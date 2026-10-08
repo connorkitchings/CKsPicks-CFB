@@ -24,6 +24,7 @@ from cks_picks_cfb.forecast.live_sources import _read_frame, load_live_forecast_
 from cks_picks_cfb.ratings.possession_intended_update import IntendedUpdate
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
 from cks_picks_cfb.ratings_lab.corpus import PINS
+from cks_picks_cfb.rebuild.successor_sources import is_corrected, rating_inputs
 from contracts.teams import TEAM_LOGO_MAP
 
 OUTPUT_ROOT = (
@@ -53,6 +54,12 @@ def _inputs(
         observations = pd.read_parquet(cache / "live_measurement_observations.parquet")
         priors = pd.read_parquet(cache / "live_rating_priors.parquet")
         terminal = pd.read_parquet(cache / "terminal.parquet")
+    elif is_corrected(lock):
+        if os.getenv("CFB_STORAGE_BACKEND") != "r2":
+            raise ValueError("2026 rating artifact requires CFB_STORAGE_BACKEND=r2")
+        schedule, observations, priors, terminal = rating_inputs(
+            get_storage(environment="preview"), lock
+        )
     else:
         if os.getenv("CFB_STORAGE_BACKEND") != "r2":
             raise ValueError("2026 rating artifact requires CFB_STORAGE_BACKEND=r2")
@@ -237,7 +244,11 @@ def build(
             "parents": {
                 "source_lock_sha256": _sha(lock_raw),
                 "source_lock_name": source_lock.name,
-                "historical_measurement_manifest_sha256": PINS["measurement"][1],
+                "historical_measurement_manifest_sha256": lock["corrected_lineage"][
+                    "rebuild_root_raw_sha256"
+                ]
+                if is_corrected(lock)
+                else PINS["measurement"][1],
                 "measurement_manifest_sha256": lock["research_2026_measurement_sha256"],
                 "accepted_rating_manifest_sha256": lock["research_2026_rating_sha256"],
                 "schedule_content_sha256": lock["research_source_import"][

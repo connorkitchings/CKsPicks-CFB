@@ -57,6 +57,11 @@ def main() -> int:
         "--task4-receipt-sha256",
         default="1cd439defb14b886a3850102e0ad8ef44691a51287885dbc46e748e6d00ea3e3",
     )
+    parser.add_argument("--replay-run-id", default="6b-replay-w5-20261008-r2")
+    parser.add_argument(
+        "--replay-root-sha256",
+        default="c253022a2ae072f63a8f131383782ddff67ace092cd3c831ecf94bc7ab87bd1a",
+    )
     parser.add_argument(
         "--week5-config",
         type=Path,
@@ -93,6 +98,8 @@ def main() -> int:
             "task4_run_id": args.task4_run_id,
             "task4_root_raw_sha256": args.task4_root_sha256,
             "task4_receipt_raw_sha256": args.task4_receipt_sha256,
+            "replay_run_id": args.replay_run_id,
+            "replay_root_raw_sha256": args.replay_root_sha256,
             "inference_bundle_raw_sha256": _sha(args.bundle),
             "base_lock_sha256": hashlib.sha256(args.base_lock.read_bytes()).hexdigest(),
             "measurement_parent_sha256": args.rebuild_root_sha256,

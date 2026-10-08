@@ -12,8 +12,10 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import yaml
 
 from cks_picks_cfb.data.data_first_phase2d import signed_payload, verify_signed_payload
+from cks_picks_cfb.data.market_integrity import SNAPSHOT_POLICY, snapshot_identity
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
 from scripts.pipeline.build_v5_intended_update_serving import OUTPUT_ROOT
@@ -42,7 +44,73 @@ def _result(side: str, *, target: str, line: float, home: int, away: int) -> str
     return "Win" if favorable else "Loss"
 
 
-def _verify_target(row: pd.Series, quotes: pd.DataFrame, *, target: str) -> None:
+DEFAULT_PRICE = -110.0
+
+
+def _side_price(row: pd.Series, column: str) -> float:
+    value = row.get(column)
+    return DEFAULT_PRICE if value is None or pd.isna(value) else float(value)
+
+
+def _profit_per_unit(price: float) -> float:
+    return price / 100.0 if price > 0 else 100.0 / abs(price)
+
+
+def label_thresholds(config: dict[str, Any]) -> dict[str, float]:
+    """The bet-label and grade thresholds a weekly bets config declares."""
+    spread = float(config["spread_edge_threshold"])
+    return {
+        "spread_bet": spread,
+        "spread_high": float(config.get("spread_edge_threshold_high_conf", spread)),
+        "total_bet": float(
+            config.get("total_lean_threshold", config["total_edge_threshold"])
+        ),
+        "total_grade": float(config["total_edge_threshold"]),
+    }
+
+
+def expected_snapshot_id(snapshot: pd.Series, game_id: int) -> str:
+    """The corrected snapshot identity of a stored snapshot row (current policy)."""
+    return snapshot_identity(
+        {
+            "game_id": int(game_id),
+            "market_captured_at": pd.to_datetime(
+                snapshot["market_captured_at"], utc=True
+            ),
+            "home_team_spread_line": None
+            if pd.isna(snapshot["spread_line"])
+            else float(snapshot["spread_line"]),
+            "total_line": None
+            if pd.isna(snapshot["total_line"])
+            else float(snapshot["total_line"]),
+            "source_quote_ids": snapshot["source_quote_ids"],
+            "spread_selection_rule": snapshot["spread_selection_rule"],
+            "total_selection_rule": snapshot["total_selection_rule"],
+            "spread_provider_count": int(snapshot["spread_provider_count"]),
+            "total_provider_count": int(snapshot["total_provider_count"]),
+            "market_policy_version": SNAPSHOT_POLICY,
+        }
+    )
+
+
+def _verify_target(
+    row: pd.Series,
+    quotes: pd.DataFrame,
+    *,
+    target: str,
+    bet_threshold: float = 0.0,
+    high_threshold: float | None = None,
+    cutoff: pd.Timestamp | None = None,
+) -> None:
+    """Re-derive one target's selection under ``model_side_best_quote_v2`` and compare.
+
+    Direction comes from the canonical snapshot line (an exact tie goes away/under);
+    candidates are the snapshot's quotes captured strictly before kickoff and not after
+    ``cutoff``; the best point for that side wins, then the better side price, then the
+    quote id. The bet label follows the config threshold (0.0 labels every lined game);
+    prices default to -110 when a quote carries none. ``bet_threshold=1.0`` reproduces the
+    retired September rule for checking an old artifact.
+    """
     spread = target == "spread"
     canonical = row["canonical_spread_line" if spread else "canonical_total_line"]
     prediction = float(row["Spread Prediction" if spread else "Total Prediction"])
@@ -62,45 +130,59 @@ def _verify_target(row: pd.Series, quotes: pd.DataFrame, *, target: str) -> None
         else ("Over" if prediction > canonical else "Under")
     )
     linked = set(json.loads(row["source_quote_ids"]))
-    candidates = (
-        quotes[
-            quotes.game_id.eq(int(row["game_id"]))
-            & quotes.quote_id.isin(linked)
-            & pd.to_datetime(quotes.captured_at, utc=True).lt(
-                pd.Timestamp(row["start_date"])
-            )
-        ]
-        .dropna(subset=["spread" if spread else "total"])
-        .copy()
-    )
+    captured = pd.to_datetime(quotes.captured_at, utc=True)
+    point_col = "spread" if spread else "total"
+    candidates = quotes[
+        quotes.game_id.eq(int(row["game_id"]))
+        & quotes.quote_id.isin(linked)
+        & captured.lt(pd.Timestamp(row["start_date"]))
+        & (captured.le(cutoff) if cutoff is not None else True)
+    ].dropna(subset=[point_col])
     if candidates.empty:
         if pd.notna(selected_id) or pd.notna(selected_point) or bet != "No Bet":
             raise ValueError("missing candidate target has a quote or bet")
         return
-    point_col = "spread" if spread else "total"
+    price_column = (
+        ("home_spread_price" if direction == "Home" else "away_spread_price")
+        if spread
+        else ("over_price" if direction == "Over" else "under_price")
+    )
     # Home-signed spreads: highest line is best for Home, lowest for Away.
     # Totals: lowest is best for Over, highest for Under.
     ascending = direction == "Away" if spread else direction == "Over"
-    candidates = candidates.sort_values(
-        [point_col, "quote_id"], ascending=[ascending, True]
+    ranked = candidates.assign(
+        _price=[_side_price(item, price_column) for _, item in candidates.iterrows()]
     )
-    best = candidates.iloc[0]
+    ranked["_profit"] = ranked["_price"].map(_profit_per_unit)
+    ranked = ranked.sort_values(
+        [point_col, "_profit", "quote_id"], ascending=[ascending, False, True]
+    )
+    best = ranked.iloc[0]
     if (
-        str(selected_id) != str(best["quote_id"])
+        pd.isna(selected_id)
+        or str(selected_id) != str(best["quote_id"])
         or abs(float(selected_point) - float(best[point_col])) > 1e-9
-        or abs(float(selected_price) - (-110.0)) > 1e-9
+        or abs(float(selected_price) - float(best["_price"])) > 1e-9
     ):
-        raise ValueError("selected quote differs from original eligible best quote")
+        raise ValueError("selected quote differs from the best eligible quote")
     edge = (
-        abs(prediction + selected_point) if spread else abs(prediction - selected_point)
+        abs(prediction + float(selected_point))
+        if spread
+        else abs(prediction - float(selected_point))
     )
     actual_edge = float(row["edge_spread" if spread else "edge_total"])
     if abs(edge - actual_edge) > 1e-8:
         raise ValueError("selected quote edge differs")
-    threshold = 1.0
-    expected_bet = direction if edge >= threshold else "No Bet"
+    expected_bet = direction if edge >= bet_threshold else "No Bet"
     if bet != expected_bet:
-        raise ValueError("selected quote bet differs from unchanged threshold")
+        raise ValueError("selected quote bet differs from the configured threshold")
+    if spread and high_threshold is not None and "Spread Confidence" in row.index:
+        expected_confidence = (
+            "" if bet == "No Bet" else ("High" if edge >= high_threshold else "Medium")
+        )
+        confidence = row["Spread Confidence"]
+        if (0 if pd.isna(confidence) else confidence) != (expected_confidence or 0):
+            raise ValueError("spread confidence differs from the configured threshold")
 
 
 def verify(
@@ -181,12 +263,18 @@ def verify(
             uri=market["market_snapshots"]["uri"],
             storage=storage,
         ).set_index("game_id")
+        config_path = Path(market["config"])
+        if _sha(config_path.read_bytes()) != market["config_sha256"]:
+            raise ValueError(f"Week {week} threshold config changed")
+        thresholds = label_thresholds(yaml.safe_load(config_path.read_text()))
+        cutoff = pd.Timestamp(market["as_of"])
         for _, item in scored.iterrows():
             game_id = int(item["game_id"])
             frozen = games.loc[game_id]
             snap = snapshots.loc[game_id]
             if (
-                item["market_snapshot_id"] != snap["market_snapshot_id"]
+                item["market_snapshot_id"] != expected_snapshot_id(snap, game_id)
+                or str(item["source_quote_ids"]) != str(snap["source_quote_ids"])
                 or abs(
                     float(item["canonical_spread_line"]) - float(snap["spread_line"])
                 )
@@ -198,10 +286,20 @@ def verify(
                     )
                     > 1e-9
                 )
+                or (
+                    pd.isna(snap["total_line"]) != pd.isna(item["canonical_total_line"])
+                )
             ):
                 raise ValueError("serving canonical snapshot differs")
             for target in ("spread", "total"):
-                _verify_target(item, quotes, target=target)
+                _verify_target(
+                    item,
+                    quotes,
+                    target=target,
+                    bet_threshold=thresholds[f"{target}_bet"],
+                    high_threshold=thresholds["spread_high"],
+                    cutoff=cutoff,
+                )
                 line = item[
                     "home_team_spread_line" if target == "spread" else "total_line"
                 ]
@@ -214,7 +312,9 @@ def verify(
                 else:
                     expected_result = (
                         "No Bet"
-                        if target == "total" and float(item["edge_total"]) < 1.5
+                        if target == "total"
+                        and thresholds["total_grade"] > 0.0
+                        and float(item["edge_total"]) < thresholds["total_grade"]
                         else _result(
                             str(
                                 item[

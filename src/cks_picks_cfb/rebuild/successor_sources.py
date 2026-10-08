@@ -8,11 +8,15 @@ so the builders can run on it unchanged once their inputs come from there. Reads
 
 from __future__ import annotations
 
+import hashlib
+import io
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
-from cks_picks_cfb.rebuild.published import PublishedRun
+from cks_picks_cfb.rebuild.errors import GateError
+from cks_picks_cfb.rebuild.published import PublishedRun, open_pinned_run
 
 #: Frames the historical bridge builder and verifier read (``--historical-cache`` layout).
 HISTORICAL_FRAMES = (
@@ -61,3 +65,96 @@ def write_historical_cache(run: PublishedRun, out_dir: Path) -> dict[str, int]:
         frame.to_parquet(out_dir / f"{name}.parquet")
         rows[name] = len(frame)
     return rows
+
+
+# ---------------------------------------------------------------------------
+# Inputs read through a corrected successor lock (release tooling, no local caches)
+# ---------------------------------------------------------------------------
+
+
+def lineage(lock: dict[str, Any]) -> dict[str, Any]:
+    """The corrected-lineage block of a successor lock, or an error naming what is missing."""
+    block = lock.get("corrected_lineage")
+    if not block or block.get("kind") != "corrected_rebuild":
+        raise GateError("the source lock is not a corrected successor lock")
+    return block
+
+
+def is_corrected(lock: dict[str, Any]) -> bool:
+    return bool(lock.get("corrected_lineage"))
+
+
+def rebuild_run(storage: Any, lock: dict[str, Any]) -> PublishedRun:
+    block = lineage(lock)
+    return open_pinned_run(
+        storage, block["rebuild_run_id"], block["rebuild_root_raw_sha256"]
+    )
+
+
+def replay_run(storage: Any, lock: dict[str, Any]) -> PublishedRun:
+    block = lineage(lock)
+    if not block.get("replay_run_id"):
+        raise GateError("the corrected lock names no replay run for application frames")
+    return open_pinned_run(
+        storage,
+        block["replay_run_id"],
+        block["replay_root_raw_sha256"],
+        namespace="rebuild/6b/",
+    )
+
+
+def lock_schedule(storage: Any, lock: dict[str, Any]) -> pd.DataFrame:
+    """The locked 2026 schedule (canonical team names) from the pinned Silver games."""
+    from cks_picks_cfb.rebuild import states_2026
+
+    parent = lock["research_source_import"]["replay_parents"]
+    raw = storage.read_bytes(parent["schedule_uri"])
+    if hashlib.sha256(raw).hexdigest() != parent["schedule_content_sha256"]:
+        raise GateError("pinned schedule dataset changed")
+    return states_2026.locked_schedule(pd.read_parquet(io.BytesIO(raw)), lock)
+
+
+def rating_inputs(
+    storage: Any, lock: dict[str, Any]
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """(schedule, observations, priors, terminal) for the 2026 rating builder."""
+    run = rebuild_run(storage, lock)
+    return (
+        lock_schedule(storage, lock),
+        run.frame("states_2026/observations.parquet"),
+        run.frame("states_2026/priors.parquet"),
+        run.frame("ratings/terminal.parquet"),
+    )
+
+
+def forecast_inputs(
+    storage: Any, lock: dict[str, Any]
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """(schedule, replay features, live features) for the forecast builder.
+
+    Every locked week is a replay week; the 6B application frames are the 2026 feature rows
+    (the four rating means are replaced from the pregame states by the builder).
+    """
+    frames = replay_run(storage, lock).frame("application_frames/frames.parquet")
+    return lock_schedule(storage, lock), frames, frames.iloc[0:0].copy()
+
+
+def corrected_parents(
+    lock: dict[str, Any], lock_raw: bytes
+) -> dict[str, dict[str, str]]:
+    """The parent pins a corrected bridge manifest records (instead of the old research pins)."""
+    block = lineage(lock)
+    return {
+        "corrected_rebuild": {
+            "uri": f"rebuild/6a/{block['rebuild_run_id']}/root-manifest.json",
+            "raw_sha256": block["rebuild_root_raw_sha256"],
+        },
+        "task4_receipt": {
+            "uri": f"rebuild/6a/{block['task4_run_id']}/receipt/receipt.json",
+            "raw_sha256": block["task4_receipt_raw_sha256"],
+        },
+        "source_lock": {
+            "uri": "successor-source-lock",
+            "raw_sha256": hashlib.sha256(lock_raw).hexdigest(),
+        },
+    }

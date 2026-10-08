@@ -75,3 +75,31 @@ class PublishedRun:
                 )
             frames[season] = pd.read_parquet(io.BytesIO(data))
         return frames
+
+
+def open_pinned_run(
+    storage: Any,
+    run_id: str,
+    root_raw_sha256: str,
+    *,
+    namespace: str = DEFAULT_NAMESPACE,
+) -> PublishedRun:
+    """A published rebuild run opened outside the harness, pinned by its root's raw sha256.
+
+    Behaves like ``PublishedRun`` (every read is checked against the signed root's hashes)
+    without a stage context, for release tooling that runs as ordinary scripts.
+    """
+    raw = storage.read_bytes(f"{namespace}{run_id}/root-manifest.json")
+    if hashlib.sha256(raw).hexdigest() != root_raw_sha256:
+        raise GateError(f"published root manifest {run_id} changed")
+    root = json.loads(raw)
+    verify_signed_payload(root, label="published root manifest")
+    if root.get("kind") != "rebuild_root_v1" or root.get("run_id") != run_id:
+        raise GateError(f"{run_id}: not the published rebuild root it was pinned as")
+    run = object.__new__(PublishedRun)
+    run.context = None
+    run.storage = storage
+    run.root = root
+    run.prefix = f"{root.get('namespace', namespace)}{run_id}/"
+    run.objects = dict(root["objects"])
+    return run

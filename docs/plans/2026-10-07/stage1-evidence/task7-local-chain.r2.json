@@ -2,16 +2,66 @@
   "inputs": {
     "published_6a_root_raw_sha256": "7865d35336b039f8983ee235c6855d2795a9b35233a779a7a67a959aee89d9b0",
     "successor_lock": "conf/rebuild/successor_lock_w5_v1.json",
-    "successor_lock_sha256": "e1739d522d0a3f3c2db20f45e614bf96463bf5029f60cc2af76b99b19c11512d",
     "inference_bundle_raw_sha256": "a507d0c7cba5419868eac5c0955853d3e2855fc857aabf36f5cd192d5e7a90f1",
     "mode": "unmodified successor builders run locally on caches written from the published run and the pinned market sources (all market objects matched their content shas)"
   },
   "results": {
-    "rating_manifest": {"built": true, "matches_6a_states": "max difference 0.0", "independent_verifier": "verified"},
-    "bridge_manifest": {"built": true, "independent_verifier": "verified (states 35740, calibration counts 7192/7192)"},
-    "forecast_manifests": {"weeks": [0, 1, 2, 3, 4, 5], "evidence_class": "replay", "predictions_vs_6B_r1_with_6A_bundle": "identical when the 6A bundle is used", "predictions_vs_served_with_B2": "mean margin 0.33, total 0.17"},
-    "serving_manifests": {"weeks": [0, 1, 2, 3, 4, 5], "games": 271, "spread_record": "129-137-5", "total_record": "138-131-1", "matches_6B_r2": "records identical; spread quote id equal 271/271, total quote id equal 270/270"},
-    "serving_verifier": {"state": "FAILED", "reason": "serving canonical snapshot differs; the verifier still encodes the retired September policy (canonical line equals the snapshot line, edge thresholds 1.0 and 1.5, bet labels No Bet below threshold) while the serving builder and the current weekly config use best-quote v2 with no edge constraints"}
+    "rating_manifest": {
+      "built": true,
+      "matches_6a_states": "max difference 0.0",
+      "independent_verifier": "verified"
+    },
+    "bridge_manifest": {
+      "built": true,
+      "independent_verifier": "verified (states 35740, calibration counts 7192/7192)"
+    },
+    "forecast_manifests": {
+      "weeks": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "evidence_class": "replay",
+      "predictions_vs_6B_r1_with_6A_bundle": "identical when the 6A bundle is used",
+      "predictions_vs_served_with_B2": "mean margin 0.33, total 0.17"
+    },
+    "serving_manifests": {
+      "weeks": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "games": 271,
+      "spread_record": "129-137-5",
+      "total_record": "138-131-1",
+      "matches_6B_r2": "records identical; spread quote id equal 271/271, total quote id equal 270/270"
+    },
+    "serving_verifier": {
+      "state": "verified",
+      "weeks": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "games": 271,
+      "rewritten_to": "best-quote v2 with the config's thresholds (0.0), independent re-derivation of the snapshot identity, best quote, edge, bet label, confidence and grade",
+      "earlier_failure": "serving canonical snapshot differs (the verifier encoded the retired September policy)"
+    }
   },
-  "threshold_config_drift": "the first lock pinned replay configs whose files changed on 2026-10-03/04 (edge constraints removed); the corrected lock pins the current config and records the replaced one per week under superseded_config"
+  "threshold_config_drift": "the first lock pinned replay configs whose files changed on 2026-10-03/04 (edge constraints removed); the corrected lock pins the current config and records the replaced one per week under superseded_config",
+  "corrected_run_modes": {
+    "rating_builder_and_verifier": "read the published run through the lock; outputs byte-identical to the cache-mode build",
+    "bridge_builder_and_verifier": "--corrected-lock; bundle byte-identical to conf/rebuild/bundle_b2_w5_v1.json; manifest records corrected parents",
+    "forecast_inputs": "schedule and replay features equal the local cache",
+    "serving_builder": "schedule from the pinned Silver games through the lock"
+  }
 }

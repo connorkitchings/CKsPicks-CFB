@@ -21,6 +21,7 @@ from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.inference.v5_serving import build_v5_serving_rows
 from cks_picks_cfb.inference.weekly import resolve_label_thresholds
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
+from cks_picks_cfb.rebuild.successor_sources import is_corrected, lock_schedule
 from scripts.pipeline.build_v5_intended_update_forecasts import (
     OUTPUT_ROOT as FORECAST_ROOT,
 )
@@ -103,7 +104,9 @@ def build(
         if (market_cache is None or forecast_dir is None or schedule_cache is None)
         else None
     )
-    if schedule_cache is None:
+    if schedule_cache is None and is_corrected(lock):
+        schedule = lock_schedule(storage, lock)
+    elif schedule_cache is None:
         parent = lock["research_source_import"]["replay_parents"]
         raw = storage.read_bytes(parent["schedule_uri"])
         if _sha(raw) != parent["schedule_content_sha256"]:

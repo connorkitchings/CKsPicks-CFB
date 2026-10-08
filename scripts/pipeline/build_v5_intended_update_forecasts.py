@@ -29,6 +29,7 @@ from cks_picks_cfb.forecast.live_sources import load_live_forecast_sources
 from cks_picks_cfb.forecast.replay_sources import load_replay_sources
 from cks_picks_cfb.ratings.possession_intended_update import MODEL_ID
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
+from cks_picks_cfb.rebuild.successor_sources import forecast_inputs, is_corrected
 
 OUTPUT_ROOT = (
     "artifacts/research/data-first-football-v1/forecasts/intended-update/2026-runs"
@@ -134,6 +135,17 @@ def _sources(
         if _sha(state_raw) != state_ref["raw_sha256"]:
             raise ValueError("successor rating state checksum differs")
         states = pd.read_parquet(io.BytesIO(state_raw))
+        if is_corrected(lock):
+            schedule, replay_features, live_features = forecast_inputs(storage, lock)
+            return (
+                schedule,
+                replay_features,
+                live_features,
+                states,
+                bundle,
+                _sha(bridge_raw),
+                _sha(rating_raw),
+            )
         source = lock["research_source_import"]
         parent = source["replay_parents"]
         replay, _, _ = load_replay_sources(

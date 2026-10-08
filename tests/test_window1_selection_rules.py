@@ -55,15 +55,21 @@ def _row(
 def test_verifier_exact_spread_tie_is_away_and_takes_lowest_line():
     # prediction + canonical == 0 is a tie -> Away -> lowest home-signed line (q0).
     row = _row("spread", prediction=-3.0, canonical=3.0, selected=0, point=2.5)
-    verifier._verify_target(row, _quotes("spread", [2.5, 3.5]), target="spread")
+    verifier._verify_target(
+        row, _quotes("spread", [2.5, 3.5]), target="spread", bet_threshold=1.0
+    )
     wrong = _row("spread", prediction=-3.0, canonical=3.0, selected=1, point=3.5)
     with pytest.raises(ValueError):
-        verifier._verify_target(wrong, _quotes("spread", [2.5, 3.5]), target="spread")
+        verifier._verify_target(
+            wrong, _quotes("spread", [2.5, 3.5]), target="spread", bet_threshold=1.0
+        )
 
 
 def test_verifier_exact_total_tie_is_under_and_takes_highest_line():
     row = _row("total", prediction=50.0, canonical=50.0, selected=1, point=50.5)
-    verifier._verify_target(row, _quotes("total", [49.5, 50.5]), target="total")
+    verifier._verify_target(
+        row, _quotes("total", [49.5, 50.5]), target="total", bet_threshold=1.0
+    )
 
 
 def test_publisher_null_labels_do_not_synthesize_a_lean():

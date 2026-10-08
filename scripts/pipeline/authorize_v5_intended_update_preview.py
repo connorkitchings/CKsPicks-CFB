@@ -56,7 +56,7 @@ def authorization_record(manifest: dict, *, decision_ref: str) -> dict:
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--week", type=int, choices=range(6))
+    parser.add_argument("--week", type=int)
     parser.add_argument("--decision-ref")
     parser.add_argument("--packet", type=Path)
     parser.add_argument("--receipt", type=Path)
@@ -95,6 +95,8 @@ def main() -> None:
         return
     if args.week is None or not args.decision_ref:
         parser.error("legacy single-run mode requires --week and --decision-ref")
+    if args.week < 0:
+        parser.error("--week must be a non-negative week")
     if not re.fullmatch(r"[a-z0-9-]+", args.release_tag):
         raise SystemExit("invalid successor release tag")
     if (

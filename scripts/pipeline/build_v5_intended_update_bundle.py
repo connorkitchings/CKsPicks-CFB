@@ -40,6 +40,12 @@ from cks_picks_cfb.ratings_lab.v5_control import (
     load_v5_control,
     replay_v5_control,
 )
+from cks_picks_cfb.rebuild.successor_sources import (
+    HISTORICAL_FRAMES,
+    corrected_parents,
+    historical_frames,
+    rebuild_run,
+)
 
 OUTPUT_ROOT = "artifacts/research/data-first-football-v1/forecasts/intended-update/runs"
 SCHEMA_VERSION = "v5_intended_update_bridge_manifest_v1"
@@ -71,8 +77,14 @@ def _source(output: Path) -> ResearchStorage:
 
 
 def _cached(root: Path) -> tuple[Corpus, V5Control]:
+    return _from_frames(
+        {name: pd.read_parquet(root / f"{name}.parquet") for name in HISTORICAL_FRAMES}
+    )
+
+
+def _from_frames(frames: dict[str, pd.DataFrame]) -> tuple[Corpus, V5Control]:
     def frame(name: str) -> pd.DataFrame:
-        return pd.read_parquet(root / f"{name}.parquet")
+        return frames[name]
 
     corpus = Corpus(
         frame("population"),
@@ -145,7 +157,12 @@ def _states(
 
 
 def build(
-    *, run_id: str, output: Path, code_sha: str, cache: Path | None = None
+    *,
+    run_id: str,
+    output: Path,
+    code_sha: str,
+    cache: Path | None = None,
+    corrected_lock: Path | None = None,
 ) -> dict[str, Any]:
     if not re.fullmatch(r"v5-intended-update-[a-z0-9-]+", run_id):
         raise ValueError("invalid intended-update run ID")
@@ -153,7 +170,16 @@ def build(
     if output.resolve() == forbidden or forbidden in output.resolve().parents:
         raise ValueError("bundle output cannot use repository ./data")
     output.mkdir(parents=True, exist_ok=True)
-    if cache is None:
+    parents = {
+        name: {"uri": uri, "raw_sha256": digest} for name, (uri, digest) in PINS.items()
+    }
+    if corrected_lock is not None:
+        lock_raw = corrected_lock.read_bytes()
+        lock = json.loads(lock_raw)
+        run = rebuild_run(get_storage(environment="preview"), lock)
+        corpus, control = _from_frames(historical_frames(run))
+        parents = corrected_parents(lock, lock_raw)
+    elif cache is None:
         storage = _source(output)
         corpus = load_v5_corpus(storage)
         control = load_v5_control(storage, corpus)
@@ -178,10 +204,7 @@ def build(
                 "environment": "preview",
                 "candidate_id": V5_GAME_AT_CUTOFF.candidate_id,
             },
-            "parents": {
-                name: {"uri": uri, "raw_sha256": digest}
-                for name, (uri, digest) in PINS.items()
-            },
+            "parents": parents,
             "output_refs": {
                 "historical_states": {
                     "uri": f"{prefix}/historical-states.parquet",
@@ -221,6 +244,11 @@ def main() -> None:
     parser.add_argument("--expected-code-sha", required=True)
     parser.add_argument("--local-output", type=Path, required=True)
     parser.add_argument("--historical-cache", type=Path)
+    parser.add_argument(
+        "--corrected-lock",
+        type=Path,
+        help="build from the published corrected rebuild named by this successor lock",
+    )
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--preflight-evidence", type=Path)
     args = parser.parse_args()
@@ -231,6 +259,7 @@ def main() -> None:
         output=args.local_output,
         code_sha=args.expected_code_sha,
         cache=args.historical_cache,
+        corrected_lock=args.corrected_lock,
     )
     if not args.apply:
         print(json.dumps(manifest, sort_keys=True))

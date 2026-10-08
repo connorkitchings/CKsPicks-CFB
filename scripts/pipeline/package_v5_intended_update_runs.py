@@ -47,6 +47,7 @@ RATING_URI = (
     "intended-update-2026/runs/v5-intended-update-2026-ratings-v1/rating-manifest.json"
 )
 CONFIG = Path("conf/weekly_bets/v5_intended_update_2026.yaml")
+DEFAULT_RELEASE_TAG = "20260929-p1"
 
 
 def _sha(raw: bytes) -> str:
@@ -69,26 +70,33 @@ def _write_once(storage: Any, uri: str, raw: bytes) -> None:
 
 
 def package_week(
-    storage: Any, lock: dict[str, Any], lock_sha: str, week: int
+    storage: Any,
+    lock: dict[str, Any],
+    lock_sha: str,
+    week: int,
+    *,
+    release_tag: str = DEFAULT_RELEASE_TAG,
+    bridge_uri: str = BRIDGE_URI,
+    rating_uri: str = RATING_URI,
 ) -> tuple[dict, dict, bytes, bytes]:
     """Build a standard run and scored manifest from the signed research chain."""
-    if week not in range(5):
-        raise ValueError("only completed Weeks 0-4 have verified replay serving")
     if os.getenv("CFB_ARTIFACT_ENV") != "preview":
         raise ValueError("replay packaging requires the Preview artifact namespace")
+    if not 0 <= week < int(lock["active_week"]["week"]):
+        raise ValueError("only weeks before the lock's active week have replay serving")
     cfg = OmegaConf.load(CONFIG)
     if cfg.model_id != "v5-intended-update-2026-v1":
         raise ValueError("successor serving config has another model")
-    bridge, bridge_sha = _signed(storage, BRIDGE_URI)
-    ratings, rating_sha = _signed(storage, RATING_URI)
+    bridge, bridge_sha = _signed(storage, bridge_uri)
+    ratings, rating_sha = _signed(storage, rating_uri)
     bridge_verifier, _ = _signed(
-        storage, f"{BRIDGE_URI.rsplit('/', 1)[0]}/verification/verifier-manifest.json"
+        storage, f"{bridge_uri.rsplit('/', 1)[0]}/verification/verifier-manifest.json"
     )
     rating_verifier, _ = _signed(
-        storage, f"{RATING_URI.rsplit('/', 1)[0]}/verification/verifier-manifest.json"
+        storage, f"{rating_uri.rsplit('/', 1)[0]}/verification/verifier-manifest.json"
     )
-    run_id = f"2026w{week}-v5repair-20260929-p1"
-    forecast_uri = f"{FORECAST_ROOT}/20260929-p1/week={week}/forecast-manifest.json"
+    run_id = f"2026w{week}-v5repair-{release_tag}"
+    forecast_uri = f"{FORECAST_ROOT}/{release_tag}/week={week}/forecast-manifest.json"
     serving_uri = f"{SERVING_ROOT}/{run_id}/serving-manifest.json"
     verifier_uri = f"{SERVING_ROOT}/{run_id}/verification/verifier-manifest.json"
     forecast, forecast_sha = _signed(storage, forecast_uri)
@@ -212,7 +220,10 @@ def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-lock", type=Path, required=True)
-    parser.add_argument("--week", type=int, choices=range(5), required=True)
+    parser.add_argument("--week", type=int, required=True)
+    parser.add_argument("--release-tag", default=DEFAULT_RELEASE_TAG)
+    parser.add_argument("--bridge-uri", default=BRIDGE_URI)
+    parser.add_argument("--rating-uri", default=RATING_URI)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expected-packet-sha")
     parser.add_argument("--expected-code-sha")
@@ -224,7 +235,13 @@ def main() -> None:
     storage = get_storage(environment="preview")
     lock_raw = args.source_lock.read_bytes()
     manifest, scored_manifest, predictions_raw, scored_raw = package_week(
-        storage, json.loads(lock_raw), _sha(lock_raw), args.week
+        storage,
+        json.loads(lock_raw),
+        _sha(lock_raw),
+        args.week,
+        release_tag=args.release_tag,
+        bridge_uri=args.bridge_uri,
+        rating_uri=args.rating_uri,
     )
     packet = {"prediction": manifest, "scored": scored_manifest}
     packet_sha = _sha(canonical_json(packet))

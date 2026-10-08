@@ -26,6 +26,8 @@
     "rating_parent_sha256": "1cd439defb14b886a3850102e0ad8ef44691a51287885dbc46e748e6d00ea3e3",
     "rebuild_root_raw_sha256": "7865d35336b039f8983ee235c6855d2795a9b35233a779a7a67a959aee89d9b0",
     "rebuild_run_id": "6a-rebuild-w5-20261007-r2",
+    "replay_root_raw_sha256": "c253022a2ae072f63a8f131383782ddff67ace092cd3c831ecf94bc7ab87bd1a",
+    "replay_run_id": "6b-replay-w5-20261008-r2",
     "task4_receipt_raw_sha256": "1cd439defb14b886a3850102e0ad8ef44691a51287885dbc46e748e6d00ea3e3",
     "task4_root_raw_sha256": "3681c884952059bd14bd59c97b11b5afe35f4dbbdc2a7facf9379237e2a2c063",
     "task4_run_id": "6a-task4-w5-r2"
