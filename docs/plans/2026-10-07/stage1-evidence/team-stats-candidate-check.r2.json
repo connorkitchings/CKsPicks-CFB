@@ -1,0 +1,28 @@
+{
+  "as_of_weeks": [
+    6
+  ],
+  "candidate_raw_sha256": "1b4b36857409ba1a0fb4a7b04158716f62a540480be846f638910e1f16ffa762",
+  "checks": {
+    "independent_drive_metric_recompute": {
+      "6": {
+        "as_of_week": 6,
+        "compared": 24,
+        "differences": [],
+        "passed": true,
+        "teams": [
+          "Michigan",
+          "Oklahoma",
+          "Vanderbilt",
+          "Auburn"
+        ]
+      }
+    },
+    "structure": {
+      "passed": true
+    }
+  },
+  "passed": true,
+  "rows": 3036,
+  "schema_version": "v5_team_stats_candidate_check_v1"
+}
