@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import Any
 
 import pandas as pd
@@ -40,8 +40,15 @@ def fetch_table(cur, table: str, columns, jsonb, where: str, params) -> pd.DataF
     return pd.DataFrame(cur.fetchall(), columns=list(columns))
 
 
+STATS_WEEKS = tuple(range(1, 6))
+
+
 def season_stats_frame(
-    run: PublishedRun, storage, pin_file: dict[str, Any], fallback_names: set[str]
+    run: PublishedRun,
+    storage,
+    pin_file: dict[str, Any],
+    fallback_names: set[str],
+    weeks: Iterable[int] = STATS_WEEKS,
 ) -> tuple[pd.DataFrame, str]:
     """The website table rebuilt from the corrected 2026 Silver, week by week."""
     from cks_picks_cfb.data.lake import read_dataset
@@ -63,7 +70,7 @@ def season_stats_frame(
     else:
         fbs, source = set(fallback_names), "neon.games (fallback)"
     frames = []
-    for week in range(1, 6):
+    for week in weeks:
         result = build_team_season_stats(
             byplay=byplay,
             drives=drives,

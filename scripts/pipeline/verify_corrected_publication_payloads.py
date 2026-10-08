@@ -72,10 +72,14 @@ def change_gate(before_rows: list[dict], after_rows: list[dict]) -> dict[str, An
 
 
 def handcheck(
-    after_rows: list[dict], teams: tuple[str, ...], as_of_week: int
+    after_rows: list[dict],
+    teams: tuple[str, ...],
+    as_of_week: int,
+    run_id: str,
+    root_sha256: str,
 ) -> dict[str, Any]:
     storage = get_storage(environment="preview")
-    run = open_published_run(storage)
+    run = open_published_run(storage, run_id, root_sha256)
     plays = run.dataset_frames("byplay", season_scope="2026")[SEASON]
     plays = plays[(plays["season"] == SEASON) & (plays["week"] < as_of_week)]
     published = pd.DataFrame(
@@ -102,16 +106,59 @@ def handcheck(
     }
 
 
+def check_candidate(args: argparse.Namespace) -> int:
+    """Structure plus the independent drive-metric recompute for a candidate payload.
+
+    A candidate has no database rows to compare with, so there is no before/after receipt
+    and no controller binding; this is evidence about the rows only.
+    """
+    payload, digest = load_payload(args.candidate)
+    rows = payload["rows"]
+    weeks = sorted({r["as_of_week"] for r in rows})
+    checks = {
+        "structure": {"passed": not rp.structural_problems(rows)},
+        "independent_drive_metric_recompute": {
+            str(week): handcheck(
+                rows, tuple(args.teams), week, args.run_id, args.root_sha256
+            )
+            for week in weeks
+        },
+    }
+    passed = checks["structure"]["passed"] and all(
+        c["passed"] for c in checks["independent_drive_metric_recompute"].values()
+    )
+    report = {
+        "schema_version": "v5_team_stats_candidate_check_v1",
+        "candidate_raw_sha256": digest,
+        "as_of_weeks": weeks,
+        "rows": len(rows),
+        "checks": checks,
+        "passed": passed,
+    }
+    args.out.write_text(json.dumps(report, indent=2, sort_keys=True))
+    print(json.dumps({k: report[k] for k in ("passed", "as_of_weeks", "rows")}))
+    return 0 if passed else 1
+
+
 def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--before", type=Path, required=True)
-    parser.add_argument("--after", type=Path, required=True)
-    parser.add_argument("--decision-ref", required=True)
+    parser.add_argument("--before", type=Path)
+    parser.add_argument("--after", type=Path)
+    parser.add_argument(
+        "--candidate", type=Path, help="check a candidate payload (no database rows)"
+    )
+    parser.add_argument("--decision-ref")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--run-id", required=True, help="published 6A run id")
+    parser.add_argument("--root-sha256", required=True, help="raw sha of its root")
     parser.add_argument("--teams", nargs="+", default=list(DEFAULT_TEAMS))
     parser.add_argument("--as-of-week", type=int, default=5)
     args = parser.parse_args()
+    if args.candidate:
+        return check_candidate(args)
+    if not (args.before and args.after and args.decision_ref):
+        raise SystemExit("--before, --after and --decision-ref are required")
 
     before, before_sha = load_payload(args.before)
     after, after_sha = load_payload(args.after)
@@ -125,7 +172,11 @@ def main() -> int:
         },
         "expected_change_buckets": change_gate(before_rows, after_rows),
         "independent_drive_metric_recompute": handcheck(
-            after_rows, tuple(args.teams), args.as_of_week
+            after_rows,
+            tuple(args.teams),
+            args.as_of_week,
+            args.run_id,
+            args.root_sha256,
         ),
     }
     receipt = rp.verification_receipt(

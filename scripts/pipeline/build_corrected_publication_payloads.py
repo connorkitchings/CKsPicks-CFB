@@ -37,19 +37,31 @@ from cks_picks_cfb.rebuild import release_payloads as rp  # noqa: E402
 from cks_picks_cfb.rebuild.published import PublishedRun  # noqa: E402
 from cks_picks_cfb.rebuild.published_comparison import season_stats_frame  # noqa: E402
 
-PUBLISHED_RUN_ID = "6a-rebuild-20261004-r1"
-ROOT_KEY = f"rebuild/6a/{PUBLISHED_RUN_ID}/root-manifest.json"
-ROOT_RAW_SHA256 = "741d262f116a51db0d33ffc84efb22aa5ff4093e7da38535073343aee1fa85d0"
-PIN_FILE = REPO_ROOT / "conf" / "rebuild" / "silver_2026_parents_v1.json"
 SEASON = 2026
+# The first corrected run, for reproducing the evidence recorded on 2026-10-07:
+#   --run-id 6a-rebuild-20261004-r1 --pin-file conf/rebuild/silver_2026_parents_v1.json
+#   --root-sha256 741d262f116a51db0d33ffc84efb22aa5ff4093e7da38535073343aee1fa85d0
 URL_ENV = {"preview": "PREVIEW_DATABASE_URL", "production": "DATABASE_URL"}
 
 
-def open_published_run(storage: Any) -> PublishedRun:
-    """The published 6A run, pinned by the raw SHA-256 of its root manifest."""
-    raw = storage.read_bytes(ROOT_KEY)
-    if hashlib.sha256(raw).hexdigest() != ROOT_RAW_SHA256:
-        raise SystemExit("published 6A root manifest changed")
+def parse_weeks(text: str) -> list[int]:
+    """``"1-5"`` or ``"1,3,6"`` as a sorted list of as-of weeks."""
+    weeks: set[int] = set()
+    for part in text.split(","):
+        low, dash, high = part.strip().partition("-")
+        if not low.isdigit() or (dash and not high.isdigit()):
+            raise ValueError(f"bad as-of week list: {text!r}")
+        weeks.update(range(int(low), int(high or low) + 1))
+    if not weeks or min(weeks) < 1:
+        raise ValueError(f"as-of weeks must be 1 or more: {text!r}")
+    return sorted(weeks)
+
+
+def open_published_run(storage: Any, run_id: str, root_sha256: str) -> PublishedRun:
+    """A published 6A run, pinned by the raw SHA-256 of its root manifest."""
+    raw = storage.read_bytes(f"rebuild/6a/{run_id}/root-manifest.json")
+    if hashlib.sha256(raw).hexdigest() != root_sha256:
+        raise SystemExit(f"published 6A root manifest {run_id} changed")
     root = json.loads(raw)
     verify_signed_payload(root, label="published root manifest")
     run = object.__new__(PublishedRun)
@@ -78,12 +90,12 @@ def silver_version(run: PublishedRun, dataset: str) -> str:
 
 
 def corrected_source_versions(
-    run: PublishedRun, pins: dict[str, Any]
+    run: PublishedRun, pins: dict[str, Any], run_id: str, root_sha256: str
 ) -> dict[str, str]:
     parents = {p["dataset"]: p for p in pins["parents"]}
     return {
-        "lineage": f"corrected:{PUBLISHED_RUN_ID}",
-        "rebuild_root_sha256": ROOT_RAW_SHA256,
+        "lineage": f"corrected:{run_id}",
+        "rebuild_root_sha256": root_sha256,
         "byplay": silver_version(run, "byplay"),
         "drives": silver_version(run, "drives"),
         "games": parents["games"]["version_id"],
@@ -107,20 +119,42 @@ def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out-dir", type=Path, required=True)
+    parser.add_argument("--run-id", required=True, help="published 6A run id")
+    parser.add_argument("--root-sha256", required=True, help="raw sha of its root")
+    parser.add_argument("--pin-file", type=Path, required=True, help="2026 parents")
+    parser.add_argument(
+        "--weeks", default="1-5", help="as-of weeks compared with the database"
+    )
+    parser.add_argument(
+        "--candidate-weeks",
+        default="",
+        help="as-of weeks with no database rows yet; written as a candidate payload",
+    )
     parser.add_argument(
         "--before-environment", choices=sorted(URL_ENV), default="production"
     )
     args = parser.parse_args()
+    weeks = parse_weeks(args.weeks)
+    candidate_weeks = parse_weeks(args.candidate_weeks) if args.candidate_weeks else []
+    if set(weeks) & set(candidate_weeks):
+        raise SystemExit("--weeks and --candidate-weeks overlap")
+    pin_file = (
+        args.pin_file if args.pin_file.is_absolute() else REPO_ROOT / args.pin_file
+    )
     if REPO_ROOT / "data" in [args.out_dir.resolve(), *args.out_dir.resolve().parents]:
         raise SystemExit("output cannot be the repository ./data directory")
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
     storage = get_storage(environment="preview")
-    run = open_published_run(storage)
-    pins = json.loads(PIN_FILE.read_text())
-    versions = corrected_source_versions(run, pins)
-    frame, fbs_source = season_stats_frame(run, storage, pins, set())
-    after_rows = rp.stat_rows(frame, versions)
+    run = open_published_run(storage, args.run_id, args.root_sha256)
+    pins = json.loads(pin_file.read_text())
+    versions = corrected_source_versions(run, pins, args.run_id, args.root_sha256)
+    frame, fbs_source = season_stats_frame(
+        run, storage, pins, set(), weeks=[*weeks, *candidate_weeks]
+    )
+    all_rows = rp.stat_rows(frame, versions)
+    after_rows = [r for r in all_rows if r["as_of_week"] in weeks]
+    candidate_rows = [r for r in all_rows if r["as_of_week"] in candidate_weeks]
     scope = rp.scope_of(after_rows)
 
     url = os.getenv(URL_ENV[args.before_environment])
@@ -134,10 +168,10 @@ def main() -> int:
             before_rows = rp.database_stat_rows(cur, scope)
 
     parents = {
-        "published_run_id": PUBLISHED_RUN_ID,
-        "published_root_raw_sha256": ROOT_RAW_SHA256,
-        "silver_2026_parents_file": PIN_FILE.name,
-        "silver_2026_parents_sha256": hashlib.sha256(PIN_FILE.read_bytes()).hexdigest(),
+        "published_run_id": args.run_id,
+        "published_root_raw_sha256": args.root_sha256,
+        "silver_2026_parents_file": pin_file.name,
+        "silver_2026_parents_sha256": hashlib.sha256(pin_file.read_bytes()).hexdigest(),
         "fbs_team_source": fbs_source,
     }
     before = rp.team_stats_payload(
@@ -162,6 +196,18 @@ def main() -> int:
         "after": write_payload(args.out_dir, "team-stats-after", after),
         "comparison": rp.compare_stats(before_rows, after_rows),
     }
+    if candidate_rows:
+        candidate = rp.team_stats_payload(
+            candidate_rows,
+            environment=args.before_environment,
+            season=SEASON,
+            parents=parents,
+            label=f"candidate (as-of {candidate_weeks}; no database rows)",
+        )
+        summary["candidate"] = write_payload(
+            args.out_dir, "team-stats-candidate", candidate
+        )
+        summary["candidate"]["as_of_weeks"] = candidate_weeks
     (args.out_dir / "team-stats-build-summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True, default=str)
     )
