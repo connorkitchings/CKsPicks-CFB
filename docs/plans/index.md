@@ -28,6 +28,8 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current active contracts
 
+The [October 8 repair-track certification and closure contract](2026-10-08/02-repair-track-certification-and-closure.md) is In Progress and is the completion matrix for the October 4 objective. Stage 1 closure does not close the full track.
+
 The [V6 ratings research platform](2026-09-28/v6-ratings-research-platform.md)
 is Closed (2026-09-30, `RETAINED_AS_BENCHMARK`); see
 [Phase 5](2026-09-30/07-v6-phase5-finishing-drives.md). It built isolated research

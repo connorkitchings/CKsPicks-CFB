@@ -1,0 +1,107 @@
+diff --git a/src/cks_picks_cfb/features/byplay/enrichment.py b/src/cks_picks_cfb/features/byplay/enrichment.py
+index f1df313a..0f621840 100644
+--- a/src/cks_picks_cfb/features/byplay/enrichment.py
++++ b/src/cks_picks_cfb/features/byplay/enrichment.py
+@@ -227,6 +227,45 @@ def calculate_st_analytics(df: pd.DataFrame) -> pd.DataFrame:
+     return df_copy
+ 
+ 
++def _deduplicate_source_plays(data: pd.DataFrame) -> pd.DataFrame:
++    """Collapse exact repeats, but never use play sequence as event identity.
++
++    A provider ID may legitimately share its displayed play number with another
++    event. Without IDs, differing rows at the same position are ambiguous and
++    need source review before they can enter a measurement build.
++    """
++    import json
++
++    df = data.copy()
++    position = ["season", "week", "game_id", "drive_number", "play_number"]
++    missing = sorted(set(position) - set(df.columns))
++    if missing:
++        raise ValueError(f"Source plays lack identity columns: {missing}")
++    id_column = "id" if "id" in df else "play_id" if "play_id" in df else None
++    if id_column:
++        ids = df[id_column].map(
++            lambda value: None if pd.isna(value) or str(value).strip() == "" else str(value)
++        )
++        df["source_play_id"] = ids
++    else:
++        df["source_play_id"] = None
++
++    # Only byte-equivalent source records may collapse. Provider IDs are
++    # checked separately so the same ID cannot denote two different plays.
++    signatures = df.drop(columns="source_play_id").apply(
++        lambda row: json.dumps(row.to_dict(), sort_keys=True, default=str), axis=1
++    )
++    duplicate = signatures.duplicated()
++    df = df.loc[~duplicate].copy()
++    with_ids = df[df["source_play_id"].notna()]
++    if with_ids.duplicated(["season", "game_id", "source_play_id"]).any():
++        raise ValueError("Conflicting records share a provider play ID")
++    for _, group in df.groupby(position, dropna=False, sort=False):
++        if len(group) > 1 and group["source_play_id"].isna().any():
++            raise ValueError("Distinct plays share a sequence without complete provider IDs")
++    return df
++
++
+ def allplays_to_byplay(
+     data: pd.DataFrame,
+     corrections: pd.DataFrame | None = None,
+@@ -241,10 +280,7 @@ def allplays_to_byplay(
+     ``nullable_ppa=True`` (the Window 2 Silver version) a missing PPA stays null, a genuine
+     numerical zero stays zero, and nothing is inferred from existing zeros.
+     """
+-    df = data.copy()
+-    df = df.drop_duplicates(
+-        subset=["game_id", "drive_number", "play_number"], keep="first"
+-    )
++    df = _deduplicate_source_plays(data)
+ 
+     # --- Normalize column names first ---
+     if "yards_to_first" not in df.columns and "distance" in df.columns:
+@@ -688,6 +724,8 @@ def allplays_to_byplay(
+         "kick_distance",
+         "is_fg_made",
+     ]
++    if df["source_play_id"].notna().any():
++        column_order.append("source_play_id")
+     df = df[column_order].copy()
+     df = df[~df["play_type"].isin(playtype_delete)].copy()
+     df["ppa"] = pd.to_numeric(df["ppa"], errors="coerce")
+diff --git a/tests/test_new_features.py b/tests/test_new_features.py
+index 9feca275..95ce9f93 100644
+--- a/tests/test_new_features.py
++++ b/tests/test_new_features.py
+@@ -241,6 +241,31 @@ class TestByplayVectorized:
+         assert result.ppa_missing.tolist() == [True, False]
+         assert result.ppa_missing_reason.tolist() == ["provider_missing_ppa", ""]
+ 
++    def test_distinct_provider_plays_at_one_sequence_are_preserved(self):
++        raw = pd.DataFrame(
++            [
++                _make_play(id=101, play_number=1, yards_gained=5),
++                _make_play(id=102, play_number=1, yards_gained=8),
++            ]
++        )
++        result = allplays_to_byplay(raw)
++        assert len(result) == 2
++        assert set(result.source_play_id) == {"101", "102"}
++
++    def test_only_exact_source_repeats_collapse(self):
++        play = _make_play(id=101)
++        assert len(allplays_to_byplay(pd.DataFrame([play, play]))) == 1
++
++    def test_conflicting_or_unidentified_source_plays_fail(self):
++        with pytest.raises(ValueError, match="provider play ID"):
++            allplays_to_byplay(
++                pd.DataFrame([_make_play(id=101), _make_play(id=101, ppa=0.4)])
++            )
++        with pytest.raises(ValueError, match="without complete provider IDs"):
++            allplays_to_byplay(
++                pd.DataFrame([_make_play(play_number=1), _make_play(play_number=1, ppa=0.4)])
++            )
++
+     def test_nullable_ppa_keeps_missing_null_and_genuine_zero_zero(self):
+         raw = pd.DataFrame(
+             [

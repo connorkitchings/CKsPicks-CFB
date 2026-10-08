@@ -1,5 +1,7 @@
 # Known Data Issues
 
+> **Current repair closure authority:** See the [completion matrix](../plans/2026-10-08/02-repair-track-certification-and-closure.md). Stage 1 is closed; remaining ingestion, scoring, full-population metric and 2025 matchup requirements remain open. Historical findings below are not current release instructions.
+
 Open and resolved data-quality issues that affect what the product shows. Add an entry when an issue is found; move it to **Resolved** with the fixing commit.
 
 ## Repair authority (updated 2026-10-04)

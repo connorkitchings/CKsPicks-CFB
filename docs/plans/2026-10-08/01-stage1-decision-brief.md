@@ -1,5 +1,7 @@
 # Stage 1 decision brief: what the corrected data work produced and how to release it
 
+> **Follow-through:** The [repair-track completion matrix](02-repair-track-certification-and-closure.md) governs remaining certification and closure. Independent c2/B2 readback is now recorded there; this Stage 1 decision does not close the October 4 objective.
+
 - **Status:** Decided (see Outcome); original analysis below
 - **Created:** 2026-10-08
 - **Contract:** [`2026-10-07/04-stage1-week5-corrected-data-finalization.md`](../2026-10-07/04-stage1-week5-corrected-data-finalization.md) (Task 9)

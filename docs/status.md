@@ -1,5 +1,7 @@
 # Current Status
 
+> **Repair-track verification update (2026-10-08):** The [completion matrix](plans/2026-10-08/02-repair-track-certification-and-closure.md) now records independent c2/B2 readback, baseline CI and deployed revision. These checks do not establish corrected Production activation or full track closure. Serving/week state below is unchanged.
+
 > **Single source of truth for live run IDs, week state and the scoreboard.**
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
