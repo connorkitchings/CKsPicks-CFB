@@ -79,12 +79,15 @@ function Cell({
   testId?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center" data-testid={testId}>
-      <div className="inline-flex flex-wrap items-center justify-center gap-1.5">
+    <div className="flex min-w-0 flex-col items-center justify-center text-center" data-testid={testId}>
+      <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-1 sm:flex-nowrap sm:gap-1.5">
         <span
           className={clsx(
-            "font-mono",
-            muted ? "text-ink-faint" : accent ? "font-medium text-accent-ink" : "font-medium text-ink",
+            "leading-tight text-center whitespace-nowrap",
+            accent
+              ? "font-sans text-xs font-semibold text-accent-ink sm:text-[13px]"
+              : "font-mono text-xs font-medium text-ink sm:text-sm",
+            muted && "!font-normal !text-ink-faint",
           )}
         >
           {value}
@@ -142,12 +145,12 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           />
 
           {/* Center: market and model */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-5 py-4 text-center sm:min-w-[360px]">
+          <div className="flex w-full flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-4 py-4 text-center sm:w-[475px] sm:px-5">
             <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Forecast & Lines</span>
 
             <div
               data-testid="forecast-grid"
-              className="mt-3 grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-5 gap-y-3 text-sm"
+              className="mt-3 grid w-full grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-4 gap-y-3 text-sm"
             >
               <span aria-hidden />
               <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Spread</span>
