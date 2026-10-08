@@ -3,6 +3,7 @@ import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
+import { ResultBadge } from "@/components/slate/ResultBadge";
 import { ShareButton } from "./ShareButton";
 
 function TeamBlock({
@@ -65,26 +66,31 @@ function TeamBlock({
 function Cell({
   value,
   book,
+  badge,
   accent = false,
   muted = false,
   testId,
 }: {
   value: string;
   book?: string | null;
+  badge?: React.ReactNode;
   accent?: boolean;
   muted?: boolean;
   testId?: string;
 }) {
   return (
-    <div className="text-center" data-testid={testId}>
-      <span
-        className={clsx(
-          "font-mono",
-          muted ? "text-ink-faint" : accent ? "font-medium text-accent-ink" : "font-medium text-ink",
-        )}
-      >
-        {value}
-      </span>
+    <div className="flex flex-col items-center justify-center text-center" data-testid={testId}>
+      <div className="inline-flex flex-wrap items-center justify-center gap-1.5">
+        <span
+          className={clsx(
+            "font-mono",
+            muted ? "text-ink-faint" : accent ? "font-medium text-accent-ink" : "font-medium text-ink",
+          )}
+        >
+          {value}
+        </span>
+        {badge}
+      </div>
       {book && <span className="block font-sans text-[11px] leading-tight text-ink-faint">{book}</span>}
     </div>
   );
@@ -170,12 +176,22 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                         : "No Spread"
                     }
                     muted={!matchup.spreadLean}
+                    badge={
+                      isFinal && matchup.spreadLean && matchup.spreadResult ? (
+                        <ResultBadge grade={matchup.spreadResult} />
+                      ) : null
+                    }
                   />
                   <Cell
                     accent
                     testId="model-bet-total"
                     value={matchup.totalLean ? (matchup.totalLean === "over" ? "Over" : "Under") : "—"}
                     muted={!matchup.totalLean}
+                    badge={
+                      isFinal && matchup.totalLean && matchup.totalResult ? (
+                        <ResultBadge grade={matchup.totalResult} />
+                      ) : null
+                    }
                   />
                 </>
               )}

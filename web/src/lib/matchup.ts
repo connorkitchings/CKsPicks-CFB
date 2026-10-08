@@ -79,6 +79,8 @@ export interface MatchupData {
   // Final results if game completed
   homeFinalPoints: number | null;
   awayFinalPoints: number | null;
+  spreadResult: "win" | "loss" | "push" | null;
+  totalResult: "win" | "loss" | "push" | null;
   // Ratings
   awayRating: TeamRatingSummary;
   homeRating: TeamRatingSummary;
@@ -274,6 +276,8 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     highConfidence: view.highConfidence,
     homeFinalPoints,
     awayFinalPoints,
+    spreadResult: view.spreadResult,
+    totalResult: view.totalResult,
     awayRating: summarize(game.awayTeam),
     homeRating: summarize(game.homeTeam),
     stats: statRows.unavailable

@@ -57,15 +57,19 @@ test("missing game yields no view", () => {
 });
 
 test("predictions mode with a selected-run game exposes model fields", () => {
-  const view = selectMatchupView(predictionGame, "predictions");
+  const gradedGame = { ...predictionGame, spreadResult: "win" as const, totalResult: "loss" as const };
+  const view = selectMatchupView(gradedGame, "predictions");
   assert.equal(view?.publicationMode, "predictions");
   assert.equal(view?.predictedSpread, 6.2);
   assert.equal(view?.spreadLean, "home");
   assert.equal(view?.modelId, "v5-possession-ppp-rho060-exposure");
+  assert.equal(view?.spreadResult, "win");
+  assert.equal(view?.totalResult, "loss");
 });
 
 test("market mode never exposes model fields even for a prediction game", () => {
-  const view = selectMatchupView(predictionGame, "market");
+  const gradedGame = { ...predictionGame, spreadResult: "win" as const, totalResult: "loss" as const };
+  const view = selectMatchupView(gradedGame, "market");
   assert.equal(view?.publicationMode, "market");
   assert.equal(view?.predictedSpread, null);
   assert.equal(view?.predictedTotal, null);
@@ -73,6 +77,8 @@ test("market mode never exposes model fields even for a prediction game", () => 
   assert.equal(view?.totalLean, null);
   assert.equal(view?.modelId, null);
   assert.equal(view?.marketSpreadLine, -3.5);
+  assert.equal(view?.spreadResult, null);
+  assert.equal(view?.totalResult, null);
 });
 
 test("a week with no selected run (market game) stays market-only in predictions mode", () => {
