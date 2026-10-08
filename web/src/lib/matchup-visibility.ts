@@ -25,6 +25,8 @@ export type MatchupPublicView = {
   highConfidence: boolean;
   homePoints: number | null;
   awayPoints: number | null;
+  spreadResult: "win" | "loss" | "push" | null;
+  totalResult: "win" | "loss" | "push" | null;
 };
 
 export function selectMatchupView(
@@ -53,6 +55,8 @@ export function selectMatchupView(
       spreadSource: null,
       totalSource: null,
       highConfidence: false,
+      spreadResult: null,
+      totalResult: null,
     };
   }
   return {
@@ -69,5 +73,7 @@ export function selectMatchupView(
     spreadSource: game.spreadSource ?? null,
     totalSource: game.totalSource ?? null,
     highConfidence: Boolean(game.highConfidence),
+    spreadResult: game.spreadResult ?? null,
+    totalResult: game.totalResult ?? null,
   };
 }

@@ -103,6 +103,8 @@ export function fixtureMatchup(gameId: number): MatchupData | null {
     highConfidence: predictions ? game.highConfidence : false,
     homeFinalPoints: game.homePoints,
     awayFinalPoints: game.awayPoints,
+    spreadResult: predictions ? (game.spreadResult ?? null) : null,
+    totalResult: predictions ? (game.totalResult ?? null) : null,
     awayRating: rating(game.awayTeam, 12),
     homeRating: rating(game.homeTeam, 30),
     stats: buildMatchupStats(rows, game.week, game.awayTeam, game.homeTeam),
