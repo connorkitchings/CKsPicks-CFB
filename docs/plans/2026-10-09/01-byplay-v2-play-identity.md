@@ -1,11 +1,11 @@
 # byplay_v2: provider-keyed play identity (impact-first)
 
-- **Status:** Approved
+- **Status:** In Progress (Task 1 delivered 2026-10-09; stop gate: Task 2 waits for the user to confirm the Task 1 numbers)
 - **Created:** 2026-10-09
 - **Planner:** Sol
 - **Approval source:** User approved this plan in-session on 2026-10-09 (checkpoint → surgical docs pruning → impact-first `byplay_v2`), after two review rounds that corrected the ordering rule and the ID typing recorded below.
 - **Parent contract:** [Repair-track certification and closure](../2026-10-08/02-repair-track-certification-and-closure.md) (milestone: duplicate plays / scoring / complete metrics). That contract keeps its text and completion matrix; this contract is linked from it by Amendment.
-- **Implementation log:** `session_logs/2026-10-09/03-byplay-v2-implementation.md` (to be created by the implementing session)
+- **Implementation log:** `session_logs/2026-10-09/03-byplay-v2-implementation.md`
 - **Commit policy:** Separate user-run plan commit; implementation in later user-run commits. No automatic merge, deployment, cloud write or serving change.
 
 ## Goal
@@ -219,4 +219,20 @@ Then focused tests per task, the full Python suite with `-W error`, `ruff format
 
 ## Amendments
 
-None.
+### Amendment 1 (2026-10-09): Task 1 receipt and mechanical findings
+
+**Reason:** Record the Task 1 deliverables and two mechanical findings. The approach, interfaces, scope and acceptance criteria are unchanged.
+
+**Delivered:** `scripts/analysis/play_identity_impact.py` and `play_identity_shadow.py` (read-only; pinned parents only), `tests/test_play_identity_impact.py` (19 tests, `-W error`), and the checksummed report `docs/plans/2026-10-08/repair-track-evidence/play-identity-impact.json` (two runs byte-identical; registered in `checksums.json`).
+
+**Results (all verified from the report):**
+
+- The 28 collisions are 25 cross-period and 3 same-period. All 25 cross-period collisions pair an overtime play (provider drive IDs negative, overtime drive numbers restarted) with a regulation play of another team. All 28 sit in 4 games (one 2021, three 2025).
+- Unresolved plays under the two-case rule: 6 across all 11 seasons, which are exactly the 3 same-period groups (2 plays each). No missing periods. The 2021 pair shares one provider drive and its clocks (3:41, 3:10) agree with file order; the two 2025 groups are overtime plays on different provider drives and offenses, all at clock 0:00.
+- The shadow historical build reproduces the pinned legacy by-play and drives for these games exactly, apart from `field_position_bin` (later code change) and `ppa` zero-fill versus null (41 and 115 rows, all legacy-zero/new-null).
+- The historical dedup removed 28 plays: 19 with non-null PPA, 3 scoring, 25 in regulation, 3 in overtime. This matches the census.
+- Retaining them adds 1 + 24 by-play rows, 0 + 9 net drive/possession rows, and changes scoring events (2025: 1 historical-only, 2 retained-only). No cell of any other by-play row changes. 92 team-game measurement cells change in 3 games (2021 Week 1; 2025 Weeks 6 and 8), reaching 6 team-games. The overtime-only game changes no regulation measurement. Excluding the 6 unresolved plays instead leaves the same observation changes (16 and 76 cells).
+- Drive-number reuse across provider drive IDs occurs only in the 3 collision games of 2025; no game outside the collision games has it.
+- Clock census over 1,538,279 compared pairs (no exclusion applied): 3,688 reversals, of which 12 involve impossible clock values (39 regulation rows in 2021 with `clock_minutes` above 15, up to 58) and 3,676 have valid clocks. Of the valid ones, 310 land on a fresh 15:00 clock (the period label looks wrong for those plays) and 1,702 exceed 60 seconds without being a period reset; they are far commoner in 2021–2026 than in 2015–2019 and are not explained by replay review.
+
+**Open decisions for the user (not taken by this contract):** keep the two-case unresolved rule as written; whether the clock and period-label anomalies get their own read-only investigation; proceed to Task 2.
