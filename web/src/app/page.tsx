@@ -1,4 +1,4 @@
-import { displayOnlyNotice } from "@/lib/display-only";
+import { displayOnlyNotice, isDisplayOnlyNoticeEnabled } from "@/lib/display-only";
 import { redirect } from "next/navigation";
 import {
   getCurrentWeek,
@@ -174,7 +174,7 @@ export default async function Home({
           const selectedRun = await getRunForWeek(season, week);
           retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
             && selectedRun.evidenceClass === "replay";
-          displayOnlyText = selectedRun?.displayOnly
+          displayOnlyText = selectedRun?.displayOnly && isDisplayOnlyNoticeEnabled()
             ? displayOnlyNotice(week, selectedRun.createdAt)
             : null;
           const isV5 = selectsV5(selectedRun?.modelId) || (season === 2026 && selectedRun === null);

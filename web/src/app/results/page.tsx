@@ -1,4 +1,4 @@
-import { displayOnlyNotice } from "@/lib/display-only";
+import { displayOnlyNotice, isDisplayOnlyNoticeEnabled } from "@/lib/display-only";
 import { redirect } from "next/navigation";
 import {
   getGamesForWeek,
@@ -82,7 +82,7 @@ export default async function ResultsPage({
           const selectedRun = await getRunForWeek(season, week);
           retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
             && selectedRun.evidenceClass === "replay";
-          displayOnlyText = selectedRun?.displayOnly
+          displayOnlyText = selectedRun?.displayOnly && isDisplayOnlyNoticeEnabled()
             ? displayOnlyNotice(week, selectedRun.createdAt)
             : null;
           [games, performance] = await Promise.all([

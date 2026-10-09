@@ -14,6 +14,10 @@ separately promoted.
 Anything else is fail-closed market-only rendering. Prediction publication does
 not authorize a model change.
 
+`CFB_DISPLAY_ONLY_NOTICE=0` hides the display-only timing notice on Picks and
+Results; unset (or anything else) shows it. The run's `display_only` database
+flag and its freeze/evidence guards are independent of this presentation flag.
+
 ## Local matchup pages
 
 The matchup pages are meant to be run locally for now; production stays closed and nothing in Vercel needs to change.

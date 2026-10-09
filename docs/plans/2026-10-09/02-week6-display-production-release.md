@@ -129,6 +129,16 @@ row. Append-only history tables stay.
 2. Re-apply Tasks 1 + Preview selection forward so Preview ends in the open state.
 3. **Phase 2 may not start until the user has reviewed the script and the rehearsal.**
 
+**Rehearsal outcome 2026-10-09 (evening, recorded here; script pending user review):**
+rollback `--apply` executed in Preview after two fail-closed aborts (unselected
+market rows, then FK order — both rolled back atomically with Preview intact).
+Final run deleted 7,879 rows and verified the exact hold screen (`current_week`
+(2026,6)/NULL, 0 W6 games, weeks 0–5 intact; local site "Dropping Soon").
+Requires the one-time Preview grant (`GRANT DELETE/SELECT ON
+prediction_market_selections TO cks_preview_migrator`; that table is uniquely
+`neondb_owner`-held). Re-apply forward deferred to resume (needs a clean tree
+for the authorizer). `docs/status.md` notes Preview is on hold until then.
+
 ### Task 3 — Phase 2a: stage d2 artifacts to the production namespace
 
 ```bash
@@ -262,6 +272,23 @@ site-wide rating source to `c83b1423…`, so Weeks 0–5 matchup pages there wil
 hidden) until the Week 7 cutover rebinds them. Preview's W5 page already shows
 this state since the Oct 8 d2 selection — pre-existing, not caused by this work;
 served W0–5 rows and bindings are byte-intact. Picks/Results/Ratings are unaffected.
+
+### Amendment 4 (2026-10-09, Terra): timing notice hidden behind an opt-out flag (user-directed)
+
+**Decision (user, 2026-10-09):** Week 6 ships with no timing notice and no
+lineage labels anywhere. This overrides Amendment 9's notice rule for this
+release only; the run's `validation.display_only` database flag, the
+freeze/never-missed guards, the unconstrained grading path and the prospective
+exclusion are all unchanged — the authoritative record still marks the run
+display-only/pending, but the UI no longer tells casual visitors the picks
+were generated mid-week rather than frozen pre-kickoff.
+
+**Implementation:** `CFB_DISPLAY_ONLY_NOTICE=0` hides the notice on Picks and
+Results (both call sites gated; default unset shows it, mirroring the
+`CFB_MATCHUP_ENABLED=0` opt-out pattern); unit tests extended; web
+lint/typecheck/publication-tests/build green; both modes verified against the
+local Preview site. **Ops consequence:** the Production Vercel environment
+needs `CFB_DISPLAY_ONLY_NOTICE=0` at release time (user/ops step).
 
 ## Risks and Edge Cases
 
