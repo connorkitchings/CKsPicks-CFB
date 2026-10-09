@@ -1,0 +1,1197 @@
+{
+  "schema_version": "play_identity_census_v1",
+  "seasons": [
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 7771,
+        "provider_id_column": "id",
+        "ref_sha256": "5c169cc88bf777f89e9faf02d17b27eab2cb69687f4280fdd3dd95c87ec2b7bb",
+        "ref_uri": "lake/silver/dataset=plays/version=3f9a66519bdf8432dec92ba2/manifest.json",
+        "rows": 160180,
+        "same_id_rows": 0,
+        "season": 2015,
+        "sequence_collisions": [],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "051bb4147922894a140e6b412355c5ae32efae8803ec48ac8bd52cc2631c0275",
+      "ref_uri": "lake/silver/dataset=plays/version=3f9a66519bdf8432dec92ba2/data.parquet",
+      "rows": 160180,
+      "same_id_rows": 0,
+      "season": 2015,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 7540,
+        "provider_id_column": "id",
+        "ref_sha256": "d3f5217e075cae0a298d424465bdb0829ad1581fe613f4331b9c0117ec205d0f",
+        "ref_uri": "lake/silver/dataset=plays/version=4f44169a36791a47ca2ee3f4/manifest.json",
+        "rows": 158518,
+        "same_id_rows": 0,
+        "season": 2016,
+        "sequence_collisions": [],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "3868214ad644c8cfa425acb955db097c01647a241ec0205999c070ab28abd084",
+      "ref_uri": "lake/silver/dataset=plays/version=4f44169a36791a47ca2ee3f4/data.parquet",
+      "rows": 158518,
+      "same_id_rows": 0,
+      "season": 2016,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 7427,
+        "provider_id_column": "id",
+        "ref_sha256": "9c614b3e497b9e70831c8d28ea89575d2ecf05f0017897ad0790a5826b3d471e",
+        "ref_uri": "lake/silver/dataset=plays/version=cbbb83533432f8637ffc979a/manifest.json",
+        "rows": 158574,
+        "same_id_rows": 0,
+        "season": 2017,
+        "sequence_collisions": [],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "a27d3bf18993cc43cc80f3260bd8b2eac80739d103c6eb86e49b8bad66c3254d",
+      "ref_uri": "lake/silver/dataset=plays/version=cbbb83533432f8637ffc979a/data.parquet",
+      "rows": 158574,
+      "same_id_rows": 0,
+      "season": 2017,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 6968,
+        "provider_id_column": "id",
+        "ref_sha256": "fac015ec5be1b44bda2c4ad2dc66574eb293ae75a3cf89afb9f643bd042bbc54",
+        "ref_uri": "lake/silver/dataset=plays/version=4709987c41cc3ad53174ba76/manifest.json",
+        "rows": 160512,
+        "same_id_rows": 0,
+        "season": 2018,
+        "sequence_collisions": [],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "5d3b41d470ae0c7ff850127627575e3fca001969e5b915237e2f01a4313921ce",
+      "ref_uri": "lake/silver/dataset=plays/version=4709987c41cc3ad53174ba76/data.parquet",
+      "rows": 160512,
+      "same_id_rows": 0,
+      "season": 2018,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 7184,
+        "provider_id_column": "id",
+        "ref_sha256": "16487e68f87ccd8d8d55c172e79ff76c6430ca31172d6ad4eb3d9e65cc00e259",
+        "ref_uri": "lake/silver/dataset=plays/version=c012fe1be4f53f03f0beef28/manifest.json",
+        "rows": 159915,
+        "same_id_rows": 0,
+        "season": 2019,
+        "sequence_collisions": [],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "e976f402689ae72c9cc0284b0e1e0b77dda587e357ee1f981539a74b08609132",
+      "ref_uri": "lake/silver/dataset=plays/version=c012fe1be4f53f03f0beef28/data.parquet",
+      "rows": 159915,
+      "same_id_rows": 0,
+      "season": 2019,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 1,
+        "duplicate_sequence_groups": 1,
+        "duplicate_sequence_rows": 2,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 6865,
+        "provider_id_column": "id",
+        "ref_sha256": "a05ad897eb5295382477589b8a2a5356963fde791b59a74ed7b778364515caad",
+        "ref_uri": "lake/silver/dataset=plays/version=0a3314a3d48c77c0141077c5/manifest.json",
+        "rows": 158498,
+        "same_id_rows": 0,
+        "season": 2021,
+        "sequence_collisions": [
+          {
+            "drive_number": 5,
+            "game_id": 401310699,
+            "play_number": 6,
+            "provider_play_ids": [
+              -218,
+              -217
+            ]
+          }
+        ],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [
+        {
+          "capture_id": "743637a710534ab393b1421f4d7b627c",
+          "drive_number": 5,
+          "game_id": 401310699,
+          "offense": "New Mexico State",
+          "play_number": 6,
+          "play_type": "Rush",
+          "ppa": -0.02931750568170164,
+          "provider_play_id": "-218",
+          "scoring": false
+        }
+      ],
+      "distinct_id_sequence_groups": 1,
+      "duplicate_sequence_groups": 1,
+      "duplicate_sequence_rows": 2,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "3a3d34bd58138306ab5cdc64b3debe8c4108567017a1a588466467a5242f4d1d",
+      "ref_uri": "lake/silver/dataset=plays/version=0a3314a3d48c77c0141077c5/data.parquet",
+      "rows": 158498,
+      "same_id_rows": 0,
+      "season": 2021,
+      "sequence_collisions": [
+        {
+          "drive_number": 5,
+          "game_id": 401310699,
+          "play_number": 6,
+          "provider_play_ids": [
+            -218,
+            -217
+          ]
+        }
+      ],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 7521,
+        "provider_id_column": "id",
+        "ref_sha256": "1a54a00fdb79d8f6eb20cf4a7a7d1b51cd457e27d0b5877794d1d1804186c375",
+        "ref_uri": "lake/silver/dataset=plays/version=500e08edceec24b9b7fcc21a/manifest.json",
+        "rows": 160282,
+        "same_id_rows": 0,
+        "season": 2022,
+        "sequence_collisions": [],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "7dc43500248dc2d2851209b1017a65652304c4903bb0a786cb2ca64e68518893",
+      "ref_uri": "lake/silver/dataset=plays/version=500e08edceec24b9b7fcc21a/data.parquet",
+      "rows": 160282,
+      "same_id_rows": 0,
+      "season": 2022,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 7272,
+        "provider_id_column": "id",
+        "ref_sha256": "6fe2d774fa2f573afa403bf89eccb7dc92efb447c5bd3c2d1fd84fc592bb79e8",
+        "ref_uri": "lake/silver/dataset=plays/version=453693233200f8f1de4a833e/manifest.json",
+        "rows": 158995,
+        "same_id_rows": 0,
+        "season": 2023,
+        "sequence_collisions": [],
+        "source_capture_count": 16,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "034b74851673f6ac4380df71298dcde146b62cde925ab98d81bd4a1926aa61a8",
+      "ref_uri": "lake/silver/dataset=plays/version=453693233200f8f1de4a833e/data.parquet",
+      "rows": 158995,
+      "same_id_rows": 0,
+      "season": 2023,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 8168,
+        "provider_id_column": "id",
+        "ref_sha256": "ea7f8822e25b453197669dcca4b72aeaaada84d1087e18a02f2f60a66fd78e8d",
+        "ref_uri": "lake/silver/dataset=plays/version=ce61a0dcfc0d969377f9b2fd/manifest.json",
+        "rows": 162751,
+        "same_id_rows": 0,
+        "season": 2024,
+        "sequence_collisions": [],
+        "source_capture_count": 17,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "dd6c5e1794e2815006b51b8c2857ab5c03d943e2e2370f279c0397c17c82bac2",
+      "ref_uri": "lake/silver/dataset=plays/version=ce61a0dcfc0d969377f9b2fd/data.parquet",
+      "rows": 162751,
+      "same_id_rows": 0,
+      "season": 2024,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 27,
+        "duplicate_sequence_groups": 27,
+        "duplicate_sequence_rows": 54,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 8316,
+        "provider_id_column": "id",
+        "ref_sha256": "27f86302f3fe907bc1ebbc4b901dc02f6db38d2cf67c2b1aa1b2fd63e6c8e5be",
+        "ref_uri": "lake/silver/dataset=plays/version=dc723a9699bbc4df4249d63c/manifest.json",
+        "rows": 166236,
+        "same_id_rows": 0,
+        "season": 2025,
+        "sequence_collisions": [
+          {
+            "drive_number": 19,
+            "game_id": 401761632,
+            "play_number": 5,
+            "provider_play_ids": [
+              -22489,
+              401761632103986701
+            ]
+          },
+          {
+            "drive_number": 19,
+            "game_id": 401761632,
+            "play_number": 1,
+            "provider_play_ids": [
+              -22485,
+              401761632103966501
+            ]
+          },
+          {
+            "drive_number": 19,
+            "game_id": 401761632,
+            "play_number": 2,
+            "provider_play_ids": [
+              -22486,
+              401761632103969201
+            ]
+          },
+          {
+            "drive_number": 19,
+            "game_id": 401761632,
+            "play_number": 3,
+            "provider_play_ids": [
+              -22487,
+              401761632103975801
+            ]
+          },
+          {
+            "drive_number": 19,
+            "game_id": 401761632,
+            "play_number": 4,
+            "provider_play_ids": [
+              -22488,
+              401761632103979301
+            ]
+          },
+          {
+            "drive_number": 20,
+            "game_id": 401761632,
+            "play_number": 1,
+            "provider_play_ids": [
+              -22490,
+              401761632103996002
+            ]
+          },
+          {
+            "drive_number": 20,
+            "game_id": 401761632,
+            "play_number": 2,
+            "provider_play_ids": [
+              -22491,
+              401761632103996003
+            ]
+          },
+          {
+            "drive_number": 20,
+            "game_id": 401761632,
+            "play_number": 5,
+            "provider_play_ids": [
+              -22494,
+              401761632103999902
+            ]
+          },
+          {
+            "drive_number": 20,
+            "game_id": 401761632,
+            "play_number": 3,
+            "provider_play_ids": [
+              -22492,
+              401761632103996701
+            ]
+          },
+          {
+            "drive_number": 20,
+            "game_id": 401761632,
+            "play_number": 4,
+            "provider_play_ids": [
+              -22493,
+              401761632103999901
+            ]
+          },
+          {
+            "drive_number": 20,
+            "game_id": 401761632,
+            "play_number": 6,
+            "provider_play_ids": [
+              -22495,
+              401761632104855401
+            ]
+          },
+          {
+            "drive_number": 21,
+            "game_id": 401761632,
+            "play_number": 3,
+            "provider_play_ids": [
+              -22501,
+              401761632103999202
+            ]
+          },
+          {
+            "drive_number": 21,
+            "game_id": 401761632,
+            "play_number": 1,
+            "provider_play_ids": [
+              -22499,
+              401761632103996202
+            ]
+          },
+          {
+            "drive_number": 21,
+            "game_id": 401761632,
+            "play_number": 2,
+            "provider_play_ids": [
+              -22500,
+              401761632103999201
+            ]
+          },
+          {
+            "drive_number": 22,
+            "game_id": 401761632,
+            "play_number": 1,
+            "provider_play_ids": [
+              -22507,
+              401761632104894801
+            ]
+          },
+          {
+            "drive_number": 22,
+            "game_id": 401761632,
+            "play_number": 2,
+            "provider_play_ids": [
+              -22508,
+              401761632104895801
+            ]
+          },
+          {
+            "drive_number": 22,
+            "game_id": 401761632,
+            "play_number": 3,
+            "provider_play_ids": [
+              -22509,
+              401761632104898401
+            ]
+          },
+          {
+            "drive_number": 22,
+            "game_id": 401761632,
+            "play_number": 4,
+            "provider_play_ids": [
+              -22510,
+              401761632104906401
+            ]
+          },
+          {
+            "drive_number": 22,
+            "game_id": 401761632,
+            "play_number": 5,
+            "provider_play_ids": [
+              -22511,
+              401761632104914601
+            ]
+          },
+          {
+            "drive_number": 22,
+            "game_id": 401761632,
+            "play_number": 6,
+            "provider_play_ids": [
+              -22512,
+              401761632104914602
+            ]
+          },
+          {
+            "drive_number": 18,
+            "game_id": 401762831,
+            "play_number": 4,
+            "provider_play_ids": [
+              -22408,
+              401762831104876101
+            ]
+          },
+          {
+            "drive_number": 18,
+            "game_id": 401762831,
+            "play_number": 1,
+            "provider_play_ids": [
+              -22405,
+              401762831104868701
+            ]
+          },
+          {
+            "drive_number": 18,
+            "game_id": 401762831,
+            "play_number": 2,
+            "provider_play_ids": [
+              -22406,
+              401762831104874702
+            ]
+          },
+          {
+            "drive_number": 18,
+            "game_id": 401762831,
+            "play_number": 3,
+            "provider_play_ids": [
+              -22407,
+              401762831104875202
+            ]
+          },
+          {
+            "drive_number": 24,
+            "game_id": 401756916,
+            "play_number": 1,
+            "provider_play_ids": [
+              -22421,
+              401756916105000001
+            ]
+          },
+          {
+            "drive_number": 24,
+            "game_id": 401756916,
+            "play_number": 2,
+            "provider_play_ids": [
+              -22422,
+              401756916105000004
+            ]
+          },
+          {
+            "drive_number": 23,
+            "game_id": 401756916,
+            "play_number": 1,
+            "provider_play_ids": [
+              -22415,
+              401756916105000002
+            ]
+          }
+        ],
+        "source_capture_count": 17,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [
+        {
+          "capture_id": "f19ee49681cb4749b39c47b8cbb567be",
+          "drive_number": 23,
+          "game_id": 401756916,
+          "offense": "BYU",
+          "play_number": 1,
+          "play_type": "Field Goal Good",
+          "ppa": null,
+          "provider_play_id": "401756916105000002",
+          "scoring": true
+        },
+        {
+          "capture_id": "f19ee49681cb4749b39c47b8cbb567be",
+          "drive_number": 24,
+          "game_id": 401756916,
+          "offense": "Arizona",
+          "play_number": 1,
+          "play_type": "End of Game",
+          "ppa": null,
+          "provider_play_id": "401756916105000001",
+          "scoring": false
+        },
+        {
+          "capture_id": "f19ee49681cb4749b39c47b8cbb567be",
+          "drive_number": 24,
+          "game_id": 401756916,
+          "offense": "BYU",
+          "play_number": 2,
+          "play_type": "Rushing Touchdown",
+          "ppa": null,
+          "provider_play_id": "401756916105000004",
+          "scoring": true
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 19,
+          "game_id": 401761632,
+          "offense": "Marshall",
+          "play_number": 1,
+          "play_type": "Rush",
+          "ppa": -0.7513387299797563,
+          "provider_play_id": "401761632103966501",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 19,
+          "game_id": 401761632,
+          "offense": "Marshall",
+          "play_number": 2,
+          "play_type": "Pass Reception",
+          "ppa": 1.990203917809528,
+          "provider_play_id": "401761632103969201",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 19,
+          "game_id": 401761632,
+          "offense": "Marshall",
+          "play_number": 3,
+          "play_type": "Pass Reception",
+          "ppa": 2.529264878743632,
+          "provider_play_id": "401761632103975801",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 19,
+          "game_id": 401761632,
+          "offense": "Marshall",
+          "play_number": 4,
+          "play_type": "Pass Reception",
+          "ppa": -0.374805786232315,
+          "provider_play_id": "401761632103979301",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 19,
+          "game_id": 401761632,
+          "offense": "Marshall",
+          "play_number": 5,
+          "play_type": "Pass Incompletion",
+          "ppa": -0.4710097256430323,
+          "provider_play_id": "401761632103986701",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 20,
+          "game_id": 401761632,
+          "offense": "Marshall",
+          "play_number": 1,
+          "play_type": "Kickoff",
+          "ppa": null,
+          "provider_play_id": "401761632103996002",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 20,
+          "game_id": 401761632,
+          "offense": "Marshall",
+          "play_number": 2,
+          "play_type": "Kickoff",
+          "ppa": null,
+          "provider_play_id": "401761632103996003",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 20,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 3,
+          "play_type": "Sack",
+          "ppa": -1.17598648705635,
+          "provider_play_id": "401761632103996701",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 20,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 4,
+          "play_type": "Rush",
+          "ppa": 0.2445752915976831,
+          "provider_play_id": "401761632103999901",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 20,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 5,
+          "play_type": "End Period",
+          "ppa": null,
+          "provider_play_id": "401761632103999902",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 20,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 6,
+          "play_type": "Passing Touchdown",
+          "ppa": 7.009166315179988,
+          "provider_play_id": "401761632104855401",
+          "scoring": true
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 21,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 1,
+          "play_type": "Sack",
+          "ppa": -1.17598648705635,
+          "provider_play_id": "401761632103996202",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 21,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 2,
+          "play_type": "Rush",
+          "ppa": 0.2445752915976831,
+          "provider_play_id": "401761632103999201",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 21,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 3,
+          "play_type": "End Period",
+          "ppa": null,
+          "provider_play_id": "401761632103999202",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 22,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 1,
+          "play_type": "Timeout",
+          "ppa": null,
+          "provider_play_id": "401761632104894801",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 22,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 2,
+          "play_type": "Pass Reception",
+          "ppa": -0.6343354265717327,
+          "provider_play_id": "401761632104895801",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 22,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 3,
+          "play_type": "Rush",
+          "ppa": -0.09607386397355633,
+          "provider_play_id": "401761632104898401",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 22,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 4,
+          "play_type": "Rush",
+          "ppa": -0.02872677075051122,
+          "provider_play_id": "401761632104906401",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 22,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 5,
+          "play_type": "Fumble Recovery (Opponent)",
+          "ppa": 0.14519385690090303,
+          "provider_play_id": "401761632104914601",
+          "scoring": false
+        },
+        {
+          "capture_id": "1181ece00e85484894f0037ee1b3bdf3",
+          "drive_number": 22,
+          "game_id": 401761632,
+          "offense": "Texas State",
+          "play_number": 6,
+          "play_type": "Fumble Recovery (Opponent)",
+          "ppa": 0.14519385690090303,
+          "provider_play_id": "401761632104914602",
+          "scoring": false
+        },
+        {
+          "capture_id": "5d4188b37066412c988ede61c1e88c21",
+          "drive_number": 18,
+          "game_id": 401762831,
+          "offense": "Buffalo",
+          "play_number": 1,
+          "play_type": "Rush",
+          "ppa": -0.46882789768185695,
+          "provider_play_id": "401762831104868701",
+          "scoring": false
+        },
+        {
+          "capture_id": "5d4188b37066412c988ede61c1e88c21",
+          "drive_number": 18,
+          "game_id": 401762831,
+          "offense": "Buffalo",
+          "play_number": 2,
+          "play_type": "Pass Incompletion",
+          "ppa": -0.31009262307283425,
+          "provider_play_id": "401762831104874702",
+          "scoring": false
+        },
+        {
+          "capture_id": "5d4188b37066412c988ede61c1e88c21",
+          "drive_number": 18,
+          "game_id": 401762831,
+          "offense": "Buffalo",
+          "play_number": 3,
+          "play_type": "Pass Incompletion",
+          "ppa": -0.13875783656262275,
+          "provider_play_id": "401762831104875202",
+          "scoring": false
+        },
+        {
+          "capture_id": "5d4188b37066412c988ede61c1e88c21",
+          "drive_number": 18,
+          "game_id": 401762831,
+          "offense": "Buffalo",
+          "play_number": 4,
+          "play_type": "Punt",
+          "ppa": null,
+          "provider_play_id": "401762831104876101",
+          "scoring": false
+        }
+      ],
+      "distinct_id_sequence_groups": 27,
+      "duplicate_sequence_groups": 27,
+      "duplicate_sequence_rows": 54,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "ab8efe4852e1ee45a1855f47350da16af21b068db8383caf49a5b7fbc10caa3c",
+      "ref_uri": "lake/silver/dataset=plays/version=dc723a9699bbc4df4249d63c/data.parquet",
+      "rows": 166236,
+      "same_id_rows": 0,
+      "season": 2025,
+      "sequence_collisions": [
+        {
+          "drive_number": 18,
+          "game_id": 401762831,
+          "play_number": 1,
+          "provider_play_ids": [
+            -22405,
+            401762831104868701
+          ]
+        },
+        {
+          "drive_number": 18,
+          "game_id": 401762831,
+          "play_number": 2,
+          "provider_play_ids": [
+            -22406,
+            401762831104874702
+          ]
+        },
+        {
+          "drive_number": 18,
+          "game_id": 401762831,
+          "play_number": 3,
+          "provider_play_ids": [
+            -22407,
+            401762831104875202
+          ]
+        },
+        {
+          "drive_number": 18,
+          "game_id": 401762831,
+          "play_number": 4,
+          "provider_play_ids": [
+            -22408,
+            401762831104876101
+          ]
+        },
+        {
+          "drive_number": 23,
+          "game_id": 401756916,
+          "play_number": 1,
+          "provider_play_ids": [
+            -22415,
+            401756916105000002
+          ]
+        },
+        {
+          "drive_number": 24,
+          "game_id": 401756916,
+          "play_number": 1,
+          "provider_play_ids": [
+            -22421,
+            401756916105000001
+          ]
+        },
+        {
+          "drive_number": 24,
+          "game_id": 401756916,
+          "play_number": 2,
+          "provider_play_ids": [
+            -22422,
+            401756916105000004
+          ]
+        },
+        {
+          "drive_number": 19,
+          "game_id": 401761632,
+          "play_number": 1,
+          "provider_play_ids": [
+            -22485,
+            401761632103966501
+          ]
+        },
+        {
+          "drive_number": 19,
+          "game_id": 401761632,
+          "play_number": 2,
+          "provider_play_ids": [
+            -22486,
+            401761632103969201
+          ]
+        },
+        {
+          "drive_number": 19,
+          "game_id": 401761632,
+          "play_number": 3,
+          "provider_play_ids": [
+            -22487,
+            401761632103975801
+          ]
+        },
+        {
+          "drive_number": 19,
+          "game_id": 401761632,
+          "play_number": 4,
+          "provider_play_ids": [
+            -22488,
+            401761632103979301
+          ]
+        },
+        {
+          "drive_number": 19,
+          "game_id": 401761632,
+          "play_number": 5,
+          "provider_play_ids": [
+            -22489,
+            401761632103986701
+          ]
+        },
+        {
+          "drive_number": 20,
+          "game_id": 401761632,
+          "play_number": 1,
+          "provider_play_ids": [
+            -22490,
+            401761632103996002
+          ]
+        },
+        {
+          "drive_number": 20,
+          "game_id": 401761632,
+          "play_number": 2,
+          "provider_play_ids": [
+            -22491,
+            401761632103996003
+          ]
+        },
+        {
+          "drive_number": 20,
+          "game_id": 401761632,
+          "play_number": 3,
+          "provider_play_ids": [
+            -22492,
+            401761632103996701
+          ]
+        },
+        {
+          "drive_number": 20,
+          "game_id": 401761632,
+          "play_number": 4,
+          "provider_play_ids": [
+            -22493,
+            401761632103999901
+          ]
+        },
+        {
+          "drive_number": 20,
+          "game_id": 401761632,
+          "play_number": 5,
+          "provider_play_ids": [
+            -22494,
+            401761632103999902
+          ]
+        },
+        {
+          "drive_number": 20,
+          "game_id": 401761632,
+          "play_number": 6,
+          "provider_play_ids": [
+            -22495,
+            401761632104855401
+          ]
+        },
+        {
+          "drive_number": 21,
+          "game_id": 401761632,
+          "play_number": 1,
+          "provider_play_ids": [
+            -22499,
+            401761632103996202
+          ]
+        },
+        {
+          "drive_number": 21,
+          "game_id": 401761632,
+          "play_number": 2,
+          "provider_play_ids": [
+            -22500,
+            401761632103999201
+          ]
+        },
+        {
+          "drive_number": 21,
+          "game_id": 401761632,
+          "play_number": 3,
+          "provider_play_ids": [
+            -22501,
+            401761632103999202
+          ]
+        },
+        {
+          "drive_number": 22,
+          "game_id": 401761632,
+          "play_number": 1,
+          "provider_play_ids": [
+            -22507,
+            401761632104894801
+          ]
+        },
+        {
+          "drive_number": 22,
+          "game_id": 401761632,
+          "play_number": 2,
+          "provider_play_ids": [
+            -22508,
+            401761632104895801
+          ]
+        },
+        {
+          "drive_number": 22,
+          "game_id": 401761632,
+          "play_number": 3,
+          "provider_play_ids": [
+            -22509,
+            401761632104898401
+          ]
+        },
+        {
+          "drive_number": 22,
+          "game_id": 401761632,
+          "play_number": 4,
+          "provider_play_ids": [
+            -22510,
+            401761632104906401
+          ]
+        },
+        {
+          "drive_number": 22,
+          "game_id": 401761632,
+          "play_number": 5,
+          "provider_play_ids": [
+            -22511,
+            401761632104914601
+          ]
+        },
+        {
+          "drive_number": 22,
+          "game_id": 401761632,
+          "play_number": 6,
+          "provider_play_ids": [
+            -22512,
+            401761632104914602
+          ]
+        }
+      ],
+      "source_tier": "silver"
+    },
+    {
+      "bronze": {
+        "current_sequence_dedup_drop_candidates": [],
+        "distinct_id_sequence_groups": 0,
+        "duplicate_sequence_groups": 0,
+        "duplicate_sequence_rows": 0,
+        "missing_provider_ids": 0,
+        "missing_sequence_rows": 0,
+        "provider_id_column": "id",
+        "ref_sha256": "d67995c644f226bdd4afcb792a550e211b5881f3e9a5b389c8a6a9789edba3e7",
+        "ref_uri": "lake/silver/dataset=plays/version=51374ea11dcdc74d84924c08/manifest.json",
+        "rows": 68876,
+        "same_id_rows": 0,
+        "season": 2026,
+        "sequence_collisions": [],
+        "source_capture_count": 6,
+        "source_tier": "bronze"
+      },
+      "collision_identities_match_bronze": true,
+      "current_sequence_dedup_drop_candidates": [],
+      "distinct_id_sequence_groups": 0,
+      "duplicate_sequence_groups": 0,
+      "duplicate_sequence_rows": 0,
+      "missing_provider_ids": 0,
+      "missing_sequence_rows": 0,
+      "provider_id_column": "play_id",
+      "ref_sha256": "b5546bf8d1648bb72be6bc667a12ad2c7d1d67163dc99ca855f07c19f2908374",
+      "ref_uri": "lake/silver/dataset=plays/version=51374ea11dcdc74d84924c08/data.parquet",
+      "rows": 48378,
+      "same_id_rows": 0,
+      "season": 2026,
+      "sequence_collisions": [],
+      "source_tier": "silver"
+    }
+  ]
+}

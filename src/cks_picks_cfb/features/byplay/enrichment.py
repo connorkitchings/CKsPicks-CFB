@@ -242,9 +242,22 @@ def allplays_to_byplay(
     numerical zero stays zero, and nothing is inferred from existing zeros.
     """
     df = data.copy()
-    df = df.drop_duplicates(
-        subset=["game_id", "drive_number", "play_number"], keep="first"
-    )
+    # byplay_v1 cannot represent two source rows at one displayed sequence.
+    # Refuse that source population rather than silently discard a regulation
+    # or scoring play. Exact repeated records may be collapsed safely.
+    sequence = ["game_id", "drive_number", "play_number"]
+    collisions = df.loc[df.duplicated(sequence, keep=False)]
+    if not collisions.empty:
+        provider_fields = [
+            column for column in collisions if not column.startswith("__capture_")
+        ]
+        distinct = collisions[provider_fields].drop_duplicates()
+        if distinct.duplicated(sequence).any():
+            raise ValueError(
+                "byplay_v1 cannot represent distinct source plays at one sequence; "
+                "resolve provider identity under a versioned schema"
+            )
+    df = df.drop_duplicates(subset=sequence, keep="first")
 
     # --- Normalize column names first ---
     if "yards_to_first" not in df.columns and "distance" in df.columns:

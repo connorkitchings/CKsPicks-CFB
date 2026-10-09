@@ -23,23 +23,33 @@ SEASON_DATASETS = {
 
 
 def _ref_row(
-    cur: Any, dataset: str, season: int | None, pin: str | None
+    cur: Any,
+    dataset: str,
+    season: int | None,
+    pin: str | None,
+    cutoff: str | None = None,
 ) -> tuple | None:
     query = (
-        "SELECT dataset, version_id, schema_version, content_sha, uri "
+        "SELECT dataset, version_id, schema_version, content_sha, uri, as_of "
         "FROM catalog.dataset_versions "
         "WHERE dataset = %s AND tier = 'silver' AND state = 'validated' "
     )
     params: list[Any] = [dataset]
+    if season is not None:
+        query += "AND partitions @> %s::jsonb "
+        params.append(json.dumps({"seasons": [season]}))
     if pin is not None:
         query += "AND version_id = %s "
         params.append(pin)
-    elif season is not None:
-        query += "AND partitions @> %s::jsonb "
-        params.append(json.dumps({"seasons": [season]}))
-    query += "ORDER BY as_of DESC, created_at DESC LIMIT 1"
+    if cutoff is not None:
+        query += "AND as_of <= %s "
+        params.append(cutoff)
+    query += "ORDER BY as_of DESC, created_at DESC LIMIT 2"
     cur.execute(query, params)
-    return cur.fetchone()
+    rows = cur.fetchall()
+    if len(rows) > 1 and (pin is not None or rows[0][5] == rows[1][5]):
+        raise ValueError(f"Ambiguous validated Silver version for {dataset}; pin one")
+    return rows[0][:5] if rows else None
 
 
 def catalog_versions(cur: Any) -> pd.DataFrame:

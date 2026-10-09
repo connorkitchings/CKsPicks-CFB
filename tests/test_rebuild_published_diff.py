@@ -70,6 +70,9 @@ def test_rows_on_one_side_only_are_attributed_by_metric():
     report = _diff(_frame().iloc[:3], _frame())
     assert report["population"]["only_published"] == 1
     assert report["population"]["by_bucket"]["only_published"] == {"punt": 1}
+    assert report["population"]["keys"]["only_published"] == [
+        {"week": 1, "team": "B", "metric": "plays_per_possession", "bucket": "punt"}
+    ]
     assert not report["unexplained"]
     # a dropped scoring row is an unexplained population difference
     dropped = _diff(_frame().iloc[[1, 2, 3]], _frame())

@@ -12,6 +12,7 @@ Storage backend is auto-detected from CFB_STORAGE_BACKEND env var (r2/s3/local).
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -55,6 +56,11 @@ def main():
         help="Season type (regular/postseason/both)",
     )
     parser.add_argument(
+        "--request-inventory",
+        type=Path,
+        help="Pinned schedule-derived CFBD request inventory for plays/game_stats",
+    )
+    parser.add_argument(
         "--require-full-line-coverage",
         action="store_true",
         help=(
@@ -69,6 +75,11 @@ def main():
     if unknown:
         print(f"Unknown entities: {unknown}")
         sys.exit(1)
+    inventory = None
+    if set(requested) & {"plays", "game_stats"}:
+        if args.request_inventory is None:
+            parser.error("plays/game_stats require --request-inventory")
+        inventory = json.loads(args.request_inventory.read_text())
 
     for entity_key in requested:
         cls = ENTITIES[entity_key]
@@ -85,7 +96,10 @@ def main():
 
         try:
             ingester = cls(**kwargs)
-            ingester.run()
+            if entity_key in {"plays", "game_stats"}:
+                ingester.run(request_inventory=inventory)
+            else:
+                ingester.run()
             print(f"  ✅ {entity_key} done")
         except DataUnavailableError as exc:
             print(f"  ⏳ {entity_key} unavailable: {exc}")

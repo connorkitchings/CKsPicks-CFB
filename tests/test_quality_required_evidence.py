@@ -1,9 +1,14 @@
 """Independent expected-request inventory and fail-closed release checks."""
 
 import copy
+import hashlib
+import io
+import json
 
+import pandas as pd
 import pytest
 
+from cks_picks_cfb.data.week_policy import WeekAssignment, WeekPolicySpec
 from cks_picks_cfb.quality import checks as q
 from cks_picks_cfb.quality.__main__ import main as cli_main
 from cks_picks_cfb.quality.loaders import (
@@ -11,7 +16,12 @@ from cks_picks_cfb.quality.loaders import (
     capture_requests,
     request_key,
 )
-from cks_picks_cfb.quality.request_inventory import expected_request_keys
+from cks_picks_cfb.quality.request_inventory import (
+    build_expected_request_inventory,
+    expected_request_keys,
+    read_pinned_schedule,
+    verify_expected_request_inventory,
+)
 from tests.test_quality_loaders import RunsCursor, _request
 
 
@@ -29,6 +39,172 @@ def inventory():
             for w in [0, 1]
         ],
     }
+
+
+def test_inventory_is_independent_of_attempts_and_binds_week_mapping():
+    kickoff = pd.Timestamp("2026-08-29T18:00:00Z")
+    schedule = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "game_id": 10,
+                "provider_week": 1,
+                "kickoff_utc": kickoff,
+                "completed": True,
+            },
+            {
+                "season": 2026,
+                "game_id": 11,
+                "provider_week": 1,
+                "kickoff_utc": kickoff,
+                "completed": False,
+            },
+        ]
+    )
+    policy = WeekPolicySpec(
+        "test-v1",
+        2026,
+        (
+            WeekAssignment(10, kickoff, 0),
+            WeekAssignment(11, kickoff, 0),
+        ),
+    )
+    result = build_expected_request_inventory(
+        schedule,
+        schedule_ref={"version_id": "g1", "content_sha": "a" * 64},
+        policy=policy,
+        season=2026,
+        canonical_week=0,
+    )
+    assert len(result["requests"]) == 2
+    assert all(r["parameters"]["week"] == 1 for r in result["requests"])
+    assert all(r["parameters"]["canonical_week"] == 0 for r in result["requests"])
+    assert all(
+        r["parameters"]["expected_game_ids"] == [10, 11] for r in result["requests"]
+    )
+    assert all(r["required_completed_game_ids"] == [10] for r in result["requests"])
+    assert len(expected_request_keys(result, 2026)) == 2
+    with pytest.raises(ValueError, match="duplicate game"):
+        build_expected_request_inventory(
+            pd.concat([schedule, schedule.iloc[:1]]),
+            schedule_ref=result["schedule_ref"],
+            policy=policy,
+            season=2026,
+            canonical_week=0,
+        )
+
+
+def test_inventory_readback_recomputes_request_population(monkeypatch):
+    import cks_picks_cfb.data.week_policy as week_policy
+    import cks_picks_cfb.quality.loaders as loaders
+
+    kickoff = pd.Timestamp("2026-08-29T18:00:00Z")
+    schedule = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "game_id": 10,
+                "provider_week": 1,
+                "kickoff_utc": kickoff,
+                "completed": True,
+            }
+        ]
+    )
+    policy = WeekPolicySpec("test-v1", 2026, (WeekAssignment(10, kickoff, 0),))
+    ref = {
+        "dataset": "games",
+        "version_id": "g1",
+        "schema_version": "games_v1",
+        "content_sha": "a" * 64,
+        "uri": "lake/games.parquet",
+    }
+    inventory = build_expected_request_inventory(
+        schedule,
+        schedule_ref=ref,
+        policy=policy,
+        season=2026,
+        canonical_week=0,
+    )
+    inventory["week_policy_path"] = "conf/policy/test-v1.yaml"
+    monkeypatch.setattr(week_policy, "load_week_policy_spec", lambda path: policy)
+    monkeypatch.setattr(
+        loaders, "read_quality_dataset", lambda storage, pinned: schedule
+    )
+    verify_expected_request_inventory(object(), inventory)
+    inventory["requests"][0]["parameters"]["expected_game_ids"] = [10, 11]
+    with pytest.raises(ValueError, match="differs from pinned requests"):
+        verify_expected_request_inventory(object(), inventory)
+
+
+def test_raw_schedule_pin_includes_fbs_fcs_and_rejects_changed_bytes():
+    schedule = pd.DataFrame(
+        [
+            {
+                "id": 10,
+                "season": 2026,
+                "season_type": "regular",
+                "week": 5,
+                "start_date": pd.Timestamp("2026-10-03T18:00:00Z"),
+                "completed": True,
+                "home_classification": "fbs",
+                "away_classification": "fbs",
+            },
+            {
+                "id": 11,
+                "season": 2026,
+                "season_type": "regular",
+                "week": 5,
+                "start_date": pd.Timestamp("2026-10-03T19:00:00Z"),
+                "completed": True,
+                "home_classification": "fbs",
+                "away_classification": "fcs",
+            },
+            {
+                "id": 12,
+                "season": 2026,
+                "season_type": "regular",
+                "week": 5,
+                "start_date": pd.Timestamp("2026-10-03T20:00:00Z"),
+                "completed": True,
+                "home_classification": "fcs",
+                "away_classification": "fcs",
+            },
+        ]
+    )
+    buffer = io.BytesIO()
+    schedule.to_parquet(buffer, index=False)
+    raw = buffer.getvalue()
+    digest = hashlib.sha256(raw).hexdigest()
+    ref = {
+        "dataset": "games",
+        "schema_version": "raw_games_snapshot_v1",
+        "version_id": digest[:24],
+        "content_sha": digest,
+        "uri": "raw/games/year=2026/part-0.parquet",
+    }
+
+    class Storage:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def read_bytes(self, uri):
+            assert uri == ref["uri"]
+            return self.payload
+
+    normalized = read_pinned_schedule(Storage(raw), ref, season=2026)
+    result = build_expected_request_inventory(
+        normalized,
+        schedule_ref=ref,
+        policy=WeekPolicySpec("test", 2026, ()),
+        season=2026,
+        canonical_week=5,
+    )
+    assert all(
+        item["parameters"]["expected_game_ids"] == [10, 11]
+        for item in result["requests"]
+    )
+    with pytest.raises(ValueError, match="bytes differ"):
+        read_pinned_schedule(Storage(raw + b"changed"), ref, season=2026)
 
 
 def test_never_attempted_request_blocks_against_independent_inventory():
@@ -62,6 +238,46 @@ def test_attempt_ledger_alone_cannot_establish_completeness(tmp_path):
                 "ingest",
                 "--require-check",
                 "ingest.capture_completeness",
+                "--output",
+                str(tmp_path),
+            ]
+        )
+
+
+def test_environment_quality_run_rechecks_inventory_bytes_before_catalog(
+    monkeypatch, tmp_path
+):
+    import cks_picks_cfb.quality.__main__ as quality_cli
+    import cks_picks_cfb.quality.request_inventory as inventory_module
+
+    path = tmp_path / "inventory.json"
+    path.write_text(json.dumps(inventory()))
+    monkeypatch.setattr(
+        quality_cli,
+        "load_ingest_context",
+        lambda *_args, **_kwargs: pytest.fail(
+            "catalog read before inventory verification"
+        ),
+    )
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.storage.get_storage", lambda **_kwargs: object()
+    )
+    monkeypatch.setattr(
+        inventory_module,
+        "verify_expected_request_inventory",
+        lambda *_args: (_ for _ in ()).throw(ValueError("tampered schedule")),
+    )
+    with pytest.raises(ValueError, match="tampered schedule"):
+        cli_main(
+            [
+                "--stage",
+                "ingest",
+                "--year",
+                "2026",
+                "--environment",
+                "preview",
+                "--request-inventory",
+                str(path),
                 "--output",
                 str(tmp_path),
             ]

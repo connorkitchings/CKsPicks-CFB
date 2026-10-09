@@ -27,13 +27,17 @@ class FakeCursor:
             self._rows = self.schedule
         else:
             dataset = params[0]
-            pin = params[1] if "version_id = %s" in query else None
+            pin = (
+                params[2]
+                if "version_id = %s" in query and "partitions @>" in query
+                else (params[1] if "version_id = %s" in query else None)
+            )
             rows = [
                 (d, v, "s1", f"sha-{v}", f"uri/{v}")
                 for d, v, _a, parts in self.catalog
                 if d == dataset and (pin is None or v == pin)
             ]
-            self._rows = rows[:1]
+            self._rows = rows[:2]
 
     def fetchall(self):
         return self._rows
@@ -58,6 +62,27 @@ def test_parse_pins():
     assert loaders.parse_pins(None) == {}
     with pytest.raises(ValueError, match="dataset=version_id"):
         loaders.parse_pins(["venues"])
+
+
+def test_silver_reader_rejects_ambiguous_latest_and_restricts_pins():
+    class Cur:
+        def execute(self, query, params):
+            self.query, self.params = query, params
+
+        def fetchall(self):
+            rows = [
+                ("games", "v1", "s1", "a", "uri/a", T),
+                ("games", "v2", "s1", "b", "uri/b", T),
+            ]
+            return rows[:1] if "version_id = %s" in self.query else rows
+
+    cur = Cur()
+    with pytest.raises(ValueError, match="Ambiguous"):
+        loaders._ref_row(cur, "games", 2026, None)
+    loaders._ref_row(cur, "games", 2026, "v1", "2026-09-01T00:00:00Z")
+    assert "partitions @>" in cur.query and "as_of <=" in cur.query
+    assert cur.params[1] == '{"seasons": [2026]}'
+    assert cur.params[2] == "v1"
 
 
 def test_context_includes_found_datasets_and_omits_missing_ones():

@@ -187,6 +187,19 @@ def diff_frames(
         "only_built": int(len(only_built)),
         "only_published": int(len(only_pub)),
         "by_bucket": population_buckets,
+        "keys": {
+            label: [
+                {
+                    **{key: _plain(row[key]) for key in keys},
+                    "bucket": bucket_of(metric_of(row)),
+                }
+                for _, row in frame.sort_values(list(keys)).iterrows()
+            ]
+            for label, frame in (
+                ("only_built", only_built),
+                ("only_published", only_pub),
+            )
+        },
     }
     unexplained_population = {
         label: {b: n for b, n in buckets.items() if b not in allowed}

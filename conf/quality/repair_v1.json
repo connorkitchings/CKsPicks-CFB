@@ -1,0 +1,31 @@
+{
+  "schema_version": "data_quality_required_policy_v1",
+  "stages": {
+    "ingest": [
+      "ingest.capture_completeness",
+      "ingest.completed_games_have_scores",
+      "ingest.games_vs_schedule",
+      "ingest.plays_and_drives_per_completed_game",
+      "ingest.ppa_coverage",
+      "ingest.schema_contract",
+      "ingest.versions_pinned"
+    ],
+    "silver": [
+      "silver.completed_game_refresh_pinned",
+      "silver.drive_numbering",
+      "silver.plays_and_drives_same_games",
+      "silver.points_identity",
+      "silver.ppa_missing_flag",
+      "silver.reconciliation_compares_scores",
+      "silver.reconciliation_recorded",
+      "silver.score_stream_monotone",
+      "silver.stream_scores_match_finals"
+    ],
+    "gold": [
+      "gold.ledger_semantics",
+      "gold.metric_semantics",
+      "gold.schema_contract"
+    ],
+    "publish": []
+  }
+}

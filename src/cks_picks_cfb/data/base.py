@@ -319,7 +319,7 @@ class BaseIngester(ABC):
             f"Wrote {written} records to {self.entity_name}/{partition.path_suffix()}."
         )
 
-    def run(self) -> None:
+    def run(self, *, request_inventory: dict | None = None) -> None:
         """Fetch, capture, catalog, and finally update compatibility storage."""
         dual_write_default = (
             "1" if self.storage.describe().casefold().startswith("r2:") else "0"
@@ -329,6 +329,46 @@ class BaseIngester(ABC):
         if dual_write and not conn_url and os.getenv("CFB_REQUIRE_CATALOG", "0") == "1":
             raise ValueError("DATABASE_URL is required when CFB_REQUIRE_CATALOG=1")
         requests = self.source_requests()
+        entity = self.entity_name.removeprefix("raw/")
+        inventory_sha = None
+        if entity in {"plays", "game_stats"}:
+            if request_inventory is None and self.storage_backend == "r2":
+                raise ValueError(
+                    f"{entity} requires a pinned expected-request inventory"
+                )
+            if request_inventory is not None:
+                import hashlib
+                import json
+
+                from cks_picks_cfb.quality.loaders import request_key
+                from cks_picks_cfb.quality.request_inventory import (
+                    expected_request_keys,
+                )
+
+                if self.storage_backend == "r2":
+                    from cks_picks_cfb.quality.request_inventory import (
+                        verify_expected_request_inventory,
+                    )
+
+                    verify_expected_request_inventory(self.storage, request_inventory)
+
+                expected = {
+                    key
+                    for key in expected_request_keys(request_inventory, self.year)
+                    if key.startswith(f"{entity}:")
+                }
+                actual = {
+                    request_key(entity, request.parameters) for request in requests
+                }
+                if not expected or actual != expected or len(requests) != len(actual):
+                    raise ValueError(
+                        f"{entity} requests differ from pinned schedule inventory"
+                    )
+                inventory_sha = hashlib.sha256(
+                    json.dumps(
+                        request_inventory, sort_keys=True, separators=(",", ":")
+                    ).encode()
+                ).hexdigest()
         ingestion_run_id = (
             (os.getenv("CFB_INGESTION_RUN_ID") or uuid4().hex)
             if dual_write and conn_url
@@ -342,34 +382,20 @@ class BaseIngester(ABC):
                 ingestion_run_id=ingestion_run_id,
                 provider="cfbd",
                 entity=self.entity_name.removeprefix("raw/"),
-                request={"requests": [request.manifest() for request in requests]},
+                request={
+                    "requests": [request.manifest() for request in requests],
+                    "expected_request_inventory_sha256": inventory_sha,
+                },
             )
         try:
             print(f"Starting {self.__class__.__name__} for {self.year}...")
             print(f"  - Using storage: {self.storage.describe()}")
 
             responses = self.fetch_source_responses(requests)
-            raw_data = [record for response in responses for record in response.records]
-            self.capture_time = max(response.captured_at for response in responses)
-            print(f"Fetched {len(raw_data)} records from CFBD API.")
-            if not raw_data:
-                raise DataUnavailableError(self.entity_name, self.year)
-
-            # Transform data for storage
-            transformed_data = self.transform_data(raw_data)
-            print(f"Transformed {len(transformed_data)} records for ingestion.")
-            if not transformed_data:
-                raise ValueError(
-                    f"{self.entity_name} produced no valid rows after transformation"
-                )
-
-            # Dual-write an immutable Bronze capture.  Repeated provider payloads
-            # reuse the same Parquet object while preserving a new observation.
+            # Retain the provider's exact response even when completeness later
+            # rejects it. Failed runs remain diagnosable without admitting data.
             if dual_write:
-                from cks_picks_cfb.data.catalog import (
-                    finish_ingestion_run,
-                    register_source_capture,
-                )
+                from cks_picks_cfb.data.catalog import register_source_capture
                 from cks_picks_cfb.data.lake import capture_provider_records
 
                 for response in responses:
@@ -388,10 +414,56 @@ class BaseIngester(ABC):
                     )
                     if conn_url:
                         register_source_capture(
-                            conn_url,
-                            capture,
-                            ingestion_run_id=ingestion_run_id,
+                            conn_url, capture, ingestion_run_id=ingestion_run_id
                         )
+            if inventory_sha:
+                from cks_picks_cfb.quality.loaders import request_key
+
+                received = {
+                    request_key(entity, response.request["parameters"])
+                    for response in responses
+                }
+                if received != actual or len(responses) != len(requests):
+                    raise ValueError(f"{entity} capture responses are incomplete")
+                required_by_key = {
+                    request_key(entity, item["parameters"]): set(
+                        item.get("required_completed_game_ids", [])
+                    )
+                    for item in request_inventory["requests"]
+                    if item["entity"] == entity
+                }
+                for response in responses:
+                    observed = set()
+                    for record in response.records:
+                        provider_record = (
+                            record.get("provider_record", record)
+                            if isinstance(record, dict)
+                            else record
+                        )
+                        game_id = self.safe_getattr(provider_record, "game_id", None)
+                        if game_id is None and entity == "game_stats":
+                            game_id = self.safe_getattr(provider_record, "id", None)
+                        if game_id is not None:
+                            observed.add(int(game_id))
+                    key = request_key(entity, response.request["parameters"])
+                    missing = required_by_key[key] - observed
+                    if missing:
+                        raise ValueError(
+                            f"{entity} capture lacks completed games: {sorted(missing)}"
+                        )
+            raw_data = [record for response in responses for record in response.records]
+            self.capture_time = max(response.captured_at for response in responses)
+            print(f"Fetched {len(raw_data)} records from CFBD API.")
+            if not raw_data:
+                raise DataUnavailableError(self.entity_name, self.year)
+
+            # Transform data for storage
+            transformed_data = self.transform_data(raw_data)
+            print(f"Transformed {len(transformed_data)} records for ingestion.")
+            if not transformed_data:
+                raise ValueError(
+                    f"{self.entity_name} produced no valid rows after transformation"
+                )
 
             # Compatibility storage is deliberately last: failures above cannot
             # mutate the legacy projection without a durable capture/catalog row.

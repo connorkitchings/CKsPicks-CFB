@@ -255,6 +255,33 @@ class TestByplayVectorized:
         assert result.ppa_missing.tolist() == [True, False, False]
         assert result.ppa_missing_reason.tolist() == ["provider_missing_ppa", "", ""]
 
+    def test_byplay_v1_collapses_only_exact_source_repeats(self):
+        play = _make_play(id=101, __capture_id="first")
+        result = allplays_to_byplay(
+            pd.DataFrame([play, {**play, "__capture_id": "retry"}])
+        )
+        assert len(result) == 1
+
+    def test_byplay_v1_blocks_distinct_provider_ids_at_same_sequence(self):
+        raw = pd.DataFrame(
+            [
+                _make_play(id=101, play_number=1, ppa=0.1),
+                _make_play(id=102, play_number=1, ppa=0.2),
+            ]
+        )
+        with pytest.raises(ValueError, match="byplay_v1 cannot represent distinct"):
+            allplays_to_byplay(raw)
+
+    def test_byplay_v1_blocks_conflicting_revisions_of_one_provider_id(self):
+        raw = pd.DataFrame(
+            [
+                _make_play(id=101, play_number=1, ppa=0.1),
+                _make_play(id=101, play_number=1, ppa=0.2),
+            ]
+        )
+        with pytest.raises(ValueError, match="byplay_v1 cannot represent distinct"):
+            allplays_to_byplay(raw)
+
     def test_nullable_ppa_changes_nothing_but_ppa(self):
         raw = pd.DataFrame(
             [_make_play(play_number=1, ppa=None), _make_play(play_number=2, ppa=0.0)]

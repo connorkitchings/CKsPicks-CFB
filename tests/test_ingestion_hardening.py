@@ -191,6 +191,88 @@ def test_one_failed_week_prevents_partial_plays_write(monkeypatch):
     assert storage.writes == []
 
 
+def test_weekly_ingestion_rejects_never_scheduled_request_before_fetch(monkeypatch):
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+    storage = MemoryIndexStorage([{"id": 10, "week": 0}])
+    ingester = PlaysIngester(year=2026, only_week=0, storage=storage)
+    inventory = {
+        "schema_version": "cfbd_expected_requests_v1",
+        "season": 2026,
+        "schedule_ref": {"version_id": "g1", "content_sha": "a" * 64},
+        "requests": [
+            {
+                "provider": "cfbd",
+                "entity": "plays",
+                "parameters": {
+                    "year": 2026,
+                    "season_type": "regular",
+                    "week": 0,
+                    "canonical_week": 0,
+                    "classification": "fbs",
+                    "expected_game_ids": [10, 11],
+                },
+            },
+        ],
+    }
+    with pytest.raises(ValueError, match="differ from pinned schedule inventory"):
+        ingester.run(request_inventory=inventory)
+    assert storage.writes == []
+
+
+def test_completed_game_missing_from_capture_blocks_promotion(monkeypatch):
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+    monkeypatch.setenv("CFB_LAKE_DUAL_WRITE", "1")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    storage = MemoryIndexStorage([{"id": 10, "week": 0}, {"id": 11, "week": 0}])
+    ingester = PlaysIngester(year=2026, only_week=0, storage=storage)
+    retained = []
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.lake.capture_provider_records",
+        lambda _storage, **kwargs: retained.append(kwargs) or object(),
+    )
+    inventory = {
+        "schema_version": "cfbd_expected_requests_v1",
+        "season": 2026,
+        "schedule_ref": {"version_id": "g1", "content_sha": "a" * 64},
+        "requests": [
+            {
+                "provider": "cfbd",
+                "entity": "plays",
+                "required_completed_game_ids": [10, 11],
+                "parameters": {
+                    "year": 2026,
+                    "season_type": "regular",
+                    "week": 0,
+                    "canonical_week": 0,
+                    "classification": "fbs",
+                    "expected_game_ids": [10, 11],
+                },
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        ingester,
+        "fetch_source_responses",
+        lambda requests: [
+            SimpleNamespace(
+                request=requests[0].manifest(),
+                records=[{"provider_record": SimpleNamespace(game_id=10)}],
+                provider="cfbd",
+                entity="plays",
+                captured_at=pd.Timestamp.now(tz="UTC"),
+                effective_at=None,
+                provider_api_version=None,
+                response_metadata={},
+            )
+        ],
+    )
+    with pytest.raises(ValueError, match=r"lacks completed games: \[11\]"):
+        ingester.run(request_inventory=inventory)
+    assert storage.writes == []
+    assert len(retained) == 1
+    assert len(retained[0]["records"]) == 1
+
+
 def test_catalog_failure_cannot_mutate_compatibility_projection(monkeypatch):
     monkeypatch.setenv("CFBD_API_KEY", "test-key")
     monkeypatch.setenv("CFB_LAKE_DUAL_WRITE", "1")

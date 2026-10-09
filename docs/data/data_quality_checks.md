@@ -15,7 +15,7 @@ in the receipt without stopping anything; new checks start at `warn` and are pro
 `skipped`: neither passed nor failed by default. Explicit `--require-check CHECK_ID` promotes failure or missing evidence to a blocking result; unknown or wrong-stage IDs are rejected.
 
 Contract: [pipeline data-quality gates](../plans/2026-10-04/01-pipeline-data-quality-gates.md).
-Definitions and evidence: [session log](../../session_logs/2026-10-04/04-data-quality-task1-library.md).
+Definitions and evidence: `session_logs/2026-10-04/04-data-quality-task1-library.md`.
 
 ## Ingest (Bronze and catalog)
 
@@ -93,12 +93,25 @@ completeness: without an inventory the check falls back to the attempt ledger
 (`inputs.request_basis = "attempt_ledger"`), which catches failed or unretried pulls but
 never a request that was not attempted. An inventory is recorded as
 `request_basis = "request_inventory"`. Require `ingest.capture_completeness` to block missing inventory.
-This interface does not yet generate or independently validate the expected schedule
-population; that remains an open repair-track requirement.
+The weekly generator now derives and rereads exact requests from a schedule pin.
+Broader endpoint coverage and operational receipts remain open.
 
 Gold accepts exact pins for all four measurement datasets and verifies ordinary or
 partitioned lake objects before schema and semantic checks. These checks enforce
 shared contracts; they do not replace independent source-to-metric recomputation.
 `--upload-receipt` explicitly enables immutable R2 receipt persistence with byte
-readback; default runs remain local. Automatic ingestion and Silver enforcement,
-reviewed production blocking policy, and legacy validator disposition remain open.
+readback; default runs remain local. Other ingestion paths, Silver builder
+enforcement, reviewed production blocking policy, and legacy validator
+disposition remain open.
+
+The weekly plays/game-stats command now requires `--request-inventory`. Generate
+it with `scripts/data/build_expected_request_inventory.py` from the exact raw
+games object (`--raw-schedule-uri raw/games/year=2026/part-0.parquet`) and the
+repository's versioned canonical-week policy. This source includes FBS–FCS games;
+the Week 5 Silver `games` dataset omits three such games and cannot establish the
+complete ingestion request population. The generator records the raw object's
+SHA-256 and R2 ingestion rereads and verifies those bytes. R2 ingestion rereads those
+sources, recomputes the request population, compares planned and captured
+requests, and rejects missing completed-game responses before validated promotion.
+The schedule must provide completed status or both final scores. Provider
+revisions and ambiguous raw play identities remain explicit repair findings.

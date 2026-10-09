@@ -10,6 +10,7 @@
     "c2-serving/week=4/verification/verifier-manifest.json": "c91c746448d406d0799e8e644e68f45c92de825a0d0615f746b04eb5e7601fab",
     "c2-serving/week=5/verification/verifier-manifest.json": "f165290dae025997824ec702b62ca480a7c6c4a706d7172d6311e1451fc26862",
     "ci-04cd53ce.json": "f4a6d646844a3ea37472d8c6398dfb29b3beba2f31d261a77426b2fc47bcb83d",
+    "play-identity-census.json": "30758510d7ce5947406d8418a974cac8da018fbc68dd3dad475c5bbb120139ac",
     "staging-production-dry-run.json": "fbd894af61dfd57ebe9f16b861a9a1606099bcb913d0429d8b56827ace87a4c3",
     "vercel-production-detail.json": "4539a9e13d750818bb5d693cb92e2c8bb4b75f7765bc0415196b0b56e8cecb00",
     "vercel-production.json": "2d4626c0db1074680ecee8d297914d8a9c73361d12620f36239c7fe0b69ccbe9"

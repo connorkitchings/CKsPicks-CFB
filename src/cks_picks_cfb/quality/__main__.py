@@ -54,6 +54,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Fail closed on a failed or skipped check (repeatable)",
     )
     parser.add_argument(
+        "--policy",
+        type=Path,
+        help="Versioned required-check policy (defaults to repair_v1 for a database environment)",
+    )
+    parser.add_argument(
         "--upload-receipt",
         action="store_true",
         help="Copy the exact receipt to configured R2; never upload by default",
@@ -91,6 +96,15 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--request-inventory is for the ingest stage")
         inventory_raw = args.request_inventory.read_bytes()
         inventory = json.loads(inventory_raw)
+        if args.environment:
+            from cks_picks_cfb.data.storage import get_storage
+            from cks_picks_cfb.quality.request_inventory import (
+                verify_expected_request_inventory,
+            )
+
+            verify_expected_request_inventory(
+                get_storage(environment=args.environment), inventory
+            )
     if (
         args.stage == "ingest"
         and "ingest.capture_completeness" in args.require_check
@@ -117,10 +131,29 @@ def main(argv: list[str] | None = None) -> int:
         context.setdefault("inputs", {})["request_inventory"] = {
             "sha256": hashlib.sha256(inventory_raw).hexdigest()
         }
-    run = run_stage(args.stage, context, required_checks=args.require_check)
+    policy_path = args.policy or (
+        Path("conf/quality/repair_v1.json") if args.environment else None
+    )
+    policy_sha = None
+    required_checks = set(args.require_check)
+    if policy_path is not None:
+        from cks_picks_cfb.quality.policy import load_required_policy
+
+        required_checks.update(load_required_policy(policy_path)[args.stage])
+        policy_sha = hashlib.sha256(policy_path.read_bytes()).hexdigest()
+        context.setdefault("inputs", {})["required_policy"] = {
+            "sha256": policy_sha,
+            "path": str(policy_path),
+        }
+    run = run_stage(args.stage, context, required_checks=sorted(required_checks))
     receipt = build_receipt(
         run,
-        identity={"year": args.year, "environment": args.environment, "pins": pins},
+        identity={
+            "year": args.year,
+            "environment": args.environment,
+            "pins": pins,
+            "required_policy_sha256": policy_sha,
+        },
         code_sha=_code_sha(),
         inputs=context.get("inputs"),
     )
