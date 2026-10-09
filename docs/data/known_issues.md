@@ -124,6 +124,8 @@ The [checksum-verified Bronze/Silver census](../plans/2026-10-08/repair-track-ev
 
 **Current gate:** new `byplay_v1` builds reject distinct source rows at a sequence and collapse only exact repeated provider rows. The real pinned 2021 source triggers that guard. Existing artifacts are unchanged and may contain the loss. The draft identity patch is not applied: correcting this requires versioned by-play, drive, possession and scoring identities, then full historical descendant comparison and rebuild. The [repair completion matrix](../plans/2026-10-08/02-repair-track-certification-and-closure.md) remains the release authority.
 
+**Update (2026-10-09):** `byplay_v2` (provider-keyed identity) is implemented and its output is proven unchanged outside the four collision games ([invariance proof](../plans/2026-10-08/repair-track-evidence/invariance-proof-v2.json); [contract](../plans/2026-10-09/01-byplay-v2-play-identity.md)). Served data is unchanged: Production and Preview still serve the loss until the corrected rebuild and cutover, and the descendants of the four games still need recertification. The weekly pipeline still defaults to `byplay_v1`, which fails closed on a distinct-play collision rather than dropping a play.
+
 ### 16. Net punt yards pair drives by number, so reused drive numbers collapse (opened 2026-10-09; corrected 2026-10-09)
 
 `calculate_st_analytics_agg` (`features/aggregations/team_game.py`) finds a punt's next drive with `groupby(["game_id", "drive_number"]).first()` and `shift(-1)`. Where a feed numbers two distinct drives the same, one is dropped and the displayed net punt yards can be wrong.

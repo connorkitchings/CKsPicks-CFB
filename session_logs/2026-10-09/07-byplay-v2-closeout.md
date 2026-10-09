@@ -45,3 +45,9 @@
 - **Watch out for:** Keep `byplay_v1` datasets retained for evidence/superseded comparison; any corrected descendant builds must require `byplay_v2`.
 
 **tags:** ["integrity", "pipeline", "identity", "closeout"]
+
+## Correction (2026-10-09, later review)
+
+- "Zero differences across the entire 11-season corpus" is too broad: 2026 covers only the Week 4/5 pin sets (Silver plus baseline), not Week 6; unverified decisions are 1,747 not 1,749; one evidence row differs by representative event. Full limits: contract `01` Amendment 7 and the parent contract's Amendment 2.
+- The completion-matrix row was set to "Verified locally" in error; it is now **Partial** (scoring, independent full metrics and serving remain open).
+- Descendant recertification for the four collision games is a pending milestone in the parent contract.
