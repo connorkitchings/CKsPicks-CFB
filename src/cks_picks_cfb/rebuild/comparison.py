@@ -20,6 +20,7 @@ import pandas as pd
 from cks_picks_cfb.rebuild import baseline, common, eligibility
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
+from cks_picks_cfb.rebuild.silver import identity_of
 
 PREFIX = "rebuild/6a/{run_id}/comparison/"
 RECEIPT = "comparison.json"
@@ -156,6 +157,19 @@ def _sha(data: bytes) -> str:
 
 
 def build(context: StageContext) -> StageOutput:
+    """Dispatch on the plan's ``play_identity`` policy (default ``byplay_v1``)."""
+    if identity_of(context) == "byplay_v2":
+        return _build_v2(context)
+    return _build_v1(context)
+
+
+def verify(context: StageContext) -> list[str]:
+    if identity_of(context) == "byplay_v2":
+        return _verify_v2(context)
+    return _verify_v1(context)
+
+
+def _build_v1(context: StageContext) -> StageOutput:
     from cks_picks_cfb.data.data_first_possession_v1 import build_population
     from cks_picks_cfb.data.lake import read_dataset
     from cks_picks_cfb.ratings import admission as adm
@@ -308,7 +322,7 @@ def build(context: StageContext) -> StageOutput:
     )
 
 
-def verify(context: StageContext) -> list[str]:
+def _verify_v1(context: StageContext) -> list[str]:
     """Re-derive the headline checks from the staged files, not the receipt's verdict."""
     stage = context.stage.name
     prefix = PREFIX.format(run_id=context.plan.run_id)
@@ -338,6 +352,186 @@ def verify(context: StageContext) -> list[str]:
     ):
         if len(pd.read_parquet(io.BytesIO(read(FILES[name])))) != expected:
             problems.append(f"{name} count differs from Step 5")
+    if not receipt.get("passed"):
+        failed = [k for k, ok in receipt["checks"].items() if not ok]
+        problems.append(f"comparison gate failed: {failed}")
+    return problems
+
+
+# --- provider-keyed identity (contract 2026-10-09/01, Task 4.6) -----------------------------
+#: Games whose legacy ledger legitimately differs from the v2 one (distinct provider plays at
+#: one displayed sequence). Every other game must be identical under the id mapping.
+COLLISION_GAMES = frozenset({401310699, 401756916, 401761632, 401762831})
+V2_DECISIONS_KEY = "admission_decisions_v2_csv"
+
+
+def ledgers_for(
+    identity: str,
+    plays: pd.DataFrame,
+    population: pd.DataFrame,
+    outcomes: pd.DataFrame,
+    finals: Mapping[tuple[int, str], float],
+):
+    """Possessions, baseline and R1-candidate events, groups and their members."""
+    from cks_picks_cfb.ratings import possession_measurements as pm
+    from cks_picks_cfb.ratings import score_envelope_r1 as r1
+
+    extra = {"play_identity": identity} if identity == "byplay_v2" else {}
+    possessions, base = pm.build_possession_ledger(
+        byplay=plays,
+        population=population,
+        outcomes=outcomes,
+        scope="historical",
+        **extra,
+    )
+    candidate_plays, _ = r1.apply_r1(pm._canonicalize_byplay_teams(plays), finals)
+    _, cand = pm.build_possession_ledger(
+        byplay=candidate_plays,
+        population=population,
+        outcomes=outcomes,
+        scope="historical",
+        **extra,
+    )
+    members: dict[str, list[str]] = {}
+    groups = r1.changed_groups(base, cand, members_out=members)
+    return possessions, base, cand, groups, members
+
+
+def _build_v2(context: StageContext) -> StageOutput:
+    """Provider-keyed comparison.
+
+    The CFBD evidence behind the decisions never looked at a play id, so the pinned decisions are
+    re-keyed offline (``scripts/analysis/rekey_admission_v2.py``) and pinned here by hash. This
+    stage rebuilds the v2 ledgers from the staged Silver, requires the recomputed groups to
+    equal the pinned v2 groups, and re-verifies the admitted ledger independently. It cannot
+    compare with the stage-1 v1 ledger (the v1-only baseline stage refuses a v2 plan); that
+    equality, outside the collision games, is established by the pinned re-key report.
+    """
+    from cks_picks_cfb.data.data_first_possession_v1 import build_population
+    from cks_picks_cfb.data.lake import read_dataset
+    from cks_picks_cfb.ratings import admission as adm
+    from cks_picks_cfb.ratings import possession_verification as verifier
+    from cks_picks_cfb.rebuild import legacy as legacy5c
+    from cks_picks_cfb.rebuild.legacy import _repair
+
+    storage = common.preview_storage(context)
+    pins = {pin.name: pin for pin in context.plan.inputs}
+    pin_file = json.loads(context.read_input("phase2c_silver_parents"))
+    seasons = sorted(context.plan.seasons)
+    elig_prefix = eligibility.PREFIX.format(run_id=context.plan.run_id)
+    population_raw = pd.read_parquet(
+        io.BytesIO(
+            context.read_artifact("eligibility", elig_prefix + eligibility.POPULATION)
+        )
+    )
+    population = build_population(population_raw, scope="historical")
+    outcomes = pd.concat(
+        [
+            read_dataset(
+                storage,
+                common.dataset_ref(pin_file["seasons"][str(s)]["game_outcomes"]),
+            )
+            for s in seasons
+        ],
+        ignore_index=True,
+    )
+    byplay = common.staged_silver(context, "byplay")
+    finals = legacy5c._finals(population, outcomes)
+    possessions, base_events, cand_events, groups, members = ledgers_for(
+        "byplay_v2", byplay, population, outcomes, finals
+    )
+    status = pd.read_csv(
+        io.BytesIO(context.read_input("corroboration_group_status_v2"))
+    )
+    group_ids_match = set(status["group_id"]) == set(groups["group_id"])
+    if not group_ids_match:
+        raise GateError("rebuilt v2 allocation groups differ from the pinned v2 groups")
+    decisions = adm.build_decisions(status, members)
+    admitted = adm.build_admitted_events(base_events, cand_events, decisions, members)
+    decisions_bytes = decisions.to_csv(index=False).encode()
+    counts = {
+        "baseline_events": len(base_events),
+        "candidate_events": len(cand_events),
+        "admitted_events": len(admitted),
+        "decisions": {
+            k: int(v) for k, v in decisions["decision"].value_counts().items()
+        },
+    }
+    repair, _ = _repair(storage, pins["repair_v2_manifest"].uri, scope="historical")
+    legacy_population = read_dataset(
+        storage, common.dataset_ref(repair["output_refs"]["population"])
+    )
+    parity = population_parity(population_raw, legacy_population)
+    verdict = verifier.verify_admitted_ledger(
+        byplay=byplay,
+        population=population,
+        outcomes=outcomes,
+        baseline_events=base_events,
+        admitted_events=admitted,
+        decisions=decisions,
+        play_identity="byplay_v2",
+    )
+    rekey = json.loads(context.read_input("admission_rekey_report"))
+    expected = baseline.EXPECTED["decisions"]
+    checks = {
+        "group_ids_match_v2_status": group_ids_match,
+        "decisions_csv_bytes": _sha(decisions_bytes)
+        == context.plan.decisions[V2_DECISIONS_KEY],
+        "rekey_report_passed": bool(rekey.get("passed"))
+        and rekey["outputs"]["admission_decisions_v2_sha256"]
+        == context.plan.decisions[V2_DECISIONS_KEY],
+        "admitted_and_contradicted_unchanged": all(
+            counts["decisions"].get(k, 0) == expected[k]
+            for k in ("admitted", "reverted_contradicted")
+        ),
+        "population_parity": bool(parity["equal"]),
+        "independent_verifier": bool(verdict["ok"]),
+    }
+    receipt = {
+        "play_identity": "byplay_v2",
+        "checks": checks,
+        "passed": all(checks.values()),
+        "counts": counts,
+        "population": {"games": int(len(population_raw)), "parity": parity},
+        "skipped": {
+            "admitted_equals_stage1": "stage 1 is v1-pinned; established by the pinned re-key report",
+            "punt_flag_change_bounded": "a Silver property proven by the v1 stage",
+        },
+        "verifier": {"ok": bool(verdict["ok"]), "problems": verdict["problems"][:20]},
+        "decisions_csv_sha256": _sha(decisions_bytes),
+    }
+    prefix = PREFIX.format(run_id=context.plan.run_id)
+
+    def artifacts() -> Iterator[tuple[str, bytes]]:
+        yield prefix + FILES["decisions"], decisions_bytes
+        yield prefix + FILES["possessions"], _parquet(possessions)
+        yield prefix + FILES["baseline_events"], _parquet(base_events)
+        yield prefix + FILES["candidate_events"], _parquet(cand_events)
+        yield prefix + FILES["admitted_events"], _parquet(admitted)
+        yield (
+            prefix + RECEIPT,
+            json.dumps(receipt, indent=2, sort_keys=True, default=str).encode(),
+        )
+
+    return StageOutput(
+        artifacts=artifacts(), metrics={"gate_passed": receipt["passed"], **counts}
+    )
+
+
+def _verify_v2(context: StageContext) -> list[str]:
+    """Re-derive the v2 headline checks from the staged files, not the receipt's verdict."""
+    stage = context.stage.name
+    prefix = PREFIX.format(run_id=context.plan.run_id)
+    read = lambda name: context.read_artifact(stage, prefix + name)  # noqa: E731
+    problems: list[str] = []
+    receipt = json.loads(read(RECEIPT))
+    if receipt.get("play_identity") != "byplay_v2":
+        problems.append("comparison receipt is not a byplay_v2 receipt")
+    if _sha(read(FILES["decisions"])) != context.plan.decisions[V2_DECISIONS_KEY]:
+        problems.append("decisions differ from the pinned v2 file")
+    admitted = pd.read_parquet(io.BytesIO(read(FILES["admitted_events"])))
+    if "source_play_id" not in admitted.columns:
+        problems.append("admitted ledger is not provider-keyed")
     if not receipt.get("passed"):
         failed = [k for k, ok in receipt["checks"].items() if not ok]
         problems.append(f"comparison gate failed: {failed}")

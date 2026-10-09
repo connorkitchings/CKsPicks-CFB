@@ -1,0 +1,49 @@
+{
+  "admitted_equals_v1_outside_collisions": {
+    "columns": [],
+    "compared": true,
+    "equal": true,
+    "rows": [
+      8329,
+      8329
+    ]
+  },
+  "admitted_events": {
+    "v1": 8329,
+    "v2": 8329
+  },
+  "anchor": {
+    "v1_decisions_equal_pinned": true,
+    "v1_groups_equal_pinned": true
+  },
+  "decisions_pinned": {
+    "admitted": 73,
+    "reverted_unverified": 77
+  },
+  "decisions_v2": {
+    "admitted": 73,
+    "reverted_unverified": 77
+  },
+  "differing": [],
+  "gold_v2": {
+    "evidence": 73,
+    "ledger": 8329,
+    "possessions": 32030,
+    "problem_count": 0,
+    "problems": []
+  },
+  "groups": {
+    "matched": 150,
+    "pinned": 150,
+    "recomputed_v2": 150
+  },
+  "independent_verifier": {
+    "ok": true,
+    "problems": []
+  },
+  "pinned_only": [],
+  "population_games": 873,
+  "recomputed_only": [],
+  "reconcile_problems": [],
+  "season": 2016
+}

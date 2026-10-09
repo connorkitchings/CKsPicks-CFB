@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable
+from typing import Any
 
 from cks_picks_cfb.rebuild import (
     attribution,
     baseline,
+    common,
     comparison,
     eligibility,
     forecast_refit,
@@ -24,8 +27,37 @@ from cks_picks_cfb.rebuild.orchestrator import Stage, StageContext, StageOutput
 from cks_picks_cfb.rebuild.plan import RebuildPlan
 from cks_picks_cfb.rebuild.recon_stages import SIX_B_STAGE_BUILDERS
 
+#: Stages whose inputs or pins are tied to the superseded sequence identity (legacy
+#: ``season:game:drive:play`` ids, the pinned 5C decision hashes, v1 published artifacts).
+#: They refuse a plan whose ``play_identity`` policy is ``byplay_v2`` instead of silently
+#: mixing identities.
+V1_PINNED_STAGES = frozenset(
+    {
+        "baseline_reproduction",
+        "measurements_parity",
+        "ratings_parity",
+        "silver_2026",
+        "states_2026",
+        "attribution",
+        "published_comparison",
+        "receipt",
+    }
+)
+
+
+def _v1_pinned(
+    name: str, function: Callable[[StageContext], Any]
+) -> Callable[[StageContext], Any]:
+    @functools.wraps(function)
+    def guarded(context: StageContext) -> Any:
+        common.require_v1_identity(context, name)
+        return function(context)
+
+    return guarded
+
+
 #: name -> (build, verify). Task 3 registers each stage as it is implemented.
-STAGE_BUILDERS: dict[
+_REGISTERED: dict[
     str,
     tuple[Callable[[StageContext], StageOutput], Callable[[StageContext], list[str]]],
 ] = {
@@ -43,6 +75,15 @@ STAGE_BUILDERS: dict[
     "attribution": (attribution.build, attribution.verify),
     "published_comparison": (published_comparison.build, published_comparison.verify),
     "receipt": (receipt.build, receipt.verify),
+}
+STAGE_BUILDERS: dict[
+    str,
+    tuple[Callable[[StageContext], StageOutput], Callable[[StageContext], list[str]]],
+] = {
+    name: (_v1_pinned(name, build), _v1_pinned(name, verify))
+    if name in V1_PINNED_STAGES
+    else (build, verify)
+    for name, (build, verify) in _REGISTERED.items()
 }
 
 

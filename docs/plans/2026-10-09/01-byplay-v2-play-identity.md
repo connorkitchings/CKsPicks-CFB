@@ -284,7 +284,7 @@ Reconciliation classes had zero mismatches and zero blocking rows in all three. 
 
 **Task 4 scope (user decision):** includes the v2 score envelope, independent envelope, scoring-attribution evidence and Gold stage wiring. The pinned 5C admission decisions embed legacy ids, but the CFBD corroboration compares points per `(team, drive_number)` against hash-pinned drive bundles and never looks at play ids, so the decisions are **re-keyed by a deterministic mapping, not re-admitted**: no fresh CFBD run. Groups created only by retained plays in a collision game fail closed to `reverted_unverified` unless the offline classifier reproduces a status. v1 pins, hashes and schemas are added beside, never edited.
 
-**Other decisions:** `ratings/observations.py` and the v1-pinned rebuild modules stay v1-only and refuse v2 input (re-sorting them would change served lineage). Net punt yards: v2 pairs by provider drive and matches v1 wherever no drive number is reused; the restart-game bug is recorded as known issue 16 and left for a separate contract.
+**Other decisions:** `ratings/observations.py` and the v1-pinned rebuild modules stay v1-only and refuse v2 input (re-sorting them would change served lineage). Net punt yards: v2 pairs by provider drive and matches v1 wherever no drive number is reused; known issue 16 records the collapse (corrected in Amendment 6: it occurs only in the collision games).
 
 ### Amendment 4 (2026-10-09): Task 3 receipt
 
@@ -348,3 +348,28 @@ Zero `unresolved_play_order` events appear in real data: the 2021 pair is score-
 
 **Next:** 4.5 (admission re-key and the v2 score envelope, evidence and verifier block), 4.6 (rebuild wiring) and 4.7 (net punt yards), then the final Task 4 stop gate.
 
+
+### Amendment 6 (2026-10-09): Task 4.5–4.7 receipt (final Task 4 stop gate)
+
+**Admission re-key (4.5).** `scripts/analysis/rekey_admission_v2.py` maps each pinned legacy event id to the provider id of the play the legacy build kept (Silver file order), re-derives `group_id` from the v2 first event (recovered by hashing the members), and reconciles the result against groups recomputed from `byplay_v2` ledgers. No CFBD call; evidence is the same hash-pinned bundles. Outputs (evidence `admission-v2/`, in `checksums.json`; two assemble runs byte-identical): `admission_decisions_v2.csv`, `corroboration_group_status_v2.csv`, `rekey_report.json` and ten per-season summaries.
+
+| Check | Result |
+| --- | --- |
+| Decisions admitted / contradicted | 1,416 / 28, equal to the pins |
+| Decisions unverified | 1,747 against 1,749 pinned: the two pinned groups of game 401756916 have no v2 counterpart (the overtime tied streams are skipped by the v2 envelope) and are dropped, not admitted |
+| Groups matched | 3,191 of 3,193 pinned groups recomputed from v2 (one of them differs on members: game 401761632, already `reverted_unverified`); 2 pinned-only (game 401756916); 0 new v2-only groups |
+| Anchors (v1 groups and decisions rebuilt equal the pins) | true in all ten seasons |
+| v1-mapped admitted ledger equals v2 outside the four collision games | row-equal in all ten seasons (2025: 9,145 rows; 9,187 v1 against 9,188 v2 events overall) |
+| `verify_admitted_ledger` v2 | ok in all ten seasons; Gold v2 dry run 0 problems, evidence rows = admitted counts (1,416) |
+
+No admitted or contradicted group touches a collision game, as the Task 4 plan predicted, so the re-key changes no served decision.
+
+**Wiring (4.6).** `play_identity` plan policy (default `byplay_v1`) is honoured by `rebuild/comparison.py` (a v2 build/verify beside the untouched v1 bodies), `rebuild/gold.py` (`settings_for(identity)`) and `rebuild/measurements.py`; `common.silver_summary` raises if staged Silver was built with a different identity than the plan; eight stages (`V1_PINNED_STAGES`) refuse a v2 plan and name themselves. A v2 plan needs inputs `corroboration_group_status_v2` and `admission_rekey_report`, and the pin `admission_decisions_v2_csv`. **Honesty note:** the v2 comparison and Gold stage paths are covered by unit tests and a faked-context run of the comparison stage, not by an orchestrated Preview rebuild; that remains the parent contract's milestone.
+
+**Deviations from the Task 4 plan:** the re-key is a new script and library (`ratings/admission_rekey.py`) rather than a v2 mode in `build_admitted_ledger_5c.py`; `score_envelope_r1.restoration_jumps` and `apply_r1` now accept v2 frames (tied-stream teams are skipped and reported as unresolved); `admission.py` and `metrics/evidence.py` needed no change; the possession duplicate-key check in `metrics/builders.py` uses `drive_id` when present.
+
+**Net punt yards (4.7) and a correction.** `calculate_st_analytics_agg` runs the unchanged v1 algorithm on every game without a play-sequence collision and pairs provider drives chronologically only in collided games, ordering by `(is_overtime, drive_number, drive_start_period, first_play_number, drive_id)` and returning NaN when drives cannot be ordered. Real data (`net-punt-yards-comparison.json`, ten seasons): 17,755 team-games compared, 3 differ, all in collision games (401761632 Texas State; 401762831 Buffalo and Eastern Michigan), 0 outside. **Correction:** Amendment 3 and the first known issue 16 said the collapse also affects the 245 games whose drive numbers go backwards across periods. No game outside the collision games shares a drive number between two provider drives, so that part was wrong; known issue 16 now says so, and issue 17 (backward numbering) stays separate.
+
+**Validation:** full suite with `-W error` 2,418 passed, 15 skipped; `ruff format --check .` (759 files) and `ruff check .` clean; `git diff --check`, `make contracts-check` and `mkdocs build --strict` pass.
+
+**Next:** Task 5 (invariance proof) after the user's review of this gate.

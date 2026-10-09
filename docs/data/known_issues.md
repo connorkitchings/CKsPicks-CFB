@@ -124,11 +124,13 @@ The [checksum-verified Bronze/Silver census](../plans/2026-10-08/repair-track-ev
 
 **Current gate:** new `byplay_v1` builds reject distinct source rows at a sequence and collapse only exact repeated provider rows. The real pinned 2021 source triggers that guard. Existing artifacts are unchanged and may contain the loss. The draft identity patch is not applied: correcting this requires versioned by-play, drive, possession and scoring identities, then full historical descendant comparison and rebuild. The [repair completion matrix](../plans/2026-10-08/02-repair-track-certification-and-closure.md) remains the release authority.
 
-### 16. Net punt yards pair drives by number, so reused drive numbers collapse (opened 2026-10-09)
+### 16. Net punt yards pair drives by number, so reused drive numbers collapse (opened 2026-10-09; corrected 2026-10-09)
 
-`calculate_st_analytics_agg` (`features/aggregations/team_game.py`) finds a punt's next drive with `groupby(["game_id", "drive_number"]).first()` and `shift(-1)`. Where a feed numbers drives more than once in a game, two drives share a number and one is dropped. This happens in the three 2025 collision games and, per the [period-label diagnostic](../plans/2026-10-08/repair-track-evidence/period-label-diagnostic.json), in 245 of 8,759 games whose drive numbers restart across periods. The displayed net punt yards for punts in those games can therefore be wrong.
+`calculate_st_analytics_agg` (`features/aggregations/team_game.py`) finds a punt's next drive with `groupby(["game_id", "drive_number"]).first()` and `shift(-1)`. Where a feed numbers two distinct drives the same, one is dropped and the displayed net punt yards can be wrong.
 
-**Decision (2026-10-09, byplay_v2 contract):** the v2 pairing matches v1 exactly wherever no drive number is reused and corrects only the collision games; the restart-game values are deliberately left at their v1 value so the Task 5 invariance proof stays clean. Fixing them needs a separate contract with a discrepancy-ledger row per changed value.
+**Correction (2026-10-09, Task 4.7):** the first version of this entry said the collapse also affects the 245 games whose drive numbers go backwards across periods. The real-data comparison ([`net-punt-yards-comparison.json`](../plans/2026-10-08/repair-track-evidence/net-punt-yards-comparison.json)) disproves that: across the ten seasons, no game outside the four collision games has one drive number shared by two provider drives, and v1 and v2 net punt yards are identical for all 17,752 team-games outside them. Drive numbers that go backwards (issue 17) are a different pattern and do not trigger the collapse. The defect is confined to the collision games (2021 game 401310699; 2025 games 401756916, 401761632, 401762831); v1 values differ from the provider-keyed ones for 3 team-games (401761632 Texas State; 401762831 Buffalo and Eastern Michigan).
+
+**Decision (2026-10-09, byplay_v2 contract):** v2 keeps the v1 algorithm on every game without a play-sequence collision and pairs provider drives chronologically only in collided games (NaN where the drives cannot be ordered).
 
 ### 17. Some plays carry a stale period label, and play order disagrees with the clock (opened 2026-10-09)
 

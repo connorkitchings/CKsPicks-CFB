@@ -1,0 +1,144 @@
+{
+  "contract": "docs/plans/2026-10-09/01-byplay-v2-play-identity.md#task-4",
+  "inputs": {
+    "historical_parents_sha256": "c85daae49d1daf8ce441ffd7363152974fe9a50895bdc612dc6ee2c9c38c8b0b"
+  },
+  "schema_version": "net_punt_yards_comparison_v1",
+  "seasons": {
+    "2015": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1722,
+      "team_games_differing": 0
+    },
+    "2016": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1709,
+      "team_games_differing": 0
+    },
+    "2017": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1736,
+      "team_games_differing": 0
+    },
+    "2018": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1758,
+      "team_games_differing": 0
+    },
+    "2019": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1770,
+      "team_games_differing": 0
+    },
+    "2021": {
+      "collision_games_in_season": [
+        401310699
+      ],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1771,
+      "team_games_differing": 0
+    },
+    "2022": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1787,
+      "team_games_differing": 0
+    },
+    "2023": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1813,
+      "team_games_differing": 0
+    },
+    "2024": {
+      "collision_games_in_season": [],
+      "differing_detail": [],
+      "differing_games": [],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1827,
+      "team_games_differing": 0
+    },
+    "2025": {
+      "collision_games_in_season": [
+        401756916,
+        401761632,
+        401762831
+      ],
+      "differing_detail": [
+        {
+          "game_id": 401761632,
+          "team": "Texas State",
+          "v1": 40.6,
+          "v2": 32.166666666666664
+        },
+        {
+          "game_id": 401762831,
+          "team": "Buffalo",
+          "v1": 59.75,
+          "v2": 59.0
+        },
+        {
+          "game_id": 401762831,
+          "team": "Eastern Michigan",
+          "v1": 31.833333333333332,
+          "v2": 41.0
+        }
+      ],
+      "differing_games": [
+        401761632,
+        401762831
+      ],
+      "differing_outside_collision_games": 0,
+      "games_with_reused_drive_numbers": 0,
+      "reused_drive_number_games_that_differ": 0,
+      "team_games_compared": 1862,
+      "team_games_differing": 3
+    }
+  },
+  "totals": {
+    "differing_outside_collision_games": 0,
+    "games_with_reused_drive_numbers": 0,
+    "reused_drive_number_games_that_differ": 0,
+    "team_games_compared": 17755,
+    "team_games_differing": 3
+  }
+}

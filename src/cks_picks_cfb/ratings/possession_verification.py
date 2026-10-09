@@ -1405,9 +1405,14 @@ def _certified_finals(
 
 
 def _independent_envelope(
-    plays: pd.DataFrame, finals: dict[tuple[int, str], float]
+    plays: pd.DataFrame, finals: dict[tuple[int, str], float], v2: bool = False
 ) -> pd.DataFrame:
-    """``min(F, running maximum)`` of each team's reported score, in stream order."""
+    """``min(F, running maximum)`` of each team's reported score, in stream order.
+
+    For provider-keyed (v2) plays, a team-game that contains a play tied with a distinct
+    provider play is left as reported: a running maximum cannot be asserted across plays whose
+    order is unknown.
+    """
     frame = plays.sort_values(
         ["season", "game_id", "quarter", "drive_number", "play_number"],
         kind="mergesort",
@@ -1421,9 +1426,15 @@ def _independent_envelope(
     for i in range(len(frame)):
         positions[(int(game[i]), str(offense[i]))].append((i, "o"))
         positions[(int(game[i]), str(defense[i]))].append((i, "d"))
+    tied_streams: set[tuple[int, str]] = set()
+    if v2:
+        tied_rows = frame.loc[_tied_sequence(frame)]
+        for row in tied_rows.itertuples(index=False):
+            tied_streams.add((int(row.game_id), str(row.offense)))
+            tied_streams.add((int(row.game_id), str(row.defense)))
     for key, slots in positions.items():
         final = finals.get(key)
-        if final is None:
+        if final is None or key in tied_streams:
             continue
         running = None
         for i, side in slots:
@@ -1461,6 +1472,7 @@ def verify_admitted_ledger(
     expected_admitted_groups: int | None = None,
     scope: str = "historical",
     legacy_labels: bool = False,
+    play_identity: str = "byplay_v1",
 ) -> dict[str, Any]:
     """Re-derive the admitted ledger and report every disagreement. Never mutates inputs."""
     problems: list[str] = []
@@ -1477,14 +1489,19 @@ def verify_admitted_ledger(
         problem("duplicate group ids in decisions")
 
     plays, _, own_baseline = _reconstruct_ledgers(
-        byplay=byplay, population=population, outcomes=outcomes, scope=scope
-    )
-    finals = _certified_finals(population, outcomes)
-    _, _, own_candidate = _reconstruct_ledgers(
-        byplay=_independent_envelope(plays, finals),
+        byplay=byplay,
         population=population,
         outcomes=outcomes,
         scope=scope,
+        play_identity=play_identity,
+    )
+    finals = _certified_finals(population, outcomes)
+    _, _, own_candidate = _reconstruct_ledgers(
+        byplay=_independent_envelope(plays, finals, v2=play_identity == "byplay_v2"),
+        population=population,
+        outcomes=outcomes,
+        scope=scope,
+        play_identity=play_identity,
     )
     base = _event_table(own_baseline)
     cand = _event_table(own_candidate)

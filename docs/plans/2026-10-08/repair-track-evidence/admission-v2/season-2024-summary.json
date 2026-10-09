@@ -1,0 +1,51 @@
+{
+  "admitted_equals_v1_outside_collisions": {
+    "columns": [],
+    "compared": true,
+    "equal": true,
+    "rows": [
+      8580,
+      8580
+    ]
+  },
+  "admitted_events": {
+    "v1": 8580,
+    "v2": 8580
+  },
+  "anchor": {
+    "v1_decisions_equal_pinned": true,
+    "v1_groups_equal_pinned": true
+  },
+  "decisions_pinned": {
+    "admitted": 237,
+    "reverted_contradicted": 1,
+    "reverted_unverified": 176
+  },
+  "decisions_v2": {
+    "admitted": 237,
+    "reverted_contradicted": 1,
+    "reverted_unverified": 176
+  },
+  "differing": [],
+  "gold_v2": {
+    "evidence": 237,
+    "ledger": 8580,
+    "possessions": 31412,
+    "problem_count": 0,
+    "problems": []
+  },
+  "groups": {
+    "matched": 414,
+    "pinned": 414,
+    "recomputed_v2": 414
+  },
+  "independent_verifier": {
+    "ok": true,
+    "problems": []
+  },
+  "pinned_only": [],
+  "population_games": 920,
+  "recomputed_only": [],
+  "reconcile_problems": [],
+  "season": 2024
+}

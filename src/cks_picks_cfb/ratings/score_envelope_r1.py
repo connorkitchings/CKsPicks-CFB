@@ -15,8 +15,6 @@ from typing import Any, Mapping
 import numpy as np
 import pandas as pd
 
-from cks_picks_cfb.data.play_identity import require_v1_byplay
-
 ORDER_COLUMNS = ["season", "game_id", "quarter", "drive_number", "play_number"]
 EVENT_KEYS = ["game_id", "team", "source_event_id"]
 COMPARE_FIELDS = [
@@ -45,11 +43,19 @@ def apply_r1(
     ``finals`` maps ``(game_id, team)`` to the certified final score. Returns the
     rewritten frame and the team-games left unresolved because the envelope does not
     reach the final (they stay quarantined exactly as in the baseline).
+
+    A ``byplay_v2`` frame is accepted. Its team-games that contain a play tied with a
+    distinct provider play at one sequence are left unchanged and reported unresolved: a
+    running maximum depends on the order of the tied plays, which is unknown.
     """
-    require_v1_byplay(byplay, consumer="score_envelope_r1.apply_r1")
+    v2 = "source_play_id" in byplay.columns
     frame = byplay.sort_values(ORDER_COLUMNS, kind="mergesort").copy()
     unresolved: set[tuple[int, str]] = set()
     for game_id, group in frame.groupby("game_id", sort=False):
+        tied_teams: set[str] = set()
+        if v2:
+            tied = group[group["play_order_reason"] == "tied_sequence"]
+            tied_teams = set(tied["offense"]) | set(tied["defense"])
         for team in set(group["offense"]) | set(group["defense"]):
             is_off = (group["offense"] == team).to_numpy()
             is_def = (group["defense"] == team).to_numpy()
@@ -67,6 +73,9 @@ def apply_r1(
                 # No certified final: R1 cannot cap or test resolution, so the rows are
                 # left exactly as the baseline sees them.
                 continue
+            if team in tied_teams:
+                unresolved.add((int(game_id), team))
+                continue
             envelope = np.minimum(np.maximum.accumulate(values), final)
             if values.max() < final:
                 unresolved.add((int(game_id), team))
@@ -79,12 +88,22 @@ def apply_r1(
 
 
 def restoration_jumps(byplay: pd.DataFrame) -> set[tuple[int, str]]:
-    """Team-games whose raw score rises by more than eight after an earlier decrease."""
-    require_v1_byplay(byplay, consumer="score_envelope_r1.restoration_jumps")
+    """Team-games whose raw score rises by more than eight after an earlier decrease.
+
+    A ``byplay_v2`` frame is accepted; a team-game with a play tied at one sequence is skipped,
+    because the order of a decrease and a rise cannot be asserted across tied plays.
+    """
+    v2 = "source_play_id" in byplay.columns
     frame = byplay.sort_values(ORDER_COLUMNS, kind="mergesort")
     found: set[tuple[int, str]] = set()
     for game_id, group in frame.groupby("game_id", sort=False):
+        tied_teams: set[str] = set()
+        if v2:
+            tied = group[group["play_order_reason"] == "tied_sequence"]
+            tied_teams = set(tied["offense"]) | set(tied["defense"])
         for team in set(group["offense"]) | set(group["defense"]):
+            if team in tied_teams:
+                continue
             score = np.where(
                 group["offense"] == team,
                 group["offense_score"],

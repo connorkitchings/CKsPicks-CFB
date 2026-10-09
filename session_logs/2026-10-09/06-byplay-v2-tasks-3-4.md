@@ -55,3 +55,12 @@
 - **Watch out for:** `web/*` and `README` changes in the worktree belong to another session; do not stage them. The 94% season guard means any real-season run needs an explicit population.
 - **Commit proposal (user-run):** `feat(identity): add provider-keyed possession ledger, independent verifier and Gold converters`.
 
+
+## Update: Tasks 4.5–4.7 (final Task 4 stop gate)
+
+- Admission re-key run on all ten seasons; assembled outputs registered in the evidence manifest; decisions 1,416 / 28 admitted/contradicted unchanged, unverified 1,747 (two overtime-only groups in game 401756916 dropped); verifier and Gold v2 clean everywhere.
+- Plan-policy wiring for comparison, Gold and measurements; staged-Silver identity guard; eight stages pinned to v1.
+- Net punt yards: v1 preserved outside collision games; real-data check shows 3 differing team-games, all in collision games. This disproved the "245 restart games" part of known issue 16, which is corrected in place (Amendment 6).
+- Validation: 2,418 passed / 15 skipped (`-W error`); ruff, contracts and strict docs build clean.
+- **Resume at:** Task 5 (invariance proof), only after the user reviews the stop gate. Uncommitted; do not stage `web/*`.
+- **Commit proposal (user-run):** `feat(identity): re-key admission decisions to provider ids and wire the play-identity policy`.

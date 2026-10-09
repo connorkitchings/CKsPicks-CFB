@@ -20,6 +20,7 @@ import pandas as pd
 from cks_picks_cfb.rebuild import common, comparison, eligibility
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
+from cks_picks_cfb.rebuild.silver import identity_of
 
 PREFIX = "rebuild/6a/{run_id}/ratings/"
 SELECTED_CANDIDATE = "ppp__rho_0_60__exposure"
@@ -126,6 +127,7 @@ def build(context: StageContext) -> StageOutput:
         outcomes=outcomes,
         possessions=possessions,
         scoring_events=admitted,
+        play_identity=identity_of(context),
     )
     snapshots: list[pd.DataFrame] = []
     terminal: list[pd.DataFrame] = []

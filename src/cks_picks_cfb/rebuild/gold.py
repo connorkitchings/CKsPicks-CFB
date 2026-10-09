@@ -25,6 +25,7 @@ import pandas as pd
 from cks_picks_cfb.rebuild import common, comparison, eligibility
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
+from cks_picks_cfb.rebuild.silver import identity_of
 
 SUMMARY = "rebuild/6a/{run_id}/gold/summary.json"
 DATASETS = (
@@ -44,6 +45,32 @@ GOLD_CONFIG = {
 }
 
 
+#: Provider-keyed (v2) play identity changes the possession ledger, the scoring ledger and the
+#: attribution evidence; team-game metrics and season features carry no play identity.
+SCHEMA_VERSIONS_V2 = {
+    **SCHEMA_VERSIONS,
+    "football_possessions": "football_possessions_v2",
+    "football_scoring_ledger": "football_scoring_ledger_v2",
+    "scoring_attribution_evidence": "scoring_attribution_evidence_v2",
+}
+GOLD_CONFIG_V2 = {
+    **GOLD_CONFIG,
+    "datasets": SCHEMA_VERSIONS_V2,
+    "play_identity": "byplay_v2",
+}
+
+
+def settings_for(identity: str) -> tuple[dict[str, Any], dict[str, str]]:
+    """The Gold config and schema versions for a plan's play identity; v1 stays all ``_v1``."""
+    if identity == "byplay_v2":
+        return GOLD_CONFIG_V2, SCHEMA_VERSIONS_V2
+    if identity == "byplay_v1":
+        if not all(version.endswith("_v1") for version in SCHEMA_VERSIONS.values()):
+            raise GateError("the byplay_v1 gold datasets must all be _v1 schemas")
+        return GOLD_CONFIG, SCHEMA_VERSIONS
+    raise GateError(f"unknown play identity: {identity}")
+
+
 def _as_stored(frame: pd.DataFrame) -> pd.DataFrame:
     """The frame exactly as a reader will see it after the lake's parquet round trip.
 
@@ -55,9 +82,9 @@ def _as_stored(frame: pd.DataFrame) -> pd.DataFrame:
     return pd.read_parquet(io.BytesIO(parquet_bytes(frame.to_dict("records"))))
 
 
-def config_sha() -> str:
+def config_sha(config: Mapping[str, Any] = GOLD_CONFIG) -> str:
     return hashlib.sha256(
-        json.dumps(GOLD_CONFIG, sort_keys=True, separators=(",", ":")).encode()
+        json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
 
 
@@ -162,7 +189,12 @@ def build(context: StageContext) -> StageOutput:
     from cks_picks_cfb.metrics import contracts as gold
     from cks_picks_cfb.metrics import evidence as ev
     from cks_picks_cfb.metrics.builders import build_team_game_metrics
-    from cks_picks_cfb.metrics.ledger import possessions_to_v1, scoring_events_to_v1
+    from cks_picks_cfb.metrics.ledger import (
+        possessions_to_v1,
+        possessions_to_v2,
+        scoring_events_to_v1,
+        scoring_events_to_v2,
+    )
     from cks_picks_cfb.metrics.season_features import season_features
     from cks_picks_cfb.ratings import admission as adm
     from cks_picks_cfb.ratings import possession_measurements as pm
@@ -172,6 +204,9 @@ def build(context: StageContext) -> StageOutput:
     pin_file = json.loads(context.read_input("phase2c_silver_parents"))
     seasons = sorted(context.plan.seasons)
     silver = common.silver_summary(context)
+    identity = identity_of(context)
+    v2 = identity == "byplay_v2"
+    config, schema_versions = settings_for(identity)
     as_of = datetime.fromisoformat(
         context.plan.policies["silver_as_of"].replace("Z", "+00:00")
     )
@@ -217,7 +252,9 @@ def build(context: StageContext) -> StageOutput:
                 for i in silver["seasons"]
             ]
         ),
-        "decisions": context.plan.decisions["admission_decisions_csv"],
+        "decisions": context.plan.decisions[
+            "admission_decisions_v2_csv" if v2 else "admission_decisions_csv"
+        ],
     }
 
     # Evidence bytes come from the pinned CFBD bundles on Preview R2, hash-verified.
@@ -240,10 +277,10 @@ def build(context: StageContext) -> StageOutput:
         (int(r.game_id), str(r.team), str(r.source_event_id)): r.allocation_group_id
         for r in inputs["admitted"].dropna(subset=["allocation_group_id"]).itertuples()
     }
-    possessions = possessions_to_v1(
+    possessions = (possessions_to_v2 if v2 else possessions_to_v1)(
         inputs["possessions"], drives, source_versions=versions
     )
-    ledger = scoring_events_to_v1(
+    ledger = (scoring_events_to_v2 if v2 else scoring_events_to_v1)(
         inputs["admitted"],
         canonical,
         finals=finals,
@@ -281,15 +318,17 @@ def build(context: StageContext) -> StageOutput:
         "season_level_features": features,
     }
     problems = (
-        gold.possessions_problems(possessions)
-        + gold.scoring_ledger_problems(ledger, possessions)
+        (gold.possessions_v2_problems if v2 else gold.possessions_problems)(possessions)
+        + (gold.scoring_ledger_v2_problems if v2 else gold.scoring_ledger_problems)(
+            ledger, possessions
+        )
         + gold.evidence_problems(evidence)
         + gold.team_game_metrics_problems(metrics)
         + gold.defense_mirror_problems(metrics)
     )
     summary: dict[str, Any] = {
-        "config": GOLD_CONFIG,
-        "config_sha": config_sha(),
+        "config": config,
+        "config_sha": config_sha(config),
         "contract_problem_count": len(problems),
         "contract_problems": problems[:20],
         "datasets": {},
@@ -307,9 +346,9 @@ def build(context: StageContext) -> StageOutput:
                         dataset=name,
                         parent_refs=parents,
                         code_sha=context.code_sha,
-                        config_sha=config_sha(),
+                        config_sha=config_sha(config),
                         as_of=as_of,
-                        schema_version=SCHEMA_VERSIONS[name],
+                        schema_version=schema_versions[name],
                         tier="gold",
                     ),
                     partition_keys=("season",),
@@ -380,7 +419,10 @@ def verify(context: StageContext) -> list[str]:
         context.read_artifact(stage, SUMMARY.format(run_id=context.plan.run_id))
     )
     problems: list[str] = []
-    if summary["config_sha"] != config_sha():
+    identity = identity_of(context)
+    v2 = identity == "byplay_v2"
+    config, _ = settings_for(identity)
+    if summary["config_sha"] != config_sha(config):
         problems.append("gold config identity changed")
     if summary["contract_problem_count"]:
         problems.append(
@@ -411,8 +453,12 @@ def verify(context: StageContext) -> list[str]:
         frames["scoring_attribution_evidence"],
         frames["team_game_metrics"],
     )
-    problems += gold.possessions_problems(possessions)
-    problems += gold.scoring_ledger_problems(ledger, possessions)
+    problems += (gold.possessions_v2_problems if v2 else gold.possessions_problems)(
+        possessions
+    )
+    problems += (
+        gold.scoring_ledger_v2_problems if v2 else gold.scoring_ledger_problems
+    )(ledger, possessions)
     problems += gold.evidence_problems(evidence)
     problems += gold.team_game_metrics_problems(metrics)
     problems += gold.defense_mirror_problems(metrics)

@@ -5,6 +5,98 @@ from __future__ import annotations
 import pandas as pd
 
 
+def _pair_punts_by_drive_number(
+    punts: pd.DataFrame, drives_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Each punt with the start yard line of the next drive, pairing drives by number.
+
+    This is the ``drives_v1`` pairing, unchanged: drives sharing a displayed number are
+    collapsed into one (``first`` start yard line), then the next row in the game is used.
+    """
+    drive_starts = (
+        drives_df.groupby(["game_id", "drive_number"])["start_yards_to_goal"]
+        .first()
+        .reset_index()
+    )
+    drive_starts["next_drive_start_ytg"] = drive_starts.groupby("game_id")[
+        "start_yards_to_goal"
+    ].shift(-1)
+    return punts.merge(drive_starts, on=["game_id", "drive_number"], how="left")
+
+
+def _pair_punts_provider_keyed(
+    punts: pd.DataFrame, plays_df: pd.DataFrame, drives_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Pairing for ``byplay_v2`` / ``drives_v2`` frames.
+
+    A game without a play-sequence collision is paired exactly as ``drives_v1`` pairs it, so
+    every value outside the collision games is unchanged (including games whose provider
+    restarts drive numbers across periods; that known issue is left for a separate contract).
+    A game in which distinct provider plays share a displayed drive and play number is paired by
+    provider drive, ordered ``(is_overtime, drive_number, drive_start_period, first_play_number,
+    drive_id)``. A punt whose own or next drive cannot be ordered gets no next-drive start.
+    """
+    sequence = ["game_id", "drive_number", "play_number"]
+    collided = set(plays_df.loc[plays_df.duplicated(sequence, keep=False), "game_id"])
+    clean_punts = punts[~punts["game_id"].isin(collided)]
+    clean_drives = drives_df[~drives_df["game_id"].isin(collided)].sort_values(
+        ["game_id", "drive_number", "offense", "defense", "drive_start_period"],
+        kind="mergesort",
+    )
+    parts = []
+    if not clean_punts.empty:
+        parts.append(_pair_punts_by_drive_number(clean_punts, clean_drives))
+    for game_id in sorted(collided & set(punts["game_id"])):
+        parts.append(
+            _pair_punts_in_collided_game(
+                punts[punts["game_id"] == game_id],
+                plays_df[plays_df["game_id"] == game_id],
+                drives_df[drives_df["game_id"] == game_id],
+            )
+        )
+    if not parts:
+        return punts.assign(start_yards_to_goal=None, next_drive_start_ytg=None)
+    return pd.concat(parts, ignore_index=True)
+
+
+def _pair_punts_in_collided_game(
+    punts: pd.DataFrame, plays: pd.DataFrame, drives: pd.DataFrame
+) -> pd.DataFrame:
+    first_play = (
+        plays.groupby("drive_id")["play_number"].min().rename("first_play_number")
+    )
+    ordered = (
+        drives.sort_values(["offense", "defense"], kind="mergesort")
+        .groupby("drive_id", sort=False)
+        .agg(
+            drive_number=("drive_number", "min"),
+            drive_start_period=("drive_start_period", "min"),
+            start_yards_to_goal=("start_yards_to_goal", "first"),
+        )
+        .join(first_play)
+        .reset_index()
+    )
+    ordered["is_overtime"] = ordered["drive_start_period"] >= 5
+    position = [
+        "is_overtime",
+        "drive_number",
+        "drive_start_period",
+        "first_play_number",
+    ]
+    ordered = ordered.sort_values(
+        [*position, "drive_id"], kind="mergesort"
+    ).reset_index(drop=True)
+    # drives that tie on every ordering key except the provider id cannot be ordered
+    ordered["unordered"] = ordered.duplicated(position, keep=False)
+    ordered["next_drive_start_ytg"] = ordered["start_yards_to_goal"].shift(-1)
+    unordered_next = ordered["unordered"].shift(-1, fill_value=False)
+    ordered.loc[ordered["unordered"] | unordered_next, "next_drive_start_ytg"] = float(
+        "nan"
+    )
+    keep = ["drive_id", "start_yards_to_goal", "next_drive_start_ytg"]
+    return punts.merge(ordered[keep], on="drive_id", how="left")
+
+
 def calculate_st_analytics_agg(
     plays_df: pd.DataFrame, drives_df: pd.DataFrame
 ) -> pd.DataFrame:
@@ -26,15 +118,10 @@ def calculate_st_analytics_agg(
     # Calculate Net Punt Yards
     punts = st_plays[st_plays["st_punt"] == 1].copy()
     if not punts.empty:
-        drive_starts = (
-            drives_df.groupby(["game_id", "drive_number"])["start_yards_to_goal"]
-            .first()
-            .reset_index()
-        )
-        drive_starts["next_drive_start_ytg"] = drive_starts.groupby("game_id")[
-            "start_yards_to_goal"
-        ].shift(-1)
-        punts = punts.merge(drive_starts, on=["game_id", "drive_number"], how="left")
+        if "drive_id" in drives_df.columns and "drive_id" in plays_df.columns:
+            punts = _pair_punts_provider_keyed(punts, plays_df, drives_df)
+        else:
+            punts = _pair_punts_by_drive_number(punts, drives_df)
         punts["net_punt_yards"] = punts["yards_to_goal"] - (
             100 - punts["next_drive_start_ytg"]
         )

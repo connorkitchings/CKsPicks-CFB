@@ -527,17 +527,13 @@ def test_ties_in_the_middle_or_that_agree_change_nothing():
 
 def test_v1_pinned_consumers_refuse_provider_keyed_frames():
     from cks_picks_cfb.data.play_identity import require_v1_byplay
-    from cks_picks_cfb.ratings import observations, score_envelope_r1
+    from cks_picks_cfb.ratings import observations
 
     v2 = v2_byplay(cross_period_collision())
     v1 = allplays_to_byplay(pd.DataFrame([play()]))
     require_v1_byplay(v1, consumer="x")  # v1 passes
     with pytest.raises(PlayIdentityError, match="pinned to byplay_v1"):
         require_v1_byplay(v2, consumer="x")
-    with pytest.raises(PlayIdentityError, match="apply_r1"):
-        score_envelope_r1.apply_r1(v2, finals={})
-    with pytest.raises(PlayIdentityError, match="restoration_jumps"):
-        score_envelope_r1.restoration_jumps(v2)
     with pytest.raises(PlayIdentityError, match="build_measurement_observations"):
         observations.build_measurement_observations(
             byplay=v2,

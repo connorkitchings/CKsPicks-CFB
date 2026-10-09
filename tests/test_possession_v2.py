@@ -388,3 +388,41 @@ def test_an_injected_v2_ledger_must_be_unique_on_the_provider_drive():
     pd.testing.assert_frame_equal(
         built.observations, again.observations, check_dtype=False
     )
+
+
+# --- the R1 envelope accepts provider-keyed plays (Task 4.5) ---------------------------
+
+
+def test_the_r1_envelope_matches_v1_when_no_play_is_tied():
+    from cks_picks_cfb.ratings import score_envelope_r1 as r1
+
+    rows = SCENARIOS["no_ties"]
+    finals = {(GAME, "A"): 13.0, (GAME, "B"): 3.0}
+    v2_plays = v2_frame(rows)
+    v1_plays = allplays_to_byplay(pd.DataFrame(rows), nullable_ppa=True)
+    new, unresolved_v2 = r1.apply_r1(v2_plays, finals)
+    old, unresolved_v1 = r1.apply_r1(v1_plays, finals)
+    assert unresolved_v1 == unresolved_v2
+    keep = ["drive_number", "play_number", "offense_score", "defense_score"]
+    pd.testing.assert_frame_equal(
+        old[keep].reset_index(drop=True),
+        new[keep].reset_index(drop=True),
+        check_dtype=False,
+    )
+    assert r1.restoration_jumps(v2_plays) == r1.restoration_jumps(v1_plays)
+
+
+def test_streams_with_a_tied_play_are_left_unchanged_and_reported_unresolved():
+    from cks_picks_cfb.ratings import score_envelope_r1 as r1
+
+    plays_v2 = v2_frame(SCENARIOS["touchdown_tied_with_admin_row"])
+    finals = {(GAME, "A"): 13.0, (GAME, "B"): 3.0}
+    out, unresolved = r1.apply_r1(plays_v2, finals)
+    assert unresolved == {(GAME, "A"), (GAME, "B")}
+    ordered = plays_v2.sort_values(r1.ORDER_COLUMNS, kind="mergesort")
+    pd.testing.assert_series_equal(
+        ordered["offense_score"].reset_index(drop=True),
+        out["offense_score"].reset_index(drop=True),
+        check_dtype=False,
+    )
+    assert r1.restoration_jumps(plays_v2) == set()  # tied streams are skipped

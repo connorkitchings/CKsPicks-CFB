@@ -278,8 +278,9 @@ def build_team_game_metrics(
             "unknown or candidate admission in final scoring ledger"
         )
     admitted = ledger
+    drive_key = "drive_id" if "drive_id" in possessions.columns else "drive_number"
     for label, frame, keys in (
-        ("possessions", possessions, ["season", "game_id", "drive_number", "offense"]),
+        ("possessions", possessions, ["season", "game_id", drive_key, "offense"]),
         ("ledger", ledger, ["season", "game_id", "source_event_id", "team"]),
     ):
         _require(frame, tuple(keys), label)

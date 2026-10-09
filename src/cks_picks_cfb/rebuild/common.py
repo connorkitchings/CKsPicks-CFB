@@ -14,7 +14,7 @@ from cks_picks_cfb.rebuild.orchestrator import StageContext
 from cks_picks_cfb.rebuild.plan import HISTORICAL_SEASONS
 from cks_picks_cfb.rebuild.retry import RetryingStorage
 from cks_picks_cfb.rebuild.silver import SUMMARY as SILVER_SUMMARY
-from cks_picks_cfb.rebuild.silver import check_capture_manifest
+from cks_picks_cfb.rebuild.silver import check_capture_manifest, identity_of
 
 SILVER_STAGE = "silver"
 
@@ -45,12 +45,29 @@ def dataset_ref(entry: Mapping[str, Any]):
     )
 
 
+def require_v1_identity(context: StageContext, stage: str) -> None:
+    """Refuse a stage that is pinned to the superseded sequence identity under a v2 plan."""
+    if identity_of(context) != "byplay_v1":
+        raise GateError(
+            f"stage {stage} is pinned to byplay_v1 identity (legacy ids, hashes or v1 artifacts) "
+            "and cannot run under a play_identity=byplay_v2 plan"
+        )
+
+
 def silver_summary(context: StageContext) -> dict[str, Any]:
-    return json.loads(
+    """The staged Silver summary, only if it was built with the plan's play identity."""
+    summary = json.loads(
         context.read_artifact(
             SILVER_STAGE, SILVER_SUMMARY.format(run_id=context.plan.run_id)
         )
     )
+    built = summary.get("config", {}).get("play_identity", "byplay_v1")
+    wanted = identity_of(context)
+    if built != wanted:
+        raise GateError(
+            f"staged silver was built with play identity {built}; the plan policy is {wanted}"
+        )
+    return summary
 
 
 def staged_silver(context: StageContext, dataset: str) -> pd.DataFrame:
