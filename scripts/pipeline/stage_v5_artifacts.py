@@ -32,6 +32,11 @@ def main() -> None:
         help="repeatable",
     )
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument(
+        "--predictions-only",
+        action="store_true",
+        help="Stage a pending run that has no scored artifact (refuses a scored run)",
+    )
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expected-receipt-sha256")
     parser.add_argument("--expected-code-sha")
@@ -41,7 +46,13 @@ def main() -> None:
     source = get_storage(environment=args.source)
     target = get_storage(environment=args.target)
     receipt = stage_runs(
-        source, target, runs, source=args.source, target=args.target, apply=False
+        source,
+        target,
+        runs,
+        source=args.source,
+        target=args.target,
+        apply=False,
+        predictions_only=args.predictions_only,
     )
     if args.apply:
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
@@ -51,7 +62,13 @@ def main() -> None:
         if receipt["manifest_sha256"] != args.expected_receipt_sha256:
             raise SystemExit("dry-run plan differs from the reviewed receipt")
         receipt = stage_runs(
-            source, target, runs, source=args.source, target=args.target, apply=True
+            source,
+            target,
+            runs,
+            source=args.source,
+            target=args.target,
+            apply=True,
+            predictions_only=args.predictions_only,
         )
     args.receipt.parent.mkdir(parents=True, exist_ok=True)
     args.receipt.write_bytes(canonical_json(receipt))

@@ -142,3 +142,45 @@ def test_nothing_is_written_when_a_later_run_is_invalid():
             apply=True,
         )
     assert target.writes == []
+
+
+def test_predictions_only_stages_a_pending_run_and_refuses_a_scored_one():
+    full = _source()
+    pdir = "artifacts/preview/predictions/year=2026/week=0/run_id=r-0"
+    sdir = "artifacts/preview/scored/year=2026/week=0/run_id=r-0"
+    pending = Store({k: v for k, v in full.objects.items() if not k.startswith(sdir)})
+    target = Store()
+    receipt = staging.stage_runs(
+        pending,
+        target,
+        {0: "r-0"},
+        source="preview",
+        target="production",
+        apply=True,
+        predictions_only=True,
+    )
+    assert sorted(target.objects) == [
+        "artifacts/production/predictions/year=2026/week=0/run_id=r-0/manifest.json",
+        "artifacts/production/predictions/year=2026/week=0/run_id=r-0/predictions.csv",
+    ]
+    assert [o["state"] for o in receipt["runs"][0]["objects"]] == ["written", "written"]
+    assert pdir in next(iter(pending.objects))
+    with pytest.raises(staging.StagingError, match="has a scored artifact"):
+        staging.stage_runs(
+            full,
+            Store(),
+            {0: "r-0"},
+            source="preview",
+            target="production",
+            apply=False,
+            predictions_only=True,
+        )
+    with pytest.raises(KeyError):  # the default path still demands the scored artifact
+        staging.stage_runs(
+            pending,
+            Store(),
+            {0: "r-0"},
+            source="preview",
+            target="production",
+            apply=False,
+        )

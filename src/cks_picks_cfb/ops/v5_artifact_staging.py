@@ -56,14 +56,49 @@ def plan_run(
     target: str,
     week: int,
     run_id: str,
+    predictions_only: bool = False,
 ) -> dict[str, Any]:
-    """Read and verify one source run, returning the exact target objects."""
+    """Read and verify one source run, returning the exact target objects.
+
+    ``predictions_only`` stages a run that has no scored artifact yet (a pending display-only
+    run). It is explicit, and it refuses a run that does have a scored artifact so a scored run
+    is never staged half way.
+    """
     if source not in ENVIRONMENTS or target not in ENVIRONMENTS or source == target:
         raise StagingError("source and target must be different known environments")
     pred_dir, scored_dir = _run_dir(source, week, run_id)
     manifest_raw = source_storage.read_bytes(f"{pred_dir}/manifest.json")
-    scored_manifest_raw = source_storage.read_bytes(f"{scored_dir}/manifest.json")
     manifest = json.loads(manifest_raw)
+    if predictions_only:
+        if source_storage.exists(f"{scored_dir}/manifest.json"):
+            raise StagingError(
+                f"run {run_id} has a scored artifact; stage it without predictions_only"
+            )
+        if manifest.get("schema_version") != "prediction_run_v1" or (
+            manifest.get("run_id") != run_id or manifest.get("week") != week
+        ):
+            raise StagingError(f"source manifest does not describe run {run_id}")
+        predictions_raw = source_storage.read_bytes(manifest["artifact_uri"])
+        if _sha(predictions_raw) != manifest["artifact_sha256"]:
+            raise StagingError(f"source artifact for {run_id} fails its own checksum")
+        target_manifest = {
+            **manifest,
+            "artifact_uri": _rebase(manifest["artifact_uri"], source, target),
+        }
+        t_pred_dir, _ = _run_dir(target, week, run_id)
+        if target_manifest["artifact_uri"] != f"{t_pred_dir}/predictions.csv":
+            raise StagingError(f"run {run_id} is not at the standard artifact layout")
+        return {
+            "run_id": run_id,
+            "week": week,
+            "objects": [
+                (target_manifest["artifact_uri"], predictions_raw),
+                (f"{t_pred_dir}/manifest.json", canonical_json(target_manifest)),
+            ],
+            "target_manifest": target_manifest,
+            "target_artifact_sha256": target_manifest["artifact_sha256"],
+        }
+    scored_manifest_raw = source_storage.read_bytes(f"{scored_dir}/manifest.json")
     scored_manifest = json.loads(scored_manifest_raw)
     if (
         manifest.get("schema_version") != "prediction_run_v1"
@@ -131,10 +166,18 @@ def stage_runs(
     source: str,
     target: str,
     apply: bool,
+    predictions_only: bool = False,
 ) -> dict[str, Any]:
     """Plan every run first, then (only with ``apply``) write them all once."""
     plans = [
-        plan_run(source_storage, source=source, target=target, week=w, run_id=r)
+        plan_run(
+            source_storage,
+            source=source,
+            target=target,
+            week=w,
+            run_id=r,
+            predictions_only=predictions_only,
+        )
         for w, r in sorted(runs.items())
     ]
     items = []
