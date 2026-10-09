@@ -1,10 +1,10 @@
 # Week 6 Display-Only Run: Production Release
 
-- **Status:** Approved
+- **Status:** In Progress (Terra execution started 2026-10-09 ~14:00Z)
 - **Created:** 2026-10-09
 - **Planner:** Sol (Plan Mode investigation; read-only review of Preview/Production state, run artifacts and tooling)
-- **Approval source:** User decisions in session 2026-10-09 — existing d2 run, full publish scope, Preview rollback rehearsal kept, local-site verification loop
-- **Implementation log:** none yet (Terra executes via `implement-plan` on this exact path)
+- **Approval source:** User decisions in session 2026-10-09 — existing d2 run, full publish scope, Preview rollback rehearsal kept, local-site verification loop; explicit `implement-plan` instruction on this exact path
+- **Implementation log:** `session_logs/2026-10-09/03-week6-display-production-implementation.md`
 - **Commit policy:** Commit with implementation
 - **Parent decisions:** [Contract 04 Amendment 9](../2026-10-07/04-stage1-week5-corrected-data-finalization.md#amendment-9-2026-10-08-labeled-display-only-week-6-on-the-corrected-lineage) (display-only mode rules; Production publication is a separate go-ahead — this contract is that go-ahead), Amendment 10 (Week 6 waiver in the prospective check), Amendment 11 (Task 7 chain delivered). Supersedes the hold-until-cutover decision for Week 6 only ([decision brief](../2026-10-08/01-stage1-decision-brief.md), Outcome).
 
@@ -192,6 +192,50 @@ Order matters (learned from the Preview rehearsal):
   stats, 2 admin rows and staged artifacts.
 - Validation: scoped pytest + ruff + `contracts-check` + web
   lint/typecheck/publication tests; `git diff --check`; session log.
+
+## Amendments
+
+### Amendment 1 (2026-10-09, Terra, mechanical): ratings publisher substitution
+
+Task 1 named `publish_v5_ratings.py`. That script only accepts the legacy
+rating-replay schema (`selected_candidate`, URI parents) and refuses every
+intended-update manifest — including the served one. The correct tool for the
+`v5_intended_update_2026_rating_manifest_v1` schema is
+`publish_v5_intended_update_ratings.py` (same CLI shape, same target table,
+full signed-chain verification in the dry run). Used for the Preview
+projection: 1,624 rows for `c83b1423…`, verified (top: Notre Dame +1.88, Utah
++1.83, Alabama +1.80 — matches the R2 review). No scope change.
+
+### Amendment 2 (2026-10-09, Terra, blocking): matchup leg has no consumable measurement manifest — release stopped
+
+**Finding.** `publish_matchup_data.py` requires a measurement manifest with
+`output_refs.observations` whose raw sha equals the rating manifest's parent.
+The w6live rating manifest pins `parents.measurement_manifest_sha256 =
+7865d353…`, which is the 6A rebuild *root* manifest (`rebuild/6a/
+6a-rebuild-w5-20261007-r2/root-manifest.json`, sha verified) — it has no
+`output_refs`, so the publisher fails with `KeyError: 'output_refs'`
+(reproduced on the dry run). No standalone corrected measurement manifest
+exists in R2 (all 13 are original-lineage). The Oct 8 matchup candidate
+bypassed the publisher (read 6A states directly, bound to the 6A root sha) and
+cannot be written as-is: the site binds W6 matchup data to rating sha
+`c83b1423…`, not `7865d353…`. This is the "still deferred: matchup database
+gates" item from Amendment 11 — it was never only about missing snapshots.
+
+**Decision (user, 2026-10-09):** stop the release; send back to Sol for a
+revised plan designing the bridge (a signed corrected measurement manifest or
+a 6A-aware publisher mode, with its own independent verifier). Design
+constraint for Sol: the w6live rating manifest is frozen, so its parent sha
+(`7865d353…`) cannot change — the bridge must resolve that sha to consumable
+observations (e.g. a 6A-aware loader asserting the root sha + signature, as
+`build_matchup_candidate.py` and the Task 4 comparison already trust), then
+bind output to rating sha `c83b1423…`. The candidate's 7/7 static gates show
+the numbers reconcile.
+
+**State left behind (all Preview-only, additive):** d2 still selected; corrected
+snapshots (1,624 rows) + as-of-6 team stats (3,036 rows) projected — both are
+needed by the eventual DB gates, so they stand. No Production write, no freeze/
+close, no code changes. Tasks 2–7 not started. Contract stays `In Progress`
+(blocked); resume at Task 1c once the bridge design lands.
 
 ## Risks and Edge Cases
 
