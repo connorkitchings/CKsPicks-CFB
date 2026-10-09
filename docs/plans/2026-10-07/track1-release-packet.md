@@ -1,5 +1,7 @@
 # Track 1 release preparation packet — PROMOTED 2026-10-07 (see the final section; earlier text below is the pre-promotion record)
 
+- **Status:** Implemented (Evidence packet; promoted 2026-10-07. Execution authority is [01-track1-production-promotion.md](01-track1-production-promotion.md))
+
 - **Contract:** [approved Track 1 plan](01-track1-production-promotion.md).
 - **Capture date:** 2026-10-07, 08:43–08:56 EDT (12:43–12:56 UTC).
 - **Decision:** Preparation only. No Production venue apply, deployment, Git mutation, or Stage 7B serving operation is authorized or performed.
@@ -77,7 +79,7 @@ Before release:
 The "no final candidate commit exists" statement above is superseded; the earlier text is kept as the record of the capture state. This update does not change the hold.
 
 - **Candidate:** `dev` head `0cd0a3c0` (PR #2, `dev`→`main`, open and mergeable). Commits on the Track 1 commit `a600748f`: `66c71de8` (ruff formatting, Python only), `9042b087` (CI split), `aaf0ca0b` (CI: full-history checkout, 6B flow as its own job), `c6e82848` (freeze: missed deadline recorded before the decision-ref check), `fc57facb` (web: Performance sections load independently), `d100d15e` (audit evidence and log), `0cd0a3c0` (format and lint of the audit scripts; `d100d15e` had failed the formatting check).
-- **CI:** run `37641359773` on `0cd0a3c0`: all four jobs succeeded. Lint and contracts 28s; Web 1m54s; Python tests 10m21s (parallel 1,987 passed and 2 skipped; rating publication 7 passed; PostgreSQL 23 passed; coverage gate "Required test coverage of 60.0% reached. Total coverage: 65.96%"); 6B rebuild flow 34 passed in 9m52s. Details: [session log 03](../../../session_logs/2026-10-07/03-pre-week6-audit.md).
+- **CI:** run `37641359773` on `0cd0a3c0`: all four jobs succeeded. Lint and contracts 28s; Web 1m54s; Python tests 10m21s (parallel 1,987 passed and 2 skipped; rating publication 7 passed; PostgreSQL 23 passed; coverage gate "Required test coverage of 60.0% reached. Total coverage: 65.96%"); 6B rebuild flow 34 passed in 9m52s. Details: `session_logs/2026-10-07/03-pre-week6-audit.md`.
 - **Vercel Preview:** the GitHub check for PR head `0cd0a3c0` is `SUCCESS`: [inspect URL](https://vercel.com/connorkitchings-projects/c-ks-picks-cfb/4QA4B4HxvHmUSDrhUCtvbMV6XJFd). That is the inspect link GitHub reports; the `dpl_` deployment ID and the deployed URL were not captured, and the deployment was not opened. A successful build is not route verification.
 - **Web code added after this packet's review:** `web/src/app/performance/page.tsx`, `web/src/lib/performance-sections.ts` (new), `web/src/lib/performance-sections.test.ts` (new) and `web/package.json` (test registration). The 19-file web review and `track1-evidence/candidate-files.json` predate these four files and do not cover them. Local checks that did run: web lint, typecheck, 139 publication tests (1 skipped), and the Performance Playwright spec (5 passed, fixture mode). No test renders the prospective-unavailable card; it shows a fixed message only.
 - **Pipeline code in the candidate that is not part of the web deployment:** `scripts/pipeline/freeze_week.py`, `Makefile` (`freeze-week` forwards `DECISION_REF`), and a message fix in `select_v5_intended_update_batch.py`.

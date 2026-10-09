@@ -183,7 +183,7 @@ Matchup pages are already public; CFB_MATCHUP_ENABLED=0 is only an emergency opt
 | #7 reconciliation score comparison skipped | Window 2, step 5B (user-confirmed 2026-10-04): the new Silver team-game contract carries an explicit `points` column and the reconciliation compares it with certified finals. Until then it is detected, not fixed, by `silver.reconciliation_compares_scores` (warn); `exact_match` proves team identity and rows only |
 | #9 neutral-site model | Separate challenger/promotion contract; not Window 2 |
 
-Issue #5 evidence is the [local October 3 investigation log](../../../../session_logs/2026-10-03/04-data-integrity-investigation.md): 0/76 overtime plays and 0/20 OT drives entered eligible metrics; independent hand-check matched 24/24 values. This was investigation evidence, not a claimed Window 1 deployment. Reconcile the pushed register with that dated record while retaining the original hypothesis and independence limit.
+Issue #5 evidence is `session_logs/2026-10-03/04-data-integrity-investigation.md`: 0/76 overtime plays and 0/20 OT drives entered eligible metrics; independent hand-check matched 24/24 values. This was investigation evidence, not a claimed Window 1 deployment. Reconcile the pushed register with that dated record while retaining the original hypothesis and independence limit.
 
 ## Session checkpoints and acceptance
 

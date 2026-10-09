@@ -2,7 +2,7 @@
 
 > **Follow-through:** The [repair-track completion matrix](02-repair-track-certification-and-closure.md) governs remaining certification and closure. Independent c2/B2 readback is now recorded there; this Stage 1 decision does not close the October 4 objective.
 
-- **Status:** Decided (see Outcome); original analysis below
+- **Status:** Implemented (Decision brief; decided, see Outcome; original analysis below. Execution authority is the [Stage 1 contract](../2026-10-07/04-stage1-week5-corrected-data-finalization.md))
 - **Created:** 2026-10-08
 - **Contract:** [`2026-10-07/04-stage1-week5-corrected-data-finalization.md`](../2026-10-07/04-stage1-week5-corrected-data-finalization.md) (Task 9)
 - **Evidence:** `docs/plans/2026-10-07/stage1-evidence/` (checksummed) and `session_logs/2026-10-08/01-stage1-completion.md`

@@ -1,5 +1,7 @@
 # V5 intended-update 2026 production release packet
 
+- **Status:** Implemented (Evidence packet; activated 2026-09-30. Execution authority is [v5-intended-update-2026-production-repair.md](v5-intended-update-2026-production-repair.md))
+
 **Decision status:** Approved by the user and activated on 2026-09-30 UTC. This packet is the separate exact release decision required by [Task 6](v5-intended-update-2026-production-repair.md). Its machine-readable [payload](v5-intended-update-production-release-packet.json) has SHA-256 `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`; the payload itself remains unchanged.
 
 ## Proposed production result

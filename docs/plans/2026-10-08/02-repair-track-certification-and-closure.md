@@ -33,15 +33,15 @@ Retain delivered plan policies and packet/staging CLIs; add only needed Week 6 c
 | Positive Week 7 packet / Week 6 exclusion | Partial | Signed synthetic Week 5 receipt passes packet validation and survives unchanged; actual Week 5 evidence and real Preview rehearsal still required |
 | Seven-week fixture and Week 6 reconstruction | Partial | Seven-week frame build and independent verifiers pass; no original Week 6 artifact fabricated. Successor certification integration and stabilized live finals still required |
 | Preview cutover and matchup database gates | Open | Pending Week 7 and corrected snapshot bindings |
-| Six quality follow-ups | Partial | Independent-inventory input, required-check blocking, Gold schema/semantics and opt-in R2 readback delivered; inventory generation, automatic enforcement, ambiguity resolution, Silver receipts and legacy disposition remain |
-| Duplicate plays / scoring / complete metrics | Open | Independently verified repair or truthful missingness. A draft play-identity design is saved at `drafts/byplay-play-identity.patch` and is **not applied**: it keeps distinct plays that share `(game_id, drive_number, play_number)`, which `byplay_v1` rejects as duplicate keys, and adds a `source_play_id` column that changes byplay content for every season. Adoption needs a read-only count over pinned Bronze plays for every B2 season, a `byplay_v2` identity schema, and attribution of every downstream change |
+| Six quality follow-ups | Partial | A byte-pinned raw schedule generator, weekly plays/stats request comparison, required-check policy file and opt-in R2 readback are code-level increments. The policy is not yet enforced in builders; raw failed-capture retention, odds evidence, complete ambiguity review, durable builder receipts and legacy disposition remain |
+| Duplicate plays / scoring / complete metrics | Open | The [pinned Bronze/Silver identity census](repair-track-evidence/play-identity-census.json) verified 168 Bronze captures (1,673,337 rows) by object hash across all 11 B2 seasons. Both tiers contain the same 28 complete-sequence collisions with distinct provider IDs (1 in 2021, 27 in 2025). In 2025, 25 collisions cross periods; historical `keep="first"` has 24 regulation-play removal candidates. Across both seasons, 28 candidate removals include 19 non-null PPA values and three scoring plays. New `byplay_v1` builds now fail closed on distinct source records at one sequence and allow only exact repeats; a read-only 2021 pinned-source smoke test rejected the real collision. The 75,032 Bronze rows with incomplete sequence keys are separate; normalized Silver has no missing sequence fields. The draft `drafts/byplay-play-identity.patch` is **not applied**: `byplay_v1` rejects retained distinct IDs, while drive and possession identities also need review. Adoption needs versioned identity contracts and attribution of every descendant change; scoring and independent full metrics remain open |
 | 2025 matchup backfill | Open | Corrected lineage and serving gates |
 | Null-lean database regression | Verified locally | Real PostgreSQL publication with quoted null/No Bet rows and valid controls; legacy model exercises shared persistence path, not V5 authorization |
 | Documentation reconciliation | In progress | This matrix tracks remaining work |
 
 ## Decisions (2026-10-08 review)
 
-- **Release gating:** a limited Production release is allowed once the corrected chain is certified and the Preview rehearsal passes, with open integrity items disclosed. Full track closure is a separate, later bar.
+- **Release gating:** the October 9 user direction supersedes the earlier limited-release proposal for this execution: integrity closure precedes this cutover. Corrected Production activation still requires a separate exact decision.
 - **Week 7 checkpoint:** Sunday Oct 11 evening. If the successor Week 6 certification integration is not built and tested by then, move the cutover to Week 8; no gate is compressed.
 - **Open, recommended default:** build rollback authorizations for the old runs as part of the Preview rehearsal (none exist today).
 - **Open, recommended default:** Week 6 games whose only quotes are post-kickoff (the d2 snapshot was captured after some kickoffs; no Week 6 market-sources lock exists) are verified gaps with no selection or grade.
@@ -50,6 +50,43 @@ Retain delivered plan policies and packet/staging CLIs; add only needed Week 6 c
 ## Amendment policy
 
 Record mechanical findings here without changing acceptance. Material model, lineage, release, or evidence-policy changes require a new decision; never weaken a gate merely to finish. Mark Implemented only after all closure requirements pass. If future source availability prevents execution, retain In Progress and record the exact resume gate.
+
+## October 9 implementation direction
+
+The user approved the complete repair-track plan in this chat and chose integrity
+closure before release timing. Continue actionable repairs even when Week 6 finals
+are pending. Stage 1 remains closed. Preserve the B2 fitting recipe rather than
+assuming its currently verified artifact bytes will survive corrected inputs.
+Every changed measurement requires a recorded downstream impact decision and
+recertification of affected ratings, forecasts, selections, grades and matchup
+data. The Week 7 target is conditional on correctness and the existing kickoff
+gates; missing it requires a revised operating decision.
+
+On October 9, implementation added a schedule-derived expected-request inventory
+and R2 readback path, strict weekly
+request/capture comparison for completed games, a Silver reader ambiguity guard,
+and exact population keys in published comparisons. A draft source-identity play
+change remains unapplied pending a `byplay_v2` contract. A checksum-verified census
+of all pinned Bronze play captures confirmed the 28 distinct-ID sequence
+collisions; descendant impact analysis remains open. The current Week 5 Silver games
+artifact lists 56 FBS–FBS games and omits three FBS–FCS games that the ingesters
+request. A byte-pinned `raw/games/year=2026/part-0.parquet` inventory covers all
+59 and matches both real request enumerators on readback. Raw schedule mutation
+invalidates its digest and blocks reuse.
+
+The collision pairs show period reuse, not simply repeated rows: 25 of the 27
+2025 groups cross regulation and overtime periods. The current dedup would remove
+24 regulation plays from these groups, including candidates with PPA and scoring
+data. New `byplay_v1` builds now reject such a source population before deriving
+values; this is a protective gate, not a corrected rebuild. `byplay_v2` must
+carry provider identity, and the downstream drive,
+possession, scoring-event and ordering contracts must be reviewed together.
+Neither provider IDs nor same-numbered positions alone establish event order;
+unresolvable attribution must remain missing and excluded rather than be sorted
+into a fabricated sequence.
+These are code-level increments. No corrected datasets were rebuilt and no
+six-follow-up or numerical closure is claimed. The new work's log is
+`session_logs/2026-10-09/01-repair-track-integrity.md`.
 
 ## Certification evidence and limits (2026-10-08)
 
@@ -74,3 +111,20 @@ remains the target; missing its readiness/kickoff window requires a new operatin
 - Four audit-scope tests passed; the new receipt corruption regression passed in the 11-test library run.
 - Whole-repository Ruff lint/format, shared contracts and registry validation passed.
 - This is not full new-change CI, live database certification or production activation.
+
+### October 9 validation
+
+- Full Python suite: 2,237 passed, 14 skipped with `-W error`; serial PostgreSQL
+  integration against a disposable local PostgreSQL 16 database: 29 passed.
+- Ruff format/check, shared contracts, quality registry, web lint/typecheck/build,
+  web publication tests (141 passed, 1 skipped), browser fixtures (51 passed),
+  and strict MkDocs build passed. The local evidence manifest verifies 13 files.
+- Exact-commit CI, live database lineage, rebuilt corrected descendants, and
+  a guarded Preview cutover rehearsal remain open. These local gates do not
+  certify serving correctness.
+
+## Amendments
+
+### Amendment 1 (2026-10-09): byplay_v2 play identity has its own contract
+
+The duplicate-play and play-identity work (completion-matrix row "Duplicate plays / scoring / complete metrics") is executed under [2026-10-09/01-byplay-v2-play-identity.md](../2026-10-09/01-byplay-v2-play-identity.md): an impact-first shadow diff with a user stop gate, then `byplay_v2` keyed by provider play ID (`source_play_id` as a string), period-first ordering with the game clock as diagnostics only, and proof of unchanged output outside the 28 collision keys. This contract's text and matrix are otherwise unchanged; the new contract's Task 6 appends receipts here. Scoring defects, the quality follow-ups, the 95 adjusted rows, Week 6 certification and the Preview rehearsal stay governed by this contract.

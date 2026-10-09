@@ -1,6 +1,6 @@
 # Track 1: Production Venues and Full `dev` Promotion
 
-- **Status:** In Progress
+- **Status:** Implemented (promoted to Production 2026-10-07; the Production venue upsert was skipped by decision because all 271 venues were already present; see [release packet](track1-release-packet.md) and `docs/status.md`)
 - **Created:** 2026-10-07
 - **Planner:** Sol
 - **Approval source:** User explicitly requested implementation of this exact Track 1 plan on 2026-10-07. Repository workflow requires the separate plan commit and a fresh implementation task before implementation work.

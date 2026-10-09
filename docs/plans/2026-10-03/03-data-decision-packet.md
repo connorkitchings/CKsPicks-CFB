@@ -3,7 +3,7 @@
 > **Authority update (2026-10-04):** this document preserves dated investigation/decision evidence. [Contract 04, Amendment 2](04-data-integrity-two-window-implementation.md#amendment-2-window-2-measurement-repair-and-prospective-cutover-2026-10-04) and its two appendices document the approved (2026-10-04) Window 2 scope. Earlier neutral-refit, single-batch and all-or-nothing allocation recommendations below are historical, not current instructions. Window 1 remains independent.
 
 
-- **Status:** Reviewed. Evidence packet only; the user decisions are recorded below and [04-data-integrity-two-window-implementation.md](04-data-integrity-two-window-implementation.md) is the execution authority.
+- **Status:** Implemented (Evidence packet; reviewed. Execution authority is [04-data-integrity-two-window-implementation.md](04-data-integrity-two-window-implementation.md).) Evidence packet only; the user decisions are recorded below and [04-data-integrity-two-window-implementation.md](04-data-integrity-two-window-implementation.md) is the execution authority.
 - **Created:** 2026-10-03
 - **Author:** Claude (Sonnet 5.5) with the user, from the read-only investigation in [Week 5 data-issue investigation](02-week5-data-issue-investigation.md) (Phases A-F plus the sweep recorded in its Amendment 3).
 - **Evidence:** [known data issues](../../data/known_issues.md) (issues 1-12) and the working notes in `artifacts/backups/2026-10-03/investigation/`. Analysis code is present in the worktree; this packet does not claim a commit state.

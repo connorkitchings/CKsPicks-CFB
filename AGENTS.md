@@ -205,85 +205,12 @@ Production is live at `https://c-ks-picks-cfb.vercel.app` in approval-gated
 weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
 `docs/ops/production_runbook.md`.
 
-The detailed checkpoints below are dated historical records. Use the status
-above and the latest session log for current-week operations.
-
-**Current focus (2026-10-04):** Step 5 is closed; the [pre-6A integrity and rebuild contract](docs/plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) is Approved. Shared-contract repairs and explicit corrected-lineage integration precede the Preview rebuild/refit. Stage 6B replay and Stages 7–8 release remain separately gated. Current serving/week state: [`docs/status.md`](docs/status.md).
-
-**Historical checkpoints (dated, not current):**
-- ✅ Data platform modernization (immutable lake, CFBD hardening, resumable ops)
-- ✅ Week 0 regime modeling (5 routes × 2 targets, temporal folds)
-- ✅ Phase 1–5: Full bootstrap, Silver/Gold, OOF baselines, V4 tournament complete
-  (bundle `week0-2026-v4-strict-20260818-r2`, config `conf/weekly_bets/v4_2026.yaml`)
-- ✅ Phase 6: Production deployed 2026-08-18; predictions revealed 2026-08-21;
-  Week 0 games played Aug 29–30.
-- ✅ **Week 0 closed:** `2026w0-55de0317120d` frozen and `scored` (8/8/8).
-- ✅ **Week 1 scored:** 43 games and 86 grade rows were verified on 2026-09-10.
-- ✅ **Week 2 scored:** `2026w2-43b25511a100` froze on 2026-09-10 (49/49/49,
-  no waiver) and closed 2026-09-13 after a 49/49 finals gate: 90 grade rows
-  (49 spread + 41 total; 8 sub-threshold totals are No-Bet/ungraded by design);
-  YTD spread 37-62-1, total 40-52-0. Follow the current weekly runbooks for
-  later-week procedures.
-- 🧭 **Week 3 prepared:** cumulative Gold `point_in_time_matchups`
-  `d184186ddfbc7c40657f0714` (preview pipeline-run
-  `285684cc44af4e5b95943d4c5f40d4b3`), readiness-green 2026-09-13 after a
-  Preview-only catalog quarantine of 2025-replay market versions
-  (`e4061aab…`, `32db239e…`, `dfc36725…`) plus phantom-row cleanup
-  (`db61a68d…`); earliest kickoff Thu 2026-09-17 23:30Z. Week 3 published
-  same day: run `2026w3-68fe6a815bd6` activated 57/57/56 (Houston @ Texas
-  Tech total not yet posted); progressive republish Mon-Wed, then freeze
-  before kickoff. The v4 feature
-  chain is intentionally unchanged. The old rebuild is a superseded root-cause
-  record; the independent feature-v5 diagnostic resumes under
-  `docs/plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md`.
-- 🧭 **Historical ratings evidence:** R1 is certified at
-  `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
-  `tournaments_permitted: true`. The fresh, code-bound Preview admission at
-  `early-week-context-20260904-786580ec-r2` admits reconstructed returning
-  production, recruiting, and coaching; transfers and talent remain rejected.
-  The direct selection report and R2 between-season tournament remain historical
-  reconstructed evidence. Corrected Phase 1 audit v3 classifies the R2 result as
-  unsupported for the data-first program, so its prior winner cannot enter
-  Phase 4 without renewed evidence. The pending R3/R4 sequence is superseded;
-  **Corrective checkpoint 2026-09-08:** completed Phase 3/4 engineering does
-  not establish current predictive eligibility. The review found 32 completed
-  schedule games omitted from Phase 3, same-game context leakage in Phase 4B,
-  constant coaching features, and incorrect roster continuity. The original
-  Phase 4B retained manifest is prohibited as a new forecasting parent. Repair
-  v2 is independently verified; Phase 3 v2 is certified in Preview under
-  `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
-  `phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
-  independently verified and idempotently rerun on 2026-09-11).
-  It is benchmark evidence. **V5 checkpoint (2026-09-22):** the historical lane
-  is complete and accepted. All four 10B blockers are closed on the corrected
-  lineage — Repair v2 (verifier v3), measurements
-  `possession-v1-measurements-20260921-r9` (superseding the R6
-  `possession-v1-measurements-20260915-18fb0aa-r6` historical evidence), ratings
-  `possession-v1-ratings-20260921-11d59ee-r9cert` (no selection flip:
-  `ppp__rho_0_60__exposure`), forecast bridge
-  `forecast-v1-20260921-5afd577-11c` with through-2025 final fit (11D verifier
-  `4cfe5ef8…`). Contract 12 issued
-  `accepted_for_prospective_evaluation` (`readiness-v1-20260921-scorecard`)
-  and the user explicitly accepted it on 2026-09-22. Contracts 07–09 are
-  re-reviewed against the corrected parents with deferrals lifted under the
-  archived September 22 acceptance and re-review record.
-  Contract 08 was Implemented for Weeks 0–3 as independently verified replay
-  `possession-v1-rating-replay-20260922-fcaa571`; the Week 4 07/08 refresh
-  and Week 5 live forecast were verified on 2026-09-27.
-  [V5 model development is complete and accepted](docs/modeling/v5_status.md).
-  The Week 5 candidate was [authorized and published in production](session_logs/2026-09-27/06.md).
-  Contract 06
-  continues prospective monitoring; six slates are not a prelaunch condition.
-  Conditional results remain `conditional_historical_results_only`.
-  V4 feature-schema-v5 diagnostic (contract 01) closed 2026-09-22: cause not
-  confirmed (pooled W1+W2 shadow spread 38.46% < 45%), predictions
-  value-identical on all 100 games. V5 ratings successor is distinct from V4
-  feature schema v5. September 8 Phase 4A–6
-  contracts are Superseded by the V5 package; only explicitly inherited mathematics
-  carry forward. The first release uses a rating-to-margin/total Ridge bridge;
-  possession arithmetic is a later challenger. Polls/direct models and O2
-  candidate-v1 at `ac1fba1` are diagnostic-only. See the canonical
-  [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md).
+Dated checkpoints (Weeks 0-3, the Phase 1-6 buildout, the September V5 acceptance record and
+the 2026-10-04 "current focus") now live in [`docs/status_history.md`](docs/status_history.md). They are
+history, not current authority; use [`docs/status.md`](docs/status.md) for live state. The accepted
+V5 model, its lineage and the V4 rollback are summarized in the
+[V5 status guide](docs/modeling/v5_status.md). Week 4 and earlier are retrospective V5 replay;
+Week 5 was the first live V5 slate.
 
 **Roadmap (2026 transition):** `docs/planning/roadmap.md` ·
 **Weekly ops:** `docs/ops/weekly_pipeline.md` ·

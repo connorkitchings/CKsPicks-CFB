@@ -281,7 +281,7 @@ Any change to R1 scope, EPA treatment, replay cutoff policy, data identities, ne
 
 **Review changelog:** replaces the monolithic phase proposal with Tasks 5A–8 under the approved two-window architecture; removes redundant discovery and production-boundary refactoring; supplies exact data/registry contracts and null-consumer tests; restores CFBD drives and adds the 25% sizing gate; separates user authorization and append-only revocation from pipeline selection; specifies migrations/grants/schema synchronization, selectors, freeze checks and web tests including real Preview; fixes N at packet creation; scopes prospective records to V5 Week 5 onward (V4 Weeks 0–4 remain audit/rollback); specifies new-freeze quote timing and possible pre-kickoff lean changes; reconciles issue #5 and requires proof that served ratings never select EPA candidates.
 
-The original October 3 investigation and decision packet remain evidence, not current conflicting instructions. See the [planning persistence log](../../../session_logs/2026-10-04/01-window2-amendment-planning.md). No code, migration, data rebuild, database write or release is performed by saving these documents.
+The original October 3 investigation and decision packet remain evidence, not current conflicting instructions. See `session_logs/2026-10-04/01-window2-amendment-planning.md`. No code, migration, data rebuild, database write or release is performed by saving these documents.
 
 ### Amendment 3 — Pre-6A integrity review and rebuild contract (2026-10-04)
 

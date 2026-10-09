@@ -1,6 +1,6 @@
 # Stage 7B: Exact Release and Cutover
 
-- **Status:** Foundations & Prerequisites Complete; Cutover Packet Execution Deferred to Week N=7 (2026-10-06; Amendments 1 & 2 approved; Preview & Production attestations registered and verified; schema parity achieved; Week 6 kickoff passed, cutover dynamically advances to Week 7 post-stabilization)
+- **Status:** In Progress (Foundations & prerequisites complete; cutover packet execution deferred until the corrected-lineage cutover week, previously Week 7; 2026-10-06; Amendments 1 & 2 approved; Preview & Production attestations registered and verified; schema parity achieved; Week 6 kickoff passed, cutover dynamically advances to Week 7 post-stabilization)
 - **Created:** 2026-10-06
 - **Planner:** Sol planning workflow
 - **Authority:** Contract 04 Amendments 2, 4, and 5 and its normative Appendices A and B; Stage 6B and Stage 7A are Implemented with Preview-only evidence

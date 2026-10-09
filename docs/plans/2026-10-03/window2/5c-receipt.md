@@ -1,6 +1,6 @@
 # Window 2 Step 5C: exit receipt
 
-- **Status:** **Closed.** Decisions 1 and 2 below were confirmed by the user on 2026-10-04 (committed `ea53c07`). Built and verified locally. **Nothing was written to R2, Neon or any database; no Silver or Gold dataset was published.** The ledgers below exist only in a local scratch directory; the decisions and report are committed under `5c-data/`.
+- **Status:** Implemented (evidence record). **Closed.** Decisions 1 and 2 below were confirmed by the user on 2026-10-04 (committed `ea53c07`). Built and verified locally. **Nothing was written to R2, Neon or any database; no Silver or Gold dataset was published.** The ledgers below exist only in a local scratch directory; the decisions and report are committed under `5c-data/`.
 - **Authority:** [Appendix A, 5C](data-contracts-and-certification.md) and its Amendment 2; user directives of 2026-10-04.
 
 ## Result (historical 2015-2019, 2021-2025; 8,936 games)

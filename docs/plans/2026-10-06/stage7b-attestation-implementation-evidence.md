@@ -1,5 +1,7 @@
 # Stage 7B attestation implementation evidence — 2026-10-06
 
+- **Status:** In Progress (Evidence packet; execution authority is the [Stage 7B contract](02-stage7b-exact-release-and-cutover.md))
+
 Authority: [Stage 7B](02-stage7b-exact-release-and-cutover.md), Contract 04 Amendment 4 and normative Appendix B. This is an implementation/evidence report, not a registration decision or executable release packet. The [historical preflight hold](stage7b-preflight-hold.md) is preserved unchanged.
 
 ## Delivered boundary
@@ -41,4 +43,4 @@ These temporary files contain source audit records, not credentials. Re-capture 
 | `/private/tmp/stage7b-preview-source-verification.json` | `040ea84ae86f5d6a4f908beb6571e6014ddf29ef154c2f50a65acfd563632ed2` |
 | `/private/tmp/stage7b-production-source-verification.json` | `bce4c5a81399a8e9c45fab333a7159d8e51c25c6e6d7910cbf85ba2b0f1cc84f` |
 
-Validation and the final implementation handoff are in the [session log](../../../session_logs/2026-10-06/10-stage7b-attestation-implementation.md). Stage 7B remains In Progress; its live definition-of-done gates are not satisfied.
+Validation and the final implementation handoff are in `session_logs/2026-10-06/10-stage7b-attestation-implementation.md`. Stage 7B remains In Progress; its live definition-of-done gates are not satisfied.

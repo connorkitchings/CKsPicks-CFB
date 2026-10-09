@@ -5,7 +5,7 @@
 - **Planner:** Sol
 - **Approval source:** User explicitly requested “PLEASE IMPLEMENT THIS PLAN” with the complete reviewed plan in the planning chat on 2026-10-04. The user separately selected “R2 + Preview catalog (Recommended)” for the 6A write boundary.
 - **Governing authority:** [contract 04](../2026-10-03/04-data-integrity-two-window-implementation.md), Amendment 3; [Appendix A](../2026-10-03/window2/data-contracts-and-certification.md), Amendment 4. This is their bounded execution contract, not a competing release authority.
-- **Planning log:** [09-pre-stage6-integrity-plan.md](../../../session_logs/2026-10-04/09-pre-stage6-integrity-plan.md)
+- **Planning log:** `session_logs/2026-10-04/09-pre-stage6-integrity-plan.md`
 - **Implementation log:** `session_logs/2026-10-04/10-pre-stage6-integrity-implementation.md`
 - **Commit policy:** Separate documentation/plan commit on `dev`, then scoped implementation checkpoints. All git operations remain user-run.
 - **Handoff:** The user subsequently explicitly invoked implement-plan on this exact path in this chat; implementation is authorized here. The preceding planning edits remain uncommitted and are preserved.

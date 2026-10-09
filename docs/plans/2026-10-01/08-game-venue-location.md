@@ -1,6 +1,6 @@
 # Game Venue Location (City, State) on Picks and Results
 
-- **Status:** Approved
+- **Status:** Implemented (venue data live in Production, 271 games; city/state UI released; recorded in `docs/status.md`)
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the plan in-session on 2026-10-01 ("game venue", "UI now, data at home").

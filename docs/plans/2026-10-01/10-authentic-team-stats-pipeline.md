@@ -1,6 +1,6 @@
 # Authentic Team Stats: Play-by-Play Pipeline, Neon Table, Gated Matchup Read
 
-- **Status:** Approved
+- **Status:** Implemented (code released to `main` 2026-10-02; data live on Preview and Production; Production republished with the punt-return fix 2026-10-07. Remaining corrected-lineage team stats are tracked by the [repair-track contract](../2026-10-08/02-repair-track-certification-and-closure.md))
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the plan in-session on 2026-10-01 ("it looks good"), with these scope choices: stats pipeline only (page redesign is a later contract), source = our own play-by-play, pre-game snapshot semantics, matchup pages hidden until ready.

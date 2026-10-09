@@ -1,6 +1,6 @@
 # Window 2 Step 5B: exit receipt
 
-- **Status:** **Closed** with Step 5 (user, 2026-10-04; committed `e33d63d`). Built and tested locally. The v1 mode of `possession_verification.py` deferred below was delivered in 5C (`ea53c07`). No dataset was built or published and nothing was written to Preview, production or any database by this step.
+- **Status:** Implemented (evidence record). **Closed** with Step 5 (user, 2026-10-04; committed `e33d63d`). Built and tested locally. The v1 mode of `possession_verification.py` deferred below was delivered in 5C (`ea53c07`). No dataset was built or published and nothing was written to Preview, production or any database by this step.
 - **Authority:** [contract 04, Amendment 2](../04-data-integrity-two-window-implementation.md), [Appendix A, 5B](data-contracts-and-certification.md) and its Amendment 1, authorized by the user on 2026-10-04.
 - **Exit gate in Appendix A:** "schema, population, null propagation and served PPP-only tests pass; no structural refactor."
 
