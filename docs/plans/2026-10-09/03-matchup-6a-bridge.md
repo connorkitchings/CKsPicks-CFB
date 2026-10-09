@@ -1,6 +1,6 @@
 # 6A-Bridged Matchup Publication for the Corrected Lineage
 
-- **Status:** In Progress (Terra execution started 2026-10-09)
+- **Status:** Implemented (2026-10-09; all DoD items pass, Task 4 proof green)
 - **Created:** 2026-10-09
 - **Planner:** Sol (Plan Mode investigation; read-only review of the publisher, candidate tool, 6A run, manifests and gates)
 - **Approval source:** User decisions in session 2026-10-09 — 6A-aware loader design, signed gate-receipt verifier, Week-6 write scoping, Preview proof included; explicit `implement-plan` instruction on this exact path

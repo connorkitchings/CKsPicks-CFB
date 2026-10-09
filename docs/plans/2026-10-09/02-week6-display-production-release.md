@@ -237,6 +237,32 @@ needed by the eventual DB gates, so they stand. No Production write, no freeze/
 close, no code changes. Tasks 2–7 not started. Contract stays `In Progress`
 (blocked); resume at Task 1c once the bridge design lands.
 
+### Amendment 3 (2026-10-09, Terra): bridge delivered — Task 1c complete in Preview, release resumed
+
+Contract `03-matchup-6a-bridge.md` is Implemented (loader + signed gate-receipt
+verifier + Week-6 log write scoping + 12 tests, full suite green). Task 1c proof
+in Preview (all user-authorized applies):
+- Bridge verifier signed + written to R2:
+  `.../v5-intended-update-2026-corrected-w6live-r1/verification/bridge-verifier-manifest.json`
+  (2,640 bytes; 11/11 gates).
+- Matchup publish `--apply`: stats 1,656 + adjusted 549 + components 508 +
+  registry row (`2026:intended_update:c83b1423…:08e22bae…`, weeks `[6]`); game-log
+  write correctly 0 rows (no completed W6 games; served W0–5 provenance untouched).
+- Payload sha `08e22bae…` deterministic across 3 independent builds;
+  `verify_matchup_data` exit 0, 0 differing rows.
+- Local Preview site: Picks 55 games + notice; W6 matchup page lineage `ready`;
+  Ratings renders corrected post-W5; W5 page unchanged (see below).
+
+**Task 5 ordering fix:** matchup publish runs *after* select in each environment
+(the DB "selected source" gate requires the manifest to be the selected source).
+
+**New finding requiring explicit accept:** selecting d2 in Production flips the
+site-wide rating source to `c83b1423…`, so Weeks 0–5 matchup pages there will read
+"Forecast and rating snapshots use different published lineages" (model sections
+hidden) until the Week 7 cutover rebinds them. Preview's W5 page already shows
+this state since the Oct 8 d2 selection — pre-existing, not caused by this work;
+served W0–5 rows and bindings are byte-intact. Picks/Results/Ratings are unaffected.
+
 ## Risks and Edge Cases
 
 - **Already-final games on the Picks tab:** 4 Thursday games are final and 5

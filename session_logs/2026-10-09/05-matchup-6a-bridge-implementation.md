@@ -44,8 +44,18 @@
 ## Amendments and Blockers
 - None to the contract. Blocker: explicit user authorization for the two Preview `--apply` steps.
 
-## Handoff Notes
-- **Resume at:** user authorizes → verifier `--apply` → publish `--apply` → verify exit 0 → `run_web_local.sh preview` route check (W6 `ready`, W0–5 unchanged) → annotate contract `02` (payload sha, verifier URI, select-before-matchup ordering fix) → contract `Implemented` → commit proposal.
+## Closeout (2026-10-09, user-authorized applies complete)
+
+- Verifier `--apply`: signed manifest written to R2 (2,640 bytes; 11/11 gates; payload `08e22bae…` = 3rd identical build).
+- Matchup publish `--apply` (Preview): stats 1,656 + adjusted 549 + components 508 + registry row `2026:intended_update:c83b1423…:08e22bae…` (weeks `[6]`); log write 0 rows (correct — no completed W6 games; served provenance untouched).
+- `verify_matchup_data`: exit 0, 0 differing rows.
+- Local Preview site (`run_web_local.sh preview`, predictions mode): Picks 55 games + exact notice text; W6 matchup (Texas–Oklahoma) lineage `ready`; Ratings renders corrected post-W5 (Notre Dame, Utah on top); W5 page unchanged apart from its pre-existing Oct-8 source-flip state (served rows byte-intact; documented in contract `02` Amendment 3 as requiring explicit accept for Production).
+- Contract `03` → `Implemented`; contract `02` annotated (Amendment 3: Task 1c proof + Task 5 ordering fix + W0–5 degradation accept).
+- Validation rerun at closeout: full suite already green (2,305 passed); `git diff --check` clean; no further code changes after the suite run (docs only).
+
+## Handoff Notes (updated)
+- **Resume at:** user decision on the W0–5 matchup degradation accept → release contract `02` Task 2 (rollback script, user review gate) → Tasks 3–7 (all Production applies user-run).
+- **Commit proposal:** `feat(matchup): 6A-bridged publication path with verifier and scoped writes` (full message in the prior handoff; add contract `02` Amendment 3 + this log to the same commit).
 - **Watch out for:** verifier `--apply` writes R2 research prefix (write-once, refuses on differing bytes); publish `--apply` needs the active pipeline lease + restricted role (script asserts both); never freeze/close any run; no Production writes in this contract.
 - **Exact pending commands:** in the log appendix below.
 
