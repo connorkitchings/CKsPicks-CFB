@@ -1,6 +1,6 @@
 # byplay_v2: provider-keyed play identity (impact-first)
 
-- **Status:** In Progress (Task 1 delivered 2026-10-09; stop gate: Task 2 waits for the user to confirm the Task 1 numbers)
+- **Status:** In Progress (Tasks 1 and 2 delivered 2026-10-09; Task 3 waits for the read-only period-label diagnostic)
 - **Created:** 2026-10-09
 - **Planner:** Sol
 - **Approval source:** User approved this plan in-session on 2026-10-09 (checkpoint → surgical docs pruning → impact-first `byplay_v2`), after two review rounds that corrected the ordering rule and the ID typing recorded below.
@@ -229,10 +229,46 @@ Then focused tests per task, the full Python suite with `-W error`, `ruff format
 
 - The 28 collisions are 25 cross-period and 3 same-period. All 25 cross-period collisions pair an overtime play (provider drive IDs negative, overtime drive numbers restarted) with a regulation play of another team. All 28 sit in 4 games (one 2021, three 2025).
 - Unresolved plays under the two-case rule: 6 across all 11 seasons, which are exactly the 3 same-period groups (2 plays each). No missing periods. The 2021 pair shares one provider drive and its clocks (3:41, 3:10) agree with file order; the two 2025 groups are overtime plays on different provider drives and offenses, all at clock 0:00.
-- The shadow historical build reproduces the pinned legacy by-play and drives for these games exactly, apart from `field_position_bin` (later code change) and `ppa` zero-fill versus null (41 and 115 rows, all legacy-zero/new-null).
+- The shadow historical build reproduces the pinned legacy by-play and drives for these games exactly, apart from `field_position_bin` and `ppa` zero-fill versus null (41 and 115 rows, all legacy-zero/new-null). *Correction (Task 2 session): the `field_position_bin` difference on every row is not a code change. The current build yields a real missing value where the pinned legacy file stores the string `'nan'`; the rebuild stage's `value_differences` already normalizes that, so Task 1's fidelity check should have too.*
 - The historical dedup removed 28 plays: 19 with non-null PPA, 3 scoring, 25 in regulation, 3 in overtime. This matches the census.
 - Retaining them adds 1 + 24 by-play rows, 0 + 9 net drive/possession rows, and changes scoring events (2025: 1 historical-only, 2 retained-only). No cell of any other by-play row changes. 92 team-game measurement cells change in 3 games (2021 Week 1; 2025 Weeks 6 and 8), reaching 6 team-games. The overtime-only game changes no regulation measurement. Excluding the 6 unresolved plays instead leaves the same observation changes (16 and 76 cells).
 - Drive-number reuse across provider drive IDs occurs only in the 3 collision games of 2025; no game outside the collision games has it.
 - Clock census over 1,538,279 compared pairs (no exclusion applied): 3,688 reversals, of which 12 involve impossible clock values (39 regulation rows in 2021 with `clock_minutes` above 15, up to 58) and 3,676 have valid clocks. Of the valid ones, 310 land on a fresh 15:00 clock (the period label looks wrong for those plays) and 1,702 exceed 60 seconds without being a period reset; they are far commoner in 2021–2026 than in 2015–2019 and are not explained by replay review.
 
 **Open decisions for the user (not taken by this contract):** keep the two-case unresolved rule as written; whether the clock and period-label anomalies get their own read-only investigation; proceed to Task 2.
+
+### Amendment 2 (2026-10-09): Task 2 receipt, decisions and mechanical findings
+
+**Reason:** Record the Task 2 deliverables and the user's decisions on the Task 1 findings. The approach, interfaces, scope and acceptance criteria are unchanged.
+
+**User decisions on Task 1 (2026-10-09):** keep the two-case unresolved rule as written (the clock does not order the 2021 pair); run a targeted read-only diagnostic of the 310 period-reset plays *before the Task 3 ordering helper is finalized*; proceed with Task 2 meanwhile. The two exclusion variants gave identical observation changes (16 and 76 cells); the team-game feature cells differ slightly (45 vs 39 and 315 vs 302), so the effect is small, not zero.
+
+**Delivered:**
+
+- `src/cks_picks_cfb/data/play_identity.py` (new): exact-string provider IDs (floats, booleans, non-integer text and missing values rejected; integral floats below 2**53 admitted only for drive IDs), `deduplicate_source_plays`, provider/derived drive IDs with an ambiguity rule, the lineage rule, and `require_v2_byplay` for consumers.
+- `data/schema_contracts.py`: `byplay_v2` and `drives_v2` registered beside v1 (`_DERIVED_SILVER_SCHEMA_REVISIONS`); new `identifier_columns` field, emitted into a schema's hash only when set, so all 83 pre-existing schema hashes were verified unchanged (and the two v1 hashes are pinned by a test); `validate_frame` rejects non-string or non-integer-text identifiers. `data/silver/contracts.py`: `SILVER_CONTRACT_REVISIONS` and `silver_contract()`.
+- `features/byplay/enrichment.py`: `allplays_to_byplay(play_identity="byplay_v2")`; `aggregations/drives.py`: `aggregate_drives(schema_version="drives_v2")`; `features/pipeline.py`: option passed only for v2, so the v1 call is textually unchanged. The v1 collision guard is untouched.
+- `data/lake.py`: `build_dataset_version` refuses any v2 play-identity build with a `byplay_v1`/`drives_v1` parent.
+- `rebuild/silver.py`: `DERIVED_V2`, `PIPELINE_CONFIG_V2`, plan policy `play_identity` (default `byplay_v1`, so existing plans are unchanged), a comparison keyed on `(game_id, source_play_id)` that reports one-sided keys instead of requiring equal length, and a v2-aware `verify`.
+- Tests: `tests/test_play_identity_v2.py` (28), eight additions to `tests/test_rebuild_silver.py`, and one updated assertion in `tests/test_schema_contracts.py` (it asserted that `byplay_v2` was invalid; it now asserts an unknown version).
+
+**Decisions inside the approach:**
+
+1. **`drives_v2` is keyed `(season, game_id, drive_id, offense, defense)`.** A provider drive holds the kickoff (kicking team on offense) and then the receiving team's plays, and the team-game drive counts count those v1 rows. A first version keyed on `drive_id` alone would have merged 8,959 kickoff rows in 2021 and shifted drive counts everywhere; the real-data smoke test caught it (`drives_rows_equal` false) and it was corrected before this receipt. This still honors "provider drive identity when available"; it stops v1 from merging distinct provider drives that share a number.
+2. **Derived drives** (no provider `drive_id`) are admitted when they hold at most two offense/defense orientations within at most two adjacent periods; otherwise `drive_ambiguous` is true. No derived drive appeared in the 2021, 2022 or 2025 runs.
+3. **Added columns:** `byplay_v2` carries `source_play_id`, string `drive_id`, `drive_id_source` and `drive_ambiguous`.
+4. **`data/silver/builders.py` is unchanged.** The integer-to-string conversion happens once at the by-play build (the Silver → by-play boundary); normalized Silver plays keep their integer `play_id`.
+5. **Left for Task 3/4:** `calculate_st_analytics_agg` finds the next drive by `(game_id, drive_number)` with `.first()`, so a reused drive number still collapses two provider drives for net punt yards. Sequence-addressed manual corrections already fail closed in v2, because `apply_data_corrections` raises when a correction matches more than one row.
+
+**Real-data check** (read-only; the unmodified stage code, a throwaway local lake; evidence for Task 5, not the Task 5 proof):
+
+| Season | By-play rows (v2 / legacy) | Drives (v2 / legacy) | One-sided keys | Value differences on matched rows |
+| --- | --- | --- | --- | --- |
+| 2022 (no collisions) | 152,083 / 152,083; v1 and v2 builds identical | 30,758 / 30,758 | none | `ppa` 31,162 (the existing nullable-PPA change) |
+| 2021 | 150,828 / 150,827 | 30,558 / 30,558 | 1 new (`-218`), 0 legacy-only | `ppa` 31,177 only |
+| 2025 | 154,656 / 154,632 | 31,456 / 31,447 | 24 new (the exact IDs Task 1 listed), 0 legacy-only | `ppa` 30,789; `st`/`st_punt` 739 (the documented punt-return fix) |
+
+Reconciliation classes had zero mismatches and zero blocking rows in all three. v1 on 2021 refuses the real collision. The stage's `verify`, run against the real v2 output, reported only the single-season harness limitation; every manifest, config, parent, row-count and `validate_frame` check on the 150k-row `byplay_v2`/`drives_v2` passed.
+
+**Open:** the period-label diagnostic (above) gates Task 3. Task 4 must move the possession, scoring-ledger and observation versions into `REQUIRES_V2_PLAY_IDENTITY`.
+

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
@@ -201,6 +202,8 @@ from cks_picks_cfb.ratings.v4_benchmark import (
     V4_BENCHMARK_SCHEMA_VERSION,
 )
 
+_IDENTIFIER_TEXT = re.compile(r"-?\d+")
+
 
 class DatasetSchemaError(ValueError):
     """Raised when a frame does not satisfy its published schema contract."""
@@ -229,8 +232,17 @@ class DatasetSchema:
     nonnullable: tuple[str, ...] = ()
     allowed_values: Mapping[str, tuple[Any, ...]] | None = None
     dynamic_features: bool = False
+    #: Columns holding exact provider identifiers as integer text (never floats).
+    identifier_columns: tuple[str, ...] = ()
 
     def json(self) -> dict[str, Any]:
+        body = self._json_body()
+        if self.identifier_columns:
+            # Emitted only when set so every pre-existing schema keeps its published hash.
+            body["identifier_columns"] = list(self.identifier_columns)
+        return body
+
+    def _json_body(self) -> dict[str, Any]:
         return {
             "dataset": self.dataset,
             "schema_version": self.schema_version,
@@ -452,6 +464,57 @@ _DERIVED_SILVER_SCHEMAS: dict[str, DatasetSchema] = {
                 "blocking_conflict",
             )
         },
+    ),
+}
+
+_BYPLAY_V1 = _DERIVED_SILVER_SCHEMAS["byplay"]
+_DRIVES_V1 = _DERIVED_SILVER_SCHEMAS["drives"]
+_DRIVE_ID_SOURCES = ("provider", "derived")
+
+#: Provider-keyed play identity (contract 2026-10-09/01). Registered beside v1, which stays
+#: readable as superseded evidence. ``source_play_id`` and ``drive_id`` are exact strings.
+_DERIVED_SILVER_SCHEMA_REVISIONS: dict[tuple[str, str], DatasetSchema] = {
+    ("byplay", "byplay_v2"): replace(
+        _BYPLAY_V1,
+        schema_version="byplay_v2",
+        required=(
+            *_BYPLAY_V1.required,
+            "source_play_id",
+            "drive_id",
+            "drive_id_source",
+            "drive_ambiguous",
+        ),
+        keys=("season", "game_id", "source_play_id"),
+        boolean_columns=("drive_ambiguous",),
+        nonnullable=(
+            *_BYPLAY_V1.nonnullable,
+            "source_play_id",
+            "drive_id",
+            "drive_id_source",
+            "drive_ambiguous",
+        ),
+        allowed_values={"drive_id_source": _DRIVE_ID_SOURCES},
+        identifier_columns=("source_play_id", "drive_id"),
+    ),
+    ("drives", "drives_v2"): replace(
+        _DRIVES_V1,
+        schema_version="drives_v2",
+        required=(
+            *_DRIVES_V1.required,
+            "drive_id",
+            "drive_id_source",
+            "drive_ambiguous",
+        ),
+        keys=("season", "game_id", "drive_id", "offense", "defense"),
+        boolean_columns=("drive_ambiguous",),
+        nonnullable=(
+            *_DRIVES_V1.nonnullable,
+            "drive_id",
+            "drive_id_source",
+            "drive_ambiguous",
+        ),
+        allowed_values={"drive_id_source": _DRIVE_ID_SOURCES},
+        identifier_columns=("drive_id",),
     ),
 }
 
@@ -2522,10 +2585,16 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
             )
         return schema
     if dataset in _DERIVED_SILVER_SCHEMAS:
+        revision = _DERIVED_SILVER_SCHEMA_REVISIONS.get((dataset, schema_version))
+        if revision is not None:
+            return revision
         schema = _DERIVED_SILVER_SCHEMAS[dataset]
         if schema_version != schema.schema_version:
+            known = [schema.schema_version] + sorted(
+                v for d, v in _DERIVED_SILVER_SCHEMA_REVISIONS if d == dataset
+            )
             raise DatasetSchemaError(
-                f"{dataset} must use schema version {schema.schema_version}, "
+                f"{dataset} must use schema version {' or '.join(known)}, "
                 f"got {schema_version}"
             )
         return schema
@@ -2695,6 +2764,17 @@ def validate_frame(frame: pd.DataFrame, schema: DatasetSchema) -> dict[str, Any]
         values = pd.to_numeric(frame[column], errors="coerce")
         if values.isna().any() or not (values.dropna() % 1 == 0).all():
             raise DatasetSchemaError(f"{schema.dataset}.{column} must be integral")
+    for column in schema.identifier_columns:
+        bad = [
+            value
+            for value in frame[column].dropna()
+            if not (isinstance(value, str) and _IDENTIFIER_TEXT.fullmatch(value))
+        ]
+        if bad:
+            raise DatasetSchemaError(
+                f"{schema.dataset}.{column} must be exact integer strings, "
+                f"got {bad[0]!r}"
+            )
     for column in schema.boolean_columns:
         if not pd.api.types.is_bool_dtype(frame[column]):
             values = set(frame[column].dropna().tolist())

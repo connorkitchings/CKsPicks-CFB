@@ -636,6 +636,18 @@ def build_dataset_version(
     validation: Mapping[str, Any] | None = None,
 ) -> tuple[DatasetRef, DatasetManifest]:
     """Create an immutable Silver/Gold dataset from explicit parent versions."""
+    from cks_picks_cfb.data.play_identity import lineage_problem
+
+    problem = lineage_problem(
+        build.dataset,
+        build.schema_version,
+        [
+            {"dataset": parent.dataset, "schema_version": parent.schema_version}
+            for parent in build.parent_refs
+        ],
+    )
+    if problem:
+        raise StorageError(f"Refusing superseded play identity: {problem}")
     as_of = _utc(build.as_of)
     frame = pd.DataFrame.from_records(records)
     validation_results = dict(validation or {"valid": True})

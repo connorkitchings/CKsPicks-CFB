@@ -32,6 +32,9 @@ DERIVED = {
     "reconciled_team_game": "team_game_v1",
     "source_reconciliation": "reconciliation_v1",
 }
+#: Provider-keyed play identity (contract 2026-10-09/01): selected by the plan policy
+#: ``play_identity``. The default keeps the v1 sequence identity so existing plans are unchanged.
+DERIVED_V2 = {**DERIVED, "byplay": "byplay_v2", "drives": "drives_v2"}
 PARENT_ORDER = ("plays", "fbs_involved_games", "teams", "team_game_stats")
 PIN_SCHEMA = "rebuild_6a_silver_parents_v1"
 CORRECTIONS_DATASET = "data_corrections"
@@ -42,6 +45,21 @@ PIPELINE_CONFIG = {
     "stream_score_reconciliation": True,
     "corrections_dataset": CORRECTIONS_DATASET,
 }
+
+
+PIPELINE_CONFIG_V2 = {**PIPELINE_CONFIG, "play_identity": "byplay_v2"}
+
+
+def identity_of(context: StageContext) -> str:
+    """The play identity this plan builds (``byplay_v1`` unless the plan opts in to v2)."""
+    identity = (context.plan.policies or {}).get("play_identity", "byplay_v1")
+    if identity not in ("byplay_v1", "byplay_v2"):
+        raise GateError(f"unknown play_identity policy: {identity}")
+    return identity
+
+
+def config_for(identity: str) -> Mapping[str, Any]:
+    return PIPELINE_CONFIG_V2 if identity == "byplay_v2" else PIPELINE_CONFIG
 
 
 def config_sha(config: Mapping[str, Any] = PIPELINE_CONFIG) -> str:
@@ -112,6 +130,95 @@ def punt_return_fix(new: pd.DataFrame, legacy: pd.DataFrame) -> dict[str, Any]:
         )
     )
     return {"rows": rows, "fits_punt_return_fix": fits}
+
+
+SEQUENCE = ["game_id", "drive_number", "play_number"]
+V2_KEY = ["game_id", "source_play_id"]
+
+
+def attach_legacy_source_ids(legacy: pd.DataFrame, plays: pd.DataFrame) -> pd.DataFrame:
+    """Give each legacy v1 by-play row the provider ID of the play it kept.
+
+    v1 kept the first source row at each displayed sequence, so the legacy row maps to that
+    row's provider ID. The legacy sequence is unique; a legacy row with no source play fails.
+    """
+    from cks_picks_cfb.data.play_identity import source_id_strings
+
+    first = plays.drop_duplicates(SEQUENCE, keep="first")[[*SEQUENCE, "play_id"]]
+    keyed = legacy.astype({c: "int64" for c in SEQUENCE}).merge(
+        first.astype({c: "int64" for c in SEQUENCE}),
+        on=SEQUENCE,
+        how="left",
+        validate="one_to_one",
+    )
+    if keyed["play_id"].isna().any():
+        raise GateError("legacy by-play rows without a source play")
+    keyed["source_play_id"] = source_id_strings(
+        keyed["play_id"], label="legacy play_id"
+    )
+    return keyed.drop(columns="play_id")
+
+
+def align_on_source_play(
+    new: pd.DataFrame, legacy: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, list[list[Any]], list[list[Any]]]:
+    """Match v2 and legacy by-play rows by ``(game_id, source_play_id)``.
+
+    Returns the matched rows of each in the same order plus the one-sided keys, so a row
+    count that differs is reported by key instead of aborting the comparison.
+    """
+    if new.duplicated(V2_KEY).any() or legacy.duplicated(V2_KEY).any():
+        raise GateError("by-play frames must be unique on (game_id, source_play_id)")
+    new_keys = (
+        new[V2_KEY].astype({"game_id": "int64"}).astype({"source_play_id": "string"})
+    )
+    old_keys = (
+        legacy[V2_KEY].astype({"game_id": "int64"}).astype({"source_play_id": "string"})
+    )
+    merged = new_keys.reset_index().merge(
+        old_keys.reset_index(),
+        on=V2_KEY,
+        how="outer",
+        indicator=True,
+        suffixes=("_new", "_legacy"),
+    )
+    both = merged[merged["_merge"] == "both"].sort_values(V2_KEY)
+    only_new = merged[merged["_merge"] == "left_only"].sort_values(V2_KEY)
+    only_legacy = merged[merged["_merge"] == "right_only"].sort_values(V2_KEY)
+
+    def keys(frame: pd.DataFrame) -> list[list[Any]]:
+        return [
+            [int(g), str(s)] for g, s in zip(frame["game_id"], frame["source_play_id"])
+        ]
+
+    return (
+        new.loc[both["index_new"].to_numpy()].reset_index(drop=True),
+        legacy.loc[both["index_legacy"].to_numpy()].reset_index(drop=True),
+        keys(only_new),
+        keys(only_legacy),
+    )
+
+
+def drive_id_differences(new: pd.DataFrame, legacy: pd.DataFrame) -> dict[str, int]:
+    """Compare v2 string drive IDs with the legacy column on matched rows.
+
+    A provider drive ID must read the same as text. Rows where the legacy ID was missing may
+    carry a derived ID in v2; that is counted, not treated as a mismatch.
+    """
+    from cks_picks_cfb.data.play_identity import source_id_strings
+
+    old = source_id_strings(
+        legacy["drive_id"].astype(object).where(legacy["drive_id"].notna(), None),
+        label="legacy drive_id",
+        allow_missing=True,
+        allow_exact_float=True,
+    ).reset_index(drop=True)
+    cur = new["drive_id"].reset_index(drop=True)
+    known = old.notna()
+    return {
+        "provider_text_mismatches": int((known & (old != cur)).sum()),
+        "filled_from_derived": int((~known).sum()),
+    }
 
 
 def _ref(entry: Mapping[str, Any]):
@@ -200,6 +307,10 @@ def derive_season(
     from cks_picks_cfb.features.pipeline import build_preaggregation_pipeline
 
     entry, parents = _season_pin(context, pin_file, season)
+    identity = identity_of(context)
+    v2 = identity == "byplay_v2"
+    derived = DERIVED_V2 if v2 else DERIVED
+    config = config_for(identity)
     frames = {ref.dataset: read_dataset(storage, ref) for ref in parents}
     games = frames["fbs_involved_games"].rename(columns={"kickoff_utc": "start_date"})
     byplay, drives, team_game, _ = build_preaggregation_pipeline(
@@ -210,6 +321,7 @@ def derive_season(
         weather_df=None,
         corrections_df=frames.get(CORRECTIONS_DATASET),
         nullable_ppa=PIPELINE_CONFIG["nullable_ppa"],
+        **({"play_identity": identity} if v2 else {}),
     )
     plays_entry = [
         e
@@ -249,16 +361,16 @@ def derive_season(
         "games": int(len(games)),
     }
     for dataset, frame in outputs.items():
-        validate_frame(frame, schema_for(dataset, DERIVED[dataset]))
+        validate_frame(frame, schema_for(dataset, derived[dataset]))
         ref, manifest = build_dataset_version(
             local,
             build=BuildRequest(
                 dataset=dataset,
                 parent_refs=tuple(parents),
                 code_sha=context.code_sha,
-                config_sha=config_sha(),
+                config_sha=config_sha(config),
                 as_of=as_of,
-                schema_version=DERIVED[dataset],
+                schema_version=derived[dataset],
                 tier="silver",
             ),
             records=frame.to_dict("records"),
@@ -293,8 +405,30 @@ def derive_season(
         "legacy_null_ppa": int(legacy["ppa"].isna().sum()),
         "legacy_zero_ppa": int((legacy["ppa"] == 0).sum()),
     }
-    summary["value_differences"] = value_differences(byplay, legacy)
-    summary["punt_return_fix"] = punt_return_fix(byplay, legacy)
+    if v2:
+        # Row counts legitimately differ (retained plays); compare by provider play ID and
+        # report every one-sided key instead of requiring equal length.
+        new_m, legacy_m, only_new, only_legacy = align_on_source_play(
+            byplay, attach_legacy_source_ids(legacy, frames["plays"])
+        )
+        summary["ppa"]["rows_equal"] = bool(
+            len(byplay) == len(legacy) and not only_new and not only_legacy
+        )
+        summary["ppa"]["matched_rows"] = int(len(new_m))
+        summary["ppa"]["matched_null_ppa"] = int(new_m["ppa"].isna().sum())
+        summary["identity"] = {
+            "play_identity": identity,
+            "only_new": only_new,
+            "only_legacy": only_legacy,
+            "drive_id": drive_id_differences(new_m, legacy_m),
+        }
+        summary["value_differences"] = value_differences(
+            new_m.drop(columns="drive_id"), legacy_m.drop(columns="drive_id")
+        )
+        summary["punt_return_fix"] = punt_return_fix(new_m, legacy_m)
+    else:
+        summary["value_differences"] = value_differences(byplay, legacy)
+        summary["punt_return_fix"] = punt_return_fix(byplay, legacy)
     summary["reconciliation"] = {
         "classifications": {
             str(k): int(v)
@@ -338,8 +472,8 @@ def build(context: StageContext) -> StageOutput:
             prefix,
             json.dumps(
                 {
-                    "config": PIPELINE_CONFIG,
-                    "config_sha": config_sha(),
+                    "config": config_for(identity_of(context)),
+                    "config_sha": config_sha(config_for(identity_of(context))),
                     "seasons": summaries,
                 },
                 indent=2,
@@ -359,7 +493,16 @@ def verify(context: StageContext) -> list[str]:
         context.read_artifact(stage, SUMMARY.format(run_id=context.plan.run_id))
     )
     problems: list[str] = []
-    if summary["config_sha"] != config_sha() or not summary["config"]["nullable_ppa"]:
+    identity = identity_of(context)
+    v2 = identity == "byplay_v2"
+    derived = DERIVED_V2 if v2 else DERIVED
+    config = config_for(identity)
+    if summary["config"].get("play_identity", "byplay_v1") != identity:
+        problems.append("silver play identity differs from the plan policy")
+    if (
+        summary["config_sha"] != config_sha(config)
+        or not summary["config"]["nullable_ppa"]
+    ):
         problems.append("silver config is not the nullable-PPA stream-reconciled build")
     found = sorted(item["season"] for item in summary["seasons"])
     if found != sorted(HISTORICAL_SEASONS):
@@ -369,7 +512,12 @@ def verify(context: StageContext) -> list[str]:
         season = item["season"]
         if item["reconciliation"]["blocking"]:
             problems.append(f"{season}: blocking reconciliation rows")
-        if not item["ppa"]["rows_equal"]:
+        if v2:
+            if item["identity"]["only_legacy"]:
+                problems.append(f"{season}: legacy plays missing from the v2 build")
+            if item["identity"]["drive_id"]["provider_text_mismatches"]:
+                problems.append(f"{season}: provider drive IDs differ from legacy")
+        elif not item["ppa"]["rows_equal"]:
             problems.append(f"{season}: byplay rows differ from legacy")
         parity = item["legacy_parity"]
         for name in (
@@ -377,6 +525,8 @@ def verify(context: StageContext) -> list[str]:
             "team_game_rows_equal",
             "reconciliation_rows_equal",
         ):
+            if v2 and name == "drives_rows_equal":
+                continue  # provider drives are keyed differently from v1 drives
             if not parity[name]:
                 problems.append(f"{season}: {name} is false against the legacy build")
         if parity["reconciliation_class_mismatches"]:
@@ -393,7 +543,8 @@ def verify(context: StageContext) -> list[str]:
                 problems.append(f"{season}: {column} changes differ from the punt fix")
         if not fix["fits_punt_return_fix"]:
             problems.append(f"{season}: special-teams changes are not the punt fix")
-        if item["value_differences"].get("ppa") != item["ppa"]["null_ppa"]:
+        nulled = item["ppa"]["matched_null_ppa"] if v2 else item["ppa"]["null_ppa"]
+        if item["value_differences"].get("ppa") != nulled:
             problems.append(f"{season}: ppa changes are not exactly the nulled values")
         for dataset, info in item["datasets"].items():
             data_key, manifest_key = info["keys"]
@@ -401,14 +552,14 @@ def verify(context: StageContext) -> list[str]:
             manifest = json.loads(context.read_artifact(stage, manifest_key))
             if hashlib.sha256(data).hexdigest() != manifest["content_sha"]:
                 problems.append(f"{season}/{dataset}: data hash != manifest")
-            if manifest["config_sha"] != config_sha():
+            if manifest["config_sha"] != config_sha(config):
                 problems.append(f"{season}/{dataset}: wrong config sha")
             if list(manifest["parent_versions"]) != item["parents"]:
                 problems.append(f"{season}/{dataset}: parent versions differ")
             frame = pd.read_parquet(io.BytesIO(data))
             if len(frame) != info["rows"] or manifest["row_count"] != info["rows"]:
                 problems.append(f"{season}/{dataset}: row count mismatch")
-            validate_frame(frame, schema_for(dataset, DERIVED[dataset]))
+            validate_frame(frame, schema_for(dataset, derived[dataset]))
             if (
                 dataset == "byplay"
                 and int(frame["ppa"].isna().sum()) != item["ppa"]["null_ppa"]

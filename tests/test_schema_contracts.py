@@ -117,8 +117,9 @@ def test_derived_silver_schemas_accept_r1_measurement_inputs():
 
 
 def test_derived_silver_schemas_reject_wrong_versions_and_bad_keys():
-    with pytest.raises(DatasetSchemaError, match="must use schema version byplay_v1"):
-        schema_for("byplay", "byplay_v2")
+    # byplay_v2 is registered beside v1 (contract 2026-10-09/01); anything else is unknown.
+    with pytest.raises(DatasetSchemaError, match="byplay_v1 or byplay_v2"):
+        schema_for("byplay", "byplay_v3")
 
     duplicate = pd.concat([_drives_frame(), _drives_frame()], ignore_index=True)
     with pytest.raises(DatasetSchemaError, match="duplicate keys"):

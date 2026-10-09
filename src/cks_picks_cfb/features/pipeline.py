@@ -64,8 +64,12 @@ def build_preaggregation_pipeline(
     corrections_df: pd.DataFrame | None = None,
     *,
     nullable_ppa: bool = False,
+    play_identity: str = "byplay_v1",
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run plays → byplay → drives → team-game → team-season pipeline.
+
+    ``play_identity="byplay_v2"`` builds provider-keyed ``byplay_v2``/``drives_v2`` (see
+    ``allplays_to_byplay``); the default keeps the superseded v1 sequence identity.
 
     ``nullable_ppa=True`` builds the Window 2 Silver version: provider-missing PPA stays null
     (``ppa_missing`` records it) instead of being zero-filled. Legacy feature columns derived
@@ -103,10 +107,20 @@ def build_preaggregation_pipeline(
             "Input DataFrame to pipeline is missing required 'week' column."
         )
 
-    byplay = allplays_to_byplay(
-        plays_raw_df, corrections=corrections_df, nullable_ppa=nullable_ppa
+    # The v1 call is left exactly as it was; only v2 passes the identity option.
+    identity_options = (
+        {} if play_identity == "byplay_v1" else {"play_identity": play_identity}
     )
-    drives = aggregate_drives(byplay)
+    byplay = allplays_to_byplay(
+        plays_raw_df,
+        corrections=corrections_df,
+        nullable_ppa=nullable_ppa,
+        **identity_options,
+    )
+    drives = aggregate_drives(
+        byplay,
+        schema_version="drives_v2" if play_identity == "byplay_v2" else "drives_v1",
+    )
     if "season" not in drives.columns or "week" not in drives.columns:
         drives = drives.merge(
             byplay[["game_id", "season", "week"]].drop_duplicates(),

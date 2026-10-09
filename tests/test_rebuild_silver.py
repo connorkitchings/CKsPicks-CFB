@@ -117,3 +117,121 @@ def test_punt_return_fix_accepts_only_the_documented_change():
     reverse = legacy.assign(st=[0, 0, 0], st_punt=[0, 0, 0])
     assert not silver.punt_return_fix(reverse, legacy)["fits_punt_return_fix"]
     assert silver.punt_return_fix(legacy, legacy)["rows"] == 0
+
+
+# --- provider-keyed play identity (contract 2026-10-09/01) ---------------------------
+
+
+def _policy_context(**policies):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(plan=SimpleNamespace(policies=policies))
+
+
+def test_play_identity_policy_defaults_to_v1_and_rejects_unknown_values():
+    assert silver.identity_of(_policy_context()) == "byplay_v1"
+    assert silver.identity_of(_policy_context(play_identity="byplay_v2")) == "byplay_v2"
+    with pytest.raises(GateError):
+        silver.identity_of(_policy_context(play_identity="byplay_v3"))
+
+
+def test_v2_registers_beside_v1_without_changing_the_v1_build():
+    assert silver.DERIVED["byplay"] == "byplay_v1"
+    assert silver.DERIVED["drives"] == "drives_v1"
+    assert silver.DERIVED_V2["byplay"] == "byplay_v2"
+    assert silver.DERIVED_V2["drives"] == "drives_v2"
+    assert (
+        silver.DERIVED_V2["reconciled_team_game"]
+        == silver.DERIVED["reconciled_team_game"]
+    )
+    # a v2 build can never share a config identity with a v1 build
+    assert silver.config_sha(silver.config_for("byplay_v2")) != silver.config_sha()
+    assert silver.config_for("byplay_v1") is silver.PIPELINE_CONFIG
+
+
+def _legacy_rows():
+    import pandas as pd
+
+    return pd.DataFrame(
+        {
+            "game_id": [9, 9, 9],
+            "drive_number": [18, 18, 19],
+            "play_number": [1, 2, 1],
+            "ppa": [0.0, 0.5, 0.0],
+            "drive_id": [40176283118.0, 40176283118.0, None],
+        }
+    )
+
+
+def _source_plays():
+    import pandas as pd
+
+    # the first play at (18, 1) is the overtime play v1 kept; the regulation play was dropped
+    return pd.DataFrame(
+        {
+            "game_id": [9, 9, 9, 9],
+            "drive_number": [18, 18, 18, 19],
+            "play_number": [1, 1, 2, 1],
+            "play_id": [-22405, 401762831104868701, 401762831104874702, 7],
+        }
+    )
+
+
+def test_legacy_rows_map_to_the_source_play_v1_kept():
+    keyed = silver.attach_legacy_source_ids(_legacy_rows(), _source_plays())
+    assert keyed["source_play_id"].tolist() == ["-22405", "401762831104874702", "7"]
+
+
+def test_legacy_rows_without_a_source_play_fail():
+    plays = _source_plays().iloc[:2]
+    with pytest.raises(GateError, match="without a source play"):
+        silver.attach_legacy_source_ids(_legacy_rows(), plays)
+
+
+def test_alignment_reports_one_sided_keys_instead_of_requiring_equal_length():
+    import pandas as pd
+
+    legacy = silver.attach_legacy_source_ids(_legacy_rows(), _source_plays())
+    new = pd.DataFrame(
+        {
+            "game_id": [9, 9, 9, 9],
+            "source_play_id": [
+                "-22405",
+                "401762831104868701",
+                "401762831104874702",
+                "7",
+            ],
+            "ppa": [0.0, 0.1, 0.5, 0.0],
+            "drive_id": ["-2885", "40176283118", "40176283118", "9-19"],
+        }
+    )
+    new_m, legacy_m, only_new, only_legacy = silver.align_on_source_play(new, legacy)
+    assert only_new == [[9, "401762831104868701"]]
+    assert only_legacy == []
+    assert new_m["source_play_id"].tolist() == legacy_m["source_play_id"].tolist()
+    assert (
+        silver.value_differences(
+            new_m.drop(columns="drive_id"), legacy_m.drop(columns="drive_id")
+        )
+        == {}
+    )
+    # the retained regulation play is the only difference and is reported by key
+
+
+def test_alignment_rejects_duplicate_provider_identities():
+    import pandas as pd
+
+    frame = pd.DataFrame({"game_id": [9, 9], "source_play_id": ["1", "1"]})
+    with pytest.raises(GateError):
+        silver.align_on_source_play(frame, frame)
+
+
+def test_drive_id_differences_separate_mismatches_from_derived_fills():
+    import pandas as pd
+
+    legacy = pd.DataFrame({"drive_id": [40176283118.0, None, 5.0]})
+    new = pd.DataFrame({"drive_id": ["40176283118", "9-19", "6"]})
+    assert silver.drive_id_differences(new, legacy) == {
+        "provider_text_mismatches": 1,
+        "filled_from_derived": 1,
+    }

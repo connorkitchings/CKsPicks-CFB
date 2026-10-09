@@ -5,6 +5,14 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.play_identity import (
+    BYPLAY_V1,
+    BYPLAY_V2,
+    SOURCE_PLAY_ID,
+    deduplicate_source_plays,
+    derived_drive_ambiguity,
+    provider_drive_ids,
+)
 from cks_picks_cfb.features.byplay.corrections import (
     apply_data_corrections,
     apply_manual_data_fixes,
@@ -232,8 +240,16 @@ def allplays_to_byplay(
     corrections: pd.DataFrame | None = None,
     *,
     nullable_ppa: bool = False,
+    play_identity: str = BYPLAY_V1,
 ) -> pd.DataFrame:
     """Transform raw plays into enriched by-play dataset.
+
+    ``play_identity="byplay_v2"`` keys every play by its provider ID
+    (``source_play_id``, an exact string): payload-identical repeats collapse, divergent
+    versions of one provider play block the build, and distinct provider plays that share a
+    displayed drive/play number are all kept. Row order inside such a tie follows the input
+    and carries no meaning; ordering and unresolved ties are a separate contract step. The
+    default ``byplay_v1`` keeps the sequence key and fails closed on a collision.
 
     ``ppa_missing`` is always derived from the provider value before any conversion.
     With the default ``nullable_ppa=False`` a missing PPA is then zero-filled, which is what
@@ -241,23 +257,29 @@ def allplays_to_byplay(
     ``nullable_ppa=True`` (the Window 2 Silver version) a missing PPA stays null, a genuine
     numerical zero stays zero, and nothing is inferred from existing zeros.
     """
+    if play_identity not in (BYPLAY_V1, BYPLAY_V2):
+        raise ValueError(f"unknown play identity version: {play_identity}")
+    v2 = play_identity == BYPLAY_V2
     df = data.copy()
-    # byplay_v1 cannot represent two source rows at one displayed sequence.
-    # Refuse that source population rather than silently discard a regulation
-    # or scoring play. Exact repeated records may be collapsed safely.
-    sequence = ["game_id", "drive_number", "play_number"]
-    collisions = df.loc[df.duplicated(sequence, keep=False)]
-    if not collisions.empty:
-        provider_fields = [
-            column for column in collisions if not column.startswith("__capture_")
-        ]
-        distinct = collisions[provider_fields].drop_duplicates()
-        if distinct.duplicated(sequence).any():
-            raise ValueError(
-                "byplay_v1 cannot represent distinct source plays at one sequence; "
-                "resolve provider identity under a versioned schema"
-            )
-    df = df.drop_duplicates(subset=sequence, keep="first")
+    if v2:
+        df = deduplicate_source_plays(df)
+    else:
+        # byplay_v1 cannot represent two source rows at one displayed sequence.
+        # Refuse that source population rather than silently discard a regulation
+        # or scoring play. Exact repeated records may be collapsed safely.
+        sequence = ["game_id", "drive_number", "play_number"]
+        collisions = df.loc[df.duplicated(sequence, keep=False)]
+        if not collisions.empty:
+            provider_fields = [
+                column for column in collisions if not column.startswith("__capture_")
+            ]
+            distinct = collisions[provider_fields].drop_duplicates()
+            if distinct.duplicated(sequence).any():
+                raise ValueError(
+                    "byplay_v1 cannot represent distinct source plays at one sequence; "
+                    "resolve provider identity under a versioned schema"
+                )
+        df = df.drop_duplicates(subset=sequence, keep="first")
 
     # --- Normalize column names first ---
     if "yards_to_first" not in df.columns and "distance" in df.columns:
@@ -427,7 +449,10 @@ def allplays_to_byplay(
         if corrections is None
         else apply_data_corrections(df, corrections)
     )
-    if "drive_id" not in df.columns:
+    if v2:
+        df["drive_id"], df["drive_id_source"] = provider_drive_ids(df)
+        df["drive_ambiguous"] = derived_drive_ambiguity(df)
+    elif "drive_id" not in df.columns:
         df["drive_id"] = (
             df["game_id"].astype(str) + "-" + df["drive_number"].astype(int).astype(str)
         )
@@ -577,7 +602,8 @@ def allplays_to_byplay(
         columns={"updated_yards_gained": "yards_gained"}
     )
     df = df.sort_values(
-        by=["season", "week", "game_id", "quarter", "drive_number", "play_number"]
+        by=["season", "week", "game_id", "quarter", "drive_number", "play_number"],
+        kind="mergesort" if v2 else "quicksort",
     )
 
     def calculate_garbage_time(df_inner: pd.DataFrame) -> pd.Series:
@@ -701,6 +727,8 @@ def allplays_to_byplay(
         "kick_distance",
         "is_fg_made",
     ]
+    if v2:
+        column_order += [SOURCE_PLAY_ID, "drive_id_source", "drive_ambiguous"]
     df = df[column_order].copy()
     df = df[~df["play_type"].isin(playtype_delete)].copy()
     df["ppa"] = pd.to_numeric(df["ppa"], errors="coerce")

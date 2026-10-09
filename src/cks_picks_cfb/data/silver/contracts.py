@@ -234,3 +234,35 @@ SILVER_CONTRACTS: dict[str, SilverContract] = {
         ("correction_id",),
     ),
 }
+
+#: Provider-keyed play identity (contract 2026-10-09/01). Registered beside ``SILVER_CONTRACTS``,
+#: which keeps the superseded v1 entries; select a revision with :func:`silver_contract`.
+SILVER_CONTRACT_REVISIONS: dict[tuple[str, str], SilverContract] = {
+    ("byplay", "byplay_v2"): SilverContract(
+        "byplay",
+        "byplay_v2",
+        SILVER_CONTRACTS["byplay"].required_columns
+        | {"source_play_id", "drive_id", "drive_id_source", "drive_ambiguous"},
+        ("season", "game_id", "source_play_id"),
+    ),
+    ("drives", "drives_v2"): SilverContract(
+        "drives",
+        "drives_v2",
+        SILVER_CONTRACTS["drives"].required_columns
+        | {"drive_id", "drive_id_source", "drive_ambiguous"},
+        ("season", "game_id", "drive_id", "offense", "defense"),
+    ),
+}
+
+
+def silver_contract(dataset: str, schema_version: str) -> SilverContract:
+    """The contract for a dataset at an exact schema version, v1 or a registered revision."""
+    revision = SILVER_CONTRACT_REVISIONS.get((dataset, schema_version))
+    if revision is not None:
+        return revision
+    contract = SILVER_CONTRACTS.get(dataset)
+    if contract is None or contract.schema_version != schema_version:
+        raise SilverValidationError(
+            f"No Silver contract for {dataset} at schema version {schema_version}"
+        )
+    return contract
