@@ -26,6 +26,10 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     SNAPSHOT_COLUMNS,
     TERMINAL_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_possession_v2 import (
+    POSSESSION_COLUMNS_V2,
+    SCORING_EVENT_COLUMNS_V2,
+)
 from cks_picks_cfb.data.data_first_repair_v2 import LIVE_TIMING, RECONSTRUCTED_TIMING
 from cks_picks_cfb.data.play_filters import (
     eligible_play,
@@ -34,6 +38,7 @@ from cks_picks_cfb.data.play_filters import (
     is_dead_play,
     play_period,
 )
+from cks_picks_cfb.data.play_identity import BYPLAY_V1, BYPLAY_V2, require_v2_byplay
 from cks_picks_cfb.data.play_order import order_plays
 from cks_picks_cfb.preseason_features import canonical_team
 
@@ -88,6 +93,64 @@ def _source_id(row: Any) -> str:
     return f"{int(row.season)}:{int(row.game_id)}:{int(row.drive_number)}:{int(row.play_number)}"
 
 
+def _source_id_v2(row: Any) -> str:
+    """Provider-keyed event id: ``season:game_id:source_play_id`` (game-qualified)."""
+    return f"{int(row.season)}:{int(row.game_id)}:{row.source_play_id}"
+
+
+_V2_BYPLAY_COLUMNS = {
+    "source_play_id",
+    "drive_id",
+    "drive_ambiguous",
+    "play_order_unresolved",
+    "play_order_reason",
+}
+UNRESOLVED_PLAY_ORDER = "unresolved_play_order"
+
+
+def _check_identity(byplay: pd.DataFrame, play_identity: str, consumer: str) -> bool:
+    """True for provider-keyed v2 input; refuses a mismatch between frame and identity."""
+    if play_identity not in (BYPLAY_V1, BYPLAY_V2):
+        raise PossessionMeasurementError(f"unknown play identity: {play_identity}")
+    if play_identity == BYPLAY_V2:
+        require_v2_byplay(byplay, consumer=consumer)
+        _required(byplay, _V2_BYPLAY_COLUMNS, "byplay_v2")
+        return True
+    if "source_play_id" in byplay.columns:
+        raise PossessionMeasurementError(
+            f"{consumer}: a provider-keyed byplay frame needs play_identity='byplay_v2'"
+        )
+    return False
+
+
+def _tie_group_state(
+    members: list[tuple[str, str, Any, Any]],
+    prior_scores: dict[tuple[int, int, str], float],
+    malformed: set[tuple[int, int, str]],
+    season: int,
+    game_id: int,
+) -> tuple[bool, bool]:
+    """``(sensitive, unanimous)`` for the live plays tied at one sequence.
+
+    A group is harmless (not sensitive) when every member shows the teams' running scores as they
+    stood just before the group: then no order of the members can create an event, a rollback or
+    an increment. Otherwise attribution depends on an order that cannot be known. ``unanimous``
+    means every member shows the same teams and scores, so the score after the group is order
+    independent and only the identity of the event that carries the change is ambiguous.
+    """
+    if len(members) < 2:
+        return False, True
+    for offense, defense, offense_score, defense_score in members:
+        for team, score in ((offense, offense_score), (defense, defense_score)):
+            key = (season, game_id, team)
+            if key in malformed:
+                continue
+            current = _num(score)
+            if current is None or current != prior_scores.get(key, 0.0):
+                return True, len(set(members)) == 1
+    return False, True
+
+
 def _required(frame: pd.DataFrame, columns: set[str], label: str) -> None:
     missing = sorted(columns - set(frame.columns))
     if missing:
@@ -105,15 +168,19 @@ _INJECTED_ADMISSIONS = frozenset(
 
 
 def _validated_injected_ledger(
-    possessions: pd.DataFrame, scoring: pd.DataFrame, population: pd.DataFrame
+    possessions: pd.DataFrame,
+    scoring: pd.DataFrame,
+    population: pd.DataFrame,
+    play_identity: str = BYPLAY_V1,
 ) -> pd.DataFrame:
     """Check an externally supplied ledger before it replaces the rebuilt baseline."""
+    v2 = play_identity == BYPLAY_V2
     _required(
         possessions,
         {
             "season",
             "game_id",
-            "drive_number",
+            "drive_id" if v2 else "drive_number",
             "offense",
             "possession_eligible",
             "mixed_eligibility",
@@ -135,7 +202,13 @@ def _validated_injected_ledger(
         },
         "injected scoring events",
     )
-    if possessions.duplicated(["season", "game_id", "drive_number", "offense"]).any():
+    identity_key = [
+        "season",
+        "game_id",
+        "drive_id" if v2 else "drive_number",
+        "offense",
+    ]
+    if possessions.duplicated(identity_key).any():
         raise PossessionMeasurementError("injected possessions repeat an identity")
     if scoring.duplicated(["season", "game_id", "source_event_id", "team"]).any():
         raise PossessionMeasurementError("injected scoring events repeat an identity")
@@ -171,12 +244,19 @@ def build_possession_ledger(
     outcomes: pd.DataFrame | None = None,
     progress: Callable[..., None] | None = None,
     scope: str = "historical",
+    play_identity: str = BYPLAY_V1,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Build regulation possession eligibility and score-attribution ledgers."""
+    """Build regulation possession eligibility and score-attribution ledgers.
+
+    ``play_identity="byplay_v2"`` keys possessions by provider drive and events by provider play
+    (see ``data_first_possession_v2``) and applies the tie-neutrality rule to plays that
+    ``byplay_v2`` flags as tied; the default keeps the superseded sequence identity.
+    """
     if scope not in ("historical", "season_2026"):
         raise PossessionMeasurementError(f"ledger build has unknown scope: {scope}")
     row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     byplay = _canonicalize_byplay_teams(byplay)
+    v2 = _check_identity(byplay, play_identity, "build_possession_ledger")
     _required(
         byplay,
         {
@@ -199,13 +279,18 @@ def build_possession_ledger(
         },
         "byplay",
     )
+    event_id_of = _source_id_v2 if v2 else _source_id
+    drive_column = "drive_id" if v2 else "drive_number"
     known_games = set(
         population[["season", "game_id"]].itertuples(index=False, name=None)
     )
     plays = byplay.copy()
     for name in ("season", "week", "game_id", "drive_number", "play_number"):
         plays[name] = pd.to_numeric(plays[name], errors="raise").astype(int)
-    if plays.duplicated(["season", "game_id", "drive_number", "play_number"]).any():
+    if (
+        not v2
+        and plays.duplicated(["season", "game_id", "drive_number", "play_number"]).any()
+    ):
         raise PossessionMeasurementError("byplay has duplicate stable source play IDs")
     plays = order_plays(
         plays.loc[
@@ -215,7 +300,7 @@ def build_possession_ledger(
         ]
     )
     grouped_drives = plays.groupby(
-        ["season", "game_id", "drive_number", "offense"], sort=False
+        ["season", "game_id", drive_column, "offense"], sort=False
     )
     drive_total = grouped_drives.ngroups
     if progress is not None:
@@ -228,7 +313,7 @@ def build_possession_ledger(
         )
 
     possession_records: list[dict[str, Any]] = []
-    possession_lookup: dict[tuple[int, int, int, str], dict[str, Any]] = {}
+    possession_lookup: dict[tuple[int, int, int | str, str], dict[str, Any]] = {}
     for drive_index, (key, group) in enumerate(grouped_drives, start=1):
         if progress is not None and drive_index % 1_000 == 0:
             progress(
@@ -243,11 +328,12 @@ def build_possession_ledger(
         period_class = periods.pop() if len(periods) == 1 else "unknown"
         drive_plays = tuple(group.itertuples(index=False))
         eligible = [row for row in drive_plays if _eligible_play(row)]
+        ambiguous_drive = v2 and bool(group["drive_ambiguous"].any())
         record = {
             "season": int(season),
             "week": int(group["week"].iloc[0]),
             "game_id": int(game_id),
-            "drive_number": int(drive),
+            "drive_number": int(group["drive_number"].min()) if v2 else int(drive),
             "offense": str(offense),
             "defense": defenses[0] if len(defenses) == 1 else None,
             "period_class": period_class,
@@ -255,14 +341,17 @@ def build_possession_ledger(
             "ineligible_play_count": int(len(group) - len(eligible)),
             "mixed_eligibility": bool(eligible and len(eligible) != len(group)),
             "possession_eligible": bool(eligible),
-            "source_play_ids": json.dumps([_source_id(row) for row in drive_plays]),
+            "source_play_ids": json.dumps([event_id_of(row) for row in drive_plays]),
             "quality_reason": None
-            if len(defenses) == 1 and period_class != "unknown"
+            if len(defenses) == 1 and period_class != "unknown" and not ambiguous_drive
             else "ambiguous_drive_identity_or_period",
             "timing_class": row_timing,
         }
+        if v2:
+            record["drive_id"] = str(drive)
         possession_records.append(record)
-        possession_lookup[(int(season), int(game_id), int(drive), str(offense))] = (
+        lookup_drive = str(drive) if v2 else int(drive)
+        possession_lookup[(int(season), int(game_id), lookup_drive, str(offense))] = (
             record
         )
     if progress is not None:
@@ -274,9 +363,9 @@ def build_possession_ledger(
             rows=len(possession_records),
         )
     possessions = pd.DataFrame.from_records(
-        possession_records, columns=POSSESSION_COLUMNS
+        possession_records, columns=POSSESSION_COLUMNS_V2 if v2 else POSSESSION_COLUMNS
     )
-    if possessions.duplicated(["season", "game_id", "drive_number", "offense"]).any():
+    if possessions.duplicated(["season", "game_id", drive_column, "offense"]).any():
         raise PossessionMeasurementError("possession ledger has duplicate keys")
     if progress is not None:
         progress(
@@ -320,12 +409,70 @@ def build_possession_ledger(
     active_event: dict[tuple[int, int, str], str] = {}
     prior_scores: dict[tuple[int, int, str], float] = {}
     malformed_scores: set[tuple[int, int, str]] = set()
+    # v2 only: live plays tied at one sequence, the group being walked, and teams whose next
+    # event depends on a tie group whose members disagree on the score.
+    tie_members: dict[tuple[int, ...], list[tuple[str, str, Any, Any]]] = {}
+    if v2:
+        for member in plays.loc[
+            plays["play_order_reason"] == "tied_sequence"
+        ].itertuples(index=False):
+            if _dead_play(member.play_type):
+                continue
+            tie_members.setdefault(
+                (
+                    int(member.season),
+                    int(member.game_id),
+                    int(member.quarter),
+                    int(member.drive_number),
+                    int(member.play_number),
+                ),
+                [],
+            ).append(
+                (
+                    str(member.offense),
+                    str(member.defense),
+                    member.offense_score,
+                    member.defense_score,
+                )
+            )
+    taint: set[tuple[int, int, str]] = set()
+    current_tie: tuple[int, ...] | None = None
+    tie_sensitive = False
     for index, row in enumerate(plays.itertuples(index=False), start=1):
         if progress is not None and index % 10_000 == 0:
             progress("ledger", completed=index, total=len(plays), rows=index)
         if _dead_play(row.play_type):
             continue
-        event_id = _source_id(row)
+        event_id = event_id_of(row)
+        extra: dict[str, Any] = {}
+        if v2:
+            extra = {
+                "source_play_id": str(row.source_play_id),
+                "drive_id": str(row.drive_id),
+            }
+            if row.play_order_reason == "tied_sequence":
+                tie_key = (
+                    int(row.season),
+                    int(row.game_id),
+                    int(row.quarter),
+                    int(row.drive_number),
+                    int(row.play_number),
+                )
+                if tie_key != current_tie:
+                    current_tie = tie_key
+                    tie_sensitive, unanimous = _tie_group_state(
+                        tie_members.get(tie_key, []),
+                        prior_scores,
+                        malformed_scores,
+                        int(row.season),
+                        int(row.game_id),
+                    )
+                    if tie_sensitive and not unanimous:
+                        for offense, defense, _, _ in tie_members[tie_key]:
+                            taint.add((int(row.season), int(row.game_id), offense))
+                            taint.add((int(row.season), int(row.game_id), defense))
+            else:
+                current_tie, tie_sensitive = None, False
         for team, score in (
             (str(row.offense), row.offense_score),
             (str(row.defense), row.defense_score),
@@ -390,6 +537,7 @@ def build_possession_ledger(
                         "conversion_for_event_id": None,
                         "quality_reason": malformed_reason,
                         "timing_class": row_timing,
+                        **extra,
                     }
                 )
                 malformed_scores.add(key)
@@ -419,6 +567,7 @@ def build_possession_ledger(
                             "conversion_for_event_id": None,
                             "quality_reason": "exceeds_repaired_final",
                             "timing_class": row_timing,
+                            **extra,
                         }
                     )
                     continue
@@ -433,7 +582,7 @@ def build_possession_ledger(
                 (
                     int(row.season),
                     int(row.game_id),
-                    int(row.drive_number),
+                    str(row.drive_id) if v2 else int(row.drive_number),
                     str(row.offense),
                 )
             )
@@ -477,6 +626,19 @@ def build_possession_ledger(
                 category = "excluded_regulation_offense"
             if category == "unresolved" and reason is None:
                 reason = "unclassified_scoring_event"
+            after_group = key in taint and current_tie is None
+            if tie_sensitive or after_group:
+                # The event's attribution depends on the order of tied plays: leave it
+                # unresolved (overtime keeps its category, so regulation is untouched).
+                if after_group:
+                    taint.discard(
+                        key
+                    )  # only the first event after the group is tainted
+                unit, associated, conversion_for = "unknown", None, None
+                if category != "overtime":
+                    category = "unresolved"
+                if reason is None:
+                    reason = UNRESOLVED_PLAY_ORDER
             item = {
                 "season": int(row.season),
                 "game_id": int(row.game_id),
@@ -491,11 +653,14 @@ def build_possession_ledger(
                 "conversion_for_event_id": conversion_for,
                 "quality_reason": reason,
                 "timing_class": row_timing,
+                **extra,
             }
             events.append(item)
             if category != "overtime" and category != "unresolved":
                 active_event[key] = event_id
-    scoring = pd.DataFrame.from_records(events, columns=SCORING_EVENT_COLUMNS)
+    scoring = pd.DataFrame.from_records(
+        events, columns=SCORING_EVENT_COLUMNS_V2 if v2 else SCORING_EVENT_COLUMNS
+    )
     if scoring.duplicated(["season", "game_id", "source_event_id", "team"]).any():
         raise PossessionMeasurementError(
             "scoring ledger has duplicate stable event keys"
@@ -644,6 +809,7 @@ def build_measurements(
     scope: str = "historical",
     possessions: pd.DataFrame | None = None,
     scoring_events: pd.DataFrame | None = None,
+    play_identity: str = BYPLAY_V1,
 ) -> PossessionMeasurementResult:
     """Build both role measurements while preserving every scoreable game row.
 
@@ -657,6 +823,7 @@ def build_measurements(
         )
     row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     byplay = _canonicalize_byplay_teams(byplay)
+    _check_identity(byplay, play_identity, "build_measurements")
     if (possessions is None) != (scoring_events is None):
         raise PossessionMeasurementError(
             "possessions and scoring_events must be supplied together"
@@ -668,9 +835,12 @@ def build_measurements(
             outcomes=outcomes,
             progress=progress,
             scope=scope,
+            play_identity=play_identity,
         )
     else:
-        scoring = _validated_injected_ledger(possessions, scoring_events, population)
+        scoring = _validated_injected_ledger(
+            possessions, scoring_events, population, play_identity
+        )
     if progress is not None:
         progress(
             "team_game_measurements",

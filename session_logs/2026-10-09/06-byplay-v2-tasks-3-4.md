@@ -33,3 +33,25 @@
 - **Commit proposal (user-run):** `feat(ordering): add shared play order, unresolved-play flags and v1 golden regression` — stage the new and modified files listed above.
 
 **tags:** ["integrity", "pipeline", "ordering"]
+
+## Task 4.1–4.4 (second half of this session)
+
+### Work Completed
+- Identity module, schema revisions and lineage set; builder v2 with the tie-neutrality rule; the independent verifier's own v2 path (it recomputes tie flags from raw columns and rejects forged ones); Gold converters and contract validators. Details, decisions and the real-data table are in Amendment 5 of the contract.
+- A shared logic bug (the "next event" marker consumed inside the tie group) was found by a scenario test and fixed in both implementations; the agreement test could not have caught it.
+- The stop-gate comparison is now reproducible evidence: `scripts/analysis/possession_v2_comparison.py` and `repair-track-evidence/possession-v2-comparison.json` (two final runs identical; 16-file manifest verifies).
+
+### Files Modified
+- New: `src/cks_picks_cfb/data/data_first_possession_v2.py`, `scripts/analysis/possession_v2_comparison.py`, `tests/test_possession_v2.py`, `tests/test_gold_v2.py`, `tests/test_possession_v2_comparison.py`, `repair-track-evidence/possession-v2-comparison.json`.
+- Modified: `data/{play_identity,schema_contracts}.py`, `metrics/{ledger,contracts}.py`, `ratings/{possession_measurements,possession_verification}.py`, `tests/ratings/test_possession_verification.py`, `repair-track-evidence/checksums.json`, the contract and this log.
+
+### Validation
+- [x] Full suite `-W error`: 2,384 passed, 15 skipped; ruff (752 files), `git diff --check` and `make contracts-check` clean.
+- [x] v1 golden digests and eight v1 schema hashes unchanged throughout.
+- [x] Real data: producer equals verifier on all four frames in 2021, 2022 and 2025; 2022 identical to v1; 2021 and 2025 differ only in the collision games, with the exact observation counts Task 1 predicted; no differing shared event and no scoring point moves.
+
+### Handoff Notes
+- **Resume at:** 4.5 — `scripts/analysis/rekey_admission_v2.py` and the v2 paths in `score_envelope_r1.py`, `admission.py`, `metrics/evidence.py`, `build_admitted_ledger_5c.py` and `possession_verification.verify_admitted_ledger`.
+- **Watch out for:** `web/*` and `README` changes in the worktree belong to another session; do not stage them. The 94% season guard means any real-season run needs an explicit population.
+- **Commit proposal (user-run):** `feat(identity): add provider-keyed possession ledger, independent verifier and Gold converters`.
+

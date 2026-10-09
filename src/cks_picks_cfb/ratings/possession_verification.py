@@ -30,6 +30,10 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     SNAPSHOT_COLUMNS,
     TERMINAL_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_possession_v2 import (
+    POSSESSION_COLUMNS_V2,
+    SCORING_EVENT_COLUMNS_V2,
+)
 from cks_picks_cfb.data.data_first_repair_v2 import (
     EXTENSION_2026_SEASONS,
     LIVE_TIMING,
@@ -225,6 +229,56 @@ def _require(frame: pd.DataFrame, required: set[str], label: str) -> None:
         raise IndependentPossessionError(f"{label} lacks columns: {missing}")
 
 
+# --- provider-keyed (v2) identity, expressed here independently of the producer ---------
+_V2_COLUMNS = {
+    "source_play_id",
+    "drive_id",
+    "drive_ambiguous",
+    "play_order_unresolved",
+    "play_order_reason",
+}
+
+
+def _event_key_v2(row: Any) -> str:
+    return f"{int(row.season)}:{int(row.game_id)}:{row.source_play_id}"
+
+
+def _tied_sequence(plays: pd.DataFrame) -> pd.Series:
+    """Plays whose displayed sequence is shared by distinct provider plays (valid period)."""
+    sequence = ["season", "game_id", "quarter", "drive_number", "play_number"]
+    valid = plays["quarter"].map(lambda v: _finite_number(v) is not None and v >= 1)
+    sizes = plays.loc[valid].groupby(sequence)["source_play_id"].transform("nunique")
+    tied = pd.Series(False, index=plays.index)
+    tied.loc[sizes.index] = sizes > 1
+    return tied
+
+
+def _tie_group_outcome(
+    members: list[tuple[str, str, Any, Any]],
+    score_state: dict[tuple[int, int, str], float],
+    broken_streams: set[tuple[int, int, str]],
+    season: int,
+    game_id: int,
+) -> tuple[bool, bool]:
+    """``(order_dependent, same_everywhere)`` for the live plays tied at one sequence.
+
+    Tied plays cannot be ordered, so a group matters only if some member would change a team's
+    running score; a group whose members all show the scores as they stood before it cannot
+    create an event, rollback or increment under any order.
+    """
+    if len(members) < 2:
+        return False, True
+    for offense, defense, offense_points, defense_points in members:
+        for team, points in ((offense, offense_points), (defense, defense_points)):
+            stream = (season, game_id, team)
+            if stream in broken_streams:
+                continue
+            shown = _finite_number(points)
+            if shown is None or shown != score_state.get(stream, 0.0):
+                return True, len(set(members)) == 1
+    return False, True
+
+
 def _reconstruct_ledgers(
     *,
     byplay: pd.DataFrame,
@@ -232,11 +286,15 @@ def _reconstruct_ledgers(
     outcomes: pd.DataFrame | None = None,
     progress: ProgressCallback | None = None,
     scope: str = "historical",
+    play_identity: str = "byplay_v1",
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     if scope not in ("historical", "season_2026"):
         raise IndependentPossessionError(
             f"ledger reconstruction has unknown scope: {scope}"
         )
+    if play_identity not in ("byplay_v1", "byplay_v2"):
+        raise IndependentPossessionError(f"unknown play identity: {play_identity}")
+    v2 = play_identity == "byplay_v2"
     row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     plays = _canonicalize_teams(byplay)
     _require(
@@ -261,9 +319,20 @@ def _reconstruct_ledgers(
         },
         "byplay",
     )
+    if v2:
+        _require(plays, _V2_COLUMNS, "byplay_v2")
+    elif "source_play_id" in plays:
+        raise IndependentPossessionError(
+            "a provider-keyed byplay frame needs play_identity='byplay_v2'"
+        )
     for column in ("season", "week", "game_id", "drive_number", "play_number"):
         plays[column] = pd.to_numeric(plays[column], errors="raise").astype(int)
-    if plays.duplicated(["season", "game_id", "drive_number", "play_number"]).any():
+    if v2:
+        if not plays["source_play_id"].map(lambda v: isinstance(v, str)).all():
+            raise IndependentPossessionError("source_play_id must be exact strings")
+        if plays.duplicated(["season", "game_id", "source_play_id"]).any():
+            raise IndependentPossessionError("byplay contains duplicate provider plays")
+    elif plays.duplicated(["season", "game_id", "drive_number", "play_number"]).any():
         raise IndependentPossessionError("byplay contains duplicate stable play keys")
     membership = set(
         population[["season", "game_id"]].itertuples(index=False, name=None)
@@ -274,8 +343,38 @@ def _reconstruct_ledgers(
         ["season", "game_id", "quarter", "drive_number", "play_number"],
         kind="mergesort",
     )
+    drive_axis = "drive_id" if v2 else "drive_number"
+    event_key_of = _event_key_v2 if v2 else _event_key
+    live_ties: dict[tuple[int, ...], list[tuple[str, str, Any, Any]]] = {}
+    if v2:
+        tied = _tied_sequence(plays)
+        persisted = plays["play_order_reason"] == "tied_sequence"
+        if not (tied == persisted).all():
+            raise IndependentPossessionError(
+                "persisted play-order flags disagree with the recomputed ties"
+            )
+        for member in plays.loc[tied].itertuples(index=False):
+            if _contains(member.play_type, _DEAD_MARKERS):
+                continue
+            live_ties.setdefault(
+                (
+                    int(member.season),
+                    int(member.game_id),
+                    int(member.quarter),
+                    int(member.drive_number),
+                    int(member.play_number),
+                ),
+                [],
+            ).append(
+                (
+                    str(member.offense),
+                    str(member.defense),
+                    member.offense_score,
+                    member.defense_score,
+                )
+            )
     grouped_drives = plays.groupby(
-        ["season", "game_id", "drive_number", "offense"], sort=False
+        ["season", "game_id", drive_axis, "offense"], sort=False
     )
     drive_total = grouped_drives.ngroups
     if progress is not None:
@@ -288,7 +387,7 @@ def _reconstruct_ledgers(
         )
 
     possession_rows: list[dict[str, Any]] = []
-    drive_by_key: dict[tuple[int, int, int, str], dict[str, Any]] = {}
+    drive_by_key: dict[tuple[int, int, int | str, str], dict[str, Any]] = {}
     for drive_index, (key, drive_frame) in enumerate(grouped_drives, start=1):
         if progress is not None and drive_index % 1_000 == 0:
             progress(
@@ -297,7 +396,10 @@ def _reconstruct_ledgers(
                 total=drive_total,
                 rows=len(possession_rows),
             )
-        season, game_id, drive_number, offense = key
+        season, game_id, drive_value, offense = key
+        drive_number = (
+            int(drive_frame["drive_number"].min()) if v2 else int(drive_value)
+        )
         defenses = drive_frame["defense"].dropna().astype(str).unique().tolist()
         periods = {_period_class(value) for value in drive_frame["quarter"]}
         period = next(iter(periods)) if len(periods) == 1 else "unknown"
@@ -317,14 +419,25 @@ def _reconstruct_ledgers(
                 eligible_count and eligible_count != len(drive_frame)
             ),
             "possession_eligible": bool(eligible_count),
-            "source_play_ids": json.dumps([_event_key(play) for play in drive_plays]),
+            "source_play_ids": json.dumps([event_key_of(play) for play in drive_plays]),
             "quality_reason": None
-            if len(defenses) == 1 and period != "unknown"
+            if len(defenses) == 1
+            and period != "unknown"
+            and not (v2 and bool(drive_frame["drive_ambiguous"].any()))
             else "ambiguous_drive_identity_or_period",
             "timing_class": row_timing,
         }
+        if v2:
+            row["drive_id"] = str(drive_value)
         possession_rows.append(row)
-        drive_by_key[(int(season), int(game_id), int(drive_number), str(offense))] = row
+        drive_by_key[
+            (
+                int(season),
+                int(game_id),
+                str(drive_value) if v2 else int(drive_value),
+                str(offense),
+            )
+        ] = row
     if progress is not None:
         progress(
             "ledger_drive_index",
@@ -333,8 +446,10 @@ def _reconstruct_ledgers(
             total=drive_total,
             rows=len(possession_rows),
         )
-    possessions = pd.DataFrame.from_records(possession_rows, columns=POSSESSION_COLUMNS)
-    if possessions.duplicated(["season", "game_id", "drive_number", "offense"]).any():
+    possessions = pd.DataFrame.from_records(
+        possession_rows, columns=POSSESSION_COLUMNS_V2 if v2 else POSSESSION_COLUMNS
+    )
+    if possessions.duplicated(["season", "game_id", drive_axis, "offense"]).any():
         raise IndependentPossessionError(
             "independent possession ledger has duplicate keys"
         )
@@ -380,13 +495,47 @@ def _reconstruct_ledgers(
     score_state: dict[tuple[int, int, str], float] = {}
     last_scoring_event: dict[tuple[int, int, str], str] = {}
     broken_streams: set[tuple[int, int, str]] = set()
+    pending_order_taint: set[tuple[int, int, str]] = set()
+    open_group: tuple[int, ...] | None = None
+    group_order_dependent = False
     total = len(plays)
     for index, play in enumerate(plays.itertuples(index=False), start=1):
         if progress is not None and index % 10_000 == 0:
             progress("ledger_reconstruction", completed=index, total=total, rows=index)
         if _contains(play.play_type, _DEAD_MARKERS):
             continue
-        source_event_id = _event_key(play)
+        source_event_id = event_key_of(play)
+        v2_columns: dict[str, Any] = {}
+        if v2:
+            v2_columns = {
+                "source_play_id": str(play.source_play_id),
+                "drive_id": str(play.drive_id),
+            }
+            sequence_key = (
+                int(play.season),
+                int(play.game_id),
+                int(play.quarter),
+                int(play.drive_number),
+                int(play.play_number),
+            )
+            if sequence_key in live_ties:
+                if sequence_key != open_group:
+                    open_group = sequence_key
+                    group_order_dependent, same_everywhere = _tie_group_outcome(
+                        live_ties[sequence_key],
+                        score_state,
+                        broken_streams,
+                        int(play.season),
+                        int(play.game_id),
+                    )
+                    if group_order_dependent and not same_everywhere:
+                        for member in live_ties[sequence_key]:
+                            for side in member[:2]:
+                                pending_order_taint.add(
+                                    (int(play.season), int(play.game_id), side)
+                                )
+            else:
+                open_group, group_order_dependent = None, False
         for team, reported_score in (
             (str(play.offense), play.offense_score),
             (str(play.defense), play.defense_score),
@@ -449,6 +598,7 @@ def _reconstruct_ledgers(
                         "conversion_for_event_id": None,
                         "quality_reason": reason,
                         "timing_class": row_timing,
+                        **v2_columns,
                     }
                 )
                 broken_streams.add(stream_key)
@@ -477,6 +627,7 @@ def _reconstruct_ledgers(
                             "conversion_for_event_id": None,
                             "quality_reason": "exceeds_repaired_final",
                             "timing_class": row_timing,
+                            **v2_columns,
                         }
                     )
                     continue
@@ -491,7 +642,7 @@ def _reconstruct_ledgers(
                 (
                     int(play.season),
                     int(play.game_id),
-                    int(play.drive_number),
+                    str(play.drive_id) if v2 else int(play.drive_number),
                     str(play.offense),
                 )
             )
@@ -535,6 +686,15 @@ def _reconstruct_ledgers(
                 category = "excluded_regulation_offense"
             if category == "unresolved" and quality_reason is None:
                 quality_reason = "unclassified_scoring_event"
+            follows_group = stream_key in pending_order_taint and open_group is None
+            if follows_group:
+                pending_order_taint.discard(
+                    stream_key
+                )  # consumed by the first event after
+            if group_order_dependent or follows_group:
+                unit, associated, conversion_for = "unknown", None, None
+                category = category if category == "overtime" else "unresolved"
+                quality_reason = quality_reason or "unresolved_play_order"
             event_rows.append(
                 {
                     "season": int(play.season),
@@ -550,11 +710,14 @@ def _reconstruct_ledgers(
                     "conversion_for_event_id": conversion_for,
                     "quality_reason": quality_reason,
                     "timing_class": row_timing,
+                    **v2_columns,
                 }
             )
             if category not in {"overtime", "unresolved"}:
                 last_scoring_event[stream_key] = source_event_id
-    scoring = pd.DataFrame.from_records(event_rows, columns=SCORING_EVENT_COLUMNS)
+    scoring = pd.DataFrame.from_records(
+        event_rows, columns=SCORING_EVENT_COLUMNS_V2 if v2 else SCORING_EVENT_COLUMNS
+    )
     if scoring.duplicated(["season", "game_id", "source_event_id", "team"]).any():
         raise IndependentPossessionError(
             "independent scoring ledger has duplicate keys"
@@ -692,6 +855,7 @@ def reconstruct_measurements(
     population: pd.DataFrame,
     progress: ProgressCallback | None = None,
     scope: str = "historical",
+    play_identity: str = "byplay_v1",
 ) -> IndependentMeasurements:
     """Independently derive team-game possession measurements and paired defense."""
     if scope not in ("historical", "season_2026"):
@@ -703,6 +867,7 @@ def reconstruct_measurements(
         outcomes=outcomes,
         progress=progress,
         scope=scope,
+        play_identity=play_identity,
     )
     if progress is not None:
         progress(

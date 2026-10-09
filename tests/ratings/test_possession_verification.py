@@ -131,6 +131,9 @@ def test_verifier_import_boundary_excludes_producer_logic() -> None:
     banned = {
         "cks_picks_cfb.ratings.possession_measurements",
         "scripts.research.run_data_first_possession_measurements",
+        # v2 play order and identity are expressed independently in the verifier
+        "cks_picks_cfb.data.play_order",
+        "cks_picks_cfb.data.play_identity",
     }
     for path in paths:
         tree = ast.parse(path.read_text())

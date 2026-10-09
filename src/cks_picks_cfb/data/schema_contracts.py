@@ -139,6 +139,11 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
 from cks_picks_cfb.data.data_first_possession_v1 import (
     TERMINAL_COLUMNS as POSSESSION_TERMINAL_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_possession_v2 import (
+    POSSESSION_COLUMNS_V2,
+    POSSESSION_DATASETS_V2,
+    SCORING_EVENT_COLUMNS_V2,
+)
 from cks_picks_cfb.data.data_first_repair_v2 import (
     AUXILIARY_COLUMNS as REPAIR_AUXILIARY_COLUMNS,
 )
@@ -2376,6 +2381,79 @@ _GOLD_METRIC_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
+# Provider-keyed (v2) downstream identities (contract 2026-10-09/01, Task 4). Each entry is its v1
+# schema with only the identity changed; v1 entries above are never edited, so their published
+# hashes and catalog entries stay valid.
+_POSSESSION_V1 = _POSSESSION_SCHEMAS[POSSESSION_DATASETS["possessions"][0]]
+_POSSESSION_EVENT_V1 = _POSSESSION_SCHEMAS[POSSESSION_DATASETS["scoring_events"][0]]
+_POSSESSION_OBSERVATION_V1 = _POSSESSION_SCHEMAS[POSSESSION_DATASETS["observations"][0]]
+_GOLD_POSSESSIONS_V1 = _GOLD_METRIC_SCHEMAS["football_possessions"]
+_GOLD_LEDGER_V1 = _GOLD_METRIC_SCHEMAS["football_scoring_ledger"]
+_GOLD_EVIDENCE_V1 = _GOLD_METRIC_SCHEMAS["scoring_attribution_evidence"]
+
+
+def _after(columns: tuple[str, ...], anchor: str, *added: str) -> tuple[str, ...]:
+    at = columns.index(anchor) + 1
+    return (*columns[:at], *added, *columns[at:])
+
+
+_PLAY_IDENTITY_DOWNSTREAM_SCHEMAS: dict[tuple[str, str], DatasetSchema] = {
+    (
+        POSSESSION_DATASETS_V2["possessions"][0],
+        POSSESSION_DATASETS_V2["possessions"][1],
+    ): (
+        replace(
+            _POSSESSION_V1,
+            schema_version=POSSESSION_DATASETS_V2["possessions"][1],
+            required=POSSESSION_COLUMNS_V2,
+            keys=("season", "game_id", "drive_id", "offense"),
+            nonnullable=_after(_POSSESSION_V1.nonnullable, "drive_number", "drive_id"),
+            identifier_columns=("drive_id",),
+        )
+    ),
+    (
+        POSSESSION_DATASETS_V2["scoring_events"][0],
+        POSSESSION_DATASETS_V2["scoring_events"][1],
+    ): replace(
+        _POSSESSION_EVENT_V1,
+        schema_version=POSSESSION_DATASETS_V2["scoring_events"][1],
+        required=SCORING_EVENT_COLUMNS_V2,
+        nonnullable=(*_POSSESSION_EVENT_V1.nonnullable, "source_play_id", "drive_id"),
+        identifier_columns=("source_play_id", "drive_id"),
+    ),
+    (
+        POSSESSION_DATASETS_V2["observations"][0],
+        POSSESSION_DATASETS_V2["observations"][1],
+    ): replace(
+        _POSSESSION_OBSERVATION_V1,
+        schema_version=POSSESSION_DATASETS_V2["observations"][1],
+    ),
+    ("football_possessions", "football_possessions_v2"): replace(
+        _GOLD_POSSESSIONS_V1,
+        schema_version="football_possessions_v2",
+        required=_after(_GOLD_POSSESSIONS_V1.required, "drive_number", "drive_id"),
+        keys=("season", "game_id", "drive_id", "offense"),
+        nonnullable=_after(
+            _GOLD_POSSESSIONS_V1.nonnullable, "drive_number", "drive_id"
+        ),
+        identifier_columns=("drive_id",),
+    ),
+    ("football_scoring_ledger", "football_scoring_ledger_v2"): replace(
+        _GOLD_LEDGER_V1,
+        schema_version="football_scoring_ledger_v2",
+        required=_after(
+            _GOLD_LEDGER_V1.required, "source_event_id", "source_play_id", "drive_id"
+        ),
+        nonnullable=_after(
+            _GOLD_LEDGER_V1.nonnullable, "source_event_id", "source_play_id", "drive_id"
+        ),
+        identifier_columns=("source_play_id", "drive_id"),
+    ),
+    ("scoring_attribution_evidence", "scoring_attribution_evidence_v2"): replace(
+        _GOLD_EVIDENCE_V1, schema_version="scoring_attribution_evidence_v2"
+    ),
+}
+
 # ---------------------------------------------------------------------------
 # Stage 6B reconstruction datasets (Window 2 6B, contract 2026-10-05/01)
 # ---------------------------------------------------------------------------
@@ -2583,6 +2661,9 @@ _RECONSTRUCTION_SCHEMAS: dict[str, DatasetSchema] = {
 
 def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
     """Return the executable contract for every active immutable dataset."""
+    downstream = _PLAY_IDENTITY_DOWNSTREAM_SCHEMAS.get((dataset, schema_version))
+    if downstream is not None:
+        return downstream
     if dataset in _RECONSTRUCTION_SCHEMAS:
         schema = _RECONSTRUCTION_SCHEMAS[dataset]
         if schema_version != schema.schema_version:

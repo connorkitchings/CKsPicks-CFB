@@ -17,8 +17,16 @@ from typing import Any, Mapping
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.data_first_possession_v2 import (
+    is_event_id_v2,
+    source_event_id_v2,
+)
 from cks_picks_cfb.data.play_order import order_plays
-from cks_picks_cfb.metrics.contracts import canonical_json_text, possession_id_for
+from cks_picks_cfb.metrics.contracts import (
+    canonical_json_text,
+    possession_id_for,
+    possession_id_for_v2,
+)
 
 BASELINE_RULE = "baseline_v1"
 
@@ -48,6 +56,10 @@ def possessions_to_v1(
     narrowed to regulation possessions without a quality reason; a start field position
     outside 0-100 becomes null.
     """
+    if "drive_id" in possessions.columns or "drive_id_source" in drives.columns:
+        raise LedgerConversionError(
+            "possessions_to_v1 cannot convert provider-keyed v2 frames"
+        )
     keys = ["season", "game_id", "drive_number", "offense"]
     if "season" not in drives:
         # Legacy single-season inputs predate the Gold converter. Never infer
@@ -150,6 +162,10 @@ def scoring_events_to_v1(
     sorted evidence ids: those groups' events become ``admission = corroborated`` under
     ``admitted_rule_version`` (the events passed in must already be the admitted allocation).
     """
+    if "source_play_id" in plays.columns or "source_play_id" in events.columns:
+        raise LedgerConversionError(
+            "scoring_events_to_v1 cannot convert provider-keyed v2 frames"
+        )
     frame = plays.copy()
     frame["_id"] = [
         source_event_id(s, g, d, p)
@@ -277,6 +293,263 @@ def scoring_events_to_v1(
                 if pd.isna(e["conversion_for_event_id"])
                 else e["conversion_for_event_id"],
                 "raw_score_before": None if score is None else float(score["before"]),
+                "raw_score_after": None if score is None else float(score["score"]),
+                "envelope_before": score["envelope_before"]
+                if populate_envelopes and evidence and score is not None
+                else None,
+                "envelope_after": score["envelope_after"]
+                if populate_envelopes and evidence and score is not None
+                else None,
+                "certified_final": None if final is None else int(final),
+                "quality_reason": None
+                if pd.isna(e["quality_reason"])
+                else e["quality_reason"],
+                "rule_version": admitted_rule_version
+                if evidence and admitted_rule_version
+                else rule_version,
+                "allocation_group_id": group,
+                "admission": disposition,
+                "evidence_ids": canonical_json_text(sorted(evidence or ())),
+                "timing_class": e["timing_class"],
+                "source_versions": versions,
+            }
+        )
+    out = pd.DataFrame(rows)
+    for column in ("score_increment", "certified_final"):
+        out[column] = out[column].astype("Int64")
+    return out.replace({np.nan: None})
+
+
+def possessions_to_v2(
+    possessions: pd.DataFrame,
+    drives: pd.DataFrame,
+    *,
+    source_versions: Mapping[str, str],
+) -> pd.DataFrame:
+    """``football_possessions_v2``: the v1 conversion keyed on the provider drive.
+
+    ``possessions`` is the v2 ledger (it carries ``drive_id``); ``drives`` is ``drives_v2``,
+    keyed by season, game, provider drive and offense. Merging on the provider drive is
+    one-to-one, so a reused drive number cannot mix two drives. A possession with no drive row
+    keeps null field position and opportunity rather than a default.
+    """
+    if "drive_id" not in possessions.columns or "drive_id_source" not in drives.columns:
+        raise LedgerConversionError(
+            "possessions_to_v2 needs v2 possessions and drives_v2"
+        )
+    if "season" not in drives:
+        raise LedgerConversionError("drives_v2 must carry the season")
+    keys = ["season", "game_id", "drive_id", "offense"]
+    if drives.duplicated(keys).any() or possessions.duplicated(keys).any():
+        raise LedgerConversionError("duplicate possession or drive identity")
+    keep = drives[[*keys, "start_yards_to_goal", "had_scoring_opportunity"]]
+    merged = possessions.merge(keep, on=keys, how="left", validate="one_to_one")
+    opportunity = pd.to_numeric(merged["had_scoring_opportunity"], errors="coerce")
+    merged["scoring_opportunity"] = opportunity.map({1.0: True, 0.0: False}).astype(
+        object
+    )
+    merged.loc[opportunity.isna(), "scoring_opportunity"] = None
+    merged["possession_eligible"] = (
+        merged["possession_eligible"].fillna(False).astype(bool)
+        & merged["period_class"].eq("regulation")
+        & merged["quality_reason"].isna()
+    )
+    yards = pd.to_numeric(merged["start_yards_to_goal"], errors="coerce")
+    merged["start_yards_to_goal"] = yards.where(yards.between(0, 100))
+    merged["possession_id"] = [
+        possession_id_for_v2(s, g, d, o)
+        for s, g, d, o in zip(
+            merged["season"], merged["game_id"], merged["drive_id"], merged["offense"]
+        )
+    ]
+    merged["source_versions"] = canonical_json_text(
+        dict(sorted(source_versions.items()))
+    )
+    columns = [
+        "season",
+        "week",
+        "game_id",
+        "drive_number",
+        "drive_id",
+        "possession_id",
+        "offense",
+        "defense",
+        "period_class",
+        "eligible_play_count",
+        "ineligible_play_count",
+        "mixed_eligibility",
+        "possession_eligible",
+        "scoring_opportunity",
+        "start_yards_to_goal",
+        "source_play_ids",
+        "quality_reason",
+        "timing_class",
+        "source_versions",
+    ]
+    return merged[columns]
+
+
+def scoring_events_to_v2(
+    events: pd.DataFrame,
+    plays: pd.DataFrame,
+    *,
+    finals: Mapping[tuple[int, str], float],
+    source_versions: Mapping[str, str],
+    rule_version: str = BASELINE_RULE,
+    groups: Mapping[tuple[int, str, str], str] | None = None,
+    admitted_evidence: Mapping[str, tuple[str, ...]] | None = None,
+    admitted_rule_version: str | None = None,
+    populate_envelopes: bool = False,
+) -> pd.DataFrame:
+    """``football_scoring_ledger_v2``: the v1 conversion keyed on the provider play.
+
+    ``events`` must carry v2 ids (``season:game_id:source_play_id``); ``plays`` is the
+    ``byplay_v2`` frame. A raw score is *not* asserted across tied plays: ``raw_score_before``
+    is null when the play, or the previous play in that team's stream, is unresolved, and an
+    envelope stops (stays null) at the first unresolved play, because a tie order is unknown.
+    """
+    if "source_play_id" not in plays.columns or "source_play_id" not in events.columns:
+        raise LedgerConversionError(
+            "scoring_events_to_v2 needs v2 events and byplay_v2 plays"
+        )
+    if not events["source_event_id"].map(is_event_id_v2).all():
+        raise LedgerConversionError("events must carry v2 event ids")
+    frame = plays.copy()
+    frame["_id"] = [
+        source_event_id_v2(s, g, i)
+        for s, g, i in zip(frame["season"], frame["game_id"], frame["source_play_id"])
+    ]
+    if frame["_id"].duplicated().any():
+        raise LedgerConversionError("duplicate source play identity")
+    if events.duplicated(["season", "game_id", "source_event_id", "team"]).any():
+        raise LedgerConversionError("duplicate scoring event identity")
+    by_id = frame.set_index("_id")
+    missing = sorted(set(events["source_event_id"]) - set(by_id.index))
+    if missing:
+        raise LedgerConversionError(
+            f"{len(missing)} events have no matching play, e.g. {missing[:3]}"
+        )
+    ordered = order_plays(frame)
+    long = pd.concat(
+        [
+            ordered[
+                ["game_id", "_id", "offense", "offense_score", "play_order_unresolved"]
+            ].set_axis(["game_id", "_id", "team", "score", "unresolved"], axis=1),
+            ordered[
+                ["game_id", "_id", "defense", "defense_score", "play_order_unresolved"]
+            ].set_axis(["game_id", "_id", "team", "score", "unresolved"], axis=1),
+        ]
+    )
+    long["unresolved"] = long["unresolved"].astype(bool)
+    position = {pid: i for i, pid in enumerate(ordered["_id"])}
+    long["pos"] = long["_id"].map(position)
+    long = long.sort_values(["game_id", "team", "pos"], kind="mergesort").reset_index(
+        drop=True
+    )
+    stream = long.groupby(["game_id", "team"])
+    long["before"] = stream["score"].shift(1)
+    long.loc[stream.cumcount().eq(0), "before"] = 0.0
+    previous_unresolved = stream["unresolved"].shift(1, fill_value=False)
+    long.loc[long["unresolved"] | previous_unresolved, "before"] = np.nan
+    long["envelope_after"] = None
+    long["envelope_before"] = None
+    if populate_envelopes:
+        for (game_id, team), rows in long.groupby(["game_id", "team"], sort=False):
+            final = finals.get((int(game_id), team))
+            if final is None:
+                continue
+            running = 0
+            for idx in rows.index:
+                raw = long.loc[idx, "score"]
+                if (
+                    long.loc[idx, "unresolved"]
+                    or pd.isna(raw)
+                    or not np.isfinite(raw)
+                    or raw < 0
+                    or raw != int(raw)
+                ):
+                    # An invalid stream, or a tied play whose order is unknown, cannot
+                    # produce asserted envelope context from here on.
+                    running = None
+                    continue
+                if running is not None:
+                    long.loc[idx, "envelope_before"] = running
+                    running = min(int(final), max(running, int(raw)))
+                    long.loc[idx, "envelope_after"] = running
+    lookup = long.drop_duplicates(["game_id", "team", "_id"]).set_index(
+        ["game_id", "team", "_id"]
+    )
+
+    rows: list[dict[str, Any]] = []
+    versions = canonical_json_text(dict(sorted(source_versions.items())))
+    for e in events.to_dict("records"):
+        play = by_id.loc[e["source_event_id"]]
+        key = (int(e["game_id"]), e["team"], e["source_event_id"])
+        score = lookup.loc[key] if key in lookup.index else None
+        unresolved = e["scoring_category"] == "unresolved"
+        possession = None
+        if e["associated_possession_id"] is not None and not pd.isna(
+            e["associated_possession_id"]
+        ):
+            linked = e["associated_possession_id"]
+            if linked not in by_id.index:
+                raise LedgerConversionError("associated possession play is missing")
+            linked_play = by_id.loc[linked]
+            if (linked_play["season"], linked_play["game_id"]) != (
+                e["season"],
+                e["game_id"],
+            ):
+                raise LedgerConversionError(
+                    "associated possession crosses game identity"
+                )
+            possession = possession_id_for_v2(
+                e["season"],
+                e["game_id"],
+                str(linked_play["drive_id"]),
+                linked_play["offense"],
+            )
+        group = (groups or {}).get(key) or f"unchanged:{int(e['game_id'])}:{e['team']}"
+        final = finals.get((int(e["game_id"]), e["team"]))
+        evidence = (admitted_evidence or {}).get(group)
+        disposition = e.get(
+            "admission", "corroborated" if evidence else "baseline_unchanged"
+        )
+        if disposition not in {
+            "baseline_unchanged",
+            "corroborated",
+            "reverted_unverified",
+            "reverted_contradicted",
+        }:
+            raise LedgerConversionError("unknown or candidate admission")
+        if (disposition == "corroborated") != bool(evidence):
+            raise LedgerConversionError(
+                "admission disagrees with corroborating evidence"
+            )
+        before = (
+            None
+            if score is None or pd.isna(score["before"])
+            else float(score["before"])
+        )
+        rows.append(
+            {
+                "season": int(e["season"]),
+                "game_id": int(e["game_id"]),
+                "source_event_id": e["source_event_id"],
+                "source_play_id": str(e["source_play_id"]),
+                "drive_id": str(e["drive_id"]),
+                "team": e["team"],
+                "drive_number": int(e["drive_number"]),
+                "quarter": int(play["quarter"]),
+                "play_number": int(play["play_number"]),
+                "period_class": e["period_class"],
+                "score_increment": None if unresolved else int(e["score_increment"]),
+                "scoring_category": e["scoring_category"],
+                "unit_category": e["unit_category"],
+                "associated_possession_id": possession,
+                "conversion_for_event_id": None
+                if pd.isna(e["conversion_for_event_id"])
+                else e["conversion_for_event_id"],
+                "raw_score_before": before,
                 "raw_score_after": None if score is None else float(score["score"]),
                 "envelope_before": score["envelope_before"]
                 if populate_envelopes and evidence and score is not None

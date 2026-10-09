@@ -23,6 +23,7 @@ from typing import Any, Iterable
 
 import pandas as pd
 
+from cks_picks_cfb.data.data_first_possession_v2 import is_event_id_v2
 from cks_picks_cfb.metrics import registry as reg
 
 MAX_RESOLVED_INCREMENT = 8
@@ -43,6 +44,16 @@ def possession_id_for(
 ) -> str:
     """Deterministic possession identity from the composite key."""
     raw = f"{int(season)}|{int(game_id)}|{int(drive_number)}|{offense}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:20]
+
+
+def possession_id_for_v2(season: int, game_id: int, drive_id: str, offense: str) -> str:
+    """Deterministic possession identity keyed on the provider drive (byplay_v2).
+
+    The ``v2|`` prefix guarantees it can never equal a v1 id, which is keyed on the displayed
+    drive number.
+    """
+    raw = f"v2|{int(season)}|{int(game_id)}|{drive_id}|{offense}"
     return hashlib.sha256(raw.encode()).hexdigest()[:20]
 
 
@@ -230,6 +241,68 @@ def possessions_problems(frame: pd.DataFrame) -> list[str]:
         if not _string_map(row["source_versions"]):
             problems.append(
                 f"{row['possession_id']}: source_versions must be a JSON map of strings"
+            )
+    return problems
+
+
+def possessions_v2_problems(frame: pd.DataFrame) -> list[str]:
+    """Semantic checks for ``football_possessions_v2`` (provider-drive identity)."""
+    problems = []
+    if frame.duplicated(["season", "game_id", "drive_id", "offense"]).any():
+        problems.append("duplicate possession identity")
+    for row in frame.to_dict("records"):
+        expected = possession_id_for_v2(
+            row["season"], row["game_id"], row["drive_id"], row["offense"]
+        )
+        where = f"{row['game_id']}/{row['drive_id']}/{row['offense']}"
+        if not isinstance(row["drive_id"], str):
+            problems.append(f"{where}: drive_id must be an exact string")
+        if row["possession_id"] != expected:
+            problems.append(f"{where}: possession_id is not the deterministic v2 id")
+        if row["possession_eligible"] and row["period_class"] != "regulation":
+            problems.append(f"{where}: an eligible possession must be regulation")
+        if row["possession_eligible"] and not _null(row["quality_reason"]):
+            problems.append(
+                f"{where}: an eligible possession cannot carry a quality_reason"
+            )
+        if (
+            not _null(row["start_yards_to_goal"])
+            and not 0 <= float(row["start_yards_to_goal"]) <= 100
+        ):
+            problems.append(f"{where}: start_yards_to_goal outside 0-100")
+        ids = _json(row["source_play_ids"])
+        if ids is None or not all(is_event_id_v2(i) for i in ids):
+            problems.append(
+                f"{where}: source_play_ids must be a JSON list of v2 event ids"
+            )
+        if not _string_map(row["source_versions"]):
+            problems.append(f"{where}: source_versions must be a JSON map of strings")
+    return problems
+
+
+def scoring_ledger_v2_problems(
+    frame: pd.DataFrame, possessions: pd.DataFrame | None = None
+) -> list[str]:
+    """``scoring_ledger_problems`` plus the v2 event-id and provider-play checks."""
+    problems = scoring_ledger_problems(frame, possessions)
+    for row in frame.to_dict("records"):
+        where = f"{row['game_id']}/{row['team']}/{row['source_event_id']}"
+        event_id = row["source_event_id"]
+        if not is_event_id_v2(event_id):
+            problems.append(f"{where}: source_event_id is not a v2 event id")
+        elif (
+            event_id
+            != f"{int(row['season'])}:{int(row['game_id'])}:{row['source_play_id']}"
+        ):
+            problems.append(f"{where}: source_event_id disagrees with source_play_id")
+        ref = row["conversion_for_event_id"]
+        if not _null(ref) and not is_event_id_v2(ref):
+            problems.append(f"{where}: conversion_for_event_id is not a v2 event id")
+        if not isinstance(row["drive_id"], str) or not isinstance(
+            row["source_play_id"], str
+        ):
+            problems.append(
+                f"{where}: drive_id and source_play_id must be exact strings"
             )
     return problems
 

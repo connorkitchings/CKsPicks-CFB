@@ -1,6 +1,6 @@
 # byplay_v2: provider-keyed play identity (impact-first)
 
-- **Status:** In Progress (Tasks 1–3 delivered 2026-10-09; Task 4 next)
+- **Status:** In Progress (Tasks 1–3 and Task 4.1–4.4 delivered 2026-10-09; Task 4.5–4.7 next)
 - **Created:** 2026-10-09
 - **Planner:** Sol
 - **Approval source:** User approved this plan in-session on 2026-10-09 (checkpoint → surgical docs pruning → impact-first `byplay_v2`), after two review rounds that corrected the ordering rule and the ID typing recorded below.
@@ -313,4 +313,38 @@ Row and drive counts equal the Task 2 smoke run exactly. Unresolved plays total 
 **Validation:** full suite with `-W error` 2,344 passed and 15 skipped (the one added skip is the other session's disposable-PostgreSQL test in `test_matchup_6a_bridge.py`; none of this work's tests skip); `ruff format --check .` (747 files) and `ruff check .` clean; `git diff --check`, `make contracts-check` and `mkdocs build --strict` pass.
 
 **Next:** Task 4. The ledger, verifier and Gold converters still key on the legacy sequence and raise on tied v2 plays until Task 4 moves identities to `source_play_id`.
+
+### Amendment 5 (2026-10-09): Task 4.1–4.4 receipt (first Task 4 stop gate)
+
+**Reason:** Record the identity, builder, independent verifier and Gold-converter deliverables and their results. The approach, interfaces, scope and acceptance criteria are unchanged; two mechanical decisions are noted below.
+
+**Delivered:**
+
+- `data/data_first_possession_v2.py` (new; v1 untouched): `POSSESSION_COLUMNS_V2` (+`drive_id`), `SCORING_EVENT_COLUMNS_V2` (+`source_play_id`, `drive_id`), `POSSESSION_DATASETS_V2` (ledger, scoring-event and observation `_v2`; population, snapshots, history, terminal and coverage stay v1, so the forecast materializer refuses v2 references by design), and `source_event_id_v2 = season:game_id:source_play_id`.
+- `data/schema_contracts.py`: v2 revisions for the possession ledger, scoring event, observation, `football_possessions`, `football_scoring_ledger` and `scoring_attribution_evidence`, each derived from its v1 entry with only the identity changed; the possession and Gold ledgers are keyed on `drive_id`, identifiers are validated as exact strings. No v1 entry was edited, which the golden hash test enforces.
+- `data/play_identity.py`: `REQUIRES_V2_PLAY_IDENTITY` now lists all eight v2 versions and a `SUPERSEDED_PLAY_IDENTITY` set of eight `(dataset, version)` pairs replaces the old two-name check, so an observation v2 cannot descend from a possession ledger v1.
+- `ratings/possession_measurements.py`: `play_identity` on `build_possession_ledger` and `build_measurements`. v2 groups possessions on `(season, game_id, drive_id, offense)`, ids events from the provider play, validates an injected ledger on the provider drive, and applies the **tie-neutrality rule**: for each group of live plays tied at a sequence, snapshot the teams' running scores; the group is harmless if every member shows those scores. Otherwise events created by its members are `unresolved` (`unresolved_play_order`, increment kept so totals reconcile; overtime keeps category `overtime`), and if members also disagree with each other the next event for those teams is marked too.
+- `ratings/possession_verification.py`: an independent v2 path with its own event key, duplicate check, grouping and neutrality predicate. It **recomputes the tie flags from raw columns and raises if the persisted `play_order_*` flags disagree**. It imports neither `data.play_order` nor `data.play_identity`; the import-boundary test now bans both.
+- `metrics/ledger.py`, `metrics/contracts.py`: `possessions_to_v2`, `scoring_events_to_v2` (a raw score is not asserted across a tied play and an envelope stops at one), `possession_id_for_v2`, `possessions_v2_problems`, `scoring_ledger_v2_problems`. Both v1 converters refuse v2 frames.
+- Tests: `tests/test_possession_v2.py` (19; every scenario is run through the builder *and* the verifier, which must agree frame for frame), `tests/test_gold_v2.py` (17), `tests/test_possession_v2_comparison.py` (4).
+
+**Decisions inside the approach:**
+
+1. **Rollbacks triggered at a tied play are not rewritten.** A score regression is a property of the score stream, not of the order of the tied plays: in the 2025 overtime game the 0–0 provider rows regress the score whichever twin comes first. Rewriting the rolled-back regulation events would have blanked regulation measurements because of an overtime-only tie, contrary to the intent that an overtime tie never touches regulation.
+2. **Neutrality is judged over the *live* tied members.** A dead play (timeout, end of game) never scores, so a pair of one live and one dead play is not a reorderable pair for scoring. The persisted flag still marks all tied plays for disclosure.
+3. A logic bug found by the tests and fixed in **both** implementations: the "next event" marker was consumed by an event inside the tie group instead of the first event after it. Builder-versus-verifier agreement could not have found it, because both had it; a scenario test did.
+
+**Real-data results** (`repair-track-evidence/possession-v2-comparison.json`; read-only, two runs byte-identical). Population: games with plays whose baseline ledger reconciles to the certified finals, plus the four collision games, identical for v1, v2 and the verifier (the unadmitted baseline otherwise trips the builder's 94% season guard on a fraction of real games, which is a known pre-existing issue).
+
+| Season | Games used | Producer = verifier | Possessions v1 / v2 | Events v1 / v2 | Shared events differing | Observation cells changed | One-sided events (v1 / v2) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2022 (no collisions) | 671 of 896 | all four frames | 23,434 / 23,434 | 6,675 / 6,675 | 0 | 0 | 0 / 0 |
+| 2021 | 656 of 887 | all four frames | 22,744 / 22,744 | 6,494 / 6,494 | 0 | 16, all game 401310699 | 0 / 0 |
+| 2025 | 702 of 934 | all four frames | 23,486 / 23,495 (+9) | 6,900 / 6,901 | 0 | 76 (401761632: 46, 401762831: 30); 401756916: 0 | 3 / 6, games 401756916 and 401761632, **0 points** |
+
+Zero `unresolved_play_order` events appear in real data: the 2021 pair is score-neutral, and the 2025 overtime streams were already quarantined by the existing malformed-score path, which takes precedence. All one-sided events are zero-point quarantine or rollback markers that land on a different twin in v2. The 16 and 76 observation cells equal the counts Task 1 predicted.
+
+**Validation:** full suite with `-W error` 2,384 passed and 15 skipped; `ruff format --check .` (752 files) and `ruff check .` clean; `git diff --check` and `make contracts-check` pass.
+
+**Next:** 4.5 (admission re-key and the v2 score envelope, evidence and verifier block), 4.6 (rebuild wiring) and 4.7 (net punt yards), then the final Task 4 stop gate.
 

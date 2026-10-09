@@ -21,11 +21,35 @@ BYPLAY_V2 = "byplay_v2"
 DRIVES_V1 = "drives_v1"
 DRIVES_V2 = "drives_v2"
 
-#: Schema versions whose builds may only descend from v2 play identity. Later tasks add the
-#: v2 possession, scoring-ledger and observation versions here.
-REQUIRES_V2_PLAY_IDENTITY = frozenset({BYPLAY_V2, DRIVES_V2})
-#: Play-derived datasets that carry a play-identity version, and their superseded versions.
-PLAY_IDENTITY_DATASETS = {"byplay": BYPLAY_V1, "drives": DRIVES_V1}
+#: Schema versions whose builds may only descend from v2 play identity: the provider-keyed play,
+#: drive, possession, scoring-event, observation and Gold ledger versions (contract
+#: 2026-10-09/01, Tasks 2 and 4).
+REQUIRES_V2_PLAY_IDENTITY = frozenset(
+    {
+        BYPLAY_V2,
+        DRIVES_V2,
+        "data_first_possession_possession_v2",
+        "data_first_possession_scoring_event_v2",
+        "data_first_possession_observation_v2",
+        "football_possessions_v2",
+        "football_scoring_ledger_v2",
+        "scoring_attribution_evidence_v2",
+    }
+)
+#: ``(dataset, schema_version)`` pairs keyed on the superseded sequence identity. A v2 build must
+#: not descend from any of them; they stay readable as evidence.
+SUPERSEDED_PLAY_IDENTITY = frozenset(
+    {
+        ("byplay", BYPLAY_V1),
+        ("drives", DRIVES_V1),
+        ("possession_ledger", "data_first_possession_possession_v1"),
+        ("possession_scoring_event", "data_first_possession_scoring_event_v1"),
+        ("possession_observation", "data_first_possession_observation_v1"),
+        ("football_possessions", "football_possessions_v1"),
+        ("football_scoring_ledger", "football_scoring_ledger_v1"),
+        ("scoring_attribution_evidence", "scoring_attribution_evidence_v1"),
+    }
+)
 
 SOURCE_PLAY_ID = "source_play_id"
 #: Floats are exact only below 2**53; drive IDs (about 11 digits) fit, play IDs do not.
@@ -176,13 +200,10 @@ def lineage_problem(
     if schema_version not in REQUIRES_V2_PLAY_IDENTITY:
         return None
     for parent in parent_versions:
-        name = parent["dataset"]
-        if name in PLAY_IDENTITY_DATASETS and (
-            parent["schema_version"] == PLAY_IDENTITY_DATASETS[name]
-        ):
+        if (parent["dataset"], parent["schema_version"]) in SUPERSEDED_PLAY_IDENTITY:
             return (
                 f"{dataset} {schema_version} cannot descend from the superseded "
-                f"{parent['schema_version']} {name} parent"
+                f"{parent['schema_version']} {parent['dataset']} parent"
             )
     return None
 
