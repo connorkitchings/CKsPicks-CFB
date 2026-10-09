@@ -76,6 +76,32 @@ def _bool(value: Any) -> bool | None:
     return bool(value)
 
 
+def apply_venue_supplement(
+    venues: pd.DataFrame, supplement: list[dict[str, Any]]
+) -> tuple[pd.DataFrame, list[int]]:
+    """Add reviewed venue records for ids the Silver venues dataset lacks.
+
+    A supplement entry never replaces a venue Silver already has; it only fills an id that is
+    absent, so Silver stays authoritative. Returns the extended frame and the ids added.
+    """
+    v_id = _column(venues, VENUE_ID)
+    if v_id is None:
+        raise MissingVenueColumnsError(
+            f"Silver venues has no id column; columns: {sorted(venues.columns)}"
+        )
+    present = {_int(v) for v in venues[v_id]}
+    rows, added = [], []
+    for entry in supplement:
+        vid = int(entry["venue_id"])
+        if vid in present or vid in added:
+            continue
+        added.append(vid)
+        rows.append({v_id: vid, **{k: v for k, v in entry.items() if k != "venue_id"}})
+    if not rows:
+        return venues, []
+    return pd.concat([venues, pd.DataFrame(rows)], ignore_index=True), added
+
+
 def build_game_venue_rows(
     games: pd.DataFrame,
     venues: pd.DataFrame,

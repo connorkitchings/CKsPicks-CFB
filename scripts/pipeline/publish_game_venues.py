@@ -32,6 +32,7 @@ from cks_picks_cfb.data.game_venues import (
     UPSERT_GAME_VENUE_SQL,
     VENUE_ID,
     MissingVenueColumnsError,
+    apply_venue_supplement,
     build_game_venue_rows,
     require_venue_cities,
 )
@@ -113,6 +114,15 @@ def main() -> int:
         action="store_true",
         help="Fail dry run/publication on incomplete city coverage",
     )
+    parser.add_argument(
+        "--only-missing",
+        action="store_true",
+        help="Write only games that have no game_venues row yet; existing rows are never touched",
+    )
+    parser.add_argument(
+        "--supplement",
+        help="Reviewed JSON list of venue records that fills venue ids Silver lacks",
+    )
     args = parser.parse_args()
 
     url = args.database_url or os.getenv(URL_ENV[args.environment])
@@ -131,8 +141,18 @@ def main() -> int:
             venues_ref = _latest_silver_ref(cur, "venues", None, args.venues_version)
             cur.execute("SELECT game_id FROM games WHERE season = %s", (args.season,))
             neon_ids = [int(r[0]) for r in cur.fetchall()]
+            if args.only_missing:
+                cur.execute("SELECT game_id FROM game_venues")
+                have = {int(r[0]) for r in cur.fetchall()}
+                neon_ids = [g for g in neon_ids if g not in have]
+                print(f"--only-missing: {len(neon_ids)} games without a venue row")
         games = read_dataset(storage, games_ref)
         venues = read_dataset(storage, venues_ref)
+        if args.supplement:
+            venues, added = apply_venue_supplement(
+                venues, json.loads(open(args.supplement).read())
+            )
+            print(f"supplement {args.supplement}: filled venue ids {added}")
         print(f"Silver games  {games_ref.version_id}: columns {sorted(games.columns)}")
         print(
             f"Silver venues {venues_ref.version_id}: columns {sorted(venues.columns)}"

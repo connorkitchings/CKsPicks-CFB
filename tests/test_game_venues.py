@@ -8,6 +8,7 @@ import pytest
 from cks_picks_cfb.data.game_venues import (
     UPSERT_GAME_VENUE_SQL,
     MissingVenueColumnsError,
+    apply_venue_supplement,
     build_game_venue_rows,
 )
 
@@ -341,3 +342,16 @@ def _quality_identity(identity):
     assert identity["games_content_sha"] == "games-sha"
     assert identity["venues_content_sha"] == "venues-sha"
     return {"_path": "test-only"}
+
+
+def test_supplement_fills_only_absent_venue_ids():
+    extra = [
+        {"venue_id": 10, "name": "Not Rose Bowl", "city": "Elsewhere", "state": "ZZ"},
+        {"venue_id": 99, "name": "Ryan Field", "city": "Evanston", "state": "IL"},
+    ]
+    out, added = apply_venue_supplement(VENUES, extra)
+    assert added == [99]
+    assert out.loc[out["venue_id"] == 10, "city"].tolist() == ["Pasadena"]
+    assert out.loc[out["venue_id"] == 99, "city"].tolist() == ["Evanston"]
+    same, none = apply_venue_supplement(VENUES, [])
+    assert none == [] and same is VENUES
