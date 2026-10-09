@@ -1,6 +1,6 @@
 # byplay_v2: provider-keyed play identity (impact-first)
 
-- **Status:** In Progress (Tasks 1–5 delivered 2026-10-09; Task 6 close-out next)
+- **Status:** Implemented (delivered 2026-10-09 across Tasks 1–6)
 - **Created:** 2026-10-09
 - **Planner:** Sol
 - **Approval source:** User approved this plan in-session on 2026-10-09 (checkpoint → surgical docs pruning → impact-first `byplay_v2`), after two review rounds that corrected the ordering rule and the ID typing recorded below.
@@ -210,12 +210,12 @@ Then focused tests per task, the full Python suite with `-W error`, `ruff format
 
 ## Definition of Done
 
-- [ ] Task 1 evidence delivered and confirmed by the user before Task 2 began.
-- [ ] All implementation tasks and acceptance criteria are complete.
-- [ ] Invariance proven outside the collision keys; every affected-game difference is explained in the ledger.
-- [ ] Full suite with `-W error`, ruff, shared contracts and registry checks, and the strict docs build pass.
-- [ ] The parent contract carries the Amendment with receipts; the session log is written.
-- [ ] Plan status is updated to `Implemented`.
+- [x] Task 1 evidence delivered and confirmed by the user before Task 2 began.
+- [x] All implementation tasks and acceptance criteria are complete.
+- [x] Invariance proven outside the collision keys; every affected-game difference is explained in the ledger.
+- [x] Full suite with `-W error`, ruff, shared contracts and registry checks, and the strict docs build pass.
+- [x] The parent contract carries the Amendment with receipts; the session log is written.
+- [x] Plan status is updated to `Implemented`.
 
 ## Amendments
 

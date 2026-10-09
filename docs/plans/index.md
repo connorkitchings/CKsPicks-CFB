@@ -56,7 +56,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | Current contract | Purpose | State |
 | --- | --- | --- |
 | [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | The one open data contract: corrected lineage, play identity, quality follow-ups, Week 6 certification, Preview rehearsal, Production packet | In Progress |
-| [byplay_v2 play identity](2026-10-09/01-byplay-v2-play-identity.md) | Provider-keyed play identity, impact-first (child of the repair-track contract) | Approved |
+| [byplay_v2 play identity](2026-10-09/01-byplay-v2-play-identity.md) | Provider-keyed play identity, impact-first (child of the repair-track contract) | Implemented |
 | [Stage 7B exact release and cutover](2026-10-06/02-stage7b-exact-release-and-cutover.md) | Signed cutover packet and staging for the corrected lineage | In Progress (foundations complete; cutover waits for the certified packet) |
 | [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) | V5-only site and operating path | In Progress |
 | [Archive unique local artifacts](2026-09-27/03-archive-unique-local-artifacts.md) | Preserve unique local artifacts | In Progress |
