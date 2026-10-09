@@ -64,3 +64,9 @@
 - Validation: 2,418 passed / 15 skipped (`-W error`); ruff, contracts and strict docs build clean.
 - **Resume at:** Task 5 (invariance proof), only after the user reviews the stop gate. Uncommitted; do not stage `web/*`.
 - **Commit proposal (user-run):** `feat(identity): re-key admission decisions to provider ids and wire the play-identity policy`.
+
+## Update: Task 5 (invariance proof)
+
+- Built `rebuild/invariance.py`, `scripts/analysis/invariance_v2.py` and `invariance_frames_v2.py`; ran v1 against v2 for 2015–2019, 2021–2025 and the 2026 w4/w5 pin sets. 148.5M cells compared, 0 outside the four collision games, ledger 1,588 rows with 0 unexplained; two full runs byte-identical. Evidence in `repair-track-evidence/` and `checksums.json` (32 files verified).
+- Comparator artifacts found by reading cells (id-list order, evidence representative event) are handled and tested. 28 deduped plays = 25 restored + 3 removed by the unchanged play-type filter.
+- **Resume at:** Task 6 (close-out) only after the user reviews the Task 5 gate. Uncommitted; do not stage `web/*` or other sessions' files.

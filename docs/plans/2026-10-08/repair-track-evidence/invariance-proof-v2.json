@@ -1,0 +1,2038 @@
+{
+  "collision_games": [
+    401310699,
+    401756916,
+    401761632,
+    401762831
+  ],
+  "contract": "docs/plans/2026-10-09/01-byplay-v2-play-identity.md#task-5",
+  "dedup_accounting": {
+    "2021": {
+      "removed_by_historical_dedup": 1,
+      "removed_by_unchanged_play_type_filter": {},
+      "restored_in_v2_byplay": 1
+    },
+    "2025": {
+      "removed_by_historical_dedup": 27,
+      "removed_by_unchanged_play_type_filter": {
+        "End Period": 2,
+        "Timeout": 1
+      },
+      "restored_in_v2_byplay": 24
+    }
+  },
+  "evidence_representative_choices": {
+    "count": 1,
+    "note": "Evidence rows whose allocation group is the same but whose representative event differs: the representative is the group's lexicographically first event id, which changes with the id vocabulary. Both representatives are members of the same group in the v2 ledger.",
+    "rows": [
+      {
+        "columns": [
+          "possession_id",
+          "source_event_id"
+        ],
+        "evidence_id": "cfbd_drives:8ea1d96f0178a89f050df03dfd799b83f0a90b03ed05ddb20227b75e55317729",
+        "game_id": 401645358,
+        "group": "1df3c1b48f4410c8",
+        "season": 2024,
+        "v1_representative": "2024:401645358:401645358102909201",
+        "v2_representative": "2024:401645358:401645358102854901"
+      }
+    ]
+  },
+  "ledger": {
+    "rows": 1588,
+    "sha256": "ce754725e415c8d8b50e272fc560a593c2c6e035c54fc9c1dcc3e8b69fa3dcd4",
+    "unexplained_rows": 0
+  },
+  "outside_collision": {},
+  "passed": true,
+  "per_season": {
+    "2015": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10874715,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 153165,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 153165,
+        "rows_v2": 153165
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 517712,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32357,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32357,
+        "rows_v2": 32357
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 1178,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 62,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 62,
+        "rows_v2": 62
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 389760,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 27840,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 27840,
+        "rows_v2": 27840
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 485355,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32357,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32357,
+        "rows_v2": 32357
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 183238,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8329,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8329,
+        "rows_v2": 8329
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 127008,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 14112,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 14112,
+        "rows_v2": 14112
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5220,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 870,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 870,
+        "rows_v2": 870
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 186408,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1726,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1726,
+        "rows_v2": 1726
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1461600,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 73080,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 73080,
+        "rows_v2": 73080
+      }
+    },
+    "2016": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10765730,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 151630,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 151630,
+        "rows_v2": 151630
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 512480,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32030,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32030,
+        "rows_v2": 32030
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 1387,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 73,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 73,
+        "rows_v2": 73
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 391104,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 27936,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 27936,
+        "rows_v2": 27936
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 480450,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32030,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32030,
+        "rows_v2": 32030
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 183238,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8329,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8329,
+        "rows_v2": 8329
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 129654,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 14406,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 14406,
+        "rows_v2": 14406
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5238,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 873,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 873,
+        "rows_v2": 873
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 185112,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1714,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1714,
+        "rows_v2": 1714
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1466640,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 73332,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 73332,
+        "rows_v2": 73332
+      }
+    },
+    "2017": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10758133,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 151523,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 151523,
+        "rows_v2": 151523
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 511152,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31947,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 31947,
+        "rows_v2": 31947
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 1710,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 90,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 90,
+        "rows_v2": 90
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 391552,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 27968,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 27968,
+        "rows_v2": 27968
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 479205,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31947,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 31947,
+        "rows_v2": 31947
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 181148,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8234,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8234,
+        "rows_v2": 8234
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 128898,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 14322,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 14322,
+        "rows_v2": 14322
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5244,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 874,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 874,
+        "rows_v2": 874
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 187704,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1738,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1738,
+        "rows_v2": 1738
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1468320,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 73416,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 73416,
+        "rows_v2": 73416
+      }
+    },
+    "2018": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10846457,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 152767,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 152767,
+        "rows_v2": 152767
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 518528,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32408,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32408,
+        "rows_v2": 32408
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 969,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 51,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 51,
+        "rows_v2": 51
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 396032,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 28288,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 28288,
+        "rows_v2": 28288
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 486120,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32408,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32408,
+        "rows_v2": 32408
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 185592,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8436,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8436,
+        "rows_v2": 8436
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 131922,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 14658,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 14658,
+        "rows_v2": 14658
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5304,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 884,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 884,
+        "rows_v2": 884
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 190296,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1762,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1762,
+        "rows_v2": 1762
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1485120,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 74256,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 74256,
+        "rows_v2": 74256
+      }
+    },
+    "2019": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10786391,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 151921,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 151921,
+        "rows_v2": 151921
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 512176,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32011,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32011,
+        "rows_v2": 32011
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 779,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 41,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 41,
+        "rows_v2": 41
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 397824,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 28416,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 28416,
+        "rows_v2": 28416
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 480165,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 32011,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 32011,
+        "rows_v2": 32011
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 183766,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8353,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8353,
+        "rows_v2": 8353
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 131166,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 14574,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 14574,
+        "rows_v2": 14574
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5328,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 888,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 888,
+        "rows_v2": 888
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 191592,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1774,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1774,
+        "rows_v2": 1774
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1491840,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 74592,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 74592,
+        "rows_v2": 74592
+      }
+    },
+    "2021": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10708717,
+        "games_touched": [
+          401310699
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 150827,
+        "rows_only_v1": 0,
+        "rows_only_v2": 1,
+        "rows_v1": 150827,
+        "rows_v2": 150828
+      },
+      "drives": {
+        "cells_changed": 2,
+        "cells_compared": 488928,
+        "games_touched": [
+          401310699
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 30558,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 30558,
+        "rows_v2": 30558
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 4579,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 241,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 241,
+        "rows_v2": 241
+      },
+      "observations": {
+        "cells_changed": 16,
+        "cells_compared": 397376,
+        "games_touched": [
+          401310699
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 28384,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 28384,
+        "rows_v2": 28384
+      },
+      "possessions": {
+        "cells_changed": 2,
+        "cells_compared": 458370,
+        "games_touched": [
+          401310699
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 30558,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 30558,
+        "rows_v2": 30558
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 196944,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8952,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8952,
+        "rows_v2": 8952
+      },
+      "season_features": {
+        "cells_changed": 80,
+        "cells_compared": 134946,
+        "games_touched": [
+          401310699
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 14994,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 14994,
+        "rows_v2": 14994
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5322,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 887,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 887,
+        "rows_v2": 887
+      },
+      "team_game": {
+        "cells_changed": 45,
+        "cells_compared": 191592,
+        "games_touched": [
+          401310699
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1774,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1774,
+        "rows_v2": 1774
+      },
+      "team_game_metrics": {
+        "cells_changed": 86,
+        "cells_compared": 1490160,
+        "games_touched": [
+          401310699
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 74508,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 74508,
+        "rows_v2": 74508
+      }
+    },
+    "2022": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10797893,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 152083,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 152083,
+        "rows_v2": 152083
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 492128,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 30758,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 30758,
+        "rows_v2": 30758
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 4104,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 216,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 216,
+        "rows_v2": 216
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 401408,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 28672,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 28672,
+        "rows_v2": 28672
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 461370,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 30758,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 30758,
+        "rows_v2": 30758
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 185724,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8442,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8442,
+        "rows_v2": 8442
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 135702,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 15078,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 15078,
+        "rows_v2": 15078
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5376,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 896,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 896,
+        "rows_v2": 896
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 193536,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1792,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1792,
+        "rows_v2": 1792
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1505280,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 75264,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 75264,
+        "rows_v2": 75264
+      }
+    },
+    "2023": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10670732,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 150292,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 150292,
+        "rows_v2": 150292
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 501264,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31329,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 31329,
+        "rows_v2": 31329
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 4028,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 212,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 212,
+        "rows_v2": 212
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 407680,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 29120,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 29120,
+        "rows_v2": 29120
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 469935,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31329,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 31329,
+        "rows_v2": 31329
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 189530,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8615,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8615,
+        "rows_v2": 8615
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 136836,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 15204,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 15204,
+        "rows_v2": 15204
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5460,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 910,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 910,
+        "rows_v2": 910
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 196560,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1820,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1820,
+        "rows_v2": 1820
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1528800,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 76440,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 76440,
+        "rows_v2": 76440
+      }
+    },
+    "2024": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10807691,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 152221,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 152221,
+        "rows_v2": 152221
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 502592,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31412,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 31412,
+        "rows_v2": 31412
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 4503,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 237,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 237,
+        "rows_v2": 237
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 412160,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 29440,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 29440,
+        "rows_v2": 29440
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 471180,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31412,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 31412,
+        "rows_v2": 31412
+      },
+      "scoring_ledger": {
+        "cells_changed": 0,
+        "cells_compared": 188760,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8580,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8580,
+        "rows_v2": 8580
+      },
+      "season_features": {
+        "cells_changed": 0,
+        "cells_compared": 137592,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 15288,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 15288,
+        "rows_v2": 15288
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5514,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 919,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 919,
+        "rows_v2": 919
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 198504,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1838,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1838,
+        "rows_v2": 1838
+      },
+      "team_game_metrics": {
+        "cells_changed": 0,
+        "cells_compared": 1545600,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 77280,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 77280,
+        "rows_v2": 77280
+      }
+    },
+    "2025": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 10978872,
+        "games_touched": [
+          401756916,
+          401761632,
+          401762831
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 154632,
+        "rows_only_v1": 0,
+        "rows_only_v2": 24,
+        "rows_v1": 154632,
+        "rows_v2": 154656
+      },
+      "drives": {
+        "cells_changed": 30,
+        "cells_compared": 503152,
+        "games_touched": [
+          401756916,
+          401761632,
+          401762831
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31447,
+        "rows_only_v1": 0,
+        "rows_only_v2": 9,
+        "rows_v1": 31447,
+        "rows_v2": 31456
+      },
+      "evidence": {
+        "cells_changed": 0,
+        "cells_compared": 3667,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 193,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 193,
+        "rows_v2": 193
+      },
+      "observations": {
+        "cells_changed": 76,
+        "cells_compared": 418432,
+        "games_touched": [
+          401761632,
+          401762831
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 29888,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 29888,
+        "rows_v2": 29888
+      },
+      "possessions": {
+        "cells_changed": 6,
+        "cells_compared": 471705,
+        "games_touched": [
+          401756916,
+          401761632,
+          401762831
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 31447,
+        "rows_only_v1": 0,
+        "rows_only_v2": 9,
+        "rows_v1": 31447,
+        "rows_v2": 31456
+      },
+      "scoring_ledger": {
+        "cells_changed": 18,
+        "cells_compared": 202048,
+        "games_touched": [
+          401756916,
+          401761632
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 9184,
+        "rows_only_v1": 3,
+        "rows_only_v2": 4,
+        "rows_v1": 9187,
+        "rows_v2": 9188
+      },
+      "season_features": {
+        "cells_changed": 409,
+        "cells_compared": 138348,
+        "games_touched": [
+          401761632,
+          401762831
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 15372,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 15372,
+        "rows_v2": 15372
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 5604,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 934,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 934,
+        "rows_v2": 934
+      },
+      "team_game": {
+        "cells_changed": 316,
+        "cells_compared": 201744,
+        "games_touched": [
+          401756916,
+          401761632,
+          401762831
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 1868,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 1868,
+        "rows_v2": 1868
+      },
+      "team_game_metrics": {
+        "cells_changed": 452,
+        "cells_compared": 1569120,
+        "games_touched": [
+          401761632,
+          401762831
+        ],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 78456,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 78456,
+        "rows_v2": 78456
+      }
+    },
+    "2026-w4": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 2513897,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 35407,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 35407,
+        "rows_v2": 35407
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 115552,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 7222,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 7222,
+        "rows_v2": 7222
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 96320,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 6880,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 6880,
+        "rows_v2": 6880
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 79442,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 7222,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 7222,
+        "rows_v2": 7222
+      },
+      "scoring_events": {
+        "cells_changed": 0,
+        "cells_compared": 20340,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 2034,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 2034,
+        "rows_v2": 2034
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 1290,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 215,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 215,
+        "rows_v2": 215
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 46440,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 430,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 430,
+        "rows_v2": 430
+      }
+    },
+    "2026-w5": {
+      "byplay": {
+        "cells_changed": 0,
+        "cells_compared": 3169085,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 44635,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 44635,
+        "rows_v2": 44635
+      },
+      "drives": {
+        "cells_changed": 0,
+        "cells_compared": 146000,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 9125,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 9125,
+        "rows_v2": 9125
+      },
+      "observations": {
+        "cells_changed": 0,
+        "cells_compared": 121856,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 8704,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 8704,
+        "rows_v2": 8704
+      },
+      "possessions": {
+        "cells_changed": 0,
+        "cells_compared": 100375,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 9125,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 9125,
+        "rows_v2": 9125
+      },
+      "scoring_events": {
+        "cells_changed": 0,
+        "cells_compared": 25580,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 2558,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 2558,
+        "rows_v2": 2558
+      },
+      "source_reconciliation": {
+        "cells_changed": 0,
+        "cells_compared": 1632,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 272,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 272,
+        "rows_v2": 272
+      },
+      "team_game": {
+        "cells_changed": 0,
+        "cells_compared": 58536,
+        "games_touched": [],
+        "outside_collision": {
+          "cells": 0,
+          "games": [],
+          "rows_only_v1": 0,
+          "rows_only_v2": 0
+        },
+        "rows_compared": 542,
+        "rows_only_v1": 0,
+        "rows_only_v2": 0,
+        "rows_v1": 542,
+        "rows_v2": 542
+      }
+    }
+  },
+  "pinned_2026_sets": [
+    "conf/rebuild/silver_2026_parents_v1.json",
+    "conf/rebuild/silver_2026_parents_w5_v1.json"
+  ],
+  "schema_version": "invariance_proof_v2",
+  "seasons": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "totals_by_table": {
+    "byplay": {
+      "cells_changed": 0,
+      "cells_compared": 113678313,
+      "rows_compared": 1601103,
+      "rows_only_v1": 0,
+      "rows_only_v2": 25
+    },
+    "drives": {
+      "cells_changed": 32,
+      "cells_compared": 5321664,
+      "rows_compared": 332604,
+      "rows_only_v1": 0,
+      "rows_only_v2": 9
+    },
+    "evidence": {
+      "cells_changed": 0,
+      "cells_compared": 26904,
+      "rows_compared": 1416,
+      "rows_only_v1": 0,
+      "rows_only_v2": 0
+    },
+    "observations": {
+      "cells_changed": 92,
+      "cells_compared": 4221504,
+      "rows_compared": 301536,
+      "rows_only_v1": 0,
+      "rows_only_v2": 0
+    },
+    "possessions": {
+      "cells_changed": 8,
+      "cells_compared": 4923672,
+      "rows_compared": 332604,
+      "rows_only_v1": 0,
+      "rows_only_v2": 9
+    },
+    "scoring_events": {
+      "cells_changed": 0,
+      "cells_compared": 45920,
+      "rows_compared": 4592,
+      "rows_only_v1": 0,
+      "rows_only_v2": 0
+    },
+    "scoring_ledger": {
+      "cells_changed": 18,
+      "cells_compared": 1879988,
+      "rows_compared": 85454,
+      "rows_only_v1": 3,
+      "rows_only_v2": 4
+    },
+    "season_features": {
+      "cells_changed": 489,
+      "cells_compared": 1332072,
+      "rows_compared": 148008,
+      "rows_only_v1": 0,
+      "rows_only_v2": 0
+    },
+    "source_reconciliation": {
+      "cells_changed": 0,
+      "cells_compared": 56532,
+      "rows_compared": 9422,
+      "rows_only_v1": 0,
+      "rows_only_v2": 0
+    },
+    "team_game": {
+      "cells_changed": 361,
+      "cells_compared": 2028024,
+      "rows_compared": 18778,
+      "rows_only_v1": 0,
+      "rows_only_v2": 0
+    },
+    "team_game_metrics": {
+      "cells_changed": 538,
+      "cells_compared": 15012480,
+      "rows_compared": 750624,
+      "rows_only_v1": 0,
+      "rows_only_v2": 0
+    }
+  }
+}

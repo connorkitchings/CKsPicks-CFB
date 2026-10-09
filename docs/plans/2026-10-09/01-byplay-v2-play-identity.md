@@ -1,6 +1,6 @@
 # byplay_v2: provider-keyed play identity (impact-first)
 
-- **Status:** In Progress (Tasks 1–3 and Task 4.1–4.4 delivered 2026-10-09; Task 4.5–4.7 next)
+- **Status:** In Progress (Tasks 1–5 delivered 2026-10-09; Task 6 close-out next)
 - **Created:** 2026-10-09
 - **Planner:** Sol
 - **Approval source:** User approved this plan in-session on 2026-10-09 (checkpoint → surgical docs pruning → impact-first `byplay_v2`), after two review rounds that corrected the ordering rule and the ID typing recorded below.
@@ -373,3 +373,30 @@ No admitted or contradicted group touches a collision game, as the Task 4 plan p
 **Validation:** full suite with `-W error` 2,418 passed, 15 skipped; `ruff format --check .` (759 files) and `ruff check .` clean; `git diff --check`, `make contracts-check` and `mkdocs build --strict` pass.
 
 **Next:** Task 5 (invariance proof) after the user's review of this gate.
+
+### Amendment 7 (2026-10-09): Task 5 receipt (invariance proof and discrepancy ledger)
+
+**Method.** `scripts/analysis/invariance_v2.py` (frames from `invariance_frames_v2.py`, comparison in `rebuild/invariance.py` using `published_diff` equality semantics) builds both sides from the pinned parents and compares every table by key: Silver by-play, drives, team-game, source reconciliation; baseline and admitted possession ledger, Gold possessions, scoring ledger and evidence; observations; `team_game_metrics`; `season_level_features`. **v1** is the current code run on the historical `keep="first"` input, so identity is the only difference between sides. **v2** uses every provider play and the re-keyed decisions. The same version label is written on both sides so version columns never differ.
+
+**Result: passed.** 148,527,073 cells compared over the 10 B2 seasons (2015–2019, 2021–2025) and the two pinned 2026 parent sets; **0 differences outside the four collision games**; ledger 1,588 rows, 0 `UNEXPLAINED`. Two full runs are byte-identical (summaries and ledger); assembling twice is byte-identical. Evidence: `invariance-proof-v2.json`, `discrepancy-ledger-v2.csv`, both in `checksums.json` (32 files verified).
+
+| Collision game | Teams, week | Changed |
+| --- | --- | --- |
+| 401310699 (2021) | San Diego State, New Mexico State, wk 1 | 1 restored play; 2 drive cells, 2 possession cells, 16 observation cells, 45 team-game cells, 86 metric cells, 80 season-feature cells |
+| 401756916 (2025) | Arizona, BYU, wk 7 | 3 restored plays, 3 drives and possessions; 106 team-game cells (overtime only, no metric change); 18 scoring-ledger cells and 2 + 2 rows (see relabel below) |
+| 401761632 (2025) | Marshall, Texas State, wk 8 | 17 plays, 5 drives and possessions; 142 team-game, 46 observation, 306 metric, 286 season-feature cells |
+| 401762831 (2025) | Buffalo, Eastern Michigan, wk 6 | 4 plays, 1 drive and possession; 68 team-game, 30 observation, 146 metric, 123 season-feature cells |
+
+**Accounting for the 28 deduped plays:** 28 raw plays were removed by the historical key (2021: 1, 2025: 27); 25 are restored in `byplay_v2`. The other 3 (`End Period` ×2, `Timeout` ×1, game 401761632) are removed by the unchanged play-type filter on both sides. Recorded in `dedup_accounting`.
+
+**Findings and decisions inside the proof:**
+
+1. **Evidence representative (1 row, outside the collision games).** An evidence row describes its allocation group through the group's lexicographically first event id, so the same group is represented by a different member once ids change vocabulary (2024 game 401645358). It is set aside only when every changed column derives from the representative and both representatives are members of the same group in the v2 ledger; it is listed in the proof under `evidence_representative_choices`, not hidden. Evidence JSON id lists are compared as sets for the same reason.
+2. **Relabel (18 cells).** The two pinned `reverted_unverified` groups of game 401756916 have no v2 counterpart (the v2 envelope skips overtime tied streams), so their events show `baseline_unchanged` instead. No score increment changes; disposition `relabelled_pinned_group_without_v2_counterpart`.
+3. A first version of the comparison reported 1–4 evidence cells per season outside the collision games; both causes were comparator artifacts (list order, representative event), found by reading the cells, and are now handled as above and unit-tested (`tests/test_invariance_v2.py`, 10 tests).
+
+**Limits to read with the result.** (a) 2026 is the Silver tables plus the baseline possession ledger and observations for the Week 4 and Week 5 pin sets; it has no admission decisions, and no Week 6 pin set exists in `conf/rebuild/`, so Week 6 is covered by identity of the code path only. (b) Source reconciliation uses no declared-incomplete game ids on either side. (c) The Gold chain is run with the same functions as the Gold stage but not through the orchestrated stage. (d) Descendants are listed, not rebuilt: for each game above, every as-of-week aggregate of both teams from the week shown on (observations, ratings built from them, team statistics, season features, and the matchup features of later opponents) must be recertified by the parent contract.
+
+**Validation:** full suite `-W error`, ruff, `make contracts-check`, strict docs build: see the session log.
+
+**Next:** Task 6 (close-out), after the user's review of this gate.

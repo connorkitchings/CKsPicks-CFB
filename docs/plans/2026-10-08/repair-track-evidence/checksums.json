@@ -23,6 +23,8 @@
     "c2-serving/week=4/verification/verifier-manifest.json": "c91c746448d406d0799e8e644e68f45c92de825a0d0615f746b04eb5e7601fab",
     "c2-serving/week=5/verification/verifier-manifest.json": "f165290dae025997824ec702b62ca480a7c6c4a706d7172d6311e1451fc26862",
     "ci-04cd53ce.json": "f4a6d646844a3ea37472d8c6398dfb29b3beba2f31d261a77426b2fc47bcb83d",
+    "discrepancy-ledger-v2.csv": "ce754725e415c8d8b50e272fc560a593c2c6e035c54fc9c1dcc3e8b69fa3dcd4",
+    "invariance-proof-v2.json": "9b1a31b0d306e05b71ed851424d4f653476a829fb90f250b8ceb529a04b8d5ec",
     "net-punt-yards-comparison.json": "65840e1cdcd96a2b8f20502c99aee9ae9c5361e1babff0510d9ebe7955ea1ddc",
     "period-label-diagnostic.json": "94aaebb89200aa2d9dc64363a7faef1cbdbbeaa371b6bfac3989c48c568ede93",
     "play-identity-census.json": "30758510d7ce5947406d8418a974cac8da018fbc68dd3dad475c5bbb120139ac",
