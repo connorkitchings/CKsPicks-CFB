@@ -55,7 +55,9 @@ def main() -> int:
         "--lineage", choices=("intended_update",), default="intended_update"
     )
     parser.add_argument("--rating-manifest-uri", required=True)
-    parser.add_argument("--measurement-manifest-uri", required=True)
+    parser.add_argument("--measurement-manifest-uri", default=None)
+    parser.add_argument("--six-a-run-id", default=None)
+    parser.add_argument("--six-a-root-sha256", default=None)
     parser.add_argument("--environment", choices=sorted(URL_ENV), required=True)
     parser.add_argument("--weeks", help="As-of weeks, e.g. 0-5 or 5 (default: all)")
     parser.add_argument("--apply", action="store_true", help="Write (default: dry run)")
@@ -67,6 +69,13 @@ def main() -> int:
     url = os.getenv(URL_ENV[args.environment])
     if not url:
         print(f"Set {URL_ENV[args.environment]}", file=sys.stderr)
+        return 2
+    bridged = args.six_a_run_id is not None or args.six_a_root_sha256 is not None
+    if bridged and (not args.six_a_run_id or not args.six_a_root_sha256):
+        print("6A run id and root sha256 are required together.", file=sys.stderr)
+        return 2
+    if not bridged and not args.measurement_manifest_uri:
+        print("A measurement manifest URI is required.", file=sys.stderr)
         return 2
     storage = get_storage(environment="preview")  # artifacts live in the shared bucket
     try:
@@ -82,6 +91,8 @@ def main() -> int:
                     measurement_manifest_uri=args.measurement_manifest_uri,
                     weeks=weeks,
                     alias_map=TEAM_LOGO_MAP,
+                    six_a_run_id=args.six_a_run_id,
+                    six_a_root_sha256=args.six_a_root_sha256,
                 )
                 print(f"rating manifest   {artifacts.rating_sha256}")
                 print(f"measurement parent {artifacts.measurement_sha256}")
@@ -105,6 +116,21 @@ def main() -> int:
                         file=sys.stderr,
                     )
                     return 4
+                if bridged:
+                    # A signed bridge verifier must attest this exact rating
+                    # root, 6A root and rebuilt payload before any write.
+                    try:
+                        mp.assert_bridge_verifier(
+                            storage,
+                            mp.bridge_verifier_uri(args.rating_manifest_uri),
+                            artifacts.rating_sha256,
+                            artifacts.measurement_sha256,
+                            payload_sha,
+                        )
+                    except mp.PublishError as exc:
+                        print(f"Bridge verifier: {exc}", file=sys.stderr)
+                        return 3
+                    print("bridge verifier attests this build.")
                 unmigrated = mp.missing_tables(cur)
                 if unmigrated:
                     print(f"tables not migrated (0021): {unmigrated}")
@@ -136,6 +162,23 @@ def main() -> int:
                     return 0
                 assert_v5_database_environment(cur, args.environment)
                 assert_active_pipeline_lease(cur)
+                log_game_ids = None
+                if bridged:
+                    # Gates evaluated the full payload; restrict the per-game
+                    # log write to this publication's weeks so earlier
+                    # lineages' provenance is never restamped (table keys are
+                    # lineage-unaware). Other tables are new keys already.
+                    cur.execute(
+                        "SELECT game_id FROM games WHERE season = %s AND week = ANY(%s)",
+                        (args.season, sorted(built.as_of_cutoffs)),
+                    )
+                    log_game_ids = {int(r[0]) for r in cur.fetchall()}
+                    if not log_game_ids:
+                        print(
+                            "Bridge mode: no games in scope; nothing written.",
+                            file=sys.stderr,
+                        )
+                        return 3
                 try:
                     code_sha = subprocess.run(
                         ["git", "rev-parse", "HEAD"],
@@ -153,6 +196,7 @@ def main() -> int:
                     environment=args.environment,
                     code_sha=code_sha,
                     payload_sha=payload_sha,
+                    log_game_ids=log_game_ids,
                 )
             conn.commit()
         print(f"Published {json.dumps(counts)} ({args.environment}).")

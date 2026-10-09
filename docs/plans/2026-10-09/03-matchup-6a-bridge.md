@@ -1,10 +1,10 @@
 # 6A-Bridged Matchup Publication for the Corrected Lineage
 
-- **Status:** Approved
+- **Status:** In Progress (Terra execution started 2026-10-09)
 - **Created:** 2026-10-09
 - **Planner:** Sol (Plan Mode investigation; read-only review of the publisher, candidate tool, 6A run, manifests and gates)
-- **Approval source:** User decisions in session 2026-10-09 — 6A-aware loader design, signed gate-receipt verifier, Week-6 write scoping, Preview proof included
-- **Implementation log:** none yet (Terra executes via `implement-plan` on this exact path)
+- **Approval source:** User decisions in session 2026-10-09 — 6A-aware loader design, signed gate-receipt verifier, Week-6 write scoping, Preview proof included; explicit `implement-plan` instruction on this exact path
+- **Implementation log:** `session_logs/2026-10-09/05-matchup-6a-bridge-implementation.md`
 - **Commit policy:** Commit with implementation
 - **Amends (does not replace):** `02-week6-display-production-release.md` (In Progress, blocked at Task 1c; see its Amendment 2). This contract delivers the bridge machinery + Preview proof; the release resumes there afterwards.
 

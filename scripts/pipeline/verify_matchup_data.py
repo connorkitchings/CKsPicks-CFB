@@ -32,13 +32,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--season", type=int, default=2026)
     parser.add_argument("--rating-manifest-uri", required=True)
-    parser.add_argument("--measurement-manifest-uri", required=True)
+    parser.add_argument("--measurement-manifest-uri", default=None)
+    parser.add_argument("--six-a-run-id", default=None)
+    parser.add_argument("--six-a-root-sha256", default=None)
     parser.add_argument("--environment", choices=sorted(URL_ENV), required=True)
     parser.add_argument("--weeks")
     args = parser.parse_args()
     url = os.getenv(URL_ENV[args.environment])
     if not url:
         print(f"Set {URL_ENV[args.environment]}", file=sys.stderr)
+        return 2
+    bridged = args.six_a_run_id is not None or args.six_a_root_sha256 is not None
+    if bridged and (not args.six_a_run_id or not args.six_a_root_sha256):
+        print("6A run id and root sha256 are required together.", file=sys.stderr)
+        return 2
+    if not bridged and not args.measurement_manifest_uri:
+        print("A measurement manifest URI is required.", file=sys.stderr)
         return 2
     storage = get_storage(environment="preview")
     with psycopg.connect(url) as conn, conn.cursor() as cur:
@@ -52,6 +61,8 @@ def main() -> int:
             measurement_manifest_uri=args.measurement_manifest_uri,
             weeks=mp.parse_weeks(args.weeks),
             alias_map=TEAM_LOGO_MAP,
+            six_a_run_id=args.six_a_run_id,
+            six_a_root_sha256=args.six_a_root_sha256,
         )
         print(f"payload sha256 {payload_sha}")
         gates = mp.run_static_gates(built, game_names) + mp.run_db_gates(
@@ -64,6 +75,19 @@ def main() -> int:
                 + (f" - {gate.detail}" if gate.detail and not gate.ok else "")
             )
             ok &= gate.ok
+        if bridged:
+            # The scoped write (see publish_matchup_data.py) persists only
+            # this publication's games' log rows; compare exactly that scope.
+            # Gates above already evaluated the full payload.
+            cur.execute(
+                "SELECT game_id FROM games WHERE season = %s AND week = ANY(%s)",
+                (args.season, sorted(built.as_of_cutoffs)),
+            )
+            scope = {int(r[0]) for r in cur.fetchall()}
+            log = built.payload.frames["team_game_measurements"]
+            built.payload.frames["team_game_measurements"] = log[
+                log["game_id"].astype(int).isin(scope)
+            ].reset_index(drop=True)
         mismatches = mp.compare_db_to_payload(cur, built, args.season)
         print(f"database rows differing from the artifacts: {len(mismatches)}")
         for line in mismatches[:10]:

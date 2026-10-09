@@ -15,7 +15,7 @@ import hashlib
 import io
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import numpy as np
@@ -32,6 +32,7 @@ from cks_picks_cfb.ratings.possession_intended_update import (
 
 INTENDED_UPDATE_SCHEMA = "v5_intended_update_2026_rating_manifest_v1"
 INTENDED_UPDATE_VERIFIER_SCHEMA = "v5_intended_update_2026_rating_verification_v1"
+BRIDGE_VERIFIER_SCHEMA = "v5_matchup_bridge_verification_v1"
 TOL = 1e-9
 
 
@@ -173,6 +174,116 @@ class BuiltPayload:
     as_of_cutoffs: dict[int, pd.Timestamp]
     weeks: list[int]
     source_versions: dict[str, str]
+
+
+SIX_A_NAMESPACE = "rebuild/6a/"
+SIX_A_STATES_OBSERVATIONS = "states_2026/observations.parquet"
+
+
+def _read_6a_root(storage: Any, run_id: str, root_sha256: str) -> tuple[dict, str]:
+    """The pinned published 6A root manifest, by raw sha256 (mirrors
+    ``rebuild.published.open_pinned_run`` with ``PublishError`` failures)."""
+    uri = f"{SIX_A_NAMESPACE}{run_id}/root-manifest.json"
+    raw = storage.read_bytes(uri)
+    if _sha(raw) != root_sha256:
+        raise PublishError(f"6A root manifest {run_id} changed")
+    root = json.loads(raw)
+    verify_signed_payload(root, label="6A root manifest")
+    if root.get("kind") != "rebuild_root_v1" or root.get("run_id") != run_id:
+        raise PublishError(f"{run_id}: not the published 6A root it was pinned as")
+    return root, uri
+
+
+def _read_6a_frame(
+    storage: Any, root: dict, prefix: str, relative: str
+) -> tuple[bytes, str]:
+    """A 6A run object, checked against the signed root's recorded hash."""
+    key = prefix + relative
+    expected = (root.get("objects") or {}).get(key)
+    if expected is None:
+        raise PublishError(f"{key} is not in the published 6A root manifest")
+    raw = storage.read_bytes(key)
+    if _sha(raw) != expected:
+        raise PublishError(f"published 6A object changed: {key}")
+    return raw, _sha(raw)
+
+
+def load_6a_bridged_artifacts(
+    storage: Any,
+    rating_manifest_uri: str,
+    six_a_run_id: str,
+    six_a_root_sha256: str,
+    season: int,
+) -> Artifacts:
+    """Verified inputs pairing a frozen intended-update rating manifest with the
+    published 6A rebuild it names as its measurement parent.
+
+    The rating side is checked exactly like ``load_intended_update_artifacts``
+    (schema, frozen state, candidate, independent verifier, child checksums for
+    priors and both roles frames). The measurement side resolves the pinned 6A
+    root manifest — whose raw sha must equal the rating parent — and reads the
+    2026 observations states through its hash-checked object map. Component
+    snapshot ids therefore name the rating run, so the database gates reconcile
+    them against the projected ``v5_rating_snapshots`` rows.
+    """
+    rating, rating_sha = _read_signed(storage, rating_manifest_uri, "rating manifest")
+    if (
+        rating.get("schema_version") != INTENDED_UPDATE_SCHEMA
+        or rating.get("state") != "frozen"
+        or rating.get("candidate_id") != CANDIDATE_ID
+    ):
+        raise PublishError(
+            "rating manifest is not the reviewed intended-update lineage"
+        )
+    verifier_uri = (
+        f"{rating_manifest_uri.rsplit('/', 1)[0]}/verification/verifier-manifest.json"
+    )
+    verifier, _ = _read_signed(storage, verifier_uri, "rating verifier")
+    if (
+        verifier.get("schema_version") != INTENDED_UPDATE_VERIFIER_SCHEMA
+        or verifier.get("state") != "verified"
+        or verifier.get("rating_manifest_raw_sha256") != rating_sha
+    ):
+        raise PublishError("rating manifest lacks a matching independent verifier")
+    parent = (rating.get("parents") or {}).get("measurement_manifest_sha256")
+    if parent != six_a_root_sha256:
+        raise PublishError(
+            "rating manifest measurement parent is not the pinned 6A root "
+            f"({str(parent)[:12]} != {six_a_root_sha256[:12]})"
+        )
+    refs = rating["output_refs"]
+    priors = _load_child(storage, refs["priors"], "priors")
+    pregame_roles = _load_child(storage, refs["pregame_roles"], "pregame roles")
+    current_roles = _load_child(storage, refs["current_roles"], "current roles")
+    root, root_uri = _read_6a_root(storage, six_a_run_id, six_a_root_sha256)
+    prefix = f"{root.get('namespace', SIX_A_NAMESPACE)}{six_a_run_id}/"
+    obs_raw, obs_sha = _read_6a_frame(storage, root, prefix, SIX_A_STATES_OBSERVATIONS)
+    observations = pd.read_parquet(io.BytesIO(obs_raw))
+    observations = observations[observations["season"].eq(season)].reset_index(
+        drop=True
+    )
+    if observations.empty:
+        raise PublishError(f"no {season} observations in the published 6A run")
+    return Artifacts(
+        lineage="intended_update",
+        run_id=str(rating["identity"]["run_id"]),
+        candidate_id=str(rating["candidate_id"]),
+        rating_manifest=rating,
+        rating_sha256=rating_sha,
+        rating_uri=rating_manifest_uri,
+        measurement_manifest=root,
+        measurement_sha256=six_a_root_sha256,
+        measurement_uri=root_uri,
+        observations=observations,
+        observations_records_sha=obs_sha,
+        observations_version_id=f"6a:{six_a_run_id}",
+        priors=priors,
+        pregame_roles=pregame_roles,
+        current_roles=current_roles,
+        post_week_cutoffs={
+            int(k): pd.Timestamp(v) for k, v in rating["post_week_cutoffs"].items()
+        },
+    )
 
 
 def build_payload(
@@ -594,10 +705,27 @@ def write_payload(
     environment: str,
     code_sha: str | None,
     payload_sha: str,
+    log_game_ids: set[int] | None = None,
 ) -> dict[str, int]:
-    """Upsert every table and the receipt in the caller's transaction."""
+    """Upsert every table and the receipt in the caller's transaction.
+
+    When ``log_game_ids`` is given, the per-game log write is restricted to
+    those games; the gates always evaluate the full payload. This lets a
+    later-week publication add its own games' log rows without overwriting the
+    provenance of rows an earlier lineage published (table keys are
+    lineage-unaware, so an unrestricted upsert would restamp them).
+    """
     counts: dict[str, int] = {}
     records = built.payload.records()
+    if log_game_ids is not None:
+        log = built.payload.frames["team_game_measurements"]
+        scoped = log[log["game_id"].astype(int).isin(log_game_ids)].reset_index(
+            drop=True
+        )
+        records = dict(records)
+        records["team_game_measurements"] = md.to_records(
+            "team_game_measurements", scoped
+        )
     for table in (
         "team_game_measurements",
         "team_possession_stats",
@@ -683,6 +811,92 @@ def compare_db_to_payload(cur: Any, built: BuiltPayload, season: int) -> list[st
     return mismatches
 
 
+def bridge_verifier_uri(rating_manifest_uri: str) -> str:
+    """Canonical R2 location of a bridge verifier for its rating manifest."""
+    return f"{rating_manifest_uri.rsplit('/', 1)[0]}/verification/bridge-verifier-manifest.json"
+
+
+def build_bridge_verifier_manifest(
+    artifacts: Artifacts,
+    built: BuiltPayload,
+    payload_sha: str,
+    static_gates: list[GateResult],
+    db_gates: list[GateResult],
+    code_sha: str | None,
+) -> dict[str, Any]:
+    """Signed gate-receipt for a 6A-bridged matchup payload.
+
+    Records every input hash plus the rebuilt payload hash and both gate
+    outcomes. All gates must have passed; anything failing refuses here so an
+    unsigned or partial attestation can never be written.
+    """
+    failed = [g.name for g in static_gates + db_gates if not g.ok]
+    if failed:
+        raise PublishError(f"bridge verifier refused: gates failed: {failed}")
+    refs = artifacts.rating_manifest["output_refs"]
+    manifest = {
+        "schema_version": BRIDGE_VERIFIER_SCHEMA,
+        "state": "verified",
+        "rating_manifest_uri": artifacts.rating_uri,
+        "rating_manifest_raw_sha256": artifacts.rating_sha256,
+        "six_a_run_id": artifacts.observations_version_id.removeprefix("6a:"),
+        "six_a_root_raw_sha256": artifacts.measurement_sha256,
+        "six_a_root_uri": artifacts.measurement_uri,
+        "observations_bytes_sha256": artifacts.observations_records_sha,
+        "priors_raw_sha256": refs["priors"]["raw_sha256"],
+        "pregame_roles_raw_sha256": refs["pregame_roles"]["raw_sha256"],
+        "current_roles_raw_sha256": refs["current_roles"]["raw_sha256"],
+        "as_of_weeks": built.weeks,
+        "row_counts": built.payload.row_counts(),
+        "payload_sha256": payload_sha,
+        "static_gates": [asdict(g) for g in static_gates],
+        "db_gates": [asdict(g) for g in db_gates],
+        "code_sha": code_sha,
+    }
+    return sign_bridge_verifier(manifest)
+
+
+def sign_bridge_verifier(manifest: Mapping[str, Any]) -> dict[str, Any]:
+    """Sign a bridge verifier manifest with the repository payload scheme."""
+    from cks_picks_cfb.data.data_first_phase2d import signed_payload
+
+    return signed_payload(dict(manifest))
+
+
+def assert_bridge_verifier(
+    storage: Any,
+    verifier_uri: str,
+    rating_sha256: str,
+    root_sha256: str,
+    payload_sha: str,
+) -> dict[str, Any]:
+    """The publisher's pre-write check: a signed bridge verifier attesting this
+    exact rating root, 6A root and rebuilt payload must exist."""
+    try:
+        raw = storage.read_bytes(verifier_uri)
+    except Exception as exc:  # noqa: BLE001
+        raise PublishError(f"bridge verifier missing at {verifier_uri}: {exc}")
+    verifier = json.loads(raw)
+    try:
+        verify_signed_payload(verifier, label="bridge verifier")
+    except Exception as exc:  # noqa: BLE001
+        raise PublishError(f"bridge verifier is not signed: {exc}")
+    if (
+        verifier.get("schema_version") != BRIDGE_VERIFIER_SCHEMA
+        or verifier.get("state") != "verified"
+    ):
+        raise PublishError("bridge verifier is not a verified attestation")
+    if verifier.get("rating_manifest_raw_sha256") != rating_sha256:
+        raise PublishError("bridge verifier attests a different rating manifest")
+    if verifier.get("six_a_root_raw_sha256") != root_sha256:
+        raise PublishError("bridge verifier attests a different 6A root")
+    if verifier.get("payload_sha256") != payload_sha:
+        raise PublishError(
+            "bridge verifier payload differs from this build; rebuild it"
+        )
+    return verifier
+
+
 def parse_weeks(spec: str | None) -> list[int] | None:
     """``None`` (all), ``"5"``, ``"1-5"`` or ``"0,2,4-5"``."""
     if not spec:
@@ -707,16 +921,32 @@ def prepare_run(
     season: int,
     lineage: str,
     rating_manifest_uri: str,
-    measurement_manifest_uri: str,
+    measurement_manifest_uri: str | None,
     weeks: list[int] | None,
     alias_map: Mapping[str, str],
+    six_a_run_id: str | None = None,
+    six_a_root_sha256: str | None = None,
 ) -> tuple[Artifacts, BuiltPayload, set[str], str]:
     """Load verified artifacts, build every table, return the payload hash."""
     if lineage != "intended_update":
         raise PublishError(f"lineage {lineage!r} is not implemented yet")
-    artifacts = load_intended_update_artifacts(
-        storage, rating_manifest_uri, measurement_manifest_uri, season
-    )
+    bridged = six_a_run_id is not None or six_a_root_sha256 is not None
+    if bridged and (not six_a_run_id or not six_a_root_sha256):
+        raise PublishError("6A run id and root sha256 are required together")
+    if bridged:
+        artifacts = load_6a_bridged_artifacts(
+            storage,
+            rating_manifest_uri,
+            six_a_run_id or "",
+            six_a_root_sha256 or "",
+            season,
+        )
+    else:
+        if not measurement_manifest_uri:
+            raise PublishError("a measurement manifest URI is required")
+        artifacts = load_intended_update_artifacts(
+            storage, rating_manifest_uri, measurement_manifest_uri, season
+        )
     game_names = season_game_names(cur, season)
     if not game_names:
         raise PublishError(f"no {season} games in the target database")
