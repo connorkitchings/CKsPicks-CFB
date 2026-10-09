@@ -17,6 +17,7 @@ from typing import Any, Mapping
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.play_order import order_plays
 from cks_picks_cfb.metrics.contracts import canonical_json_text, possession_id_for
 
 BASELINE_RULE = "baseline_v1"
@@ -170,10 +171,7 @@ def scoring_events_to_v1(
             f"{len(missing)} events have no matching play, e.g. {missing[:3]}"
         )
     # Each team's running raw score on every play, in stream order, to give before and after values.
-    ordered = frame.sort_values(
-        ["season", "game_id", "quarter", "drive_number", "play_number"],
-        kind="mergesort",
-    )
+    ordered = order_plays(frame)
     long = pd.concat(
         [
             ordered[["game_id", "_id", "offense", "offense_score"]].set_axis(

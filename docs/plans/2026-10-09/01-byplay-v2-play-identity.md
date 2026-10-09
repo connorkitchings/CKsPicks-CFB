@@ -1,11 +1,11 @@
 # byplay_v2: provider-keyed play identity (impact-first)
 
-- **Status:** In Progress (Tasks 1 and 2 delivered 2026-10-09; Task 3 waits for the read-only period-label diagnostic)
+- **Status:** In Progress (Tasks 1–3 delivered 2026-10-09; Task 4 next)
 - **Created:** 2026-10-09
 - **Planner:** Sol
 - **Approval source:** User approved this plan in-session on 2026-10-09 (checkpoint → surgical docs pruning → impact-first `byplay_v2`), after two review rounds that corrected the ordering rule and the ID typing recorded below.
 - **Parent contract:** [Repair-track certification and closure](../2026-10-08/02-repair-track-certification-and-closure.md) (milestone: duplicate plays / scoring / complete metrics). That contract keeps its text and completion matrix; this contract is linked from it by Amendment.
-- **Implementation log:** `session_logs/2026-10-09/03-byplay-v2-implementation.md`
+- **Implementation log:** `session_logs/2026-10-09/03-byplay-v2-implementation.md` (Tasks 1–2); `session_logs/2026-10-09/06-byplay-v2-tasks-3-4.md` (Task 3 onward)
 - **Commit policy:** Separate user-run plan commit; implementation in later user-run commits. No automatic merge, deployment, cloud write or serving change.
 
 ## Goal
@@ -271,4 +271,46 @@ Then focused tests per task, the full Python suite with `-W error`, `ruff format
 Reconciliation classes had zero mismatches and zero blocking rows in all three. v1 on 2021 refuses the real collision. The stage's `verify`, run against the real v2 output, reported only the single-season harness limitation; every manifest, config, parent, row-count and `validate_frame` check on the 150k-row `byplay_v2`/`drives_v2` passed.
 
 **Open:** the period-label diagnostic (above) gates Task 3. Task 4 must move the possession, scoring-ledger and observation versions into `REQUIRES_V2_PLAY_IDENTITY`.
+
+### Amendment 3 (2026-10-09): period-label diagnostic, Task 3/4 boundary and Task 4 scope
+
+**Reason:** Record the diagnostic that gated Task 3, the user's decisions on the plan for Tasks 3 and 4, and one boundary change between the two tasks. The ordering rule, the two-case unresolved rule and the acceptance criteria are unchanged.
+
+**Diagnostic** ([`period-label-diagnostic.json`](../2026-10-08/repair-track-evidence/period-label-diagnostic.json), `scripts/analysis/play_order_diagnostic.py`; deterministic, read-only, registered in `checksums.json`): 310 plays land on a fresh 15:00 clock under an older period label; 289 start a new drive, 263 are in games that also have the next period label, one is in a game missing a regulation period. In 245 of 8,759 games provider `drive_number` goes backwards across periods; period-first against drive-first ordering, measured against the period label and the clock, is better in 75 of those games, worse in 75 and equal in 95 (3,676 vs 3,615 violations overall). **Conclusion:** `(period, drive_number, play_number)` stays the ordering; the stale label does not change relative order within a game. Recorded as known issue 17.
+
+**Boundary change.** The possession ledger and its independent verifier key events on drive and play number and cannot process tied `byplay_v2` plays until Task 4 moves event and possession identities to `source_play_id`. Task 3 therefore delivers: the shared helper `data/play_order.py`; persisted `play_order_unresolved` / `play_order_reason` columns on the (still unpublished) `byplay_v2` schema; boundary-tie handling in `drives_v2`; period-first order in the score-stream quality check for v2 input only; loud refusals of v2 input by v1-only consumers; and a golden regression proving v1 outputs and schema hashes are unchanged. The scoring exclusion logic lands in Task 4.
+
+**Scoring rule (user decision): neutrality check.** A tie group is harmless if every member shows the same teams and score as the running state just before it; no order can then change any points. Otherwise scoring attribution is unresolved and disclosed: events at or rolled back by the group's members become `scoring_category='unresolved'` with `quality_reason='unresolved_play_order'` (the increment is kept so game totals reconcile), and the team-game's scoring measurements become missing through the existing path. A non-neutral overtime group is flagged but stays category `overtime`, so regulation measurements are untouched. Real data: the 2021 pair is neutral (both show 3–0 for New Mexico State); the two 2025 groups are overtime plays whose scores disagree. Rows are never dropped from the score stream, because dropping one moves its score change onto the next play.
+
+**Task 4 scope (user decision):** includes the v2 score envelope, independent envelope, scoring-attribution evidence and Gold stage wiring. The pinned 5C admission decisions embed legacy ids, but the CFBD corroboration compares points per `(team, drive_number)` against hash-pinned drive bundles and never looks at play ids, so the decisions are **re-keyed by a deterministic mapping, not re-admitted**: no fresh CFBD run. Groups created only by retained plays in a collision game fail closed to `reverted_unverified` unless the offline classifier reproduces a status. v1 pins, hashes and schemas are added beside, never edited.
+
+**Other decisions:** `ratings/observations.py` and the v1-pinned rebuild modules stay v1-only and refuse v2 input (re-sorting them would change served lineage). Net punt yards: v2 pairs by provider drive and matches v1 wherever no drive number is reused; the restart-game bug is recorded as known issue 16 and left for a separate contract.
+
+### Amendment 4 (2026-10-09): Task 3 receipt
+
+**Reason:** Record the Task 3 deliverables and results. The approach, interfaces, scope and acceptance criteria are unchanged.
+
+**Delivered:**
+
+- **v1 frozen first.** `tests/test_v1_play_order_invariance.py` pins the output digests of the v1 producer, the independent verifier (which must agree), `aggregate_drives`, net punt yards, the Gold converters and the score-stream check, plus the eight v1 schema hashes, recorded from the unmodified Task 2 code. It still passes after every Task 3 change.
+- `src/cks_picks_cfb/data/play_order.py`: `order_plays` (the exact v1 sort, stable, no conversion, no clock, no provider ID), `flag_unresolved_plays`, `tie_groups`, `unresolved_play_keys`. A missing period is null or `< 1` (byplay stores a missing quarter as 0) and takes precedence over a tie; v1 frames, which have no `source_play_id`, can only be unresolved for a missing period and a duplicated v1 sequence raises.
+- `byplay_v2` now carries `play_order_unresolved` (non-null boolean) and `play_order_reason` (`missing_period` / `tied_sequence` / null), computed last in the v2 path, after every row filter. The v2 schema is unpublished, so its hash changed freely and both v2 hashes are now pinned in `tests/test_play_identity_v2.py`.
+- `drives_v2`: a drive's start (end) yard line is left null only when plays tied at its first (last) position disagree on `yards_to_goal`. No schema change; the columns were already nullable.
+- `possession_measurements.py` and `metrics/ledger.py` use `order_plays` (same keys, same stable sort, so v1 output is byte-identical, which the golden test confirms). The independent verifier keeps its own sort. `quality/silver.py` `score_stream_regressions` is period-first for v2 frames only.
+- `require_v1_byplay` refuses provider-keyed frames in `ratings/observations.build_measurement_observations`, `score_envelope_r1.apply_r1` and `restoration_jumps`. The v1-pinned rebuild modules read lake datasets rather than frames, so their refusal lands with the plan-policy guard in Task 4.6, not here.
+- Tests: `tests/test_play_order.py` (10), additions to `tests/test_play_identity_v2.py` (now 41), the golden file (15), `tests/test_play_order_diagnostic.py` (5).
+
+**Real-data results** (read-only, pinned parents, unmodified stage code; rebuilt `byplay_v2` in memory):
+
+| Season | By-play rows | Drives | Unresolved plays | Drive edges nulled | Score-stream regressions |
+| --- | --- | --- | --- | --- | --- |
+| 2021 | 150,828 | 30,558 | 2 (`-217`, `-218`, game 401310699, drive 5 play 6) | 0 | 530 (v2 order) |
+| 2022 | 152,083 | 30,758 | 0 | 0 | 501 (v2 order) vs 504 (v1 order on the same data) |
+| 2025 | 154,656 | 31,456 | 4 (game 401756916, overtime drives 23 and 24) | 0 | 591 (v2 order) |
+
+Row and drive counts equal the Task 2 smoke run exactly. Unresolved plays total 6, all `tied_sequence`, none `missing_period`, matching Task 1. The period-first score-stream order removes 3 false regressions in 2022 (restart-game artifacts); 2021 and 2025 have no v1 baseline because v1 refuses their collisions.
+
+**Validation:** full suite with `-W error` 2,344 passed and 15 skipped (the one added skip is the other session's disposable-PostgreSQL test in `test_matchup_6a_bridge.py`; none of this work's tests skip); `ruff format --check .` (747 files) and `ruff check .` clean; `git diff --check`, `make contracts-check` and `mkdocs build --strict` pass.
+
+**Next:** Task 4. The ledger, verifier and Gold converters still key on the legacy sequence and raise on tied v2 plays until Task 4 moves identities to `source_play_id`.
 

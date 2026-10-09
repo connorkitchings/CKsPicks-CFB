@@ -202,3 +202,17 @@ def require_v2_byplay(frame: pd.DataFrame, *, consumer: str) -> None:
     key = [c for c in ("season", "game_id", SOURCE_PLAY_ID) if c in frame]
     if frame.duplicated(key).any():
         raise PlayIdentityError(f"{consumer}: duplicate provider play identities")
+
+
+def require_v1_byplay(*frames: pd.DataFrame, consumer: str) -> None:
+    """Refuse provider-keyed v2 frames in a consumer that is pinned to ``byplay_v1`` identity.
+
+    Some consumers sort or join on the displayed drive/play numbers or on pinned legacy event
+    ids. Feeding them v2 frames would misorder or mis-join silently, so they fail loudly.
+    """
+    for frame in frames:
+        if SOURCE_PLAY_ID in frame.columns or "drive_id_source" in frame.columns:
+            raise PlayIdentityError(
+                f"{consumer} is pinned to byplay_v1 identity and cannot accept "
+                "provider-keyed v2 frames"
+            )

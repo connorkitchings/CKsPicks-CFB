@@ -13,6 +13,7 @@ from cks_picks_cfb.data.play_identity import (
     derived_drive_ambiguity,
     provider_drive_ids,
 )
+from cks_picks_cfb.data.play_order import flag_unresolved_plays
 from cks_picks_cfb.features.byplay.corrections import (
     apply_data_corrections,
     apply_manual_data_fixes,
@@ -742,4 +743,7 @@ def allplays_to_byplay(
         "rush_result",
     ] = 1
     df.loc[df["play_type"].isin(["Fumble Recovery (Opponent)"]), "yards_gained"] = 0
+    if v2:
+        # Last, after every row filter above: deleting a row can break up a tie.
+        df = df.join(flag_unresolved_plays(df))
     return df

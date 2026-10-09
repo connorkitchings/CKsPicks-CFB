@@ -124,6 +124,18 @@ The [checksum-verified Bronze/Silver census](../plans/2026-10-08/repair-track-ev
 
 **Current gate:** new `byplay_v1` builds reject distinct source rows at a sequence and collapse only exact repeated provider rows. The real pinned 2021 source triggers that guard. Existing artifacts are unchanged and may contain the loss. The draft identity patch is not applied: correcting this requires versioned by-play, drive, possession and scoring identities, then full historical descendant comparison and rebuild. The [repair completion matrix](../plans/2026-10-08/02-repair-track-certification-and-closure.md) remains the release authority.
 
+### 16. Net punt yards pair drives by number, so reused drive numbers collapse (opened 2026-10-09)
+
+`calculate_st_analytics_agg` (`features/aggregations/team_game.py`) finds a punt's next drive with `groupby(["game_id", "drive_number"]).first()` and `shift(-1)`. Where a feed numbers drives more than once in a game, two drives share a number and one is dropped. This happens in the three 2025 collision games and, per the [period-label diagnostic](../plans/2026-10-08/repair-track-evidence/period-label-diagnostic.json), in 245 of 8,759 games whose drive numbers restart across periods. The displayed net punt yards for punts in those games can therefore be wrong.
+
+**Decision (2026-10-09, byplay_v2 contract):** the v2 pairing matches v1 exactly wherever no drive number is reused and corrects only the collision games; the restart-game values are deliberately left at their v1 value so the Task 5 invariance proof stays clean. Fixing them needs a separate contract with a discrepancy-ledger row per changed value.
+
+### 17. Some plays carry a stale period label, and play order disagrees with the clock (opened 2026-10-09)
+
+The [period-label diagnostic](../plans/2026-10-08/repair-track-evidence/period-label-diagnostic.json) over all 11 seasons found 310 plays on a fresh 15:00 clock under an older period label (289 at a drive boundary; the next period label exists in 263 of those games). Separately, 3,676 consecutive-play pairs have a valid clock that goes up inside one period (1,973 by more than 60 seconds); the cause is unexplained. In 245 games the provider's drive number goes backwards across periods; period-first ordering is the coherent order there (period-first is better in 75 of those games, drive-first in 75, equal in 95).
+
+Nothing is excluded on this basis: the game clock is diagnostic only. Period-dependent features (half, fourth quarter, garbage time) can be wrong for the affected plays. No fix is planned inside the byplay_v2 contract.
+
 ## Resolved
 
 ### 5. Drive metrics keep overtime drives the V5 filter drops (opened 2026-10-03; CLOSED 2026-10-03, not a defect)

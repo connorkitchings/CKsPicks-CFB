@@ -45,12 +45,17 @@ def reconciliation_summary(rec: pd.DataFrame) -> dict[str, Any]:
 def score_stream_regressions(byplay: pd.DataFrame) -> dict[str, Any]:
     """Team-games whose running score ever decreases in (drive, play) order.
 
-    ``play_number`` restarts in each drive, so plays are ordered by drive first.
+    ``play_number`` restarts in each drive, so plays are ordered by drive first. A
+    ``byplay_v2`` frame (it carries ``source_play_id``) is ordered period-first, because some
+    games restart drive numbers in each period and a drive-first order would report
+    regressions that are not in the data; v1 frames keep the original order.
     """
     frame = byplay.dropna(subset=["offense_score", "defense_score"]).copy()
     frame["order"] = frame["drive_number"].astype(float) * 100_000 + frame[
         "play_number"
     ].astype(float)
+    if "source_play_id" in frame.columns:
+        frame["order"] += frame["quarter"].astype(float) * 1_000_000_000
     side_a = frame[["game_id", "offense", "offense_score", "order"]].set_axis(
         ["game_id", "team", "score", "order"], axis=1
     )

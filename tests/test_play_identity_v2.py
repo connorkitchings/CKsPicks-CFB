@@ -36,6 +36,9 @@ OVERTIME_ID = -22405
 #: Published schema identities of the superseded v1 contracts; they must never move.
 BYPLAY_V1_SHA = "daf7cbd977cb666606afaf28e7757125f954685fb0f550bb3a55020ff9772ae8"
 DRIVES_V1_SHA = "a1400b6ad766272bb4b2644af3408f769753de2025d52e002bc8d1cc7e811473"
+#: v2 identities, pinned once the schema was final (Task 3 added the play-order flags).
+BYPLAY_V2_SHA = "579611821b15fd1f2b389b3484f0c118d8b55622fb91e4e386710abee92a768f"
+DRIVES_V2_SHA = "27c5eb4ed4347027386b8f46af64e892ce4bdce1946595d943d9007f7cbd77e6"
 
 
 def play(**overrides) -> dict:
@@ -167,6 +170,11 @@ def test_dedup_requires_a_provider_id_on_every_row():
 def test_v1_schema_identities_do_not_move():
     assert schema_for("byplay", "byplay_v1").sha256 == BYPLAY_V1_SHA
     assert schema_for("drives", "drives_v1").sha256 == DRIVES_V1_SHA
+
+
+def test_v2_schema_identities_are_pinned():
+    assert schema_for("byplay", "byplay_v2").sha256 == BYPLAY_V2_SHA
+    assert schema_for("drives", "drives_v2").sha256 == DRIVES_V2_SHA
 
 
 def test_v2_schemas_are_registered_beside_v1():
@@ -410,3 +418,136 @@ def test_consumers_refuse_a_byplay_v1_frame():
     require_v2_byplay(v2, consumer="possession ledger")
     with pytest.raises(PlayIdentityError, match="exact strings"):
         require_v2_byplay(v2.assign(source_play_id=[1, 2]), consumer="x")
+
+
+# --- unresolved plays are flagged on byplay_v2 (Task 3) ------------------------------
+
+
+def test_cross_period_collision_is_resolved_and_carries_no_flag():
+    byplay = v2_byplay(cross_period_collision())
+    assert not byplay["play_order_unresolved"].any()
+    assert byplay["play_order_reason"].isna().all()
+
+
+def same_period_tie() -> pd.DataFrame:
+    """The 2021 pair: two distinct provider plays at one drive and play number."""
+    return pd.DataFrame(
+        [
+            play(play_id=-216, play_number=5, quarter=1, drive_number=5, drive_id=-26),
+            play(play_id=-217, play_number=6, quarter=1, drive_number=5, drive_id=-26),
+            play(play_id=-218, play_number=6, quarter=1, drive_number=5, drive_id=-26),
+            play(play_id=-219, play_number=7, quarter=1, drive_number=5, drive_id=-26),
+        ]
+    )
+
+
+def test_a_same_period_tie_is_flagged_on_exactly_the_tied_plays():
+    byplay = v2_byplay(same_period_tie()).set_index("source_play_id")
+    assert byplay["play_order_unresolved"].to_dict() == {
+        "-216": False,
+        "-217": True,
+        "-218": True,
+        "-219": False,
+    }
+    assert byplay.loc["-217", "play_order_reason"] == "tied_sequence"
+    assert pd.isna(byplay.loc["-216", "play_order_reason"])
+    validate_frame(byplay.reset_index(), schema_for("byplay", "byplay_v2"))
+    assert len(byplay) == 4  # nothing is dropped from the stream
+
+
+def test_a_missing_period_is_flagged_without_dropping_the_play():
+    frame = pd.DataFrame(
+        [play(play_id=1, quarter=None), play(play_id=2, play_number=2)]
+    )
+    byplay = v2_byplay(frame).set_index("source_play_id")
+    assert byplay.loc["1", "play_order_reason"] == "missing_period"
+    assert not byplay.loc["2", "play_order_unresolved"]
+
+
+def test_v2_schema_rejects_an_unknown_order_reason():
+    byplay = v2_byplay(same_period_tie())
+    bad = byplay.assign(
+        play_order_reason=byplay["play_order_reason"].where(
+            byplay["play_order_reason"].isna(), "because"
+        )
+    )
+    with pytest.raises(DatasetSchemaError, match="unsupported values"):
+        validate_frame(bad, schema_for("byplay", "byplay_v2"))
+
+
+# --- drive boundary ties (Task 3) ----------------------------------------------------
+
+
+def drive_with_tie(position: int, yards_a: float, yards_b: float) -> pd.DataFrame:
+    """One provider drive of four plays; the plays at ``position`` are a distinct-ID tie."""
+    rows = []
+    for number in range(1, 5):
+        rows.append(
+            play(
+                play_id=100 + number,
+                play_number=number,
+                drive_id=77,
+                yards_to_goal=50.0 - number,
+            )
+        )
+    tied = play(play_id=999, play_number=position, drive_id=77, yards_to_goal=yards_b)
+    rows[position - 1]["yards_to_goal"] = yards_a
+    rows.append(tied)
+    return pd.DataFrame(rows)
+
+
+def provider_drives(frame: pd.DataFrame) -> pd.DataFrame:
+    return build_preaggregation_pipeline(
+        frame, nullable_ppa=True, play_identity="byplay_v2"
+    )[1]
+
+
+def test_a_start_tie_that_disagrees_on_field_position_leaves_the_start_unknown():
+    drives = provider_drives(drive_with_tie(1, yards_a=49.0, yards_b=40.0))
+    assert pd.isna(drives["start_yards_to_goal"]).all()
+    assert not pd.isna(drives["end_yards_to_goal"]).any()
+    validate_frame(drives, schema_for("drives", "drives_v2"))
+
+
+def test_an_end_tie_that_disagrees_on_field_position_leaves_the_end_unknown():
+    drives = provider_drives(drive_with_tie(4, yards_a=46.0, yards_b=30.0))
+    assert pd.isna(drives["end_yards_to_goal"]).all()
+    assert not pd.isna(drives["start_yards_to_goal"]).any()
+
+
+def test_ties_in_the_middle_or_that_agree_change_nothing():
+    middle = provider_drives(drive_with_tie(2, yards_a=48.0, yards_b=10.0))
+    assert not middle[["start_yards_to_goal", "end_yards_to_goal"]].isna().any().any()
+    agree = provider_drives(drive_with_tie(1, yards_a=49.0, yards_b=49.0))
+    assert agree["start_yards_to_goal"].tolist() == [49.0]
+
+
+# --- v1-pinned consumers refuse v2 frames (Task 3) -----------------------------------
+
+
+def test_v1_pinned_consumers_refuse_provider_keyed_frames():
+    from cks_picks_cfb.data.play_identity import require_v1_byplay
+    from cks_picks_cfb.ratings import observations, score_envelope_r1
+
+    v2 = v2_byplay(cross_period_collision())
+    v1 = allplays_to_byplay(pd.DataFrame([play()]))
+    require_v1_byplay(v1, consumer="x")  # v1 passes
+    with pytest.raises(PlayIdentityError, match="pinned to byplay_v1"):
+        require_v1_byplay(v2, consumer="x")
+    with pytest.raises(PlayIdentityError, match="apply_r1"):
+        score_envelope_r1.apply_r1(v2, finals={})
+    with pytest.raises(PlayIdentityError, match="restoration_jumps"):
+        score_envelope_r1.restoration_jumps(v2)
+    with pytest.raises(PlayIdentityError, match="build_measurement_observations"):
+        observations.build_measurement_observations(
+            byplay=v2,
+            drives=pd.DataFrame(),
+            games=pd.DataFrame(),
+            outcomes=pd.DataFrame(),
+            reconciled_team_game=pd.DataFrame(),
+            config=None,
+            as_of=None,
+            code_sha="",
+            config_sha="",
+            parent_ref_shas="",
+        )

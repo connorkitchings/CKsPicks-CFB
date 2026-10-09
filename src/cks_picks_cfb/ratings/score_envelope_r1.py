@@ -15,6 +15,8 @@ from typing import Any, Mapping
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.play_identity import require_v1_byplay
+
 ORDER_COLUMNS = ["season", "game_id", "quarter", "drive_number", "play_number"]
 EVENT_KEYS = ["game_id", "team", "source_event_id"]
 COMPARE_FIELDS = [
@@ -44,6 +46,7 @@ def apply_r1(
     rewritten frame and the team-games left unresolved because the envelope does not
     reach the final (they stay quarantined exactly as in the baseline).
     """
+    require_v1_byplay(byplay, consumer="score_envelope_r1.apply_r1")
     frame = byplay.sort_values(ORDER_COLUMNS, kind="mergesort").copy()
     unresolved: set[tuple[int, str]] = set()
     for game_id, group in frame.groupby("game_id", sort=False):
@@ -77,6 +80,7 @@ def apply_r1(
 
 def restoration_jumps(byplay: pd.DataFrame) -> set[tuple[int, str]]:
     """Team-games whose raw score rises by more than eight after an earlier decrease."""
+    require_v1_byplay(byplay, consumer="score_envelope_r1.restoration_jumps")
     frame = byplay.sort_values(ORDER_COLUMNS, kind="mergesort")
     found: set[tuple[int, str]] = set()
     for game_id, group in frame.groupby("game_id", sort=False):

@@ -34,6 +34,7 @@ from cks_picks_cfb.data.play_filters import (
     is_dead_play,
     play_period,
 )
+from cks_picks_cfb.data.play_order import order_plays
 from cks_picks_cfb.preseason_features import canonical_team
 
 # Private names kept so the rest of this module reads as before; the definitions
@@ -206,13 +207,12 @@ def build_possession_ledger(
         plays[name] = pd.to_numeric(plays[name], errors="raise").astype(int)
     if plays.duplicated(["season", "game_id", "drive_number", "play_number"]).any():
         raise PossessionMeasurementError("byplay has duplicate stable source play IDs")
-    plays = plays.loc[
-        plays.apply(
-            lambda row: (int(row.season), int(row.game_id)) in known_games, axis=1
-        )
-    ].sort_values(
-        ["season", "game_id", "quarter", "drive_number", "play_number"],
-        kind="mergesort",
+    plays = order_plays(
+        plays.loc[
+            plays.apply(
+                lambda row: (int(row.season), int(row.game_id)) in known_games, axis=1
+            )
+        ]
     )
     grouped_drives = plays.groupby(
         ["season", "game_id", "drive_number", "offense"], sort=False

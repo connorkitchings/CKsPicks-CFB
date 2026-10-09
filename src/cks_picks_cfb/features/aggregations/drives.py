@@ -91,6 +91,30 @@ def aggregate_drives(
     return _drive_outcomes(agg)
 
 
+DRIVE_GROUP = ("game_id", "drive_id", "offense", "defense")
+_SEQUENCE = ["quarter", "drive_number", "play_number"]
+
+
+def boundary_ties(ordered: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    """Drives whose first (last) position is tied with plays that disagree on field position.
+
+    Returns two boolean Series indexed by drive. A drive's start (end) yard line is unknown, and
+    left null, only when the plays tied at its first (last) position do not all show the same
+    ``yards_to_goal``; a tie in the middle of a drive, or a tie that agrees, changes nothing.
+    ``ordered`` must already be sorted by drive and play order.
+    """
+    group = list(DRIVE_GROUP)
+    grouped = ordered.groupby(group, sort=False)
+    result = []
+    for edge in ("first", "last"):
+        at_edge = (ordered[_SEQUENCE] == grouped[_SEQUENCE].transform(edge)).all(axis=1)
+        distinct = (
+            ordered.loc[at_edge].groupby(group, sort=True)["yards_to_goal"].nunique()
+        )
+        result.append(distinct > 1)
+    return result[0], result[1]
+
+
 def _aggregate_provider_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
     for column in ("drive_id", "drive_id_source", "drive_ambiguous"):
         if column not in plays_df.columns:
@@ -99,6 +123,7 @@ def _aggregate_provider_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
         ["game_id", "drive_id", "quarter", "drive_number", "play_number"],
         kind="mergesort",
     )
+    start_tied, end_tied = boundary_ties(ordered)
     agg = ordered.groupby(
         ["game_id", "drive_id", "offense", "defense"], as_index=False, sort=True
     ).agg(
@@ -116,6 +141,13 @@ def _aggregate_provider_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
         any_derived=("drive_id_source", lambda s: bool((s == "derived").any())),
         drive_ambiguous=("drive_ambiguous", "max"),
     )
+    group = list(DRIVE_GROUP)
+    for column, tied in (
+        ("start_yards_to_goal", start_tied),
+        ("end_yards_to_goal", end_tied),
+    ):
+        flagged = agg.set_index(group).index.isin(tied[tied].index)
+        agg.loc[flagged, column] = np.nan
     agg["had_scoring_opportunity"] = (agg["eckel_plays"] > 0).astype(int)
     agg["drive_id_source"] = agg["any_derived"].map(
         {True: "derived", False: "provider"}

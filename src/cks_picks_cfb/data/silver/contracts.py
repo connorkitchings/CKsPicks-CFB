@@ -242,7 +242,14 @@ SILVER_CONTRACT_REVISIONS: dict[tuple[str, str], SilverContract] = {
         "byplay",
         "byplay_v2",
         SILVER_CONTRACTS["byplay"].required_columns
-        | {"source_play_id", "drive_id", "drive_id_source", "drive_ambiguous"},
+        | {
+            "source_play_id",
+            "drive_id",
+            "drive_id_source",
+            "drive_ambiguous",
+            "play_order_unresolved",
+            "play_order_reason",
+        },
         ("season", "game_id", "source_play_id"),
     ),
     ("drives", "drives_v2"): SilverContract(

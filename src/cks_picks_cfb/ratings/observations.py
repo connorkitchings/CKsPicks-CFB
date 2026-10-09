@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.play_identity import require_v1_byplay
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
     MeasurementConfig,
@@ -284,6 +285,7 @@ def build_measurement_observations(
     parent_ref_shas: str,
 ) -> ObservationBuildResult:
     """Build one raw observation per game, team, measurement, and role."""
+    require_v1_byplay(byplay, drives, consumer="build_measurement_observations")
     for label, frame, required in (
         ("byplay", byplay, _BYPLAY_REQUIRED),
         ("drives", drives, _DRIVES_REQUIRED),

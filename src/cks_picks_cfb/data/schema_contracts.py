@@ -175,6 +175,7 @@ from cks_picks_cfb.data.data_first_shadow_v1 import (
     SHADOW_PREDICTION_COLUMNS,
     SHADOW_REHEARSAL_COLUMNS,
 )
+from cks_picks_cfb.data.play_order import UNRESOLVED_REASONS
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
     OBSERVATION_KEYS,
@@ -483,17 +484,23 @@ _DERIVED_SILVER_SCHEMA_REVISIONS: dict[tuple[str, str], DatasetSchema] = {
             "drive_id",
             "drive_id_source",
             "drive_ambiguous",
+            "play_order_unresolved",
+            "play_order_reason",
         ),
         keys=("season", "game_id", "source_play_id"),
-        boolean_columns=("drive_ambiguous",),
+        boolean_columns=("drive_ambiguous", "play_order_unresolved"),
         nonnullable=(
             *_BYPLAY_V1.nonnullable,
             "source_play_id",
             "drive_id",
             "drive_id_source",
             "drive_ambiguous",
+            "play_order_unresolved",
         ),
-        allowed_values={"drive_id_source": _DRIVE_ID_SOURCES},
+        allowed_values={
+            "drive_id_source": _DRIVE_ID_SOURCES,
+            "play_order_reason": UNRESOLVED_REASONS,
+        },
         identifier_columns=("source_play_id", "drive_id"),
     ),
     ("drives", "drives_v2"): replace(
