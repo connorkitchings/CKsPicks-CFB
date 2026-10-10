@@ -1,0 +1,49 @@
+# Week 7 cutover run sheet (Weeks 0-6 corrected replays + pending Week 7)
+
+- **Status:** Draft (run sheet under the [repair-track contract](../2026-10-08/02-repair-track-certification-and-closure.md), Amendments 3-5, and the [Stage 7B plan](../2026-10-06/02-stage7b-exact-release-and-cutover.md); it adds no authority of its own)
+- **Created:** 2026-10-10
+- **Rule:** every Preview write and every Production write is its own go-ahead. Preview first, always. Owner-role SQL is user-run. Dry run, then apply, then read-only readback.
+
+## Clock (UTC)
+
+| When | Event |
+|---|---|
+| Sun Oct 11 02:30 | Week 6 last kickoff |
+| Sun Oct 11 evening | Code and harness checkpoint (see "Open design items") |
+| Mon Oct 12 ~03:00 | Earliest certified Week 6 finals (24 h stable); later if any final moves |
+| Tue Oct 13 14:00 | **Pivot gate:** Preview rehearsal (including rollback) not fully verified means abandon the cutover and run the standalone Week 7 fallback |
+| Tue Oct 13 21:00 | Production cutover complete |
+| Tue Oct 13 22:00 | Week 7 freeze deadline (first kickoff 23:00) |
+
+## Open design items that block the packet (Amendment 5)
+
+1. **Week 7 is not selected yet.** The v2 controller needs every week 0..N already selected. Needs the user's decision on "advance mode" (accept `expected_current_week.week` of N or N-1, verify no Week N selection exists, select 0..N and move `current_week` 6 to 7 in one transaction).
+2. **Rolling advance mode back needs DELETE** on `site_week_selections`, which the pipeline role lacks. Proposed: owner/migrator login only, fail closed otherwise.
+3. **Rollback authorizations for the old runs** (Weeks 0-4 replays, the scored Week 5, the display-only Week 6) do not fit the replay/pending evidence shape the rollback builder demands.
+4. The B1 bundle gate is done (Amendment 4): carry the Production approval (first live week 6) as `registered_bundle` in the packet spec.
+
+## Monday sequence (after finals are stable)
+
+Record each step's evidence in the session log. Stop on any Week 0-5 change that is not attributed.
+
+1. **Week 6 finals and Silver refresh (Preview).** `ops prepare-week --year 2026 --week 7 --as-of <cutoff after the last Week 6 final> --environment preview --pipeline-run-id <id>` (pattern from Stage 1 Amendment 6). Check the Week 6 plays for provider-ID collisions: the `byplay_v1` builder fails closed on a collision, and the 2026 stages cannot run a v2 plan today, so a collision means stopping and wiring v2 first.
+2. **Finals into `game_results` (Preview, then Production, user-run).** `scripts/pipeline/load_game_finals.py --year 2026 --week 6 --outcomes-ref-uri <game_outcomes_ref.json>`: dry run, then `--apply` (Production also `--confirm-production`). Then `backfill_v5_unconstrained_grades.py --week 6 --grades-only`. This closes Week 6 release Task 7. Parity check first: the same loader on Week 5 must report 0 inserts and 0 conflicts.
+3. **Pins and lock.**
+   - `pin_6a_silver_parents.py --season-2026 --byplay-version … --game-outcomes-version … --reconciled-team-game-version … --source … --out conf/rebuild/silver_2026_parents_w6_v1.json` writes the Week 6 parents file.
+   - `extend_rebuild_source_lock.py --outcomes-ref-uri … --new-cutoff <after Week 6 finals> --games-ref-uri … --out conf/rebuild/source_lock_2026_w6_v1.json` (accept any provider kickoff revision explicitly with `--accept-kickoff-revision`).
+   - Week 6 market-sources lock: no tool is named in the docs. Default (repair-track decision): games whose only quotes are post-kickoff are verified gaps with no selection or grade. **Needs a design before Monday.**
+4. **6A and Task 4 through Week 6.** Copy `6a_w5_v1.yaml` and `6a_task4_w5_v1.yaml` to `_w6_`, new run IDs, cutoffs and the two new pins; run `make rebuild-6a OP=preflight|build|verify|publish` (about hours, not days).
+5. **6B frames for Week 6.** Fill `docs/plans/2026-10-08/6b-w6-frames-plan-template.yaml` (`cutoff_2026`, the Task 4 receipt sha, root shas, the two w6 pins, `unserved_week_as_of` for Week 6 after Week 5's last kickoff and before Week 6's first, counts `{0: 8, 1: 43, 2: 49, 3: 57, 4: 58, 5: 56, 6: 58}`); the bundle stays `bundle_b2_w5_v1.json` (`a507d0c7…`, Amendment 3).
+6. **Successor chain.** `build_corrected_successor_lock.py`, then `build_v5_intended_update_2026.py` and `verify_v5_intended_update_2026.py`, then `publish_v5_intended_update_ratings.py` (not `publish_v5_ratings.py`), then the Week 0-6 replay set with provider names, independently verified (`audit_corrected_replay_chain.py`).
+7. **Team stats as-of 7** and matchup data: `publish_team_stats.py --as-of-week 7` (dry run first), `verify_team_stats.py`; matchup publish happens after selection.
+8. **Week 7 pending run.** Fresh market capture, reconcile the full FBS schedule against spread and total coverage (AGENTS.md session rule 6), then `build_corrected_live_lock.py --week 7`, `build_v5_intended_update_forecasts.py`, `build_v5_corrected_live_serving.py` (no `--display-only`), `verify_v5_corrected_live_serving.py`, `package_v5_corrected_live_run.py`.
+9. **Preview rehearsal.** `stage_v5_artifacts.py`, `build_v5_cutover_packets.py` (authorization, selection, rollback, with `registered_bundle`), `authorize_v5_intended_update_batch.py`, `select_v5_intended_update_batch.py --apply`, `freeze_week.py --week 7 --decision-ref …`, `publish_matchup_data.py --expect-payload-sha`, `verify_matchup_data.py`, the Week 6 to Week 7 `current_week` readback, then the rollback under the owner login and re-apply. All must pass before 14:00 Tuesday.
+10. **Production** (user-run, by 21:00 Tuesday): stage artifacts, owner SQL for authorizations (the bundle approval already exists), apply the selection packet, freeze Week 7, repin matchups, verify, update `docs/status.md`.
+
+## Fallback (pivot gate or any Tuesday slip)
+
+Week 7 as a frozen standalone run on corrected ratings through Week 6: the same builds as steps 1-8, then the Week 6 publish chain (`seed_week_schedule.py`, `publish_game_venues.py --only-missing`, `publish_to_db.py --config conf/weekly_bets/v5_intended_update_2026.yaml --state published`, `select_public_run.py`, matchup publish), then `freeze_week.py --decision-ref` at least one hour before kickoff. It counts as prospective evidence, so a Week 8 cutover still validates. It needs a short contract before it runs.
+
+## Not exercised yet
+
+No Week 6 6B run exists; the seven-week fixture does not use live-shaped finals; the positive N=7 packet with a real Week 5 prospective record is untested; the v2 validator's Postgres integration path was not run this session.

@@ -1,16 +1,10 @@
 # Manual V5 Weekly Operator
 
-> **Repair checkpoint (2026-10-04):** Step 5 is closed; the approved [pre-6A contract](../plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) requires shared-contract repairs before the corrected rebuild/refit. 6A permits immutable Preview R2 and verified Preview catalog/schema/lineage/reconciliation metadata only. It does not activate a serving lineage. Continue weekly operations under existing exact decisions; do not assume Week 6 is the cutover. Stage 6B reconstructs completed weeks; Stages 7–8 govern release, freeze, rollback and matchup completion. Live week state is in [status](../status.md).
+> **Current state:** live run IDs, week state and the scoreboard are in [Current Status](../status.md); that page is the only place run IDs are recorded. Corrected-lineage work is governed by the [repair-track contract](../plans/2026-10-08/02-repair-track-certification-and-closure.md) and the [Stage 7B cutover plan](../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md).
 
-> **Historical release checkpoint (2026-09-30; current state is in status):** The [exact repaired-V5 release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md)
-> selected `2026w{0..4}-v5repair-20260929-p1` as retrospective scored replays
-> and `2026w5-v5repair-20260929-p2` as the ungraded live slate. The old
-> `2026w{0..4}-v5replay-bestquote-20260926-r3` runs and
-> `2026w5-5d436e58c072` remain the exact six-week rollback set. The p2 Week 5
-> quotes were captured at 2026-09-29 20:28:55Z; a later check found six moved
-> quote values across five games. The final pre-kickoff freeze was completed
-> 2026-09-30T12:34:06Z (see [Current Status](../status.md)). Do not grade Week 5
-> until certified finals. This dated instruction was satisfied by the subsequent close recorded in Current Status.
+> **Week 6 exception (display-only):** the Week 6 run in Production is display-only with evidence class `pending`. **Never freeze, close or score Week 6** with this checklist; that would mark kicked-off games missed and put a non-prospective run in the prospective record. After finals stabilize it receives a grades-only backfill (`scripts/pipeline/backfill_v5_unconstrained_grades.py --week 6 --grades-only`, Preview then Production, user-run) and is then superseded by its corrected replay at the cutover. Rolling it back needs `scripts/pipeline/rollback_week6_display.py` and the owner login (the pipeline role has no DELETE on `prediction_market_selections`). See the [Week 6 release contract](../plans/2026-10-09/02-week6-display-production-release.md).
+
+> **Historical (2026-09-30):** the repaired intended-update release is described in the [exact release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md). Original V5 runs remain the rollback set; the p2 Week 5 freeze and close are recorded in status.
 
 For the selected successor, continue from its independently verified rating
 manifest and refitted bundle. Keep the original V5 projector and original
@@ -64,6 +58,25 @@ The first publication may intentionally be partial while books open markets.
 Its coverage is a dated observation, not a promise that lines remain absent.
 The next market refresh and final freeze remain explicit tasks even if the
 initial production release succeeded.
+
+### Corrected-lineage cutover (Week 7 target; Week 8 or later if integrity closure slips)
+
+The weekly checklist above does not describe the cutover. The cutover selects certified corrected replays for Weeks 0 to N-1 and one pending Week N run in a single signed packet, freezes Week N, repins matchup data, and keeps a rollback packet. The authority is the [Stage 7B plan](../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md) and the [repair-track contract](../plans/2026-10-08/02-repair-track-certification-and-closure.md); every Preview and Production apply is its own exact user decision, and owner-role SQL is user-run.
+
+Tools, all under `scripts/pipeline/` (run Preview as `zsh scripts/ops/with_preview_env.sh`, Production as `zsh scripts/ops/with_production_pipeline_env.sh`; dry run first, then apply, then a read-only readback):
+
+| Step | Tool |
+|---|---|
+| Corrected live lock, serving build, verify, package | `build_corrected_live_lock.py`, `build_v5_corrected_live_serving.py` (omit `--display-only` for a prospective run), `verify_v5_corrected_live_serving.py`, `package_v5_corrected_live_run.py` |
+| Ratings projection | `publish_v5_intended_update_ratings.py` (not `publish_v5_ratings.py`) |
+| Stage artifacts into the target namespace | `stage_v5_artifacts.py` (`--predictions-only` for a run with no scored artifact) |
+| Signed selection and rollback packets | `build_v5_cutover_packets.py` |
+| Authorizations and atomic selection | `authorize_v5_intended_update_batch.py`, `select_v5_intended_update_batch.py` |
+| Freeze Week N (at least 1 hour before kickoff) | `freeze_week.py --decision-ref` |
+| Matchup repin (after selection) and verify | `publish_matchup_data.py --expect-payload-sha`, `verify_matchup_data.py` |
+| Revoke a release authorization | `revoke_v5_release.py` |
+
+Rules: the packet's bundle approval must be bound to the cutover week, display-only weeks are excluded from the prospective record, and a missed freeze deadline is a failed cutover that needs a revised operating decision (not a compressed gate).
 
 The operator is `scripts/pipeline/run_v5_weekly_cycle.py`. It has no timer or
 automatic trigger. Run it from a clean committed checkout with `PYTHONPATH=.:src`

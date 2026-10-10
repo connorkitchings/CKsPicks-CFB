@@ -56,7 +56,8 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | Current contract | Purpose | State |
 | --- | --- | --- |
 | [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | The one open data contract: corrected lineage, play identity, quality follow-ups, Week 6 certification, Preview rehearsal, Production packet | In Progress |
-| [byplay_v2 play identity](2026-10-09/01-byplay-v2-play-identity.md) | Provider-keyed play identity, impact-first (child of the repair-track contract) | Implemented |
+| [Week 6 display-only Production release](2026-10-09/02-week6-display-production-release.md) | Release the display-only Week 6 run to Production; post-finals grades-only backfill and live verification remain | In Progress (Tasks 6-7 open; Production release applied 2026-10-09) |
+| [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Ordered Monday-to-Tuesday sequence, pivot gate and fallback for the corrected-lineage cutover | Draft (run sheet under the repair-track contract; no authority of its own) |
 | [Stage 7B exact release and cutover](2026-10-06/02-stage7b-exact-release-and-cutover.md) | Signed cutover packet and staging for the corrected lineage | In Progress (foundations complete; cutover waits for the certified packet) |
 | [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) | V5-only site and operating path | In Progress |
 | [Archive unique local artifacts](2026-09-27/03-archive-unique-local-artifacts.md) | Preserve unique local artifacts | In Progress |
@@ -65,7 +66,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Move production V5 logic from `scripts/research` into `src/` | Draft |
 | [Team stats as the source of basic stats](2026-10-02/03-team-stats-feeds-ratings.md) | Fix the returned-punt leak in team stats (Phase 1, done); ratings read team stats at the next rebuild (Phase 2 design, absorbed as D4 in the unified rollout) | Draft (Phase 1 implemented) |
 | [Week 5 data-issue investigation](2026-10-03/02-week5-data-issue-investigation.md) | Read-only deep dive producing decision-ready evidence for D1–D4: score-stream cause classification, V5 `ppp` quarantine simulation, drive-metric hand-checks, zero-PPA audit, venue-gap root cause | Approved (investigation only; no writes) |
-| [Data integrity repair in two windows](2026-10-03/04-data-integrity-two-window-implementation.md) | Window 1 independent fixes; Window 2 full-corpus scoring certification, unchanged-design rebuild, replay and prospective cutover ([data specification](2026-10-03/window2/data-contracts-and-certification.md), [release/schema/web specification](2026-10-03/window2/release-schema-and-web.md)) | Window 1 implementation closed; production decision open. Step 5 closed; 6A Implemented 2026-10-05; 6B Implemented 2026-10-06; 7A Implemented 2026-10-06; 7B pending |
+| [Data integrity repair in two windows](2026-10-03/04-data-integrity-two-window-implementation.md) | Window 1 independent fixes; Window 2 full-corpus scoring certification, unchanged-design rebuild, replay and prospective cutover ([data specification](2026-10-03/window2/data-contracts-and-certification.md), [release/schema/web specification](2026-10-03/window2/release-schema-and-web.md)) | Window 1 promoted to Production 2026-10-07 (Track 1). Step 5 closed; 6A Implemented 2026-10-05; 6B Implemented 2026-10-06; 7A Implemented 2026-10-06; 7B foundations complete, cutover pending |
 
 ### Completed and superseded contracts (record)
 
@@ -98,6 +99,11 @@ Kept for history and link stability; the lifecycle status in each file is author
 | [Pipeline data-quality gates](2026-10-04/01-pipeline-data-quality-gates.md) | Shared check/receipt library with ingestion, Silver/Gold, publish-boundary and web read-side gates, plus contract 04 gates 2, 4 and 6 | Implemented 2026-10-04 (six follow-ups tracked in Amendment 3) |
 | [Stage 7A release foundations](2026-10-06/01-stage7a-release-foundations.md) | Schema, role guards, parameterized v2 release controller, and web read paths for cutover | Implemented (2026-10-06) |
 | [Track 1: Production venues and full `dev` promotion](2026-10-07/01-track1-production-promotion.md) | Publish pinned current 2026 venue facts to Production and promote the reviewed full `dev` web deployment | Implemented (promoted to Production 2026-10-07) |
+| [byplay_v2 play identity](2026-10-09/01-byplay-v2-play-identity.md) | Provider-keyed play identity, impact-first (child of the repair-track contract) | Implemented (2026-10-09; descendant recertification for the four collision games stays open in the repair-track contract) |
+| [6A-bridged matchup publication](2026-10-09/03-matchup-6a-bridge.md) | Publish matchup data for the corrected lineage through the 6A bridge, with a verifier and scoped writes | Implemented (2026-10-09) |
+| [Stage 1: Week 5 corrected data finalization](2026-10-07/04-stage1-week5-corrected-data-finalization.md) | Corrected data, successor replay set, packet builder and staging tool (Preview) | Implemented (2026-10-08, Amendment 11; CI and Production-namespace artifact check move to the cutover) |
+| [Stage 1 decision brief](2026-10-08/01-stage1-decision-brief.md) | What the corrected data work produced and how to release it | Implemented (decided; execution authority is the Stage 1 contract) |
+| [Week 6 display-only run on the served lineage](2026-10-07/03-week6-display-run.md) | Original Week 6 display proposal | Superseded (2026-10-07; replaced by the Stage 1 amendments and the Week 6 Production release contract) |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.
 
