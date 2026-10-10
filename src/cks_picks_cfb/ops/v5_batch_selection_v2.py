@@ -89,8 +89,8 @@ def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def _week_map(value: Any, label: str) -> dict[int, str]:
-    if not isinstance(value, Mapping) or not value:
+def _week_map(value: Any, label: str, *, allow_empty: bool = False) -> dict[int, str]:
+    if not isinstance(value, Mapping) or (not value and not allow_empty):
         raise V5BatchSelectionError(f"{label} must be a nonempty week map")
     result: dict[int, str] = {}
     for raw_week, raw_run in value.items():
@@ -169,9 +169,12 @@ def validate_v2_packet(
         raise V5BatchSelectionError(
             "certified replay weeks must be contiguous 0 through N-1"
         )
-    if set(_week_map(packet.get("protected_runs"), "protected_runs")) & (
-        set(before) | set(after)
-    ):
+    # Selections outside the replaced weeks. Empty is valid: a cutover that replaces every
+    # existing selection (Week 7: Weeks 0-6 replaced, nothing beyond) protects nothing, and
+    # apply then requires that no other selection exists.
+    if set(
+        _week_map(packet.get("protected_runs"), "protected_runs", allow_empty=True)
+    ) & (set(before) | set(after)):
         raise V5BatchSelectionError(
             "protected run scope overlaps the replacement slate"
         )
@@ -748,11 +751,13 @@ def apply_v2_packet(
         (weeks,),
     )
     actual_runs = {int(week): str(run_id) for week, run_id in cur.fetchall()}
-    protected = _week_map(packet.get("protected_runs"), "protected_runs")
+    protected = _week_map(
+        packet.get("protected_runs"), "protected_runs", allow_empty=True
+    )
     cur.execute(
         "SELECT week, run_id FROM site_week_selections WHERE season = 2026 "
-        "AND week = ANY(%s) ORDER BY week FOR UPDATE",
-        (sorted(protected),),
+        "AND NOT (week = ANY(%s)) ORDER BY week FOR UPDATE",
+        (weeks,),
     )
     if {int(week): str(run_id) for week, run_id in cur.fetchall()} != protected:
         raise V5BatchSelectionError("protected public selections changed")
@@ -900,11 +905,13 @@ def preflight_v2_packet(
         (weeks,),
     )
     current_runs = {int(week): str(run_id) for week, run_id in cur.fetchall()}
-    protected = _week_map(packet.get("protected_runs"), "protected_runs")
+    protected = _week_map(
+        packet.get("protected_runs"), "protected_runs", allow_empty=True
+    )
     cur.execute(
         "SELECT week, run_id FROM site_week_selections WHERE season = 2026 "
-        "AND week = ANY(%s) ORDER BY week",
-        (sorted(protected),),
+        "AND NOT (week = ANY(%s)) ORDER BY week",
+        (weeks,),
     )
     protected_now = {int(week): str(run_id) for week, run_id in cur.fetchall()}
     expected = packet["expected_current_week"]

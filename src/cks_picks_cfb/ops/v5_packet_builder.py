@@ -286,8 +286,7 @@ def build_selection_packet(
         raise PacketBuildError("replacement runs reuse a currently selected run")
     if set(protected_runs) & set(weeks):
         raise PacketBuildError("protected runs overlap the replacement slate")
-    if not protected_runs:
-        raise PacketBuildError("protected runs must name the remaining selections")
+    # Empty is valid when the cutover replaces every existing selection.
     if missing := [name for name in PAYLOAD_REFS if name not in payload_refs]:
         raise PacketBuildError(f"payload refs missing: {', '.join(missing)}")
     if sorted(c.get("week") for c in certifications) != list(range(cutover_week)):

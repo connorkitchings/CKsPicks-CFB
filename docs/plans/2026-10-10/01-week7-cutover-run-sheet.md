@@ -20,7 +20,9 @@
 1. **Advance mode.** Week 7 has no selection, so the selection packet is built with `advance: true` (before-state Weeks 0-6, `current_week` 6; after-state Weeks 0-7, `current_week` 7).
 2. **Rollback needs the owner login** (it deletes the Week 7 `site_week_selections` row); under the pipeline role it fails closed.
 3. **Bundle approval.** Carry the Production approval (first live week 6) as `registered_bundle` in the forward spec.
-4. **Rollback records.** Export the registered rows of the currently selected runs with `scripts/pipeline/export_v5_registered_releases.py --environment <env> --run 0=<id> ... --run 6=<id>` and paste them into `rollback.registered_authorizations` and `rollback.registered_bundles` (two bundles: Weeks 0-5 and Week 6). Check the Preview rows first; Production's were read on 2026-10-10.
+4. **Nothing protected.** Weeks 0-6 are all replaced and no other week is selected, so the spec has `protected_runs: {}`; apply fails closed if any other selection exists.
+5. **Preview approval.** Preview's B2 approval has `first_live_week = 5` (Production: 6). Before the Preview rehearsal the user runs, as the Preview migrator login, `UPDATE v5_model_bundle_approvals SET first_live_week = 6 WHERE approval_id = 'preview-intended-update-a507d0c7cba5';`, otherwise the forward gate refuses the packet (Amendment 7).
+6. **Rollback records.** Export the registered rows of the currently selected runs with `scripts/pipeline/export_v5_registered_releases.py --environment <env> --run 0=<id> ... --run 6=<id>` and paste them into `rollback.registered_authorizations` and `rollback.registered_bundles` (two bundles: Weeks 0-5 and Week 6). Both environments' rows were read on 2026-10-10 and match in shape.
 
 ## Monday sequence (after finals are stable)
 
@@ -31,7 +33,7 @@ Record each step's evidence in the session log. Stop on any Week 0-5 change that
 3. **Pins and lock.**
    - `pin_6a_silver_parents.py --season-2026 --byplay-version … --game-outcomes-version … --reconciled-team-game-version … --source … --out conf/rebuild/silver_2026_parents_w6_v1.json` writes the Week 6 parents file.
    - `extend_rebuild_source_lock.py --outcomes-ref-uri … --new-cutoff <after Week 6 finals> --games-ref-uri … --out conf/rebuild/source_lock_2026_w6_v1.json` (accept any provider kickoff revision explicitly with `--accept-kickoff-revision`).
-   - Week 6 market-sources lock: no tool is named in the docs. Default (repair-track decision): games whose only quotes are post-kickoff are verified gaps with no selection or grade. **Needs a design before Monday.**
+   - Week 6 market-sources lock: `scripts/pipeline/build_week_market_sources_lock.py --week 6 --as-of <forecast cutoff> --games-ref-uri … --market-quotes-ref-uri … --market-snapshots-ref-uri … --source-manifest <d2 manifest> --cutoff-source <d2 serving manifest> --expected-games 58 --out conf/rebuild/6b_source_refs_w6_v1.json --report <coverage report>`. It writes the source refs extended by Week 6 and lists the verified gaps (post-kickoff-only quotes: no selection, no grade); `derive_successor_lock` carries them into the lock. Dry run on the d2-era data: 58 games, 55 eligible, 3 gaps per target (401871051, 401871066, 401871090). Rerun on Monday's Silver versions and compare the gap list with this one; any newly eligible game needs a look before it is used.
 4. **6A and Task 4 through Week 6.** Copy `6a_w5_v1.yaml` and `6a_task4_w5_v1.yaml` to `_w6_`, new run IDs, cutoffs and the two new pins; run `make rebuild-6a OP=preflight|build|verify|publish` (about hours, not days).
 5. **6B frames for Week 6.** Fill `docs/plans/2026-10-08/6b-w6-frames-plan-template.yaml` (`cutoff_2026`, the Task 4 receipt sha, root shas, the two w6 pins, `unserved_week_as_of` for Week 6 after Week 5's last kickoff and before Week 6's first, counts `{0: 8, 1: 43, 2: 49, 3: 57, 4: 58, 5: 56, 6: 58}`); the bundle stays `bundle_b2_w5_v1.json` (`a507d0c7…`, Amendment 3).
 6. **Successor chain.** `build_corrected_successor_lock.py`, then `build_v5_intended_update_2026.py` and `verify_v5_intended_update_2026.py`, then `publish_v5_intended_update_ratings.py` (not `publish_v5_ratings.py`), then the Week 0-6 replay set with provider names, independently verified (`audit_corrected_replay_chain.py`).
@@ -46,4 +48,4 @@ Week 7 as a frozen standalone run on corrected ratings through Week 6: the same 
 
 ## Not exercised yet
 
-No Week 6 6B run exists; the seven-week fixture does not use live-shaped finals; the positive N=7 packet with a real Week 5 prospective record is untested; the v2 validator's Postgres integration path was not run this session.
+No Week 6 replay exists, so the serving verifier, packager and publisher have not seen a replay with declared spread gaps; no Week 6 6B run exists; the seven-week fixture does not use live-shaped finals; the v2 validator's Postgres integration path was not run this session.

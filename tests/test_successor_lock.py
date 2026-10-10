@@ -212,3 +212,42 @@ def test_a_live_week_that_does_not_follow_cleanly_is_refused(kwargs):
 def test_only_a_corrected_lock_can_take_a_live_week():
     with pytest.raises(SuccessorLockError):
         derive_live_lock(dict(EXTENDED), week=2, games=LIVE_GAMES, games_source=SOURCE)
+
+
+def test_an_unserved_weeks_verified_gaps_join_the_locks_declared_gaps():
+    refs = copy.deepcopy(REFS)
+    refs["weeks"]["1"]["market_gaps"] = [
+        {"week": 1, "game_id": 2, "target": "spread", "status": "post_kickoff_only"},
+        {"week": 1, "game_id": 2, "target": "total", "status": "post_kickoff_only"},
+    ]
+    extended = copy.deepcopy(EXTENDED)
+    # An earlier declared gap (a single mapping, as the first lock stores it) is kept.
+    extended["market_selection_gap"] = {"week": 0, "game_id": 1, "target": "total"}
+    lock = _derive(extended, refs=refs)
+    assert [
+        (g["week"], g["game_id"], g["target"]) for g in lock["market_selection_gap"]
+    ] == [
+        (0, 1, "total"),
+        (1, 2, "spread"),
+        (1, 2, "total"),
+    ]
+    # Re-deriving from a lock that already declares them adds nothing twice.
+    again = _derive(extended, refs=refs)
+    assert len(again["market_selection_gap"]) == 3
+
+
+def test_a_lock_without_gaps_is_left_exactly_as_before():
+    lock = _derive()
+    assert "market_selection_gap" not in lock
+
+
+def test_a_display_only_original_run_is_not_labelled_scored():
+    lock = _derive(
+        served_runs={
+            0: {"run_id": "served-0"},
+            1: {"run_id": "display-1", "state": "published", "display_only": True},
+        }
+    )
+    first, second = lock["selected_runs"]
+    assert first["state"] == "scored" and "display_only" not in first
+    assert second["state"] == "published" and second["display_only"] is True
