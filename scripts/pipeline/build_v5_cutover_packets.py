@@ -3,7 +3,9 @@
 
 The spec is JSON: ``environment``, ``cutover_week``, ``decision_ref``, ``runs`` (week ->
 run id), and for selection ``expected_current_runs``, ``protected_runs``,
-``certifications`` and ``payload_refs``; rollback also needs ``prior_runs``. The tool
+``certifications`` and ``payload_refs``; rollback also needs ``prior_runs``. An optional
+``registered_bundle`` (the six approval fields exactly as registered) carries a bundle
+approval whose first live week is an earlier display-only week. The tool
 only reads storage and writes the packet file; applying a packet stays with the
 user-run authorizer and selection scripts.
 """
@@ -43,6 +45,8 @@ def build(kind: str, spec: dict, storage) -> dict:
         decision_ref=spec["decision_ref"],
     )
     manifests = _manifests(storage, spec["runs"])
+    # An approval registered earlier (a display-only first live week) is carried unchanged.
+    common["registered_bundle"] = spec.get("registered_bundle")
     if kind == "authorization":
         return builder.build_authorization_packet(manifests, **common)
     selection = builder.build_selection_packet(
@@ -61,6 +65,8 @@ def build(kind: str, spec: dict, storage) -> dict:
         prior_manifests=_manifests(storage, spec["expected_current_runs"]),
         certifications=rollback["certifications"],
         payload_refs=rollback["payload_refs"],
+        # The prior runs' bundle is usually a different, earlier-registered approval.
+        registered_bundle=rollback.get("registered_bundle"),
     )
 
 

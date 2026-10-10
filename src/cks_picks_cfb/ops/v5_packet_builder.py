@@ -112,12 +112,36 @@ def _signed_authorizations(records: list[dict[str, Any]]) -> list[dict[str, Any]
     ]
 
 
+def registered_bundle_approval(
+    registered: Mapping[str, Any], *, model_id: str, inference_bundle_sha256: str
+) -> dict[str, Any]:
+    """Re-sign an approval row that is already registered, unchanged.
+
+    The registry keeps one approval per model and bundle, so a bundle first approved for an
+    earlier display-only week is carried into the cutover packet exactly as registered
+    (its first live week and decision reference are not rewritten).
+    """
+    if set(registered) != set(BUNDLE_FIELDS):
+        raise PacketBuildError(
+            f"registered bundle approval must have exactly: {', '.join(BUNDLE_FIELDS)}"
+        )
+    body = {key: registered[key] for key in BUNDLE_FIELDS}
+    if (
+        body["model_id"] != model_id
+        or body["inference_bundle_sha256"] != inference_bundle_sha256
+        or body["first_live_season"] != 2026
+    ):
+        raise PacketBuildError("registered bundle approval is for another bundle")
+    return {**body, "record_sha256": _sha(body)}
+
+
 def _records_for_cutover(
     manifests: Mapping[int, Mapping[str, Any]],
     *,
     environment: str,
     cutover_week: int,
     decision_ref: str,
+    registered_bundle: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if not isinstance(cutover_week, int) or cutover_week < 5:
         raise PacketBuildError("cutover week must be an integer of at least 5")
@@ -140,12 +164,18 @@ def _records_for_cutover(
                 manifest, environment=environment, decision_ref=decision_ref
             )
         )
-    bundle = bundle_approval(
-        model_id=models.pop(),
-        inference_bundle_sha256=bundles.pop(),
-        cutover_week=cutover_week,
-        decision_ref=decision_ref,
-    )
+    model_id, bundle_sha = models.pop(), bundles.pop()
+    if registered_bundle is not None:
+        bundle = registered_bundle_approval(
+            registered_bundle, model_id=model_id, inference_bundle_sha256=bundle_sha
+        )
+    else:
+        bundle = bundle_approval(
+            model_id=model_id,
+            inference_bundle_sha256=bundle_sha,
+            cutover_week=cutover_week,
+            decision_ref=decision_ref,
+        )
     return records, bundle
 
 
@@ -155,12 +185,14 @@ def build_authorization_packet(
     environment: str,
     cutover_week: int,
     decision_ref: str,
+    registered_bundle: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     records, bundle = _records_for_cutover(
         manifests,
         environment=environment,
         cutover_week=cutover_week,
         decision_ref=decision_ref,
+        registered_bundle=registered_bundle,
     )
     return signed_payload(
         {
@@ -185,17 +217,20 @@ def build_selection_packet(
     protected_runs: Mapping[int, str],
     certifications: list[Mapping[str, Any]],
     payload_refs: Mapping[str, Mapping[str, Any]],
+    registered_bundle: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the signed select packet.
 
     ``certifications`` are ``{uri, sha256, week}`` refs for Weeks 0..N-1 and
-    ``payload_refs`` carries the five retained signed payload refs.
+    ``payload_refs`` carries the five retained signed payload refs. ``registered_bundle``
+    carries an approval row that is already registered (see ``registered_bundle_approval``).
     """
     records, bundle = _records_for_cutover(
         manifests,
         environment=environment,
         cutover_week=cutover_week,
         decision_ref=decision_ref,
+        registered_bundle=registered_bundle,
     )
     weeks = list(range(cutover_week + 1))
     if sorted(expected_current_runs) != weeks:
@@ -246,6 +281,7 @@ def build_rollback_packet(
     prior_manifests: Mapping[int, Mapping[str, Any]],
     certifications: list[Mapping[str, Any]],
     payload_refs: Mapping[str, Mapping[str, Any]],
+    registered_bundle: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Invert a select packet.
 
@@ -264,6 +300,7 @@ def build_rollback_packet(
         environment=environment,
         cutover_week=cutover,
         decision_ref=decision_ref,
+        registered_bundle=registered_bundle,
     )
     for week, record in enumerate(records):
         if record["prediction_run_id"] != prior[week]:

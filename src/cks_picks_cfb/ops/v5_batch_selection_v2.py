@@ -56,6 +56,31 @@ PROSPECTIVE_COLUMNS = (
 DISPLAY_ONLY_WEEKS = frozenset({6})
 
 
+def bundle_covers_cutover(
+    first_live_week: Any, cutover: int, *, rollback: bool = False
+) -> bool:
+    """Whether a bundle approval's first live week is acceptable for cutover ``cutover``.
+
+    A fresh approval is registered at the cutover week. An approval registered earlier
+    stays valid when its first live week was a display-only week before the cutover: the
+    one approval row per model and bundle cannot be re-registered for a later week, and a
+    display-only week never produced prospective evidence under it.
+
+    A rollback restores runs that were already live, so the approval of their bundle
+    predates the cutover by design: any registered first live week from Week 5 (the
+    first live V5 slate) through the cutover week is accepted. This matches the runtime
+    selection rule, which only refuses a pending or live run before its approval's
+    first live week.
+    """
+    if not isinstance(first_live_week, int) or isinstance(first_live_week, bool):
+        return False
+    if rollback:
+        return 5 <= first_live_week <= cutover
+    return first_live_week == cutover or (
+        first_live_week in DISPLAY_ONLY_WEEKS and first_live_week < cutover
+    )
+
+
 class V5BatchSelectionError(ValueError):
     """A signed release packet cannot safely select or roll back its run set."""
 
@@ -195,9 +220,9 @@ def validate_v2_packet(
         raise V5BatchSelectionError(
             "packet lacks an exact authorization for every selected run"
         )
-    if (
-        bundle.get("first_live_season") != 2026
-        or bundle.get("first_live_week") != cutover
+    is_rollback = str(packet["schema_version"]).endswith("rollback_v2")
+    if bundle.get("first_live_season") != 2026 or not bundle_covers_cutover(
+        bundle.get("first_live_week"), cutover, rollback=is_rollback
     ):
         raise V5BatchSelectionError("bundle approval is not bound to cutover N")
 
@@ -290,7 +315,7 @@ def validate_v2_packet(
         "authorizations": auth_by_week,
         "payloads": payloads,
         "decision_ref": decision_ref,
-        "rollback": packet["schema_version"].endswith("rollback_v2"),
+        "rollback": is_rollback,
     }
 
 
