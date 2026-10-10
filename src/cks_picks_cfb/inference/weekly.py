@@ -241,6 +241,7 @@ def calculate_edges_and_leans(
     market_quotes: pd.DataFrame | None = None,
     allow_default_price: bool = True,
     forecast_cutoff: datetime | None = None,
+    accepted_late_quotes: list[dict[str, Any]] | None = None,
 ) -> pd.DataFrame:
     """Apply the existing spread-sign, threshold, and lean display contract.
 
@@ -300,6 +301,10 @@ def calculate_edges_and_leans(
                         else None
                     ),
                     "provider": q_row.get("provider"),
+                    "__capture_provider": q_row.get("__capture_provider"),
+                    "entity": "betting_lines"
+                    if q_row.get("__capture_provider") == "cfbd"
+                    else q_row.get("entity"),
                 }
             )
 
@@ -350,6 +355,8 @@ def calculate_edges_and_leans(
                     "target": "spread",
                     "point": c["spread"],
                     "captured_at": c["captured_at"],
+                    "__capture_provider": c["__capture_provider"],
+                    "entity": c["entity"],
                     "home_spread_price": c["home_spread_price"],
                     "away_spread_price": c["away_spread_price"],
                 }
@@ -368,6 +375,7 @@ def calculate_edges_and_leans(
                 quote_candidates=spread_cands,
                 require_price=not allow_default_price,
                 forecast_cutoff=forecast_cutoff,
+                accepted_late_quotes=accepted_late_quotes,
             )
 
             total_cands = [
@@ -378,6 +386,8 @@ def calculate_edges_and_leans(
                     "target": "total",
                     "point": c["total"],
                     "captured_at": c["captured_at"],
+                    "__capture_provider": c["__capture_provider"],
+                    "entity": c["entity"],
                     "over_price": c["over_price"],
                     "under_price": c["under_price"],
                 }
@@ -396,6 +406,7 @@ def calculate_edges_and_leans(
                 quote_candidates=total_cands,
                 require_price=not allow_default_price,
                 forecast_cutoff=forecast_cutoff,
+                accepted_late_quotes=accepted_late_quotes,
             )
 
             if selected_spread is not None:

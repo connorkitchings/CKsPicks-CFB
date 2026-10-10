@@ -21,6 +21,7 @@ from typing import Any
 
 import pandas as pd
 
+from cks_picks_cfb.models.late_quotes import validate_late_evidence
 from cks_picks_cfb.models.market_grading import select_best_quote
 
 TARGETS = ("spread", "total")
@@ -61,6 +62,8 @@ def classify_week_markets(
     schedule: pd.DataFrame,
     *,
     as_of: str,
+    accepted_late_quotes: list[dict[str, Any]] | None = None,
+    cfbd_comparison_receipt: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """One row per scheduled game and target with its quote-eligibility status.
 
@@ -69,6 +72,7 @@ def classify_week_markets(
     ``total_line``, ``market_captured_at``, ``source_quote_ids``); ``quotes`` the quote
     rows (``quote_id``, ``game_id``, ``captured_at``, and ``spread`` / ``total`` points).
     """
+    validate_late_evidence(accepted_late_quotes or [], cfbd_comparison_receipt)
     for name, frame, needed in (
         ("snapshots", snapshots, {"game_id", "market_snapshot_id"}),
         ("quotes", quotes, {"game_id", "quote_id", "captured_at"}),
@@ -111,6 +115,9 @@ def classify_week_markets(
                 {
                     **quote,
                     "snapshot_id": snapshot_id,
+                    "entity": "betting_lines"
+                    if quote.get("__capture_provider") == "cfbd"
+                    else quote.get("entity"),
                     "target": target,
                     "point": quote.get(target),
                 }
@@ -129,6 +136,7 @@ def classify_week_markets(
                 kickoff_utc=kickoff,
                 quote_candidates=candidates,
                 forecast_cutoff=cutoff,
+                accepted_late_quotes=accepted_late_quotes,
             )
             if selected is not None:
                 rows.append({**row, "status": STATUS_ELIGIBLE})
@@ -188,9 +196,14 @@ def week_entry(
     market_snapshots: Mapping[str, Any],
     rows: list[Mapping[str, Any]],
     week: int,
+    accepted_late_quotes: list[dict[str, Any]] | None = None,
+    cfbd_comparison_receipt: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The ``weeks[str(week)]`` entry of the reconstruction source refs."""
+    validate_late_evidence(accepted_late_quotes or [], cfbd_comparison_receipt)
     return {
+        "accepted_late_quotes": list(accepted_late_quotes or []),
+        "cfbd_comparison_receipt": dict(cfbd_comparison_receipt or {}),
         "as_of": as_of,
         "cutoff_source": dict(cutoff_source),
         "market_sources": {

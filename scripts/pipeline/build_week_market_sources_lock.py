@@ -103,6 +103,10 @@ def week_schedule(games, *, week: int, expected: int | None):
 def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--accepted-late-quotes", type=Path, help="JSON exact quote declarations"
+    )
+    parser.add_argument("--cfbd-comparison-receipt", type=Path)
     parser.add_argument("--week", type=int, required=True)
     parser.add_argument("--as-of", required=True, help="forecast cutoff, ISO UTC")
     parser.add_argument("--games-ref-uri", required=True)
@@ -130,7 +134,24 @@ def main() -> int:
     )
     schedule = week_schedule(games, week=args.week, expected=args.expected_games)
     snapshots = snapshots[snapshots["game_id"].isin(schedule["game_id"])]
-    rows = lock.classify_week_markets(snapshots, quotes, schedule, as_of=args.as_of)
+    declarations = (
+        json.loads(args.accepted_late_quotes.read_bytes())
+        if args.accepted_late_quotes
+        else []
+    )
+    comparison = (
+        json.loads(args.cfbd_comparison_receipt.read_bytes())
+        if args.cfbd_comparison_receipt
+        else None
+    )
+    rows = lock.classify_week_markets(
+        snapshots,
+        quotes,
+        schedule,
+        as_of=args.as_of,
+        accepted_late_quotes=declarations,
+        cfbd_comparison_receipt=comparison,
+    )
     entry = lock.week_entry(
         as_of=args.as_of,
         cutoff_source=_object_ref(storage, args.cutoff_source),
@@ -139,6 +160,8 @@ def main() -> int:
         market_quotes=quotes_ref,
         market_snapshots=snapshots_ref,
         rows=rows,
+        accepted_late_quotes=declarations,
+        cfbd_comparison_receipt=comparison,
         week=args.week,
     )
     base_raw = args.base_refs.read_bytes()

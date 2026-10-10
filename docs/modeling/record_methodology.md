@@ -44,3 +44,13 @@ These are facts about how the record was produced, kept here so the claim is not
 ## Provenance that is still recorded
 
 Evidence class (`replay`, `pending`, `live`), freeze receipts and the Week 5 legacy attestation, run manifests and authorizations remain in the database and artifacts. The frozen Week 5 run and its receipt are immutable; after the cutover the counted run for every week 0-6 is the corrected replay. Hard rules that do not change: training strictly precedes prediction, no 2026 outcome refits the V5 identity, no freeze receipt is created after kickoff, and market data never enters model inputs.
+
+## Audit execution and October 10 findings
+
+Run `uv run python scripts/pipeline/audit_point_in_time_leakage.py --environment preview --season 2026 --through-week 6` from the repository root. It reads R2 and the serving database without writes, verifies hashes and source-game histories, checks both cutoffs, and independently excludes all same/later-week games before rebuilding statistics from their recorded Silver versions. The receipt is created at `artifacts/audit/leakage_audit_receipt_2026.json`; an existing receipt is preserved, so use a fresh `--output` for a subsequent audit. Exact run, source-lock, rating and bridge arguments must follow the reviewed lineage when it changes. Environment is explicit; the default evidence names the current Preview corrected candidates, not a Production activation.
+
+Completed-week replays use the pregame cutoff of each game's bound rating state; their serving `data_as_of` records the separately captured market cutoff. Both appear in the receipt. Forecast generation time is not substituted for event time.
+
+The October 10 read-only execution passed all seven rules for the 271 corrected Week 0–5 games. Including the existing Week 6 display run failed: its 220 rating-role cutoffs are after its declared forecast time, that time is after the required October 7 boundary, and its slate omits three games. No future outcome was found in the rating histories. The receipt remains failed until a complete corrected Week 6 replay passes; it cannot authorize a cutover.
+
+`verify_cfbd_closing_lines.py` sampled three completed games from each of Weeks 0–5 and compared 59 pre-kickoff provider/target captures with fresh CFBD lines: 19 matched, 40 differed. The comparison **does not support enabling the declared late-quote exception**. Differences may be legitimate pregame movement after our capture, so they do not establish post-kickoff line movement either. The three early Week 6 games remain ungraded unless new evidence satisfies the acceptance gate. Exact late-quote declarations are supported by the market lock and serving paths, but a failed or missing signed comparison is refused.

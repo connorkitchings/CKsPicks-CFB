@@ -233,6 +233,8 @@ def check_quote_time(
             and str(row.entity) == ACCEPTED_LATE_ENTITY
             and str(entry.get("provider")) == ACCEPTED_LATE_PROVIDER
             and str(entry.get("entity")) == ACCEPTED_LATE_ENTITY
+            and captured >= _utc(kickoff[game])
+            and captured <= _utc(market[game])
         )
         if reason_ok:
             used.append(entry)
@@ -263,7 +265,8 @@ def check_model_parameters(
             )
         ]
     out = []
-    banned = sorted({int(s) for s in seasons} & {2020, 2026})
+    allowed = set(range(2015, 2020)) | set(range(2021, 2026))
+    banned = sorted({int(s) for s in seasons} - allowed)
     if banned:
         out.append(
             violation(
@@ -310,7 +313,9 @@ def check_cutoff_coherence(
 ) -> list[dict[str, Any]]:
     """Rule g. ``runs``: one row per run (week, run_id, forecast_as_of, market_as_of,
     display_only). Both cutoffs must be recorded; a run that forecasts a whole slate
-    (not display-only) was cut off no later than the slate's first kickoff."""
+    (not display-only or per-game) was cut off no later than the slate's first kickoff.
+    Per-game replays bind their cutoffs to the individual rating states; an earlier
+    market capture is valid for those forecasts."""
     _require(runs, ("week", "run_id", "forecast_as_of", "market_as_of"), "runs")
     first = games.groupby("week")["kickoff_utc"].apply(
         lambda s: min(_utc(v) for v in s)
@@ -331,6 +336,7 @@ def check_cutoff_coherence(
         display_only = bool(getattr(row, "display_only", False))
         if (
             not display_only
+            and not bool(getattr(row, "per_game_cutoffs", False))
             and week in first.index
             and _utc(row.forecast_as_of) > first[week]
         ):
@@ -343,7 +349,9 @@ def check_cutoff_coherence(
                     f"is after the slate's first kickoff {first[week].isoformat()}",
                 )
             )
-        if _utc(row.market_as_of) < _utc(row.forecast_as_of):
+        if not bool(getattr(row, "per_game_cutoffs", False)) and _utc(
+            row.market_as_of
+        ) < _utc(row.forecast_as_of):
             out.append(
                 violation(
                     "g_cutoff_coherence",

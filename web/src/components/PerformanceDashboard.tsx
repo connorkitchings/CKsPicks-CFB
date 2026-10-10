@@ -1,6 +1,5 @@
 "use client";
 
-import { prospectiveEvidenceLabel } from "@/lib/prospective-provenance";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -349,7 +348,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
       <section aria-labelledby="audit-heading" className="space-y-3">
         <h2 id="audit-heading" className="text-sm font-semibold text-ink">Graded picks audit</h2>
         <p className="text-xs text-ink-muted">
-          Grades use the captured selected line. Replays are retrospective evidence. Price source is an audit fact;
+          Grades use the captured selected line. Price source is an audit fact;
           accuracy does not assume a payout.
         </p>
         {auditGames.length === 0 && <p role="status" className="text-xs text-ink-muted">No graded picks match these filters.</p>}
@@ -360,7 +359,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
                 {game.awayTeam} @ {game.homeTeam}
               </Link>
               <p className="mt-1 text-[11px] text-ink-faint">
-                Week {game.week} · {game.evidenceClass === "replay" ? "Retrospective replay" : game.freezeReceiptUri && game.freezeReceiptSha256 ? prospectiveEvidenceLabel(game.freezeReceiptUri, 2026, game.week, game.runId, game.freezeReceiptSha256) : "Prospective"} · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}
+                Week {game.week} · V5 · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}
               </p>
               <p className="text-[11px] text-ink-faint">Original run: <code>{game.runId}</code></p>
               {game.freezeReceiptSha256 && <p className="text-[11px] text-ink-faint">Freeze evidence SHA-256: <code>{game.freezeReceiptSha256}</code></p>}

@@ -119,6 +119,8 @@ test("prediction and performance rows allow null leans and grades but not null i
     spreadLean: "away", totalLean: null, spreadResult: "win", totalResult: null, highConfidence: true,
   };
   assert.equal(checkRows([detail], PERFORMANCE_DETAIL_SPEC).total, 0);
+  assert.equal(checkRows([{ ...detail, evidenceClass: "pending" }], PERFORMANCE_DETAIL_SPEC).total, 0);
+  assert.equal(checkRows([{ ...detail, evidenceClass: "live" }], PERFORMANCE_DETAIL_SPEC).total, 0);
   assert.equal(checkRows([{ ...detail, evidenceClass: "draft" }], PERFORMANCE_DETAIL_SPEC).total, 1);
 });
 

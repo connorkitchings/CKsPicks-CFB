@@ -34,3 +34,9 @@ test("banner gating keys on the V5 model prefix", () => {
   assert.equal(selectsV5(undefined), false);
   assert.equal(selectsV5(""), false);
 });
+
+
+test("the cumulative V5 record admits all three selected evidence classes", async () => {
+  const { V5_RECORD_EVIDENCE } = await import("./run-selection.ts");
+  assert.deepEqual([...V5_RECORD_EVIDENCE], ["replay", "live", "pending"]);
+});

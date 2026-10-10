@@ -89,6 +89,8 @@ def derive_successor_lock(
             continue
         sources = meta["market_sources"]
         market_sources[str(week)] = {
+            "accepted_late_quotes": meta.get("accepted_late_quotes", []),
+            "cfbd_comparison_receipt": meta.get("cfbd_comparison_receipt", {}),
             "as_of": meta["as_of"],
             "config": config["path"],
             "config_sha256": config["sha256"],

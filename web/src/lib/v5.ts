@@ -1,4 +1,4 @@
-import { prospectiveEvidenceLabel } from "./prospective-provenance";
+import { V5_RECORD_EVIDENCE } from "./run-selection";
 import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
@@ -321,7 +321,7 @@ export const getTeamGames = cache(async (season: number, team: string) => {
 });
 
 type PerformanceRow = {
-  evidenceClass: "replay" | "live";
+  evidenceClass: "replay" | "live" | "pending";
   predictedMargin: number | null;
   predictedTotal: number | null;
   marginStdDev: number | null;
@@ -420,7 +420,7 @@ export const getV5Performance = cache(async (
     .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
     .where(and(
       eq(schema.siteWeekSelections.season, season),
-      inArray(schema.predictionRuns.evidenceClass, ["replay", "live"]),
+      inArray(schema.predictionRuns.evidenceClass, [...V5_RECORD_EVIDENCE]),
       beforeWeek === undefined ? undefined : lt(schema.siteWeekSelections.week, beforeWeek),
     ));
   const typed = rows as PerformanceRow[];
@@ -475,11 +475,11 @@ export interface GradedGamePick {
   totalPriceProvenance?: "actual" | "defaulted" | "unavailable";
   totalEdge: number | null;
   highConfidence: boolean;
-  evidenceClass: "replay" | "live";
+  evidenceClass: "replay" | "live" | "pending";
 }
 
 export interface PerformanceDetail {
-  classification: "replay" | "prospective";
+  classification: "all";
   selectedGames: number;
   summary: PerformanceSummary;
   byWeek: Record<number, PerformanceSummary>;
@@ -504,7 +504,7 @@ type DetailRow = {
   freezeReceiptSha256: string | null;
   spreadPriceProvenance: "actual" | "defaulted" | "unavailable";
   totalPriceProvenance: "actual" | "defaulted" | "unavailable";
-  evidenceClass: "replay" | "live";
+  evidenceClass: "replay" | "live" | "pending";
   week: number;
   gameId: number;
   startDate: Date;
@@ -604,47 +604,13 @@ function summarizeDetail(
 
 export const getV5PerformanceDetail = cache(async (
   season: number,
-  classification: "replay" | "prospective" = "replay",
 ): Promise<PerformanceDetail> => {
-  if (classification === "prospective") {
-    const designations = await db.select({
-      week: schema.prospectiveWeekRecords.week,
-      runId: schema.prospectiveWeekRecords.runId,
-      expectedGames: schema.predictionRuns.expectedGames,
-      receiptUri: schema.prospectiveWeekRecords.freezeReceiptUri,
-      receiptSha: schema.prospectiveWeekRecords.freezeReceiptSha256,
-    }).from(schema.prospectiveWeekRecords)
-      .innerJoin(schema.predictionRuns, eq(schema.prospectiveWeekRecords.runId, schema.predictionRuns.runId))
-      .where(eq(schema.prospectiveWeekRecords.season, season));
-    for (const row of designations) prospectiveEvidenceLabel(row.receiptUri, season, row.week, row.runId, row.receiptSha);
-    const weeks = new Set(designations.map((row) => row.week));
-    if (weeks.size !== designations.length) {
-      throw new Error("prospective week designation is duplicated");
-    }
-    const coverageRows = await db.select({
-      runId: schema.prospectiveWeekRecords.runId,
-      count: sql<number>`count(${schema.predictions.gameId})`,
-    }).from(schema.prospectiveWeekRecords)
-      .leftJoin(schema.predictions, eq(schema.prospectiveWeekRecords.runId, schema.predictions.runId))
-      .where(eq(schema.prospectiveWeekRecords.season, season))
-      .groupBy(schema.prospectiveWeekRecords.runId);
-    const coverageByRun = new Map(coverageRows.map((row) => [row.runId, Number(row.count)]));
-    for (const designation of designations) {
-      if ((coverageByRun.get(designation.runId) ?? 0) !== designation.expectedGames) {
-        throw new Error(`prospective Week ${designation.week} prediction coverage is incomplete`);
-      }
-    }
-  }
   const fields = {
     evidenceClass: schema.predictionRuns.evidenceClass,
-    week: classification === "replay" ? schema.siteWeekSelections.week : schema.prospectiveWeekRecords.week,
+    week: schema.siteWeekSelections.week,
     runId: schema.predictionRuns.runId,
-    freezeReceiptUri: classification === "prospective"
-      ? schema.prospectiveWeekRecords.freezeReceiptUri
-      : sql<string | null>`NULL`,
-    freezeReceiptSha256: classification === "prospective"
-      ? schema.prospectiveWeekRecords.freezeReceiptSha256
-      : sql<string | null>`NULL`,
+    freezeReceiptUri: sql<string | null>`NULL`,
+    freezeReceiptSha256: sql<string | null>`NULL`,
     gameId: schema.games.gameId,
     startDate: schema.games.startDate,
     homeTeam: schema.games.homeTeam,
@@ -683,27 +649,16 @@ export const getV5PerformanceDetail = cache(async (
         AND pg.game_id = predictions.game_id AND pg.target = 'total' LIMIT 1
     )`,
   };
-  const rows = classification === "replay"
-    ? await db.select(fields).from(schema.siteWeekSelections)
+  const rows = await db.select(fields).from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
     .innerJoin(schema.predictions, eq(schema.predictionRuns.runId, schema.predictions.runId))
     .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
     .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
     .where(and(
       eq(schema.siteWeekSelections.season, season),
-      eq(schema.predictionRuns.evidenceClass, "replay"),
+      inArray(schema.predictionRuns.evidenceClass, [...V5_RECORD_EVIDENCE]),
     ))
-    .orderBy(desc(schema.siteWeekSelections.week), asc(schema.games.startDate))
-    : await db.select(fields).from(schema.prospectiveWeekRecords)
-    .innerJoin(schema.predictionRuns, eq(schema.prospectiveWeekRecords.runId, schema.predictionRuns.runId))
-    .innerJoin(schema.predictions, eq(schema.predictionRuns.runId, schema.predictions.runId))
-    .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
-    .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
-    .where(and(
-      eq(schema.prospectiveWeekRecords.season, season),
-      eq(schema.predictionRuns.evidenceClass, "live"),
-    ))
-    .orderBy(desc(schema.prospectiveWeekRecords.week), asc(schema.games.startDate));
+    .orderBy(desc(schema.siteWeekSelections.week), asc(schema.games.startDate));
 
   guardRows("performance_detail", rows, PERFORMANCE_DETAIL_SPEC);
   const typed = rows as DetailRow[];
@@ -745,7 +700,7 @@ export const getV5PerformanceDetail = cache(async (
   }
 
   return {
-    classification,
+    classification: "all",
     selectedGames: typed.length,
     summary,
     byWeek,

@@ -20,6 +20,7 @@ from cks_picks_cfb.data.data_first_phase2d import signed_payload, verify_signed_
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.inference.v5_serving import build_v5_serving_rows
 from cks_picks_cfb.inference.weekly import resolve_label_thresholds
+from cks_picks_cfb.models.late_quotes import validate_late_evidence
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
 from cks_picks_cfb.rebuild.successor_sources import is_corrected, lock_schedule
 from scripts.pipeline.build_v5_intended_update_forecasts import (
@@ -160,6 +161,10 @@ def build(
         if not original_run_replayable(old):
             raise ValueError(f"Week {week} original run is not certified scored")
         source = lock["market_sources"][str(week)]
+        validate_late_evidence(
+            source.get("accepted_late_quotes", []),
+            source.get("cfbd_comparison_receipt"),
+        )
         markets = _market_frame(
             source["market_snapshots"],
             cache=market_cache,
@@ -199,6 +204,7 @@ def build(
             total_threshold=thresholds[2],
             timing_class="replay",
             market_quotes=quotes,
+            accepted_late_quotes=source.get("accepted_late_quotes", []),
         )
         expected = set(games.loc[games.week.eq(week), "game_id"].astype(int))
         if (

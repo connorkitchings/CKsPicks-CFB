@@ -25,7 +25,7 @@ export const v5PerformanceFixture: Performance[] = [
 ];
 
 export const v5PerformanceDetailFixture: PerformanceDetail = {
-  classification: "replay",
+  classification: "all",
   selectedGames: 2,
   summary: {
     classification: "all",

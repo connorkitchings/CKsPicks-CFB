@@ -24,6 +24,8 @@ from typing import Any
 
 import pandas as pd
 
+from cks_picks_cfb.models.late_quotes import accepted_late_quote
+
 # ---------------------------------------------------------------------------
 # Policy version identifier
 # ---------------------------------------------------------------------------
@@ -101,6 +103,7 @@ def select_best_quote(
     quote_candidates: list[dict[str, Any]],
     require_price: bool = False,
     forecast_cutoff: datetime | None = None,
+    accepted_late_quotes: list[dict[str, Any]] | None = None,
 ) -> NormalizedQuote | None:
     """Select the best executable pre-kickoff quote for a single target.
 
@@ -180,7 +183,9 @@ def select_best_quote(
             cap = datetime.fromisoformat(cap)
         if cap.tzinfo is None:
             cap = cap.replace(tzinfo=timezone.utc)
-        if cap >= kickoff_utc:
+        if cap >= kickoff_utc and not accepted_late_quote(
+            q, game_id=game_id, target=target, declarations=accepted_late_quotes or []
+        ):
             continue
         if forecast_cutoff is not None:
             cutoff = forecast_cutoff
