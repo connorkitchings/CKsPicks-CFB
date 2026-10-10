@@ -39,6 +39,23 @@ def _ref(storage, uri, body):
     return {"uri": uri, "sha256": hashlib.sha256(raw).hexdigest()}
 
 
+def _audit_ref(storage, cutover, prefix="new"):
+    """A passing point-in-time audit receipt covering runs ``{prefix}-0..{prefix}-N``."""
+    return _ref(
+        storage,
+        f"r2://audit/receipt-{cutover}",
+        {
+            "schema_version": "point_in_time_audit_receipt_v1",
+            "season": 2026,
+            "environment": "preview",
+            "state": "passed",
+            "games_checked": 100,
+            "violations": [],
+            "runs": {str(w): f"{prefix}-{w}" for w in range(cutover + 1)},
+        },
+    )
+
+
 def _packet():
     storage = Storage()
     before_runs = {str(week): f"old-{week}" for week in range(6)}
@@ -181,6 +198,7 @@ def _packet():
             "bundle_approval": bundle,
             "run_authorizations": authorizations,
             "completed_week_certifications": certs,
+            "leakage_audit": _audit_ref(storage, 5),
             "team_stats_before": stats_before,
             "team_stats_after": stats_after,
             "team_stats_verifier": verifier,
@@ -734,6 +752,7 @@ def test_moving_cutover_requires_completed_week5_prospective_evidence():
     packet["protected_runs"] = {"7": "protected-7"}
     packet["expected_current_week"] = dict(season=2026, week=6, run_id="old-6")
     packet["replacement_current_week"] = dict(season=2026, week=6, run_id="new-6")
+    packet["leakage_audit"] = _audit_ref(storage, 6)
     bundle = packet["bundle_approval"]
     bundle["first_live_week"] = 6
     bundle.pop("record_sha256")

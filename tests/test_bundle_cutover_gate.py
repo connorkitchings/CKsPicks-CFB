@@ -63,6 +63,7 @@ def _selection(**kwargs):
         protected_runs={8: "old-8"},
         certifications=fixtures._certs(storage, "new"),
         payload_refs=fixtures._refs(storage),
+        leakage_audit=fixtures._audit(storage),
         **kwargs,
     )
     return packet, storage

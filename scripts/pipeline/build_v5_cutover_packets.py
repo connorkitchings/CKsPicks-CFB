@@ -3,7 +3,8 @@
 
 The spec is JSON: ``environment``, ``cutover_week``, ``decision_ref``, ``runs`` (week ->
 run id), and for selection ``expected_current_runs``, ``protected_runs``,
-``certifications`` and ``payload_refs``; rollback also needs ``prior_runs``. An optional
+``certifications``, ``payload_refs`` and ``leakage_audit`` (the ``{uri, sha256}`` ref of the
+signed point-in-time audit receipt); rollback also needs ``prior_runs``. An optional
 ``registered_bundle`` (the six approval fields exactly as registered) carries a bundle
 approval whose first live week is an earlier display-only week. ``advance: true`` opens
 a brand-new Week N (no public selection yet; ``expected_current_runs`` lists Weeks
@@ -59,6 +60,8 @@ def build(kind: str, spec: dict, storage) -> dict:
         protected_runs=_int_keys(spec["protected_runs"]),
         certifications=spec["certifications"],
         payload_refs=spec["payload_refs"],
+        # The passing point-in-time audit receipt of exactly the selected runs.
+        leakage_audit=spec["leakage_audit"],
         # Opening a new Week N: expected_current_runs then covers Weeks 0..N-1 only.
         advance=bool(spec.get("advance")),
         **common,

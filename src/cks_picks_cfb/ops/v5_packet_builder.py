@@ -254,10 +254,14 @@ def build_selection_packet(
     protected_runs: Mapping[int, str],
     certifications: list[Mapping[str, Any]],
     payload_refs: Mapping[str, Mapping[str, Any]],
+    leakage_audit: Mapping[str, Any],
     registered_bundle: Mapping[str, Any] | None = None,
     advance: bool = False,
 ) -> dict[str, Any]:
     """Build the signed select packet.
+
+    ``leakage_audit`` is the ``{uri, sha256}`` ref of the passing point-in-time audit
+    receipt covering every selected run (the controller verifies it).
 
     ``certifications`` are ``{uri, sha256, week}`` refs for Weeks 0..N-1 and
     ``payload_refs`` carries the five retained signed payload refs. ``registered_bundle``
@@ -318,6 +322,7 @@ def build_selection_packet(
             "bundle_approval": bundle,
             "run_authorizations": _signed_authorizations(records),
             "completed_week_certifications": [dict(c) for c in certifications],
+            "leakage_audit": dict(leakage_audit),
             **{name: dict(payload_refs[name]) for name in PAYLOAD_REFS},
         }
     )
@@ -417,7 +422,7 @@ def build_rollback_packet(
     body = {
         key: value
         for key, value in selection.items()
-        if key not in {"manifest_sha256", *PAYLOAD_REFS}
+        if key not in {"manifest_sha256", "leakage_audit", *PAYLOAD_REFS}
     }
     body.update(
         schema_version=ROLLBACK_SCHEMA,

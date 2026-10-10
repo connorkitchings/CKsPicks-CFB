@@ -1,6 +1,6 @@
 # Production Runbook — 2026 Season
 
-> **Repair track:** corrected-lineage work and the cutover are governed by the [repair-track contract](../plans/2026-10-08/02-repair-track-certification-and-closure.md) and the [Stage 7B plan](../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md). Week 6 is a display-only run; never freeze or close it (see the [weekly operator](v5_weekly_operator.md)). Live week state is in [status](../status.md).
+> **Repair track:** corrected-lineage work and the cutover are governed by the [repair-track contract](../plans/2026-10-08/02-repair-track-certification-and-closure.md) and the [Stage 7B plan](../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md). Week 6 is a display-only run: never freeze it (a post-kickoff freeze would be fabricated); it is graded by the grades-only backfill and counts in the unified 2026 record (see the [weekly operator](v5_weekly_operator.md)). Live week state is in [status](../status.md).
 
 > **Status:** see [Current Status](../status.md) for the selected runs and week state. See also the [current V5 status](../modeling/v5_status.md) and [weekly operator](v5_weekly_operator.md).
 
@@ -8,7 +8,7 @@ The [manual V5 weekly operator](v5_weekly_operator.md) is the reviewed
 stage cadence. Its exact release guard is deployed on Preview and production,
 and production V5 publication and selection require the restricted `cks_prod_pipeline` login
 via `zsh scripts/ops/with_production_pipeline_env.sh`. An immutable candidate
-can be prepared without Neon activation. Prospective V5 publication and
+can be prepared without Neon activation. Live V5 publication and
 selection fail closed until a separately approved, admin-written authorization
 for that exact slate and artifact is present. The existing replay selections
 used their own exact authorizations.
@@ -226,7 +226,7 @@ repopulates as production audits run — this is expected.
 ## Rollback / recovery
 
 The V5 replay cutover rehearsed same-week V4 reselection on Preview. For a
-prospective V5 cutover with a same-week V4 run, retain that reviewed immutable
+live V5 cutover with a same-week V4 run, retain that reviewed immutable
 run and verify rollback through `current_week.active_run_id`, `/api/health`,
 and the rendered system name. For a V5 line refresh, retain the prior selected
 V5 run as the immediate same-week rollback. Week 5 has no production V4 run;

@@ -61,6 +61,18 @@
   - **Defect found:** `db.execute()` on the Neon HTTP driver returns `{rows}`, not an array. The `to_regclass` guards for `prediction_market_selections`, `game_venues` and `team_season_stats` therefore always reported the table missing and would have hidden that data in production. Fixed with a shared, tested helper. The released production cards (`GameRow`) do not render the sportsbook source; that display lives in the prototype cards, so nothing new appears until they are ported.
 - **Source:** [team stats contract, Amendment 1](../plans/2026-10-01/10-authentic-team-stats-pipeline.md), [status](../status.md).
 
+## 2026-10-10: Unified 2026 V5 Record
+
+- **Context:** Week 6 was live as a display-only run and the record was split into a Week 5-only "prospective" island, Weeks 0-4 "retrospective replays" and an ungradeable Week 6.
+- **Decisions (owner):**
+  - **One record:** the 2026 record is one continuous, cumulative V5 record from Week 0 onward, presented as if V5 had been active all season, provided every input is strictly point-in-time. The public site shows no provenance split. Week 6 is graded with the rest.
+  - **Metric:** cumulative 2026 V5 ATS win % vs the 52.4% break-even at -110, spreads and totals separately. **Supersedes** the 2026-10-01 "prospective ATS win %" metric below; MAE, calibration and gates remain diagnostics.
+  - **Counted runs:** after the Week 7 cutover the counted run for every week 0-6 is the corrected replay; the frozen Week 5 run and its receipt stay immutable as provenance. Before the cutover Week 6 counts from the display-only run.
+  - **Lines:** a CFBD-provided line fetched after kickoff is accepted as the game's pregame consensus line only when declared in the market lock and supported by the CFBD re-fetch comparison.
+  - **Claim:** "zero future-data leakage", backed by an executable point-in-time audit and a signed receipt required by the cutover packet. The assumptions and caveats are recorded in [record methodology](../modeling/record_methodology.md), not on the site.
+- **Unchanged:** the leakage and honesty rules: training strictly precedes prediction, no 2026 outcome refits the V5 identity, no freeze receipt after kickoff, immutability of frozen records, market data never enters model inputs. "Prospective" now describes freeze provenance only; the earlier "retrospective/prospective separation" and "corrected public history is reconstructed retrospective" decisions are superseded for presentation, not for provenance.
+- **Source:** [record methodology](../modeling/record_methodology.md), [status](../status.md), [repair-track contract Amendment 8](../plans/2026-10-08/02-repair-track-certification-and-closure.md).
+
 ## 2026-10-01: Success Metric, Self-Hosted Logos, Pre-Game Team Stats
 
 - **Context:** First full repo review; design work on Picks/Results and matchup pages.

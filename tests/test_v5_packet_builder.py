@@ -100,6 +100,24 @@ def _refs(storage):
     }
 
 
+def _audit(
+    storage, *, cutover=None, prefix="new", uri="r2://audit/receipt", **overrides
+):
+    """A passing point-in-time audit receipt for runs ``{prefix}-0..{prefix}-N``."""
+    last = CUTOVER if cutover is None else cutover
+    body = {
+        "schema_version": "point_in_time_audit_receipt_v1",
+        "season": 2026,
+        "environment": "preview",
+        "state": "passed",
+        "games_checked": 100,
+        "violations": [],
+        "runs": {str(w): f"{prefix}-{w}" for w in range(last + 1)},
+    }
+    body.update(overrides)
+    return _ref(storage, uri, body)
+
+
 def _certs(storage, prefix):
     return [
         _ref(
@@ -130,6 +148,7 @@ def _selection():
         protected_runs={6: "old-6"},
         certifications=_certs(storage, "new"),
         payload_refs=_refs(storage),
+        leakage_audit=_audit(storage),
     )
     return packet, storage
 
@@ -223,6 +242,7 @@ def test_selection_builder_refuses_reused_runs_and_missing_evidence():
         protected_runs={6: "old-6"},
         certifications=_certs(storage, "new"),
         payload_refs=_refs(storage),
+        leakage_audit=_audit(storage),
     )
     with pytest.raises(builder.PacketBuildError, match="reuse"):
         builder.build_selection_packet(
@@ -277,6 +297,7 @@ def _cutover7_packet(prospective_rows):
             for w, c in enumerate(_certs(storage, "new") + _certs(storage, "new")[:2])
         ],
         payload_refs=refs,
+        leakage_audit=_audit(storage, cutover=7),
     )
     return packet, storage
 

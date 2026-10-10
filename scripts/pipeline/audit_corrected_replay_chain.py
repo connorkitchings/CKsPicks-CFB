@@ -42,14 +42,29 @@ def sha(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def check_lock_weeks(lock: dict, through_week: int) -> None:
+    """The lock must hold market sources for exactly Weeks 0 through ``through_week``."""
+    expected = {str(w) for w in range(through_week + 1)}
+    if set(lock.get("market_sources", {})) != expected:
+        raise ValueError(
+            f"certification requires exactly Weeks 0–{through_week} in the lock's market sources"
+        )
+
+
 def audit(
-    storage, *, lock_path, release_tag, bridge_uri, rating_uri, expected_bundle_sha
+    storage,
+    *,
+    lock_path,
+    release_tag,
+    bridge_uri,
+    rating_uri,
+    expected_bundle_sha,
+    through_week=5,
 ):
     source = ReadOnlyEvidence(storage)
     lock_raw = lock_path.read_bytes()
     lock = json.loads(lock_raw)
-    if set(lock.get("market_sources", {})) != {str(w) for w in range(6)}:
-        raise ValueError("c2 certification requires exactly Weeks 0–5")
+    check_lock_weeks(lock, through_week)
     bridge_raw = source.read_bytes(bridge_uri)
     bridge = json.loads(bridge_raw)
     verify_signed_payload(bridge, label="corrected bridge")
@@ -133,6 +148,12 @@ def main():
     parser.add_argument("--bridge-uri", required=True)
     parser.add_argument("--rating-uri", required=True)
     parser.add_argument("--expected-bundle-sha", required=True)
+    parser.add_argument(
+        "--through-week",
+        type=int,
+        default=5,
+        help="last replayed week the lock must cover (5 for the c2 set, 6 once Week 6 is replayed)",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if os.getenv("CFB_STORAGE_BACKEND") != "r2":
@@ -145,6 +166,7 @@ def main():
         bridge_uri=args.bridge_uri,
         rating_uri=args.rating_uri,
         expected_bundle_sha=args.expected_bundle_sha,
+        through_week=args.through_week,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(canonical_json(result))

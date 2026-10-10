@@ -25,11 +25,12 @@ ineligible for leans, grades, ROI, and model selection.
   produce market decisions or confidence claims.
 - Any pricing/edge display must retain prediction run, market timestamp,
   source/provenance, and publication-state lineage.
-- **Primary success metric (decided 2026-10-01):** prospective ATS win % vs the
-  52.4% break-even at -110, reported separately for spreads and totals, using only
-  slates frozen before kickoff. Retrospective replays are reported separately and
-  are not prospective evidence. Units/ROI shown on `/performance` are
-  display/evaluation only; they do not imply staking or wagering guidance.
+- **Primary success metric (decided 2026-10-10, superseding the 2026-10-01
+  prospective-only metric):** cumulative 2026 V5 ATS win % from Week 0 onward vs the
+  52.4% break-even at -110, reported separately for spreads and totals, with strictly
+  point-in-time inputs ([record methodology](record_methodology.md)). Units/ROI shown
+  on `/performance` are display/evaluation only; they do not imply staking or
+  wagering guidance.
 - Market evaluation of future candidates begins only after football-model
   quality succeeds under the [evaluation policy](evaluation.md).
 

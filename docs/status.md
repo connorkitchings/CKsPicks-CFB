@@ -31,9 +31,9 @@ The corrected lineage through Week 5 is published in Preview R2/catalog and not 
 
 | Week | State | Selected run |
 |---|---|---|
-| 0–4 | Scored; **retrospective replay** (not prospective evidence) | `2026w{0..4}-v5repair-20260929-p1` |
-| 5 | **Scored** 2026-10-04, 56/56/56, 112 grades (56 spread, 56 total). First live V5 slate. | `2026w5-v5repair-20260929-p2` |
-| 6 | **Production: display-only run active (2026-10-09).** The Week 6 run `2026w6-v5repair-20261008-d2` covers the 55 of 58 games that had not started when it was built (Oct 8, 16:53Z; market capture 16:19Z, so Saturday lines may have moved; 3 games kicked off Oct 6-7 are omitted). Evidence class `pending`, never frozen, excluded from the prospective record ([Amendment 9](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md); Amendment 10 waives it from the completed-prospective check). `current_week` is (2026, 6) with the run active; Weeks 0-5 selections are unchanged. Selecting it moved the site-wide rating source to the corrected post-Week-5 manifest `c83b1423…`, so Weeks 0-5 matchup pages show "Forecast and rating snapshots use different published lineages" until the cutover rebinds them (accepted 2026-10-09). The grades-only backfill follows after finals (about Oct 11-12). Week 6 joins the corrected replay set after its finals stabilize ([Stage 7B plan](plans/2026-10-06/02-stage7b-exact-release-and-cutover.md)). | `2026w6-v5repair-20261008-d2` in Preview and Production. Rollback: `scripts/pipeline/rollback_week6_display.py` (owner login; rehearsed in Preview 2026-10-09). |
+| 0–4 | Scored; part of the unified 2026 V5 record (generated retrospectively from point-in-time inputs) | `2026w{0..4}-v5repair-20260929-p1` |
+| 5 | **Scored** 2026-10-04, 56/56/56, 112 grades (56 spread, 56 total).  Part of the unified record; frozen before kickoff (immutable receipt). | `2026w5-v5repair-20260929-p2` |
+| 6 | **Production: display-only run active (2026-10-09).** The Week 6 run `2026w6-v5repair-20261008-d2` covers the 55 of 58 games that had not started when it was built (Oct 8, 16:53Z; market capture 16:19Z, so Saturday lines may have moved; 3 games kicked off Oct 6-7 are omitted). Evidence class `pending`, never frozen (a post-kickoff freeze would be fabricated; it has no freeze receipt, [Amendments 9-10](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md), [Amendment 12](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md)). **Graded into the unified record** (2026-10-10 policy): the grades-only backfill follows the finals. `current_week` is (2026, 6) with the run active; Weeks 0-5 selections are unchanged. Selecting it moved the site-wide rating source to the corrected post-Week-5 manifest `c83b1423…`, so Weeks 0-5 matchup pages show "Forecast and rating snapshots use different published lineages" until the cutover rebinds them (accepted 2026-10-09). Its corrected replay (all 58 games, three on a declared CFBD line) replaces it in the counted record at the cutover; Week 6 joins the corrected replay set after its finals stabilize ([Stage 7B plan](plans/2026-10-06/02-stage7b-exact-release-and-cutover.md)). | `2026w6-v5repair-20261008-d2` in Preview and Production. Rollback: `scripts/pipeline/rollback_week6_display.py` (owner login; rehearsed in Preview 2026-10-09). |
 
 **Rollback set (exact):** `2026w{0..4}-v5replay-bestquote-20260926-r3` and
 `2026w5-5d436e58c072`. An earlier Week 5 run, `2026w5-d6366e59fd43`, is
@@ -41,14 +41,14 @@ superseded and kept only as an audit record.
 
 ## Scoreboard
 
-**Primary success metric:** prospective ATS win % vs the 52.4% break-even at
--110, reported separately for spreads and totals. MAE, calibration and the
-pre-registered promotion gates remain diagnostics.
+**Primary success metric (decided 2026-10-10):** cumulative 2026 V5 ATS win % from Week 0
+onward vs the 52.4% break-even at -110, reported separately for spreads and totals, with
+strictly point-in-time inputs ([record methodology](modeling/record_methodology.md)). MAE,
+calibration and the pre-registered promotion gates remain diagnostics.
 
-| Evidence class | Spread | Total | Notes |
+| Record | Spread | Total | Notes |
 |---|---|---|---|
-| **Prospective (frozen before kickoff)** | 28-27-1 (50.9%) | 25-30-1 (45.5%) | Week 5 is the first live V5 slate (55 decided spreads, 55 decided totals; 1 push each) |
-| Retrospective replay, Weeks 0–4 | 100-112-3 (47.2%) | 112-102-0 (52.3%) | Not prospective evidence (unconstrained; 212 decided spreads, 214 decided totals; 1 unlined W3 total) |
+| **2026 V5, cumulative (Weeks 0–5 as served)** | 128-139-4 (47.9%) | 137-132-1 (50.9%) | Sum of the served runs (Weeks 0–4 `p1`, Week 5 `p2`): 267 decided spreads, 269 decided totals; 1 unlined W3 total. Week 6 is added after finals; Weeks 0–6 are replaced by the corrected replays at the cutover |
 
 Neither target clears 52.4% YTD. In the 2025 holdout the market had
 lower error than V5 on both targets, and the docs do not claim V5 beats V4.

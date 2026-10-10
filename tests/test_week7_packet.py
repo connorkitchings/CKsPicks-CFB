@@ -92,6 +92,7 @@ def _selection(rows=None, *, storage=None):
         protected_runs={},
         certifications=fixtures._certs(storage, "new"),
         payload_refs=refs,
+        leakage_audit=fixtures._audit(storage),
         advance=True,
     )
     return packet, storage, refs

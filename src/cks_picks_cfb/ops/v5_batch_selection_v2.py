@@ -106,6 +106,42 @@ def _week_map(value: Any, label: str, *, allow_empty: bool = False) -> dict[int,
     return result
 
 
+LEAKAGE_AUDIT_SCHEMA = "point_in_time_audit_receipt_v1"
+
+
+def _verify_leakage_audit(
+    packet: Mapping[str, Any],
+    storage: Any,
+    *,
+    environment: str,
+    after: Mapping[int, str],
+) -> None:
+    """A forward cutover needs a passing point-in-time audit of exactly the runs it selects.
+
+    The receipt is produced by ``scripts/pipeline/audit_point_in_time_leakage.py`` and
+    covers every game of every selected run; a failed receipt, a receipt for other runs or
+    another environment, or one that checked no games refuses the packet.
+    """
+    receipt = _read_signed_ref(storage, packet.get("leakage_audit"), "leakage audit")
+    if (
+        receipt.get("schema_version") != LEAKAGE_AUDIT_SCHEMA
+        or receipt.get("environment") != environment
+        or receipt.get("season") != 2026
+    ):
+        raise V5BatchSelectionError("leakage audit receipt schema or scope differs")
+    if receipt.get("state") != "passed" or receipt.get("violations"):
+        raise V5BatchSelectionError("leakage audit did not pass")
+    if (
+        not isinstance(receipt.get("games_checked"), int)
+        or receipt["games_checked"] <= 0
+    ):
+        raise V5BatchSelectionError("leakage audit checked no games")
+    if receipt.get("runs") != {str(week): run for week, run in sorted(after.items())}:
+        raise V5BatchSelectionError(
+            "leakage audit does not cover exactly the packet's selected runs"
+        )
+
+
 def _read_signed_ref(storage: Any, ref: Any, label: str) -> dict[str, Any]:
     if not isinstance(ref, Mapping) or not ref.get("uri") or not ref.get("sha256"):
         raise V5BatchSelectionError(f"{label} reference is incomplete")
@@ -280,6 +316,9 @@ def validate_v2_packet(
             body["first_live_week"], cutover, rollback=is_rollback
         ):
             raise V5BatchSelectionError("bundle approval is not bound to cutover N")
+
+    if not is_rollback:
+        _verify_leakage_audit(packet, storage, environment=environment, after=after)
 
     payloads = {}
     for name in (

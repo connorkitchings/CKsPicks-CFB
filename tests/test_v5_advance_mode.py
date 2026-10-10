@@ -275,6 +275,7 @@ def _built_advance(storage=None):
         protected_runs={fixtures.CUTOVER + 1: "old-6"},
         certifications=fixtures._certs(storage, "new"),
         payload_refs=fixtures._refs(storage),
+        leakage_audit=fixtures._audit(storage),
         advance=True,
     )
     return packet, storage, builder, fixtures
@@ -305,6 +306,7 @@ def test_builder_requires_the_previous_weeks_only_in_advance_mode():
         protected_runs={fixtures.CUTOVER + 1: "old-6"},
         certifications=fixtures._certs(storage, "new"),
         payload_refs=fixtures._refs(storage),
+        leakage_audit=fixtures._audit(storage),
     )
     full = {w: f"old-{w}" for w in range(fixtures.CUTOVER + 1)}
     with pytest.raises(builder.PacketBuildError, match=r"N-1 \(advance\)"):

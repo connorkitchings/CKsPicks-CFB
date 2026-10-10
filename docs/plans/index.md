@@ -37,7 +37,7 @@ data, rating replay, and historical comparison without changing V5 production.
 
 **Operational snapshot:** see [Current Status](../status.md) for selected runs and week state. Historical contract lifecycle metadata below is retained as recorded.
 
-The former 07/08 checkpoint said “Week 4 refresh awaits stabilized finals”; that gate was satisfied on 2026-09-27. Six slates are not a launch prerequisite for prospective V5 activation; they remain a monitoring window.
+The former 07/08 checkpoint said “Week 4 refresh awaits stabilized finals”; that gate was satisfied on 2026-09-27. Six slates are not a launch prerequisite for V5 activation; they remain a monitoring window.
 
 The [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) is the approved implementation contract for the V5-only site and operating path. It supersedes the narrower [V4-to-V5 site transition draft](2026-09-22/05-v4-to-v5-site-transition.md) where their release or public-history policies differ. The older contract remains as an audit record.
 

@@ -2,13 +2,13 @@
 
 > **Current state:** live run IDs, week state and the scoreboard are in [Current Status](../status.md); that page is the only place run IDs are recorded. Corrected-lineage work is governed by the [repair-track contract](../plans/2026-10-08/02-repair-track-certification-and-closure.md) and the [Stage 7B cutover plan](../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md).
 
-> **Week 6 exception (display-only):** the Week 6 run in Production is display-only with evidence class `pending`. **Never freeze, close or score Week 6** with this checklist; that would mark kicked-off games missed and put a non-prospective run in the prospective record. After finals stabilize it receives a grades-only backfill (`scripts/pipeline/backfill_v5_unconstrained_grades.py --week 6 --grades-only`, Preview then Production, user-run) and is then superseded by its corrected replay at the cutover. Rolling it back needs `scripts/pipeline/rollback_week6_display.py` and the owner login (the pipeline role has no DELETE on `prediction_market_selections`). See the [Week 6 release contract](../plans/2026-10-09/02-week6-display-production-release.md).
+> **Week 6 exception (display-only):** the Week 6 run in Production is display-only with evidence class `pending`. **Never freeze or close Week 6** with this checklist: a post-kickoff freeze would be fabricated and close would mark kicked-off games missed. Week 6 has no freeze receipt, but it **is graded into the unified 2026 record**: after finals stabilize it receives a finals load (`scripts/pipeline/load_game_finals.py`) and a grades-only backfill (`scripts/pipeline/backfill_v5_unconstrained_grades.py --week 6 --grades-only`, Preview then Production, user-run), and it is then superseded in the counted record by its corrected replay at the cutover. Rolling it back needs `scripts/pipeline/rollback_week6_display.py` and the owner login (the pipeline role has no DELETE on `prediction_market_selections`). See the [Week 6 release contract](../plans/2026-10-09/02-week6-display-production-release.md) and the [record methodology](../modeling/record_methodology.md).
 
 > **Historical (2026-09-30):** the repaired intended-update release is described in the [exact release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md). Original V5 runs remain the rollback set; the p2 Week 5 freeze and close are recorded in status.
 
 For the selected successor, continue from its independently verified rating
 manifest and refitted bundle. Keep the original V5 projector and original
-model-pair authorizations as rollback paths; a new prospective successor run
+model-pair authorizations as rollback paths; a new live successor run
 requires its own exact source, bundle, quote, and release authorization. The
 full checklist below still governs market coverage, publication, and freeze.
 
@@ -67,7 +67,7 @@ Tools, all under `scripts/pipeline/` (run Preview as `zsh scripts/ops/with_previ
 
 | Step | Tool |
 |---|---|
-| Corrected live lock, serving build, verify, package | `build_corrected_live_lock.py`, `build_v5_corrected_live_serving.py` (omit `--display-only` for a prospective run), `verify_v5_corrected_live_serving.py`, `package_v5_corrected_live_run.py` |
+| Corrected live lock, serving build, verify, package | `build_corrected_live_lock.py`, `build_v5_corrected_live_serving.py` (omit `--display-only` for a normal pre-kickoff run), `verify_v5_corrected_live_serving.py`, `package_v5_corrected_live_run.py` |
 | Ratings projection | `publish_v5_intended_update_ratings.py` (not `publish_v5_ratings.py`) |
 | Stage artifacts into the target namespace | `stage_v5_artifacts.py` (`--predictions-only` for a run with no scored artifact) |
 | Signed selection and rollback packets | `build_v5_cutover_packets.py` |
@@ -76,7 +76,7 @@ Tools, all under `scripts/pipeline/` (run Preview as `zsh scripts/ops/with_previ
 | Matchup repin (after selection) and verify | `publish_matchup_data.py --expect-payload-sha`, `verify_matchup_data.py` |
 | Revoke a release authorization | `revoke_v5_release.py` |
 
-Rules: the packet's bundle approval must be bound to the cutover week, display-only weeks are excluded from the prospective record, and a missed freeze deadline is a failed cutover that needs a revised operating decision (not a compressed gate).
+Rules: the packet's bundle approval must be bound to the cutover week, display-only weeks have no freeze record (`prospective_week_records`) but are graded in the unified record, and a missed freeze deadline is a failed cutover that needs a revised operating decision (not a compressed gate).
 
 The operator is `scripts/pipeline/run_v5_weekly_cycle.py`. It has no timer or
 automatic trigger. Run it from a clean committed checkout with `PYTHONPATH=.:src`
@@ -158,7 +158,7 @@ before a write. `freeze` checks the selected run, full coverage, and the
 one-hour pre-kickoff hard boundary again at apply. `close` scores the selected
 frozen run against the bound outcomes ref and reuses the existing resumable
 close operation. Do not treat replay, a fixture rehearsal, a candidate
-artifact, or `pending` predictions as prospective evidence.
+artifact, or `pending` predictions as frozen-receipt evidence (graded, they still count in the unified record).
 
 ## Production release packet and rollback
 
