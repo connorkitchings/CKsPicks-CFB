@@ -135,6 +135,36 @@ def registered_bundle_approval(
     return {**body, "record_sha256": _sha(body)}
 
 
+def registered_authorization_record(
+    row: Mapping[str, Any], *, manifest: Mapping[str, Any], environment: str, week: int
+) -> dict[str, Any]:
+    """Re-sign a release authorization that is already registered, unchanged.
+
+    A rollback restores runs that were released earlier under their own decisions, so
+    their registered rows are carried verbatim; only identity against the run's retained
+    manifest is checked here (the controller re-reads the row and re-validates the
+    source chain at apply time).
+    """
+    if set(row) != set(AUTH_COLUMNS):
+        raise PacketBuildError(
+            "registered authorization must have exactly the authorization columns"
+        )
+    body = {key: row[key] for key in AUTH_COLUMNS}
+    if (
+        body["environment"] != environment
+        or body["season"] != 2026
+        or body["week"] != week
+        or body["prediction_run_id"] != manifest.get("run_id")
+        or body["evidence_class"] != manifest.get("evidence_class")
+        or body["model_id"] != manifest.get("model_id")
+        or body["inference_bundle_sha256"] != manifest.get("inference_bundle_sha256")
+    ):
+        raise PacketBuildError(
+            f"registered Week {week} authorization is for another run or environment"
+        )
+    return {**body, "record_sha256": _sha(body)}
+
+
 def _records_for_cutover(
     manifests: Mapping[int, Mapping[str, Any]],
     *,
@@ -142,17 +172,24 @@ def _records_for_cutover(
     cutover_week: int,
     decision_ref: str,
     registered_bundle: Mapping[str, Any] | None = None,
+    last_week: int | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Authorization records and the bundle approval for ``manifests``.
+
+    ``last_week`` is the last week the manifests cover (default: the cutover week). An
+    advance rollback restores only Weeks 0..N-1, so it passes ``cutover_week - 1``.
+    """
     if not isinstance(cutover_week, int) or cutover_week < 5:
         raise PacketBuildError("cutover week must be an integer of at least 5")
-    if sorted(manifests) != list(range(cutover_week + 1)):
+    last = cutover_week if last_week is None else last_week
+    if sorted(manifests) != list(range(last + 1)):
         raise PacketBuildError("manifests must cover contiguous Weeks 0 through N")
     models = {m["model_id"] for m in manifests.values()}
     bundles = {m["inference_bundle_sha256"] for m in manifests.values()}
     if len(models) != 1 or len(bundles) != 1:
         raise PacketBuildError("every run must share one model and inference bundle")
     records = []
-    for week in range(cutover_week + 1):
+    for week in range(last + 1):
         manifest = manifests[week]
         expected = "pending" if week == cutover_week else "replay"
         if manifest.get("evidence_class") != expected:
@@ -218,12 +255,17 @@ def build_selection_packet(
     certifications: list[Mapping[str, Any]],
     payload_refs: Mapping[str, Mapping[str, Any]],
     registered_bundle: Mapping[str, Any] | None = None,
+    advance: bool = False,
 ) -> dict[str, Any]:
     """Build the signed select packet.
 
     ``certifications`` are ``{uri, sha256, week}`` refs for Weeks 0..N-1 and
     ``payload_refs`` carries the five retained signed payload refs. ``registered_bundle``
     carries an approval row that is already registered (see ``registered_bundle_approval``).
+
+    ``advance`` opens Week N, which has no public selection yet: ``expected_current_runs``
+    then covers Weeks 0..N-1 (the site is at Week N-1) and the packet selects Weeks 0..N
+    and moves the current week to N in one transaction.
     """
     records, bundle = _records_for_cutover(
         manifests,
@@ -233,8 +275,12 @@ def build_selection_packet(
         registered_bundle=registered_bundle,
     )
     weeks = list(range(cutover_week + 1))
-    if sorted(expected_current_runs) != weeks:
-        raise PacketBuildError("expected current runs must cover Weeks 0 through N")
+    before_weeks = weeks[:-1] if advance else weeks
+    if sorted(expected_current_runs) != before_weeks:
+        raise PacketBuildError(
+            "expected current runs must cover Weeks 0 through "
+            + ("N-1 (advance)" if advance else "N")
+        )
     replacement = {week: manifests[week]["run_id"] for week in weeks}
     if set(expected_current_runs.values()) & set(replacement.values()):
         raise PacketBuildError("replacement runs reuse a currently selected run")
@@ -253,14 +299,17 @@ def build_selection_packet(
             "season": 2026,
             "cutover_week": cutover_week,
             "decision_ref": decision_ref,
-            "expected_current_runs": {str(w): expected_current_runs[w] for w in weeks},
+            **({"opens_week": cutover_week} if advance else {}),
+            "expected_current_runs": {
+                str(w): expected_current_runs[w] for w in before_weeks
+            },
             "replacement_runs": {str(w): replacement[w] for w in weeks},
             "certified_completed_weeks": list(range(cutover_week)),
             "protected_runs": {str(w): r for w, r in sorted(protected_runs.items())},
             "expected_current_week": {
                 "season": 2026,
-                "week": cutover_week,
-                "run_id": expected_current_runs[cutover_week],
+                "week": before_weeks[-1],
+                "run_id": expected_current_runs[before_weeks[-1]],
             },
             "replacement_current_week": {
                 "season": 2026,
@@ -279,15 +328,25 @@ def build_rollback_packet(
     selection: Mapping[str, Any],
     *,
     prior_manifests: Mapping[int, Mapping[str, Any]],
-    certifications: list[Mapping[str, Any]],
+    certifications: list[Mapping[str, Any]] | None = None,
     payload_refs: Mapping[str, Mapping[str, Any]],
     registered_bundle: Mapping[str, Any] | None = None,
+    registered_bundles: list[Mapping[str, Any]] | None = None,
+    registered_authorizations: Mapping[int, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Invert a select packet.
 
-    The prior runs become the replacement, so each needs its own authorization record
-    (built from ``prior_manifests``), completed-week certifications bound to the prior
-    runs, and team-stats refs whose before/after are swapped (``payload_refs``).
+    The prior runs become the replacement, so each needs an authorization record and
+    team-stats refs whose before/after are swapped (``payload_refs``).
+
+    Normally the prior runs were released earlier under their own registered
+    authorizations and bundle approvals (possibly two bundles, as with the repaired
+    Weeks 0-5 and the successor Week 6): pass them as ``registered_authorizations``
+    (week -> registered row) and ``registered_bundles`` and they are carried verbatim.
+    Without them, records are built from ``prior_manifests`` under the packet decision
+    (only valid for a rollback set that is registered at the cutover).
+    ``certifications`` are optional: a rollback restores history that needs no fresh
+    finals certification.
     """
     if selection.get("schema_version") != SELECTION_SCHEMA:
         raise PacketBuildError("rollback requires a select packet")
@@ -295,17 +354,64 @@ def build_rollback_packet(
     environment = selection["environment"]
     decision_ref = selection["decision_ref"]
     prior = {int(w): r for w, r in selection["expected_current_runs"].items()}
-    records, bundle = _records_for_cutover(
-        prior_manifests,
-        environment=environment,
-        cutover_week=cutover,
-        decision_ref=decision_ref,
-        registered_bundle=registered_bundle,
-    )
+    certifications = certifications or []
+    extra_bundles: list[dict[str, Any]] = []
+    # An advance packet opened Week N, so its rollback restores Weeks 0..N-1 only.
+    if registered_authorizations is not None:
+        last = max(prior)
+        if sorted(prior_manifests) != list(range(last + 1)) or sorted(
+            registered_authorizations
+        ) != list(range(last + 1)):
+            raise PacketBuildError(
+                "prior manifests and registered authorizations must cover the prior weeks"
+            )
+        if not registered_bundles:
+            raise PacketBuildError("registered authorizations need registered bundles")
+        records = [
+            registered_authorization_record(
+                registered_authorizations[week],
+                manifest=prior_manifests[week],
+                environment=environment,
+                week=week,
+            )
+            for week in range(last + 1)
+        ]
+        used = list(
+            dict.fromkeys(
+                (record["model_id"], record["inference_bundle_sha256"])
+                for record in records
+            )
+        )
+        by_pair = {
+            (item.get("model_id"), item.get("inference_bundle_sha256")): item
+            for item in registered_bundles
+        }
+        if len(by_pair) != len(registered_bundles) or set(by_pair) != set(used):
+            raise PacketBuildError(
+                "registered bundles must match the bundles of the restored runs exactly"
+            )
+        approvals = [
+            registered_bundle_approval(
+                by_pair[pair], model_id=pair[0], inference_bundle_sha256=pair[1]
+            )
+            for pair in used
+        ]
+        bundle, extra_bundles = approvals[0], approvals[1:]
+    else:
+        records, bundle = _records_for_cutover(
+            prior_manifests,
+            environment=environment,
+            cutover_week=cutover,
+            decision_ref=decision_ref,
+            registered_bundle=registered_bundle,
+            last_week=max(prior),
+        )
     for week, record in enumerate(records):
         if record["prediction_run_id"] != prior[week]:
             raise PacketBuildError(f"Week {week} prior manifest is another run")
-    if sorted(c.get("week") for c in certifications) != list(range(cutover)):
+    if certifications and sorted(c.get("week") for c in certifications) != list(
+        range(cutover)
+    ):
         raise PacketBuildError("certifications must cover Weeks 0 through N-1")
     if missing := [name for name in PAYLOAD_REFS if name not in payload_refs]:
         raise PacketBuildError(f"payload refs missing: {', '.join(missing)}")
@@ -325,4 +431,6 @@ def build_rollback_packet(
         completed_week_certifications=[dict(c) for c in certifications],
         **{name: dict(payload_refs[name]) for name in PAYLOAD_REFS},
     )
+    if extra_bundles:
+        body["additional_bundle_approvals"] = extra_bundles
     return signed_payload(body)

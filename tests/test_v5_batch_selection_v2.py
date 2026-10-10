@@ -459,6 +459,8 @@ def _make_rollback_packet(packet, storage):
     for auth in rollback["run_authorizations"]:
         record = dict(auth)
         week = int(record["week"])
+        if str(week) not in before:
+            continue  # an advance rollback restores only the weeks that were selected
         record["prediction_run_id"] = before[str(week)]
         body = {
             key: record[key]

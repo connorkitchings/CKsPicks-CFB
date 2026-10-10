@@ -5,7 +5,11 @@ The spec is JSON: ``environment``, ``cutover_week``, ``decision_ref``, ``runs`` 
 run id), and for selection ``expected_current_runs``, ``protected_runs``,
 ``certifications`` and ``payload_refs``; rollback also needs ``prior_runs``. An optional
 ``registered_bundle`` (the six approval fields exactly as registered) carries a bundle
-approval whose first live week is an earlier display-only week. The tool
+approval whose first live week is an earlier display-only week. ``advance: true`` opens
+a brand-new Week N (no public selection yet; ``expected_current_runs`` lists Weeks
+0..N-1, and a rollback needs the owner or migrator login to delete the Week N row).
+A rollback spec carries ``registered_bundles`` and ``registered_authorizations`` (week ->
+row) for the restored runs, exactly as registered. The tool
 only reads storage and writes the packet file; applying a packet stays with the
 user-run authorizer and selection scripts.
 """
@@ -55,18 +59,26 @@ def build(kind: str, spec: dict, storage) -> dict:
         protected_runs=_int_keys(spec["protected_runs"]),
         certifications=spec["certifications"],
         payload_refs=spec["payload_refs"],
+        # Opening a new Week N: expected_current_runs then covers Weeks 0..N-1 only.
+        advance=bool(spec.get("advance")),
         **common,
     )
     if kind == "selection":
         return selection
     rollback = spec["rollback"]
+    authorizations = rollback.get("registered_authorizations")
     return builder.build_rollback_packet(
         selection,
         prior_manifests=_manifests(storage, spec["expected_current_runs"]),
-        certifications=rollback["certifications"],
+        certifications=rollback.get("certifications"),
         payload_refs=rollback["payload_refs"],
-        # The prior runs' bundle is usually a different, earlier-registered approval.
+        # The prior runs keep the authorizations and bundle approvals they were
+        # registered under (export_v5_registered_releases.py prints them).
         registered_bundle=rollback.get("registered_bundle"),
+        registered_bundles=rollback.get("registered_bundles"),
+        registered_authorizations=(
+            None if authorizations is None else _int_keys(authorizations)
+        ),
     )
 
 

@@ -12,7 +12,7 @@ from cks_picks_cfb.data.data_first_phase2d import Phase2dError, verify_signed_pa
 from cks_picks_cfb.data.team_stats import UPSERT_TEAM_STAT_SQL
 from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
 from cks_picks_cfb.ops.prospective_records import verify_prospective_record
-from cks_picks_cfb.ops.public_selection import select_week_run
+from cks_picks_cfb.ops.public_selection import deselect_week_run, select_week_run
 from cks_picks_cfb.ops.v5_intended_update_release import (
     AUTH_COLUMNS,
     IntendedUpdateReleaseError,
@@ -141,20 +141,37 @@ def validate_v2_packet(
     if not decision_ref:
         raise V5BatchSelectionError("packet decision reference is missing")
 
+    is_rollback = str(packet["schema_version"]).endswith("rollback_v2")
+    # Advance mode: the cutover opens Week N, which has no public selection yet. A
+    # selection packet then starts from Weeks 0..N-1 (current week N-1) and ends at 0..N
+    # (current week N); its rollback is the exact inverse and deletes the Week N selection.
+    opens = packet.get("opens_week")
+    if opens is not None and (isinstance(opens, bool) or opens != cutover):
+        raise V5BatchSelectionError("opens_week must equal the cutover week")
+    advance = opens is not None
+    through_n, below_n = set(range(cutover + 1)), set(range(cutover))
+    expected_before = (
+        (below_n if not is_rollback else through_n) if advance else through_n
+    )
+    expected_after = (
+        (through_n if not is_rollback else below_n) if advance else through_n
+    )
     before = _week_map(packet.get("expected_current_runs"), "expected_current_runs")
     after = _week_map(packet.get("replacement_runs"), "replacement_runs")
-    expected_weeks = set(range(cutover + 1))
-    if set(before) != expected_weeks or set(after) != expected_weeks:
+    if set(before) != expected_before or set(after) != expected_after:
         raise V5BatchSelectionError(
             "selection maps must cover Weeks 0 through N exactly"
         )
+    expected_weeks = set(after)
     if set(before.values()) & set(after.values()):
         raise V5BatchSelectionError("replacement packet reuses a prior run")
     if packet.get("certified_completed_weeks") != list(range(cutover)):
         raise V5BatchSelectionError(
             "certified replay weeks must be contiguous 0 through N-1"
         )
-    if set(_week_map(packet.get("protected_runs"), "protected_runs")) & expected_weeks:
+    if set(_week_map(packet.get("protected_runs"), "protected_runs")) & (
+        set(before) | set(after)
+    ):
         raise V5BatchSelectionError(
             "protected run scope overlaps the replacement slate"
         )
@@ -165,18 +182,23 @@ def validate_v2_packet(
         not isinstance(current_before, Mapping)
         or not isinstance(current_after, Mapping)
         or current_before.get("season") != 2026
-        or current_before.get("week") != cutover
-        or current_before.get("run_id") != before[cutover]
+        or current_before.get("week") != max(before)
+        or current_before.get("run_id") != before[max(before)]
         or current_after.get("season") != 2026
-        or current_after.get("week") != cutover
-        or current_after.get("run_id") != after[cutover]
+        or current_after.get("week") != max(after)
+        or current_after.get("run_id") != after[max(after)]
     ):
         raise V5BatchSelectionError("current-week before/after bindings are incomplete")
 
     auth = packet.get("run_authorizations")
-    bundle = packet.get("bundle_approval")
-    if not isinstance(bundle, Mapping) or not isinstance(auth, list):
+    primary = packet.get("bundle_approval")
+    extra = packet.get("additional_bundle_approvals", [])
+    if not isinstance(primary, Mapping) or not isinstance(auth, list):
         raise V5BatchSelectionError("packet authorization references are missing")
+    if not isinstance(extra, list) or (extra and not is_rollback):
+        raise V5BatchSelectionError(
+            "additional bundle approvals are only valid in a rollback packet"
+        )
     bundle_fields = (
         "approval_id",
         "model_id",
@@ -185,9 +207,24 @@ def validate_v2_packet(
         "first_live_week",
         "decision_ref",
     )
-    bundle_body = {key: bundle.get(key) for key in bundle_fields}
-    if bundle.get("record_sha256") != _sha(canonical_json(bundle_body)):
-        raise V5BatchSelectionError("bundle approval canonical hash differs")
+    # A forward packet releases one bundle. A rollback restores runs that may have been
+    # released under several (the retired repaired bundle and the successor B2), each
+    # carried as its registered approval.
+    approvals: list[dict[str, Any]] = []
+    bundles: dict[tuple[Any, Any], dict[str, Any]] = {}
+    for approval in (primary, *extra):
+        if not isinstance(approval, Mapping):
+            raise V5BatchSelectionError("bundle approval entry is malformed")
+        body = {key: approval.get(key) for key in bundle_fields}
+        if approval.get("record_sha256") != _sha(canonical_json(body)):
+            raise V5BatchSelectionError("bundle approval canonical hash differs")
+        key = (body["model_id"], body["inference_bundle_sha256"])
+        if key in bundles or any(
+            body["approval_id"] == other["approval_id"] for other in approvals
+        ):
+            raise V5BatchSelectionError("bundle approvals are duplicated")
+        bundles[key] = body
+        approvals.append(body)
     auth_by_week = {}
     for record in auth:
         if not isinstance(record, Mapping):
@@ -197,17 +234,24 @@ def validate_v2_packet(
             raise V5BatchSelectionError(
                 "run authorization weeks are duplicate or out of range"
             )
+        if is_rollback:
+            # The restored runs keep the class and decision they were registered under.
+            class_ok = record.get("evidence_class") in {"replay", "pending"}
+            decision_ok = bool(str(record.get("decision_ref") or "").strip())
+        else:
+            class_ok = record.get("evidence_class") == (
+                "pending" if week == cutover else "replay"
+            )
+            decision_ok = record.get("decision_ref") == decision_ref
         if (
             record.get("environment") != environment
             or record.get("season") != 2026
             or record.get("week") != week
             or record.get("prediction_run_id") != after[week]
-            or record.get("evidence_class")
-            != ("pending" if week == cutover else "replay")
-            or record.get("model_id") != bundle_body["model_id"]
-            or record.get("inference_bundle_sha256")
-            != bundle_body["inference_bundle_sha256"]
-            or record.get("decision_ref") != decision_ref
+            or not class_ok
+            or (record.get("model_id"), record.get("inference_bundle_sha256"))
+            not in bundles
+            or not decision_ok
         ):
             raise V5BatchSelectionError(
                 "run authorization points to another replacement run"
@@ -220,11 +264,19 @@ def validate_v2_packet(
         raise V5BatchSelectionError(
             "packet lacks an exact authorization for every selected run"
         )
-    is_rollback = str(packet["schema_version"]).endswith("rollback_v2")
-    if bundle.get("first_live_season") != 2026 or not bundle_covers_cutover(
-        bundle.get("first_live_week"), cutover, rollback=is_rollback
-    ):
-        raise V5BatchSelectionError("bundle approval is not bound to cutover N")
+    used = {
+        (rec["model_id"], rec["inference_bundle_sha256"])
+        for rec in auth_by_week.values()
+    }
+    if used != set(bundles):
+        raise V5BatchSelectionError(
+            "bundle approvals do not match the bundles of the authorized runs"
+        )
+    for body in approvals:
+        if body["first_live_season"] != 2026 or not bundle_covers_cutover(
+            body["first_live_week"], cutover, rollback=is_rollback
+        ):
+            raise V5BatchSelectionError("bundle approval is not bound to cutover N")
 
     payloads = {}
     for name in (
@@ -311,11 +363,15 @@ def validate_v2_packet(
         "before": before,
         "after": after,
         "cutover_week": cutover,
-        "bundle": dict(bundle),
+        "bundle": dict(approvals[0]),
+        "bundles": [dict(item) for item in approvals],
         "authorizations": auth_by_week,
         "payloads": payloads,
         "decision_ref": decision_ref,
         "rollback": is_rollback,
+        "opens_week": opens,
+        # The pending Week N run: selected by a forward packet, removed by an advance rollback.
+        "pending_run": after.get(cutover, before.get(cutover)),
     }
 
 
@@ -459,28 +515,30 @@ def _assert_prospective_rows(cur: Any, payload: Mapping[str, Any], label: str) -
 def _verify_registered_authorizations(
     cur: Any, plan: Mapping[str, Any], storage: Any
 ) -> None:
-    bundle = plan["bundle"]
-    cur.execute(
-        "SELECT approval_id, model_id, inference_bundle_sha256, first_live_season, "
-        "first_live_week, decision_ref FROM v5_model_bundle_approvals WHERE approval_id = %s",
-        (bundle["approval_id"],),
+    bundle_fields = (
+        "approval_id",
+        "model_id",
+        "inference_bundle_sha256",
+        "first_live_season",
+        "first_live_week",
+        "decision_ref",
     )
-    expected_bundle = tuple(
-        bundle[key]
-        for key in (
-            "approval_id",
-            "model_id",
-            "inference_bundle_sha256",
-            "first_live_season",
-            "first_live_week",
-            "decision_ref",
+    for bundle in plan["bundles"]:
+        cur.execute(
+            "SELECT approval_id, model_id, inference_bundle_sha256, first_live_season, "
+            "first_live_week, decision_ref FROM v5_model_bundle_approvals "
+            "WHERE approval_id = %s",
+            (bundle["approval_id"],),
         )
-    )
-    if cur.fetchone() != expected_bundle:
-        raise V5BatchSelectionError("registered bundle approval differs from packet")
+        if cur.fetchone() != tuple(bundle[key] for key in bundle_fields):
+            raise V5BatchSelectionError(
+                "registered bundle approval differs from packet"
+            )
     from cks_picks_cfb.artifacts import prediction_run_manifest_path
 
-    records = [("bundle_approval", str(bundle["approval_id"]))]
+    records = [
+        ("bundle_approval", str(bundle["approval_id"])) for bundle in plan["bundles"]
+    ]
     for week in sorted(plan["authorizations"]):
         record = plan["authorizations"][week]
         cur.execute(
@@ -518,9 +576,46 @@ def _verify_registered_authorizations(
         raise V5BatchSelectionError(str(exc)) from exc
 
 
+def _verify_restored_runs(cur: Any, plan: Mapping[str, Any]) -> None:
+    """A rollback restores runs that were already public, so it needs no fresh finals.
+
+    Each restored run must still be a complete, published (or later) prediction run for
+    its own week. Certified finals and the 24 hour stabilization apply to the corrected
+    replays a forward packet selects, not to the retrospective history being restored (a
+    display-only run covers only some of its week and can never be certified).
+    """
+    for week, run_id in sorted(plan["after"].items()):
+        cur.execute(
+            "SELECT pr.state, pr.evidence_class, pr.expected_games, pr.predicted_games, "
+            "COUNT(p.game_id), COUNT(DISTINCT p.game_id), "
+            "COUNT(*) FILTER (WHERE g.season <> 2026 OR g.week <> %s) "
+            "FROM prediction_runs pr LEFT JOIN predictions p ON p.run_id = pr.run_id "
+            "LEFT JOIN games g ON g.game_id = p.game_id "
+            "WHERE pr.run_id = %s GROUP BY pr.run_id",
+            (week, run_id),
+        )
+        row = cur.fetchone()
+        if (
+            row is None
+            or row[0] not in {"published", "frozen", "scored"}
+            or row[1] not in {"replay", "pending", "live"}
+            or not row[2]
+            or row[2] != row[3]
+            or row[3] != row[4]
+            or row[4] != row[5]
+            or row[6] != 0
+        ):
+            raise V5BatchSelectionError(
+                f"Week {week} restored run is not a complete public run in Neon"
+            )
+
+
 def _verify_week_evidence(
     cur: Any, packet: Mapping[str, Any], plan: Mapping[str, Any], storage: Any
 ) -> None:
+    if plan["rollback"]:
+        _verify_restored_runs(cur, plan)
+        return
     certifications = packet.get("completed_week_certifications")
     if not isinstance(certifications, list):
         raise V5BatchSelectionError("completed-week certification refs are missing")
@@ -592,6 +687,8 @@ def _verify_week_evidence(
                 f"Week {week} is not a complete scored replay in Neon"
             )
 
+    if plan["cutover_week"] not in plan["after"]:
+        return  # advance rollback: the pending run is being removed, not restored
     pending = plan["after"][plan["cutover_week"]]
     cur.execute(
         "SELECT pr.state, pr.evidence_class, pr.expected_games, pr.predicted_games, "
@@ -635,7 +732,7 @@ def apply_v2_packet(
         "system_stats",
     ):
         cur.execute(f"LOCK TABLE {table} IN SHARE ROW EXCLUSIVE MODE")
-    weeks = sorted(plan["before"])
+    weeks = sorted(set(plan["before"]) | set(plan["after"]))
     for week in weeks:
         cur.execute("SELECT pg_advisory_xact_lock(%s, %s)", (2026, week))
     _verify_registered_authorizations(cur, plan, storage)
@@ -716,7 +813,7 @@ def apply_v2_packet(
         cur.execute(
             "SELECT MIN(g.start_date) FROM predictions p JOIN games g ON g.game_id = p.game_id "
             "WHERE p.run_id = %s",
-            (plan["after"][plan["cutover_week"]],),
+            (plan["pending_run"],),
         )
         kickoff = cur.fetchone()[0]
         cur.execute("SELECT NOW()")
@@ -726,20 +823,24 @@ def apply_v2_packet(
             )
 
     prior = {}
+    reason = (
+        "V5 intended-update rollback: "
+        if plan["rollback"]
+        else "V5 intended-update batch: "
+    ) + plan["decision_ref"]
     for week in weeks:
-        prior[week] = select_week_run(
-            cur,
-            season=2026,
-            week=week,
-            run_id=target_runs[week],
-            reason=(
-                "V5 intended-update rollback: "
-                if plan["rollback"]
-                else "V5 intended-update batch: "
+        if week in target_runs:
+            prior[week] = select_week_run(
+                cur,
+                season=2026,
+                week=week,
+                run_id=target_runs[week],
+                reason=reason,
+                environment=environment,
             )
-            + plan["decision_ref"],
-            environment=environment,
-        )
+        else:
+            # Only an advance rollback drops a week; it needs DELETE (owner/migrator login).
+            prior[week] = deselect_week_run(cur, season=2026, week=week, reason=reason)
     for row in sorted(target_stats["rows"], key=_stat_key):
         record = dict(row)
         record["source_versions"] = json.dumps(
@@ -792,7 +893,7 @@ def preflight_v2_packet(
     assert_v5_database_environment(cur, environment)
     _verify_registered_authorizations(cur, plan, storage)
     _verify_week_evidence(cur, packet, plan, storage)
-    weeks = sorted(plan["before"])
+    weeks = sorted(set(plan["before"]) | set(plan["after"]))
     cur.execute(
         "SELECT week, run_id FROM site_week_selections WHERE season = 2026 "
         "AND week = ANY(%s) ORDER BY week",

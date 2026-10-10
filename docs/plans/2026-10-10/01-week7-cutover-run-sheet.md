@@ -9,18 +9,18 @@
 | When | Event |
 |---|---|
 | Sun Oct 11 02:30 | Week 6 last kickoff |
-| Sun Oct 11 evening | Code and harness checkpoint (see "Open design items") |
+| Sun Oct 11 evening | Code and harness checkpoint |
 | Mon Oct 12 ~03:00 | Earliest certified Week 6 finals (24 h stable); later if any final moves |
 | Tue Oct 13 14:00 | **Pivot gate:** Preview rehearsal (including rollback) not fully verified means abandon the cutover and run the standalone Week 7 fallback |
 | Tue Oct 13 21:00 | Production cutover complete |
 | Tue Oct 13 22:00 | Week 7 freeze deadline (first kickoff 23:00) |
 
-## Open design items that block the packet (Amendment 5)
+## Packet design (Amendments 4-6, implemented; Preview rehearsal still to prove it)
 
-1. **Week 7 is not selected yet.** The v2 controller needs every week 0..N already selected. Needs the user's decision on "advance mode" (accept `expected_current_week.week` of N or N-1, verify no Week N selection exists, select 0..N and move `current_week` 6 to 7 in one transaction).
-2. **Rolling advance mode back needs DELETE** on `site_week_selections`, which the pipeline role lacks. Proposed: owner/migrator login only, fail closed otherwise.
-3. **Rollback authorizations for the old runs** (Weeks 0-4 replays, the scored Week 5, the display-only Week 6) do not fit the replay/pending evidence shape the rollback builder demands.
-4. The B1 bundle gate is done (Amendment 4): carry the Production approval (first live week 6) as `registered_bundle` in the packet spec.
+1. **Advance mode.** Week 7 has no selection, so the selection packet is built with `advance: true` (before-state Weeks 0-6, `current_week` 6; after-state Weeks 0-7, `current_week` 7).
+2. **Rollback needs the owner login** (it deletes the Week 7 `site_week_selections` row); under the pipeline role it fails closed.
+3. **Bundle approval.** Carry the Production approval (first live week 6) as `registered_bundle` in the forward spec.
+4. **Rollback records.** Export the registered rows of the currently selected runs with `scripts/pipeline/export_v5_registered_releases.py --environment <env> --run 0=<id> ... --run 6=<id>` and paste them into `rollback.registered_authorizations` and `rollback.registered_bundles` (two bundles: Weeks 0-5 and Week 6). Check the Preview rows first; Production's were read on 2026-10-10.
 
 ## Monday sequence (after finals are stable)
 
