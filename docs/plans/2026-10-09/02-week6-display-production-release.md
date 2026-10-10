@@ -290,6 +290,22 @@ lint/typecheck/publication-tests/build green; both modes verified against the
 local Preview site. **Ops consequence:** the Production Vercel environment
 needs `CFB_DISPLAY_ONLY_NOTICE=0` at release time (user/ops step).
 
+### Amendment 5 (2026-10-09, Terra): Preview re-apply findings and venue scoping
+
+- **Mis-configured first publish (Preview).** `publish_to_db.py` without `--config` used the default display-fallback config and stored run `d2` under model `TW-V2-2026-display-fallback`; `select_public_run` then refused it ("public selection requires V5"). Runs are immutable, so the reviewed rollback script removed it (5,164 rows, hold screen verified) and the chain was redone with `--config conf/weekly_bets/v5_intended_update_2026.yaml`. The V5 publish and select also have to run as `cks_preview_pipeline` (`DATABASE_URL="$PREVIEW_DATABASE_URL"`), not the migrator. Task 5's command list now needs `--config`, `--state published` and `--allow-partial-slate` (3 games kicked off before the build).
+- **Venues.** The venue publisher's city gate failed for 11 of the 329 Neon games because no validated Silver `venues` version covers them (10 already had rows; one Week 6 game, 401858482 at Ryan Field, did not). The gate is unchanged. `publish_game_venues.py` gained `--only-missing` (writes only games with no row, never touching existing rows) and `--supplement` (a reviewed JSON that only fills venue ids Silver lacks); `conf/venue_supplement_2026_w6_v1.json` holds Ryan Field (Evanston, IL). Tests in `tests/test_game_venues.py`.
+- **Owner grant.** Preview needed `GRANT INSERT ON prediction_market_selections TO cks_preview_migrator` in addition to the earlier DELETE/SELECT grants. Production did not: its pipeline role already has INSERT/SELECT/UPDATE through `cks_pipeline`; only a rollback (owner login) needs DELETE.
+
+### Amendment 6 (2026-10-09, Terra): Production staging and Silver catalog gaps
+
+- **Staging tool.** `stage_v5_artifacts.py` only handled runs with a scored artifact and failed on `d2` (no scored manifest). It now has an explicit `--predictions-only` flag that stages the prediction artifact and manifest and refuses a run that does have a scored artifact (`tests/test_v5_artifact_staging.py`). Receipt `643fc693…` (dry run), applied by the user with receipt `3c2d4826…`; `predictions.csv` sha `be18fc6e…` verified in the Production namespace.
+- **Silver catalog promotion.** The Production catalog did not hold the corrected post-Week-5 Silver, so Production team stats failed with "matched 0 validated rows". `promote_silver_versions.py` (existing tool, same bucket, nothing copied) registered byplay `afc0d7a3`, drives `2abc6c54`, games `c2f7c207`, game_outcomes `33134d76` and teams `590e9865`: 6 new versions and 13 captures in the Production catalog (user-run, 2026-10-09).
+- **Owner inserts.** The approval `production-intended-update-a507d0c7cba5` (first live 2026/6) and the authorization `production-2026w6-v5repair-20261008-d2-be18fc6efc93` were first run against the wrong Neon target and found absent by a read-only check as the Production pipeline role; re-run on the Production branch, then verified present.
+
+### Amendment 7 (2026-10-09, Terra): Production release applied
+
+Applied to Production in order, each by dry run then apply: seed schedule (58 games), venues (58 rows), corrected ratings (1,624 rows, `c83b1423…`), team stats as-of 6 (3,036 rows), `publish_to_db` (55 predictions, model `v5-intended-update-2026-v1`, state `published`, `pending`, display-only), `select_public_run`, matchup data (payload `08e22bae…`, equal to Preview, `--expect-payload-sha` pinned; `verify_matchup_data` VERIFIED, 0 rows differing). Read-only check afterwards: `current_week` (2026, 6) with the run active; Weeks 0-5 selections unchanged; run validation `display_only=true`. The run was not frozen or closed. **Not yet done:** merge of `dev` to `main` (the web notice opt-out ships with it) and `CFB_DISPLAY_ONLY_NOTICE=0` in Vercel, live-site verification (Task 6), and the post-finals grades-only backfill (Task 7). **Known:** the notice date reads the run row's `created_at` (Oct 9), not the build time (Oct 8).
+
 ## Risks and Edge Cases
 
 - **Already-final games on the Picks tab:** 4 Thursday games are final and 5
@@ -309,12 +325,12 @@ needs `CFB_DISPLAY_ONLY_NOTICE=0` at release time (user/ops step).
 
 ## Definition of Done
 
-- [ ] Task 1: Preview gap publishes applied; local Preview routes verified.
-- [ ] Task 2: rollback script reviewed by user, rehearsed in Preview (hold screen
+- [x] Task 1: Preview gap publishes applied; local Preview routes verified.
+- [x] Task 2: rollback script reviewed by user, rehearsed in Preview (hold screen
       + rating source reverted), Preview re-applied forward.
-- [ ] Task 3: d2 artifacts staged to production namespace (signed receipt).
-- [ ] Task 4: both admin rows inserted by user from reviewed payloads.
-- [ ] Task 5: Production publish chain + selection complete (user-run applies).
+- [x] Task 3: d2 artifacts staged to production namespace (signed receipt).
+- [x] Task 4: both admin rows inserted by user from reviewed payloads.
+- [x] Task 5: Production publish chain + selection complete (user-run applies).
 - [ ] Task 6: local + live Production verification passes; Weeks 0–5 unchanged.
 - [ ] Task 7: post-finals backfill done; docs updated; Week 6 never frozen/closed.
 - [ ] Contract status updated to `Implemented`; session log closed.
