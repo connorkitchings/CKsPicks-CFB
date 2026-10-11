@@ -6,6 +6,7 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [Week 6 closeout and transition review](2026-10-11/01-week6-closeout-and-transition-review.md) | Grade the served Week 6 run and certify its complete corrected replay; Week 7 held | In Progress; retained finals observation, Week 5 parity and transition review delivered. Verified 24-hour stability, clean apply code and bounded extender repair remain required. |
 | [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Authoritative completion matrix for the October 4 repair objective | In Progress; integrity closure precedes corrected-lineage cutover. Stage 1 closure does not close this track. |
 | [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Ordered execution, pivot gate and fallback under the repair contract | Draft; adds no release authority. Stable finals, certification and Preview rehearsal remain required. |
 

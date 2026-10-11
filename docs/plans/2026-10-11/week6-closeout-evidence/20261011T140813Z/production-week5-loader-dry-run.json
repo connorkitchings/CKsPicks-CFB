@@ -1,0 +1,12 @@
+{
+  "environment": "production",
+  "game_outcomes_version": "33134d76df0ec7a916faea47",
+  "mode": "dry-run",
+  "season": 2026,
+  "week": 5,
+  "inserts": 0,
+  "unchanged": 56,
+  "not_final": [],
+  "missing_outcome": [],
+  "conflicts": 0
+}

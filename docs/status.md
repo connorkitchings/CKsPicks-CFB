@@ -4,7 +4,8 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-10 (history moved to [`status_history.md`](status_history.md); serving facts as of 2026-10-09: the display-only Week 6 run, corrected post-Week-5 ratings and as-of-6 team stats are applied in Production; Weeks 0-5 selections unchanged) · **Verified from:**
+> **Last updated:** 2026-10-11 (read-only closeout checkpoint; history moved to [`status_history.md`](status_history.md); serving facts as of 2026-10-09: the display-only Week 6 run, corrected post-Week-5 ratings and as-of-6 team stats are applied in Production; Weeks 0-5 selections unchanged) · **Verified from:**
+> `session_logs/2026-10-11/02-week6-closeout-preflight.md`,
 > `session_logs/2026-10-09/08-week6-production-release.md` and [Week 6 release contract](plans/2026-10-09/02-week6-display-production-release.md) Amendment 7,
 > `session_logs/2026-10-07/03-pre-week6-audit.md` (read-only audit of Preview and Production),
 > `session_logs/2026-09-30/01-verify-deploy-freeze-week5-close-contract.md`,
@@ -70,6 +71,8 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 The display-only Week 6 run was published and selected in Production on 2026-10-09 ([contract `02`](plans/2026-10-09/02-week6-display-production-release.md), Amendment 7). `main` and `dev` carry the same contents (`656cf320`; `main`'s tip is the merge commit `b26ecca4`) and CI on `main` passed. Live-site verification is confirmed by the user. **Still open:** `CFB_DISPLAY_ONLY_NOTICE=0` in Vercel, the post-finals grades-only backfill, and contract `02` Tasks 6-7. Week 6 is never frozen or closed.
 
 ## Open work
+
+- **Week 6 closeout and Week 7 hold (2026-10-11, read-only execution preflight):** [Closeout contract](plans/2026-10-11/01-week6-closeout-and-transition-review.md) is In Progress; [retained evidence and transition review](plans/2026-10-11/week7-transition-review.md) confirm all 58 Week 6 games final at 14:08:13Z, but both databases still have zero loaded Week 6 finals/grades. Actual Week 5 loader parity passes in both environments (56 unchanged, zero inserts/conflicts). No verified 24-hour stability receipt was established in this preflight; absent earlier retained evidence, recheck after October 12 14:08:13Z (10:08 AM New York). Three provider kickoff changes require disposition; the replay extender cannot append Week 6 to the already-extended 271-game Week 5 lock and needs a bounded repair plan. **User explicitly paused Week 7 opening and corrected Production activation, including automatic pivot/fallback.** This hold supersedes scheduling assumptions below; no selection or scoreboard changed.
 
 - **Unified-record audit (2026-10-10, read-only):** the corrected Weeks 0–5 candidates pass all seven point-in-time rules for 271 games. Including the existing display Week 6 run fails the forecast/state cutoff and 58-game coverage gates; no future outcome was found in its rating histories. The CFBD re-fetch comparison matched 19/59 stored pre-kickoff provider/target lines, so the three early-game late-quote exceptions remain disabled. Audit tooling and the unified Performance UI are implemented locally; a complete passing Week 6 replay receipt is still required for cutover. See [record methodology](modeling/record_methodology.md#audit-execution-and-october-10-findings). No serving selection changed.
 
