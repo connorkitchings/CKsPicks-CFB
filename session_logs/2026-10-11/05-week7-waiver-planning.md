@@ -35,3 +35,10 @@
 - **Watch out for:** pass `--dry-run` first on the backfill; the loader has no backup; Week 6 is never frozen or closed.
 
 **tags:** ["weekly-ops", "week6", "week7", "planning"]
+
+## Execution addendum (2026-10-11, same session)
+- Fixed `prepare-week` (request inventory per week; broken since `d855bd55`); Preview run `w6-closeout-ingest-20261011-r2` built Silver/Gold, stopping at the expected ratings-readiness check. Outcomes ref covers all 58 Week 6 finals; Weeks 0-5 identical to the pinned versions apart from capture metadata.
+- Pre-write exports (both environments), then finals and grades-only backfill applied in Preview and Production (promotion scoped to `game_outcomes` `63198fa7…` only). 58 finals, 110 grades, spread 35-19-1, total 23-32-0; 0 recompute mismatches; Weeks 0-5 and selections byte-identical; idempotent re-runs.
+- `status.md` scoreboard now Weeks 0-6: spread 163-158-5, total 160-164-1. `system_stats` still Weeks 0-5 by design; public site needs the dev -> main release.
+- Evidence: `docs/plans/2026-10-11/week6-closeout-evidence/20261011T150908Z/`; local exports under `artifacts/backups/`.
+- **Resume at:** dev -> main release (user-run), then Track B steps 3-8 of the run sheet.
