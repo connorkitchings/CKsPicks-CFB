@@ -6,6 +6,11 @@ is verified against its pinned SHA-256, the new finals come from a Silver ``game
 dataset named by a pipeline ref file, and nothing already recorded may change (see
 ``cks_picks_cfb.rebuild.lock_extension``).
 
+Use ``--append-week N --expected-games COUNT --games-ref-uri URI`` to append
+the complete next week to an already-extended lock. Append output must be new;
+historical kickoff waivers are forbidden. Finals stability is a separate
+operator gate and is not established by this command's availability buffer.
+
     PYTHONPATH=src:. uv run python scripts/pipeline/extend_rebuild_source_lock.py \\
         --outcomes-ref-uri artifacts/preview/pipeline-runs/<run>/game_outcomes_ref.json \\
         --new-cutoff 2026-10-05T00:00:00Z --out conf/rebuild/source_lock_2026_w5_v1.json
@@ -40,8 +45,12 @@ def main() -> int:
     parser.add_argument("--base-sha256", default=BASE_SHA256)
     parser.add_argument("--outcomes-ref-uri", required=True)
     parser.add_argument("--new-cutoff", required=True)
-    parser.add_argument("--append-week", type=int, help="Append the complete next week's schedule")
-    parser.add_argument("--expected-games", type=int, help="Exact new-week count in append mode")
+    parser.add_argument(
+        "--append-week", type=int, help="Append the complete next week's schedule"
+    )
+    parser.add_argument(
+        "--expected-games", type=int, help="Exact new-week count in append mode"
+    )
     parser.add_argument(
         "--games-ref-uri",
         help="games_ref.json of the new Silver games; every locked kickoff is checked",
@@ -56,8 +65,14 @@ def main() -> int:
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     if args.append_week is not None:
-        if args.expected_games is None or args.expected_games <= 0 or not args.games_ref_uri:
-            parser.error("--append-week requires --games-ref-uri and positive --expected-games")
+        if (
+            args.expected_games is None
+            or args.expected_games <= 0
+            or not args.games_ref_uri
+        ):
+            parser.error(
+                "--append-week requires --games-ref-uri and positive --expected-games"
+            )
         if args.accept_kickoff_revision:
             parser.error("append mode refuses historical kickoff revisions")
         if args.out.exists():

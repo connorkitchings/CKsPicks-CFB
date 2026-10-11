@@ -1,6 +1,6 @@
 # Bounded source-lock extender repair
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-10-11
 - **Planner:** Sol
 - **Approval source:** User explicitly approved the proposed bounded repair and requested same-chat persistence and implementation on this exact path on 2026-10-11.
@@ -33,3 +33,11 @@ Run `uv run pytest tests/test_lock_extension.py`, then focused successor-lock an
 ## Handoff/amendments
 
 User explicitly authorizes implementation in this chat after persistence. Mark In Progress before code edits and Implemented only after repair acceptance passes; parent closeout remains In Progress. Mechanical adjustments preserving scope/acceptance may proceed with a recorded explanation; material downstream or operating changes return for a new decision.
+
+## Implementation receipt — 2026-10-11
+
+Append mode and CLI flags are implemented. Historical rows/order/cutoffs and prior extension metadata are preserved; prior/result row checksums, raw base hash and source refs are bound. Missing/duplicate keys, invalid/incomplete finals, historical drift, skipped weeks/count mismatches and output overwrite are refused. Legacy mode remains unchanged.
+
+`uv run pytest tests/test_lock_extension.py`: **53 passed**. Combined extender, successor, published-comparison/diff, rebuild-comparison and documentation-authority suite: **115 passed**. Scoped Ruff lint/format checks, MkDocs build and `git diff --check` passed. Retained 271 + 58 fixture and successor derivation stayed in memory; the CLI test wrote a fictional six-game fixture only in pytest's temporary directory. No operational lock or database/R2 write occurred.
+
+The separate successor CLI's fixed Weeks 0–5 mappings remain a downstream integration dependency. Parent closeout stays In Progress. Monday October 12 after 10:08 AM New York is the current earliest stability recheck, not automatic certification or permission to apply. All user-run apply requirements, Week 7 hold and Production cutover hold remain intact.

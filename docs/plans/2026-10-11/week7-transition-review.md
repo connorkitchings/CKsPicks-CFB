@@ -49,4 +49,6 @@ The later repair matrix and approved closeout contract govern current gates, eve
 
 ## Resume boundaries
 
+The subsequently approved [bounded extender repair](01-bounded-source-lock-extender-repair.md) delivers explicit append tooling with historical invariance, checksum chaining and full fixture coverage. The retained blocker receipt remains a valid observation of the earlier implementation. No operational Week 6 lock or certified finals were produced by the repair. The pure successor helper accepts the appended fixture; its separate CLI still hardcodes Weeks 0–5 and needs a bounded integration disposition before execution.
+
 The source observation can establish a baseline now; it is not certified Silver. Before any write, recheck source scores/IDs, stored state, code SHA and permissions and bind the actual new certified outcomes ref. Do not use today's preflight as a future backup or release receipt. The contract stays In Progress until both closeout tracks and all required review acceptance pass.

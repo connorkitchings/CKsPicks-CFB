@@ -6,7 +6,7 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
-| [Week 6 closeout and transition review](2026-10-11/01-week6-closeout-and-transition-review.md) | Grade the served Week 6 run and certify its complete corrected replay; Week 7 held | In Progress; retained finals observation, Week 5 parity and transition review delivered. Verified 24-hour stability, clean apply code and bounded extender repair remain required. |
+| [Week 6 closeout and transition review](2026-10-11/01-week6-closeout-and-transition-review.md) | Grade the served Week 6 run and certify its complete corrected replay; Week 7 held | In Progress; retained preflight and bounded extender tooling delivered. Verified 24-hour stability, clean apply code and operational replay certification remain required. |
 | [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Authoritative completion matrix for the October 4 repair objective | In Progress; integrity closure precedes corrected-lineage cutover. Stage 1 closure does not close this track. |
 | [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Ordered execution, pivot gate and fallback under the repair contract | Draft; adds no release authority. Stable finals, certification and Preview rehearsal remain required. |
 
@@ -16,6 +16,7 @@ Supporting contracts retain their own approval and acceptance criteria. The repa
 
 | Contract | Role / remaining obligation |
 | --- | --- |
+| [Bounded source-lock extender repair](2026-10-11/01-bounded-source-lock-extender-repair.md) | Implemented; fixture-only append and successor compatibility verified. Operational lock generation remains stability-gated. |
 | [Week 6 display-only Production release](2026-10-09/02-week6-display-production-release.md) | In Progress; Tasks 6–7 verification, configuration follow-through and post-finals grades-only backfill. No freeze or close. |
 | [Stage 7B exact release and cutover](2026-10-06/02-stage7b-exact-release-and-cutover.md) | In Progress; foundations delivered, exact packet execution, freeze, repin, readback and rollback still gated. |
 | [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) | In Progress; retains product/workflow acceptance and dependency-checked retirement obligations. Current record presentation follows the unified [record methodology](../modeling/record_methodology.md). |

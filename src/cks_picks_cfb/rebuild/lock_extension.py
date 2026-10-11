@@ -53,6 +53,10 @@ def extend_lock(
     game id is named in ``accepted_kickoff_revisions``; then the row takes the new kickoff
     and the old/new pair is recorded under ``extends.kickoff_revisions``. A changed week,
     or an acceptance for a game that did not change, is always an error.
+
+    Explicit ``append_week`` mode instead adds a complete new schedule with an
+    exact ``expected_games`` count. It supports chained extensions, preserves
+    prior metadata and refuses all historical revisions, including waivers.
     """
     if append_week is not None:
         return _append_week(
@@ -181,8 +185,13 @@ def _append_week(
         raise LockExtensionError("append_week refuses historical kickoff revisions")
     columns = base["games"]["columns"]
     required = {
-        "week", "game_id", "start_date", "home_team", "away_team",
-        "home_points", "away_points",
+        "week",
+        "game_id",
+        "start_date",
+        "home_team",
+        "away_team",
+        "home_points",
+        "away_points",
     }
     if set(columns) != required or len(columns) != len(required):
         raise LockExtensionError("append_week requires the seven-column games schema")
@@ -192,7 +201,10 @@ def _append_week(
     if {"game_id", "home_points", "away_points"} - set(finals.columns):
         raise LockExtensionError("append finals lack required columns")
     for name, frame in (("schedule", schedule), ("finals", finals)):
-        if frame["game_id"].isna().any() or frame["game_id"].astype(int).duplicated().any():
+        if (
+            frame["game_id"].isna().any()
+            or frame["game_id"].astype(int).duplicated().any()
+        ):
             raise LockExtensionError(f"duplicate or missing game_id in {name}")
         if "season" in frame and not frame["season"].eq(2026).all():
             raise LockExtensionError(f"append {name} must contain only season 2026")
@@ -232,7 +244,8 @@ def _append_week(
             int(row["week"]) != int(game["week"])
             or row["home_team"] != game["home_team"]
             or row["away_team"] != game["away_team"]
-            or _append_timestamp(row["start_date"]) != _append_timestamp(game["kickoff_utc"])
+            or _append_timestamp(row["start_date"])
+            != _append_timestamp(game["kickoff_utc"])
             or _append_points(row) != _append_points(scores)
         ):
             raise LockExtensionError(f"historical drift for game {game_id}")
@@ -258,10 +271,13 @@ def _append_week(
             raise LockExtensionError(f"game {game_id} missing team identity")
         home, away = _append_points(finals_by_id.loc[game_id])
         new_row = {
-            "week": append_week, "game_id": game_id,
+            "week": append_week,
+            "game_id": game_id,
             "start_date": kickoff.isoformat(),
-            "home_team": game["home_team"], "away_team": game["away_team"],
-            "home_points": home, "away_points": away,
+            "home_team": game["home_team"],
+            "away_team": game["away_team"],
+            "home_points": home,
+            "away_points": away,
         }
         new_rows.append([new_row[column] for column in columns])
     lock = copy.deepcopy(dict(base))
@@ -273,11 +289,17 @@ def _append_week(
         "base_game_rows_sha256": rows_sha256(rows),
         "game_rows_sha256": rows_sha256(lock["games"]["rows"]),
         "game_rows_sha256_method": "sha256(canonical_json(games.rows))",
-        "added_post_week": append_week, "added_cutoff": new_cutoff,
-        "completed_games_before": len(rows), "completed_games_after": len(rows) + len(new_rows),
-        "newly_final_game_ids": sorted(int(row["game_id"]) for row in additions.to_dict("records")),
-        "game_outcomes_ref": dict(outcomes_ref), "schedule_ref": dict(schedule_ref),
-        "availability_hours": AVAILABILITY_HOURS, "kickoff_revisions": [],
+        "added_post_week": append_week,
+        "added_cutoff": new_cutoff,
+        "completed_games_before": len(rows),
+        "completed_games_after": len(rows) + len(new_rows),
+        "newly_final_game_ids": sorted(
+            int(row["game_id"]) for row in additions.to_dict("records")
+        ),
+        "game_outcomes_ref": dict(outcomes_ref),
+        "schedule_ref": dict(schedule_ref),
+        "availability_hours": AVAILABILITY_HOURS,
+        "kickoff_revisions": [],
     }
     if previous is not None:
         lock[EXTENSION_KEY]["previous_extension"] = copy.deepcopy(previous)
@@ -285,13 +307,22 @@ def _append_week(
 
 
 def _append_timestamp(value: Any) -> pd.Timestamp:
-    stamp = pd.Timestamp(value)
+    try:
+        stamp = pd.Timestamp(value)
+    except (TypeError, ValueError):
+        raise LockExtensionError(
+            "append timestamps must be valid and timezone-aware"
+        ) from None
     if pd.isna(stamp) or stamp.tzinfo is None:
         raise LockExtensionError("append timestamps must be valid and timezone-aware")
     return stamp.tz_convert("UTC")
 
 
 def _append_points(row: Mapping[str, Any] | pd.Series) -> tuple[int, int]:
+    if "completed" in row:
+        completed = row["completed"]
+        if pd.isna(completed) or completed != True:  # noqa: E712
+            raise LockExtensionError("game is not completed")
     points = []
     for name in ("home_points", "away_points"):
         try:
