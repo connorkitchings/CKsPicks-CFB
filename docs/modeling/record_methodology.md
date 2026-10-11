@@ -30,7 +30,7 @@ A line captured at or after kickoff is normally ineligible. CFBD publishes one l
 
 **Assumption, stated plainly:** that CFBD's lines endpoint returns pregame lines only. Its documentation was not found to say so; the comparison above is the evidence. If it fails, the exception is withdrawn and those games are ungraded.
 
-Games covered: Week 6 games 401871051, 401871066 and 401871090. Week 3 Houston @ Texas Tech total (401856811) is covered only if a CFBD total exists in a capture and the Week 3 replay is rebuilt.
+Games covered (late-quote exception currently disabled): Week 6 games 401871051, 401871066 and 401871090. Week 3 Houston @ Texas Tech total (401856811) is covered only if a CFBD total exists in a capture and the Week 3 replay is rebuilt.
 
 ## What the guarantee does not cover (known caveats)
 

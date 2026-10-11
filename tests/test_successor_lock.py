@@ -251,3 +251,40 @@ def test_a_display_only_original_run_is_not_labelled_scored():
     first, second = lock["selected_runs"]
     assert first["state"] == "scored" and "display_only" not in first
     assert second["state"] == "published" and second["display_only"] is True
+
+
+def _run_cli(tmp_path, monkeypatch, base, extra):
+    import importlib.util
+    import json
+    import sys
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts/pipeline"
+    spec = importlib.util.spec_from_file_location(
+        "build_corrected_successor_lock", path / "build_corrected_successor_lock.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    base_path = tmp_path / "base.json"
+    base_path.write_text(json.dumps(base))
+    argv = ["x", "--base-lock", str(base_path), "--out", str(tmp_path / "o.json")]
+    monkeypatch.setattr(sys, "argv", argv + extra)
+    return module.main()
+
+
+def test_successor_cli_refuses_a_week6_lock_without_the_display_run(
+    tmp_path, monkeypatch
+):
+    base = copy.deepcopy(EXTENDED)
+    base["post_week_cutoffs"] = {str(w): f"t{w}" for w in range(7)}
+    with pytest.raises(SystemExit, match="week6-display-run-id"):
+        _run_cli(tmp_path, monkeypatch, base, [])
+
+
+def test_successor_cli_refuses_a_display_run_for_a_lock_that_ends_at_week5(
+    tmp_path, monkeypatch
+):
+    base = copy.deepcopy(EXTENDED)
+    base["post_week_cutoffs"] = {str(w): f"t{w}" for w in range(6)}
+    with pytest.raises(SystemExit, match="ends before Week 6"):
+        _run_cli(tmp_path, monkeypatch, base, ["--week6-display-run-id", "2026w6-x"])

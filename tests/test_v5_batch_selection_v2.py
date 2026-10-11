@@ -770,3 +770,58 @@ def test_moving_cutover_requires_completed_week5_prospective_evidence():
         validate_v2_packet(
             signed_payload(packet), environment="preview", storage=storage
         )
+
+
+class _ClockCursor:
+    """Answers only ``SELECT NOW()``; any later query ends the check with a sentinel."""
+
+    def __init__(self, now):
+        self._now = now
+
+    def execute(self, sql, params=None):
+        if "NOW()" not in sql:
+            raise RuntimeError("past-the-clock-check")
+
+    def fetchone(self):
+        return (self._now,)
+
+
+def _clock_packet(observed):
+    packet, storage = _packet()
+    plan = {
+        "rollback": False,
+        "cutover_week": 1,
+        "after": {0: packet["replacement_runs"]["0"]},
+    }
+    cert = {
+        "schema_version": "v5_replay_certification_v1",
+        "state": "verified",
+        "season": 2026,
+        "week": 0,
+        "run_id": plan["after"][0],
+        "finals_complete": True,
+        "finals_stabilized_at": observed.isoformat(),
+    }
+    packet = dict(packet)
+    packet["completed_week_certifications"] = [
+        _ref(storage, "r2://certs/clock", cert) | {"week": 0}
+    ]
+    return packet, plan, storage
+
+
+def test_finals_observation_applies_immediately_without_a_24_hour_wait():
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime(2026, 10, 11, 18, 0, tzinfo=timezone.utc)
+    packet, plan, storage = _clock_packet(now - timedelta(minutes=5))
+    with pytest.raises(RuntimeError, match="past-the-clock-check"):
+        batch_v2._verify_week_evidence(_ClockCursor(now), packet, plan, storage)
+
+
+def test_a_finals_observation_in_the_future_is_still_refused():
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime(2026, 10, 11, 18, 0, tzinfo=timezone.utc)
+    packet, plan, storage = _clock_packet(now + timedelta(hours=1))
+    with pytest.raises(batch_v2.V5BatchSelectionError, match="in the future"):
+        batch_v2._verify_week_evidence(_ClockCursor(now), packet, plan, storage)

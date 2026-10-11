@@ -2,7 +2,7 @@
 
 > **Current state:** live run IDs, week state and the scoreboard are in [Current Status](../status.md); that page is the only place run IDs are recorded. Corrected-lineage work is governed by the [repair-track contract](../plans/2026-10-08/02-repair-track-certification-and-closure.md) and the [Stage 7B cutover plan](../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md).
 
-> **Week 6 exception (display-only):** the Week 6 run in Production is display-only with evidence class `pending`. **Never freeze or close Week 6** with this checklist: a post-kickoff freeze would be fabricated and close would mark kicked-off games missed. Week 6 has no freeze receipt, but it **is graded into the unified 2026 record**: after finals stabilize it receives a finals load (`scripts/pipeline/load_game_finals.py`) and a grades-only backfill (`scripts/pipeline/backfill_v5_unconstrained_grades.py --week 6 --grades-only`, Preview then Production, user-run), and it is then superseded in the counted record by its corrected replay at the cutover. Rolling it back needs `scripts/pipeline/rollback_week6_display.py` and the owner login (the pipeline role has no DELETE on `prediction_market_selections`). See the [Week 6 release contract](../plans/2026-10-09/02-week6-display-production-release.md) and the [record methodology](../modeling/record_methodology.md).
+> **Week 6 exception (display-only):** the Week 6 run in Production is display-only with evidence class `pending`. **Never freeze or close Week 6** with this checklist: a post-kickoff freeze would be fabricated and close would mark kicked-off games missed. Week 6 has no freeze receipt, but it **is graded into the unified 2026 record**: once all finals are in (no 24-hour wait, since 2026-10-11) it receives a finals load (`scripts/pipeline/load_game_finals.py`) and a grades-only backfill (`scripts/pipeline/backfill_v5_unconstrained_grades.py --week 6 --grades-only`, Preview then Production, user-run), and it is then superseded in the counted record by its corrected replay at the cutover. Rolling it back needs `scripts/pipeline/rollback_week6_display.py` and the owner login (the pipeline role has no DELETE on `prediction_market_selections`). See the [Week 6 release contract](../plans/2026-10-09/02-week6-display-production-release.md) and the [record methodology](../modeling/record_methodology.md).
 
 > **Historical (2026-09-30):** the repaired intended-update release is described in the [exact release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md). Original V5 runs remain the rollback set; the p2 Week 5 freeze and close are recorded in status.
 
@@ -21,8 +21,8 @@ publish, or freeze. Record each stage and its evidence in the session log; do
 not treat a successful forecast or first publication as the end of the cycle.
 
 1. **Close the prior slate:** Reconcile the selected frozen run, complete FBS
-   schedule, certified finals, grading, and `close` receipt. Calculate the
-   required final-stabilization interval from the latest certified final.
+   schedule, certified finals, grading, and `close` receipt. Record the
+   all-final observation time of the latest certified final (the 24-hour wait was removed 2026-10-11; a fresh completion check at load time replaces it).
 2. **Open the next slate:** Refresh and independently verify repair,
    measurements, ratings, and forecast. Match the forecast's paired spread and
    total predictions to every eligible scheduled FBS game; check the rating
@@ -124,7 +124,7 @@ also uses the serving config and a stable prediction run ID. `publish`,
 also binds its serving config and SHA. `close` binds a certified Silver
 `game_outcomes` ref URI and SHA, plus the reviewed last-final timestamp as
 `finals_stabilized_at`. The controller verifies the ref covers all games in
-the selected frozen run and waits 24 hours after that timestamp.
+the selected frozen run and requires the close cutoff not to precede that timestamp (the 24-hour wait was removed 2026-10-11).
 
 For each component, save a preflight outside the repository, review its
 population, cutoff, parent URIs and checksums, then invoke `apply` with the

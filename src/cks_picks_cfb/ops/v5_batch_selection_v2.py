@@ -622,7 +622,7 @@ def _verify_restored_runs(cur: Any, plan: Mapping[str, Any]) -> None:
     """A rollback restores runs that were already public, so it needs no fresh finals.
 
     Each restored run must still be a complete, published (or later) prediction run for
-    its own week. Certified finals and the 24 hour stabilization apply to the corrected
+    its own week. Certified finals apply to the corrected
     replays a forward packet selects, not to the retrospective history being restored (a
     display-only run covers only some of its week and can never be certified).
     """
@@ -701,8 +701,10 @@ def _verify_week_evidence(
     db_now = cur.fetchone()[0]
 
     for week in range(plan["cutover_week"]):
-        if db_now < by_week[week] + timedelta(hours=24):
-            raise V5BatchSelectionError(f"Week {week} has not stabilized for 24 hours")
+        if db_now < by_week[week]:
+            raise V5BatchSelectionError(
+                f"Week {week} finals observation is in the future"
+            )
         cur.execute(
             "SELECT pr.state, pr.evidence_class, pr.expected_games, pr.predicted_games, "
             "COUNT(p.game_id), COUNT(gr.game_id), "

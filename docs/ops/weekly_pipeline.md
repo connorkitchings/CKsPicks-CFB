@@ -17,7 +17,7 @@ Weekly boundary: `close-week (N-1)` → verified ratings refresh and
 Live V5 publication still requires its own exact release authorization.
 
 1. **Ratings refresh and projection before `prepare-week`:**
-   After `close-week (N-1)` and stabilized finals, run the operator-controlled repair → measurements → rating replay chain and its independent verifiers. Follow [the V5 weekly operator](v5_weekly_operator.md) for exact immutable inputs and receipts. Project the verified replay into `v5_rating_snapshots` before `prepare-week (N)`; projection does not depend on a selected prediction run:
+   After `close-week (N-1)` and certified finals, run the operator-controlled repair → measurements → rating replay chain and its independent verifiers. Follow [the V5 weekly operator](v5_weekly_operator.md) for exact immutable inputs and receipts. Project the verified replay into `v5_rating_snapshots` before `prepare-week (N)`; projection does not depend on a selected prediction run:
    ```bash
    zsh scripts/ops/with_production_pipeline_env.sh \
      uv run python -m cks_picks_cfb.ops project-v5-ratings \

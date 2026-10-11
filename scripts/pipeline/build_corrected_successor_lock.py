@@ -63,9 +63,18 @@ def main() -> int:
         default="c253022a2ae072f63a8f131383782ddff67ace092cd3c831ecf94bc7ab87bd1a",
     )
     parser.add_argument(
+        "--week-config",
         "--week5-config",
+        dest="week_config",
         type=Path,
         default=REPO_ROOT / "conf/weekly_bets/v5_intended_update_2026.yaml",
+        help="threshold config pinned for every week (--week5-config is an alias)",
+    )
+    parser.add_argument(
+        "--week6-display-run-id",
+        default=None,
+        help="the display-only run being replaced; required when the base lock "
+        "extends through Week 6",
     )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
@@ -79,17 +88,34 @@ def main() -> int:
         for p in json.loads(args.parents.read_text())["parents"]
         if p["dataset"] == "games"
     )
-    config = args.week5_config
+    config = args.week_config
+    weeks = sorted(int(week) for week in base["post_week_cutoffs"])
+    served = dict(SERVED)
+    if 6 in weeks:
+        if not args.week6_display_run_id:
+            raise SystemExit("a lock through Week 6 needs --week6-display-run-id")
+        served[6] = args.week6_display_run_id
+    elif args.week6_display_run_id:
+        raise SystemExit("--week6-display-run-id given but the lock ends before Week 6")
+    if weeks != list(range(weeks[-1] + 1)) or weeks[-1] not in (5, 6):
+        raise SystemExit(f"unsupported base-lock weeks: {weeks}")
     lock = derive_successor_lock(
         base,
         refs=refs,
-        served_runs={week: {"run_id": run} for week, run in SERVED.items()},
+        served_runs={
+            week: (
+                {"run_id": run, "state": "published", "display_only": True}
+                if week == 6
+                else {"run_id": run}
+            )
+            for week, run in served.items()
+        },
         week_configs={
             week: {
                 "path": str(config.relative_to(REPO_ROOT)),
                 "sha256": _sha(config),
             }
-            for week in range(6)
+            for week in weeks
         },
         lineage={
             "kind": "corrected_rebuild",

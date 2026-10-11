@@ -1,5 +1,12 @@
 # Decision Log
 
+## 2026-10-11: Waive the Week 7 checkpoint and integrity-first rule; remove the 24-hour finals-stability rule
+
+- **Decision:** the user chose to attempt the Week 7 cutover, waiving the Sunday-evening checkpoint (successor Week 6 certification integration built and tested, otherwise move to Week 8) and the October 9 "integrity closure precedes cutover" direction for that cutover only. The user also removed the 24-hour finals-stability rule from operations: finals load once every game is complete in a fresh capture and a certified outcomes ref covers them.
+- **Code:** `ops/v5_cycle.py` and `ops/v5_batch_selection_v2.py` no longer wait 24 hours (timestamp validation kept). The research and prospective-evidence verifiers (`ratings/prospective_v5*.py`, `forecast/shadow*.py`, `score_stabilization_seconds` policies) keep their sealed designs unchanged.
+- **Still open:** EPA replacement, the six quality follow-ups, scoring and descendant recertification, and the 2025 matchup candidate stay in the repair matrix.
+- **Authority:** [contract 2026-10-11/02](../plans/2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md); user approval in Plan Mode on 2026-10-11. No Production write is authorized by this entry.
+
 ## 2026-10-04: Close Window 2 Step 5 (5A, 5B, 5C); record 6A guardrails; do not start 6A
 
 - **Decision:** the user accepted the 5A gate result, the 5C admission result (1,416 corroborated groups admitted; 28 contradicted and 1,749 unverified groups reverted to baseline; 2026 fails closed) and the materiality finding, and closed Steps 5A-5C (`f7c3a47`, `e33d63d`, `ea53c07`).

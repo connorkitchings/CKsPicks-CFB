@@ -6,8 +6,9 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
-| [Week 6 closeout and transition review](2026-10-11/01-week6-closeout-and-transition-review.md) | Grade the served Week 6 run and certify its complete corrected replay; Week 7 held | In Progress; retained preflight and bounded extender tooling delivered. Verified 24-hour stability, clean apply code and operational replay certification remain required. |
-| [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Authoritative completion matrix for the October 4 repair objective | In Progress; integrity closure precedes corrected-lineage cutover. Stage 1 closure does not close this track. |
+| [Week 6 closeout and transition review](2026-10-11/01-week6-closeout-and-transition-review.md) | Grade the served Week 6 run and certify its complete corrected replay; Week 7 held | In Progress; retained preflight and bounded extender tooling delivered. The 24-hour stability gate is removed ([contract 02](2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md)); clean apply code and operational replay certification remain required. [Transition review](2026-10-11/week7-transition-review.md). |
+| [Week 7 cutover gate waiver and readiness](2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md) | Waives the Sunday checkpoint and integrity-first rule for the Week 7 cutover; removes the 24-hour finals rule | Approved; code delivered locally. Data steps, release and Production remain separate user decisions. |
+| [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Authoritative completion matrix for the October 4 repair objective | In Progress; integrity closure waived for the Week 7 cutover only (Amendment 14). Stage 1 closure does not close this track. |
 | [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Ordered execution, pivot gate and fallback under the repair contract | Draft; adds no release authority. Stable finals, certification and Preview rehearsal remain required. |
 
 ## Supporting / In-Progress
