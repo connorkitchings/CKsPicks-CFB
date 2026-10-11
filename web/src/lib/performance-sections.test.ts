@@ -1,41 +1,29 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadPerformanceSections } from "./performance-sections.ts";
+import { loadPerformanceRecord } from "./performance-sections.ts";
 
-test("a failing prospective loader leaves the replay section available", async () => {
-  const errors: string[] = [];
-  const result = await loadPerformanceSections(
-    async () => "replay-data",
-    async () => {
-      throw new Error("prospective receipt URI is not recognised");
-    },
-    (section) => errors.push(section),
-  );
-
-  assert.deepEqual(result.replay, { status: "ok", value: "replay-data" });
-  assert.deepEqual(result.prospective, { status: "unavailable" });
-  assert.deepEqual(errors, ["prospective"]);
+test("the cumulative loader returns the selected record", async () => {
+  assert.deepEqual(await loadPerformanceRecord(async () => ({ spread: 128, total: 137 })),
+    { status: "ok", value: { spread: 128, total: 137 } });
 });
 
-test("a failing replay loader leaves the prospective section available", async () => {
-  const result = await loadPerformanceSections(
-    async () => {
-      throw new Error("replay query failed");
-    },
-    async () => "prospective-data",
-  );
-
-  assert.deepEqual(result.replay, { status: "unavailable" });
-  assert.deepEqual(result.prospective, { status: "ok", value: "prospective-data" });
+test("a query failure hides the cumulative record and reports the error", async () => {
+  const failure = new Error("query failed");
+  const errors: unknown[] = [];
+  const result = await loadPerformanceRecord(async () => { throw failure; }, error => errors.push(error));
+  assert.deepEqual(result, { status: "unavailable" });
+  assert.deepEqual(errors, [failure]);
 });
 
-test("both sections load when neither loader fails", async () => {
-  const result = await loadPerformanceSections(
-    async () => 1,
-    async () => 2,
-  );
-  assert.deepEqual(result, {
-    replay: { status: "ok", value: 1 },
-    prospective: { status: "ok", value: 2 },
-  });
+
+test("cumulative queries include selected pending grades and do not require a freeze designation", async () => {
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync(new URL("./v5.ts", import.meta.url), "utf8");
+  const query = source.slice(source.indexOf("export const getV5PerformanceDetail"));
+  assert.match(query, /from\(schema.siteWeekSelections\)/);
+  assert.match(query, /inArray\(schema.predictionRuns.evidenceClass, \[\.\.\.V5_RECORD_EVIDENCE\]\)/);
+  assert.doesNotMatch(query, /prospectiveWeekRecords/);
+  const stats = readFileSync(new URL("./queries.ts", import.meta.url), "utf8")
+    .split("export const getSystemStatsThroughWeek")[1];
+  assert.doesNotMatch(stats, /eq\(schema.predictionRuns.state, "scored"\)/);
 });

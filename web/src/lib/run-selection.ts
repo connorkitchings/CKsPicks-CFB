@@ -6,7 +6,8 @@
  * ineligible selection never guesses a run.
  */
 const PUBLISHED_STATES = new Set(["published", "frozen", "scored"]);
-const V5_EVIDENCE_CLASSES = new Set(["pending", "replay", "live"]);
+export const V5_RECORD_EVIDENCE = ["replay", "live", "pending"] as const;
+const V5_EVIDENCE_CLASSES = new Set<string>(V5_RECORD_EVIDENCE);
 
 export function isSelectableRun(run: {
   modelId: string | null;

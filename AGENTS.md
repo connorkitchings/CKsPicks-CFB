@@ -71,14 +71,14 @@ print(f"✅ Data root verified: {data_root}")
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
 - The approved 2026-09-13 V5 package compares two possession definitions, learned preseason priors and one Kalman challenger. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Polls and direct-core models are diagnostic-only.
-- Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff
+- Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff (the public 2026 V5 record is the unified point-in-time record described in `docs/modeling/record_methodology.md`; "prospective" now names freeze provenance only)
 - The original target was to complete initial requirements before Week 0; that
   date has passed, so any unfinished requirement remains an explicit blocker.
   V5 model development is complete and accepted. The Week 5 live forecast and
   Preview candidate were verified as of 2026-09-27; that release was subsequently
   activated (see `docs/status.md`). Any new corrected-lineage activation still
-  needs its separate exact release decision. Prospective
-  paired-slate evidence continues as monitoring; six slates are not a prelaunch gate.
+  needs its separate exact release decision. The cumulative 2026 V5
+  record continues as monitoring; six slates are not a prelaunch gate.
 - Further model research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
 
 **Column Conventions:**
@@ -196,7 +196,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Current status:** see [`docs/status.md`](docs/status.md) — the single source for live run IDs, week state and the scoreboard. Primary success metric: prospective ATS win % vs the 52.4% break-even (spreads and totals reported separately); retrospective replays are not prospective evidence.
+**Current status:** see [`docs/status.md`](docs/status.md) — the single source for live run IDs, week state and the scoreboard. Primary success metric: cumulative 2026 V5 ATS win % from Week 0 onward vs the 52.4% break-even at -110, spreads and totals reported separately, with strictly point-in-time inputs ([record methodology](docs/modeling/record_methodology.md)).
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -209,8 +209,8 @@ Dated checkpoints (Weeks 0-3, the Phase 1-6 buildout, the September V5 acceptanc
 the 2026-10-04 "current focus") now live in [`docs/status_history.md`](docs/status_history.md). They are
 history, not current authority; use [`docs/status.md`](docs/status.md) for live state. The accepted
 V5 model, its lineage and the V4 rollback are summarized in the
-[V5 status guide](docs/modeling/v5_status.md). Week 4 and earlier are retrospective V5 replay;
-Week 5 was the first live V5 slate.
+[V5 status guide](docs/modeling/v5_status.md). The 2026 record is one continuous V5 record from Week 0 (Week 4 and earlier were generated
+retrospectively from point-in-time inputs; Week 5 was the first slate frozen before kickoff).
 
 **Roadmap (2026 transition):** `docs/planning/roadmap.md` ·
 **Weekly ops:** `docs/ops/weekly_pipeline.md` ·

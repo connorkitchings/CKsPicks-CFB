@@ -1,0 +1,36 @@
+{
+  "environment": "preview",
+  "captured_at": "2026-10-11T15:54:05.279096+00:00",
+  "files": {
+    "game_results": {
+      "rows": 271,
+      "payload_sha256": "69bf9dbdaf398355b88021333c5ad885ac140f82de069cfd89a89c2d7d7a15a3",
+      "file_sha256": "0c548c0cc9bd31eba5a2accf0d65dd4879350300b14df437275897ca3bae56d7"
+    },
+    "prediction_grades": {
+      "rows": 1491,
+      "payload_sha256": "6bea61efeb3ec9dee151c7d193bbbc89a2076ac8ebe5fcf6e226148322d9102f",
+      "file_sha256": "5714b194a4530bb1d09773fafe993d219551c5b5aa11ecf83e2f9116877027bd"
+    },
+    "prediction_market_selections": {
+      "rows": 2316,
+      "payload_sha256": "6e572bc893d4b5e4bdd2b81114cf925274b9700a70566707d281f631b694c811",
+      "file_sha256": "c1d639dd450f79c1215dbf9a417a9a8196c10ffbdbcff7255ff7f5da3dc8d15f"
+    },
+    "system_stats": {
+      "rows": 1,
+      "payload_sha256": "3acf1703c18bd250be9592a48a61faa9e938e9dbe5f56444c53d36f3a5b08bed",
+      "file_sha256": "29b6e6b638b94a98a115e28a69213f33a9ef53da68953eb89d9bfaef4cdb0ba5"
+    },
+    "site_week_selections_and_runs": {
+      "rows": 7,
+      "payload_sha256": "0e4456bf1699350660188b4f75ab32fbbdaa7c8b23ede54525b2f6f65d5db0bc",
+      "file_sha256": "3af0f3a02eb01f4acd3b727602cde79c13999958ddbb161f485bec8f2f672b35"
+    }
+  },
+  "identity": [
+    "cks_preview_pipeline",
+    "cks_preview_pipeline",
+    "on"
+  ]
+}

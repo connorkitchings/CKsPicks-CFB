@@ -9,7 +9,7 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current V5 checkpoint (2026-09-22):** [V5 model development is complete and accepted](../modeling/v5_status.md). V5 serves the public site (V4 is the rollback). Week 4 finals and refreshed 07/08 parents gate a current forecast; verified Preview serving and rollback proof precede a separate activation decision. Six prospective slates are monitoring, not a prelaunch requirement.
+> **Current V5 checkpoint (2026-09-22):** [V5 model development is complete and accepted](../modeling/v5_status.md). V5 serves the public site (V4 is the rollback). Week 4 finals and refreshed 07/08 parents gate a current forecast; verified Preview serving and rollback proof precede a separate activation decision. Six slates of the cumulative 2026 record are monitoring, not a prelaunch requirement.
 
 ## Direction
 

@@ -89,6 +89,8 @@ def derive_successor_lock(
             continue
         sources = meta["market_sources"]
         market_sources[str(week)] = {
+            "accepted_late_quotes": meta.get("accepted_late_quotes", []),
+            "cfbd_comparison_receipt": meta.get("cfbd_comparison_receipt", {}),
             "as_of": meta["as_of"],
             "config": config["path"],
             "config_sha256": config["sha256"],
@@ -97,11 +99,31 @@ def derive_successor_lock(
         }
     lock["market_sources"] = {str(w): market_sources[str(w)] for w in weeks}
 
+    # An unserved week (the display-only Week 6) records its verified quote gaps in the
+    # source refs (``rebuild.market_sources_lock``); they join the lock's declared gaps.
+    declared = [
+        dict(gap)
+        for week in weeks
+        for gap in refs["weeks"][str(week)].get("market_gaps", [])
+    ]
+    if declared:
+        existing = lock.get("market_selection_gap") or []
+        existing = [dict(existing)] if isinstance(existing, Mapping) else list(existing)
+        keys = {(g["week"], g["game_id"], g["target"]) for g in existing}
+        lock["market_selection_gap"] = existing + [
+            gap
+            for gap in declared
+            if (gap["week"], gap["game_id"], gap["target"]) not in keys
+        ]
+
+    # ``state`` and ``display_only`` default to the certified-scored replay weeks; the
+    # display-only run being replaced says so, rather than being mislabelled as scored.
     lock["selected_runs"] = [
         {
             "week": week,
             "run_id": served_runs[week]["run_id"],
-            "state": "scored",
+            "state": served_runs[week].get("state", "scored"),
+            **({"display_only": True} if served_runs[week].get("display_only") else {}),
             "data_as_of": refs["weeks"][str(week)]["as_of"],
             "source_manifest": dict(refs["weeks"][str(week)]["source_manifest"]),
         }

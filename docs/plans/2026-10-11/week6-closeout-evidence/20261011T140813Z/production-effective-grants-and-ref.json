@@ -1,0 +1,74 @@
+{
+  "environment": "production",
+  "captured_at": "2026-10-11T14:11:42.891223+00:00",
+  "effective_grants": [
+    {
+      "table": "games",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    },
+    {
+      "table": "game_results",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    },
+    {
+      "table": "predictions",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    },
+    {
+      "table": "prediction_grades",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    },
+    {
+      "table": "prediction_market_selections",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    },
+    {
+      "table": "system_stats",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    },
+    {
+      "table": "site_week_selections",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    },
+    {
+      "table": "current_week",
+      "select": true,
+      "insert": true,
+      "update": true,
+      "delete": false
+    }
+  ],
+  "database_time": "2026-10-11 14:11:43.241492+00:00",
+  "verified_week5_ref": {
+    "uri": "artifacts/preview/pipeline-runs/stage1-w5-ingest-20261007-r2/game_outcomes_ref.json",
+    "raw_sha256": "2b1ea243804d36aa5f7483d0b60d547027aef85c3fa05c000effe78a5aaa0eb6",
+    "dataset_ref": {
+      "content_sha": "f659b35abaa462807586d64e8e8e5d04585a23cb0e36e2a5f44000ab65151cf9",
+      "dataset": "game_outcomes",
+      "schema_version": "game_outcomes_v1",
+      "uri": "lake/silver/dataset=game_outcomes/version=33134d76df0ec7a916faea47/data.parquet",
+      "version_id": "33134d76df0ec7a916faea47"
+    }
+  }
+}

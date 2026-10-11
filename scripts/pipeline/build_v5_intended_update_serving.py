@@ -20,6 +20,7 @@ from cks_picks_cfb.data.data_first_phase2d import signed_payload, verify_signed_
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.inference.v5_serving import build_v5_serving_rows
 from cks_picks_cfb.inference.weekly import resolve_label_thresholds
+from cks_picks_cfb.models.late_quotes import validate_late_evidence
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
 from cks_picks_cfb.rebuild.successor_sources import is_corrected, lock_schedule
 from scripts.pipeline.build_v5_intended_update_forecasts import (
@@ -35,6 +36,40 @@ SCHEMA = "v5_intended_update_2026_serving_manifest_v1"
 
 def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
+
+
+def original_run_replayable(old: dict[str, Any]) -> bool:
+    """A certified scored run, or the display-only run an unserved week is replayed from."""
+    return old["state"] == "scored" or (
+        old["state"] == "published" and old.get("display_only") is True
+    )
+
+
+def check_quote_gaps(serving: Any, gaps: Any, *, week: int) -> None:
+    """Unquoted spreads and totals must be exactly the gaps the lock declares for the week.
+
+    Declared gaps are verified (a game whose only quotes were captured at or after kickoff,
+    or a target the provider never lined): they get no selection and no grade.
+    """
+    if gaps is None:
+        gaps = []
+    if isinstance(gaps, dict):
+        gaps = [gaps]
+    for target in ("spread", "total"):
+        missing = set(
+            serving.loc[serving[f"{target}_market_quote_id"].isna(), "game_id"].astype(
+                int
+            )
+        )
+        allowed = {
+            int(gap["game_id"])
+            for gap in gaps
+            if int(gap["week"]) == week and gap["target"] == target
+        }
+        if missing != allowed:
+            raise ValueError(
+                f"Week {week} {target} quote gaps differ: {missing ^ allowed}"
+            )
 
 
 def _market_frame(
@@ -123,9 +158,13 @@ def build(
         week = int(old["week"])
         if week >= int(lock["active_week"]["week"]):
             continue
-        if old["state"] != "scored":
+        if not original_run_replayable(old):
             raise ValueError(f"Week {week} original run is not certified scored")
         source = lock["market_sources"][str(week)]
+        validate_late_evidence(
+            source.get("accepted_late_quotes", []),
+            source.get("cfbd_comparison_receipt"),
+        )
         markets = _market_frame(
             source["market_snapshots"],
             cache=market_cache,
@@ -165,6 +204,7 @@ def build(
             total_threshold=thresholds[2],
             timing_class="replay",
             market_quotes=quotes,
+            accepted_late_quotes=source.get("accepted_late_quotes", []),
         )
         expected = set(games.loc[games.week.eq(week), "game_id"].astype(int))
         if (
@@ -174,23 +214,7 @@ def build(
             raise ValueError(
                 f"Week {week} serving game keys differ from locked selection"
             )
-        if serving.spread_market_quote_id.isna().any():
-            raise ValueError(f"Week {week} has an unquoted spread")
-        missing_totals = set(
-            serving.loc[serving.total_market_quote_id.isna(), "game_id"].astype(int)
-        )
-        gaps = lock["market_selection_gap"]
-        if isinstance(gaps, dict):
-            gaps = [gaps]
-        allowed_missing = {
-            int(gap["game_id"])
-            for gap in gaps
-            if int(gap["week"]) == week and gap["target"] == "total"
-        }
-        if missing_totals != allowed_missing:
-            raise ValueError(
-                f"Week {week} total quote gaps differ: {missing_totals ^ allowed_missing}"
-            )
+        check_quote_gaps(serving, lock.get("market_selection_gap"), week=week)
         week_games = games.loc[
             games.week.eq(week), ["game_id", "home_points", "away_points"]
         ].copy()

@@ -190,3 +190,9 @@ For finding 2 an explicit rule is needed for games that completed after the cuto
 **Open, by decision, for the cutover:** the Production-namespace artifact check (staging dry run against Production); the CI result on the final commit; the Postgres integration job for the v2 validator path; the Week 6 replay run, the pending Week 7 run and the Production publication, scoring, certification, authorization and selection steps (user-run); a 6A rebuild through Week 6 and a Week 6 market-sources lock before the Week 6 6B frames run.
 
 **Still deferred:** matchup database gates; #8 and #11 (decisions recorded in the brief, nothing built); #9 neutral-site model.
+
+## Amendment 12 (2026-10-10): Week 6 is graded into the unified 2026 record
+
+**Decision (owner, 2026-10-10; see the [decision log](../../decisions/decision_log.md)).** The 2026 record is one cumulative V5 record from Week 0. This supersedes the **reporting** consequences of Amendment 9 rule 2 ("never prospective evidence") and rule 5 ("not part of the prospective record"): the display-only Week 6 run is graded (finals load, then the grades-only backfill) and counts in the record, and its corrected replay replaces it in the counted record at the cutover.
+
+**Unchanged mechanics.** The run keeps `evidence_class = 'pending'` and state `published`, is never frozen or closed, cannot enter `prospective_week_records`, and Amendment 10's exclusion from the completed-prospective check still applies (it concerns freeze receipts). Rule 4 (a quote captured at or after a game's kickoff is not eligible) stands, with one declared exception: a CFBD-provided pregame line fetched after kickoff for the three early Week 6 games, recorded in the market lock and used only if the CFBD re-fetch comparison supports it ([record methodology](../../modeling/record_methodology.md)).

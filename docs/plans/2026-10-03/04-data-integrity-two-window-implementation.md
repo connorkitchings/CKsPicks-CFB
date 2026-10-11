@@ -1,6 +1,6 @@
 # Data Integrity Repair in Two Windows
 
-- **Status:** In Progress (Window 1 closed for implementation; Window 2 Step 5 closed 2026-10-04, 6A authorized but not started); Amendment 3 Approved 2026-10-04 (pre-6A execution contract approved; Preview R2 and Preview catalog writes permitted for 6A only; no serving or production writes)
+- **Status:** In Progress (Window 1 closed for implementation; Window 2 Step 5 closed 2026-10-04; 6A Implemented 2026-10-05, 6B 2026-10-06, 7A 2026-10-06; 7B cutover pending; Window 1 promoted to Production 2026-10-07); Amendment 3 Approved 2026-10-04 (pre-6A execution contract approved; Preview R2 and Preview catalog writes permitted for 6A only; no serving or production writes)
 - **Created:** 2026-10-03
 - **Planner:** Sol
 - **Approval source:** The user resolved the decision packet in this session and explicitly requested that the final plan be documented before implementation.

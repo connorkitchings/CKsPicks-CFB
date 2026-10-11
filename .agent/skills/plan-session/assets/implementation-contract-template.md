@@ -7,75 +7,22 @@
 - **Implementation log:** Pending
 - **Commit policy:** Separate plan commit | Commit with implementation
 
-## Goal
+## Goal and acceptance
 
-State the problem and observable success criteria.
+State the problem, intended outcome, observable success criteria and definition of done. Implementation is complete only when every acceptance item and required check passes.
 
-## Current State
+## Baseline and constraints
 
-Summarize relevant architecture, existing behavior, dependencies, and constraints discovered during investigation.
+Record the inspected branch/commit, worktree, existing behavior and relevant authority/dependencies. State included and excluded scope, affected interfaces/components, compatibility requirements, evidence to preserve, risks and failure/stop gates. Identify assumptions requiring confirmation before implementation.
 
-## Proposed Approach
+## Ordered changes
 
-State the selected approach and why it is appropriate. Include alternatives only when they explain a material decision.
+List bounded tasks in execution order. For each task, specify the affected components or interfaces, intended change, acceptance criteria and focused validation. Resolve consequential design choices before handoff; link shared specifications instead of repeating them.
 
-## Scope
+## Validation
 
-### Included
+List required tests/checks and positive, negative, boundary and recovery scenarios appropriate to the change. Specify any readback, idempotence, rollback or release evidence needed. Include `git diff --check` and the scoped documentation/session-log checks.
 
--
+## Handoff/amendments
 
-### Excluded
-
--
-
-## Affected Components and Contracts
-
-- Files, modules, services, configuration, schemas, public interfaces, or operational contracts affected by this plan.
-
-## Implementation Tasks
-
-### Task 1 — <Descriptive name>
-
-**Files:**
-
-- `path/to/file`
-
-**Changes:**
-
-- Specify the implementation change and behavior that must remain stable.
-
-**Acceptance criteria:**
-
-- State observable results and required edge cases.
-
-**Validation:**
-
-- State focused tests, checks, builds, or manual verification.
-
-## Testing Strategy
-
-State unit, integration, regression, and end-to-end coverage required for this change.
-
-## Risks and Edge Cases
-
-- State known risks, migration concerns, performance constraints, and compatibility requirements.
-
-## Definition of Done
-
-- [ ] All implementation tasks and acceptance criteria are complete.
-- [ ] Required validation passes.
-- [ ] Documentation and session log are updated.
-- [ ] Plan status is updated to `Implemented`.
-
-## Amendments
-
-### Amendment 1 — <Title>
-
-**Reason:**
-
-**Original approach:**
-
-**Revised approach:**
-
-**Impact:**
+State the approval and resume gate, implementation log, user-controlled commit policy and precise next action. Preserve the Sol-to-Terra workflow and separate exact release approvals. A mechanical amendment may proceed only if architecture, interfaces, scope and acceptance remain unchanged; a material conflict returns to Sol for review. Record each amendment's reason, previous approach, revised approach and impact here.

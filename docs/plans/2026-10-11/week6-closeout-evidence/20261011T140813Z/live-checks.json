@@ -1,0 +1,122 @@
+{
+  "checks": [
+    {
+      "label": "health",
+      "url": "https://c-ks-picks-cfb.vercel.app/api/health?season=2026&week=6",
+      "status": 200,
+      "observed_at": "2026-10-11T14:15:00.741369+00:00",
+      "path": "live-health.json",
+      "response_sha256": "06e54e31efb1eba0541401f5bfb817e3a849038c6c0ddb690de3dc05884e8a44",
+      "file_sha256": "06e54e31efb1eba0541401f5bfb817e3a849038c6c0ddb690de3dc05884e8a44",
+      "response": {
+        "status": "ok",
+        "schemaVersion": "data_platform_v1",
+        "publication": {
+          "season": 2026,
+          "weeks": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "mode": "predictions"
+        },
+        "activeRun": {
+          "runId": "2026w6-v5repair-20261008-d2",
+          "season": 2026,
+          "week": 6,
+          "state": "published"
+        },
+        "selectedWeek": {
+          "season": 2026,
+          "week": 6,
+          "selection": {
+            "runId": "2026w6-v5repair-20261008-d2",
+            "modelId": "v5-intended-update-2026-v1",
+            "state": "published",
+            "evidenceClass": "pending",
+            "coverage": {
+              "expected": 55,
+              "predicted": 55,
+              "lined": 55
+            },
+            "artifactFreshness": "2026-10-09T22:45:05.376Z"
+          },
+          "agreesWithCurrentWeek": true
+        },
+        "coverage": {
+          "expected": 55,
+          "predicted": 55,
+          "lined": 55
+        },
+        "artifactFreshness": "2026-10-09T22:45:05.376Z",
+        "dataAsOf": "2026-10-08T16:53:58.000Z",
+        "lastSuccessfulPublish": "2026-10-09T22:45:05.376Z",
+        "latencyMs": 131
+      }
+    },
+    {
+      "label": "results",
+      "url": "https://c-ks-picks-cfb.vercel.app/results?season=2026&week=6",
+      "status": 200,
+      "observed_at": "2026-10-11T14:15:01.943275+00:00",
+      "path": "live-results.html.gz",
+      "response_sha256": "b04debe1e7cc8dfa0d46f96178005313c7639587df3c7203a844659edf5167ef",
+      "file_sha256": "a48506164692f5d94c80fff24dc12dea5936cca817853829115dc5fcc3f9da74",
+      "has_display_only_notice_phrase": false,
+      "has_prospective_phrase": false,
+      "has_unified_record_phrase": false
+    },
+    {
+      "label": "performance",
+      "url": "https://c-ks-picks-cfb.vercel.app/performance",
+      "status": 200,
+      "observed_at": "2026-10-11T14:15:02.476487+00:00",
+      "path": "live-performance.html.gz",
+      "response_sha256": "08418a98f6533840ea0511001963f0fc797e33ccb10e900b3fffae461ec3ef6a",
+      "file_sha256": "ae147c1984df21226e97091c6158832b149566fd3b19b4a02012f124862ffb9a",
+      "has_display_only_notice_phrase": false,
+      "has_prospective_phrase": true,
+      "has_unified_record_phrase": false
+    },
+    {
+      "label": "ratings",
+      "url": "https://c-ks-picks-cfb.vercel.app/ratings",
+      "status": 200,
+      "observed_at": "2026-10-11T14:15:02.867029+00:00",
+      "path": "live-ratings.html.gz",
+      "response_sha256": "fb4edc858748657f359f8725931eac4dd23e7bc312eb8c27f19a1d01ca626df7",
+      "file_sha256": "84f6a4862a161831f225a0265c67b97ab7b8d5e17879f433aad14b6fbb2a2eaf",
+      "has_display_only_notice_phrase": false,
+      "has_prospective_phrase": false,
+      "has_unified_record_phrase": false
+    },
+    {
+      "label": "matchup",
+      "url": "https://c-ks-picks-cfb.vercel.app/matchup/401862797",
+      "status": 200,
+      "observed_at": "2026-10-11T14:15:03.463652+00:00",
+      "path": "live-matchup.html.gz",
+      "response_sha256": "addc7e2dcbba3e379b4ddebba4b75e5864966a97a90ed200b9200d0c0aabb996",
+      "file_sha256": "7226050ea83df1646cd5cb3bfa677d7b98e291a02ffbbd40ff593a23eb0a13f7",
+      "has_display_only_notice_phrase": false,
+      "has_prospective_phrase": false,
+      "has_unified_record_phrase": false
+    }
+  ],
+  "deployed_revision": "not exposed by these responses; not independently verified",
+  "claim_limit": "HTTP/health evidence only; no visual/layout or completed grades verification"
+}

@@ -143,6 +143,10 @@ Approved by the user in this planning task per Contract 04 Amendment 5. Adjudica
 
 Any further scope or policy conflict is returned to Contract 04 before implementation.
 
+### Amendment 3 — One scoreboard (2026-10-10)
+
+The 2026-10-10 owner decision (see the [decision log](../../decisions/decision_log.md)) replaces the "separately sourced retrospective reconstructed and prospective V5 scoreboards" and the "separate Performance evidence classes" in this plan with **one cumulative 2026 V5 record** from Week 0 whose counted runs are the corrected replays after the cutover. Provenance (evidence class, freeze receipts, the Week 5 legacy attestation) stays in the database and the [record methodology](../../modeling/record_methodology.md). The hard rules in this plan are unchanged: never infer prospective status from a reconstructed replay or backfill, never create a freeze receipt after kickoff, and a missed kickoff or freeze deadline still means no prospective evidence for that week. The cutover packet additionally requires a passing point-in-time audit receipt.
+
 ## Execution record — 2026-10-06
 
 Fresh read-only Preview and Production snapshots verified exact restricted pipeline identities and applied migration checksums. Preview is through 0024 with zero prospective/revocation rows; Production is through 0022 with those tables absent, as anticipated by Stage 7A. Both have six selections and Week 6 with no active run. These observations do not select cutover `N` or update the serving-state authority.

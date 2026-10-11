@@ -22,6 +22,7 @@ from cks_picks_cfb.data.data_first_phase2d import (
 )
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ops.prospective_records import write_immutable
+from cks_picks_cfb.ops.v5_batch_selection_v2 import bundle_covers_cutover
 from cks_picks_cfb.ops.v5_intended_update_release import (
     AUTH_COLUMNS,
     validate_intended_update_release_record,
@@ -78,10 +79,13 @@ def validate_packet(packet: dict[str, Any], *, environment: str) -> dict[str, An
         )
     ):
         raise AuthorizationPacketError("bundle approval fields are incomplete")
+    # A bundle approval registered at an earlier display-only week keeps the decision
+    # reference it was registered under; one registered at the cutover carries the packet's.
+    registered_at_cutover = bundle_body["first_live_week"] == cutover
     if (
         bundle_body["first_live_season"] != 2026
-        or bundle_body["first_live_week"] != cutover
-        or bundle_body["decision_ref"] != decision_ref
+        or not bundle_covers_cutover(bundle_body["first_live_week"], cutover)
+        or (registered_at_cutover and bundle_body["decision_ref"] != decision_ref)
         or bundle.get("record_sha256") != _sha(canonical_json(bundle_body))
     ):
         raise AuthorizationPacketError(

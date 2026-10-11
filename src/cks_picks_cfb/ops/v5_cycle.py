@@ -468,12 +468,10 @@ def _preflight_ops(
             str(item.get("finals_stabilized_at", "")).replace("Z", "+00:00")
         )
         cutoff = datetime.fromisoformat(str(item["as_of"]).replace("Z", "+00:00"))
-        if (
-            stabilized.tzinfo is None
-            or cutoff.tzinfo is None
-            or cutoff < stabilized + timedelta(hours=24)
-        ):
-            raise V5CycleError("certified finals have not stabilized for 24 hours")
+        if stabilized.tzinfo is None or cutoff.tzinfo is None or cutoff < stabilized:
+            # ``finals_stabilized_at`` is the all-final observation time; the former
+            # 24 hour wait was removed on 2026-10-11 (decision log).
+            raise V5CycleError("close cutoff predates the certified finals observation")
         _check_outcomes_complete(
             spec, item, conn_url=conn_url, prediction_run_id=str(run_id)
         )

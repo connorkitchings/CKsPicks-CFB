@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import sys
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -68,6 +69,287 @@ def total_result(
     if score < line:
         return "loss" if lean == "over" else "win"
     return "push"
+
+
+LEGACY_QUOTE_POLICY = "model_side_best_quote_v1"
+FROZEN_LINE_VERSION = "frozen_line_v2"
+SIDES = {"spread": ("home", "away"), "total": ("over", "under")}
+
+
+@dataclass
+class BackfillPlan:
+    grades: list[dict] = field(default_factory=list)
+    prediction_updates: list[dict] = field(default_factory=list)
+    pms_updates: list[dict] = field(default_factory=list)
+    tallies: dict = field(
+        default_factory=lambda: {
+            "spread": {"win": 0, "loss": 0, "push": 0},
+            "total": {"win": 0, "loss": 0, "push": 0},
+        }
+    )
+    unresolved: list[tuple[int, str, str]] = field(default_factory=list)
+
+
+def resolve_side(
+    target: str,
+    *,
+    selection_side: str | None,
+    stored_lean: str | None,
+    predicted: float | None,
+    line: float | None,
+    prefer_recomputed: bool,
+    allow_recompute: bool,
+) -> str | None:
+    """The side a game is graded on.
+
+    The side the site already showed (the stored selection, then the stored lean) is the
+    side that is graded. The side is recomputed from prediction and line only when asked to
+    rewrite leans (``prefer_recomputed``, replay runs outside grades-only mode) or, failing
+    any stored side, when ``allow_recompute`` is set. A grades-only run never invents one.
+    """
+    valid = SIDES[target]
+    recomputed = None
+    if predicted is not None and line is not None:
+        if target == "spread":
+            recomputed = "home" if predicted + line > 0 else "away"
+        else:
+            recomputed = "over" if predicted > line else "under"
+    stored = next((x for x in (selection_side, stored_lean) if x in valid), None)
+    if prefer_recomputed and recomputed is not None:
+        return recomputed
+    if stored is not None:
+        return stored
+    return recomputed if allow_recompute else None
+
+
+def grading_version(quote_id: object, policy_version: object) -> str:
+    """The label a quote-backed grade carries is the policy that selected the quote."""
+    if not quote_id:
+        return FROZEN_LINE_VERSION
+    return str(policy_version) if policy_version else LEGACY_QUOTE_POLICY
+
+
+def recompute_result(
+    target: str,
+    side: str | None,
+    line: float | None,
+    home: float | None,
+    away: float | None,
+) -> str | None:
+    fn = spread_result if target == "spread" else total_result
+    return fn(home, away, line, side)
+
+
+def plan_backfill(rows: list[tuple], *, grades_only: bool) -> BackfillPlan:
+    """Plan the missing grades (and, outside grades-only mode, lean rewrites) for ``rows``."""
+    plan = BackfillPlan()
+    for (
+        _week,
+        run_id,
+        game_id,
+        _home_team,
+        _away_team,
+        home_line,
+        total_line,
+        pred_spread,
+        pred_total,
+        spread_lean,
+        total_lean,
+        snapshot_id,
+        home_pts,
+        away_pts,
+        spread_grade,
+        total_grade,
+        pms_spread_side,
+        pms_spread_point,
+        spread_quote_id,
+        spread_quote_price,
+        pms_total_side,
+        pms_total_point,
+        total_quote_id,
+        total_quote_price,
+        evidence_class,
+        spread_policy,
+        total_policy,
+    ) in rows:
+        home = float(home_pts) if home_pts is not None else None
+        away = float(away_pts) if away_pts is not None else None
+        can_mutate = (not grades_only) and (evidence_class == "replay")
+        for (
+            target,
+            line_a,
+            pred,
+            lean,
+            pms_side,
+            pms_point,
+            quote_id,
+            price,
+            policy,
+            existing,
+        ) in (
+            (
+                "spread",
+                home_line,
+                pred_spread,
+                spread_lean,
+                pms_spread_side,
+                pms_spread_point,
+                spread_quote_id,
+                spread_quote_price,
+                spread_policy,
+                spread_grade,
+            ),
+            (
+                "total",
+                total_line,
+                pred_total,
+                total_lean,
+                pms_total_side,
+                pms_total_point,
+                total_quote_id,
+                total_quote_price,
+                total_policy,
+                total_grade,
+            ),
+        ):
+            eff_line = (
+                float(pms_point)
+                if pms_point is not None
+                else (float(line_a) if line_a is not None else None)
+            )
+            side = resolve_side(
+                target,
+                selection_side=pms_side,
+                stored_lean=lean,
+                predicted=float(pred) if pred is not None else None,
+                line=eff_line,
+                prefer_recomputed=can_mutate,
+                allow_recompute=not grades_only,
+            )
+            lean_key = "spread_lean" if target == "spread" else "total_lean"
+            if can_mutate and side and lean != side:
+                plan.prediction_updates.append(
+                    {"run_id": run_id, "game_id": int(game_id), lean_key: side}
+                )
+            if can_mutate and side and pms_side != side and pms_side is not None:
+                plan.pms_updates.append(
+                    {
+                        "run_id": run_id,
+                        "game_id": int(game_id),
+                        "target": target,
+                        "side": side,
+                    }
+                )
+            result = recompute_result(target, side, eff_line, home, away)
+            if result is None:
+                if (
+                    home is not None
+                    and away is not None
+                    and eff_line is not None
+                    and side is None
+                ):
+                    plan.unresolved.append((int(game_id), target, "no stored side"))
+                continue
+            plan.tallies[target][result] += 1
+            if existing is None:
+                plan.grades.append(
+                    {
+                        "run_id": run_id,
+                        "game_id": int(game_id),
+                        "target": target,
+                        "market_snapshot_id": snapshot_id,
+                        "market_quote_id": quote_id,
+                        "side": side,
+                        "result": result,
+                        "profit_units": _profit(
+                            result, price=float(price) if price is not None else None
+                        ),
+                        "grading_version": grading_version(quote_id, policy),
+                    }
+                )
+    return plan
+
+
+def readback_mismatches(records: list[dict], stored: list[dict]) -> list[str]:
+    """Compare freshly inserted grades with what the database now holds.
+
+    ``stored`` rows carry the persisted grade plus its inputs (selection point and side,
+    prediction line, certified final), so the result is recomputed from the database's own
+    values rather than from the in-memory plan.
+    """
+    by_key = {(r["run_id"], r["game_id"], r["target"]): r for r in stored}
+    problems: list[str] = []
+    for rec in records:
+        key = (rec["run_id"], rec["game_id"], rec["target"])
+        row = by_key.get(key)
+        if row is None:
+            problems.append(f"{key}: grade not found after insert")
+            continue
+        line = row["point"] if row["point"] is not None else row["line"]
+        home = float(row["home_points"]) if row["home_points"] is not None else None
+        away = float(row["away_points"]) if row["away_points"] is not None else None
+        expected = recompute_result(
+            rec["target"],
+            row["side"],
+            float(line) if line is not None else None,
+            home,
+            away,
+        )
+        if expected != row["result"]:
+            problems.append(f"{key}: stored {row['result']} but inputs give {expected}")
+        if (row["result"], row["side"], row["grading_version"]) != (
+            rec["result"],
+            rec["side"],
+            rec["grading_version"],
+        ):
+            problems.append(f"{key}: stored grade differs from the planned grade")
+        if row["selection_side"] is not None and row["selection_side"] != row["side"]:
+            problems.append(
+                f"{key}: graded side differs from the stored selection side"
+            )
+    return problems
+
+
+READBACK_SQL = """
+SELECT pg.run_id, pg.game_id, pg.target, pg.side, pg.result, pg.grading_version,
+       gr.home_points, gr.away_points, pms.point, pms.side,
+       CASE WHEN pg.target = 'spread' THEN p.home_team_spread_line ELSE p.total_line END
+FROM prediction_grades pg
+JOIN predictions p ON p.run_id = pg.run_id AND p.game_id = pg.game_id
+JOIN game_results gr ON gr.game_id = pg.game_id
+LEFT JOIN prediction_market_selections pms
+  ON pms.run_id = pg.run_id AND pms.game_id = pg.game_id AND pms.target = pg.target
+WHERE pg.run_id = ANY(%s)
+"""
+
+
+def fetch_readback(cur, run_ids: list[str]) -> list[dict]:
+    cur.execute(READBACK_SQL, (run_ids,))
+    return [
+        {
+            "run_id": r[0],
+            "game_id": int(r[1]),
+            "target": r[2],
+            "side": r[3],
+            "result": r[4],
+            "grading_version": r[5],
+            "home_points": r[6],
+            "away_points": r[7],
+            "point": float(r[8]) if r[8] is not None else None,
+            "selection_side": r[9],
+            "line": float(r[10]) if r[10] is not None else None,
+        }
+        for r in cur.fetchall()
+    ]
+
+
+def snapshot_path(directory: Path, environment: str, scope: str, now: datetime) -> Path:
+    """A pre-mutation snapshot file that is unique per environment, scope and run time."""
+    stamp = now.strftime("%Y%m%dT%H%M%SZ")
+    path = directory / f"{environment}_pre_grades_{scope}_{stamp}.json"
+    if path.exists():
+        raise SystemExit(f"refusing to overwrite an existing snapshot: {path}")
+    return path
 
 
 def _resolve_db_url(environment: str, confirm_production: bool) -> str:
@@ -199,7 +481,8 @@ def main() -> None:
     parser.add_argument(
         "--snapshot-dir",
         type=Path,
-        default=Path("artifacts/backups/2026-10-02"),
+        default=Path("artifacts/backups")
+        / datetime.now(timezone.utc).strftime("%Y-%m-%d"),
     )
     args = parser.parse_args()
     conn_url = _resolve_db_url(args.environment, args.confirm_production)
@@ -219,7 +502,8 @@ def main() -> None:
            pms_s.quote_id AS spread_quote_id, pms_s.price AS spread_quote_price,
            pms_t.side AS pms_total_side, pms_t.point AS pms_total_point,
            pms_t.quote_id AS total_quote_id, pms_t.price AS total_quote_price,
-           pr.evidence_class
+           pr.evidence_class,
+           pms_s.policy_version AS spread_policy, pms_t.policy_version AS total_policy
     FROM site_week_selections sws
     JOIN predictions p ON p.run_id = sws.run_id
     JOIN prediction_runs pr ON pr.run_id = sws.run_id
@@ -246,163 +530,11 @@ def main() -> None:
             cur.execute(query, (args.year, week_param))
             rows = cur.fetchall()
 
-    pending_grades: list[dict] = []
-    pending_prediction_updates: list[dict] = []
-    pending_pms_updates: list[dict] = []
-
-    tallies = {
-        "spread": {"win": 0, "loss": 0, "push": 0},
-        "total": {"win": 0, "loss": 0, "push": 0},
-    }
-
-    for (
-        week,
-        run_id,
-        game_id,
-        home_team,
-        away_team,
-        home_line,
-        total_line,
-        pred_spread,
-        pred_total,
-        spread_lean,
-        total_lean,
-        snapshot_id,
-        home_pts,
-        away_pts,
-        spread_grade,
-        total_grade,
-        pms_spread_side,
-        pms_spread_point,
-        spread_quote_id,
-        spread_quote_price,
-        pms_total_side,
-        pms_total_point,
-        total_quote_id,
-        total_quote_price,
-        evidence_class,
-    ) in rows:
-        home = float(home_pts) if home_pts is not None else None
-        away = float(away_pts) if away_pts is not None else None
-        can_mutate_predictions = (not args.grades_only) and (evidence_class == "replay")
-
-        # Effective spread line
-        eff_spread_line = (
-            float(pms_spread_point)
-            if pms_spread_point is not None
-            else (float(home_line) if home_line is not None else None)
-        )
-        # Mathematical model lean vs market line
-        if pred_spread is not None and eff_spread_line is not None:
-            eff_spread_lean = "home" if pred_spread + eff_spread_line > 0 else "away"
-        else:
-            eff_spread_lean = spread_lean if spread_lean in ("home", "away") else None
-
-        if can_mutate_predictions:
-            if eff_spread_lean and spread_lean != eff_spread_lean:
-                pending_prediction_updates.append(
-                    {
-                        "run_id": run_id,
-                        "game_id": int(game_id),
-                        "spread_lean": eff_spread_lean,
-                    }
-                )
-            if (
-                eff_spread_lean
-                and pms_spread_side != eff_spread_lean
-                and pms_spread_side is not None
-            ):
-                pending_pms_updates.append(
-                    {
-                        "run_id": run_id,
-                        "game_id": int(game_id),
-                        "target": "spread",
-                        "side": eff_spread_lean,
-                    }
-                )
-
-        sp_res = spread_result(home, away, eff_spread_line, eff_spread_lean)
-        if sp_res is not None:
-            tallies["spread"][sp_res] += 1
-            if spread_grade is None:
-                price = (
-                    float(spread_quote_price)
-                    if spread_quote_price is not None
-                    else None
-                )
-                pending_grades.append(
-                    {
-                        "run_id": run_id,
-                        "game_id": int(game_id),
-                        "target": "spread",
-                        "market_snapshot_id": snapshot_id,
-                        "market_quote_id": spread_quote_id,
-                        "side": eff_spread_lean,
-                        "result": sp_res,
-                        "profit_units": _profit(sp_res, price=price),
-                        "grading_version": "model_side_best_quote_v1"
-                        if spread_quote_id
-                        else "frozen_line_v2",
-                    }
-                )
-
-        # Effective total line
-        eff_total_line = (
-            float(pms_total_point)
-            if pms_total_point is not None
-            else (float(total_line) if total_line is not None else None)
-        )
-        # Mathematical model lean vs market line
-        if pred_total is not None and eff_total_line is not None:
-            eff_total_lean = "over" if pred_total > eff_total_line else "under"
-        else:
-            eff_total_lean = total_lean if total_lean in ("over", "under") else None
-
-        if can_mutate_predictions:
-            if eff_total_lean and total_lean != eff_total_lean:
-                pending_prediction_updates.append(
-                    {
-                        "run_id": run_id,
-                        "game_id": int(game_id),
-                        "total_lean": eff_total_lean,
-                    }
-                )
-            if (
-                eff_total_lean
-                and pms_total_side != eff_total_lean
-                and pms_total_side is not None
-            ):
-                pending_pms_updates.append(
-                    {
-                        "run_id": run_id,
-                        "game_id": int(game_id),
-                        "target": "total",
-                        "side": eff_total_lean,
-                    }
-                )
-
-        tot_res = total_result(home, away, eff_total_line, eff_total_lean)
-        if tot_res is not None:
-            tallies["total"][tot_res] += 1
-            if total_grade is None:
-                price = (
-                    float(total_quote_price) if total_quote_price is not None else None
-                )
-                pending_grades.append(
-                    {
-                        "run_id": run_id,
-                        "game_id": int(game_id),
-                        "target": "total",
-                        "market_snapshot_id": snapshot_id,
-                        "market_quote_id": total_quote_id,
-                        "side": eff_total_lean,
-                        "result": tot_res,
-                        "profit_units": _profit(tot_res, price=price),
-                        "grading_version": "model_side_best_quote_v1"
-                        if total_quote_id
-                        else "frozen_line_v2",
-                    }
-                )
+    plan = plan_backfill(rows, grades_only=args.grades_only)
+    pending_grades = plan.grades
+    pending_prediction_updates = plan.prediction_updates
+    pending_pms_updates = plan.pms_updates
+    tallies = plan.tallies
 
     new_spread = sum(1 for g in pending_grades if g["target"] == "spread")
     new_total = sum(1 for g in pending_grades if g["target"] == "total")
@@ -419,6 +551,10 @@ def main() -> None:
     )
     print(f"Predictions lean updates: {len(pending_prediction_updates)}")
     print(f"Market selections side updates: {len(pending_pms_updates)}")
+    if plan.unresolved:
+        print(
+            f"Games with a line and a final but no stored side (not graded): {plan.unresolved}"
+        )
     print(
         f"Final full-slate spread record: {tallies['spread']['win']}–{tallies['spread']['loss']}–{tallies['spread']['push']}"
     )
@@ -431,8 +567,9 @@ def main() -> None:
         return
 
     # Take snapshot before mutating
-    snapshot_file = (
-        args.snapshot_dir / f"{args.environment}_pre_unconstrained_grades_snapshot.json"
+    scope = f"week{args.week}" if args.week is not None else f"weeks0-{args.max_week}"
+    snapshot_file = snapshot_path(
+        args.snapshot_dir, args.environment, scope, datetime.now(timezone.utc)
     )
     dump_snapshot(conn_url, args.year, snapshot_file)
 
@@ -461,6 +598,16 @@ def main() -> None:
             # 3. Insert missing prediction_grades
             for record in pending_grades:
                 cur.execute(UPSERT_GRADE_SQL, record)
+
+            # 4. Read the grades back and recompute each from the database's own inputs;
+            #    any mismatch aborts the whole transaction (nothing is committed).
+            problems = readback_mismatches(
+                pending_grades,
+                fetch_readback(cur, sorted({g["run_id"] for g in pending_grades})),
+            )
+            if problems:
+                conn.rollback()
+                raise SystemExit("grade read-back failed:\n" + "\n".join(problems))
 
         conn.commit()
 

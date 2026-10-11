@@ -387,11 +387,19 @@ def test_prepare_week_rebuilds_gold_from_completed_canonical_weeks():
     steps = build_steps(context, conn_url="postgresql://unused")
 
     names = [step.name for step in steps]
-    assert names[:3] == [
+    assert names[:4] == [
         "ingest_schedule",
+        "request_inventory_week_0",
         "ingest_plays_week_0",
         "ingest_game_stats_week_0",
     ]
+    inventory = next(step for step in steps if step.name == "request_inventory_week_0")
+    path = inventory.definition["argv"][-1]
+    assert "prepare-week-one" in path and path.endswith("week_0.json")
+    for entity in ("plays", "game_stats"):
+        ingest = next(step for step in steps if step.name == f"ingest_{entity}_week_0")
+        argv = ingest.definition["argv"]
+        assert argv[argv.index("--request-inventory") + 1] == path
     assert names[-4:] == [
         "combine_team_game",
         "build_temporal_matchups",

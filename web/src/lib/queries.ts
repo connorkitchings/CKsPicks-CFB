@@ -1,10 +1,11 @@
 import { isDisplayOnly } from "./display-only";
-import { eq, asc, and, inArray, lte, sql, notLike } from "drizzle-orm";
+import { eq, asc, and, inArray, lte, sql, notLike, or } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 import { existsFrom } from "./db-result";
 import { tiedExistsSql } from "./tie-sql";
-import { isSelectableRun } from "./run-selection";
+import { isSelectableRun, V5_RECORD_EVIDENCE } from "./run-selection";
+
 import { deriveSpreadView, deriveTotalView } from "./publication";
 import { overlaySelection } from "./selection-overlay";
 import {
@@ -877,7 +878,7 @@ function emptyStats(season: number): Stats {
 /**
  * Immutable W-L-P snapshot through a selected week. A replacement run can be
  * published during the week, but only the latest scored run is authoritative
- * once results are final. This intentionally does not read `system_stats`:
+ * once grades are available, including selected pending runs. This intentionally does not read `system_stats`:
  * that table is the latest full-season aggregate maintained by the pipeline.
  */
 export const getSystemStatsThroughWeek = cache(async (
@@ -895,7 +896,11 @@ export const getSystemStatsThroughWeek = cache(async (
       and(
         eq(schema.siteWeekSelections.season, season),
         lte(schema.siteWeekSelections.week, throughWeek),
-        eq(schema.predictionRuns.state, "scored"),
+        inArray(schema.predictionRuns.state, ["published", "frozen", "scored"]),
+        or(
+          inArray(schema.predictionRuns.evidenceClass, [...V5_RECORD_EVIDENCE]),
+          eq(schema.predictionRuns.evidenceClass, "legacy"),
+        ),
       ),
     )
     .orderBy(asc(schema.siteWeekSelections.week));

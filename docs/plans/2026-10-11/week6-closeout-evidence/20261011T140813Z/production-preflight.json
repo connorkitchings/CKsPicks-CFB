@@ -1,0 +1,844 @@
+{
+  "environment": "production",
+  "captured_at": "2026-10-11T14:09:44.699874+00:00",
+  "source_observation_sha256": "d1821664e96f92b57d5a0bfb4b62794b8fd4c88903fb2dbec758b39026d30c41",
+  "identity": [
+    {
+      "session_user": "cks_prod_pipeline",
+      "current_user": "cks_prod_pipeline",
+      "current_database": "neondb",
+      "current_setting": "repeatable read"
+    }
+  ],
+  "current_week": [
+    {
+      "season": 2026,
+      "week": 6,
+      "active_run_id": "2026w6-v5repair-20261008-d2"
+    }
+  ],
+  "selections": [
+    {
+      "week": 0,
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "state": "scored",
+      "evidence_class": "replay",
+      "frozen_at": null
+    },
+    {
+      "week": 1,
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "state": "scored",
+      "evidence_class": "replay",
+      "frozen_at": null
+    },
+    {
+      "week": 2,
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "state": "scored",
+      "evidence_class": "replay",
+      "frozen_at": null
+    },
+    {
+      "week": 3,
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "state": "scored",
+      "evidence_class": "replay",
+      "frozen_at": null
+    },
+    {
+      "week": 4,
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "state": "scored",
+      "evidence_class": "replay",
+      "frozen_at": null
+    },
+    {
+      "week": 5,
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "state": "scored",
+      "evidence_class": "live",
+      "frozen_at": "2026-09-30 12:34:06.200521+00:00"
+    },
+    {
+      "week": 6,
+      "run_id": "2026w6-v5repair-20261008-d2",
+      "state": "published",
+      "evidence_class": "pending",
+      "frozen_at": null
+    }
+  ],
+  "schedule": [
+    {
+      "game_id": 401856712,
+      "week": 6,
+      "home_team": "Alabama",
+      "away_team": "Georgia",
+      "kickoff": "2026-10-10 23:30:00+00:00"
+    },
+    {
+      "game_id": 401856713,
+      "week": 6,
+      "home_team": "Arkansas",
+      "away_team": "Tennessee",
+      "kickoff": "2026-10-10 20:15:00+00:00"
+    },
+    {
+      "game_id": 401856714,
+      "week": 6,
+      "home_team": "Florida",
+      "away_team": "South Carolina",
+      "kickoff": "2026-10-10 16:45:00+00:00"
+    },
+    {
+      "game_id": 401856715,
+      "week": 6,
+      "home_team": "Kentucky",
+      "away_team": "LSU",
+      "kickoff": "2026-10-10 23:00:00+00:00"
+    },
+    {
+      "game_id": 401856716,
+      "week": 6,
+      "home_team": "Missouri",
+      "away_team": "Texas A&M",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401856717,
+      "week": 6,
+      "home_team": "Oklahoma",
+      "away_team": "Texas",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401856718,
+      "week": 6,
+      "home_team": "Vanderbilt",
+      "away_team": "Ole Miss",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401856808,
+      "week": 6,
+      "home_team": "Arizona State",
+      "away_team": "Hawai'i",
+      "kickoff": "2026-10-11 01:30:00+00:00"
+    },
+    {
+      "game_id": 401856823,
+      "week": 6,
+      "home_team": "West Virginia",
+      "away_team": "Arizona",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401856824,
+      "week": 6,
+      "home_team": "Oklahoma State",
+      "away_team": "UCF",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401856825,
+      "week": 6,
+      "home_team": "Kansas State",
+      "away_team": "Houston",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401856826,
+      "week": 6,
+      "home_team": "BYU",
+      "away_team": "Iowa State",
+      "kickoff": "2026-10-10 02:15:00+00:00"
+    },
+    {
+      "game_id": 401856827,
+      "week": 6,
+      "home_team": "Utah",
+      "away_team": "Kansas",
+      "kickoff": "2026-10-11 02:15:00+00:00"
+    },
+    {
+      "game_id": 401858254,
+      "week": 6,
+      "home_team": "Louisville",
+      "away_team": "Florida State",
+      "kickoff": "2026-10-09 23:00:00+00:00"
+    },
+    {
+      "game_id": 401858255,
+      "week": 6,
+      "home_team": "Georgia Tech",
+      "away_team": "Duke",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401858256,
+      "week": 6,
+      "home_team": "Pittsburgh",
+      "away_team": "North Carolina",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401858257,
+      "week": 6,
+      "home_team": "Notre Dame",
+      "away_team": "Stanford",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401858258,
+      "week": 6,
+      "home_team": "Virginia",
+      "away_team": "Syracuse",
+      "kickoff": "2026-10-10 23:30:00+00:00"
+    },
+    {
+      "game_id": 401858259,
+      "week": 6,
+      "home_team": "California",
+      "away_team": "Virginia Tech",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401858260,
+      "week": 6,
+      "home_team": "NC State",
+      "away_team": "Wake Forest",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401858480,
+      "week": 6,
+      "home_team": "Michigan State",
+      "away_team": "Illinois",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401858481,
+      "week": 6,
+      "home_team": "Nebraska",
+      "away_team": "Indiana",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401858482,
+      "week": 6,
+      "home_team": "Northwestern",
+      "away_team": "Ball State",
+      "kickoff": "2026-10-10 16:30:00+00:00"
+    },
+    {
+      "game_id": 401858483,
+      "week": 6,
+      "home_team": "Ohio State",
+      "away_team": "Maryland",
+      "kickoff": "2026-10-10 20:15:00+00:00"
+    },
+    {
+      "game_id": 401858484,
+      "week": 6,
+      "home_team": "Oregon",
+      "away_team": "UCLA",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401858485,
+      "week": 6,
+      "home_team": "Penn State",
+      "away_team": "USC",
+      "kickoff": "2026-10-10 23:30:00+00:00"
+    },
+    {
+      "game_id": 401858486,
+      "week": 6,
+      "home_team": "Purdue",
+      "away_team": "Minnesota",
+      "kickoff": "2026-10-11 00:00:00+00:00"
+    },
+    {
+      "game_id": 401858487,
+      "week": 6,
+      "home_team": "Washington",
+      "away_team": "Iowa",
+      "kickoff": "2026-10-10 01:00:00+00:00"
+    },
+    {
+      "game_id": 401860901,
+      "week": 6,
+      "home_team": "Fresno State",
+      "away_team": "Boise State",
+      "kickoff": "2026-10-11 02:30:00+00:00"
+    },
+    {
+      "game_id": 401860902,
+      "week": 6,
+      "home_team": "Oregon State",
+      "away_team": "San Diego State",
+      "kickoff": "2026-10-10 22:00:00+00:00"
+    },
+    {
+      "game_id": 401860922,
+      "week": 6,
+      "home_team": "Utah State",
+      "away_team": "Washington State",
+      "kickoff": "2026-10-10 01:00:00+00:00"
+    },
+    {
+      "game_id": 401861964,
+      "week": 6,
+      "home_team": "Temple",
+      "away_team": "UConn",
+      "kickoff": "2026-10-10 19:45:00+00:00"
+    },
+    {
+      "game_id": 401862794,
+      "week": 6,
+      "home_team": "UTSA",
+      "away_team": "South Florida",
+      "kickoff": "2026-10-08 23:30:00+00:00"
+    },
+    {
+      "game_id": 401862795,
+      "week": 6,
+      "home_team": "Army",
+      "away_team": "Tulane",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401862796,
+      "week": 6,
+      "home_team": "North Texas",
+      "away_team": "Charlotte",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401862797,
+      "week": 6,
+      "home_team": "East Carolina",
+      "away_team": "Rice",
+      "kickoff": "2026-10-10 20:00:00+00:00"
+    },
+    {
+      "game_id": 401862798,
+      "week": 6,
+      "home_team": "Memphis",
+      "away_team": "UAB",
+      "kickoff": "2026-10-10 23:00:00+00:00"
+    },
+    {
+      "game_id": 401862799,
+      "week": 6,
+      "home_team": "Navy",
+      "away_team": "Tulsa",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401864516,
+      "week": 6,
+      "home_team": "Northern Illinois",
+      "away_team": "Air Force",
+      "kickoff": "2026-10-10 23:30:00+00:00"
+    },
+    {
+      "game_id": 401864517,
+      "week": 6,
+      "home_team": "UTEP",
+      "away_team": "Nevada",
+      "kickoff": "2026-10-10 23:00:00+00:00"
+    },
+    {
+      "game_id": 401864518,
+      "week": 6,
+      "home_team": "UNLV",
+      "away_team": "North Dakota State",
+      "kickoff": "2026-10-10 23:00:00+00:00"
+    },
+    {
+      "game_id": 401864519,
+      "week": 6,
+      "home_team": "San Jos\u00e9 State",
+      "away_team": "Wyoming",
+      "kickoff": "2026-10-10 01:00:00+00:00"
+    },
+    {
+      "game_id": 401866435,
+      "week": 6,
+      "home_team": "Akron",
+      "away_team": "Eastern Michigan",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401866436,
+      "week": 6,
+      "home_team": "Bowling Green",
+      "away_team": "Sacramento State",
+      "kickoff": "2026-10-10 16:00:00+00:00"
+    },
+    {
+      "game_id": 401866437,
+      "week": 6,
+      "home_team": "Toledo",
+      "away_team": "Buffalo",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401866438,
+      "week": 6,
+      "home_team": "Ohio",
+      "away_team": "Central Michigan",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401866439,
+      "week": 6,
+      "home_team": "Western Michigan",
+      "away_team": "Kent State",
+      "kickoff": "2026-10-10 19:30:00+00:00"
+    },
+    {
+      "game_id": 401866440,
+      "week": 6,
+      "home_team": "Massachusetts",
+      "away_team": "Miami (OH)",
+      "kickoff": "2026-10-10 18:00:00+00:00"
+    },
+    {
+      "game_id": 401869843,
+      "week": 6,
+      "home_team": "App State",
+      "away_team": "Old Dominion",
+      "kickoff": "2026-10-10 17:00:00+00:00"
+    },
+    {
+      "game_id": 401869933,
+      "week": 6,
+      "home_team": "Arkansas State",
+      "away_team": "South Alabama",
+      "kickoff": "2026-10-08 23:30:00+00:00"
+    },
+    {
+      "game_id": 401869943,
+      "week": 6,
+      "home_team": "Marshall",
+      "away_team": "Coastal Carolina",
+      "kickoff": "2026-10-10 23:00:00+00:00"
+    },
+    {
+      "game_id": 401869949,
+      "week": 6,
+      "home_team": "Georgia Southern",
+      "away_team": "James Madison",
+      "kickoff": "2026-10-10 23:30:00+00:00"
+    },
+    {
+      "game_id": 401869965,
+      "week": 6,
+      "home_team": "Louisiana Tech",
+      "away_team": "Louisiana",
+      "kickoff": "2026-10-10 23:30:00+00:00"
+    },
+    {
+      "game_id": 401870766,
+      "week": 6,
+      "home_team": "Liberty",
+      "away_team": "Sam Houston",
+      "kickoff": "2026-10-08 23:00:00+00:00"
+    },
+    {
+      "game_id": 401871051,
+      "week": 6,
+      "home_team": "Kennesaw State",
+      "away_team": "Jacksonville State",
+      "kickoff": "2026-10-07 23:00:00+00:00"
+    },
+    {
+      "game_id": 401871052,
+      "week": 6,
+      "home_team": "Western Kentucky",
+      "away_team": "Missouri State",
+      "kickoff": "2026-10-08 23:00:00+00:00"
+    },
+    {
+      "game_id": 401871066,
+      "week": 6,
+      "home_team": "Florida International",
+      "away_team": "New Mexico State",
+      "kickoff": "2026-10-07 23:30:00+00:00"
+    },
+    {
+      "game_id": 401871090,
+      "week": 6,
+      "home_team": "Troy",
+      "away_team": "Southern Miss",
+      "kickoff": "2026-10-07 00:00:00+00:00"
+    }
+  ],
+  "grades": [
+    {
+      "week": 0,
+      "target": "spread",
+      "result": "win",
+      "count": 4
+    },
+    {
+      "week": 0,
+      "target": "spread",
+      "result": "loss",
+      "count": 4
+    },
+    {
+      "week": 0,
+      "target": "total",
+      "result": "win",
+      "count": 2
+    },
+    {
+      "week": 0,
+      "target": "total",
+      "result": "loss",
+      "count": 6
+    },
+    {
+      "week": 1,
+      "target": "spread",
+      "result": "win",
+      "count": 17
+    },
+    {
+      "week": 1,
+      "target": "spread",
+      "result": "loss",
+      "count": 25
+    },
+    {
+      "week": 1,
+      "target": "spread",
+      "result": "push",
+      "count": 1
+    },
+    {
+      "week": 1,
+      "target": "total",
+      "result": "win",
+      "count": 25
+    },
+    {
+      "week": 1,
+      "target": "total",
+      "result": "loss",
+      "count": 18
+    },
+    {
+      "week": 2,
+      "target": "spread",
+      "result": "win",
+      "count": 20
+    },
+    {
+      "week": 2,
+      "target": "spread",
+      "result": "loss",
+      "count": 29
+    },
+    {
+      "week": 2,
+      "target": "total",
+      "result": "win",
+      "count": 26
+    },
+    {
+      "week": 2,
+      "target": "total",
+      "result": "loss",
+      "count": 23
+    },
+    {
+      "week": 3,
+      "target": "spread",
+      "result": "win",
+      "count": 29
+    },
+    {
+      "week": 3,
+      "target": "spread",
+      "result": "loss",
+      "count": 26
+    },
+    {
+      "week": 3,
+      "target": "spread",
+      "result": "push",
+      "count": 2
+    },
+    {
+      "week": 3,
+      "target": "total",
+      "result": "win",
+      "count": 34
+    },
+    {
+      "week": 3,
+      "target": "total",
+      "result": "loss",
+      "count": 22
+    },
+    {
+      "week": 4,
+      "target": "spread",
+      "result": "win",
+      "count": 30
+    },
+    {
+      "week": 4,
+      "target": "spread",
+      "result": "loss",
+      "count": 28
+    },
+    {
+      "week": 4,
+      "target": "total",
+      "result": "win",
+      "count": 25
+    },
+    {
+      "week": 4,
+      "target": "total",
+      "result": "loss",
+      "count": 33
+    },
+    {
+      "week": 5,
+      "target": "spread",
+      "result": "win",
+      "count": 28
+    },
+    {
+      "week": 5,
+      "target": "spread",
+      "result": "loss",
+      "count": 27
+    },
+    {
+      "week": 5,
+      "target": "spread",
+      "result": "push",
+      "count": 1
+    },
+    {
+      "week": 5,
+      "target": "total",
+      "result": "win",
+      "count": 25
+    },
+    {
+      "week": 5,
+      "target": "total",
+      "result": "loss",
+      "count": 30
+    },
+    {
+      "week": 5,
+      "target": "total",
+      "result": "push",
+      "count": 1
+    }
+  ],
+  "prospective_records": [
+    {
+      "season": 2026,
+      "week": 5,
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "freeze_receipt_uri": "artifacts/prospective/v5/environment=production/season=2026/week=5/2026w5-v5repair-20260929-p2/legacy-attestation-v1-9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7.json",
+      "freeze_receipt_sha256": "9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7",
+      "frozen_at": "2026-09-30 12:34:06.200521+00:00",
+      "first_kickoff_utc": "2026-10-02 00:00:00+00:00",
+      "decision_ref": "contract-04-amendment-4-5-w5-legacy-freeze"
+    }
+  ],
+  "migrations": [
+    {
+      "version": "0002",
+      "name": "0002_prediction_runs.sql",
+      "checksum": "5042642ef56650b72ebb48d3a43af6aac724c72880606589f21b3aad86612576"
+    },
+    {
+      "version": "0003",
+      "name": "0003_data_platform.sql",
+      "checksum": "242045515946c9c067cf4bf5d542038fe59b740b5622abda49c1fdee77dc557a"
+    },
+    {
+      "version": "0004",
+      "name": "0004_ingestion_hardening.sql",
+      "checksum": "378509b07354802d1d319c22a85c0819465bb87708ddaf8f0f88a8a404bd62a4"
+    },
+    {
+      "version": "0005",
+      "name": "0005_seed_current_week.sql",
+      "checksum": "da2b2ac64d6ac5151c060f562d892a7935b036387609617b5f5103874e7de932"
+    },
+    {
+      "version": "0006",
+      "name": "0006_pipeline_data_hardening.sql",
+      "checksum": "3886f24949b827bff53095339ce8d20091d43f4599211d5875756a8601d5def1"
+    },
+    {
+      "version": "0007",
+      "name": "0007_game_ordinal_regimes.sql",
+      "checksum": "d1075bdc80fd82234f629556a035685593b331ebdd957211f783c381bb10e6d4"
+    },
+    {
+      "version": "0008",
+      "name": "0008_game_4_ordinal_regime.sql",
+      "checksum": "7bff7ee6f8da37bbfe3227a97d3f2c8d86c3fc195acb4690e4bba352a82f9a92"
+    },
+    {
+      "version": "0009",
+      "name": "0009_history_play_capture.sql",
+      "checksum": "0ef31add0b7d21e2eadf8225cd9648d72ea122ee3cd8adbb31fcef4fa63cc0fb"
+    },
+    {
+      "version": "0010",
+      "name": "0010_history_capture_attempt_grants.sql",
+      "checksum": "c3e2cee8a5ce290b05a51b096249cf5c897aa49d12f72ff7d2c15f5cacf5c7a3"
+    },
+    {
+      "version": "0011",
+      "name": "0011_market_quote_payload.sql",
+      "checksum": "ce91490eda0f194dd2577430d124e46043a23accbf8c589f16b2290d560a0dac"
+    },
+    {
+      "version": "0012",
+      "name": "0012_historical_model_context.sql",
+      "checksum": "c95d8b3b9e31edeb4d6a887d97ff6d6b722399d4d22c6f01748ee3cc6be9efe4"
+    },
+    {
+      "version": "0013",
+      "name": "0013_v5_public_selection.sql",
+      "checksum": "c7742cd9cfc2dbd1b6938982423509c3301e24b8552bbd0cc397e8daa2d94df9"
+    },
+    {
+      "version": "0014",
+      "name": "0014_v5_exact_release_authorization.sql",
+      "checksum": "c724ed284da19932ec36c4b60bb83a64bf31cfca7346b585eeca97ca9ce7bd2c"
+    },
+    {
+      "version": "0015",
+      "name": "0015_v5_replay_release_authorization.sql",
+      "checksum": "5659a5b549af0c7ab6bfca0052e60b95b8b74944d79fda7b8e5193a1048956dd"
+    },
+    {
+      "version": "0016",
+      "name": "0016_prediction_market_selections.sql",
+      "checksum": "9073b6da11beeaa49d9197e67f7aa09bf5458885739e7cffe3f781598eaeff29"
+    },
+    {
+      "version": "0017",
+      "name": "0017_require_rating_manifest.sql",
+      "checksum": "ee3df6418133e61db28fbfb42157a017af834d9979e6031af2e7b661312986cd"
+    },
+    {
+      "version": "0018",
+      "name": "0018_v5_successor_release_registry.sql",
+      "checksum": "f85db2800b315a06cb36c39e42489a46a0f512c1b4f854b33de7274eec8c6043"
+    },
+    {
+      "version": "0019",
+      "name": "0019_game_venues.sql",
+      "checksum": "92efccb229187a5886b994500d9a9b92c94843c97402c2bc51ba3ec0e1f4af53"
+    },
+    {
+      "version": "0020",
+      "name": "0020_team_season_stats.sql",
+      "checksum": "9f6fc5f7aa29fb181fe75e3b30497b3a3217c6f83061b887f9849362d4c75e05"
+    },
+    {
+      "version": "0021",
+      "name": "0021_matchup_data_v2.sql",
+      "checksum": "3b4cc1d55e1220d891e7be0b4c3a26643f12f54ff7768fd803b0b2a9f472e0f9"
+    },
+    {
+      "version": "0022",
+      "name": "0022_grant_market_quotes_web.sql",
+      "checksum": "a18af948f37fc18255f3a8dceb98659c2a966911d233f8bb40b05880f7cc1c85"
+    },
+    {
+      "version": "0023",
+      "name": "0023_prospective_week_records.sql",
+      "checksum": "c290071e450de44fcac285f264b8432e70e2f4109ca542cfe82538ff149acee0"
+    },
+    {
+      "version": "0024",
+      "name": "0024_v5_release_revocations.sql",
+      "checksum": "80d3343b45b96a0adbfc82c420e95ac5cc5cb9f6ff2f455c30faf0a59de446e2"
+    }
+  ],
+  "leases": [],
+  "bundle_approvals": [
+    {
+      "approval_id": "legacy-v5-f80b63ef01211bc9679b4b65769a3f16c7302c06cfa2b7806f6b8d830f19da0b",
+      "first_live_week": 5
+    },
+    {
+      "approval_id": "production-intended-update-30c4f1eb0ef5",
+      "first_live_week": 5
+    },
+    {
+      "approval_id": "production-intended-update-a507d0c7cba5",
+      "first_live_week": 6
+    }
+  ],
+  "grants": [],
+  "games_captures": [],
+  "recent_outcomes": [],
+  "week5_parity": {
+    "pin": {
+      "content_sha": "f659b35abaa462807586d64e8e8e5d04585a23cb0e36e2a5f44000ab65151cf9",
+      "dataset": "game_outcomes",
+      "row_count": 761,
+      "schema_version": "game_outcomes_v1",
+      "uri": "lake/silver/dataset=game_outcomes/version=33134d76df0ec7a916faea47/data.parquet",
+      "version_id": "33134d76df0ec7a916faea47"
+    },
+    "season": 2026,
+    "week": 5,
+    "inserts": 0,
+    "unchanged": 56,
+    "not_final": [],
+    "missing_outcome": [],
+    "conflicts": 0
+  },
+  "week6_counts": [
+    55,
+    0,
+    0
+  ],
+  "schedule_reconciliation": {
+    "source_games": 58,
+    "database_games": 58,
+    "source_only": [],
+    "database_only": []
+  },
+  "schedule_field_differences": [
+    {
+      "game_id": 401862797,
+      "field": "kickoff",
+      "source": "2026-10-10T17:00:00.000Z",
+      "database": "2026-10-10 20:00:00+00:00"
+    },
+    {
+      "game_id": 401856827,
+      "field": "kickoff",
+      "source": "2026-10-11T00:00:00.000Z",
+      "database": "2026-10-11 02:15:00+00:00"
+    },
+    {
+      "game_id": 401856808,
+      "field": "kickoff",
+      "source": "2026-10-11T02:30:00.000Z",
+      "database": "2026-10-11 01:30:00+00:00"
+    }
+  ]
+}

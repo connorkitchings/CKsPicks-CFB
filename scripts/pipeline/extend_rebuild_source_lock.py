@@ -6,6 +6,11 @@ is verified against its pinned SHA-256, the new finals come from a Silver ``game
 dataset named by a pipeline ref file, and nothing already recorded may change (see
 ``cks_picks_cfb.rebuild.lock_extension``).
 
+Use ``--append-week N --expected-games COUNT --games-ref-uri URI`` to append
+the complete next week to an already-extended lock. Append output must be new;
+historical kickoff waivers are forbidden. Finals stability is a separate
+operator gate and is not established by this command's availability buffer.
+
     PYTHONPATH=src:. uv run python scripts/pipeline/extend_rebuild_source_lock.py \\
         --outcomes-ref-uri artifacts/preview/pipeline-runs/<run>/game_outcomes_ref.json \\
         --new-cutoff 2026-10-05T00:00:00Z --out conf/rebuild/source_lock_2026_w5_v1.json
@@ -41,6 +46,12 @@ def main() -> int:
     parser.add_argument("--outcomes-ref-uri", required=True)
     parser.add_argument("--new-cutoff", required=True)
     parser.add_argument(
+        "--append-week", type=int, help="Append the complete next week's schedule"
+    )
+    parser.add_argument(
+        "--expected-games", type=int, help="Exact new-week count in append mode"
+    )
+    parser.add_argument(
         "--games-ref-uri",
         help="games_ref.json of the new Silver games; every locked kickoff is checked",
     )
@@ -53,6 +64,21 @@ def main() -> int:
     )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
+    if args.append_week is not None:
+        if (
+            args.expected_games is None
+            or args.expected_games <= 0
+            or not args.games_ref_uri
+        ):
+            parser.error(
+                "--append-week requires --games-ref-uri and positive --expected-games"
+            )
+        if args.accept_kickoff_revision:
+            parser.error("append mode refuses historical kickoff revisions")
+        if args.out.exists():
+            raise SystemExit("append output already exists; refusing overwrite")
+    elif args.expected_games is not None:
+        parser.error("--expected-games requires --append-week")
     if REPO_ROOT / "data" in [args.out.resolve(), *args.out.resolve().parents]:
         raise SystemExit("output cannot be the repository ./data directory")
 
@@ -95,8 +121,11 @@ def main() -> int:
         schedule=schedule,
         schedule_ref=schedule_ref,
         accepted_kickoff_revisions=args.accept_kickoff_revision,
+        append_week=args.append_week,
+        expected_games=args.expected_games,
     )
-    args.out.write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n")
+    with args.out.open("x" if args.append_week is not None else "w") as output:
+        output.write(json.dumps(lock, indent=2, sort_keys=True) + "\n")
     print(json.dumps(lock["extends"], indent=2, sort_keys=True))
     return 0
 

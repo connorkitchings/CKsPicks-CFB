@@ -5,7 +5,7 @@ an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
 ## Current posture
 
-See [Current Status](status.md) for live run IDs, week state and the scoreboard. [V5 model development is complete and accepted](modeling/v5_status.md), with four historical audit findings closed and 7,318 verified historical prediction rows. V5 is the serving family; V4 remains available for rollback. Week 4 is scored (Weeks 0–4 are retrospective V5 replays); V4 frozen runs remain the rollback. The weekly operator is manual. The primary success metric is prospective ATS win % vs the 52.4% break-even; six prospective slates are a monitoring window, not a prelaunch requirement.
+See [Current Status](status.md) for live run IDs, week state and the scoreboard. [V5 model development is complete and accepted](modeling/v5_status.md), with four historical audit findings closed and 7,318 verified historical prediction rows. V5 is the serving family; V4 remains available for rollback. Week 4 is scored and the 2026 record is one continuous V5 record from Week 0 ([record methodology](modeling/record_methodology.md)); V4 frozen runs remain the rollback. The weekly operator is manual. The primary success metric is the cumulative 2026 V5 ATS win % vs the 52.4% break-even; six slates are a monitoring window, not a prelaunch requirement.
 
 The target flow is:
 

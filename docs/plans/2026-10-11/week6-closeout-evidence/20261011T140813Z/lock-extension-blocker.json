@@ -1,0 +1,20 @@
+{
+  "status": "blocked",
+  "base_path": "conf/rebuild/source_lock_2026_w5_v1.json",
+  "base_raw_sha256": "d9086411be7604af05a8093beef9c21d8b1205ed6debdc13ac956876d6dd7477",
+  "existing_games": 271,
+  "has_prior_extension": true,
+  "existing_post_week_cutoffs": {
+    "0": "2026-09-03T04:00:00Z",
+    "1": "2026-09-08T15:35:00Z",
+    "2": "2026-09-13T18:18:22Z",
+    "3": "2026-09-22T14:58:00Z",
+    "4": "2026-09-27T14:15:00Z",
+    "5": "2026-10-05T00:00:00Z"
+  },
+  "required_additional_week6_games": 58,
+  "required_final_count": 329,
+  "reproduction_error": "the base lock is already an extension",
+  "source_use": "structural diagnostic only, not certification or stability proof",
+  "implementation_sha256": "9d70781d376a1d675ccdfca428b1cbff865848e4c0e71a95d861acefd6327386"
+}

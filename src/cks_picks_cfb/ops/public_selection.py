@@ -194,6 +194,39 @@ def select_week_run(
     return previous
 
 
+def deselect_week_run(cur: Any, *, season: int, week: int, reason: str) -> str | None:
+    """Remove a week's public selection inside the caller's transaction.
+
+    Only a rollback of a cutover that opened a brand-new week needs this. The pipeline
+    role cannot DELETE from ``site_week_selections``, so the statement fails closed
+    (and the caller's transaction rolls back) unless the connection is the owner or
+    migrator login. History keeps the removed run as both prior and current run because
+    ``site_week_selection_history.run_id`` is NOT NULL; the reason says it was removed.
+    """
+    if not reason.strip():
+        raise PublicSelectionError("deselection reason is required")
+    cur.execute("SELECT pg_advisory_xact_lock(%s, %s)", (season, week))
+    cur.execute(
+        "SELECT run_id FROM site_week_selections WHERE season = %s AND week = %s "
+        "FOR UPDATE",
+        (season, week),
+    )
+    existing = cur.fetchone()
+    if existing is None:
+        return None
+    previous = str(existing[0])
+    cur.execute(
+        "INSERT INTO site_week_selection_history "
+        "(season, week, prior_run_id, run_id, reason) VALUES (%s, %s, %s, %s, %s)",
+        (season, week, previous, previous, f"DESELECTED: {reason}"),
+    )
+    cur.execute(
+        "DELETE FROM site_week_selections WHERE season = %s AND week = %s",
+        (season, week),
+    )
+    return previous
+
+
 def select_week_runs_batch(
     cur: Any,
     *,

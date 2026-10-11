@@ -42,6 +42,7 @@ def build_v5_serving_rows(
     timing_class: str = "live",
     market_quotes: pd.DataFrame | None = None,
     allow_default_price: bool = True,
+    accepted_late_quotes: list[dict[str, Any]] | None = None,
 ) -> pd.DataFrame:
     """Require one pregame margin/total pair for every scheduled serving game.
 
@@ -164,6 +165,7 @@ def build_v5_serving_rows(
         market_quotes=market_quotes,
         allow_default_price=allow_default_price,
         forecast_cutoff=cutoff.to_pydatetime(),
+        accepted_late_quotes=accepted_late_quotes,
     )
     rows["predicted_spread_std_dev"] = np.sqrt(
         pairs[("variance", "margin")].to_numpy(float)

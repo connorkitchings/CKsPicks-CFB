@@ -182,7 +182,7 @@ export const PREDICTION_GAME_SPEC: RowSpec = {
 };
 
 export const PERFORMANCE_DETAIL_SPEC: RowSpec = {
-  evidenceClass: { kind: { enum: ["replay", "live"] } },
+  evidenceClass: { kind: { enum: ["replay", "live", "pending"] } },
   week: { kind: "int" },
   gameId: { kind: "int" },
   runId: { kind: "string" },

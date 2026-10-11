@@ -1,0 +1,216 @@
+season,week,game_id,kickoff_utc,home_team,away_team,schedule_completed,outcome_valid,forecast_eligible,measurement_usable,population_disposition,measurement_disposition,missing_reason,timing_class
+2026,0,401856766,2026-08-29 16:00:00+00:00,TCU,North Carolina,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,0,401858201,2026-08-29 23:00:00+00:00,Stanford,Hawai_i,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,0,401858202,2026-08-29 19:30:00+00:00,Virginia,NC State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,0,401862693,2026-08-30 02:00:00+00:00,UNLV,Memphis,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,0,401864494,2026-08-29 19:00:00+00:00,USC,San Jose State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,0,401864570,2026-08-29 23:00:00+00:00,Florida State,New Mexico State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,0,401864577,2026-08-29 21:30:00+00:00,North Dakota State,Jacksonville State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,0,401866408,2026-08-29 22:30:00+00:00,Eastern Michigan,Sacramento State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856634,2026-09-05 16:00:00+00:00,Alabama,East Carolina,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856636,2026-09-05 19:30:00+00:00,Auburn,Baylor,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856637,2026-09-05 23:45:00+00:00,Florida,Florida Atlantic,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856660,2026-09-05 23:30:00+00:00,LSU,Clemson,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856661,2026-09-06 23:30:00+00:00,Ole Miss,Louisville,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856662,2026-09-05 23:30:00+00:00,Mississippi State,Louisiana Monroe,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856664,2026-09-05 00:00:00+00:00,Oklahoma,UTEP,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856665,2026-09-05 16:45:00+00:00,South Carolina,Kent State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856667,2026-09-05 19:30:00+00:00,Texas,Texas State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856668,2026-09-05 23:00:00+00:00,Texas A&M,Missouri State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856772,2026-09-05 19:45:00+00:00,Tulsa,Oklahoma State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856776,2026-09-04 00:00:00+00:00,Georgia Tech,Colorado,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856777,2026-09-05 19:30:00+00:00,Cincinnati,Boston College,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856778,2026-09-05 16:00:00+00:00,Houston,Oregon State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401856780,2026-09-05 16:00:00+00:00,West Virginia,Coastal Carolina,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858204,2026-09-03 23:00:00+00:00,Wake Forest,Akron,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858206,2026-09-05 01:00:00+00:00,Stanford,Miami,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858207,2026-09-05 16:30:00+00:00,Pittsburgh,Miami (OH),True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858209,2026-09-05 19:30:00+00:00,Duke,Tulane,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858210,2026-09-06 02:30:00+00:00,California,UCLA,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858212,2026-09-07 23:30:00+00:00,Florida State,SMU,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858423,2026-09-03 22:00:00+00:00,Rutgers,UMass,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858424,2026-09-04 01:00:00+00:00,Illinois,UAB,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858425,2026-09-05 16:00:00+00:00,Indiana,North Texas,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858426,2026-09-05 20:15:00+00:00,Iowa,Northern Illinois,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858428,2026-09-05 23:30:00+00:00,Michigan,Western Michigan,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858429,2026-09-05 00:00:00+00:00,Michigan State,Toledo,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858430,2026-09-05 16:00:00+00:00,Nebraska,Ohio,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858432,2026-09-05 16:30:00+00:00,Ohio State,Ball State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858433,2026-09-05 19:30:00+00:00,Oregon,Boise State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858434,2026-09-05 19:30:00+00:00,Penn State,Marshall,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858436,2026-09-05 01:00:00+00:00,USC,Fresno State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858437,2026-09-06 20:00:00+00:00,Washington,Washington State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401858438,2026-09-06 23:30:00+00:00,Notre Dame,Wisconsin,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401860878,2026-09-05 22:00:00+00:00,Colorado State,Wyoming,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401862695,2026-09-05 23:00:00+00:00,Memphis,Arkansas State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401862699,2026-09-05 23:00:00+00:00,South Florida,Florida International,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401864432,2026-09-06 02:30:00+00:00,Nevada,Western Kentucky,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401864495,2026-09-04 22:30:00+00:00,Eastern Michigan,San Jose State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401864497,2026-09-06 02:00:00+00:00,Hawai_i,UNLV,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401864498,2026-09-06 02:00:00+00:00,New Mexico,Central Michigan,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401869960,2026-09-05 16:00:00+00:00,James Madison,Liberty,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,1,401870763,2026-09-05 23:00:00+00:00,Troy,Sam Houston State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856670,2026-09-13 02:15:00+00:00,Utah,Arkansas,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856671,2026-09-12 23:45:00+00:00,Auburn,Southern Mississippi,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856673,2026-09-12 16:45:00+00:00,Georgia,Western Kentucky,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856674,2026-09-12 19:30:00+00:00,Kentucky,Alabama,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856676,2026-09-12 23:45:00+00:00,Ole Miss,Charlotte,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856677,2026-09-12 19:30:00+00:00,Minnesota,Mississippi State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856678,2026-09-12 00:00:00+00:00,Kansas,Missouri,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856679,2026-09-12 16:00:00+00:00,Michigan,Oklahoma,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856681,2026-09-12 23:00:00+00:00,Georgia Tech,Tennessee,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856682,2026-09-12 23:30:00+00:00,Texas,Ohio State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856683,2026-09-12 16:00:00+00:00,Texas A&M,Arizona State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856684,2026-09-12 20:15:00+00:00,Vanderbilt,Delaware,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856781,2026-09-12 16:00:00+00:00,Kansas State,Washington State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856782,2026-09-12 16:00:00+00:00,Oklahoma State,Oregon,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856783,2026-09-12 23:30:00+00:00,Oregon State,Texas Tech,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856788,2026-09-12 23:30:00+00:00,Iowa,Iowa State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856790,2026-09-12 19:30:00+00:00,Pittsburgh,UCF,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401856810,2026-09-12 19:30:00+00:00,BYU,Arizona,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858214,2026-09-11 23:30:00+00:00,Boston College,Rutgers,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858216,2026-09-12 19:30:00+00:00,Syracuse,California,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858217,2026-09-12 19:30:00+00:00,Illinois,Duke,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858219,2026-09-12 23:30:00+00:00,Clemson,Georgia Southern,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858221,2026-09-12 16:00:00+00:00,Virginia Tech,Old Dominion,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858224,2026-09-12 16:00:00+00:00,Purdue,Wake Forest,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858440,2026-09-12 19:30:00+00:00,Michigan State,Eastern Michigan,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858441,2026-09-12 23:00:00+00:00,Nebraska,Bowling Green,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858442,2026-09-12 16:00:00+00:00,Temple,Penn State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858443,2026-09-12 23:15:00+00:00,UCLA,San Diego State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858444,2026-09-12 19:30:00+00:00,Connecticut,Maryland,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858445,2026-09-13 03:00:00+00:00,USC,Louisiana,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401858446,2026-09-12 19:30:00+00:00,Washington,Utah State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401859184,2026-09-12 19:30:00+00:00,Notre Dame,Rice,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401860881,2026-09-12 22:00:00+00:00,Boise State,Memphis,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401860883,2026-09-13 02:30:00+00:00,Fresno State,Sacramento State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401860884,2026-09-12 19:30:00+00:00,Texas State,UT San Antonio,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401862702,2026-09-12 16:00:00+00:00,Army,South Florida,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401862703,2026-09-12 23:30:00+00:00,Florida Atlantic,Navy,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401862705,2026-09-12 19:45:00+00:00,North Texas,UNLV,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401862707,2026-09-12 23:00:00+00:00,Sam Houston State,Tulsa,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401862708,2026-09-12 19:30:00+00:00,UAB,Louisiana Monroe,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401864502,2026-09-13 02:00:00+00:00,Air Force,North Dakota State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401864571,2026-09-12 16:00:00+00:00,East Carolina,Appalachian State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401864575,2026-09-12 23:00:00+00:00,Tulane,South Alabama,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401864578,2026-09-13 03:59:00+00:00,Hawai_i,New Mexico State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401866414,2026-09-12 22:00:00+00:00,Florida International,Buffalo,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401866418,2026-09-12 22:00:00+00:00,Ohio,Jacksonville State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401867796,2026-09-12 23:30:00+00:00,LSU,Louisiana Tech,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401869955,2026-09-12 23:00:00+00:00,Kennesaw State,Georgia State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,2,401871045,2026-09-12 23:00:00+00:00,Marshall,Middle Tennessee,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856685,2026-09-19 19:30:00+00:00,Alabama,Florida State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856686,2026-09-19 16:00:00+00:00,Arkansas,Georgia,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856687,2026-09-19 23:00:00+00:00,Auburn,Florida,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856688,2026-09-19 23:30:00+00:00,Ole Miss,LSU,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856689,2026-09-19 23:00:00+00:00,Missouri,Troy,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856690,2026-09-19 23:30:00+00:00,Oklahoma,New Mexico,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856691,2026-09-19 20:15:00+00:00,South Carolina,Mississippi State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856692,2026-09-19 23:45:00+00:00,Tennessee,Kennesaw State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856693,2026-09-20 00:00:00+00:00,Texas,UT San Antonio,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856694,2026-09-19 19:30:00+00:00,Texas A&M,Kentucky,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856695,2026-09-19 16:45:00+00:00,Vanderbilt,NC State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856792,2026-09-19 16:00:00+00:00,Kansas State,Tulane,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856793,2026-09-20 02:30:00+00:00,Arizona,Northern Illinois,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856795,2026-09-19 23:30:00+00:00,Colorado State,BYU,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856796,2026-09-19 23:30:00+00:00,Northwestern,Colorado,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856797,2026-09-19 19:30:00+00:00,Cincinnati,Miami (OH),True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856798,2026-09-19 16:00:00+00:00,Iowa State,Bowling Green,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856799,2026-09-20 00:00:00+00:00,TCU,Arkansas State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856800,2026-09-19 23:00:00+00:00,UCF,Georgia State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856801,2026-09-19 19:30:00+00:00,Utah,Utah State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856802,2026-09-19 23:30:00+00:00,Virginia,West Virginia,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856811,2026-09-19 00:00:00+00:00,Texas Tech,Houston,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401856812,2026-09-19 16:00:00+00:00,Kansas,Arizona State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858225,2026-09-17 23:30:00+00:00,Pittsburgh,Syracuse,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858226,2026-09-18 23:30:00+00:00,Wake Forest,Miami,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858229,2026-09-19 16:00:00+00:00,Clemson,North Carolina,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858230,2026-09-19 19:30:00+00:00,Louisville,SMU,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858231,2026-09-19 20:00:00+00:00,Duke,Stanford,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858232,2026-09-19 23:30:00+00:00,Maryland,Virginia Tech,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858449,2026-09-19 20:00:00+00:00,Indiana,Western Kentucky,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858450,2026-09-19 19:30:00+00:00,Michigan,UTEP,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858451,2026-09-19 16:00:00+00:00,Minnesota,Akron,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858453,2026-09-19 23:30:00+00:00,Notre Dame,Michigan State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858454,2026-09-19 16:00:00+00:00,Ohio State,Kent State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858456,2026-09-19 16:00:00+00:00,Penn State,Buffalo,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858457,2026-09-19 19:30:00+00:00,Rutgers,USC,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858458,2026-09-20 03:00:00+00:00,UCLA,Purdue,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401858460,2026-09-19 16:30:00+00:00,Wisconsin,Eastern Michigan,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401860887,2026-09-20 02:00:00+00:00,San Diego State,James Madison,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401860888,2026-09-20 03:00:00+00:00,San Jose State,Fresno State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401860889,2026-09-19 16:00:00+00:00,Texas State,North Texas,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401861963,2026-09-19 23:00:00+00:00,Southern Mississippi,Connecticut,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401862710,2026-09-19 22:00:00+00:00,Old Dominion,East Carolina,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401862771,2026-09-19 22:00:00+00:00,Florida Atlantic,Florida International,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401862773,2026-09-19 23:00:00+00:00,Rice,Western Michigan,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401862774,2026-09-19 19:00:00+00:00,Toledo,Temple,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401862776,2026-09-20 00:00:00+00:00,Louisiana,UAB,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401864443,2026-09-19 23:00:00+00:00,Middle Tennessee,Nevada,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401864507,2026-09-20 02:30:00+00:00,Sacramento State,North Dakota State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401864508,2026-09-19 17:00:00+00:00,Central Michigan,Wyoming,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401864574,2026-09-19 22:00:00+00:00,Appalachian State,Charlotte,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401866422,2026-09-19 20:00:00+00:00,Liberty,Ball State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401866423,2026-09-19 23:00:00+00:00,South Alabama,Ohio,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401867804,2026-09-19 20:00:00+00:00,Baylor,Louisiana Tech,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401869940,2026-09-19 15:30:00+00:00,Delaware,Coastal Carolina,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401869948,2026-09-19 23:00:00+00:00,Jacksonville State,Georgia Southern,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,3,401871047,2026-09-19 22:30:00+00:00,Missouri State,Marshall,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856696,2026-09-26 23:00:00+00:00,Alabama,South Carolina,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856697,2026-09-27 00:00:00+00:00,Arkansas,Tulsa,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856698,2026-09-26 20:15:00+00:00,Auburn,Vanderbilt,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856699,2026-09-26 19:30:00+00:00,Florida,Ole Miss,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856700,2026-09-26 19:30:00+00:00,Georgia,Oklahoma,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856702,2026-09-26 23:30:00+00:00,LSU,Texas A&M,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856703,2026-09-26 23:45:00+00:00,Mississippi State,Missouri,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856704,2026-09-26 16:00:00+00:00,Tennessee,Texas,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856804,2026-09-26 23:30:00+00:00,Washington State,Arizona,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856805,2026-09-26 16:00:00+00:00,Texas Tech,Sam Houston State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856806,2026-09-26 20:00:00+00:00,Georgia Southern,Houston,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856813,2026-09-26 16:00:00+00:00,Baylor,Colorado,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856814,2026-09-26 23:00:00+00:00,Cincinnati,Kansas State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856815,2026-09-26 19:30:00+00:00,UCF,TCU,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856816,2026-09-26 19:30:00+00:00,Iowa State,Utah,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401856881,2026-09-26 23:00:00+00:00,West Virginia,Oklahoma State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858234,2026-09-26 02:30:00+00:00,California,Clemson,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858238,2026-09-26 22:30:00+00:00,Miami,Central Michigan,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858239,2026-09-26 22:00:00+00:00,Virginia,Delaware,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858240,2026-09-27 02:30:00+00:00,Stanford,Georgia Tech,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858241,2026-09-27 01:00:00+00:00,SMU,Missouri State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858242,2026-09-26 16:00:00+00:00,Boston College,Virginia Tech,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858243,2026-09-26 16:00:00+00:00,Louisville,Wake Forest,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858461,2026-09-26 00:00:00+00:00,Indiana,Northwestern,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858462,2026-09-26 17:30:00+00:00,Maryland,UCLA,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858463,2026-09-26 19:30:00+00:00,Michigan,Iowa,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858464,2026-09-26 21:00:00+00:00,Michigan State,Nebraska,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858465,2026-09-26 16:00:00+00:00,Ohio State,Illinois,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858466,2026-09-26 21:00:00+00:00,Penn State,Wisconsin,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858467,2026-09-26 18:00:00+00:00,Purdue,Notre Dame,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858469,2026-09-26 23:30:00+00:00,USC,Oregon,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401858470,2026-09-27 03:00:00+00:00,Washington,Minnesota,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401860891,2026-09-27 02:00:00+00:00,Fresno State,Rice,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401860893,2026-09-26 16:00:00+00:00,Toledo,San Diego State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401860894,2026-09-26 23:30:00+00:00,Utah State,Troy,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401860895,2026-09-27 01:00:00+00:00,UTEP,Oregon State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401860896,2026-09-26 16:00:00+00:00,UT San Antonio,Colorado State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401860897,2026-09-26 19:30:00+00:00,Western Michigan,Boise State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401861970,2026-09-26 19:30:00+00:00,Miami (OH),Connecticut,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401862778,2026-09-25 23:00:00+00:00,UAB,Navy,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401862779,2026-09-25 20:00:00+00:00,Temple,Army,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401862780,2026-09-26 22:30:00+00:00,Charlotte,Louisiana,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401862782,2026-09-27 00:00:00+00:00,Louisiana Monroe,Florida Atlantic,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401862784,2026-09-26 23:00:00+00:00,Tulane,Southern Mississippi,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401862785,2026-09-26 21:00:00+00:00,Bowling Green,South Florida,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401864509,2026-09-27 02:30:00+00:00,Nevada,Air Force,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401864510,2026-09-26 19:00:00+00:00,Wyoming,Hawai_i,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401864511,2026-09-26 18:00:00+00:00,Georgia State,Northern Illinois,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401864512,2026-09-26 16:00:00+00:00,Akron,UNLV,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401864572,2026-09-26 23:30:00+00:00,NC State,Appalachian State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401864576,2026-09-26 16:45:00+00:00,Kentucky,South Alabama,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401864579,2026-09-26 19:30:00+00:00,New Mexico State,New Mexico,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401866425,2026-09-26 16:00:00+00:00,Kent State,Ball State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401866429,2026-09-27 01:00:00+00:00,Sacramento State,UMass,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401869931,2026-09-26 23:00:00+00:00,Arkansas State,Kennesaw State,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401869941,2026-09-24 23:30:00+00:00,Coastal Carolina,Liberty,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401869961,2026-09-26 22:00:00+00:00,Old Dominion,James Madison,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live
+2026,4,401871048,2026-09-26 23:00:00+00:00,Jacksonville State,Middle Tennessee,True,True,True,True,eligible_with_measurements,eligible_with_measurements,,live

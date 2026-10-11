@@ -17,6 +17,7 @@ import yaml
 from cks_picks_cfb.data.data_first_phase2d import signed_payload, verify_signed_payload
 from cks_picks_cfb.data.market_integrity import SNAPSHOT_POLICY, snapshot_identity
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.models.late_quotes import validate_late_evidence
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
 from scripts.pipeline.build_v5_intended_update_serving import OUTPUT_ROOT
 
@@ -101,6 +102,7 @@ def _verify_target(
     bet_threshold: float = 0.0,
     high_threshold: float | None = None,
     cutoff: pd.Timestamp | None = None,
+    accepted_late_quotes: list[dict[str, Any]] | None = None,
 ) -> None:
     """Re-derive one target's selection under ``model_side_best_quote_v2`` and compare.
 
@@ -132,10 +134,22 @@ def _verify_target(
     linked = set(json.loads(row["source_quote_ids"]))
     captured = pd.to_datetime(quotes.captured_at, utc=True)
     point_col = "spread" if spread else "total"
+    late_ids = {
+        str(item["quote_id"])
+        for item in (accepted_late_quotes or [])
+        if int(item["game_id"]) == int(row["game_id"])
+        and item["target"] == target
+        and item.get("reason") == "cfbd_pregame_consensus_fetched_post_kickoff"
+        and item.get("provider") == "cfbd"
+        and item.get("entity") == "betting_lines"
+    }
+    late_mask = quotes.quote_id.isin(late_ids) & quotes.get(
+        "__capture_provider", pd.Series("unknown", index=quotes.index)
+    ).eq("cfbd")
     candidates = quotes[
         quotes.game_id.eq(int(row["game_id"]))
         & quotes.quote_id.isin(linked)
-        & captured.lt(pd.Timestamp(row["start_date"]))
+        & (captured.lt(pd.Timestamp(row["start_date"])) | late_mask)
         & (captured.le(cutoff) if cutoff is not None else True)
     ].dropna(subset=[point_col])
     if candidates.empty:
@@ -209,6 +223,10 @@ def verify(
         lock["market_sources"].items(), key=lambda pair: int(pair[0])
     ):
         week = int(key)
+        validate_late_evidence(
+            market.get("accepted_late_quotes", []),
+            market.get("cfbd_comparison_receipt"),
+        )
         run_id = f"2026w{week}-v5repair-{release_tag}"
         prefix = f"{OUTPUT_ROOT}/{run_id}"
         root = serving_dir / f"week={week}" if serving_dir is not None else None
@@ -299,6 +317,7 @@ def verify(
                     bet_threshold=thresholds[f"{target}_bet"],
                     high_threshold=thresholds["spread_high"],
                     cutoff=cutoff,
+                    accepted_late_quotes=market.get("accepted_late_quotes", []),
                 )
                 line = item[
                     "home_team_spread_line" if target == "spread" else "total_line"

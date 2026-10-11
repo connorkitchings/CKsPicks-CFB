@@ -39,6 +39,23 @@ def _ref(storage, uri, body):
     return {"uri": uri, "sha256": hashlib.sha256(raw).hexdigest()}
 
 
+def _audit_ref(storage, cutover, prefix="new"):
+    """A passing point-in-time audit receipt covering runs ``{prefix}-0..{prefix}-N``."""
+    return _ref(
+        storage,
+        f"r2://audit/receipt-{cutover}",
+        {
+            "schema_version": "point_in_time_audit_receipt_v1",
+            "season": 2026,
+            "environment": "preview",
+            "state": "passed",
+            "games_checked": 100,
+            "violations": [],
+            "runs": {str(w): f"{prefix}-{w}" for w in range(cutover + 1)},
+        },
+    )
+
+
 def _packet():
     storage = Storage()
     before_runs = {str(week): f"old-{week}" for week in range(6)}
@@ -181,6 +198,7 @@ def _packet():
             "bundle_approval": bundle,
             "run_authorizations": authorizations,
             "completed_week_certifications": certs,
+            "leakage_audit": _audit_ref(storage, 5),
             "team_stats_before": stats_before,
             "team_stats_after": stats_after,
             "team_stats_verifier": verifier,
@@ -459,6 +477,8 @@ def _make_rollback_packet(packet, storage):
     for auth in rollback["run_authorizations"]:
         record = dict(auth)
         week = int(record["week"])
+        if str(week) not in before:
+            continue  # an advance rollback restores only the weeks that were selected
         record["prediction_run_id"] = before[str(week)]
         body = {
             key: record[key]
@@ -732,6 +752,7 @@ def test_moving_cutover_requires_completed_week5_prospective_evidence():
     packet["protected_runs"] = {"7": "protected-7"}
     packet["expected_current_week"] = dict(season=2026, week=6, run_id="old-6")
     packet["replacement_current_week"] = dict(season=2026, week=6, run_id="new-6")
+    packet["leakage_audit"] = _audit_ref(storage, 6)
     bundle = packet["bundle_approval"]
     bundle["first_live_week"] = 6
     bundle.pop("record_sha256")
@@ -749,3 +770,58 @@ def test_moving_cutover_requires_completed_week5_prospective_evidence():
         validate_v2_packet(
             signed_payload(packet), environment="preview", storage=storage
         )
+
+
+class _ClockCursor:
+    """Answers only ``SELECT NOW()``; any later query ends the check with a sentinel."""
+
+    def __init__(self, now):
+        self._now = now
+
+    def execute(self, sql, params=None):
+        if "NOW()" not in sql:
+            raise RuntimeError("past-the-clock-check")
+
+    def fetchone(self):
+        return (self._now,)
+
+
+def _clock_packet(observed):
+    packet, storage = _packet()
+    plan = {
+        "rollback": False,
+        "cutover_week": 1,
+        "after": {0: packet["replacement_runs"]["0"]},
+    }
+    cert = {
+        "schema_version": "v5_replay_certification_v1",
+        "state": "verified",
+        "season": 2026,
+        "week": 0,
+        "run_id": plan["after"][0],
+        "finals_complete": True,
+        "finals_stabilized_at": observed.isoformat(),
+    }
+    packet = dict(packet)
+    packet["completed_week_certifications"] = [
+        _ref(storage, "r2://certs/clock", cert) | {"week": 0}
+    ]
+    return packet, plan, storage
+
+
+def test_finals_observation_applies_immediately_without_a_24_hour_wait():
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime(2026, 10, 11, 18, 0, tzinfo=timezone.utc)
+    packet, plan, storage = _clock_packet(now - timedelta(minutes=5))
+    with pytest.raises(RuntimeError, match="past-the-clock-check"):
+        batch_v2._verify_week_evidence(_ClockCursor(now), packet, plan, storage)
+
+
+def test_a_finals_observation_in_the_future_is_still_refused():
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime(2026, 10, 11, 18, 0, tzinfo=timezone.utc)
+    packet, plan, storage = _clock_packet(now + timedelta(hours=1))
+    with pytest.raises(batch_v2.V5BatchSelectionError, match="in the future"):
+        batch_v2._verify_week_evidence(_ClockCursor(now), packet, plan, storage)

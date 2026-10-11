@@ -1,5 +1,12 @@
 # Decision Log
 
+## 2026-10-11: Waive the Week 7 checkpoint and integrity-first rule; remove the 24-hour finals-stability rule
+
+- **Decision:** the user chose to attempt the Week 7 cutover, waiving the Sunday-evening checkpoint (successor Week 6 certification integration built and tested, otherwise move to Week 8) and the October 9 "integrity closure precedes cutover" direction for that cutover only. The user also removed the 24-hour finals-stability rule from operations: finals load once every game is complete in a fresh capture and a certified outcomes ref covers them.
+- **Code:** `ops/v5_cycle.py` and `ops/v5_batch_selection_v2.py` no longer wait 24 hours (timestamp validation kept). The research and prospective-evidence verifiers (`ratings/prospective_v5*.py`, `forecast/shadow*.py`, `score_stabilization_seconds` policies) keep their sealed designs unchanged.
+- **Still open:** EPA replacement, the six quality follow-ups, scoring and descendant recertification, and the 2025 matchup candidate stay in the repair matrix.
+- **Authority:** [contract 2026-10-11/02](../plans/2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md); user approval in Plan Mode on 2026-10-11. No Production write is authorized by this entry.
+
 ## 2026-10-04: Close Window 2 Step 5 (5A, 5B, 5C); record 6A guardrails; do not start 6A
 
 - **Decision:** the user accepted the 5A gate result, the 5C admission result (1,416 corroborated groups admitted; 28 contradicted and 1,749 unverified groups reverted to baseline; 2026 fails closed) and the materiality finding, and closed Steps 5A-5C (`f7c3a47`, `e33d63d`, `ea53c07`).
@@ -60,6 +67,18 @@
   - **Pre-game consistency:** matchup ratings come from the latest frozen generation at or before kickoff, backfilled with preseason priors, so they match the pre-game stats.
   - **Defect found:** `db.execute()` on the Neon HTTP driver returns `{rows}`, not an array. The `to_regclass` guards for `prediction_market_selections`, `game_venues` and `team_season_stats` therefore always reported the table missing and would have hidden that data in production. Fixed with a shared, tested helper. The released production cards (`GameRow`) do not render the sportsbook source; that display lives in the prototype cards, so nothing new appears until they are ported.
 - **Source:** [team stats contract, Amendment 1](../plans/2026-10-01/10-authentic-team-stats-pipeline.md), [status](../status.md).
+
+## 2026-10-10: Unified 2026 V5 Record
+
+- **Context:** Week 6 was live as a display-only run and the record was split into a Week 5-only "prospective" island, Weeks 0-4 "retrospective replays" and an ungradeable Week 6.
+- **Decisions (owner):**
+  - **One record:** the 2026 record is one continuous, cumulative V5 record from Week 0 onward, presented as if V5 had been active all season, provided every input is strictly point-in-time. The public site shows no provenance split. Week 6 is graded with the rest.
+  - **Metric:** cumulative 2026 V5 ATS win % vs the 52.4% break-even at -110, spreads and totals separately. **Supersedes** the 2026-10-01 "prospective ATS win %" metric below; MAE, calibration and gates remain diagnostics.
+  - **Counted runs:** after the Week 7 cutover the counted run for every week 0-6 is the corrected replay; the frozen Week 5 run and its receipt stay immutable as provenance. Before the cutover Week 6 counts from the display-only run.
+  - **Lines:** a CFBD-provided line fetched after kickoff is accepted as the game's pregame consensus line only when declared in the market lock and supported by the CFBD re-fetch comparison.
+  - **Claim:** "zero future-data leakage", backed by an executable point-in-time audit and a signed receipt required by the cutover packet. The assumptions and caveats are recorded in [record methodology](../modeling/record_methodology.md), not on the site.
+- **Unchanged:** the leakage and honesty rules: training strictly precedes prediction, no 2026 outcome refits the V5 identity, no freeze receipt after kickoff, immutability of frozen records, market data never enters model inputs. "Prospective" now describes freeze provenance only; the earlier "retrospective/prospective separation" and "corrected public history is reconstructed retrospective" decisions are superseded for presentation, not for provenance.
+- **Source:** [record methodology](../modeling/record_methodology.md), [status](../status.md), [repair-track contract Amendment 8](../plans/2026-10-08/02-repair-track-certification-and-closure.md).
 
 ## 2026-10-01: Success Metric, Self-Hosted Logos, Pre-Game Team Stats
 

@@ -1,0 +1,28 @@
+{
+  "database_identity": [
+    "cks_prod_pipeline",
+    "on"
+  ],
+  "environment": "production",
+  "rating_run_ids": [
+    "v5-intended-update-2026-ratings-v1"
+  ],
+  "tables": {
+    "team_game_measurements": {
+      "rows": 6880,
+      "sha256": "1b91e0f829281055e9e5b76a87a1ad0ec23034da46af9d4740b58474bdf84e9d"
+    },
+    "team_possession_adjusted": {
+      "rows": 2062,
+      "sha256": "1713e5dda5b515a79f82e45b92000381ba0a5bdf5ae67146fa4833b02c5b39f2"
+    },
+    "team_possession_stats": {
+      "rows": 6276,
+      "sha256": "c10613cccde4269c24e3c8b5f3563742c8a861f94dd28d286708e441f8dfe771"
+    },
+    "team_rating_components": {
+      "rows": 2740,
+      "sha256": "e0ac1ef338bbfe2399b0d4cdfd2b1aaa4230619e5796b1e59d1ee5a5eb04a2f0"
+    }
+  }
+}

@@ -27,8 +27,8 @@ rollback is a hard gate before any Production write.
   `site_week_selections` reason cites Contract 04 Amendment 9.
 - **The run:** built 2026-10-08T16:53:58Z, market capture 16:19Z (110 quotes);
   55/58 games, all lined; 3 omitted as kicked-off before the build (Southern Miss
-  @ Troy 401871051, Jacksonville State @ Kennesaw State 401871066, New Mexico
-  State @ FIU 401871090). Every pick predates its game's kickoff; ratings are
+  @ Troy 401871090, Jacksonville State @ Kennesaw State 401871051, New Mexico
+  State @ FIU 401871066; **corrected 2026-10-10** from the pinned games dataset: this line first paired 401871051 with Southern Miss @ Troy and 401871090 with New Mexico State @ FIU). Every pick predates its game's kickoff; ratings are
   through-Week-5 only — no Week 6 plays/results ingested. Evidence in
   `docs/plans/2026-10-07/stage1-evidence/week6-display-only-preview-d2.json`.
 - **Ratings gap (new finding):** the corrected manifest `c83b1423…`
