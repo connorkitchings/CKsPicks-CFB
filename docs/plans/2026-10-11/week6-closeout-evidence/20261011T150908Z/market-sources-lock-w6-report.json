@@ -1,0 +1,722 @@
+{
+  "as_of": "2026-10-08T16:20:00Z",
+  "coverage": {
+    "games": 58,
+    "spread": {
+      "by_status": {
+        "eligible": 55,
+        "post_kickoff_only": 3
+      },
+      "eligible": 55,
+      "gaps": 3
+    },
+    "total": {
+      "by_status": {
+        "eligible": 55,
+        "post_kickoff_only": 3
+      },
+      "eligible": 55,
+      "gaps": 3
+    }
+  },
+  "rows": [
+    {
+      "game_id": 401856712,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856712,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856713,
+      "kickoff_utc": "2026-10-10T20:15:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856713,
+      "kickoff_utc": "2026-10-10T20:15:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856714,
+      "kickoff_utc": "2026-10-10T16:45:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856714,
+      "kickoff_utc": "2026-10-10T16:45:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856715,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856715,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856716,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856716,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856717,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856717,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856718,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856718,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856808,
+      "kickoff_utc": "2026-10-11T02:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856808,
+      "kickoff_utc": "2026-10-11T02:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856823,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856823,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856824,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856824,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856825,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856825,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856826,
+      "kickoff_utc": "2026-10-10T02:15:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856826,
+      "kickoff_utc": "2026-10-10T02:15:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401856827,
+      "kickoff_utc": "2026-10-11T00:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401856827,
+      "kickoff_utc": "2026-10-11T00:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858254,
+      "kickoff_utc": "2026-10-09T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858254,
+      "kickoff_utc": "2026-10-09T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858255,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858255,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858256,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858256,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858257,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858257,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858258,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858258,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858259,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858259,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858260,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858260,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858480,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858480,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858481,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858481,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858482,
+      "kickoff_utc": "2026-10-10T16:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858482,
+      "kickoff_utc": "2026-10-10T16:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858483,
+      "kickoff_utc": "2026-10-10T20:15:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858483,
+      "kickoff_utc": "2026-10-10T20:15:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858484,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858484,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858485,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858485,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858486,
+      "kickoff_utc": "2026-10-11T00:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858486,
+      "kickoff_utc": "2026-10-11T00:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401858487,
+      "kickoff_utc": "2026-10-10T01:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401858487,
+      "kickoff_utc": "2026-10-10T01:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401860901,
+      "kickoff_utc": "2026-10-11T02:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401860901,
+      "kickoff_utc": "2026-10-11T02:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401860902,
+      "kickoff_utc": "2026-10-10T22:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401860902,
+      "kickoff_utc": "2026-10-10T22:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401860922,
+      "kickoff_utc": "2026-10-10T01:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401860922,
+      "kickoff_utc": "2026-10-10T01:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401861964,
+      "kickoff_utc": "2026-10-10T19:45:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401861964,
+      "kickoff_utc": "2026-10-10T19:45:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401862794,
+      "kickoff_utc": "2026-10-08T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401862794,
+      "kickoff_utc": "2026-10-08T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401862795,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401862795,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401862796,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401862796,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401862797,
+      "kickoff_utc": "2026-10-10T17:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401862797,
+      "kickoff_utc": "2026-10-10T17:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401862798,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401862798,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401862799,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401862799,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401864516,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401864516,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401864517,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401864517,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401864518,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401864518,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401864519,
+      "kickoff_utc": "2026-10-10T01:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401864519,
+      "kickoff_utc": "2026-10-10T01:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401866435,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401866435,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401866436,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401866436,
+      "kickoff_utc": "2026-10-10T16:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401866437,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401866437,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401866438,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401866438,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401866439,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401866439,
+      "kickoff_utc": "2026-10-10T19:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401866440,
+      "kickoff_utc": "2026-10-10T18:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401866440,
+      "kickoff_utc": "2026-10-10T18:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401869843,
+      "kickoff_utc": "2026-10-10T17:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401869843,
+      "kickoff_utc": "2026-10-10T17:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401869933,
+      "kickoff_utc": "2026-10-08T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401869933,
+      "kickoff_utc": "2026-10-08T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401869943,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401869943,
+      "kickoff_utc": "2026-10-10T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401869949,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401869949,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401869965,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401869965,
+      "kickoff_utc": "2026-10-10T23:30:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401870766,
+      "kickoff_utc": "2026-10-08T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401870766,
+      "kickoff_utc": "2026-10-08T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401871051,
+      "kickoff_utc": "2026-10-07T23:00:00Z",
+      "status": "post_kickoff_only",
+      "target": "spread"
+    },
+    {
+      "game_id": 401871051,
+      "kickoff_utc": "2026-10-07T23:00:00Z",
+      "status": "post_kickoff_only",
+      "target": "total"
+    },
+    {
+      "game_id": 401871052,
+      "kickoff_utc": "2026-10-08T23:00:00Z",
+      "status": "eligible",
+      "target": "spread"
+    },
+    {
+      "game_id": 401871052,
+      "kickoff_utc": "2026-10-08T23:00:00Z",
+      "status": "eligible",
+      "target": "total"
+    },
+    {
+      "game_id": 401871066,
+      "kickoff_utc": "2026-10-07T23:30:00Z",
+      "status": "post_kickoff_only",
+      "target": "spread"
+    },
+    {
+      "game_id": 401871066,
+      "kickoff_utc": "2026-10-07T23:30:00Z",
+      "status": "post_kickoff_only",
+      "target": "total"
+    },
+    {
+      "game_id": 401871090,
+      "kickoff_utc": "2026-10-07T00:00:00Z",
+      "status": "post_kickoff_only",
+      "target": "spread"
+    },
+    {
+      "game_id": 401871090,
+      "kickoff_utc": "2026-10-07T00:00:00Z",
+      "status": "post_kickoff_only",
+      "target": "total"
+    }
+  ],
+  "schema_version": "week_market_sources_lock_v1",
+  "week": 6
+}

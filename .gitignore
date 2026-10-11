@@ -331,3 +331,5 @@ artifacts/research/window2_5a_cfbd_drives/
 
 # 6A rebuild local staging (immutable evidence lives in Preview R2)
 artifacts/rebuild/
+artifacts/backups/2026-10-11/
+artifacts/backups/week6-closeout-20261011/
