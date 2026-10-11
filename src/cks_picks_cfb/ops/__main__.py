@@ -1757,6 +1757,30 @@ def build_steps(
             ),
         ]
         for completed_week in range(0, week):
+            inventory = (
+                f"artifacts/quality/request_inventories/{environment}/"
+                f"{context.pipeline_run_id}/week_{completed_week}.json"
+            )
+            steps.append(
+                subprocess_step(
+                    f"request_inventory_week_{completed_week}",
+                    _python(
+                        "scripts/data/build_expected_request_inventory.py",
+                        "--raw-schedule-uri",
+                        f"raw/games/year={year}/part-0.parquet",
+                        "--policy",
+                        f"conf/policy/canonical_week_{year}_v1.yaml",
+                        "--season",
+                        year,
+                        "--canonical-week",
+                        completed_week,
+                        "--environment",
+                        environment,
+                        "--output",
+                        inventory,
+                    ),
+                )
+            )
             for entity in ("plays", "game_stats"):
                 steps.append(
                     _fetch_source_step(
@@ -1769,6 +1793,8 @@ def build_steps(
                             completed_week,
                             "--entities",
                             entity,
+                            "--request-inventory",
+                            inventory,
                         ),
                         conn_url=conn_url,
                         entity=entity,

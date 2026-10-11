@@ -1,0 +1,43 @@
+{
+  "schema_version": "week6_closeout_prepare_week_receipt_v1",
+  "code_sha": "24bc9fda1c2ebf3d6e34bdd55a90a84149f8d2ff",
+  "worktree": "HEAD plus uncommitted prepare-week request-inventory wiring (ops/__main__.py, tests/test_ops_state_machine.py)",
+  "pipeline_run_id": "w6-closeout-ingest-20261011-r2",
+  "failed_first_attempt": "w6-closeout-ingest-20261011-r1 (ingest_plays_week_0: --request-inventory required; schedule ingest had already refreshed Preview raw/games/year=2026)",
+  "environment": "preview",
+  "as_of": "2026-10-11T15:00:00Z",
+  "week_arg": 7,
+  "steps": "all ingest, request-inventory and Silver/Gold build steps succeeded; target_week_readiness failed as expected (ratings stale: snapshot cutoff 2026-10-05, newest kickoff 2026-10-11T02:30Z)",
+  "outcomes_ref": {
+    "uri": "artifacts/preview/pipeline-runs/w6-closeout-ingest-20261011-r2/game_outcomes_ref.json",
+    "raw_sha256": "90b5e67dfbdd4fada6156241b7ca81479c77be4fc627484800ef6228b20ae14f",
+    "version_id": "63198fa7a174f5b0ba2505ff",
+    "content_sha": "16faab73e70f1196c549906bac4a4c6bac4866db82e519511f03b5361df2be8b"
+  },
+  "checks": {
+    "week6_finals_in_outcomes": "58/58, scores equal the CFBD capture 20261011T150908Z",
+    "previously_completed_outcomes": "272 rows (271 through Week 5 plus 401871090, already complete with 55-34) unchanged in every business column",
+    "games_weeks_0_5": "271 rows, only __capture_id/__captured_at differ from the pinned w5 version",
+    "plays_weeks_0_5": "48,378 rows, only __capture_id/__captured_at differ from the pinned w5 version",
+    "week6_plays": "10,384 plays over 58 games, 0 duplicate (game_id, play_id)",
+    "finals_loader_dry_run_preview": "58 inserts, 0 unchanged, 0 conflicts, 0 not_final, 0 missing_outcome"
+  },
+  "databases_before_state": {
+    "preview_preflight_raw_sha256": "e0a2851e37b06a7043ee343bd26209fdf1c4410fef61bc09847b711d24cd1bc4",
+    "production_preflight_raw_sha256": "7c62bda07fc781147af48b5c04bc56f341c578b5b7e70d6f76ee73713c1c8c58"
+  },
+  "files": {
+    "cfbd-games.json": "4542f7b56e968eba922898b17ab349932b18e37e2413d7eb758b7f38bca713cd",
+    "cfbd-lines.json": "f8e3da5b25d70ed48f63ab933917d1f6be79bfc47c413de491d4aec23d93f3ca",
+    "checksums.json": "5b55c359324b3aa8983abb14175c2e63af947cdea86957d0c604091239d1cbea",
+    "normalized-finals.json": "80af0049bf817ae5e049c3418bfd4db9bca4d5c0803f6772694fb8a4aa8d1e52",
+    "observation.json": "892e62c20f6c06dd1d164b8f1080d1529ba3b777d0ee1b78db4e25802d237a6b",
+    "prepare-week-r2.log": "91cd7fda386171740924fc19c5bfb5309a880d37f1e47a25946086249a9e3d03",
+    "preview-preflight-r2.json": "e0a2851e37b06a7043ee343bd26209fdf1c4410fef61bc09847b711d24cd1bc4",
+    "production-preflight-r2.json": "7c62bda07fc781147af48b5c04bc56f341c578b5b7e70d6f76ee73713c1c8c58",
+    "capture-tools/db-preflight-150908.py": "7ef7363a2b873f1fe80826abfcecf46dfcdb12eb04e89f06d372f19e81d23c85",
+    "capture-tools/drift2.py": "4491671a477af24e8ce34d055405dc83193856d86e848a83c2566a860d6330d8",
+    "capture-tools/drift3.py": "bf630495b693e06d45f75c1244a7e220567f66cd89b4df5268a4ce6f8f3d514d",
+    "capture-tools/effective-preflight-150908.py": "5787aef1950a075fa86f689365be52ffd51e75270026a9027f8231551406b1ff"
+  }
+}
