@@ -186,3 +186,5 @@ run selectable. Reselect it with `select_public_run.py` and its exact run ID;
 include `--allow-v4-fallback` when the rollback run is V4. Follow with
 selected-week health and page checks. Never alter immutable artifacts to roll
 back.
+
+To undo a release that opened a new Week N (state `published`, evidence class `pending`, never frozen, ungraded, display-only or not), use `scripts/pipeline/rollback_week_release.py --environment <env> --week N --run-id <run> --reason <ref> [--release-receipt <receipt.json>]` under the owner/migrator login. It deletes the Week N selection, restores `current_week` to (season, N-1) with the Week N-1 selected run active, and removes as-of-N team stats and rating snapshots only when the release receipt declares them and the database agrees. Dry run is the default and prints the before and planned after state; `--apply` commits only when the read-back equals the plan. Frozen, scored or graded runs are refused.
