@@ -15,7 +15,7 @@ policies:
   published_run_id: 6a-rebuild-w6-20261012-r2
   materiality_threshold: 0.05
 inputs:
-  - {name: root_manifest, kind: r2_object, uri: rebuild/6a/6a-rebuild-w6-20261012-r2/root-manifest.json, sha256: UNRESOLVED_UNTIL_6A_PUBLISH}  # raw sha256 of the published -r2 root manifest
+  - {name: root_manifest, kind: r2_object, uri: rebuild/6a/6a-rebuild-w6-20261012-r2/root-manifest.json, sha256: 9d218543eec7eda149bbb5ba446b5f73f33b8ae107d5a7da20bdbe00f8d007c3}  # raw sha256 of the published -r2 root manifest
   - {name: phase2c_silver_parents, kind: git_file, uri: conf/rebuild/phase2c_silver_parents_v1.json, sha256: c85daae49d1daf8ce441ffd7363152974fe9a50895bdc612dc6ee2c9c38c8b0b}
   - {name: repair_v2_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json, sha256: b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4}
   - {name: r9_measurement_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/possession-v1/measurements/runs/possession-v1-measurements-20260921-r9/measurement-manifest.json, sha256: 10b380d69524d20ce694833821d0a309a60c532d4eca05d8e8129200461dbf56}
