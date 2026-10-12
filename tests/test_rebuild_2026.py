@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+
 import pandas as pd
 import pytest
 
@@ -99,3 +102,56 @@ def test_2026_config_identity_differs_from_the_historical_build():
     from cks_picks_cfb.rebuild import silver
 
     assert silver_2026.config_sha() != silver.config_sha()
+
+
+def _verify_with_ppa(*, legacy_zero_ppa, null_ppa, ppa_differences):
+    summary = {
+        "config_sha": silver_2026.config_sha(),
+        "config": silver_2026.PIPELINE_CONFIG,
+        "reconciliation": {"blocking": 0},
+        "ppa": {
+            "rows_equal": True,
+            "null_ppa": null_ppa,
+            "legacy_zero_ppa": legacy_zero_ppa,
+        },
+        "value_differences": {"ppa": ppa_differences} if ppa_differences else {},
+        "punt_return_fix": {"rows": 0, "fits_punt_return_fix": True},
+        "datasets": {},
+    }
+    context = SimpleNamespace(
+        stage=SimpleNamespace(name="silver_2026"),
+        plan=SimpleNamespace(run_id="run"),
+        read_artifact=lambda stage, key: json.dumps(summary).encode(),
+    )
+    return silver_2026.verify(context)
+
+
+def test_verify_accepts_legacy_zero_ppa_becoming_null():
+    problems = _verify_with_ppa(
+        legacy_zero_ppa=9121, null_ppa=9121, ppa_differences=9121
+    )
+    assert problems == []
+
+
+def test_verify_accepts_already_nullable_legacy_without_ppa_changes():
+    problems = _verify_with_ppa(legacy_zero_ppa=0, null_ppa=11045, ppa_differences=0)
+    assert problems == []
+
+
+@pytest.mark.parametrize(
+    ("legacy_zero_ppa", "ppa_differences"), [(9121, 9120), (0, 5), (9121, 0)]
+)
+def test_verify_rejects_ppa_changes_other_than_legacy_zeros(
+    legacy_zero_ppa, ppa_differences
+):
+    problems = _verify_with_ppa(
+        legacy_zero_ppa=legacy_zero_ppa,
+        null_ppa=11045,
+        ppa_differences=ppa_differences,
+    )
+    assert problems == ["ppa changes are not exactly the legacy zero values"]
+
+
+def test_verify_rejects_a_build_without_null_ppa():
+    problems = _verify_with_ppa(legacy_zero_ppa=0, null_ppa=0, ppa_differences=0)
+    assert problems == ["no null PPA: nullable mode not in effect"]
