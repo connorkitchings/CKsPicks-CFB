@@ -58,6 +58,28 @@ def identity_of(context: StageContext) -> str:
     return identity
 
 
+def collision_exceptions_for(context: StageContext, season: int) -> frozenset[int]:
+    """The season's byplay_v1 games whose pinned lineage kept the first colliding play.
+
+    The ``byplay_v1_collision_exceptions`` policy maps a season to its game IDs; every
+    listed game must collide in that season's plays (``allplays_to_byplay`` checks it).
+    """
+    raw = (context.plan.policies or {}).get("byplay_v1_collision_exceptions", {})
+    if not isinstance(raw, Mapping):
+        raise GateError("byplay_v1_collision_exceptions must map seasons to game IDs")
+    if raw and identity_of(context) != "byplay_v1":
+        raise GateError("byplay_v1_collision_exceptions apply only to byplay_v1 plans")
+    by_season = {str(key): value for key, value in raw.items()}
+    if unknown := set(by_season) - {str(s) for s in HISTORICAL_SEASONS}:
+        raise GateError(f"collision exceptions for unknown seasons: {sorted(unknown)}")
+    games = by_season.get(str(season), [])
+    if not isinstance(games, list) or not all(
+        isinstance(game, int) and not isinstance(game, bool) for game in games
+    ):
+        raise GateError(f"{season} collision exceptions must be a list of integer IDs")
+    return frozenset(games)
+
+
 def config_for(identity: str) -> Mapping[str, Any]:
     return PIPELINE_CONFIG_V2 if identity == "byplay_v2" else PIPELINE_CONFIG
 
@@ -321,6 +343,7 @@ def derive_season(
         weather_df=None,
         corrections_df=frames.get(CORRECTIONS_DATASET),
         nullable_ppa=PIPELINE_CONFIG["nullable_ppa"],
+        v1_collision_exceptions=collision_exceptions_for(context, season),
         **({"play_identity": identity} if v2 else {}),
     )
     plays_entry = [

@@ -135,6 +135,41 @@ def test_play_identity_policy_defaults_to_v1_and_rejects_unknown_values():
         silver.identity_of(_policy_context(play_identity="byplay_v3"))
 
 
+def test_collision_exceptions_are_read_per_season_from_the_plan():
+    from pathlib import Path
+
+    import yaml
+
+    plan_path = Path(__file__).resolve().parents[1] / "conf/rebuild/6a_w6_v1.yaml"
+    plan = yaml.safe_load(plan_path.read_text())
+    context = _policy_context(**plan["policies"])
+    assert silver.collision_exceptions_for(context, 2021) == {401310699}
+    assert silver.collision_exceptions_for(context, 2025) == {
+        401756916,
+        401761632,
+        401762831,
+    }
+    assert silver.collision_exceptions_for(context, 2024) == frozenset()
+    assert silver.collision_exceptions_for(_policy_context(), 2025) == frozenset()
+
+
+@pytest.mark.parametrize(
+    "policies",
+    [
+        {"byplay_v1_collision_exceptions": [401310699]},
+        {"byplay_v1_collision_exceptions": {"2020": [1]}},
+        {"byplay_v1_collision_exceptions": {"2021": ["401310699"]}},
+        {
+            "byplay_v1_collision_exceptions": {"2021": [401310699]},
+            "play_identity": "byplay_v2",
+        },
+    ],
+)
+def test_malformed_collision_exception_policies_are_refused(policies):
+    with pytest.raises(GateError):
+        silver.collision_exceptions_for(_policy_context(**policies), 2021)
+
+
 def test_v2_registers_beside_v1_without_changing_the_v1_build():
     assert silver.DERIVED["byplay"] == "byplay_v1"
     assert silver.DERIVED["drives"] == "drives_v1"
