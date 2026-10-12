@@ -13,6 +13,11 @@ policies:
   design: ppp__rho_0_60__exposure
   ridge_alpha: 10.0
   published_run_id: 6a-rebuild-w6-20261012-r2
+  # Rating runs whose ids Preview's 2026 team_rating_components carry, by as-of week
+  # (Week 6 display release: weeks 0-5 from ratings-v1, week 6 published with --weeks 6).
+  published_rating_runs:
+    v5-intended-update-2026-ratings-v1: [0, 1, 2, 3, 4, 5]
+    v5-intended-update-2026-corrected-w6live-r1: [6]
   materiality_threshold: 0.05
 inputs:
   - {name: root_manifest, kind: r2_object, uri: rebuild/6a/6a-rebuild-w6-20261012-r2/root-manifest.json, sha256: 9d218543eec7eda149bbb5ba446b5f73f33b8ae107d5a7da20bdbe00f8d007c3}  # raw sha256 of the published -r2 root manifest

@@ -140,6 +140,62 @@ def kickoff_revision(scope: dict[str, Any]):
     return override
 
 
+def published_rating_runs(policies: dict[str, Any]) -> dict[int, str]:
+    """The plan's ``published_rating_runs`` policy as as-of week -> rating run id.
+
+    Preview publishes each as-of week's components under the rating run that projected
+    them, so component and snapshot ids carry that run's id; the plan names every run and
+    its weeks, and no week may belong to two runs.
+    """
+    raw = policies.get("published_rating_runs")
+    if not raw:
+        raise GateError("plan policy published_rating_runs is missing or empty")
+    week_runs: dict[int, str] = {}
+    for run_id, weeks in raw.items():
+        if not weeks:
+            raise GateError(f"published_rating_runs: {run_id} has no weeks")
+        for week in weeks:
+            if int(week) in week_runs:
+                raise GateError(f"published_rating_runs: week {week} names two runs")
+            week_runs[int(week)] = str(run_id)
+    return week_runs
+
+
+def check_published_runs(found: Iterable[str], week_runs: dict[int, str]) -> None:
+    """Refuse unless the published components name exactly the planned runs."""
+    found, planned = set(found), set(week_runs.values())
+    if found != planned:
+        raise GateError(
+            f"published components name runs {sorted(found)}; the plan expects "
+            f"{sorted(planned)} (unexpected {sorted(found - planned)}, "
+            f"missing {sorted(planned - found)})"
+        )
+
+
+def build_frames(
+    artifacts, week_runs: dict[int, str], build
+) -> dict[str, pd.DataFrame]:
+    """The payload frames, each as-of week's components under the run that published it.
+
+    Only component and snapshot ids carry the run id, so the other tables come from the
+    newest run's build. Weeks past the plan (the lock extension's added scope) also take the
+    newest run's ids; outside the added scope they would be population findings.
+    """
+    newest = week_runs[max(week_runs)]
+    builds = {
+        run_id: build(dataclasses.replace(artifacts, run_id=run_id)).payload.frames
+        for run_id in sorted(set(week_runs.values()))
+    }
+    frames = dict(builds[newest])
+    parts = []
+    for run_id, built in builds.items():
+        components = built["team_rating_components"]
+        owner = components["as_of_week"].astype(int).map(week_runs).fillna(newest)
+        parts.append(components[owner.eq(run_id)])
+    frames["team_rating_components"] = pd.concat(parts, ignore_index=True)
+    return frames
+
+
 def baseline_history_control(
     context,
     run,
@@ -153,6 +209,7 @@ def baseline_history_control(
     mp,
     md,
     scope: dict[str, Any],
+    week_runs: dict[int, str],
 ) -> dict[str, Any]:
     """2026 states rebuilt from the SERVED terminal: must equal the published components."""
     from cks_picks_cfb.data.lake import read_dataset
@@ -188,13 +245,17 @@ def baseline_history_control(
         pregame_roles=pregame.rating_states,
         current_roles=current,
     )
-    built = mp.build_payload(
-        control_artifacts, season=SEASON, game_names=game_names, alias_map=TEAM_LOGO_MAP
+    built = build_frames(
+        control_artifacts,
+        week_runs,
+        lambda a: mp.build_payload(
+            a, season=SEASON, game_names=game_names, alias_map=TEAM_LOGO_MAP
+        ),
     )
     columns, keys, jsonb = md.TABLES["team_rating_components"]
     values = [c for c in columns if c not in keys and c not in PROVENANCE]
     report = published_diff.diff_frames(
-        built.payload.frames["team_rating_components"],
+        built["team_rating_components"],
         published["team_rating_components"],
         keys=keys,
         columns=values,
@@ -229,6 +290,7 @@ def build(context: StageContext) -> StageOutput:
     cutoffs = {int(w): pd.Timestamp(c) for w, c in lock["post_week_cutoffs"].items()}
     root_sha = run.root["manifest_sha256"]
     scope = lock_scope(lock)
+    week_runs = published_rating_runs(dict(context.plan.policies))
 
     url = resolve_runtime_target("preview").database_url
     published: dict[str, pd.DataFrame] = {}
@@ -242,11 +304,7 @@ def build(context: StageContext) -> StageOutput:
                 "FROM team_rating_components WHERE season = %s",
                 (SEASON,),
             )
-            run_ids = sorted(row[0] for row in cur.fetchall())
-            if len(run_ids) != 1:
-                raise GateError(
-                    f"published components name {len(run_ids)} runs: {run_ids}"
-                )
+            check_published_runs((row[0] for row in cur.fetchall()), week_runs)
             for table, (columns, _keys, jsonb) in md.TABLES.items():
                 published[table] = fetch_table(
                     cur, table, columns, jsonb, "season = %s", (SEASON,)
@@ -275,7 +333,7 @@ def build(context: StageContext) -> StageOutput:
 
     artifacts = mp.Artifacts(
         lineage="intended_update",
-        run_id=run_ids[0],
+        run_id=week_runs[max(week_runs)],
         candidate_id=str(states["pregame_roles"]["candidate_id"].iloc[0]),
         rating_manifest={},
         rating_sha256=root_sha,
@@ -291,10 +349,14 @@ def build(context: StageContext) -> StageOutput:
         current_roles=states["current_roles"],
         post_week_cutoffs=cutoffs,
     )
-    built = mp.build_payload(
-        artifacts, season=SEASON, game_names=game_names, alias_map=TEAM_LOGO_MAP
+    rebuilt = build_frames(
+        artifacts,
+        week_runs,
+        lambda a: mp.build_payload(
+            a, season=SEASON, game_names=game_names, alias_map=TEAM_LOGO_MAP
+        ),
     )
-    rebuilt, tables = dict(built.payload.frames), {}
+    tables = {}
     control = baseline_history_control(
         context,
         run,
@@ -308,6 +370,7 @@ def build(context: StageContext) -> StageOutput:
         mp,
         md,
         scope,
+        week_runs,
     )
     components_expected = (
         published_diff.EXPECTED_TO_DIFFER
@@ -356,7 +419,7 @@ def build(context: StageContext) -> StageOutput:
     report = {
         "season": SEASON,
         "database_role": "cks_preview_pipeline (read-only transaction)",
-        "published_run_id": run_ids[0],
+        "published_rating_runs": {str(w): r for w, r in sorted(week_runs.items())},
         "publication": publication,
         "fbs_source": fbs_source,
         "tables": tables,
