@@ -10,6 +10,7 @@
 | [Week 7 cutover gate waiver and readiness](2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md) | Waives the Sunday checkpoint and integrity-first rule for the Week 7 cutover; removes the 24-hour finals rule | Approved; code delivered locally. Data steps, release and Production remain separate user decisions. |
 | [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Authoritative completion matrix for the October 4 repair objective | In Progress; integrity closure waived for the Week 7 cutover only (Amendment 14). Stage 1 closure does not close this track. |
 | [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Ordered execution, pivot gate and fallback under the repair contract | Draft; adds no release authority. Stable finals, certification and Preview rehearsal remain required. |
+| [Week 7 standalone fallback](2026-10-11/03-week7-standalone-fallback.md) | Single-week Week 7 publish, select and freeze if the cutover misses the pivot gate | Draft, awaiting owner approval; verified command chain. Needs the in-progress `rollback_week_release.py` and an exact release decision. |
 
 ## Supporting / In-Progress
 
