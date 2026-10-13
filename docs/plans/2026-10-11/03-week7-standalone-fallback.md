@@ -5,6 +5,13 @@
 - **Governed by:** the [Week 7 cutover run sheet](../2026-10-10/01-week7-cutover-run-sheet.md), the [gate waiver contract](02-week7-cutover-gate-waiver-and-readiness.md) and the [repair-track contract](../2026-10-08/02-repair-track-certification-and-closure.md) Amendments 14 and 15.
 - **Rule:** Preview first, always. Every Preview write and every Production write is its own go-ahead: dry run, then apply, then read-only readback. Owner-role SQL is user-run.
 
+> **2026-10-13 note ([repair Amendment 16](../2026-10-08/02-repair-track-certification-and-closure.md#amendment-16--2026-10-13-week-7-ratings-decision-display-only-release-and-live-rating-provenance)).** Two parts of this document are superseded:
+>
+> - **Ratings input.** The owner decided Week 7 forecasts must use ratings corrected through Week 6. Option 2 below (post-Week-5 manifest `c83b1423…`, Week 6 left out) is withdrawn. Week 7 publication now waits for [Task 4 `6a-task4-w6-r2`](../2026-10-13/02-task4-verification-and-catalog-repair.md) and the 6B Week 6 frames to be built, verified and published, then the rest of the upstream chain (step 4 onward uses `6a-task4-w6-r2` in place of `6a-task4-w6-r1`).
+> - **Freeze.** The first Week 7 kickoff (`401871067`, 23:00Z October 13) has passed, so a frozen Week 7 is impossible. Week 7 ships display-only: games kicked off before the run's `as_of` are omitted, the evidence class stays `pending`, and the run is never frozen. The command reference's "never `--display-only` here" notes no longer apply to Week 7. Step R13 and the optional Preview freeze rehearsal do not run; `freeze_week.py` refuses display-only runs and would mark a late run `missed`. "Why Week 7 cannot be skipped" and the Week 8 Advance-Mode prerequisite of a Week 7 freeze receipt need a separate disposition.
+>
+> The forecast builder in step 10 must also carry the live-rating provenance fix recorded in Amendment 16 (live predictions keep `current_teams` ratings with `#current:<current_teams_raw_sha256>/<team>` refs, checked by the serving verifier) before it is run for Week 7.
+
 ## When this applies
 
 The run sheet's pivot gate is Tuesday 2026-10-13 14:00Z. If the Preview rehearsal of the Advance-Mode cutover, including the owner-login rollback proof and readback, is not fully verified by then, the Week 0–6 corrected-replay cutover is barred. Week 7 is then served on its own: a frozen Week 7 run whose ratings come from the corrected chain through Week 6, with Weeks 0–6 left as currently selected (Week 6 stays on the display-only run `2026w6-v5repair-20261008-d2`, see [Current Status](../../status.md)).

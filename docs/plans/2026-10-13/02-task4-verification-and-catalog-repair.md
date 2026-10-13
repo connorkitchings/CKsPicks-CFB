@@ -54,7 +54,7 @@ Require every compared component to belong to exactly one control. Keep control 
 - **Acceptance:** both controls reproduce their published values, apart from the exact timestamp differences covered by Step 3. All 512 previously differing rows are accounted for.
 
 ### 3. Bind the Four Kickoff Revisions to Evidence
-Recover the recorded Week 5 revision through extension history. For the three Week 6 revisions, create a comparison-evidence artifact that binds the published source and pinned Silver/lock source by full hashes:
+Exactly four games carry kickoff revisions, and together they account for all 16 component `cutoff_utc` changes: one Week 5 game (`401862787`, Charlotte @ Memphis, Oct 3) and three Week 6 games (`401862797`, `401856827`, `401856808`). No other game is in scope. Recover the Week 5 revision through extension history. For the three Week 6 revisions, create a comparison-evidence artifact that binds the published source and pinned Silver/lock source by full hashes:
 
 | Game ID | Matchup | Published UTC | Built/locked UTC |
 |---|---|---|---|
@@ -88,3 +88,12 @@ After the repair code, evidence pins, and new plan are reviewed and committed th
 - Run full Task 4 verification. Partial verification cannot authorize publication.
 - Dry-run the designed publisher, publish only after all required checks pass, independently read back every published hash, and prove an identical retry writes nothing.
 - **Acceptance:** attribution, published comparison, and receipt all pass; catalog coverage is complete; publication readback and idempotence pass. The original failed r1 evidence remains intact.
+
+---
+
+## Amendments
+
+### 2026-10-13: kickoff-revision count and Week 7 dependency
+
+- **Step 3 count corrected.** The kickoff-revision scope is four games in total, not one Week 5 revision plus four Week 6 games: `401862787` (Charlotte @ Memphis, Oct 3, Week 5) and `401862797`, `401856827`, `401856808` (Week 6). These four games account for exactly 16 component `cutoff_utc` changes; Step 3 now states this.
+- **Week 7 now depends on this contract.** On 2026-10-13 the owner decided that Week 7 forecasts must use ratings corrected through Week 6, so Week 7 publication waits for `6a-task4-w6-r2` and the 6B Week 6 frames to be built, verified and published. See [repair-track Amendment 16](../2026-10-08/02-repair-track-certification-and-closure.md#amendment-16--2026-10-13-week-7-ratings-decision-display-only-release-and-live-rating-provenance), which also records the 6A `-r2` provenance split and the `published_rating_runs` two-run policy that this contract's Step 2 builds on.
