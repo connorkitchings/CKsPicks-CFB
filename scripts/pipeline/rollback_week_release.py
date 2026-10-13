@@ -12,7 +12,12 @@ Undoes what opening Week N exposed, and nothing else:
   referenced by any other run). Without a receipt both scopes are kept.
 
 The run row, its predictions and market rows stay: runs are immutable, and an
-unselected published run is an audit record, not a public one.
+unselected published run is an audit record, not a public one. Never touched:
+R2 artifacts, catalog registrations, approval/authorization rows, schedule and
+venue rows, and Week N matchup rows (``team_possession_*``,
+``team_rating_components``, ``matchup_data_publications``): in ``predictions``
+mode the site renders a matchup only for a week with a selected run, so they go
+inert once Week N is deselected (``market`` mode would still show them).
 
 Fail-closed contract:
 - The run must be state='published', evidence_class='pending', never frozen
@@ -116,15 +121,16 @@ def read_state(
     """The serving facts this rollback changes, in one comparable dict."""
     cur.execute("SELECT season, week, active_run_id FROM current_week WHERE id = 1")
     cw_season, cw_week, active = cur.fetchone()
+    # Every week of the season, so the read-back proves Weeks 0..N-1 unchanged.
     cur.execute(
-        "SELECT week, run_id FROM site_week_selections "
-        "WHERE season = %s AND week = ANY(%s) ORDER BY week",
-        (season, [week - 1, week]),
+        "SELECT week, run_id FROM site_week_selections WHERE season = %s ORDER BY week",
+        (season,),
     )
-    selected = {int(w): str(r) for w, r in cur.fetchall()}
+    selections: dict[str, str | None] = {str(w): None for w in (week - 1, week)}
+    selections.update({str(w): str(r) for w, r in cur.fetchall()})
     state = {
         "current_week": [cw_season, cw_week, active],
-        "selections": {str(w): selected.get(w) for w in (week - 1, week)},
+        "selections": selections,
         "team_season_stats_as_of_week": _count(
             cur,
             "SELECT count(*) FROM team_season_stats WHERE season = %s AND as_of_week = %s",
