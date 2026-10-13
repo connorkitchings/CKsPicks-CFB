@@ -5,9 +5,61 @@ from __future__ import annotations
 import os
 from typing import Any
 
+# A display-only run (Contract 04, Amendment 9) may go public only this long after its cutoff.
+MAX_DISPLAY_AGE_HOURS = 6
+
 
 class PublicSelectionError(ValueError):
     """A run cannot be exposed as the selected public week."""
+
+
+def _run_manifest(
+    storage: Any, *, season: int, week: int, run_id: str, artifact_sha: str
+) -> dict[str, Any]:
+    """The immutable run manifest, bound to the stored run by its artifact hash."""
+    from cks_picks_cfb.artifacts import prediction_run_manifest_path, read_json_artifact
+
+    manifest = read_json_artifact(
+        prediction_run_manifest_path(season, week, run_id), storage
+    )
+    if manifest.get("artifact_sha256") != artifact_sha:
+        raise PublicSelectionError("stored run differs from immutable artifact")
+    return manifest
+
+
+def _require_open_pending_window(
+    cur: Any, *, season: int, week: int, run_id: str, as_of: Any
+) -> None:
+    """A pending run is selectable only while it is recent and none of its games has started.
+
+    Its games must be exactly the week's games scheduled after its cutoff, so a run cannot
+    hide a game that kicked off since it was built. One database clock reading decides it.
+    """
+    if not as_of:
+        raise PublicSelectionError("pending run manifest has no data cutoff")
+    cur.execute(
+        "WITH clock AS (SELECT clock_timestamp() AS now) "
+        "SELECT (SELECT now FROM clock) < %s::timestamptz + make_interval(hours => %s), "
+        "COUNT(*) FILTER (WHERE p.game_id IS NOT NULL "
+        "AND g.start_date <= (SELECT now FROM clock)), "
+        "COUNT(*) FILTER (WHERE p.game_id IS NULL OR g.start_date <= %s::timestamptz) "
+        "FROM games g LEFT JOIN predictions p "
+        "ON p.game_id = g.game_id AND p.run_id = %s "
+        "WHERE g.season = %s AND g.week = %s "
+        "AND (g.start_date > %s::timestamptz OR p.game_id IS NOT NULL)",
+        (as_of, MAX_DISPLAY_AGE_HOURS, as_of, run_id, season, week, as_of),
+    )
+    fresh, started, mismatched = cur.fetchone()
+    if not fresh:
+        raise PublicSelectionError(
+            f"pending run is older than {MAX_DISPLAY_AGE_HOURS} hours"
+        )
+    if int(started):
+        raise PublicSelectionError("pending run includes a game that has kicked off")
+    if int(mismatched):
+        raise PublicSelectionError(
+            "pending run's games differ from the games scheduled after its cutoff"
+        )
 
 
 def select_week_run(
@@ -52,6 +104,7 @@ def select_week_run(
         evidence_class,
         bundle_sha,
     ) = candidate
+    manifest = None
     if (run_season, run_week) != (season, week):
         raise PublicSelectionError("selected run belongs to another season or week")
     if (
@@ -113,18 +166,16 @@ def select_week_run(
                 raise PublicSelectionError(
                     "production V5 selection requires a reviewed release"
                 )
-            from cks_picks_cfb.artifacts import (
-                prediction_run_manifest_path,
-                read_json_artifact,
-            )
             from cks_picks_cfb.data.storage import get_storage
 
             storage = get_storage(environment=environment)
-            manifest = read_json_artifact(
-                prediction_run_manifest_path(season, week, run_id), storage
+            manifest = _run_manifest(
+                storage,
+                season=season,
+                week=week,
+                run_id=run_id,
+                artifact_sha=artifact_sha,
             )
-            if manifest.get("artifact_sha256") != artifact_sha:
-                raise PublicSelectionError("stored run differs from immutable artifact")
             if model_id == "v5-intended-update-2026-v1":
                 from cks_picks_cfb.ops.v5_intended_update_release import (
                     require_intended_update_release_record,
@@ -166,6 +217,25 @@ def select_week_run(
     stored_count, foreign_count = cur.fetchone()
     if int(stored_count) != expected or int(foreign_count) != 0:
         raise PublicSelectionError("selected run's stored predictions are incomplete")
+    # Frozen, scored and replay runs are exempt; a pending one must still be current.
+    if evidence_class == "pending" and state == "published":
+        if manifest is None:
+            from cks_picks_cfb.data.storage import get_storage
+
+            manifest = _run_manifest(
+                get_storage(environment=environment),
+                season=season,
+                week=week,
+                run_id=run_id,
+                artifact_sha=artifact_sha,
+            )
+        _require_open_pending_window(
+            cur,
+            season=season,
+            week=week,
+            run_id=run_id,
+            as_of=manifest.get("data_as_of"),
+        )
     cur.execute(
         "SELECT run_id FROM site_week_selections WHERE season = %s AND week = %s FOR UPDATE",
         (season, week),

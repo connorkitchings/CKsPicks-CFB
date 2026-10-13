@@ -43,6 +43,7 @@ from cks_picks_cfb.data.data_first_phase2d import (  # noqa: E402
 from cks_picks_cfb.data.storage import get_storage  # noqa: E402
 from cks_picks_cfb.inference.v5_serving import build_v5_serving_rows  # noqa: E402
 from cks_picks_cfb.inference.weekly import resolve_label_thresholds  # noqa: E402
+from cks_picks_cfb.ops.public_selection import MAX_DISPLAY_AGE_HOURS  # noqa: E402
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json  # noqa: E402
 from cks_picks_cfb.rebuild.live_week import kicked_off_game_ids  # noqa: E402
 from cks_picks_cfb.rebuild.successor_sources import (  # noqa: E402
@@ -58,7 +59,6 @@ from scripts.pipeline.build_v5_intended_update_serving import (  # noqa: E402
 )
 
 CONFIG = REPO_ROOT / "conf/weekly_bets/v5_intended_update_2026.yaml"
-MAX_DISPLAY_AGE_HOURS = 6
 
 
 def _sha(raw: bytes) -> str:
