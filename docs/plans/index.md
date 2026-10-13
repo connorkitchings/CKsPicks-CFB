@@ -11,6 +11,7 @@
 | [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Authoritative completion matrix for the October 4 repair objective | In Progress; integrity closure waived for the Week 7 cutover only (Amendment 14). Stage 1 closure does not close this track. |
 | [Task 4 verification and catalog repair](2026-10-13/02-task4-verification-and-catalog-repair.md) | Correct population scope, two-lineage rating controls, kickoff revisions, and recover 6A catalog registration for Task 4 r2 | In Progress; baseline reconciliation complete. |
 | [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Ordered execution, pivot gate and fallback under the repair contract | Draft; adds no release authority. Stable finals, certification and Preview rehearsal remain required. |
+| [Week 7 standalone fallback](2026-10-11/03-week7-standalone-fallback.md) | Single-week Week 7 publish, select and freeze if the cutover misses the pivot gate | Draft, awaiting owner approval; verified command chain. Needs the in-progress `rollback_week_release.py` and an exact release decision. |
 
 ## Supporting / In-Progress
 
