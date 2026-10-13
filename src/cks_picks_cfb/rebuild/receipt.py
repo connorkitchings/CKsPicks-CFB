@@ -323,11 +323,14 @@ def derive_receipt(context: StageContext) -> dict[str, Any]:
 def render_markdown(receipt: dict[str, Any]) -> str:
     ident, cov = receipt["identity"], receipt["coverage"]
     attribution = receipt["attribution"]["headline_vs_baseline"]
+    publisher = ident["publisher_code_sha"]
+    # Roots published before publisher provenance existed record null here.
+    publisher_label = publisher[:8] if publisher is not None else "none recorded"
     lines = [
         "# Stage 6A exit receipt",
         "",
         f"- Receipt checksum: `{receipt['manifest_sha256']}`",
-        f"- Main run `{ident['main_run_id']}`: build `{ident['build_code_sha'][:8]}`, publisher `{ident['publisher_code_sha'][:8]}`",
+        f"- Main run `{ident['main_run_id']}`: build `{ident['build_code_sha'][:8]}`, publisher `{publisher_label}`",
         f"- Root manifest raw sha256 `{ident['root_manifest']['raw_sha256']}`",
         f"- Games {cov['games']} ({cov['forecast_eligible']} forecast-eligible, {cov['measurement_usable']} measurement-usable)",
         f"- Admitted ledger: {cov['admitted_ledger']}",
