@@ -53,11 +53,101 @@ def authorization_record(manifest: dict, *, decision_ref: str) -> dict:
     }
 
 
+APPROVAL_COLUMNS = (
+    "approval_id",
+    "model_id",
+    "inference_bundle_sha256",
+    "first_live_season",
+    "first_live_week",
+    "decision_ref",
+)
+
+
+def register_authorization(
+    cur,
+    record: dict,
+    *,
+    approval_id: str,
+    approval_bundle_sha256: str,
+    approval_decision_ref: str,
+) -> bool:
+    """Match the reviewed B2 approval, then write the authorization once.
+
+    Expected approval identity comes from the caller, never from the stored
+    row. Returns whether a row was written; an identical retry writes nothing.
+    """
+    if record["environment"] != "preview":
+        raise ValueError("Preview authorizer only writes Preview authorizations")
+    if record["inference_bundle_sha256"] != approval_bundle_sha256:
+        raise ValueError("run bundle differs from the reviewed approval bundle")
+    cur.execute(
+        f"SELECT {', '.join(APPROVAL_COLUMNS)} FROM v5_model_bundle_approvals "
+        "WHERE approval_id = %s OR (model_id = %s AND inference_bundle_sha256 = %s) "
+        "FOR SHARE",
+        (approval_id, record["model_id"], approval_bundle_sha256),
+    )
+    rows = cur.fetchall()
+    if len(rows) != 1:
+        raise ValueError(
+            f"expected exactly one reviewed Preview approval, found {len(rows)}"
+        )
+    stored = dict(zip(APPROVAL_COLUMNS, rows[0]))
+    expected = {
+        "approval_id": approval_id,
+        "model_id": record["model_id"],
+        "inference_bundle_sha256": approval_bundle_sha256,
+        "first_live_season": record["season"],
+        "decision_ref": approval_decision_ref,
+    }
+    mismatched = sorted(key for key, value in expected.items() if stored[key] != value)
+    if mismatched:
+        raise ValueError(
+            f"Preview approval differs from reviewed identity: {', '.join(mismatched)}"
+        )
+    if stored["first_live_week"] > record["week"]:
+        raise ValueError(
+            f"Preview approval is live from week {stored['first_live_week']}, "
+            f"after requested week {record['week']}"
+        )
+
+    values = tuple(record[name] for name in AUTH_COLUMNS)
+    select_auth = (
+        f"SELECT {', '.join(AUTH_COLUMNS)} FROM v5_intended_update_release_authorizations "
+        "WHERE authorization_id = %s"
+    )
+    cur.execute(select_auth, (record["authorization_id"],))
+    existing = cur.fetchone()
+    if existing is not None:
+        if existing != values:
+            raise ValueError("Preview run authorization conflicts with reviewed record")
+        return False
+    cur.execute(
+        f"INSERT INTO v5_intended_update_release_authorizations ({', '.join(AUTH_COLUMNS)}) "
+        f"VALUES ({', '.join(['%s'] * len(AUTH_COLUMNS))}) "
+        "ON CONFLICT (authorization_id) DO NOTHING",
+        values,
+    )
+    cur.execute(select_auth, (record["authorization_id"],))
+    if cur.fetchone() != values:
+        raise ValueError("Preview run authorization conflicts with reviewed record")
+    return True
+
+
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--week", type=int)
-    parser.add_argument("--decision-ref")
+    parser.add_argument(
+        "--decision-ref", help="decision reference written on the authorization"
+    )
+    parser.add_argument("--approval-id", help="reviewed B2 approval ID")
+    parser.add_argument(
+        "--approval-bundle-sha256", help="full reviewed B2 inference bundle sha256"
+    )
+    parser.add_argument(
+        "--approval-decision-ref",
+        help="decision reference stored on the reviewed B2 approval",
+    )
     parser.add_argument("--packet", type=Path)
     parser.add_argument("--receipt", type=Path)
     parser.add_argument("--expected-packet-sha256")
@@ -93,8 +183,21 @@ def main() -> None:
             sys.argv.append("--apply")
         batch_main()
         return
-    if args.week is None or not args.decision_ref:
-        parser.error("legacy single-run mode requires --week and --decision-ref")
+    if not all(
+        (
+            args.week is not None,
+            args.decision_ref,
+            args.approval_id,
+            args.approval_bundle_sha256,
+            args.approval_decision_ref,
+        )
+    ):
+        parser.error(
+            "legacy single-run mode requires --week, --decision-ref, --approval-id, "
+            "--approval-bundle-sha256 and --approval-decision-ref"
+        )
+    if not re.fullmatch(r"[0-9a-f]{64}", args.approval_bundle_sha256):
+        parser.error("--approval-bundle-sha256 must be a full lowercase sha256")
     if args.week < 0:
         parser.error("--week must be a non-negative week")
     if not re.fullmatch(r"[a-z0-9-]+", args.release_tag):
@@ -127,7 +230,10 @@ def main() -> None:
         week=args.week,
         environment="preview",
     )
+    if record["inference_bundle_sha256"] != args.approval_bundle_sha256:
+        raise SystemExit("Preview run bundle differs from the reviewed approval bundle")
     record_sha = hashlib.sha256(canonical_json(record)).hexdigest()
+    written = False
     if args.apply:
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
         dirty = subprocess.check_output(
@@ -151,49 +257,21 @@ def main() -> None:
                     raise ValueError(
                         "Preview authorization requires exact migrator role"
                     )
-                bundle_sha = record["inference_bundle_sha256"]
-                approval = (
-                    f"preview-intended-update-{bundle_sha[:12]}",
-                    record["model_id"],
-                    bundle_sha,
-                    2026,
-                    5,
-                    args.decision_ref,
+                written = register_authorization(
+                    cur,
+                    record,
+                    approval_id=args.approval_id,
+                    approval_bundle_sha256=args.approval_bundle_sha256,
+                    approval_decision_ref=args.approval_decision_ref,
                 )
-                cur.execute(
-                    "INSERT INTO v5_model_bundle_approvals "
-                    "(approval_id, model_id, inference_bundle_sha256, first_live_season, first_live_week, decision_ref) "
-                    "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (approval_id) DO NOTHING",
-                    approval,
-                )
-                cur.execute(
-                    "SELECT approval_id, model_id, inference_bundle_sha256, first_live_season, first_live_week, decision_ref "
-                    "FROM v5_model_bundle_approvals WHERE approval_id = %s",
-                    (approval[0],),
-                )
-                if cur.fetchone() != approval:
-                    raise ValueError(
-                        "Preview model approval conflicts with reviewed pair"
-                    )
-                values = tuple(record[name] for name in AUTH_COLUMNS)
-                cur.execute(
-                    f"INSERT INTO v5_intended_update_release_authorizations ({', '.join(AUTH_COLUMNS)}) "
-                    f"VALUES ({', '.join(['%s'] * len(AUTH_COLUMNS))}) "
-                    "ON CONFLICT (authorization_id) DO NOTHING",
-                    values,
-                )
-                cur.execute(
-                    f"SELECT {', '.join(AUTH_COLUMNS)} FROM v5_intended_update_release_authorizations "
-                    "WHERE authorization_id = %s",
-                    (record["authorization_id"],),
-                )
-                if cur.fetchone() != values:
-                    raise ValueError(
-                        "Preview run authorization conflicts with reviewed record"
-                    )
     print(
         json.dumps(
-            {"run_id": run_id, "record_sha256": record_sha, "applied": args.apply},
+            {
+                "run_id": run_id,
+                "record_sha256": record_sha,
+                "applied": args.apply,
+                "written": written,
+            },
             sort_keys=True,
         )
     )
