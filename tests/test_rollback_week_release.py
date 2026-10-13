@@ -16,6 +16,7 @@ RUN = "2026w7-test-pending"
 PRIOR = "2026w6-test-display"
 SHA = "a" * 64
 OTHER_SHA = "b" * 64
+EARLIER = {str(w): f"2026w{w}-test" for w in range(6)}  # Weeks 0-5 selections
 VERSIONS = {"byplay": "bp7", "drives": "dr7", "games": "gm7", "game_outcomes": "go7"}
 OLD_VERSIONS = {
     "byplay": "bp6",
@@ -50,7 +51,10 @@ class FakeDb:
             },
         }
         self.grades: dict[str, int] = {}
-        self.selections = {(2026, 6): PRIOR, (2026, 7): RUN}
+        self.selections = {(2026, int(w)): r for w, r in EARLIER.items()}
+        self.selections.update({(2025, 7): "2025w7-test", (2026, 6): PRIOR})
+        self.selections[(2026, 7)] = RUN
+        self.writes: list[str] = []  # table of every write, in order
         self.history: list[tuple] = []
         self.current_week = [2026, 7, RUN]
         # 3 rows from this release's Silver versions plus 2 older as-of-7 rows
@@ -150,11 +154,10 @@ class FakeCursor:
         elif s.startswith("SELECT season, week, active_run_id FROM current_week"):
             rows = [tuple(db.current_week)]
         elif s.startswith("SELECT week, run_id FROM site_week_selections"):
-            season, weeks = params
             rows = [
                 (w, r)
                 for (se, w), r in sorted(db.selections.items())
-                if se == season and w in weeks
+                if se == params[0]
             ]
         elif s.startswith("SELECT count(*) FROM team_season_stats"):
             rows = [(len(self._stats(params)),)]
@@ -185,6 +188,11 @@ class FakeCursor:
             ]
         else:  # pragma: no cover - an unknown statement is a test bug
             raise AssertionError(f"unexpected SQL: {s}")
+        verb, *words = s.split()
+        if verb in {"INSERT", "DELETE"}:  # INSERT INTO t / DELETE FROM t
+            db.writes.append(words[1])
+        elif verb == "UPDATE":
+            db.writes.append(words[0])
         self._rows = rows
 
     def _stats(self, params):
@@ -255,14 +263,14 @@ def test_apply_restores_prior_week_and_removes_release_rows(
     assert code == 0 and db.committed and not db.rolled_back
     assert states["before"] == {
         "current_week": [2026, 7, RUN],
-        "selections": {"6": PRIOR, "7": RUN},
+        "selections": {**EARLIER, "6": PRIOR, "7": RUN},
         "team_season_stats_as_of_week": 5,
         "team_season_stats_release_rows": 3,
         "v5_rating_snapshots_run_manifest": 4,
     }
     assert states["after"] == {
         "current_week": [2026, 6, PRIOR],
-        "selections": {"6": PRIOR, "7": None},
+        "selections": {**EARLIER, "6": PRIOR, "7": None},
         "team_season_stats_as_of_week": 2,
         "team_season_stats_release_rows": 0,
         "v5_rating_snapshots_run_manifest": 0,
@@ -287,7 +295,11 @@ def test_dry_run_prints_planned_after_and_writes_nothing(
     assert code == 0 and not db.committed
     assert states["before"]["current_week"] == [2026, 7, RUN]
     assert states["after (planned)"]["current_week"] == [2026, 6, PRIOR]
-    assert states["after (planned)"]["selections"] == {"6": PRIOR, "7": None}
+    assert states["after (planned)"]["selections"] == {
+        **EARLIER,
+        "6": PRIOR,
+        "7": None,
+    }
     assert db.selections[(2026, 7)] == RUN and db.current_week == [2026, 7, RUN]
     assert len(db.stats) == 6 and len(db.snapshots) == 5 and not db.history
 
@@ -412,3 +424,57 @@ def test_refuses_a_receipt_that_does_not_match_the_run(
     assert message in _refused(
         monkeypatch, tmp_path, capsys, db, "--apply", receipt=receipt
     )
+
+
+def test_apply_writes_only_restored_tables_and_receipt_scopes(monkeypatch, tmp_path):
+    # Retained by design: approvals, catalog, schedule/venues, matchup rows and the
+    # run row itself. The fake rejects any statement it does not know, so this list
+    # is every write the tool can make.
+    db = FakeDb()
+    assert _run_cli(monkeypatch, tmp_path, db, "--apply", receipt=_receipt()) == 0
+    assert db.writes == [
+        "site_week_selection_history",
+        "site_week_selections",
+        "current_week",
+        "team_season_stats",
+        "v5_rating_snapshots",
+    ]
+    assert db.runs[RUN]["state"] == "published" and db.runs[RUN]["frozen_at"] is None
+    assert RUN not in db.selections.values() and RUN not in db.current_week
+    assert db.selections[(2025, 7)] == "2025w7-test"
+
+
+@pytest.mark.parametrize(
+    "published, stats_left, snapshots_left",
+    [
+        ({"team_season_stats": {"as_of_week": 7, "source_versions": VERSIONS}}, 2, 5),
+        ({"v5_rating_snapshots": {"source_manifest_sha256": SHA}}, 5, 1),
+    ],
+)
+def test_only_scopes_the_receipt_declares_are_removed(
+    monkeypatch, tmp_path, published, stats_left, snapshots_left
+):
+    db = FakeDb()
+    if "v5_rating_snapshots" not in published:
+        db.components.append("s0")  # matchup rows on kept snapshots stay, inert
+    receipt = _receipt(**published)
+    assert _run_cli(monkeypatch, tmp_path, db, "--apply", receipt=receipt) == 0
+    assert sum(1 for x in db.stats if x["as_of_week"] == 7) == stats_left
+    assert len(db.snapshots) == snapshots_left
+    assert db.current_week == [2026, 6, PRIOR] and (2026, 7) not in db.selections
+
+
+def test_read_back_fails_when_an_earlier_week_selection_changes(
+    monkeypatch, tmp_path, capsys
+):
+    deselect = rollback.deselect_week_run
+
+    def deselect_and_touch_week_5(cur, **kwargs):
+        cur.db.selections[(2026, 5)] = "intruder"
+        return deselect(cur, **kwargs)
+
+    monkeypatch.setattr(rollback, "deselect_week_run", deselect_and_touch_week_5)
+    db = FakeDb()
+    assert _run_cli(monkeypatch, tmp_path, db, "--apply", receipt=_receipt()) == 3
+    assert db.rolled_back and not db.committed
+    assert "VERIFY FAIL" in capsys.readouterr().err
