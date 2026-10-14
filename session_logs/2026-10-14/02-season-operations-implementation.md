@@ -15,8 +15,9 @@
 - [x] Reverify published Preview Task 4 r3 root and receipt.
 - [ ] Verify deployed Week 6 Results/Performance and deployed revision.
 - [x] Prepare/review bridge configuration.
-- [ ] Commit reviewed plan and configuration before operational build — explicitly authorized by owner.
-- [ ] Build/verify/publish Week 6 frames and corrected ratings.
+- [x] Commit reviewed plan and configuration before operational build — explicitly authorized by owner.
+- [x] Build/verify/publish Week 6 frames.
+- [ ] Commit generated successor/live pins and build/verify corrected ratings.
 - [ ] Build Week 7 Preview candidate and complete exact Production gate.
 - [ ] Implement season runner and canonical model/revision adapters.
 - [ ] Implement atomic schema, readers and publisher.
@@ -59,3 +60,18 @@
 **tags:** ["pipeline", "operations", "implementation"]
 
 Owner authorized the two local commits and fast-forward integration into dev with “Authorized. Let’s proceed”. No push or Production write is included.
+
+## Week 6 frames operational evidence
+
+- Owner-authorized commits: plan3647e052 and configuration57113245; fast-forwarded dev. Both clean before preflight/build. No push.
+- A manual credential-name assertion used incorrect aliases and stopped before data access; corrected to repository StorageSettings, then preflight passed.
+- Preflight embedded checksum c834bfc317e6d24d0d5bec395d546a33cb62cba66f192cda17e01d48edd88776.
+- All five stages built; full verify passed, embedded checksum bea7e0e612778c9f07456576dff1c0f761c9abd3d9d46ee02f16e40dbee73505.
+- Scoring events:329 completed games,3073 events,10528 observations. Application frames:8/43/49/57/58/56/58 =329 games.
+- Designed publication dry run passed. Preview publication wrote42 objects plus root; identical retry wrote0 objects, root unchanged. No catalog registration required for this bridge's direct references.
+- Independent readback verified every42 object hash, signed root and unchanged original6A root. Frames root raw SHA285030d15601bca22d337165bcb5e43e5f201c15966dfa5576133e92c1919365; embedded checksum b1cb5a2786319f8982a5fb95821fbfdb98d536e743f9366f0f79a42538077474.
+- Generated successor_lock_w6_v1.json raw SHAb40438fe932ad6dd2c4cd12a9b81968c49188376e39f340283d671a627f5a0d3.
+- Generated successor_lock_w7live_v1.json raw SHA1c68a4c0e94a7a58ade2133c4658c0e6a5bfea2c5c42f70eb6f3c05f9ffe3a3f.
+- Independent pins/population check:329 historical +59 Week7 live-source games, unchanged completed-week cutoffs, exact published parent raw hashes. Forecast population will dynamically omit kicked-off games at actual build time.
+- Focused successor/intended-update tests:26 passed; diff check passes. Newly generated pins await the separately reviewed clean-commit gate before rating execution.
+- Parallel isolated workers implement season preparation, additive atomic-release schema and request-consistent web queries; they do not modify bridge checkout.
