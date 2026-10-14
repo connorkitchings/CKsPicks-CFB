@@ -122,3 +122,15 @@ The two reviewed local commits (`8bf0e19b`, `f76a953a`) were fast-forwarded into
 ### Explicit pin commit and Task 4 Preview authorization
 
 Owner approved “Commit verified pins and continue Task 4 in Preview.” Execute the local baseline/pin/evidence commit and fast-forward `dev`, then Task 4 preflight/build/verify/designed publication/readback/idempotence from clean committed HEAD. The previous pending pin choice is resolved. Failed-check/count/hash, Production, push and rollback boundaries stay unchanged.
+
+### Task 4 r2 verification stop — 2026-10-13 New York
+
+At commit `196596d8`, preflight and all three stage builds completed. Full verify failed (`ddfd771c…`) solely because 3,036 already-published as-of-7 team stats were placed inside added scope by the stale `published_coverage.team_season_stats: 5` policy. Attribution, receipt, baseline, controls, exact additions and 16 timestamp cells passed. Read-only Preview query confirms the as-of-7 rows predate this session. No publication or dependent execution occurred. Failed r2 evidence is preserved. Owner choice requested for a new r3 plan with stats coverage 6 and unchanged remaining gates; see `session_logs/2026-10-13/07-task4-r2-verification-stop.md`. No repair or waiver is assumed.
+
+### Owner-approved coverage repair and r3 retry
+
+**Approval source:** Owner explicitly selected “Approve the coverage repair and r3 Preview retry” after reviewing the failed r2 scope finding.
+
+Preserve all failed r2 staging and its v2 YAML unchanged. Create `conf/rebuild/6a_task4_w6_v3.yaml` for `6a-task4-w6-r3`, changing only that Task 4 run/output namespace and `published_coverage.team_season_stats` from post-week 5 to 6. Existing 3,036 as-of-7 rows must now be compared normally, never treated as additions. Keep every root/input/baseline pin, other table coverage, control, exact declared population, tolerance, bucket and four-games/16-cells requirement unchanged. Review and locally commit the new YAML/evidence amendment, fast-forward `dev`, then execute r3 preflight/build/full-verify/designed-publish/readback/idempotence only while all checks pass. No R2/Neon serving data changes are needed to reconcile this coverage.
+
+This owner approval authorizes the bounded local commit/integration and Preview retry. All subsequent 6B/lock references must use the successfully published r3 root/receipt rather than failed r2. Original 6A rebuild root and failed r1/r2 remain unchanged. Production, push and rollback gates are unchanged. The previous pending repair choice is resolved; contract remains In Progress.

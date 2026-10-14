@@ -670,3 +670,49 @@ def test_numeric_drift_alongside_a_valid_revision_is_still_unexplained():
     )
     assert report["differences_by_bucket"]["kickoff_revision"] == {"cutoff_utc": 16}
     assert report["unexplained_buckets"] == {"ratings": {"rating_mean": 16}}
+
+
+def test_task4_r3_only_updates_stats_coverage_and_preserves_pins():
+    previous = yaml.safe_load(Path("conf/rebuild/6a_task4_w6_v2.yaml").read_text())
+    current = yaml.safe_load(Path("conf/rebuild/6a_task4_w6_v3.yaml").read_text())
+    expected = copy.deepcopy(previous)
+    expected["run_id"] = "6a-task4-w6-r3"
+    expected["policies"]["published_coverage"]["team_season_stats"] = 6
+    for stage in expected["stages"]:
+        stage["outputs"] = [
+            prefix.replace("6a-task4-w6-r2", "6a-task4-w6-r3")
+            for prefix in stage["outputs"]
+        ]
+    assert current == expected
+    plan = RebuildPlan.from_dict(current)
+    plan.validate()
+    for pin in plan.inputs:
+        if pin.kind == "git_file":
+            assert hashlib.sha256(Path(pin.uri).read_bytes()).hexdigest() == pin.sha256
+
+
+def test_task4_r3_compares_existing_asof7_stats_and_retains_other_additions():
+    previous = yaml.safe_load(Path("conf/rebuild/6a_task4_w6_v2.yaml").read_text())
+    current = yaml.safe_load(Path("conf/rebuild/6a_task4_w6_v3.yaml").read_text())
+    lock = json.loads(Path("conf/rebuild/source_lock_2026_w6_v1.json").read_text())
+    scope = pc.lock_scope(lock)
+    old = pc.table_additions(previous["policies"], scope)
+    new = pc.table_additions(current["policies"], scope)
+    assert new["team_season_stats"]["first_as_of_week"] is None
+    assert len(new["team_game_measurements"]["games"]) == 114
+    for table in set(new) - {"team_season_stats"}:
+        assert new[table] == old[table]
+    frame = pd.DataFrame(
+        {"as_of_week": [6, 7], "team": ["A", "A"], "value": [1.0, 2.0]}
+    )
+    report = pd_.diff_frames(
+        frame,
+        frame,
+        keys=["as_of_week", "team"],
+        columns=["value"],
+        metric_of=lambda _: None,
+        added_scope=pc.addition_scope("team_season_stats", new),
+    )
+    assert report["rows_compared"] == 2
+    assert "added_scope" not in report
+    assert not report["unexplained"]
