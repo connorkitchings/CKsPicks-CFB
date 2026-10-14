@@ -628,7 +628,8 @@ def build_rating_components(
     """Decompose every projected V5 snapshot role into prior and evidence.
 
     Snapshot ids follow ``publish_v5_intended_update_ratings.py``: preseason
-    ``{run}:pregame:{team}:preseason``, pregame ``{run}:pregame:{team}:{game}``,
+    ``{run}:pregame:{team}:preseason``, pregame ``{run}:pregame:{team}:{game}``
+    (``{run}:pregame:{team}:week-{w}`` when the pregame row has no game id),
     current ``{run}:current:post-week-{N-1}:{team}``. ``excluded_observations``
     lists the PPP observations the rating could not use (the explanation never
     names them), from the same availability window as the rating.
@@ -720,7 +721,12 @@ def build_rating_components(
                     f"source_game_ids differ from evidence for {team} {role}"
                 )
             cutoff = pd.Timestamp(r.cutoff_utc)
-            if snapshot_class == "pregame":
+            if snapshot_class == "pregame" and pd.isna(r.game_id):
+                # Weekly pregame snapshots (season releases) carry no game id.
+                game_id = None
+                snapshot = f"{run_id}:pregame:{team}:week-{int(r.week)}"
+                as_of = int(r.week)
+            elif snapshot_class == "pregame":
                 game_id = int(r.game_id)
                 snapshot = f"{run_id}:pregame:{team}:{game_id}"
                 as_of = int(r.week)
