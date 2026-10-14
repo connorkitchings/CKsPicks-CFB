@@ -114,3 +114,11 @@ The exact full-repository Ruff gates expose 33 pre-existing lint findings and 10
 ### Local commit/integration authorization — 2026-10-13
 
 After the reviewed diff, passing checks and manual commit/integration gate were presented, the owner replied “proceed” to the stated next steps. This authorizes the two reviewed local plan/implementation commits and fast-forward integration into `dev` for this handoff. No push, Production action or rollback apply is authorized. Operational baseline/pin changes will be presented after derivation/capture, with their next clean-HEAD gate preserved.
+
+### Baseline capture checkpoint — 2026-10-13 New York
+
+The two reviewed local commits (`8bf0e19b`, `f76a953a`) were fast-forwarded into clean `dev` without push. Read-only derivation returned exactly 276 component IDs; baseline capture declares 114 measurement game IDs and fingerprints 3,248 components, 6,880 measurements, 7,932 possession stats and 2,611 adjusted rows. Raw baseline SHA-256 is `3e198873a0fb8919b9984ec35eac573aa938fc0359494b94df48c40ae9bca38b`; YAML pin is filled locally. Independent fresh Preview verification and local hash bindings pass; 48 focused tests pass. See `session_logs/2026-10-13/06-task4-comparison-baseline-capture.md`. The new baseline/pin commit choice remains pending; Task 4 preflight/build/verify/publish have not started.
+
+### Explicit pin commit and Task 4 Preview authorization
+
+Owner approved “Commit verified pins and continue Task 4 in Preview.” Execute the local baseline/pin/evidence commit and fast-forward `dev`, then Task 4 preflight/build/verify/designed publication/readback/idempotence from clean committed HEAD. The previous pending pin choice is resolved. Failed-check/count/hash, Production, push and rollback boundaries stay unchanged.
