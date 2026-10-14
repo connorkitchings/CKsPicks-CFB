@@ -12,10 +12,13 @@ import pandas as pd
 import pytest
 import yaml
 
+from cks_picks_cfb.data import matchup_data as md
+from cks_picks_cfb.data.data_first_phase2d import signed_payload
 from cks_picks_cfb.rebuild import published_comparison as pc
 from cks_picks_cfb.rebuild import published_diff as pd_
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.lock_extension import rows_sha256
+from cks_picks_cfb.rebuild.plan import RebuildPlan
 
 COLUMNS = ["week", "game_id", "start_date", "home_team", "away_team"]
 ROWS_BASE = [
@@ -338,3 +341,194 @@ def test_each_week_carries_its_runs_ids():
         f"{W6LIVE}:7",  # past the plan: the newest run's ids (lock-extension scope)
     ]
     assert frames["team_game_measurements"]["run"].tolist() == [W6LIVE]
+
+
+# ---- two-lineage rating controls ------------------------------------------------------
+
+V2_PLAN = RebuildPlan.from_dict(
+    yaml.safe_load(Path("conf/rebuild/6a_task4_w6_v2.yaml").read_text())
+)
+PINS = {pin.name: pin for pin in V2_PLAN.inputs}
+V1_SHA = PINS["ratings_v1_rating_manifest"].sha256
+W6_SHA = PINS["w6live_rating_manifest"].sha256
+W4_MEASUREMENT = (
+    "artifacts/.../possession-v1-measurements-20260927-w4/m.json",
+    "c4" * 32,
+)
+W5_ROOT = ("rebuild/6a/6a-rebuild-w5-20261007-r2/root-manifest.json", "78" * 32)
+
+
+def _publication(pin, measurement, publication_id):
+    return {
+        "publication_id": publication_id,
+        "rating_manifest_uri": PINS[pin].uri,
+        "rating_manifest_sha256": PINS[pin].sha256,
+        "measurement_manifest_uri": measurement[0],
+        "measurement_manifest_sha256": measurement[1],
+    }
+
+
+PUBLICATIONS = [
+    _publication("ratings_v1_rating_manifest", W4_MEASUREMENT, "2026:a"),
+    _publication("w6live_rating_manifest", W5_ROOT, "2026:b"),
+]
+
+
+def _controls(policies=None, publications=PUBLICATIONS):
+    policies = dict(V2_PLAN.policies) if policies is None else policies
+    week_runs = pc.published_rating_runs(policies)
+    return pc.bind_publications(
+        pc.rating_controls(policies, PINS, week_runs), publications
+    )
+
+
+def test_the_v2_plan_binds_each_run_to_its_own_lineage():
+    controls = _controls()
+    assert {r: (c["method"], c["weeks"]) for r, c in controls.items()} == {
+        RATINGS_V1: (pc.SERVED_R9_REPLAY, [0, 1, 2, 3, 4, 5]),
+        W6LIVE: (pc.SIX_A_BRIDGE, [6]),
+    }
+    assert controls[W6LIVE]["measurement_uri"] == W5_ROOT[0]
+    assert controls[RATINGS_V1]["sha256"] == V1_SHA
+
+
+def _policies(**controls):
+    policies = copy.deepcopy(dict(V2_PLAN.policies))
+    policies["rating_controls"].update(controls)
+    return policies
+
+
+@pytest.mark.parametrize(
+    ("policies", "word"),
+    [
+        (_policies(**{"other-run": {"method": pc.SIX_A_BRIDGE}}), "published runs"),
+        (
+            _policies(**{W6LIVE: {"method": "guess", "rating_manifest": "x"}}),
+            "unknown method",
+        ),
+        (
+            _policies(
+                **{
+                    W6LIVE: {
+                        "method": pc.SIX_A_BRIDGE,
+                        "rating_manifest": "ratings_v1_rating_manifest",
+                    }
+                }
+            ),
+            "no pinned manifest",
+        ),
+    ],
+)
+def test_unknown_runs_and_wrong_manifest_bindings_are_refused(policies, word):
+    with pytest.raises(GateError, match=word):
+        _controls(policies)
+
+
+@pytest.mark.parametrize(
+    ("publications", "word"),
+    [
+        (PUBLICATIONS[:1], "no publication"),
+        (
+            [PUBLICATIONS[0], {**PUBLICATIONS[1], "rating_manifest_sha256": "0" * 64}],
+            "different rating manifest",
+        ),
+        (
+            [
+                *PUBLICATIONS,
+                {**PUBLICATIONS[1], "measurement_manifest_sha256": "1" * 64},
+            ],
+            "measurement parents",
+        ),
+    ],
+)
+def test_the_publication_metadata_must_record_the_pinned_manifests(publications, word):
+    with pytest.raises(GateError, match=word):
+        _controls(publications=publications)
+
+
+def test_a_rating_manifest_must_be_its_runs_over_the_published_parent():
+    manifest = signed_payload(
+        {
+            "identity": {"run_id": W6LIVE},
+            "parents": {"measurement_manifest_sha256": W5_ROOT[1]},
+        }
+    )
+    pc.check_rating_manifest(manifest, W6LIVE, W5_ROOT[1])
+    with pytest.raises(GateError, match="not"):
+        pc.check_rating_manifest(manifest, RATINGS_V1, W5_ROOT[1])
+    with pytest.raises(GateError, match="parent"):
+        pc.check_rating_manifest(manifest, W6LIVE, W4_MEASUREMENT[1])
+    with pytest.raises(Exception, match="checksum"):
+        pc.check_rating_manifest({**manifest, "state": "edited"}, W6LIVE, W5_ROOT[1])
+
+
+def _published_components(rows):
+    """Component rows (run, sha, week, rating) with every published column filled."""
+    frame = pd.DataFrame(
+        [
+            {
+                **dict.fromkeys(md.COMPONENT_COLUMNS, 0.0),
+                "component_id": f"{run}:pregame:T{i}:{week}:offense",
+                "v5_snapshot_id": f"{run}:pregame:T{i}:{week}",
+                "source_manifest_sha256": sha,
+                "as_of_week": week,
+                "game_id": 100 + i,
+                "cutoff_utc": pd.Timestamp("2026-10-10T20:00:00Z"),
+                "rating_mean": rating,
+                "evidence": "{}",
+                "excluded_observations": "[]",
+                "prior_detail": "{}",
+                "fallback_reason": None,
+            }
+            for i, (run, sha, week, rating) in enumerate(rows)
+        ]
+    )
+    return frame
+
+
+BOTH = [
+    (RATINGS_V1, V1_SHA, 0, 1.0),
+    (RATINGS_V1, V1_SHA, 5, 2.0),
+    (W6LIVE, W6_SHA, 6, 3.0),
+    (W6LIVE, W6_SHA, 6, 4.0),
+]
+
+
+def test_both_lineages_partition_every_published_component():
+    parts = pc.partition_components(_published_components(BOTH), _controls())
+    assert {run: len(part) for run, part in parts.items()} == {
+        RATINGS_V1: 2,
+        W6LIVE: 2,
+    }
+
+
+@pytest.mark.parametrize(
+    ("rows", "word"),
+    [
+        ([*BOTH, (W6LIVE, "f" * 64, 6, 1.0)], "unknown rating manifests"),
+        ([*BOTH, (RATINGS_V1, W6_SHA, 6, 1.0)], "run other than"),  # wrong binding
+        (BOTH[:2], f"no published components of {W6LIVE}"),
+        ([*BOTH, (W6LIVE, W6_SHA, 5, 1.0)], "outside its weeks"),  # overlaps ratings-v1
+    ],
+)
+def test_unknown_mismatched_missing_or_overlapping_partitions_are_refused(rows, word):
+    with pytest.raises(GateError, match=word):
+        pc.partition_components(_published_components(rows), _controls())
+
+
+def test_a_control_reproduces_its_partition_and_an_altered_week6_value_fails():
+    parts = pc.partition_components(_published_components(BOTH), _controls())
+    reports = {
+        run: {"team_rating_components": pc.control_diff(part, part, md, None)}
+        for run, part in parts.items()
+    }
+    assert pc.summarize_controls(reports)["matches_published"]
+    altered = parts[W6LIVE].copy()
+    altered.loc[altered.index[0], "rating_mean"] += 0.01
+    reports[W6LIVE] = {
+        "team_rating_components": pc.control_diff(altered, parts[W6LIVE], md, None)
+    }
+    summary = pc.summarize_controls(reports)
+    assert not summary["matches_published"]
+    assert summary["team_rating_components"]["rows_with_a_difference"] == 1
+    assert summary["team_rating_components"]["rows_published"] == 4

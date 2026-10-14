@@ -12,7 +12,8 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from collections.abc import Iterable, Iterator
+import re
+from collections.abc import Callable, Iterable, Iterator
 from typing import Any
 
 import pandas as pd
@@ -32,6 +33,16 @@ PROVENANCE = {
 }
 SEASON_STATS_COLUMNS = ("value", "n", "games", "rank", "cohort_size")
 STATE_FILES = ("observations", "priors", "pregame_roles", "current_roles")
+PUBLICATION_COLUMNS = (
+    "publication_id",
+    "payload_sha256",
+    "as_of_weeks",
+    "row_counts",
+    "rating_manifest_uri",
+    "rating_manifest_sha256",
+    "measurement_manifest_uri",
+    "measurement_manifest_sha256",
+)
 
 
 def fetch_table(cur, table: str, columns, jsonb, where: str, params) -> pd.DataFrame:
@@ -331,23 +342,147 @@ def build_frames(
     return frames
 
 
-def baseline_history_control(
-    context,
-    run,
-    storage,
-    pin_file,
-    lock,
-    states,
-    artifacts,
-    game_names,
-    published,
-    mp,
-    md,
-    scope: dict[str, Any],
-    additions: dict[str, dict[str, Any]],
-    week_runs: dict[int, str],
-) -> dict[str, Any]:
-    """2026 states rebuilt from the SERVED terminal: must equal the published components."""
+SERVED_R9_REPLAY = "served_r9_replay"
+SIX_A_BRIDGE = "six_a_bridge"
+CONTROL_METHODS = {
+    SERVED_R9_REPLAY: (
+        "2026 states replayed with priors and scale from the served r9 terminal and the "
+        "same 2026 observations"
+    ),
+    SIX_A_BRIDGE: (
+        "the run's own frozen priors and roles, verified against its rating verifier, "
+        "paired with the observations of the 6A root it names as its measurement parent"
+    ),
+}
+
+
+def rating_controls(
+    policies: dict[str, Any], pins: dict[str, Any], week_runs: dict[int, str]
+) -> dict[str, dict[str, Any]]:
+    """The plan's ``rating_controls``: one control per published rating run.
+
+    Each names its method and the plan input pinning the run's rating manifest, whose URI
+    must be that run's; no manifest may control two runs.
+    """
+    raw = policies.get("rating_controls") or {}
+    planned = set(week_runs.values())
+    if set(raw) != planned:
+        raise GateError(
+            f"rating_controls name {sorted(raw)}; the published runs are {sorted(planned)}"
+        )
+    controls = {}
+    for run_id, spec in raw.items():
+        if spec.get("method") not in CONTROL_METHODS:
+            raise GateError(f"rating_controls {run_id}: unknown method {spec!r}")
+        pin = pins.get(spec.get("rating_manifest"))
+        if pin is None or f"/runs/{run_id}/" not in pin.uri:
+            raise GateError(f"rating_controls {run_id}: no pinned manifest of that run")
+        controls[run_id] = {
+            "method": spec["method"],
+            "input": pin.name,
+            "uri": pin.uri,
+            "sha256": pin.sha256,
+            "weeks": sorted(w for w, r in week_runs.items() if r == run_id),
+        }
+    if len({c["sha256"] for c in controls.values()}) != len(controls):
+        raise GateError("rating_controls: one manifest pinned for two runs")
+    return controls
+
+
+def bind_publications(
+    controls: dict[str, dict[str, Any]], publications: list[dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    """Each control bound to the publication metadata that names its rating manifest.
+
+    Every publication of a run must record exactly the pinned manifest (URI and hash) and
+    one measurement parent; a run without a publication cannot be a control.
+    """
+    bound = {}
+    for run_id, control in controls.items():
+        rows = [
+            p
+            for p in publications
+            if p["rating_manifest_uri"] == control["uri"]
+            or p["rating_manifest_sha256"] == control["sha256"]
+        ]
+        if not rows:
+            raise GateError(f"no publication records the {run_id} rating manifest")
+        if any(
+            (p["rating_manifest_uri"], p["rating_manifest_sha256"])
+            != (control["uri"], control["sha256"])
+            for p in rows
+        ):
+            raise GateError(
+                f"publication metadata binds {run_id} to a different rating manifest"
+            )
+        parents = {
+            (p["measurement_manifest_uri"], p["measurement_manifest_sha256"])
+            for p in rows
+        }
+        if len(parents) != 1:
+            raise GateError(
+                f"{run_id} publications name {len(parents)} measurement parents"
+            )
+        ((uri, sha),) = parents
+        bound[run_id] = {
+            **control,
+            "measurement_uri": uri,
+            "measurement_sha256": sha,
+            "publications": sorted(p["publication_id"] for p in rows),
+        }
+    return bound
+
+
+def check_rating_manifest(
+    manifest: dict[str, Any], run_id: str, measurement_sha256: str
+) -> None:
+    """A control's signed rating manifest must be its run's, over the published parent."""
+    from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
+
+    verify_signed_payload(manifest, label=f"{run_id} rating manifest")
+    if (manifest.get("identity") or {}).get("run_id") != run_id:
+        raise GateError(f"the pinned rating manifest is not {run_id}'s")
+    parent = (manifest.get("parents") or {}).get("measurement_manifest_sha256")
+    if parent != measurement_sha256:
+        raise GateError(
+            f"{run_id}: rating manifest parent {str(parent)[:12]} is not the published "
+            f"measurement manifest {measurement_sha256[:12]}"
+        )
+
+
+def partition_components(
+    components: pd.DataFrame, controls: dict[str, dict[str, Any]]
+) -> dict[str, pd.DataFrame]:
+    """Published components by their recorded rating manifest, each in exactly one control.
+
+    A component of an unknown manifest, one whose snapshot id names another run than its
+    manifest's, one outside its run's planned weeks, or a run with no components refuses.
+    """
+    owner = {c["sha256"]: run_id for run_id, c in controls.items()}
+    sha = components["source_manifest_sha256"].astype(str)
+    if unknown := set(sha) - set(owner):
+        raise GateError(f"components from unknown rating manifests {sorted(unknown)}")
+    run = sha.map(owner)
+    named = components["v5_snapshot_id"].astype(str).str.split(":").str[0]
+    if (named != run).any():
+        raise GateError(
+            f"{int((named != run).sum())} components name a run other than their manifest's"
+        )
+    parts = {}
+    for run_id, control in controls.items():
+        part = components[run.eq(run_id)]
+        if part.empty:
+            raise GateError(f"no published components of {run_id}")
+        if outside := set(part["as_of_week"].astype(int)) - set(control["weeks"]):
+            raise GateError(f"{run_id} components outside its weeks: {sorted(outside)}")
+        parts[run_id] = part
+    return parts
+
+
+def served_r9_replay(
+    context, storage, pin_file, lock, states, artifacts, game_names, mp
+) -> Callable[[str, list[int]], pd.DataFrame]:
+    """Components for a run's weeks, from 2026 states replayed on the SERVED r9 terminal."""
     from cks_picks_cfb.data.lake import read_dataset
     from cks_picks_cfb.ratings.possession_intended_update import IntendedUpdate
     from cks_picks_cfb.ratings.possession_live_replay import _priors
@@ -381,31 +516,71 @@ def baseline_history_control(
         pregame_roles=pregame.rating_states,
         current_roles=current,
     )
-    built = build_frames(
-        control_artifacts,
-        week_runs,
-        lambda a: mp.build_payload(
-            a, season=SEASON, game_names=game_names, alias_map=TEAM_LOGO_MAP
-        ),
+
+    def components(run_id: str, weeks: list[int]) -> pd.DataFrame:
+        built = mp.build_payload(
+            dataclasses.replace(control_artifacts, run_id=run_id),
+            season=SEASON,
+            game_names=game_names,
+            alias_map=TEAM_LOGO_MAP,
+            weeks=weeks,
+        )
+        return built.payload.frames["team_rating_components"]
+
+    return components
+
+
+def six_a_bridge(storage, control: dict[str, Any], game_names, mp) -> pd.DataFrame:
+    """Components for a run's weeks, rebuilt from its own verified frozen frames."""
+    from contracts.teams import TEAM_LOGO_MAP
+
+    match = re.fullmatch(
+        r"rebuild/6a/([^/]+)/root-manifest\.json", control["measurement_uri"]
     )
+    if match is None:
+        raise GateError(f"{control['measurement_uri']} is not a published 6A root")
+    artifacts = mp.load_6a_bridged_artifacts(
+        storage, control["uri"], match[1], control["measurement_sha256"], SEASON
+    )
+    if artifacts.rating_sha256 != control["sha256"]:
+        raise GateError(f"{control['uri']} changed after it was pinned")
+    built = mp.build_payload(
+        artifacts,
+        season=SEASON,
+        game_names=game_names,
+        alias_map=TEAM_LOGO_MAP,
+        weeks=control["weeks"],
+    )
+    return built.payload.frames["team_rating_components"]
+
+
+def control_diff(built, published, md, override) -> dict[str, Any]:
+    """One control against its partition: only evidenced kickoff revisions may differ."""
     columns, keys, jsonb = md.TABLES["team_rating_components"]
     values = [c for c in columns if c not in keys and c not in PROVENANCE]
-    report = published_diff.diff_frames(
-        built["team_rating_components"],
-        published["team_rating_components"],
+    return published_diff.diff_frames(
+        built,
+        published,
         keys=keys,
         columns=values,
         metric_of=lambda row: None,
         jsonb=[c for c in jsonb if c in values],
         expected={"kickoff_revision"},
-        added_scope=addition_scope("team_rating_components", additions),
-        bucket_override=kickoff_revision(scope),
+        bucket_override=override,
     )
+
+
+def summarize_controls(controls: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Every published component reproduced by its own control, apart from evidence."""
+    reports = [c["team_rating_components"] for c in controls.values()]
     return {
-        "method": "priors and scale from the served r9 terminal; same 2026 observations",
-        "team_rating_components": report,
-        # Only recorded kickoff revisions may differ; the diff already refuses anything else.
-        "matches_published": not report["unexplained"],
+        "method": "each published rating run reproduced from its own lineage",
+        "controls": controls,
+        "team_rating_components": {
+            name: sum(r[name] for r in reports)
+            for name in ("rows_published", "rows_compared", "rows_with_a_difference")
+        },
+        "matches_published": all(not r["unexplained"] for r in reports),
     }
 
 
@@ -462,11 +637,14 @@ def build(context: StageContext) -> StageOutput:
                 (SEASON,),
             )
             cur.execute(
-                "SELECT publication_id, payload_sha256, as_of_weeks, row_counts "
-                "FROM matchup_data_publications WHERE season = %s",
+                f"SELECT {', '.join(PUBLICATION_COLUMNS)} FROM matchup_data_publications "  # noqa: S608
+                "WHERE season = %s ORDER BY publication_id",
                 (SEASON,),
             )
-            publication = [list(map(str, row)) for row in cur.fetchall()]
+            publications = [
+                dict(zip(PUBLICATION_COLUMNS, map(str, row), strict=True))
+                for row in cur.fetchall()
+            ]
 
     artifacts = mp.Artifacts(
         lineage="intended_update",
@@ -494,22 +672,38 @@ def build(context: StageContext) -> StageOutput:
         ),
     )
     tables = {}
-    control = baseline_history_control(
-        context,
-        run,
-        storage,
-        pin_file,
-        lock,
-        states,
-        artifacts,
-        game_names,
-        published,
-        mp,
-        md,
-        scope,
-        additions,
-        week_runs,
+    controls = bind_publications(
+        rating_controls(
+            dict(context.plan.policies),
+            {pin.name: pin for pin in context.plan.inputs},
+            week_runs,
+        ),
+        publications,
     )
+    parts = partition_components(published["team_rating_components"], controls)
+    replay = None
+    control_reports = {}
+    for run_id, bound in controls.items():
+        check_rating_manifest(
+            json.loads(context.read_input(bound["input"])),
+            run_id,
+            bound["measurement_sha256"],
+        )
+        if bound["method"] == SERVED_R9_REPLAY:
+            replay = replay or served_r9_replay(
+                context, storage, pin_file, lock, states, artifacts, game_names, mp
+            )
+            built = replay(run_id, bound["weeks"])
+        else:
+            built = six_a_bridge(storage, bound, game_names, mp)
+        control_reports[run_id] = {
+            **{k: v for k, v in bound.items() if k != "input"},
+            "description": CONTROL_METHODS[bound["method"]],
+            "team_rating_components": control_diff(
+                built, parts[run_id], md, kickoff_revision(scope)
+            ),
+        }
+    control = summarize_controls(control_reports)
     components_expected = (
         published_diff.EXPECTED_TO_DIFFER
         | {"kickoff_revision"}
@@ -555,7 +749,7 @@ def build(context: StageContext) -> StageOutput:
         "season": SEASON,
         "database_role": "cks_preview_pipeline (read-only transaction)",
         "published_rating_runs": {str(w): r for w, r in sorted(week_runs.items())},
-        "publication": publication,
+        "publication": publications,
         "fbs_source": fbs_source,
         "tables": tables,
         "scope": {
@@ -592,8 +786,8 @@ def build(context: StageContext) -> StageOutput:
             ),
             "history_correction": (
                 "2026 priors and the rating scale come from the corrected 2025 terminal; "
-                "proven by the control below, which reproduces the published components "
-                "exactly from the served terminal"
+                "proven by the controls below, which reproduce each published rating "
+                "run's components exactly from that run's own lineage"
             ),
         },
         "not_compared": "v5_rating_snapshots: covered through team_rating_components.rating_mean",
@@ -634,7 +828,11 @@ def verify(context: StageContext) -> list[str]:
             )
     control = report.get("control_baseline_history", {})
     if not control.get("matches_published"):
+        problems.append("the rating controls do not reproduce the published components")
+    partitioned = control.get("team_rating_components", {}).get("rows_published")
+    if partitioned != report["tables"]["team_rating_components"]["rows_published"]:
         problems.append(
-            "the baseline-history control does not reproduce the published components"
+            f"the rating controls cover {partitioned} published components, not all "
+            f"{report['tables']['team_rating_components']['rows_published']}"
         )
     return problems
