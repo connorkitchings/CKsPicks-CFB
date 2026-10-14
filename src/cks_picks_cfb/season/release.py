@@ -110,8 +110,9 @@ def validate_candidate(
     plus every table of ``PROJECTION_ORDER``). Projection checks are re-derived
     with ``derive(projections, manifest)`` (default
     ``verification.derive_checks``) and must equal the reported entries, so a
-    self-reported pass is never trusted; ``validate(report, projections=...)``
-    (default ``verification.validate_report``) then checks the whole report.
+    self-reported pass is never trusted; ``validate(report, projections=...,
+    manifest=manifest)`` (default ``verification.validate_report``) then checks the
+    whole report and binds its identity and output refs to the run manifest.
     """
     from cks_picks_cfb.season import verification as verifier
 
@@ -126,9 +127,17 @@ def validate_candidate(
         or not manifest["release_id"].strip()
     ):
         raise SeasonReleaseError("release identity missing")
+    identity = manifest.get("identity")
+    if not isinstance(identity, Mapping) or not isinstance(
+        manifest.get("identities"), Mapping
+    ):
+        raise SeasonReleaseError("release identity missing: identity/identities")
     for field in IDENTITY_FIELDS:
         if field not in manifest:
             raise SeasonReleaseError(f"release identity missing: {field}")
+        # The recorded release columns are the ones the checks were derived for.
+        if identity.get(field) != manifest[field]:
+            raise SeasonReleaseError(f"release identity differs from run: {field}")
     for field in (
         "model_manifest_sha256",
         "revision_manifest_sha256",
@@ -161,7 +170,7 @@ def validate_candidate(
             raise SeasonReleaseError(f"candidate check failed: {name}")
     try:
         derived = derive(projections, manifest)
-        validate(verification, projections=projections)
+        validate(verification, projections=projections, manifest=manifest)
     except ValueError as error:
         raise SeasonReleaseError(f"verification report rejected: {error}") from error
     if not isinstance(derived, Mapping) or set(derived) != projection_names:
@@ -187,9 +196,11 @@ def _normal(value: Any, column: str = "") -> Any:
             raise SeasonReleaseError("naive timestamp in release projection")
         return value.astimezone(timezone.utc).isoformat()
     if isinstance(value, str) and (
-        column.endswith(("_at", "_utc")) or column in {"start_date", "as_of_cutoff"}
+        column.endswith(("_at", "_utc", "_as_of"))
+        or column in {"start_date", "as_of_cutoff", "data_as_of"}
+        or "as_of" in column
     ):
-        return _normal(datetime.fromisoformat(value.replace("Z", "+00:00")))
+        return _normal(datetime.fromisoformat(value.replace("Z", "+00:00")), column)
     if isinstance(value, (Decimal, int, float)) and not isinstance(value, bool):
         number = Decimal(str(value))
         if not number.is_finite():
@@ -469,6 +480,11 @@ def stage_release(
     The payload is environment-free: ``release_id`` (and ``environment`` where the
     schema has it) are filled in here, so the same bytes stage in every
     environment with identical projection checks.
+
+    The database records only logical ``season-run:`` URIs, never the local paths
+    staging read the bytes from: ``run_manifest_uri`` must be the manifest's own
+    ``run_manifest_logical_uri`` and the recorded verification URI is its
+    ``verification_logical_uri``.
     """
     if getattr(conn, "autocommit", False):
         raise SeasonReleaseError(
@@ -478,6 +494,18 @@ def stage_release(
     verification = _json(verification_raw, "verification")
     if _sha(verification_raw) != manifest.get("verification_sha256"):
         raise SeasonReleaseError("verification bytes changed")
+    logical = {
+        key: manifest.get(key)
+        for key in ("run_manifest_logical_uri", "verification_logical_uri")
+    }
+    prefix = f"season-run:{manifest.get('release_id')}/"
+    if any(
+        not isinstance(uri, str) or not uri.startswith(prefix)
+        for uri in logical.values()
+    ):
+        raise SeasonReleaseError("run manifest lacks logical season-run URIs")
+    if run_manifest_uri != logical["run_manifest_logical_uri"]:
+        raise SeasonReleaseError("run manifest URI must be its logical URI")
     refs = manifest.get("output_refs")
     ref = refs.get("serving_projections") if isinstance(refs, Mapping) else None
     if not isinstance(ref, Mapping) or _sha(projection_raw) != ref.get("sha256"):
@@ -501,7 +529,7 @@ def stage_release(
         **{k: manifest[k] for k in IDENTITY_FIELDS},
         "run_manifest_uri": run_manifest_uri,
         "run_manifest_sha256": _sha(manifest_raw),
-        "verification_uri": manifest["verification_uri"],
+        "verification_uri": logical["verification_logical_uri"],
         "verification_sha256": _sha(verification_raw),
         "projection_checks": checks,
     }

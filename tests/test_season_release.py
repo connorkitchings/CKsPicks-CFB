@@ -1,60 +1,24 @@
-"""Behavioral tests for invisible staging and atomic all-view activation/rollback."""
+"""Behavioral tests for invisible staging and atomic all-view activation/rollback.
+
+Candidates are sealed by ``tests.season_candidates`` and pass the REAL
+``verification.derive_checks`` / ``validate_report``; only the database is faked.
+"""
 
 import copy
-import hashlib
 import json
 import re
 
 import pytest
 
 from cks_picks_cfb.season import release as r
-from cks_picks_cfb.season import verification as v
-
-
-def encoded(doc):
-    return json.dumps(doc, sort_keys=True).encode()
-
-
-def derived_checks(projections, manifest):
-    """Stand-in for ``verification.derive_checks``: a pure payload function."""
-    return {
-        name: {
-            "passed": True,
-            "observed": {"games": len(projections["games"])},
-            "source": "projection",
-        }
-        for name in sorted(v.REQUIRED_PROJECTION_CHECKS)
-    }
-
-
-def report_for(payload, manifest):
-    """A passing ``season_verification_v2`` report for ``payload``."""
-    tables = {base: payload.get(base, []) for base in r.PROJECTION_ORDER}
-    return {
-        "schema_version": v.SCHEMA_VERSION,
-        "checks": {
-            **derived_checks(payload, manifest),
-            **{
-                name: {"passed": True, "observed": {}, "source": "prepare"}
-                for name in v.REQUIRED_PREPARE_CHECKS
-            },
-        },
-        "projection_checks": {
-            b: r.projection_check(rows) for b, rows in tables.items()
-        },
-        "row_counts": {b: len(rows) for b, rows in tables.items()},
-    }
-
-
-@pytest.fixture(autouse=True)
-def verifier(monkeypatch):
-    """Inject derive/validate until the verification module implements them."""
-    calls = []
-    monkeypatch.setattr(v, "derive_checks", derived_checks)
-    monkeypatch.setattr(
-        v, "validate_report", lambda report, *, projections: calls.append(report)
-    )
-    return calls
+from cks_picks_cfb.season.manifest import canonical, sha
+from tests.season_candidates import (
+    POLICY,
+    candidate,
+    manifest_uri,
+    payload_for,
+    seal,
+)
 
 
 class Database:
@@ -73,14 +37,10 @@ class Database:
         self.statements = []
         self.read_only = False
         self.commits = 0
-        self.policy = (
-            "a" * 64,
-            "season_workflow_v1",
-            "c" * 64,
-            True,
-            "owner-installed",
-        )
+        self.policy = (*POLICY.values(), True, "owner-installed")
         self.columns = {}
+        self.run_columns = {}
+        self.registry = {}
 
     def cursor(self):
         return self
@@ -101,6 +61,16 @@ class Database:
             self.results = [(self.role, self.role)]
         elif "pg_advisory" in query:
             pass
+        elif "table_name = 'prediction_runs'" in query:
+            self.results = list(self.run_columns.items())
+        elif "FROM prediction_runs WHERE run_id" in query:
+            row = self.registry.get(values[0])
+            self.results = [tuple(row[k] for k in self.run_columns)] if row else []
+        elif query.startswith("INSERT INTO prediction_runs"):
+            row = dict(zip(self.run_columns, values, strict=True))
+            self.registry[row["run_id"]] = {
+                k: getattr(value, "obj", value) for k, value in row.items()
+            }
         elif "information_schema.columns" in query:
             base = values[0].removeprefix("season_release_")
             server = ["release_id"] + (
@@ -226,66 +196,30 @@ class Database:
         self.commits += 1
 
 
-def sealed(manifest, payload):
-    """Seal ``payload`` and its report into ``manifest`` (checksum chain)."""
-    raw = encoded(payload)
-    manifest["output_refs"] = {
-        "serving_projections": {
-            "uri": "projections.json",
-            "sha256": hashlib.sha256(raw).hexdigest(),
-        }
+def _types(row: dict) -> dict:
+    return {
+        k: "jsonb" if isinstance(v, (dict, list)) else "text" for k, v in row.items()
     }
-    verification_raw = encoded(report_for(payload, manifest))
-    manifest["verification_sha256"] = hashlib.sha256(verification_raw).hexdigest()
-    return verification_raw, raw
 
 
-@pytest.fixture
-def prepared():
-    projections = {base: [] for base in r.PROJECTION_KEYS}
-    projections.update(
-        {
-            "games": [{"game_id": 1, "season": 2026, "week": 0}],
-            "game_results": [{"game_id": 1, "home_points": 10, "away_points": 7}],
-            "predictions": [{"run_id": "week0", "game_id": 1}],
-            "site_week_selections": [{"season": 2026, "week": 0, "run_id": "week0"}],
-            "v5_rating_snapshots": [{"snapshot_id": "rating", "season": 2026}],
-            "system_stats": [{"season": 2026}],
-        }
-    )
-    payload = {**projections, "prediction_runs": []}
-    manifest = {
-        "schema_version": "season_run_v1",
-        "release_id": "candidate",
-        "season": 2026,
-        "active_week": 0,
-        "model_manifest_sha256": "a" * 64,
-        "revision_manifest_sha256": "b" * 64,
-        "workflow_version": "season_workflow_v1",
-        "grading_policy_sha256": "c" * 64,
-        "code_sha": "d" * 40,
-        "config_sha": "e" * 64,
-        "verification_uri": "verify.json",
-    }
-    verification_raw, raw = sealed(manifest, payload)
-    return manifest, verification_raw, raw, projections
-
-
-def stage(db, prepared, label="candidate"):
-    manifest, verification, projections, rows = prepared
-    manifest = {**manifest, "release_id": label}
+def schema_for(db, payload):
+    """Teach the fake database the 0025 columns of ``payload``'s tables."""
     db.columns = {
-        base: row[0] if row else {key: None for key in keys}
+        base: _types(rows[0]) if rows else {key: "text" for key in keys}
         for base, keys in r.PROJECTION_KEYS.items()
-        for row in [rows[base]]
+        for rows in [payload[base]]
     }
+    db.run_columns = _types(payload["prediction_runs"][0])
+
+
+def stage(db, label="candidate", sealed=None):
+    sealed = sealed or candidate(label)
+    schema_for(db, json.loads(sealed["projection_raw"]))
     return r.stage_release(
         db,
-        manifest_raw=encoded(manifest),
-        run_manifest_uri="run.json",
-        verification_raw=verification,
-        projection_raw=projections,
+        run_manifest_uri=manifest_uri(sealed),
         environment=db.environment,
+        **sealed,
     )
 
 
@@ -300,25 +234,39 @@ def activate(db, release_id, previous=None, **kwargs):
     )
 
 
-def test_staging_invisible_and_identical_retry_writes_no_rows(prepared):
+def test_staging_invisible_and_identical_retry_writes_no_rows():
     db = Database()
-    release_id = stage(db, prepared)
+    release_id = stage(db)
     assert db.rows[release_id]["status"] == "staged"
-    before = copy.deepcopy(db.projections)
-    assert stage(db, prepared) == release_id
-    assert db.projections == before
+    assert len(db.registry) == 3  # weeks 0..active_week registered once
+    before = copy.deepcopy((db.projections, db.registry))
+    assert stage(db) == release_id
+    assert (db.projections, db.registry) == before
     assert not db.history
     assert db.commits == 0
 
 
-def test_activation_readback_and_owner_rollback_restore_all_views(prepared):
+def test_staged_release_records_logical_uris_only():
     db = Database()
-    old = stage(db, prepared, "old")
+    sealed = candidate("candidate")
+    release_id = stage(db, sealed=sealed)
+    manifest = json.loads(sealed["manifest_raw"])
+    row = db.rows[release_id]
+    assert row["run_manifest_uri"] == manifest["run_manifest_logical_uri"]
+    assert row["verification_uri"] == manifest["verification_logical_uri"]
+    assert not any(
+        row[k].startswith("/") for k in ("run_manifest_uri", "verification_uri")
+    )
+
+
+def test_activation_readback_and_owner_rollback_restore_all_views():
+    db = Database()
+    old = stage(db, "old")
     activate(db, old)
     original = copy.deepcopy(
         {base: rows for (rid, base), rows in db.projections.items() if rid == old}
     )
-    new = stage(db, prepared, "new")
+    new = stage(db, "new")
     receipt = activate(db, new, old)
     assert receipt["prior_release_id"] == old
     assert db.rows[old]["status"] == "superseded"
@@ -346,55 +294,55 @@ def test_activation_readback_and_owner_rollback_restore_all_views(prepared):
 @pytest.mark.parametrize(
     "fault", ["prior", "environment", "policy", "readback", "role"]
 )
-def test_activation_refuses_without_changing_pointer(prepared, fault):
+def test_activation_refuses_without_changing_pointer(fault):
     db = Database()
-    candidate = stage(db, prepared)
+    staged = stage(db)
     if fault == "prior":
         kwargs = {"expected_previous_release_id": "other"}
     else:
         kwargs = {"expected_previous_release_id": None}
     if fault == "environment":
-        db.rows[candidate]["environment"] = "production"
+        db.rows[staged]["environment"] = "production"
     elif fault == "policy":
         db.policy = (*db.policy[:3], False, db.policy[-1])
     elif fault == "readback":
-        db.projections[(candidate, "games")][0]["game_id"] = 999
+        db.projections[(staged, "games")][0]["game_id"] = 999
     elif fault == "role":
         db.role = "cks_prod_pipeline"
     with pytest.raises(ValueError):
         r.activate_release(
-            db, environment="preview", season=2026, release_id=candidate, **kwargs
+            db, environment="preview", season=2026, release_id=staged, **kwargs
         )
-    assert db.rows[candidate]["status"] == "staged"
+    assert db.rows[staged]["status"] == "staged"
     assert not db.history
 
 
-def test_production_requires_matching_independent_preview_rehearsal(prepared):
+def test_production_requires_matching_independent_preview_rehearsal():
     prod = Database("production")
-    candidate = stage(prod, prepared)
+    staged = stage(prod)
     with pytest.raises(r.SeasonReleaseError, match="Preview rehearsal"):
-        activate(prod, candidate)
+        activate(prod, staged)
     preview = Database()
-    preview_id = stage(preview, prepared)
+    preview_id = stage(preview)
     activate(preview, preview_id)
     preview.read_only = True
-    assert activate(prod, candidate, preview_conn=preview)["release_id"] == candidate
+    assert activate(prod, staged, preview_conn=preview)["release_id"] == staged
 
 
-def test_production_refuses_preview_with_different_view_content(prepared):
+def test_production_refuses_preview_with_different_view_content():
     prod, preview = Database("production"), Database()
-    candidate = stage(prod, prepared)
-    preview_id = stage(preview, prepared)
+    staged = stage(prod)
+    preview_id = stage(preview)
     activate(preview, preview_id)
     preview.read_only = True
     preview.projections[(preview_id, "game_results")][0]["home_points"] = 999
     with pytest.raises(r.SeasonReleaseError, match="readback"):
-        activate(prod, candidate, preview_conn=preview)
-    assert prod.rows[candidate]["status"] == "staged"
+        activate(prod, staged, preview_conn=preview)
+    assert prod.rows[staged]["status"] == "staged"
 
 
 @pytest.mark.parametrize("authorized,owner", [(False, True), (True, False)])
-def test_rollback_requires_owner_approval_and_privilege(prepared, authorized, owner):
+def test_rollback_requires_owner_approval_and_privilege(authorized, owner):
     db = Database(owner=owner)
     with pytest.raises(r.SeasonReleaseError, match="owner"):
         r.rollback_release(
@@ -409,6 +357,34 @@ def test_rollback_requires_owner_approval_and_privilege(prepared, authorized, ow
     assert not db.history
 
 
+def _fail_check(report):
+    report["checks"]["paired_predictions"]["passed"] = False
+
+
+def _edit_manifest(sealed, **changes):
+    manifest = json.loads(sealed["manifest_raw"])
+    for key, value in changes.items():
+        if value is None:
+            manifest.pop(key)
+        else:
+            manifest[key] = value
+    sealed["manifest_raw"] = canonical(manifest)
+
+
+PAYLOAD_FAULTS = {
+    "duplicate": lambda p: p["games"].append(copy.deepcopy(p["games"][0])),
+    "foreign_scope": lambda p: p["games"][0].update(season=2025),
+    "prediction_outside_schedule": lambda p: p["predictions"].append(
+        {**p["predictions"][0], "game_id": 99}
+    ),
+    "environment_key": lambda p: p["games"][0].update(environment="preview"),
+    "release_id_key": lambda p: p["system_stats"][0].update(release_id="preview-x"),
+    "missing_final": lambda p: p["game_results"][0].update(home_points=None),
+    # Passes the scope check; only the re-derived verification refuses it.
+    "wrong_grade": lambda p: p["prediction_grades"][0].update(result="loss"),
+}
+
+
 @pytest.mark.parametrize(
     "fault",
     [
@@ -416,114 +392,93 @@ def test_rollback_requires_owner_approval_and_privilege(prepared, authorized, ow
         "projection_hash",
         "verification_schema",
         "failed_check",
+        "local_run_manifest_uri",
+        "missing_logical_uri",
+        "missing_identities",
+        "identity_differs",
         "missing_projection",
-        "duplicate",
-        "foreign_scope",
-        "prediction_outside_schedule",
-        "missing_final",
-        "environment_key",
-        "release_id_key",
+        *PAYLOAD_FAULTS,
     ],
 )
-def test_stage_refuses_unverified_or_incomplete_candidate(prepared, fault):
-    manifest, verifyraw, raw, projections = copy.deepcopy(prepared)
-    db = Database()
+def test_stage_refuses_unverified_or_incomplete_candidate(fault):
+    sealed = candidate("candidate")
+    uri = manifest_uri(sealed)
     if fault == "verification_hash":
-        verifyraw += b"\n"
+        sealed["verification_raw"] += b"\n"
     elif fault == "projection_hash":
-        raw += b"\n"
-    elif fault in {"verification_schema", "failed_check"}:
-        verification = json.loads(verifyraw)
-        if fault == "verification_schema":
-            verification["schema_version"] = "season_verification_v1"
-        else:
-            verification["checks"]["paired_predictions"]["passed"] = False
-        verifyraw = encoded(verification)
-        manifest["verification_sha256"] = hashlib.sha256(verifyraw).hexdigest()
+        sealed["projection_raw"] += b"\n"
+    elif fault == "verification_schema":
+        sealed = candidate(
+            edit_report=lambda doc: doc.update(schema_version="season_verification_v1")
+        )
+    elif fault == "failed_check":
+        sealed = candidate(edit_report=_fail_check)
+    elif fault == "local_run_manifest_uri":
+        uri = "/Users/me/prepared/run-manifest.json"
+    elif fault == "missing_logical_uri":
+        _edit_manifest(sealed, verification_logical_uri=None)
+    elif fault == "missing_identities":
+        _edit_manifest(sealed, identities=None)
+    elif fault == "identity_differs":
+        _edit_manifest(sealed, code_sha="b" * 40)
+    elif fault == "missing_projection":
+        payload = payload_for("candidate")
+        payload.pop("market_quotes")
+        sealed = seal("candidate", payload, reported_payload=payload_for("candidate"))
     else:
-        if fault == "missing_projection":
-            projections.pop("market_quotes")
-        elif fault == "duplicate":
-            projections["games"].append(copy.deepcopy(projections["games"][0]))
-        elif fault == "foreign_scope":
-            projections["games"][0]["season"] = 2025
-        elif fault == "prediction_outside_schedule":
-            projections["predictions"].append({"run_id": "week0", "game_id": 2})
-        elif fault == "environment_key":
-            projections["games"][0]["environment"] = "preview"
-        elif fault == "release_id_key":
-            projections["system_stats"][0]["release_id"] = "preview-candidate"
-        else:
-            projections["game_results"][0]["home_points"] = None
-        verifyraw, raw = sealed(manifest, {**projections, "prediction_runs": []})
+        sealed = candidate(edit_payload=PAYLOAD_FAULTS[fault])
+    db = Database()
+    schema_for(db, payload_for("candidate"))
     with pytest.raises(r.SeasonReleaseError):
         r.stage_release(
             db,
-            manifest_raw=encoded(manifest),
-            run_manifest_uri="run.json",
-            verification_raw=verifyraw,
-            projection_raw=raw,
+            run_manifest_uri=uri,
             environment="preview",
+            **sealed,
         )
-    assert not db.rows
+    assert not db.rows and not db.registry
 
 
-def test_full_schedule_stages_games_without_predictions(prepared):
-    manifest, _, _, projections = copy.deepcopy(prepared)
-    projections["games"].append({"game_id": 2, "season": 2026, "week": 3})
-    verifyraw, raw = sealed(manifest, {**projections, "prediction_runs": []})
+def test_full_schedule_stages_games_without_predictions():
+    def later_game(payload):
+        game = next(g for g in payload["games"] if g["week"] == 3)
+        payload["games"].append({**game, "game_id": 6, "week": 4})
+
     db = Database()
-    db.columns = {
-        base: rows[0] if rows else {key: None for key in keys}
-        for base, keys in r.PROJECTION_KEYS.items()
-        for rows in [projections[base]]
-    }
+    release_id = stage(db, sealed=candidate("candidate", edit_payload=later_game))
 
-    release_id = r.stage_release(
-        db,
-        manifest_raw=encoded(manifest),
-        run_manifest_uri="run.json",
-        verification_raw=verifyraw,
-        projection_raw=raw,
-        environment="preview",
+    games = db.projections[(release_id, "games")]
+    assert len(games) == 6 and sum(g["predicted_spread"] is None for g in games) == 2
+
+
+def _candidate_args(label="candidate"):
+    sealed = candidate(label)
+    return (
+        json.loads(sealed["manifest_raw"]),
+        json.loads(sealed["verification_raw"]),
+        json.loads(sealed["projection_raw"]),
     )
 
-    assert len(db.projections[(release_id, "games")]) == 2
+
+def test_validate_candidate_passes_with_real_rederived_report():
+    manifest, report, payload = _candidate_args()
+
+    r.validate_candidate(manifest, report, payload)
 
 
-def _candidate_args(prepared):
-    manifest, verifyraw, raw, projections = copy.deepcopy(prepared)
-    return manifest, json.loads(verifyraw), {**projections, "prediction_runs": []}
-
-
-def test_validate_candidate_passes_with_report_rederived_from_payload(prepared):
-    manifest, report, payload = _candidate_args(prepared)
-    seen = []
-
-    r.validate_candidate(
-        manifest,
-        report,
-        payload,
-        derive=derived_checks,
-        validate=lambda doc, *, projections: seen.append((doc, projections)),
-    )
-
-    assert seen == [(report, payload)]
+def _stale_report_for_changed_payload(manifest, report, payload):
+    """A report honestly derived for one payload, presented with another."""
+    payload["prediction_market_selections"][0]["price"] = -105.0
 
 
 @pytest.mark.parametrize(
-    "forgery", ["derived-failure", "extra-check", "missing-check", "bare-boolean"]
+    "forgery",
+    ["derived-failure", "extra-check", "missing-check", "bare-boolean", "observed"],
 )
-def test_validate_candidate_refuses_forged_checks(prepared, forgery):
-    manifest, report, payload = _candidate_args(prepared)
-    derive = derived_checks
+def test_validate_candidate_refuses_forged_checks(forgery):
+    manifest, report, payload = _candidate_args()
     if forgery == "derived-failure":
-
-        def derive(projections, manifest):
-            checks = derived_checks(projections, manifest)
-            checks["market_links"] = {**checks["market_links"], "passed": False}
-            return checks
-
+        _stale_report_for_changed_payload(manifest, report, payload)
     elif forgery == "extra-check":
         report["checks"]["self_declared"] = {
             "passed": True,
@@ -532,44 +487,42 @@ def test_validate_candidate_refuses_forged_checks(prepared, forgery):
         }
     elif forgery == "missing-check":
         report["checks"].pop("market_links")
-    else:
+    elif forgery == "bare-boolean":
         report["checks"]["market_links"] = True
+    else:
+        report["checks"]["market_links"]["observed"]["quotes"] = 99
 
     with pytest.raises(r.SeasonReleaseError, match="check"):
-        r.validate_candidate(
-            manifest,
-            report,
-            payload,
-            derive=derive,
-            validate=lambda doc, *, projections: None,
-        )
+        r.validate_candidate(manifest, report, payload)
 
 
 @pytest.mark.parametrize("field", ["projection_checks", "row_counts"])
-def test_validate_candidate_refuses_report_for_other_payload(prepared, field):
-    manifest, report, payload = _candidate_args(prepared)
+def test_validate_candidate_refuses_report_for_other_payload(field):
+    manifest, report, payload = _candidate_args()
     report[field]["games"] = {"rows": 9, "sha256": "0" * 64} if field[0] == "p" else 9
 
     with pytest.raises(r.SeasonReleaseError, match="differ from payload"):
+        r.validate_candidate(manifest, report, payload)
+
+
+def test_validate_candidate_binds_report_to_the_run_manifest():
+    manifest, report, payload = _candidate_args()
+    other, _, _ = _candidate_args("other")
+
+    with pytest.raises(r.SeasonReleaseError, match="identity differs from manifest"):
         r.validate_candidate(
-            manifest,
-            report,
-            payload,
-            derive=derived_checks,
-            validate=lambda doc, *, projections: None,
+            {**other, "output_refs": manifest["output_refs"]}, report, payload
         )
 
 
-def test_validate_candidate_wraps_verification_rejection(prepared):
-    manifest, report, payload = _candidate_args(prepared)
+def test_validate_candidate_wraps_verification_rejection():
+    manifest, report, payload = _candidate_args()
 
-    def reject(doc, *, projections):
+    def reject(doc, *, projections, manifest):
         raise ValueError("row counts differ")
 
     with pytest.raises(r.SeasonReleaseError, match="row counts differ"):
-        r.validate_candidate(
-            manifest, report, payload, derive=derived_checks, validate=reject
-        )
+        r.validate_candidate(manifest, report, payload, validate=reject)
 
 
 def test_timestamp_normalization_and_server_columns_are_excluded():
@@ -671,11 +624,11 @@ def test_registered_run_collision_preserves_existing_row():
         r._register_runs(cursor, [{**row, "frozen_at": "2026-10-14T00:00:00Z"}], 2026)
 
 
-def test_autocommit_cannot_partially_stage_or_activate(prepared):
+def test_autocommit_cannot_partially_stage_or_activate():
     db = Database()
     db.autocommit = True
     with pytest.raises(r.SeasonReleaseError, match="transaction"):
-        stage(db, prepared)
+        stage(db)
     with pytest.raises(r.SeasonReleaseError, match="transaction"):
         activate(db, "candidate")
     assert not db.rows and not db.history
@@ -683,8 +636,6 @@ def test_autocommit_cannot_partially_stage_or_activate(prepared):
 
 def _prepared_run(tmp_path):
     """A manifest whose output refs and verification live on disk."""
-    from cks_picks_cfb.season.manifest import sha
-
     files = {
         "serving_projections": b'{"games":[]}',
         "ratings": b"ratings",

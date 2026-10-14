@@ -79,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
             output=args.output,
             code_sha=code_sha,
             reconstruct_next_week=args.reconstruct_next_week,
+            environment=args.environment,
         )
         print(json.dumps(manifest, sort_keys=True))
         return 0
@@ -154,7 +155,8 @@ def _release(args: argparse.Namespace) -> int:
             release_id = stage_release(
                 conn,
                 manifest_raw=raw,
-                run_manifest_uri=str(args.run_manifest.resolve()),
+                # Bytes are read locally; the database records the logical URI.
+                run_manifest_uri=manifest["run_manifest_logical_uri"],
                 verification_raw=verification,
                 projection_raw=projection,
                 environment=args.environment,

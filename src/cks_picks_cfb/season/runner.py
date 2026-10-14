@@ -111,11 +111,16 @@ def _write_ref(directory: Path, name: str, raw: bytes, rows: int) -> dict:
     return _ref(directory, path, rows)
 
 
+def _logical(directory: Path, path: Path) -> str:
+    """Environment-free name of a run file; the only form recorded in a database."""
+    return f"season-run:{directory.name}/{path.name}"
+
+
 def _ref(directory: Path, path: Path, rows: int) -> dict:
     """Local ``uri`` (read by status/staging) plus an environment-free logical one."""
     return {
         "uri": str(path),
-        "logical_uri": f"season-run:{directory.name}/{path.name}",
+        "logical_uri": _logical(directory, path),
         "sha256": sha(path.read_bytes()),
         "rows": rows,
     }
@@ -370,7 +375,9 @@ def prepare(
                 "evidence_class": "reconstructed",
                 "grading_policy": GRADING_POLICY,
                 "verification_uri": str(verification_path),
+                "verification_logical_uri": _logical(directory, verification_path),
                 "verification_sha256": sha(verification_path.read_bytes()),
+                "run_manifest_logical_uri": _logical(directory, manifest_path),
                 "output_refs": refs,
             }
             _atomic_json(manifest_path, manifest)

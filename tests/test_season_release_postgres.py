@@ -22,6 +22,10 @@ handling is exercised unchanged.
 
 Every template is built from the shipped SQL alone; the "operable" template
 only adds the owner-installed release policies.
+
+Candidates (``tests.season_candidates``) pass the REAL verification module: staging
+re-derives every projection check from the payload bytes. Only the tests of the
+database foreign keys and of rejection wrapping inject verification stand-ins.
 """
 
 from __future__ import annotations
@@ -41,8 +45,19 @@ from psycopg import errors, sql
 
 from cks_picks_cfb.season import release
 from cks_picks_cfb.season import verification as verifier
+from cks_picks_cfb.season.manifest import canonical
+from scripts.pipeline.run_season import _sealed_candidate
 from tests.pg_harness import PgCluster, find_pg_bin
-from tests.test_season_release import derived_checks, report_for
+from tests.season_candidates import (
+    POLICY,
+    candidate,
+    manifest_uri,
+    payload_for,
+    rename_venue,
+    run_id,
+    seal,
+)
+from tests.season_fixtures import build_season
 
 PG_BIN = find_pg_bin()
 if PG_BIN is None:
@@ -60,13 +75,7 @@ OWNER = "cks_owner"
 WEB_LOGIN = "cks_web_reader"
 PIPELINE = {"preview": "cks_preview_pipeline", "production": "cks_prod_pipeline"}
 SEASON = 2026
-RUN_ID = "season-2026-week-0"
-TS = "2026-08-29T16:00:00+00:00"
-POLICY = {
-    "model_manifest_sha256": "a" * 64,
-    "workflow_version": "season_workflow_v1",
-    "grading_policy_sha256": "c" * 64,
-}
+ACTIVE_WEEK = 2  # tests.season_candidates identities: through Week 1, active Week 2
 CONTROL_TABLES = {
     "season_release_policies",
     "season_releases",
@@ -202,13 +211,25 @@ def db(make_db):
     return make_db("tpl_operable")
 
 
-@pytest.fixture(autouse=True)
-def verification_functions(monkeypatch):
-    """Inject derive/validate until the verification module implements them."""
-    monkeypatch.setattr(verifier, "derive_checks", derived_checks)
-    monkeypatch.setattr(
-        verifier, "validate_report", lambda report, *, projections: None
-    )
+@pytest.fixture
+def fake_verification(monkeypatch):
+    """Verification stand-ins, only for payloads the real checks would refuse."""
+
+    def derived(projections, manifest):
+        report = json.loads(manifest["__report__"])
+        return {
+            name: report["checks"][name] for name in verifier.REQUIRED_PROJECTION_CHECKS
+        }
+
+    monkeypatch.setattr(verifier, "derive_checks", lambda p, m: _passing(p))
+    monkeypatch.setattr(verifier, "validate_report", lambda report, **kwargs: None)
+
+
+def _passing(projections) -> dict:
+    return {
+        name: {"passed": True, "observed": {}, "source": "projection"}
+        for name in sorted(verifier.REQUIRED_PROJECTION_CHECKS)
+    }
 
 
 # --------------------------------------------------------------------------
@@ -216,364 +237,29 @@ def verification_functions(monkeypatch):
 # --------------------------------------------------------------------------
 
 
-def _encoded(doc) -> bytes:
-    return json.dumps(doc, sort_keys=True).encode()
+def views(label: str = "r1") -> dict:
+    """The serving projections (payload minus the run registry) of ``label``."""
+    payload = payload_for(label)
+    payload.pop("prediction_runs")
+    return payload
 
 
-def run_record() -> dict:
-    return {
-        "run_id": RUN_ID,
-        "season": SEASON,
-        "week": 0,
-        "state": "published",
-        "expected_games": 1,
-        "predicted_games": 1,
-        "lined_games": 1,
-        "data_as_of": TS,
-        "source_config": "conf/season/test.yaml",
-        "system_name": "Season Test",
-        "model_id": "season-test",
-        "code_sha": "d" * 40,
-        "config_sha": "e" * 64,
-        "model_bundle_sha256": None,
-        "rating_manifest_sha256": None,
-        "artifact_uri": "runs/week0.json",
-        "artifact_sha256": "f" * 64,
-        "input_dataset_refs": [],
-        "validation": {},
-        "created_at": TS,
-        "published_at": TS,
-        "frozen_at": None,
-        "scored_at": None,
-        "evidence_class": "legacy",
-    }
-
-
-def game(game_id: int, week: int = 0, lines: dict | None = None) -> dict:
-    """A schedule row; prediction columns stay NULL without ``lines``."""
-    blank = dict.fromkeys(
-        (
-            "home_team_spread_line",
-            "total_line",
-            "predicted_spread",
-            "predicted_total",
-            "predicted_spread_std_dev",
-            "predicted_total_std_dev",
-            "spread_lean",
-            "total_lean",
-            "edge_spread",
-            "edge_total",
-        )
-    )
-    provenance = {"source_config": None, "system_name": None, "model_id": None}
-    if lines:
-        provenance = {
-            "source_config": "conf/season/test.yaml",
-            "system_name": "Season Test",
-            "model_id": "season-test",
-        }
-    return {
-        "game_id": game_id,
-        "season": SEASON,
-        "week": week,
-        "start_date": TS,
-        "home_team": f"Home {game_id}",
-        "away_team": f"Away {game_id}",
-        **blank,
-        "high_confidence": False,
-        **(lines or {}),
-        **provenance,
-        "inserted_at": TS,
-        "updated_at": TS,
-    }
-
-
-def quote(quote_id: str, game_id: int) -> dict:
-    return {
-        "quote_id": quote_id,
-        "game_id": game_id,
-        "provider": "consensus",
-        "captured_at": TS,
-        "spread": -3.5,
-        "total": 51.5,
-        "source_capture_id": None,
-        "home_spread_price": -110.0,
-        "away_spread_price": -110.0,
-        "over_price": -110.0,
-        "under_price": -110.0,
-        "quote_updated_at": TS,
-        "source_event_id": None,
-    }
-
-
-def projections(spread: float) -> dict:
-    """Environment-free week-0 serving view with every release link populated.
-
-    ``spread`` makes release contents differ.
-    """
-    lines = {
-        "home_team_spread_line": -3.5,
-        "total_line": 51.5,
-        "predicted_spread": spread,
-        "predicted_total": 50.0,
-        "predicted_spread_std_dev": 13.0,
-        "predicted_total_std_dev": 12.0,
-        "spread_lean": "home",
-        "total_lean": "under",
-        "edge_spread": 1.5,
-        "edge_total": 1.5,
-        "high_confidence": False,
-    }
-    views = {base: [] for base in release.PROJECTION_KEYS}
-    views.update(
-        games=[game(401, lines=lines)],
-        game_venues=[
-            {
-                "game_id": 401,
-                "venue_id": 7,
-                "venue_name": "Home Field",
-                "city": "Hometown",
-                "state": "TX",
-                "country_code": "US",
-                "timezone": "America/Chicago",
-                "neutral_site": False,
-                "source": "cfbd",
-                "updated_at": TS,
-            }
-        ],
-        game_results=[
-            {
-                "completion_state": "completed",
-                "source_dataset_version_id": None,
-                "game_id": 401,
-                "home_points": 31,
-                "away_points": 20,
-                "spread_result": "win",
-                "total_result": "push",
-                "scored_at": TS,
-            }
-        ],
-        predictions=[
-            {
-                "run_id": RUN_ID,
-                "game_id": 401,
-                **lines,
-                "high_confidence_eligible": False,
-                "home_completed_games": 0,
-                "away_completed_games": 0,
-                "regime": "preseason",
-                "spread_model_version": "v-test",
-                "total_model_version": "v-test",
-                "created_at": TS,
-                "market_snapshot_id": "msnap-401",
-            }
-        ],
-        prediction_grades=[
-            {
-                "run_id": RUN_ID,
-                "game_id": 401,
-                "target": "spread",
-                "market_snapshot_id": "msnap-401",
-                "market_quote_id": "quote-401",
-                "side": "home",
-                "result": "win",
-                "profit_units": "0.9091",
-                "grading_version": "model_side_best_quote_v2:test",
-                "graded_at": TS,
-            }
-        ],
-        market_quotes=[quote("quote-401", 401)],
-        market_snapshots=[
-            {
-                "snapshot_id": "msnap-401",
-                "game_id": 401,
-                "captured_at": TS,
-                "spread": -3.5,
-                "total": 51.5,
-                "spread_rule": "consensus",
-                "total_rule": "consensus",
-                "spread_provider_count": 1,
-                "total_provider_count": 1,
-                "source_quote_ids": ["quote-401"],
-                "policy_version": "consensus_then_median_v1",
-                "created_at": TS,
-            }
-        ],
-        market_snapshot_quotes=[
-            {"snapshot_id": "msnap-401", "quote_id": "quote-401", "target": "spread"}
-        ],
-        prediction_market_selections=[
-            {
-                "run_id": RUN_ID,
-                "game_id": 401,
-                "target": "spread",
-                "snapshot_id": "msnap-401",
-                "quote_id": "quote-401",
-                "side": "home",
-                "point": -3.5,
-                "price": -110.0,
-                "edge": 1.5,
-                "policy_version": "model_side_best_quote_v2",
-                "created_at": TS,
-            }
-        ],
-        site_week_selections=[
-            {
-                "season": SEASON,
-                "week": 0,
-                "run_id": RUN_ID,
-                "selected_at": TS,
-                "reason": "season release",
-            }
-        ],
-        v5_rating_snapshots=[
-            {
-                "snapshot_id": "snap-home-u",
-                "source_run_id": RUN_ID,
-                "source_manifest_sha256": "9" * 64,
-                "team": "Home U",
-                "season": SEASON,
-                "week": 0,
-                "game_id": None,
-                "snapshot_class": "pregame",
-                "cutoff_utc": TS,
-                "offense_rating": 1.25,
-                "offense_variance": 0.5,
-                "defense_rating": -0.75,
-                "defense_variance": 0.5,
-                "overall_rating": 2.0,
-                "overall_variance": 0.75,
-                "fallback_reason": None,
-                "created_at": TS,
-            }
-        ],
-        team_rating_components=[
-            {
-                "component_id": "component-home-u-offense",
-                "v5_snapshot_id": "snap-home-u",
-                "lineage": "historical_replay",
-                "candidate_id": "candidate-test",
-                "source_manifest_sha256": "9" * 64,
-                "snapshot_class": "pregame",
-                "season": SEASON,
-                "as_of_week": 0,
-                "game_id": None,
-                "cutoff_utc": TS,
-                "rating_team": "Home U",
-                "team": "Home U",
-                "unit_role": "offense",
-                "rating_mean": 1.25,
-                "rating_variance": 0.5,
-                "prior_mean": 1.0,
-                "prior_variance": 0.6,
-                "prior_weight": 1.0,
-                "prior_contribution": 1.0,
-                "evidence_weight": 0.0,
-                "process_variance": 0.1,
-                "k": 0.0,
-                "usable_exposure": 0.0,
-                "completed_games": 0,
-                "evidence": [],
-                "excluded_observations": [],
-                "prior_detail": {"source": "preseason"},
-                "fallback_reason": None,
-                "created_at": TS,
-            }
-        ],
-        matchup_data_publications=[
-            {
-                "publication_id": "season-run:r1#matchup",
-                "season": SEASON,
-                "lineage": "historical_replay",
-                "rating_manifest_sha256": "1" * 64,
-                "rating_manifest_uri": "season-run:r1#ratings",
-                "measurement_manifest_sha256": "2" * 64,
-                "measurement_manifest_uri": "season-run:r1#measurements",
-                "observations_records_sha": "3" * 64,
-                "as_of_weeks": [0],
-                "rating_scale": {"points": 1},
-                "row_counts": {"team_rating_components": 1},
-                "payload_sha256": "4" * 64,
-                "code_sha": "d" * 40,
-                "published_at": TS,
-            }
-        ],
-        system_stats=[
-            {
-                "season": SEASON,
-                "as_of_week": 0,
-                "spread_wins": 1,
-                "spread_losses": 0,
-                "spread_pushes": 0,
-                "total_wins": 0,
-                "total_losses": 0,
-                "total_pushes": 0,
-                "spread_profit_units": "0.9091",
-                "total_profit_units": "0.0000",
-                "updated_at": TS,
-            }
-        ],
-    )
-    return views
-
-
-def seal(
-    label: str,
-    views: dict,
-    *,
-    model_sha: str = POLICY["model_manifest_sha256"],
-    report=None,
-) -> dict[str, bytes]:
-    """Manifest/report/payload bytes chained by checksums; ``report`` edits it."""
-    payload = {**views, "prediction_runs": [run_record()]}
-    projection_raw = _encoded(payload)
-    manifest = {
-        "schema_version": "season_run_v1",
-        "release_id": label,
-        "season": SEASON,
-        "active_week": 0,
-        "model_manifest_sha256": model_sha,
-        "revision_manifest_sha256": "b" * 64,
-        "workflow_version": POLICY["workflow_version"],
-        "grading_policy_sha256": POLICY["grading_policy_sha256"],
-        "code_sha": "d" * 40,
-        "config_sha": "e" * 64,
-        "verification_uri": f"verify/{label}.json",
-        "output_refs": {
-            "serving_projections": {
-                "uri": f"projections/{label}.json",
-                "sha256": hashlib.sha256(projection_raw).hexdigest(),
-            }
-        },
-    }
-    document = report_for(payload, manifest)
-    if report:
-        report(document)
-    verification_raw = _encoded(document)
-    manifest["verification_sha256"] = hashlib.sha256(verification_raw).hexdigest()
-    return {
-        "manifest_raw": _encoded(manifest),
-        "verification_raw": verification_raw,
-        "projection_raw": projection_raw,
-    }
-
-
-def candidate(label: str, *, spread: float = -2.0, **kwargs) -> dict[str, bytes]:
-    """Sealed manifest/verification/projection bytes, chained by checksums."""
-    return seal(label, projections(spread), **kwargs)
+def release_id_of(label: str, environment: str = "preview") -> str:
+    return f"{environment}-{run_id(label)}"
 
 
 def stage(cluster, dbname, label, environment="preview", payload=None, **kwargs):
     """Stage and commit exactly as ``run_season.py`` does (rollback on error)."""
+    sealed = payload or candidate(label, **kwargs)
     with cluster.connect(dbname, PIPELINE[environment]) as conn:
-        release_id = release.stage_release(
+        staged = release.stage_release(
             conn,
-            run_manifest_uri=f"runs/{label}.json",
+            run_manifest_uri=manifest_uri(sealed),
             environment=environment,
-            **(payload or candidate(label, **kwargs)),
+            **sealed,
         )
         conn.commit()
-    return release_id
+    return staged
 
 
 def activate(cluster, dbname, release_id, previous, environment="preview", **kwargs):
@@ -948,9 +634,9 @@ def test_pipeline_update_of_release_manifest_columns_refused(cluster, db):
 def test_pipeline_cannot_change_releases_via_direct_sql(cluster, db, statement):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
-    staged = stage(cluster, db, "r3", spread=-5.0)
+    staged = stage(cluster, db, "r3")
     before = release_state(cluster, db)
 
     with cluster.connect(db, PIPELINE["preview"]) as conn:
@@ -998,7 +684,7 @@ def test_activation_function_refuses_set_role_session(cluster, db):
 def test_direct_activation_function_call_enforces_checks(cluster, db, fault):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     target, previous, message = second, first, "owner policy"
     if fault == "policy":
         with cluster.connect(db, OWNER, autocommit=True) as conn:
@@ -1019,7 +705,7 @@ def test_direct_activation_function_call_enforces_checks(cluster, db, fault):
 def test_direct_activation_function_call_supersedes_and_records_history(cluster, db):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
 
     with cluster.connect(db, PIPELINE["preview"]) as conn:
         prior = _call_activation_function(conn, second, first)
@@ -1043,8 +729,8 @@ def test_projection_rows_and_history_immutable_even_for_owner(cluster, db):
         with pytest.raises(errors.RaiseException, match="requires a staged release"):
             conn.execute(
                 "INSERT INTO season_release_site_week_selections"
-                " (release_id, season, week, run_id, reason) VALUES (%s, %s, 1, %s, 'x')",
-                (release_id, SEASON, RUN_ID),
+                " (release_id, season, week, run_id, reason) VALUES (%s, %s, 9, %s, 'x')",
+                (release_id, SEASON, f"{run_id('r1')}:w0"),
             )
         with pytest.raises(errors.RaiseException, match="append-only"):
             conn.execute("UPDATE season_release_history SET decision_ref = 'x'")
@@ -1076,7 +762,7 @@ def test_stage_is_invisible_to_active_pointer_and_legacy_tables(cluster, db):
 
     release_id = stage(cluster, db, "r1")
 
-    assert release_id == "preview-r1"
+    assert release_id == release_id_of("r1")
     assert statuses(cluster, db) == {release_id: "staged"}
     assert history(cluster, db) == []
     legacy_after = legacy_state(cluster, db)
@@ -1100,7 +786,7 @@ def test_identical_restage_returns_same_release_without_new_rows(cluster, db):
 def test_activation_supersedes_previous_and_appends_history(cluster, db):
     first = stage(cluster, db, "r1")
     initial = activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
 
     receipt = activate(cluster, db, second, first)
 
@@ -1128,7 +814,7 @@ def test_activation_with_stale_expected_previous_refused_without_writes(
 ):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     before = release_state(cluster, db)
 
     with pytest.raises(release.SeasonReleaseError, match="changed since review"):
@@ -1154,7 +840,7 @@ def test_stage_with_wrong_environment_login_refused_without_writes(cluster, db):
         with pytest.raises(ValueError, match="restricted pipeline role"):
             release.stage_release(
                 conn,
-                run_manifest_uri="runs/r1.json",
+                run_manifest_uri=manifest_uri(candidate("r1")),
                 environment="production",
                 **candidate("r1"),
             )
@@ -1207,17 +893,19 @@ def _fail_check(report: dict) -> None:
 def _tampered(fault: str) -> dict[str, bytes]:
     payload = candidate("r1")
     if fault == "verification-failed":
-        return candidate("r1", report=_fail_check)
+        return candidate("r1", edit_report=_fail_check)
     if fault == "verification-bytes":
         payload["verification_raw"] += b" "
     elif fault == "verification-missing":
         payload["verification_raw"] = b""
     elif fault == "projection-bytes":
-        payload["projection_raw"] = _encoded(projections(-9.0))
+        payload["projection_raw"] = candidate("r1", edit_payload=rename_venue)[
+            "projection_raw"
+        ]
     elif fault == "projection-checksum":
         manifest = json.loads(payload["manifest_raw"])
         manifest["output_refs"]["serving_projections"]["sha256"] = "0" * 64
-        payload["manifest_raw"] = _encoded(manifest)
+        payload["manifest_raw"] = canonical(manifest)
     return payload
 
 
@@ -1241,9 +929,9 @@ def test_stage_of_unverified_candidate_refused_without_writes(cluster, db, fault
 
 
 def test_stage_with_unknown_payload_column_leaves_no_partial_rows(cluster, db):
-    views = projections(-2.0)
-    views["system_stats"][0]["unexpected_column"] = 1
-    payload = seal("r1", views)
+    payload = candidate(
+        "r1", edit_payload=lambda p: p["system_stats"][0].update(unexpected_column=1)
+    )
     before = release_state(cluster, db)
 
     with pytest.raises(
@@ -1257,7 +945,7 @@ def test_stage_with_unknown_payload_column_leaves_no_partial_rows(cluster, db):
 def test_rollback_reactivates_prior_release_and_keeps_all_rows(cluster, db):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
     before = release_state(cluster, db)
 
@@ -1287,7 +975,7 @@ def test_rollback_without_owner_inputs_refused_without_writes(
 ):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
     before = release_state(cluster, db)
 
@@ -1300,7 +988,7 @@ def test_rollback_without_owner_inputs_refused_without_writes(
 def test_rollback_from_set_role_session_refused(cluster, db):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
 
     with cluster.connect(db) as conn:
@@ -1320,7 +1008,7 @@ def test_rollback_from_set_role_session_refused(cluster, db):
 def test_rollback_to_never_activated_release_refused_without_writes(cluster, db):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    staged = stage(cluster, db, "r2", spread=-4.0)
+    staged = stage(cluster, db, "r2")
     before = release_state(cluster, db)
 
     with pytest.raises(release.SeasonReleaseError, match="invalid activation status"):
@@ -1332,7 +1020,7 @@ def test_rollback_to_never_activated_release_refused_without_writes(cluster, db)
 def test_rollback_when_no_release_is_active_refused_without_writes(cluster, db):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
     with cluster.connect(db, OWNER, autocommit=True) as conn:
         conn.execute(
@@ -1350,7 +1038,7 @@ def test_rollback_when_no_release_is_active_refused_without_writes(cluster, db):
 def test_rollback_with_stale_expected_active_refused_without_writes(cluster, db):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
     rollback(cluster, db, first, second)
     before = release_state(cluster, db)
@@ -1388,7 +1076,7 @@ def test_production_activation_with_read_only_preview_rehearsal_succeeds(cluster
             preview_conn=preview,
         )
 
-    assert receipt["release_id"] == "production-r1"
+    assert receipt["release_id"] == release_id_of("r1", "production")
     assert statuses(cluster, db)[candidate_id] == "active"
 
 
@@ -1452,7 +1140,7 @@ def test_production_activation_with_run_season_preview_connection_succeeds(clust
 
 
 def test_production_activation_without_matching_preview_refused(cluster, db):
-    rehearsal = stage(cluster, db, "r1", spread=-4.0)
+    rehearsal = stage(cluster, db, "r1", edit_payload=rename_venue)
     activate(cluster, db, rehearsal, None)
     candidate_id = stage(cluster, db, "r1", environment="production")
     before = release_state(cluster, db)
@@ -1516,7 +1204,7 @@ def test_same_payload_bytes_stage_identically_in_preview_and_production(cluster,
     assert hashlib.sha256(payload["projection_raw"]).hexdigest() == pinned["sha256"]
     assert preview_row["projection_checks"] == production_row["projection_checks"]
     assert preview_row["projection_checks"] == {
-        base: release.projection_check(rows) for base, rows in projections(-2.0).items()
+        base: release.projection_check(rows) for base, rows in views("r1").items()
     }
     assert preview_receipt["readback_sha256"] == production_receipt["readback_sha256"]
     assert preview_row["run_manifest_sha256"] == production_row["run_manifest_sha256"]
@@ -1536,12 +1224,13 @@ def test_same_payload_bytes_stage_identically_in_preview_and_production(cluster,
 def test_payload_row_with_server_column_refused_without_writes(
     cluster, db, table, column, value
 ):
-    views = projections(-2.0)
-    views[table][0][column] = value
+    payload = candidate(
+        "r1", edit_payload=lambda p: p[table][0].update({column: value})
+    )
     before = release_state(cluster, db)
 
     with pytest.raises(release.SeasonReleaseError, match="server-filled column"):
-        stage(cluster, db, "r1", payload=seal("r1", views))
+        stage(cluster, db, "r1", payload=payload)
 
     assert release_state(cluster, db) == before
 
@@ -1549,7 +1238,7 @@ def test_payload_row_with_server_column_refused_without_writes(
 def test_activation_refuses_projection_row_of_another_environment(cluster, db):
     release_id = stage(cluster, db, "r1")
     with cluster.connect(db, OWNER, autocommit=True) as conn:
-        row = projections(-2.0)["matchup_data_publications"][0]
+        row = views("r1")["matchup_data_publications"][0]
         conn.execute(
             "INSERT INTO season_release_matchup_data_publications (release_id,"
             " environment, publication_id, season, lineage, rating_manifest_sha256,"
@@ -1581,27 +1270,26 @@ def test_activation_refuses_projection_row_of_another_environment(cluster, db):
 
 
 def _broken_link(fault: str) -> dict:
-    views = projections(-2.0)
+    payload = payload_for("r1")
     if fault == "result-unknown-game":
-        views["game_results"].append({**views["game_results"][0], "game_id": 999})
+        payload["game_results"].append({**payload["game_results"][0], "game_id": 999})
     elif fault == "selection-quote-of-other-game":
-        views["games"].append(game(402))
-        views["market_quotes"].append(quote("quote-402", 402))
-        views["prediction_market_selections"][0]["quote_id"] = "quote-402"
+        # q4 quotes game 2; the selection is for game 1.
+        payload["prediction_market_selections"][0]["quote_id"] = "q4"
     elif fault == "grade-without-prediction":
-        views["games"].append(game(402))
-        views["prediction_grades"].append(
-            {**views["prediction_grades"][0], "game_id": 402}
+        # Game 5 is scheduled (Week 3) but never predicted.
+        payload["prediction_grades"].append(
+            {**payload["prediction_grades"][0], "game_id": 5}
         )
     elif fault == "component-missing-rating-snapshot":
-        views["team_rating_components"][0]["v5_snapshot_id"] = "snap-missing"
+        payload["team_rating_components"][0]["v5_snapshot_id"] = "snap-missing"
     elif fault == "snapshot-quote-missing-quote":
-        views["market_snapshot_quotes"].append(
-            {"snapshot_id": "msnap-401", "quote_id": "quote-missing", "target": "total"}
+        payload["market_snapshot_quotes"].append(
+            {"snapshot_id": "s1", "quote_id": "quote-missing", "target": "total"}
         )
     elif fault == "prediction-missing-market-snapshot":
-        views["predictions"][0]["market_snapshot_id"] = "msnap-missing"
-    return views
+        payload["predictions"][0]["market_snapshot_id"] = "msnap-missing"
+    return payload
 
 
 LINK_FAULTS = {
@@ -1618,14 +1306,22 @@ LINK_FAULTS = {
 
 @pytest.mark.parametrize("fault,constraint", LINK_FAULTS.items())
 def test_database_links_refuse_broken_payload_at_stage_without_writes(
-    cluster, db, monkeypatch, fault, constraint
+    cluster, db, monkeypatch, fake_verification, fault, constraint
 ):
-    # Disable the payload scope check so the 0025 foreign keys alone decide.
+    # The real checks refuse these payloads first; disable them and the payload
+    # scope check so the 0025 foreign keys alone decide.
+    monkeypatch.setattr(release, "validate_candidate", lambda *args, **kwargs: None)
     monkeypatch.setattr(release, "_check_projection_scope", lambda *args: None)
+    payload = _broken_link(fault)
     before = release_state(cluster, db)
 
     with pytest.raises(release.SeasonReleaseError, match=constraint):
-        stage(cluster, db, "r1", payload=seal("r1", _broken_link(fault)))
+        stage(
+            cluster,
+            db,
+            "r1",
+            payload=seal("r1", payload, reported_payload=payload_for("r1")),
+        )
 
     assert release_state(cluster, db) == before
 
@@ -1650,33 +1346,32 @@ def test_release_links_are_deferred_composite_foreign_keys(cluster, migrated_db)
 
 
 def test_full_schedule_with_unpredicted_games_stages(cluster, db):
-    views = projections(-2.0)
-    views["games"] += [game(402), game(403, week=5)]
+    def later_games(payload):
+        game = next(g for g in payload["games"] if g["week"] == 3)
+        payload["games"] += [
+            {**game, "game_id": 6, "week": 4},
+            {**game, "game_id": 7, "week": 5},
+        ]
 
-    release_id = stage(cluster, db, "r1", payload=seal("r1", views))
-    receipt = activate(cluster, db, release_id, None)
+    staged = stage(cluster, db, "r1", edit_payload=later_games)
+    receipt = activate(cluster, db, staged, None)
 
     state = release_state(cluster, db)
-    assert receipt["release_id"] == release_id
-    assert len(state["season_release_games"]) == 3
-    assert len(state["season_release_predictions"]) == 1
+    assert receipt["release_id"] == staged
+    assert len(state["season_release_games"]) == 7
+    assert len(state["season_release_predictions"]) == 4
 
 
 def test_prediction_for_game_outside_schedule_refused_without_writes(cluster, db):
-    views = projections(-2.0)
-    views["predictions"].append({**views["predictions"][0], "game_id": 999})
+    def outside(payload):
+        payload["predictions"].append({**payload["predictions"][0], "game_id": 999})
+
     before = release_state(cluster, db)
 
     with pytest.raises(release.SeasonReleaseError, match="outside the release"):
-        stage(cluster, db, "r1", payload=seal("r1", views))
+        stage(cluster, db, "r1", edit_payload=outside)
 
     assert release_state(cluster, db) == before
-
-
-def _forged_rederivation(projections, manifest):
-    checks = derived_checks(projections, manifest)
-    checks["market_links"] = {**checks["market_links"], "passed": False}
-    return checks
 
 
 def _extra_check(report):
@@ -1699,9 +1394,7 @@ def _forged_observation(report):
     "forgery",
     ["rederived-failure", "extra-check", "missing-check", "bare-boolean", "observed"],
 )
-def test_forged_verification_report_refused_without_writes(
-    cluster, db, monkeypatch, forgery
-):
+def test_forged_verification_report_refused_without_writes(cluster, db, forgery):
     edit = {
         "extra-check": _extra_check,
         "missing-check": lambda report: report["checks"].pop("market_links"),
@@ -1709,17 +1402,22 @@ def test_forged_verification_report_refused_without_writes(
         "observed": _forged_observation,
     }.get(forgery)
     if forgery == "rederived-failure":
-        monkeypatch.setattr(verifier, "derive_checks", _forged_rederivation)
+        # An honest report of the original payload, sealed with changed bytes.
+        changed = payload_for("r1")
+        changed["prediction_market_selections"][0]["price"] = -105.0
+        payload = seal("r1", changed, reported_payload=payload_for("r1"))
+    else:
+        payload = candidate("r1", edit_report=edit)
     before = release_state(cluster, db)
 
     with pytest.raises(release.SeasonReleaseError, match="check"):
-        stage(cluster, db, "r1", payload=candidate("r1", report=edit))
+        stage(cluster, db, "r1", payload=payload)
 
     assert release_state(cluster, db) == before
 
 
 def test_verification_module_rejection_refuses_stage(cluster, db, monkeypatch):
-    def reject(report, *, projections):
+    def reject(report, *, projections, manifest=None):
         raise ValueError("row_counts do not match projections")
 
     monkeypatch.setattr(verifier, "validate_report", reject)
@@ -1780,7 +1478,7 @@ def _activation_worker(cluster, dbname, release_id):
 @pytest.mark.parametrize("attempt", range(5))
 def test_concurrent_initial_activations_exactly_one_wins(cluster, db, attempt):
     first = stage(cluster, db, "r1")
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
 
     outcomes = _race(
         [
@@ -1801,7 +1499,7 @@ def test_concurrent_initial_activations_exactly_one_wins(cluster, db, attempt):
 
 def test_activation_blocked_by_open_activation_then_refused(cluster, db):
     first = stage(cluster, db, "r1")
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     holder = cluster.connect(db, PIPELINE["preview"])
     try:
         release.activate_release(
@@ -1846,24 +1544,25 @@ def test_concurrent_identical_stages_create_one_release(cluster, db):
             conn.execute("SELECT 1")
             conn.rollback()
             barrier.wait()
-            release_id = release.stage_release(
+            sealed = candidate("r1")
+            staged = release.stage_release(
                 conn,
-                run_manifest_uri="runs/r1.json",
+                run_manifest_uri=manifest_uri(sealed),
                 environment="preview",
-                **candidate("r1"),
+                **sealed,
             )
             conn.commit()
-            return release_id
+            return staged
 
     outcomes = _race([worker, worker, worker])
 
     assert [kind for kind, _ in outcomes] == ["ok"] * 3, outcomes
-    assert {value for _, value in outcomes} == {"preview-r1"}
+    assert {value for _, value in outcomes} == {release_id_of("r1")}
     state = release_state(cluster, db)
     assert len(state["season_releases"]) == 1
-    assert len(state["season_release_games"]) == 1
-    assert len(state["season_release_predictions"]) == 1
-    assert len(state["prediction_runs"]) == 1
+    assert len(state["season_release_games"]) == 5
+    assert len(state["season_release_predictions"]) == 4
+    assert len(state["prediction_runs"]) == 3
 
 
 # --------------------------------------------------------------------------
@@ -1932,7 +1631,7 @@ def test_web_active_query_returns_no_row_without_activation(cluster, db):
 def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    second = stage(cluster, db, "r2", spread=-4.0)
+    second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
     exists_sql, active_sql, missing_sql = web_sql()
 
@@ -1947,7 +1646,7 @@ def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db
         second,
         "preview",
         SEASON,
-        0,
+        ACTIVE_WEEK,
     )
     assert activated_at is not None
     assert other == []
@@ -1966,3 +1665,257 @@ def test_web_missing_projection_query_with_one_array_parameter_succeeds(cluster,
         assert missing_sql.count("%s") == 1
         assert missing == []
         assert absent.fetchall() == [("season_release_absent",)]
+
+
+# --------------------------------------------------------------------------
+# E. End-to-end prepare, stage, activate, rollback
+# --------------------------------------------------------------------------
+
+
+def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
+    """End-to-end test of the full lifecycle against real PostgreSQL:
+    1. Real preparation via runner.prepare / build_season writes sealed artifacts.
+    2. Negative checks: corrupted outputs refused at sealing; corrupted payload refused at staging.
+    3. Candidate staged and activated in Preview.
+    4. Identical candidate staged in Production and activated with read-only Preview proof.
+    5. Web reader queries (loadReleaseContext) against Production succeed and find all projections.
+    6. Second candidate staged and activated, superseding the first.
+    7. Owner rolls back Production to the first candidate; all projection rows preserved.
+    """
+    db_name = make_db("tpl_migrated")
+
+    # 1. Real preparation
+    s1_dir = tmp_path / "s1"
+    s1_dir.mkdir()
+    s1 = build_season(s1_dir)
+    manifest_path1 = s1_dir / s1["identity"]["run_id"] / "run-manifest.json"
+    manifest_raw1 = manifest_path1.read_bytes()
+    manifest1 = json.loads(manifest_raw1)
+    pinned1 = manifest1["output_refs"]["serving_projections"]["sha256"]
+
+    # 2a. Negative: corrupted output refused at sealing
+    serving_path1 = Path(manifest1["output_refs"]["serving_projections"]["uri"])
+    serving_bytes1 = serving_path1.read_bytes()
+    try:
+        serving_path1.write_bytes(serving_bytes1 + b" ")
+        with pytest.raises(ValueError, match="checksum"):
+            _sealed_candidate(manifest1, pinned1)
+    finally:
+        serving_path1.write_bytes(serving_bytes1)
+
+    with pytest.raises(ValueError, match="pinned projection payload checksum"):
+        _sealed_candidate(manifest1, "0" * 64)
+
+    proj1, verif1 = _sealed_candidate(manifest1, pinned1)
+
+    # Install owner policy for s1 in preview and production
+    with cluster.connect(db_name, OWNER, autocommit=True) as conn:
+        for env in ("preview", "production"):
+            conn.execute(
+                """
+                INSERT INTO season_release_policies (
+                    environment, season, model_manifest_sha256,
+                    workflow_version, grading_policy_sha256, enabled, decision_ref
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    env,
+                    SEASON,
+                    manifest1["model_manifest_ref"]["sha256"],
+                    manifest1["workflow_version"],
+                    manifest1["grading_policy_sha256"],
+                    True,
+                    "e2e owner policy",
+                ),
+            )
+
+    # 2b. Negative: corrupted payload row refused at staging without writes
+    corrupted_payload = json.loads(proj1.decode())
+    corrupted_payload["system_stats"][0]["unexpected_column"] = 999
+    corrupted_raw = canonical(corrupted_payload)
+    before_state = release_state(cluster, db_name)
+    with cluster.connect(db_name, PIPELINE["preview"]) as conn:
+        with pytest.raises(release.SeasonReleaseError):
+            release.stage_release(
+                conn,
+                manifest_raw=manifest_raw1,
+                run_manifest_uri=manifest1["run_manifest_logical_uri"],
+                verification_raw=verif1,
+                projection_raw=corrupted_raw,
+                environment="preview",
+            )
+    assert release_state(cluster, db_name) == before_state
+
+    # 3. Stage and activate s1 in Preview
+    with cluster.connect(db_name, PIPELINE["preview"]) as conn:
+        prev_id1 = release.stage_release(
+            conn,
+            manifest_raw=manifest_raw1,
+            run_manifest_uri=manifest1["run_manifest_logical_uri"],
+            verification_raw=verif1,
+            projection_raw=proj1,
+            environment="preview",
+        )
+        prev_receipt1 = release.activate_release(
+            conn,
+            environment="preview",
+            season=SEASON,
+            release_id=prev_id1,
+            expected_previous_release_id=None,
+        )
+        conn.commit()
+    assert prev_receipt1["release_id"] == prev_id1
+
+    # 4. Stage identical bytes in Production and activate with Preview read-only connection
+    with cluster.connect(db_name, PIPELINE["production"]) as conn:
+        prod_id1 = release.stage_release(
+            conn,
+            manifest_raw=manifest_raw1,
+            run_manifest_uri=manifest1["run_manifest_logical_uri"],
+            verification_raw=verif1,
+            projection_raw=proj1,
+            environment="production",
+        )
+        conn.commit()
+
+    with psycopg.connect(
+        cluster.conninfo(db_name, PIPELINE["preview"]),
+        options="-c default_transaction_read_only=on",
+    ) as preview:
+        preview.read_only = True
+        with cluster.connect(db_name, PIPELINE["production"]) as conn:
+            prod_receipt1 = release.activate_release(
+                conn,
+                environment="production",
+                season=SEASON,
+                release_id=prod_id1,
+                expected_previous_release_id=None,
+                preview_conn=preview,
+            )
+            conn.commit()
+    assert prod_receipt1["release_id"] == prod_id1
+
+    # 5. Web read queries against Production
+    exists_sql, active_sql, missing_sql = web_sql()
+    with cluster.connect(db_name, WEB_LOGIN, autocommit=True) as conn:
+        exists = conn.execute(exists_sql).fetchone()[0]
+        active_prod = conn.execute(active_sql, ("production", SEASON)).fetchall()
+        missing_prod = conn.execute(
+            missing_sql, (web_release_projections(),)
+        ).fetchall()
+
+    assert exists is True
+    assert len(active_prod) == 1
+    assert active_prod[0][0] == prod_id1
+    assert active_prod[0][3] == ACTIVE_WEEK
+    assert missing_prod == []
+
+    # 6. Prepare, stage, activate second candidate (s2)
+    s2_dir = tmp_path / "s2"
+    s2_dir.mkdir()
+
+    def edit_venue(tables):
+        tables["venues"].loc[0, "city"] = "Alt City"
+
+    s2 = build_season(s2_dir, edit=edit_venue)
+    manifest_path2 = s2_dir / s2["identity"]["run_id"] / "run-manifest.json"
+    manifest_raw2 = manifest_path2.read_bytes()
+    manifest2 = json.loads(manifest_raw2)
+    pinned2 = manifest2["output_refs"]["serving_projections"]["sha256"]
+    proj2, verif2 = _sealed_candidate(manifest2, pinned2)
+
+    with cluster.connect(db_name, PIPELINE["preview"]) as conn:
+        prev_id2 = release.stage_release(
+            conn,
+            manifest_raw=manifest_raw2,
+            run_manifest_uri=manifest2["run_manifest_logical_uri"],
+            verification_raw=verif2,
+            projection_raw=proj2,
+            environment="preview",
+        )
+        release.activate_release(
+            conn,
+            environment="preview",
+            season=SEASON,
+            release_id=prev_id2,
+            expected_previous_release_id=prev_id1,
+        )
+        conn.commit()
+
+    with cluster.connect(db_name, PIPELINE["production"]) as conn:
+        prod_id2 = release.stage_release(
+            conn,
+            manifest_raw=manifest_raw2,
+            run_manifest_uri=manifest2["run_manifest_logical_uri"],
+            verification_raw=verif2,
+            projection_raw=proj2,
+            environment="production",
+        )
+        conn.commit()
+
+    with psycopg.connect(
+        cluster.conninfo(db_name, PIPELINE["preview"]),
+        options="-c default_transaction_read_only=on",
+    ) as preview:
+        preview.read_only = True
+        with cluster.connect(db_name, PIPELINE["production"]) as conn:
+            release.activate_release(
+                conn,
+                environment="production",
+                season=SEASON,
+                release_id=prod_id2,
+                expected_previous_release_id=prod_id1,
+                preview_conn=preview,
+            )
+            conn.commit()
+
+    assert statuses(cluster, db_name) == {
+        prev_id1: "superseded",
+        prev_id2: "active",
+        prod_id1: "superseded",
+        prod_id2: "active",
+    }
+
+    # 7. Owner rolls back Production to the first candidate
+    state_before_rollback = release_state(cluster, db_name)
+    with cluster.connect(db_name, OWNER) as conn:
+        rollback_receipt = release.rollback_release(
+            conn,
+            environment="production",
+            season=SEASON,
+            release_id=prod_id1,
+            expected_previous_release_id=prod_id2,
+            owner_authorized=True,
+            decision_ref="e2e owner rollback decision",
+        )
+        conn.commit()
+
+    state_after_rollback = release_state(cluster, db_name)
+    assert rollback_receipt["action"] == "rollback"
+    assert rollback_receipt["release_id"] == prod_id1
+    assert rollback_receipt["prior_release_id"] == prod_id2
+    assert statuses(cluster, db_name) == {
+        prev_id1: "superseded",
+        prev_id2: "active",
+        prod_id1: "active",
+        prod_id2: "rolled_back",
+    }
+    assert history(cluster, db_name)[-1] == (
+        prod_id2,
+        prod_id1,
+        "rollback",
+        "e2e owner rollback decision",
+    )
+
+    # All projection rows are preserved without deletion
+    for table, rows in state_before_rollback.items():
+        if table not in {"season_releases", "season_release_history"}:
+            assert state_after_rollback[table] == rows, (
+                f"Table {table} rows changed during rollback"
+            )
+
+    # Web query sees prod_id1 as active again
+    with cluster.connect(db_name, WEB_LOGIN, autocommit=True) as conn:
+        active_after = conn.execute(active_sql, ("production", SEASON)).fetchall()
+    assert len(active_after) == 1
+    assert active_after[0][0] == prod_id1
