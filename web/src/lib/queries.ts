@@ -5,6 +5,7 @@ import { db, schema } from "./db";
 import { existsFrom } from "./db-result";
 import { tiedExistsSql } from "./tie-sql";
 import { isSelectableRun, V5_RECORD_EVIDENCE } from "./run-selection";
+import { selectGradedWeeks } from "./results-weeks.ts";
 
 import { deriveSpreadView, deriveTotalView } from "./publication";
 import { overlaySelection } from "./selection-overlay";
@@ -204,7 +205,10 @@ export async function getAvailableWeeks(season: number): Promise<number[]> {
   return rows.filter(isSelectableRun).map((row) => row.week);
 }
 
-/** Distinct weeks with completed/scored games for a season, ascending. */
+/**
+ * Distinct weeks with completed/scored games for a season, ascending: scored
+ * selected runs, plus published display-only runs whose games have finals.
+ */
 export async function getScoredWeeks(season: number): Promise<number[]> {
   if (process.env.CFB_UI_TEST_MODE === "1") {
     return [0, 1, 2];
@@ -214,15 +218,20 @@ export async function getScoredWeeks(season: number): Promise<number[]> {
     modelId: schema.predictionRuns.modelId,
     state: schema.predictionRuns.state,
     evidenceClass: schema.predictionRuns.evidenceClass,
+    validation: schema.predictionRuns.validation,
+    gradedGames: sql<number>`(
+      SELECT count(*) FROM predictions p
+      JOIN game_results gr ON gr.game_id = p.game_id
+      WHERE p.run_id = ${schema.predictionRuns.runId}
+    )`.mapWith(Number),
   })
     .from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
     .where(and(
       eq(schema.siteWeekSelections.season, season),
-      eq(schema.predictionRuns.state, "scored"),
-    ))
-    .orderBy(asc(schema.siteWeekSelections.week));
-  return rows.filter(isSelectableRun).map((row) => row.week);
+      inArray(schema.predictionRuns.state, ["published", "scored"]),
+    ));
+  return selectGradedWeeks(rows);
 }
 
 /** Distinct upcoming/unscored weeks with published forecasts for a season, ascending. */
