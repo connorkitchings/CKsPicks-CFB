@@ -42,6 +42,9 @@ from scripts.pipeline.build_v5_corrected_live_serving import (  # noqa: E402
     receipt_uri,
     run_uris,
 )
+from scripts.pipeline.build_v5_intended_update_forecasts import (  # noqa: E402
+    check_live_provenance,
+)
 from scripts.pipeline.publish_to_db import (  # noqa: E402
     _assert_v5_artifact_matches_forecast,
 )
@@ -63,6 +66,45 @@ def _checked(storage: Any, uri: str, expected_sha: str, label: str) -> bytes:
     if _sha(raw) != expected_sha:
         raise ValueError(f"{label} changed")
     return raw
+
+
+def _verify_live_ratings(
+    storage: Any,
+    lock: dict[str, Any],
+    forecast: dict[str, Any],
+    model_rows: pd.DataFrame,
+    *,
+    week: int,
+) -> None:
+    """Live predictions carry ``#current:`` refs to the forecast's rating manifest states.
+
+    The rating manifest sits beside its current-team frame and must be the forecast's
+    rating parent; the ratings and refs are re-derived from that frame.
+    """
+    current = forecast.get("current_teams")
+    if not current:
+        raise ValueError("the live forecast records no current-team states")
+    rating_uri = f"{current['uri'].rsplit('/', 1)[0]}/rating-manifest.json"
+    rating_sha = forecast["parents"]["rating_manifest_raw_sha256"]
+    rating_manifest = json.loads(
+        _checked(storage, rating_uri, rating_sha, "rating manifest")
+    )
+    verify_signed_payload(rating_manifest, label="forecast rating parent")
+    ref = rating_manifest["output_refs"]["current_teams"]
+    current_teams = pd.read_parquet(
+        io.BytesIO(
+            _checked(storage, ref["uri"], ref["raw_sha256"], "current-team states")
+        )
+    )
+    check_live_provenance(
+        model_rows,
+        current,
+        current_teams,
+        rating_manifest,
+        lock_schedule(storage, lock),
+        rating_sha=rating_sha,
+        week=week,
+    )
 
 
 def verify(
@@ -154,9 +196,9 @@ def verify(
         forecast["prediction_ref"]["raw_sha256"],
         "forecast child",
     )
-    _assert_v5_artifact_matches_forecast(
-        rows, pd.read_csv(io.BytesIO(model_raw)), season=2026, week=week
-    )
+    model_rows = pd.read_csv(io.BytesIO(model_raw))
+    _assert_v5_artifact_matches_forecast(rows, model_rows, season=2026, week=week)
+    _verify_live_ratings(storage, lock, forecast, model_rows, week=week)
 
     frames = {}
     for kind, content_key in (

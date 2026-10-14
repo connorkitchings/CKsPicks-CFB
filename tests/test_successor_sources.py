@@ -187,3 +187,47 @@ def test_a_live_week_needs_current_states_and_a_real_as_of(monkeypatch):
         ss.forecast_inputs(object(), lock)
     with pytest.raises(GateError, match="live as_of"):
         ss.forecast_inputs(object(), lock, current_teams=pd.DataFrame())
+
+
+def test_live_features_carry_their_state_refs_and_current_states_sha(monkeypatch):
+    from cks_picks_cfb.rebuild import live_week
+    from cks_picks_cfb.rebuild.live_week import LiveWeek
+
+    class _Replay:
+        def frame(self, relative):
+            return pd.DataFrame({"week": [5, 6], "game_id": [1, 2]})
+
+    current = pd.DataFrame({"team": ["A", "B"]})
+
+    def _live(storage, lock, *, as_of, current_teams):
+        assert current_teams is current
+        return LiveWeek(
+            pd.DataFrame({"week": [6], "game_id": [2]}),
+            {2: "team_states/0#A|team_states/0#B"},
+            [3],
+            as_of,
+            4,
+        )
+
+    monkeypatch.setattr(ss, "replay_run", lambda storage, lock: _Replay())
+    monkeypatch.setattr(ss, "lock_schedule", lambda storage, lock: pd.DataFrame())
+    monkeypatch.setattr(live_week, "live_week_features", _live)
+    lock = {
+        "active_week": {"week": 6},
+        "corrected_lineage": {**LINEAGE, "live_week": {"week": 6}},
+    }
+    with pytest.raises(GateError, match="raw sha256"):
+        ss.forecast_inputs(
+            object(), lock, current_teams=current, live_as_of="2026-10-04T08:00:00Z"
+        )
+    _, replay, live = ss.forecast_inputs(
+        object(),
+        lock,
+        current_teams=current,
+        current_teams_raw_sha256="c" * 64,
+        live_as_of="2026-10-04T08:00:00Z",
+    )
+    assert replay["game_id"].tolist() == [1]
+    assert live.attrs["state_refs"] == {2: "team_states/0#A|team_states/0#B"}
+    assert live.attrs["current_teams_raw_sha256"] == "c" * 64
+    assert live.attrs["omitted_kicked_off_game_ids"] == [3]

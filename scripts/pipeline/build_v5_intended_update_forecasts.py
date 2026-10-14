@@ -23,7 +23,10 @@ from cks_picks_cfb.data.data_first_live_forecast_v1 import (
 )
 from cks_picks_cfb.data.data_first_phase2d import signed_payload, verify_signed_payload
 from cks_picks_cfb.data.storage import get_storage
-from cks_picks_cfb.forecast.intended_update_bundle import replace_2026_ratings
+from cks_picks_cfb.forecast.intended_update_bundle import (
+    RATING_FEATURES,
+    replace_2026_ratings,
+)
 from cks_picks_cfb.forecast.live import apply_exported_bridge
 from cks_picks_cfb.forecast.live_sources import load_live_forecast_sources
 from cks_picks_cfb.forecast.replay_sources import load_replay_sources
@@ -71,7 +74,15 @@ def _sources(
     ratings: Path | str,
     live_as_of: str | None = None,
 ) -> tuple[
-    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any], str, str
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+    dict[str, Any],
+    str,
+    str,
+    dict[str, Any],
+    pd.DataFrame | None,
 ]:
     if cache is not None:
         if not isinstance(bridge, Path) or not isinstance(ratings, Path):
@@ -98,6 +109,15 @@ def _sources(
         schedule = pd.read_parquet(cache / "schedule.parquet")
         replay_features = pd.read_parquet(cache / "replay_features.parquet")
         live_features = pd.read_parquet(cache / "live_features.parquet")
+        current_teams = None
+        if not live_features.empty:
+            current_raw = (ratings / "current_teams.parquet").read_bytes()
+            if (
+                _sha(current_raw)
+                != rating_manifest["output_refs"]["current_teams"]["raw_sha256"]
+            ):
+                raise ValueError("local current-team states differ from manifest")
+            current_teams = pd.read_parquet(io.BytesIO(current_raw))
     else:
         if os.getenv("CFB_STORAGE_BACKEND") != "r2":
             raise ValueError("forecast source requires CFB_STORAGE_BACKEND=r2")
@@ -136,16 +156,22 @@ def _sources(
         if _sha(state_raw) != state_ref["raw_sha256"]:
             raise ValueError("successor rating state checksum differs")
         states = pd.read_parquet(io.BytesIO(state_raw))
+        current_teams = None
         if is_corrected(lock):
-            current_teams = None
+            current_sha = None
             if lock["corrected_lineage"].get("live_week"):
                 ref = rating_manifest["output_refs"]["current_teams"]
                 current_raw = storage.read_bytes(ref["uri"])
                 if _sha(current_raw) != ref["raw_sha256"]:
                     raise ValueError("successor current-team states differ")
                 current_teams = pd.read_parquet(io.BytesIO(current_raw))
+                current_sha = ref["raw_sha256"]
             schedule, replay_features, live_features = forecast_inputs(
-                storage, lock, current_teams=current_teams, live_as_of=live_as_of
+                storage,
+                lock,
+                current_teams=current_teams,
+                current_teams_raw_sha256=current_sha,
+                live_as_of=live_as_of,
             )
             return (
                 schedule,
@@ -155,6 +181,8 @@ def _sources(
                 bundle,
                 _sha(bridge_raw),
                 _sha(rating_raw),
+                rating_manifest,
+                current_teams,
             )
         source = lock["research_source_import"]
         parent = source["replay_parents"]
@@ -190,6 +218,8 @@ def _sources(
         bundle,
         _sha(bridge_raw),
         _sha(rating_raw),
+        rating_manifest,
+        current_teams,
     )
 
 
@@ -218,6 +248,157 @@ def forecast_population(
     return required
 
 
+def live_generation(
+    current_teams: pd.DataFrame, rating_manifest: dict[str, Any], *, week: int
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """The post-week current-team generation a live week is rated from, and its identity."""
+    post_week = week - 1
+    name = f"current_post_w{post_week}"
+    cutoff = rating_manifest.get("post_week_cutoffs", {}).get(str(post_week))
+    digest = rating_manifest.get("generation_hashes", {}).get(name)
+    generation = current_teams[current_teams["week"].astype(int).eq(week)]
+    if (
+        not cutoff
+        or not digest
+        or generation.empty
+        or generation["team"].duplicated().any()
+        or not pd.to_datetime(generation["cutoff_utc"], utc=True)
+        .eq(pd.to_datetime(cutoff, utc=True))
+        .all()
+    ):
+        raise ValueError(
+            f"the rating manifest lacks one {name} current-team generation"
+        )
+    identity = {
+        "name": name,
+        "post_week": post_week,
+        "cutoff_utc": cutoff,
+        "generation_sha256": digest,
+    }
+    return generation, identity
+
+
+def live_ratings(
+    game_ids: Any, schedule: pd.DataFrame, generation: pd.DataFrame
+) -> pd.DataFrame:
+    """Each live game's four rating features, taken from the current-team generation."""
+    games = pd.DataFrame({"game_id": sorted(int(g) for g in game_ids)}).merge(
+        schedule[["game_id", "home_team", "away_team"]].astype({"game_id": int}),
+        on="game_id",
+        how="left",
+        validate="one_to_one",
+    )
+    states = generation.set_index("team")
+    for side in ("home", "away"):
+        side_states = states.reindex(games[f"{side}_team"])
+        games[f"{side}_offense"] = side_states["offense_rating"].to_numpy(float)
+        games[f"{side}_defense"] = side_states["defense_rating"].to_numpy(float)
+    if games.isna().any().any():
+        raise ValueError("current-team states do not cover every live team")
+    return games
+
+
+def current_state_refs(
+    ratings: pd.DataFrame, *, rating_sha: str, current_sha: str
+) -> dict[int, str]:
+    """``rating:<sha>#current:<current_teams sha>/<team>`` for both teams of each game."""
+    return {
+        int(row.game_id): "|".join(
+            f"rating:{rating_sha}#current:{current_sha}/{team}"
+            for team in (row.home_team, row.away_team)
+        )
+        for row in ratings.itertuples(index=False)
+    }
+
+
+def live_rating_source(
+    features: pd.DataFrame,
+    schedule: pd.DataFrame,
+    current_teams: pd.DataFrame | None,
+    rating_manifest: dict[str, Any],
+    *,
+    rating_sha: str,
+    week: int,
+) -> tuple[dict[int, str], dict[str, Any]]:
+    """State refs and manifest record for live rows, which keep their current-team ratings.
+
+    The live features were built from the hash-checked current-team states; overwriting
+    them with pregame states would forecast the live week from another rating generation.
+    """
+    ref = rating_manifest["output_refs"]["current_teams"]
+    if (
+        current_teams is None
+        or features.attrs.get("current_teams_raw_sha256") != ref["raw_sha256"]
+    ):
+        raise ValueError("live features were built from other current-team states")
+    generation, identity = live_generation(current_teams, rating_manifest, week=week)
+    ratings = live_ratings(features["game_id"], schedule, generation)
+    built = {int(g): str(r) for g, r in features.attrs.get("state_refs", {}).items()}
+    for row in ratings.itertuples(index=False):
+        teams = [
+            part.rsplit("#", 1)[-1] for part in built.get(row.game_id, "").split("|")
+        ]
+        if teams != [row.home_team, row.away_team]:
+            raise ValueError("live features lack their current-team state refs")
+    if len(built) != len(ratings):
+        raise ValueError("live features lack their current-team state refs")
+    actual = features.set_index(features["game_id"].astype(int)).loc[
+        ratings["game_id"], list(RATING_FEATURES)
+    ]
+    if not (
+        actual.to_numpy(float) == ratings[list(RATING_FEATURES)].to_numpy(float)
+    ).all():
+        raise ValueError("live rating features differ from the current-team states")
+    record = {
+        "uri": ref["uri"],
+        "raw_sha256": ref["raw_sha256"],
+        "generation": identity,
+        "ratings": ratings.to_dict("records"),
+    }
+    refs = current_state_refs(
+        ratings, rating_sha=rating_sha, current_sha=ref["raw_sha256"]
+    )
+    return refs, record
+
+
+def check_live_provenance(
+    rows: pd.DataFrame,
+    record: dict[str, Any],
+    current_teams: pd.DataFrame,
+    rating_manifest: dict[str, Any],
+    schedule: pd.DataFrame,
+    *,
+    rating_sha: str,
+    week: int,
+) -> None:
+    """Verify live predictions against the rating manifest's current-team states.
+
+    ``current_teams`` must already be checked against the manifest's raw sha256. The
+    generation and per-game ratings are re-derived from it, and every live row must carry
+    a ``#current:`` ref bound to that sha (a ``#pregame:`` ref is rejected).
+    """
+    ref = rating_manifest["output_refs"]["current_teams"]
+    if (record.get("uri"), record.get("raw_sha256")) != (ref["uri"], ref["raw_sha256"]):
+        raise ValueError("the forecast's current-team states are not the rating's")
+    generation, identity = live_generation(current_teams, rating_manifest, week=week)
+    if record.get("generation") != identity:
+        raise ValueError("the forecast's current-team generation differs")
+    ratings = live_ratings(rows["game_id"].unique(), schedule, generation)
+    if ratings.to_dict("records") != record.get("ratings"):
+        raise ValueError("live ratings differ from the current-team states")
+    expected = current_state_refs(
+        ratings, rating_sha=rating_sha, current_sha=ref["raw_sha256"]
+    )
+    if (
+        not rows["timing_class"].eq("live").all()
+        or not rows["state_ref"]
+        .astype(str)
+        .eq(rows["game_id"].astype(int).map(expected))
+        .all()
+    ):
+        raise ValueError("live state refs are not bound to the current-team states")
+
+
 def build(
     *,
     release_tag: str,
@@ -238,10 +419,18 @@ def build(
         raise ValueError("forecast output cannot use repository ./data")
     lock_raw = source_lock.read_bytes()
     lock = json.loads(lock_raw)
-    schedule, replay_features, live_features, states, bundle, bridge_sha, rating_sha = (
-        _sources(
-            lock, cache=cache, bridge=bridge, ratings=ratings, live_as_of=live_as_of
-        )
+    (
+        schedule,
+        replay_features,
+        live_features,
+        states,
+        bundle,
+        bridge_sha,
+        rating_sha,
+        rating_manifest,
+        current_teams,
+    ) = _sources(
+        lock, cache=cache, bridge=bridge, ratings=ratings, live_as_of=live_as_of
     )
     game_columns = lock["games"]["columns"]
     locked_games = [
@@ -265,16 +454,28 @@ def build(
     for timing, base in (("replay", replay_features), ("live", live_features)):
         if base.empty:
             continue
-        adjusted = replace_2026_ratings(base, schedule, states)
+        current_record = None
+        if timing == "replay":
+            adjusted = replace_2026_ratings(base, schedule, states)
+            refs = {
+                int(game_id): f"rating:{rating_sha}#pregame:{int(game_id)}"
+                for game_id in adjusted.game_id
+            }
+        else:
+            adjusted = base
+            refs, current_record = live_rating_source(
+                base,
+                schedule,
+                current_teams,
+                rating_manifest,
+                rating_sha=rating_sha,
+                week=int(lock["active_week"]["week"]),
+            )
         for week, features in adjusted.groupby("week", sort=True):
             week = int(week)
             if weeks is not None and week not in weeks:
                 continue
             run_id = f"2026w{week}-v5repair-{release_tag}"
-            refs = {
-                int(game_id): f"rating:{rating_sha}#pregame:{int(game_id)}"
-                for game_id in features.game_id
-            }
             predictions = apply_exported_bridge(
                 bundle,
                 features,
@@ -344,6 +545,7 @@ def build(
                         if timing == "live" and display_only
                         else {}
                     ),
+                    **({"current_teams": current_record} if current_record else {}),
                     "production_activation_authorized": False,
                 }
             )
