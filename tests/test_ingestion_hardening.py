@@ -137,6 +137,27 @@ def test_game_stats_accepts_historical_cfbd_id_field(monkeypatch):
     ] == [10]
 
 
+def test_venues_fetch_returns_full_catalog_without_raw_games(monkeypatch):
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+
+    class FakeVenuesApi:
+        def get_venues(self, **_kwargs):
+            return [
+                SimpleNamespace(id=12),
+                SimpleNamespace(id=34),
+                SimpleNamespace(id=56),
+            ]
+
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.venues.cfbd.VenuesApi", lambda _client: FakeVenuesApi()
+    )
+    venues = VenuesIngester(year=2016, storage=MemoryIndexStorage([]))
+
+    # The full CFBD catalog is ingested unfiltered: an empty local games
+    # index must not drop any venue (FCS/neutral/renovated venues included).
+    assert [venue.id for venue in venues.fetch_data()] == [12, 34, 56]
+
+
 def test_venues_accept_exact_source_request_ids_without_raw_games(monkeypatch):
     monkeypatch.setenv("CFBD_API_KEY", "test-key")
 

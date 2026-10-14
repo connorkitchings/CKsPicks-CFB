@@ -28,30 +28,13 @@ class VenuesIngester(BaseIngester):
     def source_endpoint(self) -> str:
         return "VenuesApi.get_venues"
 
-    def get_fbs_team_names(self) -> set[str]:
-        """Deprecated: no longer used; venues derive from local games index to avoid extra calls."""
-        return set()
-
-    def get_fbs_venue_ids(self) -> set[int]:
-        """Get venue IDs used by FBS games using local games index to minimize API calls."""
-        games_index = self.storage.read_index(
-            "raw/games", {"year": self.year}, columns=["venue_id"]
-        )
-        ids: set[int] = set()
-        for row in games_index:
-            vid = row.get("venue_id")
-            if vid is not None:
-                try:
-                    ids.add(int(vid))
-                except Exception:
-                    continue
-        print(
-            f"Derived {len(ids)} unique venue IDs from local games index for {self.year}."
-        )
-        return ids
-
     def fetch_data(self) -> list[Any]:
         """Fetch venues data from the CFBD API.
+
+        The complete CFBD venue catalog is ingested unfiltered (~800 rows,
+        under 100 KB in Parquet). Filtering against the local games index
+        dropped FCS, neutral-site, renovated and newly scheduled venues from
+        Silver and broke the ``game_venues`` city gate at publish time.
 
         Returns:
             List of venue objects from CFBD API
@@ -61,19 +44,7 @@ class VenuesIngester(BaseIngester):
             _request_timeout=self.request_timeout_seconds
         )
         print(f"Found {len(all_venues)} total venues from venues API.")
-
-        # Get venue IDs used by FBS games from local index
-        fbs_venue_ids = self.get_fbs_venue_ids()
-
-        # Filter venues to only those used by FBS games
-        fbs_venues = [
-            venue
-            for venue in all_venues
-            if self.safe_getattr(venue, "id", None) in fbs_venue_ids
-        ]
-
-        print(f"Filtered to {len(fbs_venues)} venues used by FBS games.")
-        return fbs_venues
+        return all_venues
 
     def fetch_source_request(self, request: dict[str, Any]) -> list[Any]:
         """Fetch an exact venue set without reading a compatibility projection."""

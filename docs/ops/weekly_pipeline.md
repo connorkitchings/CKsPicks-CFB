@@ -59,6 +59,23 @@ Venue facts live in `game_venues`, independent of prediction runs. Run once per 
 PYTHONPATH=src:. uv run python scripts/pipeline/publish_game_venues.py --season 2026 --environment preview --dry-run
 ```
 
+Pin an exact validated Silver venues version with `--venues-version` (the
+unpinned newest-version lookup is unreliable because Silver holds one version
+per capture year). Since 2026-10-14 the canonical choice is the complete-catalog
+2026 version `c713b15888c8aaf66b7b0b93` (852 venues, every CFBD venue including
+FCS, neutral-site, renovated and international stadiums), built from
+`artifacts/preview/refs/venues-2026-complete-v1.json` after the
+`VenuesIngester` games-index filter was removed ([fix
+contract](../plans/2026-10-14/02-venues-complete-catalog-fix.md)). Complete-catalog
+versions also exist for 2015-2019 and 2021-2025
+(`artifacts/preview/refs/venues-<year>-complete-v1.json`).
+
+`--supplement` (a reviewed JSON list filling venue ids Silver lacks) is
+deprecated for routine use now that Silver holds the full catalog; it remains
+as an emergency same-day hatch for a future provider gap. The Week 6/7
+supplements (`conf/venue_supplement_2026_w6_v1.json`,
+`conf/venue_supplement_2026_w7_v1.json`) are retained as historical artifacts.
+
 ## Team stats (matchup pages)
 
 `team_season_stats` holds pre-game team stats and national ranks from our own play-by-play. The snapshot for week N covers FBS-vs-FBS games completed *before* week N's slate, so run it for the **upcoming** week once the prior week's finals are certified and the post-week Silver refresh (`prepare-week`) has run. It is idempotent and records the Silver versions it used (`source_versions`). Matchup pages stay hidden until approved. Dry run first, Preview before production. See the [team stats contract](../plans/2026-10-01/10-authentic-team-stats-pipeline.md).
