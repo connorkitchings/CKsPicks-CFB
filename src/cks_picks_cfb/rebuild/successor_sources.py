@@ -141,6 +141,7 @@ def forecast_inputs(
     lock: dict[str, Any],
     *,
     current_teams: pd.DataFrame | None = None,
+    current_teams_raw_sha256: str | None = None,
     live_as_of: str | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """(schedule, replay features, live features) for the forecast builder.
@@ -148,8 +149,9 @@ def forecast_inputs(
     Weeks before the lock's active week are replay weeks: the 6B application frames are
     their 2026 feature rows (the four rating means are replaced from the pregame states by
     the builder). A lock with a live week also needs the post-week team states and a real
-    ``live_as_of``; its feature rows cover only games that have not kicked off, and the
-    omitted game ids travel on ``features.attrs``.
+    ``live_as_of``; its feature rows cover only games that have not kicked off. The
+    omitted game ids, the per-game team-state refs and the raw sha256 of the current-team
+    frame travel on ``features.attrs``, so the builder keeps (and labels) those ratings.
     """
     active = int(lock["active_week"]["week"])
     frames = replay_run(storage, lock).frame("application_frames/frames.parquet")
@@ -157,8 +159,10 @@ def forecast_inputs(
     schedule = lock_schedule(storage, lock)
     if not lineage(lock).get("live_week"):
         return schedule, replay, frames.iloc[0:0].copy()
-    if current_teams is None or not live_as_of:
-        raise GateError("a live week needs the current team states and a live as_of")
+    if current_teams is None or not current_teams_raw_sha256 or not live_as_of:
+        raise GateError(
+            "a live week needs the current team states, their raw sha256 and a live as_of"
+        )
     from cks_picks_cfb.rebuild.live_week import live_week_features
 
     live = live_week_features(
@@ -167,6 +171,8 @@ def forecast_inputs(
     features = live.features.reset_index(drop=True)
     features.attrs["omitted_kicked_off_game_ids"] = live.omitted_kicked_off_game_ids
     features.attrs["as_of"] = live.as_of
+    features.attrs["state_refs"] = live.state_refs
+    features.attrs["current_teams_raw_sha256"] = current_teams_raw_sha256
     return schedule, replay, features
 
 
