@@ -20,20 +20,8 @@ and an "operable" copy). Every test gets its own ``CREATE DATABASE ... TEMPLATE`
 copy, so tests are independent and the release functions' own transaction
 handling is exercised unchanged.
 
-Shipped defects and the test-only workarounds (each defect also has a strict
-xfail test against the unmodified source, so the workaround becomes a no-op
-signal once the source is fixed):
-
-1. ``0025_season_releases.sql:583`` (same text at ``schema.sql:1758``): an
-   unparenthesized ``CASE ... THEN`` inside a PL/pgSQL ``IF`` ends the ``IF``
-   condition early, so ``CREATE FUNCTION validate_season_release_transition``
-   is a syntax error and the migration cannot apply. ``migration_0025_sql()``
-   adds the parentheses, only when the exact defective text is present.
-2. ``release.py:238`` (``_policy``) reads ``season_release_policies ... FOR
-   SHARE``; Postgres requires UPDATE privilege for row locks, but 0025 grants
-   the pipeline only SELECT, so every pipeline activation fails. The "operable"
-   template adds ``OPERABILITY_COMPAT_SQL`` (a single-column UPDATE grant)
-   so the activation, rollback and concurrency behaviour can still be tested.
+Every template is built from the shipped SQL alone; the "operable" template
+only adds the owner-installed release policies.
 """
 
 from __future__ import annotations
@@ -83,19 +71,7 @@ CONTROL_TABLES = {
     "season_release_history",
 }
 
-SYNTAX_DEFECT = (
-    "IF current_user <> CASE WHEN NEW.environment = 'preview' THEN "
-    "'cks_preview_pipeline' ELSE 'cks_prod_pipeline' END\n"
-    "           OR session_user <> current_user THEN"
-)
-SYNTAX_FIX = (
-    "IF (current_user <> CASE WHEN NEW.environment = 'preview' THEN "
-    "'cks_preview_pipeline' ELSE 'cks_prod_pipeline' END\n"
-    "           OR session_user <> current_user) THEN"
-)
-OPERABILITY_COMPAT_SQL = (
-    "GRANT UPDATE (installed_at) ON season_release_policies TO cks_pipeline"
-)
+ACTIVATE_FN = "activate_season_release(text, text, text)"
 
 
 # --------------------------------------------------------------------------
@@ -106,11 +82,6 @@ OPERABILITY_COMPAT_SQL = (
 def pre0025_snapshot_sql() -> str:
     schema = (ROOT / "contracts" / "schema.sql").read_text()
     return schema[: schema.index(SNAPSHOT_MARKER)]
-
-
-def migration_0025_sql() -> str:
-    """0025 with only the defect-1 parenthesization (see module docstring)."""
-    return MIGRATION_0025.read_text().replace(SYNTAX_DEFECT, SYNTAX_FIX)
 
 
 def apply_pre0025(conn) -> None:
@@ -154,10 +125,9 @@ def _bootstrap(cluster: PgCluster) -> None:
         )
     _create_db(cluster, "tpl_migrated", "tpl_pre0025")
     with cluster.connect("tpl_migrated", OWNER, autocommit=True) as conn:
-        conn.execute(migration_0025_sql())
+        conn.execute(MIGRATION_0025.read_text())
     _create_db(cluster, "tpl_operable", "tpl_migrated")
     with cluster.connect("tpl_operable", OWNER, autocommit=True) as conn:
-        conn.execute(OPERABILITY_COMPAT_SQL)
         for environment in PIPELINE:
             install_policy(conn, environment)
 
@@ -550,21 +520,11 @@ def test_snapshot_tail_is_migration_0025_verbatim_matches():
     assert tail == MIGRATION_0025.read_text()
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=errors.SyntaxError,
-    reason="0025_season_releases.sql:583 unparenthesized CASE inside PL/pgSQL IF",
-)
 def test_shipped_0025_applies_to_pre0025_database_succeeds(cluster, pre0025_db):
     with cluster.connect(pre0025_db, OWNER, autocommit=True) as conn:
         conn.execute(MIGRATION_0025.read_text())
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=errors.SyntaxError,
-    reason="schema.sql:1758 carries the same 0025 syntax error into fresh bootstraps",
-)
 def test_migration_runner_bootstraps_empty_database_succeeds(cluster, make_db):
     from cks_picks_cfb.db.migrations import apply_migrations
 
@@ -584,7 +544,7 @@ def test_0025_applies_with_all_tables_and_leaves_legacy_untouched(cluster, pre00
     before = legacy_state(cluster, pre0025_db)
 
     with cluster.connect(pre0025_db, OWNER, autocommit=True) as conn:
-        conn.execute(migration_0025_sql())
+        conn.execute(MIGRATION_0025.read_text())
         tables = {
             row[0]
             for row in conn.execute(
@@ -617,12 +577,15 @@ def test_0025_reapplied_is_idempotent_and_schema_unchanged(cluster, migrated_db)
         " UNION ALL SELECT 'colacl', attrelid::regclass || '.' || attname || ':' || attacl::text"
         "  FROM pg_attribute WHERE attacl IS NOT NULL"
         "  AND attrelid::regclass::text LIKE 'season\\_release%'"
+        " UNION ALL SELECT 'fn', proname || ':' || prosecdef || ':' || coalesce(proacl::text, '')"
+        "  || ':' || coalesce(array_to_string(proconfig, ','), '') || ':' || md5(prosrc)"
+        "  FROM pg_proc WHERE proname LIKE '%season\\_release%' OR proname LIKE '%season\\_projection%'"
         " ORDER BY 1, 2"
     )
     with cluster.connect(migrated_db, OWNER, autocommit=True) as conn:
         before = conn.execute(catalog_sql).fetchall()
 
-        conn.execute(migration_0025_sql())
+        conn.execute(MIGRATION_0025.read_text())
         after = conn.execute(catalog_sql).fetchall()
 
     assert after == before
@@ -733,24 +696,43 @@ def test_pipeline_role_cannot_delete_truncate_or_write_policy(
             conn.execute(statement)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "schema.sql ALTER DEFAULT PRIVILEGES gives cks_pipeline table-wide UPDATE on"
-        " every 0025 table; 0025 revokes only from PUBLIC (0025:504), so the"
-        " column-limited GRANT UPDATE (status, activated_at) is not the effective grant"
-    ),
-)
-def test_pipeline_update_privilege_limited_to_status_columns(cluster, migrated_db):
+def test_pipeline_has_no_update_or_history_insert_privilege(cluster, migrated_db):
     with cluster.connect(migrated_db, OWNER, autocommit=True) as conn:
         privileges = conn.execute(
             "SELECT has_table_privilege('cks_pipeline', 'season_releases', 'UPDATE'),"
-            " has_column_privilege('cks_pipeline', 'season_releases', 'code_sha', 'UPDATE'),"
+            " has_any_column_privilege('cks_pipeline', 'season_releases', 'UPDATE'),"
+            " has_any_column_privilege('cks_pipeline', 'season_release_policies', 'UPDATE'),"
+            " has_table_privilege('cks_pipeline', 'season_release_history', 'INSERT'),"
             " has_table_privilege('cks_pipeline', 'season_release_history', 'UPDATE'),"
-            " has_table_privilege('cks_pipeline', 'season_release_games', 'UPDATE')"
+            " has_table_privilege('cks_pipeline', 'season_release_games', 'UPDATE'),"
+            " has_table_privilege('cks_web', 'season_release_history', 'SELECT')"
         ).fetchone()
 
-    assert privileges == (False, False, False, False)
+    assert privileges == (False,) * 7
+
+
+def test_activation_function_executable_only_by_pipeline(cluster, migrated_db):
+    with cluster.connect(migrated_db, OWNER, autocommit=True) as conn:
+        definer, config = conn.execute(
+            "SELECT prosecdef, proconfig FROM pg_proc WHERE oid = %s::regprocedure",
+            (ACTIVATE_FN,),
+        ).fetchone()
+        executable = {
+            role: conn.execute(
+                "SELECT has_function_privilege(%s, %s, 'EXECUTE')", (role, ACTIVATE_FN)
+            ).fetchone()[0]
+            for role in ("cks_pipeline", "cks_web", "cks_release_authorizer")
+        }
+
+    assert definer is True and config == ["search_path=pg_catalog, public"]
+    assert executable == {
+        "cks_pipeline": True,
+        "cks_web": False,
+        "cks_release_authorizer": False,  # holds no grant: PUBLIC has no EXECUTE
+    }
+    with as_role(cluster, migrated_db, "cks_web") as conn:
+        with pytest.raises(errors.InsufficientPrivilege):
+            conn.execute(f"SELECT activate_season_release('x', NULL, '{'0' * 64}')")
 
 
 def test_pipeline_update_of_release_manifest_columns_refused(cluster, db):
@@ -759,7 +741,7 @@ def test_pipeline_update_of_release_manifest_columns_refused(cluster, db):
 
     with cluster.connect(db, PIPELINE["preview"], autocommit=True) as conn:
         for column, value in (("code_sha", "tampered"), ("active_week", 9)):
-            with pytest.raises(psycopg.Error, match="immutable|permission denied"):
+            with pytest.raises(errors.InsufficientPrivilege):
                 conn.execute(
                     sql.SQL(
                         "UPDATE season_releases SET {} = %s WHERE release_id = %s"
@@ -770,20 +752,100 @@ def test_pipeline_update_of_release_manifest_columns_refused(cluster, db):
     assert release_state(cluster, db) == before
 
 
-def test_pipeline_cannot_roll_back_via_direct_update(cluster, db):
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "UPDATE season_releases SET status = 'rolled_back' WHERE release_id = %(second)s",
+        "UPDATE season_releases SET status = 'active' WHERE release_id = %(staged)s",
+        "INSERT INTO season_release_history (environment, season, release_id, action,"
+        " decision_ref, readback_sha256) VALUES ('preview', 2026, %(staged)s,"
+        " 'activate', 'forged', repeat('0', 64))",
+    ],
+    ids=["roll-back", "activate", "history"],
+)
+def test_pipeline_cannot_change_releases_via_direct_sql(cluster, db, statement):
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
     second = stage(cluster, db, "r2", spread=-4.0)
     activate(cluster, db, second, first)
+    staged = stage(cluster, db, "r3", spread=-5.0)
+    before = release_state(cluster, db)
 
     with cluster.connect(db, PIPELINE["preview"]) as conn:
-        with pytest.raises(errors.RaiseException, match="may not roll back"):
-            conn.execute(
-                "UPDATE season_releases SET status = 'rolled_back' WHERE release_id = %s",
-                (second,),
-            )
+        with pytest.raises(errors.InsufficientPrivilege):
+            conn.execute(statement, {"second": second, "staged": staged})
 
+    assert release_state(cluster, db) == before
+
+
+def _call_activation_function(conn, release_id, previous):
+    return conn.execute(
+        "SELECT activate_season_release(%s, %s, %s)", (release_id, previous, "0" * 64)
+    ).fetchone()[0]
+
+
+@pytest.mark.parametrize(
+    "login,environment",
+    [(PIPELINE["production"], "preview"), (PIPELINE["preview"], "production")],
+    ids=["production-login-preview-release", "preview-login-production-release"],
+)
+def test_activation_function_refuses_other_environment_login(
+    cluster, db, login, environment
+):
+    release_id = stage(cluster, db, "r1", environment=environment)
+    before = release_state(cluster, db)
+
+    with cluster.connect(db, login) as conn:
+        with pytest.raises(errors.RaiseException, match="wrong release environment"):
+            _call_activation_function(conn, release_id, None)
+
+    assert release_state(cluster, db) == before
+
+
+def test_activation_function_refuses_set_role_session(cluster, db):
+    release_id = stage(cluster, db, "r1")
+
+    with as_role(cluster, db, "cks_preview_pipeline") as conn:
+        with pytest.raises(errors.RaiseException, match="wrong release environment"):
+            _call_activation_function(conn, release_id, None)
+
+    assert statuses(cluster, db) == {release_id: "staged"}
+
+
+@pytest.mark.parametrize("fault", ["policy", "stale-previous", "not-staged"])
+def test_direct_activation_function_call_enforces_checks(cluster, db, fault):
+    first = stage(cluster, db, "r1")
+    activate(cluster, db, first, None)
+    second = stage(cluster, db, "r2", spread=-4.0)
+    target, previous, message = second, first, "owner policy"
+    if fault == "policy":
+        with cluster.connect(db, OWNER, autocommit=True) as conn:
+            install_policy(conn, "preview", enabled=False)
+    elif fault == "stale-previous":
+        previous, message = None, "changed since review"
+    else:
+        target, message = first, "invalid activation status"
+    before = release_state(cluster, db)
+
+    with cluster.connect(db, PIPELINE["preview"]) as conn:
+        with pytest.raises(errors.RaiseException, match=message):
+            _call_activation_function(conn, target, previous)
+
+    assert release_state(cluster, db) == before
+
+
+def test_direct_activation_function_call_supersedes_and_records_history(cluster, db):
+    first = stage(cluster, db, "r1")
+    activate(cluster, db, first, None)
+    second = stage(cluster, db, "r2", spread=-4.0)
+
+    with cluster.connect(db, PIPELINE["preview"]) as conn:
+        prior = _call_activation_function(conn, second, first)
+        conn.commit()
+
+    assert prior == first
     assert statuses(cluster, db) == {first: "superseded", second: "active"}
+    assert history(cluster, db)[-1] == (first, second, "activate", "owner decision 1")
 
 
 def test_projection_rows_and_history_immutable_even_for_owner(cluster, db):
@@ -817,14 +879,6 @@ def test_projection_rows_and_history_immutable_even_for_owner(cluster, db):
 # --------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=errors.InsufficientPrivilege,
-    reason=(
-        "release.py:238 _policy uses SELECT ... FOR SHARE on season_release_policies"
-        " but 0025:502-503 grants cks_pipeline only SELECT; row locks need UPDATE"
-    ),
-)
 def test_shipped_grants_allow_pipeline_activation(cluster, migrated_db):
     with cluster.connect(migrated_db, OWNER, autocommit=True) as conn:
         install_policy(conn, "preview")
@@ -1133,13 +1187,24 @@ def test_rollback_with_stale_expected_active_refused_without_writes(cluster, db)
     assert release_state(cluster, db) == before
 
 
+def preview_connection(
+    cluster, dbname, *, server_read_only=True, client_read_only=True
+):
+    """Preview login opened like ``run_season.py`` (options + psycopg flag)."""
+    options = "-c default_transaction_read_only=on" if server_read_only else ""
+    conn = psycopg.connect(
+        cluster.conninfo(dbname, PIPELINE["preview"]), options=options
+    )
+    conn.read_only = client_read_only
+    return conn
+
+
 def test_production_activation_with_read_only_preview_rehearsal_succeeds(cluster, db):
     rehearsal = stage(cluster, db, "r1")
     activate(cluster, db, rehearsal, None)
     candidate_id = stage(cluster, db, "r1", environment="production")
 
-    with cluster.connect(db, PIPELINE["preview"]) as preview:
-        preview.read_only = True
+    with preview_connection(cluster, db) as preview:
         receipt = activate(
             cluster,
             db,
@@ -1153,14 +1218,44 @@ def test_production_activation_with_read_only_preview_rehearsal_succeeds(cluster
     assert statuses(cluster, db)[candidate_id] == "active"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=release.SeasonReleaseError,
-    reason=(
-        "run_season.py:147 opens Preview with options='-c default_transaction_read_only=on'"
-        " but release.py:461 checks psycopg conn.read_only, which stays None"
-    ),
+@pytest.mark.parametrize(
+    "server_read_only,client_read_only,pending",
+    [
+        (False, False, None),
+        (False, True, None),
+        (True, False, "SET TRANSACTION READ WRITE"),
+    ],
+    ids=["read-write", "client-flag-only", "pending-read-write-transaction"],
 )
+def test_production_activation_with_writable_preview_connection_refused(
+    cluster, db, server_read_only, client_read_only, pending
+):
+    rehearsal = stage(cluster, db, "r1")
+    activate(cluster, db, rehearsal, None)
+    candidate_id = stage(cluster, db, "r1", environment="production")
+    before = release_state(cluster, db)
+
+    with preview_connection(
+        cluster,
+        db,
+        server_read_only=server_read_only,
+        client_read_only=client_read_only,
+    ) as preview:
+        if pending:
+            preview.execute(pending)
+        with pytest.raises(release.SeasonReleaseError, match="read-only Preview"):
+            activate(
+                cluster,
+                db,
+                candidate_id,
+                None,
+                environment="production",
+                preview_conn=preview,
+            )
+
+    assert release_state(cluster, db) == before
+
+
 def test_production_activation_with_run_season_preview_connection_succeeds(cluster, db):
     rehearsal = stage(cluster, db, "r1")
     activate(cluster, db, rehearsal, None)
@@ -1188,8 +1283,7 @@ def test_production_activation_without_matching_preview_refused(cluster, db):
     candidate_id = stage(cluster, db, "r1", environment="production")
     before = release_state(cluster, db)
 
-    with cluster.connect(db, PIPELINE["preview"]) as preview:
-        preview.read_only = True
+    with preview_connection(cluster, db) as preview:
         with pytest.raises(release.SeasonReleaseError, match="Preview activation"):
             activate(
                 cluster,
@@ -1426,19 +1520,15 @@ def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db
     assert missing == []
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=psycopg.Error,
-    reason=(
-        "drizzle-orm 0.45.2 renders the JS array in season-release-context.ts:53 as"
-        " ($1, ..., $n)::text[], a row constructor that cannot be cast to text[]"
-    ),
-)
-def test_web_missing_projection_query_as_rendered_by_drizzle_succeeds(cluster, db):
+def test_web_missing_projection_query_with_one_array_parameter_succeeds(cluster, db):
+    """season-release.test.ts pins drizzle's rendering to one ``$1::text[]``."""
     names = web_release_projections()
-    rendered = web_sql()[2].replace("%s", "(" + ", ".join(["%s"] * len(names)) + ")")
+    missing_sql = web_sql()[2]
 
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        missing = conn.execute(rendered, names).fetchall()
+        missing = conn.execute(missing_sql, (names,)).fetchall()
+        absent = conn.execute(missing_sql, ([*names, "season_release_absent"],))
 
-    assert missing == []
+        assert missing_sql.count("%s") == 1
+        assert missing == []
+        assert absent.fetchall() == [("season_release_absent",)]

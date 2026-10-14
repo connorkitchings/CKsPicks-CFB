@@ -64,6 +64,19 @@ class Database:
                 (key, "jsonb" if isinstance(value, (dict, list)) else "text")
                 for key, value in self.columns[base].items()
             ]
+        elif "current_setting('default_transaction_read_only')" in query:
+            self.results = [("on", "on") if self.read_only else ("off", "off")]
+        elif query.startswith("SELECT activate_season_release"):
+            release_id, previous, digest = values
+            row = self.rows[release_id]
+            if previous:
+                self.rows[previous]["status"] = "superseded"
+            row["status"] = "active"
+            self.history.append(
+                (row["environment"], row["season"], previous, release_id)
+                + ("activate", self.policy[-1], digest)
+            )
+            self.results = [(previous,)]
         elif query.startswith("INSERT INTO season_release_history"):
             self.history.append(values)
         elif query.startswith("INSERT INTO season_releases") or query.startswith(
@@ -79,8 +92,8 @@ class Database:
                 ),
                 "status": "staged",
             }
-        elif query.startswith("UPDATE season_releases SET status = %s"):
-            self.rows[values[1]]["status"] = values[0]
+        elif query.startswith("UPDATE season_releases SET status = 'rolled_back'"):
+            self.rows[values[0]]["status"] = "rolled_back"
         elif query.startswith("UPDATE season_releases SET status = 'active'"):
             self.rows[values[0]]["status"] = "active"
         elif query.startswith(
@@ -448,7 +461,12 @@ def test_additive_schema_projects_all_legacy_columns_and_has_one_active_pointer(
         "REVOKE ALL ON season_release_policies FROM PUBLIC, cks_pipeline, cks_web"
         in sql
     )
-    assert "GRANT UPDATE (status, activated_at)" in sql
+    assert "GRANT UPDATE" not in sql
+    assert "SECURITY DEFINER SET search_path = pg_catalog, public" in sql
+    assert (
+        "GRANT EXECUTE ON FUNCTION activate_season_release(TEXT, TEXT, TEXT) TO cks_pipeline;"
+        in sql
+    )
     assert "pipeline may not roll back releases" in sql
     assert "CREATE TABLE IF NOT EXISTS season_release_pointer" not in sql
 

@@ -1610,8 +1610,10 @@ CREATE TABLE IF NOT EXISTS season_release_site_week_selections (
     PRIMARY KEY (release_id, season, week)
 );
 
+-- SECURITY DEFINER: the staged-release row lock (FOR KEY SHARE) needs UPDATE
+-- privilege on season_releases, which the pipeline deliberately does not hold.
 CREATE OR REPLACE FUNCTION reject_season_projection_mutation()
-RETURNS trigger LANGUAGE plpgsql AS $$
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
 BEGIN
     IF TG_OP <> 'INSERT' THEN RAISE EXCEPTION 'season release projections are immutable'; END IF;
     PERFORM 1 FROM season_releases WHERE release_id = NEW.release_id AND status = 'staged' FOR KEY SHARE;
@@ -1676,11 +1678,23 @@ CREATE TRIGGER immutable_projection BEFORE INSERT OR UPDATE OR DELETE ON season_
 
 REVOKE ALL ON season_release_policies FROM PUBLIC, cks_pipeline, cks_web;
 GRANT SELECT ON season_release_policies TO cks_pipeline;
-REVOKE ALL ON season_releases, season_release_history FROM PUBLIC;
+-- Explicit revokes first: the schema's ALTER DEFAULT PRIVILEGES would otherwise
+-- leave cks_pipeline SELECT/INSERT/UPDATE and cks_web SELECT on every new table.
+REVOKE ALL ON season_releases, season_release_history FROM PUBLIC, cks_pipeline, cks_web;
+REVOKE ALL ON SEQUENCE season_release_history_activation_id_seq FROM PUBLIC, cks_pipeline, cks_web;
+REVOKE ALL ON season_release_games, season_release_game_venues, season_release_game_results,
+    season_release_predictions, season_release_prediction_grades, season_release_market_quotes,
+    season_release_market_snapshots, season_release_market_snapshot_quotes,
+    season_release_prediction_market_selections, season_release_system_stats,
+    season_release_v5_rating_snapshots, season_release_team_season_stats,
+    season_release_matchup_data_publications, season_release_team_game_measurements,
+    season_release_team_possession_stats, season_release_team_possession_adjusted,
+    season_release_team_rating_components, season_release_site_week_selections
+    FROM PUBLIC, cks_pipeline, cks_web;
 GRANT SELECT ON season_releases TO cks_web;
-GRANT SELECT, INSERT ON season_releases, season_release_history TO cks_pipeline;
-GRANT UPDATE (status, activated_at) ON season_releases TO cks_pipeline;
-GRANT USAGE, SELECT ON SEQUENCE season_release_history_activation_id_seq TO cks_pipeline;
+-- The pipeline stages releases; it activates only through activate_season_release().
+GRANT SELECT, INSERT ON season_releases TO cks_pipeline;
+GRANT SELECT ON season_release_history TO cks_pipeline;
 GRANT SELECT ON season_release_games TO cks_web;
 GRANT SELECT, INSERT ON season_release_games TO cks_pipeline;
 GRANT SELECT ON season_release_game_venues TO cks_web;
@@ -1738,14 +1752,20 @@ DO $$ BEGIN
  END IF;
 END $$;
 
+-- Pipeline sessions are identified by session_user, which stays the login role
+-- inside activate_season_release() (where current_user is the definer).
 CREATE OR REPLACE FUNCTION validate_season_release_transition()
 RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE policy season_release_policies%ROWTYPE;
+DECLARE
+    policy season_release_policies%ROWTYPE;
+    pipeline_login TEXT;
 BEGIN
     IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'season releases are retained'; END IF;
+    pipeline_login := CASE WHEN NEW.environment = 'preview' THEN 'cks_preview_pipeline' ELSE 'cks_prod_pipeline' END;
     IF TG_OP = 'INSERT' THEN
         IF NEW.status <> 'staged' THEN RAISE EXCEPTION 'release must be staged first'; END IF;
-        IF current_user LIKE '%_pipeline' AND (current_user <> CASE WHEN NEW.environment = 'preview' THEN 'cks_preview_pipeline' ELSE 'cks_prod_pipeline' END OR session_user <> current_user) THEN
+        IF (session_user LIKE '%_pipeline' OR current_user LIKE '%_pipeline')
+           AND (session_user <> pipeline_login OR current_user <> session_user) THEN
             RAISE EXCEPTION 'wrong release environment role';
         END IF;
         RETURN NEW;
@@ -1754,9 +1774,8 @@ BEGIN
        (to_jsonb(OLD) - 'status' - 'activated_at') THEN
         RAISE EXCEPTION 'release manifest and verification are immutable';
     END IF;
-    IF current_user LIKE '%_pipeline' THEN
-        IF current_user <> CASE WHEN NEW.environment = 'preview' THEN 'cks_preview_pipeline' ELSE 'cks_prod_pipeline' END
-           OR session_user <> current_user THEN RAISE EXCEPTION 'wrong release environment role'; END IF;
+    IF session_user LIKE '%_pipeline' OR current_user LIKE '%_pipeline' THEN
+        IF session_user <> pipeline_login THEN RAISE EXCEPTION 'wrong release environment role'; END IF;
         IF NOT ((OLD.status = 'staged' AND NEW.status = 'active')
              OR (OLD.status = 'active' AND NEW.status = 'superseded')) THEN
             RAISE EXCEPTION 'pipeline may not roll back releases';
@@ -1785,6 +1804,55 @@ $$;
 DROP TRIGGER IF EXISTS season_release_history_immutable ON season_release_history;
 CREATE TRIGGER season_release_history_immutable BEFORE UPDATE OR DELETE ON season_release_history
     FOR EACH ROW EXECUTE FUNCTION reject_season_release_history_mutation();
+
+-- The only pipeline activation path. Runs as the owner so the pipeline needs no
+-- UPDATE on season_releases, no INSERT on history and no policy row lock grant;
+-- session_user is still the caller's login and must match the environment.
+CREATE OR REPLACE FUNCTION activate_season_release(
+    p_release_id TEXT, p_expected_previous_release_id TEXT, p_readback_sha256 TEXT)
+RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+DECLARE
+    candidate public.season_releases%ROWTYPE;
+    policy public.season_release_policies%ROWTYPE;
+    previous TEXT;
+BEGIN
+    SELECT * INTO candidate FROM public.season_releases WHERE release_id = p_release_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'release does not exist'; END IF;
+    IF session_user <> (CASE WHEN candidate.environment = 'preview' THEN 'cks_preview_pipeline' ELSE 'cks_prod_pipeline' END) THEN
+        RAISE EXCEPTION 'wrong release environment role';
+    END IF;
+    PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
+        'season-release:' || candidate.environment || ':' || candidate.season, 0));
+    SELECT * INTO policy FROM public.season_release_policies
+      WHERE environment = candidate.environment AND season = candidate.season FOR SHARE;
+    IF NOT FOUND OR NOT policy.enabled
+       OR policy.model_manifest_sha256 <> candidate.model_manifest_sha256
+       OR policy.workflow_version <> candidate.workflow_version
+       OR policy.grading_policy_sha256 <> candidate.grading_policy_sha256 THEN
+        RAISE EXCEPTION 'owner policy does not authorize this release';
+    END IF;
+    SELECT * INTO candidate FROM public.season_releases WHERE release_id = p_release_id FOR UPDATE;
+    IF candidate.status <> 'staged' THEN RAISE EXCEPTION 'candidate has invalid activation status'; END IF;
+    SELECT release_id INTO previous FROM public.season_releases
+      WHERE environment = candidate.environment AND season = candidate.season AND status = 'active' FOR UPDATE;
+    IF previous IS DISTINCT FROM p_expected_previous_release_id THEN
+        RAISE EXCEPTION 'active release changed since review';
+    END IF;
+    IF previous IS NOT NULL THEN
+        UPDATE public.season_releases SET status = 'superseded' WHERE release_id = previous;
+    END IF;
+    UPDATE public.season_releases SET status = 'active', activated_at = pg_catalog.now()
+      WHERE release_id = p_release_id;
+    INSERT INTO public.season_release_history
+        (environment, season, prior_release_id, release_id, action, decision_ref, readback_sha256)
+      VALUES (candidate.environment, candidate.season, previous, p_release_id, 'activate',
+              policy.decision_ref, p_readback_sha256);
+    RETURN previous;
+END;
+$$;
+REVOKE ALL ON FUNCTION activate_season_release(TEXT, TEXT, TEXT) FROM PUBLIC, cks_pipeline, cks_web;
+GRANT EXECUTE ON FUNCTION activate_season_release(TEXT, TEXT, TEXT) TO cks_pipeline;
+REVOKE ALL ON FUNCTION reject_season_projection_mutation() FROM PUBLIC, cks_pipeline, cks_web;
 
 DO $$ BEGIN
  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'season_release_selection_slate_fk' AND conrelid = 'season_release_site_week_selections'::regclass) THEN

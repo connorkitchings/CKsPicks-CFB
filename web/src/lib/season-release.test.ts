@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { eq, getTableName, sql } from "drizzle-orm";
+import { eq, getTableName, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
+import { PgDialect } from "drizzle-orm/pg-core";
 import * as schema from "./schema.ts";
-import { seasonReleaseDb, RELEASE_TABLES } from "./season-release-query.ts";
+import { seasonReleaseDb, RELEASE_PROJECTIONS, RELEASE_TABLES } from "./season-release-query.ts";
 import { createReleaseContextResolver, loadReleaseContext, releaseEnvironment } from "./season-release-context.ts";
 
 const db = drizzle.mock({ schema });
@@ -76,4 +77,14 @@ test("environment and season mismatches fail closed", async () => {
   assert.throws(() => releaseEnvironment({ CFB_ARTIFACT_ENV: "local" }), /preview or production/);
   assert.throws(() => createReleaseContextResolver(async () => null)(NaN, "preview"), /Invalid release season/);
   await assert.rejects(loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [release] }, { rows: [] }]), 2026, "production"), /mismatch/);
+});
+
+test("missing-projection probe binds the projection names as one text[] parameter", async () => {
+  const queries: SQL[] = [];
+  const responses = [{ rows: [{ exists: true }] }, { rows: [release] }, { rows: [] }];
+  await loadReleaseContext(async (query) => { queries.push(query); return responses.shift(); }, 2026, "preview");
+  const rendered = new PgDialect().sqlToQuery(queries[2]);
+  assert.match(rendered.sql, /unnest\(\$1::text\[\]\)/);
+  assert.equal(rendered.sql.includes("($1,"), false);
+  assert.deepEqual(rendered.params, [RELEASE_PROJECTIONS]);
 });

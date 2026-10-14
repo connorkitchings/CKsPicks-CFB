@@ -50,7 +50,7 @@ export async function loadReleaseContext(
   if (rows.length !== 1) throw new Error("Multiple active season releases");
   const row = rows[0];
   const missing = rowsOf(await execute(sql`
-    SELECT name FROM unnest(${RELEASE_PROJECTIONS}::text[]) AS names(name)
+    SELECT name FROM unnest(${sql.param(RELEASE_PROJECTIONS)}::text[]) AS names(name)
     WHERE to_regclass('public.' || name) IS NULL
   `));
   if (missing.length) throw new Error("Active season release has missing serving projections");

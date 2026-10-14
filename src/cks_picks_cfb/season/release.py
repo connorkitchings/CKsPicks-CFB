@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from psycopg import sql
+from psycopg import errors, sql
 from psycopg.types.json import Jsonb
 
 from cks_picks_cfb.ops.v5_release import assert_v5_database_environment
@@ -208,12 +208,13 @@ def _lock(cur, environment: str, season: int) -> None:
     )
 
 
-def _release(cur, release_id: str) -> dict:
+def _release(cur, release_id: str, *, for_update: bool = False) -> dict:
     columns = (*RELEASE_COLUMNS, "status")
     cur.execute(
-        sql.SQL(
-            "SELECT {} FROM season_releases WHERE release_id = %s FOR UPDATE"
-        ).format(sql.SQL(", ").join(map(sql.Identifier, columns))),
+        sql.SQL("SELECT {} FROM season_releases WHERE release_id = %s{}").format(
+            sql.SQL(", ").join(map(sql.Identifier, columns)),
+            sql.SQL(" FOR UPDATE" if for_update else ""),
+        ),
         (release_id,),
     )
     row = cur.fetchone()
@@ -222,9 +223,12 @@ def _release(cur, release_id: str) -> dict:
     return dict(zip(columns, row, strict=True))
 
 
-def _active(cur, environment: str, season: int) -> str | None:
+def _active(
+    cur, environment: str, season: int, *, for_update: bool = False
+) -> str | None:
     cur.execute(
-        "SELECT release_id FROM season_releases WHERE environment = %s AND season = %s AND status = 'active' FOR UPDATE",
+        "SELECT release_id FROM season_releases WHERE environment = %s AND season = %s AND status = 'active'"
+        + (" FOR UPDATE" if for_update else ""),
         (environment, season),
     )
     rows = cur.fetchall()
@@ -233,9 +237,10 @@ def _active(cur, environment: str, season: int) -> str | None:
     return str(rows[0][0]) if rows else None
 
 
-def _policy(cur, release: Mapping) -> str:
+def _policy(cur, release: Mapping) -> None:
+    """Early, readable refusal; activate_season_release() re-checks under lock."""
     cur.execute(
-        "SELECT model_manifest_sha256, workflow_version, grading_policy_sha256, enabled, decision_ref FROM season_release_policies WHERE environment = %s AND season = %s FOR SHARE",
+        "SELECT model_manifest_sha256, workflow_version, grading_policy_sha256, enabled FROM season_release_policies WHERE environment = %s AND season = %s",
         (release["environment"], release["season"]),
     )
     policy = cur.fetchone()
@@ -247,7 +252,6 @@ def _policy(cur, release: Mapping) -> str:
         raise SeasonReleaseError(
             "owner-installed automatic release policy does not authorize candidate"
         )
-    return str(policy[4])
 
 
 def _check_projection_scope(
@@ -457,12 +461,29 @@ def stage_release(
     return release_id
 
 
+def _server_read_only(cur) -> bool:
+    """Server-side state: session default and current transaction both read-only.
+
+    psycopg's ``conn.read_only`` stays None when read-only is set through the
+    connection ``options``, and a pending ``SET TRANSACTION READ ONLY`` alone
+    does not make later transactions read-only, so both settings must be on.
+    """
+    cur.execute(
+        "SELECT current_setting('default_transaction_read_only'), current_setting('transaction_read_only')"
+    )
+    return cur.fetchone() == ("on", "on")
+
+
 def _preview_proof(conn, candidate: Mapping) -> None:
-    if conn is None or not conn.read_only:
+    if conn is None:
         raise SeasonReleaseError(
             "Production requires independently read-only Preview rehearsal"
         )
     with conn.cursor() as cur:
+        if not _server_read_only(cur):
+            raise SeasonReleaseError(
+                "Production requires independently read-only Preview rehearsal"
+            )
         assert_v5_database_environment(cur, "preview")
         cur.execute(
             "SELECT release_id FROM season_releases WHERE environment = 'preview' AND season = %s AND model_manifest_sha256 = %s AND revision_manifest_sha256 = %s AND workflow_version = %s AND grading_policy_sha256 = %s AND code_sha = %s AND config_sha = %s AND active_week = %s",
@@ -522,10 +543,12 @@ def _activate(
         if not rollback:
             assert_v5_database_environment(cur, environment)
         _lock(cur, environment, season)
-        previous = _active(cur, environment, season)
+        # Rollback (owner) writes directly and locks rows here; the pipeline has
+        # no UPDATE privilege and activate_season_release() takes the row locks.
+        previous = _active(cur, environment, season, for_update=rollback)
         if previous != expected_previous_release_id:
             raise SeasonReleaseError("active release changed since review")
-        candidate = _release(cur, release_id)
+        candidate = _release(cur, release_id, for_update=rollback)
         if (candidate["environment"], candidate["season"]) != (environment, season):
             raise SeasonReleaseError(
                 "candidate belongs to another environment or season"
@@ -536,30 +559,46 @@ def _activate(
         if rollback and previous is None:
             raise SeasonReleaseError("rollback requires an active release")
         if not rollback:
-            decision_ref = _policy(cur, candidate)
+            _policy(cur, candidate)
             if environment == "production":
                 _preview_proof(preview_conn, candidate)
         checks = _readback(cur, release_id, candidate["projection_checks"])
-        if previous:
-            cur.execute(
-                "UPDATE season_releases SET status = %s WHERE release_id = %s",
-                ("rolled_back" if rollback else "superseded", previous),
-            )
-        cur.execute(
-            "UPDATE season_releases SET status = 'active', activated_at = NOW() WHERE release_id = %s",
-            (release_id,),
-        )
-        if _active(cur, environment, season) != release_id:
-            raise SeasonReleaseError("activation pointer readback differs")
-        _readback(cur, release_id, checks)
         digest = _sha(
             json.dumps(checks, sort_keys=True, separators=(",", ":")).encode()
         )
         action = "rollback" if rollback else "activate"
-        cur.execute(
-            "INSERT INTO season_release_history (environment, season, prior_release_id, release_id, action, decision_ref, readback_sha256) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-            (environment, season, previous, release_id, action, decision_ref, digest),
-        )
+        if rollback:
+            cur.execute(
+                "UPDATE season_releases SET status = 'rolled_back' WHERE release_id = %s",
+                (previous,),
+            )
+            cur.execute(
+                "UPDATE season_releases SET status = 'active', activated_at = NOW() WHERE release_id = %s",
+                (release_id,),
+            )
+            cur.execute(
+                "INSERT INTO season_release_history (environment, season, prior_release_id, release_id, action, decision_ref, readback_sha256) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    environment,
+                    season,
+                    previous,
+                    release_id,
+                    action,
+                    decision_ref,
+                    digest,
+                ),
+            )
+        else:
+            try:
+                cur.execute(
+                    "SELECT activate_season_release(%s, %s, %s)",
+                    (release_id, previous, digest),
+                )
+            except errors.RaiseException as error:
+                raise SeasonReleaseError(error.diag.message_primary) from error
+        if _active(cur, environment, season) != release_id:
+            raise SeasonReleaseError("activation pointer readback differs")
+        _readback(cur, release_id, checks)
         return {
             "environment": environment,
             "season": season,

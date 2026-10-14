@@ -147,6 +147,7 @@ def _release(args: argparse.Namespace) -> int:
                 with psycopg.connect(
                     preview_url, options="-c default_transaction_read_only=on"
                 ) as preview:
+                    preview.read_only = True
                     result = activate_release(
                         conn,
                         environment=args.environment,
