@@ -58,7 +58,7 @@ from typing import Any
 import psycopg
 from dotenv import load_dotenv
 
-from cks_picks_cfb.ops.public_selection import deselect_week_run
+from cks_picks_cfb.ops.public_selection import PublicSelectionError, deselect_week_run
 
 RECEIPT_SCHEMA = "week_release_receipt_v1"
 
@@ -120,7 +120,10 @@ def read_state(
 ) -> dict[str, Any]:
     """The serving facts this rollback changes, in one comparable dict."""
     cur.execute("SELECT season, week, active_run_id FROM current_week WHERE id = 1")
-    cw_season, cw_week, active = cur.fetchone()
+    pointer = cur.fetchone()
+    if pointer is None:
+        raise WeekRollbackError("current_week has no row (id = 1) to restore")
+    cw_season, cw_week, active = pointer
     # Every week of the season, so the read-back proves Weeks 0..N-1 unchanged.
     cur.execute(
         "SELECT week, run_id FROM site_week_selections WHERE season = %s ORDER BY week",
@@ -378,7 +381,12 @@ def main(argv: list[str] | None = None) -> int:
                 f"Rollback applied and verified: site restored to week {args.week - 1}."
             )
             return 0
-    except WeekRollbackError as exc:
+    # Leaving the connection block on an error rolls the transaction back first.
+    except (
+        WeekRollbackError,
+        PublicSelectionError,
+        psycopg.errors.InsufficientPrivilege,
+    ) as exc:
         print(f"Refusing: {exc}", file=sys.stderr)
         return 3
 
