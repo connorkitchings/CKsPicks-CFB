@@ -411,8 +411,14 @@ def normalize_market_quotes(
     frame["captured_at"] = pd.to_datetime(
         frame["captured_at"], utc=True, errors="raise"
     )
-    if "over_under" in frame and "total" not in frame:
-        frame["total"] = frame["over_under"]
+    if "over_under" in frame:
+        # CFBD rows carry ``over_under``; The Odds API rows carry ``total``.
+        # In a mixed frame, backfill only the blanks so CFBD totals survive.
+        frame["total"] = (
+            frame["total"].fillna(frame["over_under"])
+            if "total" in frame
+            else frame["over_under"]
+        )
     if games is not None and "season" not in frame:
         frame = frame.merge(
             games[["game_id", "season", "week"]].drop_duplicates("game_id"),
