@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import json
 
+import psycopg
 import pytest
 
+from cks_picks_cfb.ops.public_selection import PublicSelectionError
 from scripts.pipeline import rollback_week_release as rollback
 
 RUN = "2026w7-test-pending"
@@ -73,6 +75,7 @@ class FakeDb:
             {"snapshot_id": f"s{i}", "source_manifest_sha256": SHA} for i in range(4)
         ] + [{"snapshot_id": "old", "source_manifest_sha256": OTHER_SHA}]
         self.components: list[str] = []
+        self.deny_delete = False
 
     def connection(self):
         return FakeConn(self)
@@ -152,7 +155,7 @@ class FakeCursor:
             }
             rows = [(sum(1 for c in db.components if c in ids),)]
         elif s.startswith("SELECT season, week, active_run_id FROM current_week"):
-            rows = [tuple(db.current_week)]
+            rows = [tuple(db.current_week)] if db.current_week else []
         elif s.startswith("SELECT week, run_id FROM site_week_selections"):
             rows = [
                 (w, r)
@@ -174,6 +177,8 @@ class FakeCursor:
         elif s.startswith("INSERT INTO site_week_selection_history"):
             db.history.append(tuple(params))
         elif s.startswith("DELETE FROM site_week_selections"):
+            if db.deny_delete:
+                raise psycopg.errors.InsufficientPrivilege("permission denied")
             if db.user.endswith("_pipeline"):
                 raise PermissionError("pipeline role cannot delete selections")
             db.selections.pop(tuple(params), None)
@@ -399,6 +404,30 @@ def test_refuses_state_that_is_not_this_release(
     assert code == 3 and not db.committed
     assert message in capsys.readouterr().err
     assert len(db.stats) == 6 and len(db.snapshots) == 5
+
+
+def test_a_missing_current_week_row_is_refused(monkeypatch, tmp_path, capsys):
+    db = FakeDb()
+    db.current_week = None
+    code = _run_cli(monkeypatch, tmp_path, db, "--apply", receipt=_receipt())
+    assert code == 3 and not db.committed
+    assert "Refusing: current_week has no row" in capsys.readouterr().err
+
+
+def test_a_deselect_refusal_is_reported_as_refusing(monkeypatch, tmp_path, capsys):
+    def refuse(cur, **kwargs):
+        raise PublicSelectionError("deselection reason is required")
+
+    monkeypatch.setattr(rollback, "deselect_week_run", refuse)
+    err = _refused(monkeypatch, tmp_path, capsys, FakeDb(), "--apply")
+    assert "Refusing: deselection reason is required" in err
+
+
+def test_a_privilege_error_is_reported_as_refusing(monkeypatch, tmp_path, capsys):
+    db = FakeDb()
+    db.deny_delete = True
+    err = _refused(monkeypatch, tmp_path, capsys, db, "--apply", receipt=_receipt())
+    assert "Refusing: permission denied" in err
 
 
 @pytest.mark.parametrize(

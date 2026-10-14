@@ -178,6 +178,53 @@ def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
 
 
+# Every catalog.dataset_versions column an entry fixes besides version_id: an existing
+# version must match all of them, or the registration refuses it as a conflict.
+VERSION_COLUMNS = (
+    "dataset",
+    "tier",
+    "schema_version",
+    "content_sha",
+    "uri",
+    "manifest_uri",
+    "row_count",
+    "partitions",
+    "as_of",
+    "code_sha",
+    "config_sha",
+    "state",
+    "identity_version",
+    "schema_sha",
+)
+
+
+def version_row(entry: Entry) -> tuple:
+    """The entry's values for ``VERSION_COLUMNS``, as Postgres returns them."""
+    from cks_picks_cfb.data.catalog import _catalog_timestamp
+
+    return (
+        entry.dataset,
+        entry.tier,
+        entry.schema_version,
+        entry.content_sha,
+        entry.uri,
+        entry.manifest_uri,
+        entry.row_count,
+        dict(entry.partitions),
+        _catalog_timestamp(entry.as_of),
+        entry.code_sha,
+        entry.config_sha,
+        entry.state,
+        entry.identity_version,
+        entry.schema_sha,
+    )
+
+
+def version_matches(existing: Sequence[Any], entry: Entry) -> bool:
+    """Whether an existing ``VERSION_COLUMNS`` row is exactly this entry's version."""
+    return _canonical(tuple(existing)) == _canonical(version_row(entry))
+
+
 def register_entries(
     conn_url: str,
     entries: Sequence[Entry],
@@ -187,8 +234,6 @@ def register_entries(
     connect: Callable[[str], Any] | None = None,
 ) -> dict[str, int]:
     """Register every entry in one transaction; return counts of rows newly written."""
-    from cks_picks_cfb.data.catalog import _catalog_timestamp
-
     if connect is None:
         import psycopg
 
@@ -230,32 +275,15 @@ def register_entries(
                             ),
                         )
                         written["schemas"] += 1
-                    row = (
-                        entry.dataset,
-                        entry.tier,
-                        entry.schema_version,
-                        entry.content_sha,
-                        entry.uri,
-                        entry.manifest_uri,
-                        entry.row_count,
-                        dict(entry.partitions),
-                        _catalog_timestamp(entry.as_of),
-                        entry.code_sha,
-                        entry.config_sha,
-                        entry.state,
-                        entry.identity_version,
-                        entry.schema_sha,
-                    )
+                    row = version_row(entry)
                     cur.execute(
-                        "SELECT dataset, tier, schema_version, content_sha, uri, "
-                        "manifest_uri, row_count, partitions, as_of, code_sha, config_sha, "
-                        "state, identity_version, schema_sha "
+                        f"SELECT {', '.join(VERSION_COLUMNS)} "  # noqa: S608
                         "FROM catalog.dataset_versions WHERE version_id = %s",
                         (entry.version_id,),
                     )
                     existing = cur.fetchone()
                     if existing:
-                        if _canonical(tuple(existing)) != _canonical(row):
+                        if not version_matches(existing, entry):
                             raise GateError(
                                 f"immutable dataset version conflict: {entry.version_id}"
                             )

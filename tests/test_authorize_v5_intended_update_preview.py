@@ -4,6 +4,7 @@ from cks_picks_cfb.ops.v5_intended_update_release import AUTH_COLUMNS
 from scripts.pipeline.authorize_v5_intended_update_preview import (
     APPROVAL_COLUMNS,
     authorization_record,
+    check_or_register,
     register_authorization,
 )
 
@@ -30,10 +31,14 @@ class FakeCursor:
         self.approvals = [dict(row) for row in approvals]
         self.authorizations = {}
         self.writes = 0
+        self.statements = []
         self._result = []
 
-    def execute(self, sql, params):
-        if sql.startswith("SELECT") and "v5_model_bundle_approvals" in sql:
+    def execute(self, sql, params=()):
+        self.statements.append(sql)
+        if sql == "SELECT current_user, session_user":
+            self._result = [("cks_preview_migrator", "cks_preview_migrator")]
+        elif sql.startswith("SELECT") and "v5_model_bundle_approvals" in sql:
             approval_id, model_id, bundle = params
             self._result = [
                 tuple(row[key] for key in APPROVAL_COLUMNS)
@@ -59,6 +64,34 @@ class FakeCursor:
 
     def fetchone(self):
         return self._result[0] if self._result else None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class FakeConn:
+    def __init__(self, cur):
+        self.cur, self.read_only = cur, None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def cursor(self):
+        return self.cur
+
+
+def _check_or_register(cur, *, apply):
+    conn = FakeConn(cur)
+    written = check_or_register(
+        lambda _url: conn, "url", week7_record(), apply=apply, **EXPECTED
+    )
+    return conn, written
 
 
 def week7_record(decision_ref="week7-display-only-2026-10-13"):
@@ -177,3 +210,33 @@ def test_retry_with_different_week7_decision_ref_refuses():
             cur, week7_record(decision_ref="another-week7-decision"), **EXPECTED
         )
     assert cur.writes == 1
+
+
+def test_dry_run_checks_the_stored_approval_read_only_and_writes_nothing():
+    cur = FakeCursor([APPROVAL])
+    conn, written = _check_or_register(cur, apply=False)
+    assert written is False and conn.read_only is True
+    assert cur.writes == 0 and not cur.authorizations
+    assert not any("FOR SHARE" in sql or "INSERT" in sql for sql in cur.statements)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("decision_ref", "some-other-decision", "decision_ref"),
+        ("approval_id", "preview-intended-update-other", "approval_id"),
+        ("first_live_week", 8, "after requested week 7"),
+    ],
+)
+def test_dry_run_fails_where_apply_would_refuse_the_approval(field, value, message):
+    for apply in (False, True):
+        cur = FakeCursor([{**APPROVAL, field: value}])
+        with pytest.raises(ValueError, match=message):
+            _check_or_register(cur, apply=apply)
+        assert cur.writes == 0
+
+
+def test_apply_registers_as_the_migrator():
+    cur = FakeCursor([APPROVAL])
+    conn, written = _check_or_register(cur, apply=True)
+    assert written is True and conn.read_only is False and cur.writes == 1
