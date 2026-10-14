@@ -685,3 +685,55 @@ DO $$ BEGIN
     FOREIGN KEY (season, week, run_id) REFERENCES prediction_runs(season, week, run_id) ON DELETE RESTRICT;
  END IF;
 END $$;
+
+-- Release-scoped links the legacy serving tables enforce, as composite keys on
+-- (release_id, ...). Deferred so a release inserts in any order; staging runs
+-- SET CONSTRAINTS ALL IMMEDIATE before readback. MATCH SIMPLE skips NULL links.
+DO $$
+DECLARE
+    link TEXT[];
+BEGIN
+    FOREACH link SLICE 1 IN ARRAY ARRAY[
+        ['season_release_market_quotes', 'season_release_market_quotes_game_key',
+         'UNIQUE (release_id, quote_id, game_id)'],
+        ['season_release_game_venues', 'season_release_game_venues_game_fk',
+         'FOREIGN KEY (release_id, game_id) REFERENCES season_release_games (release_id, game_id)'],
+        ['season_release_game_results', 'season_release_game_results_game_fk',
+         'FOREIGN KEY (release_id, game_id) REFERENCES season_release_games (release_id, game_id)'],
+        ['season_release_predictions', 'season_release_predictions_game_fk',
+         'FOREIGN KEY (release_id, game_id) REFERENCES season_release_games (release_id, game_id)'],
+        ['season_release_predictions', 'season_release_predictions_snapshot_fk',
+         'FOREIGN KEY (release_id, market_snapshot_id) REFERENCES season_release_market_snapshots (release_id, snapshot_id)'],
+        ['season_release_prediction_grades', 'season_release_prediction_grades_prediction_fk',
+         'FOREIGN KEY (release_id, run_id, game_id) REFERENCES season_release_predictions (release_id, run_id, game_id)'],
+        ['season_release_prediction_grades', 'season_release_prediction_grades_snapshot_fk',
+         'FOREIGN KEY (release_id, market_snapshot_id) REFERENCES season_release_market_snapshots (release_id, snapshot_id)'],
+        ['season_release_prediction_grades', 'season_release_prediction_grades_quote_fk',
+         'FOREIGN KEY (release_id, market_quote_id) REFERENCES season_release_market_quotes (release_id, quote_id)'],
+        ['season_release_market_quotes', 'season_release_market_quotes_game_fk',
+         'FOREIGN KEY (release_id, game_id) REFERENCES season_release_games (release_id, game_id)'],
+        ['season_release_market_snapshots', 'season_release_market_snapshots_game_fk',
+         'FOREIGN KEY (release_id, game_id) REFERENCES season_release_games (release_id, game_id)'],
+        ['season_release_market_snapshot_quotes', 'season_release_market_snapshot_quotes_snapshot_fk',
+         'FOREIGN KEY (release_id, snapshot_id) REFERENCES season_release_market_snapshots (release_id, snapshot_id)'],
+        ['season_release_market_snapshot_quotes', 'season_release_market_snapshot_quotes_quote_fk',
+         'FOREIGN KEY (release_id, quote_id) REFERENCES season_release_market_quotes (release_id, quote_id)'],
+        ['season_release_prediction_market_selections', 'season_release_selections_game_fk',
+         'FOREIGN KEY (release_id, game_id) REFERENCES season_release_games (release_id, game_id)'],
+        ['season_release_prediction_market_selections', 'season_release_selections_prediction_fk',
+         'FOREIGN KEY (release_id, run_id, game_id) REFERENCES season_release_predictions (release_id, run_id, game_id)'],
+        ['season_release_prediction_market_selections', 'season_release_selections_snapshot_fk',
+         'FOREIGN KEY (release_id, snapshot_id) REFERENCES season_release_market_snapshots (release_id, snapshot_id)'],
+        ['season_release_prediction_market_selections', 'season_release_selections_quote_game_fk',
+         'FOREIGN KEY (release_id, quote_id, game_id) REFERENCES season_release_market_quotes (release_id, quote_id, game_id)'],
+        ['season_release_team_rating_components', 'season_release_team_rating_components_snapshot_fk',
+         'FOREIGN KEY (release_id, v5_snapshot_id) REFERENCES season_release_v5_rating_snapshots (release_id, snapshot_id)']
+    ] LOOP
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint
+                       WHERE conname = link[2] AND conrelid = link[1]::regclass) THEN
+            EXECUTE format('ALTER TABLE %I ADD CONSTRAINT %I %s%s', link[1], link[2], link[3],
+                CASE WHEN link[3] LIKE 'FOREIGN KEY%'
+                     THEN ' MATCH SIMPLE DEFERRABLE INITIALLY DEFERRED' ELSE '' END);
+        END IF;
+    END LOOP;
+END $$;

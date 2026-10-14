@@ -40,7 +40,9 @@ import pytest
 from psycopg import errors, sql
 
 from cks_picks_cfb.season import release
+from cks_picks_cfb.season import verification as verifier
 from tests.pg_harness import PgCluster, find_pg_bin
+from tests.test_season_release import derived_checks, report_for
 
 PG_BIN = find_pg_bin()
 if PG_BIN is None:
@@ -200,6 +202,15 @@ def db(make_db):
     return make_db("tpl_operable")
 
 
+@pytest.fixture(autouse=True)
+def verification_functions(monkeypatch):
+    """Inject derive/validate until the verification module implements them."""
+    monkeypatch.setattr(verifier, "derive_checks", derived_checks)
+    monkeypatch.setattr(
+        verifier, "validate_report", lambda report, *, projections: None
+    )
+
+
 # --------------------------------------------------------------------------
 # Candidate payloads and release helpers
 # --------------------------------------------------------------------------
@@ -238,8 +249,68 @@ def run_record() -> dict:
     }
 
 
+def game(game_id: int, week: int = 0, lines: dict | None = None) -> dict:
+    """A schedule row; prediction columns stay NULL without ``lines``."""
+    blank = dict.fromkeys(
+        (
+            "home_team_spread_line",
+            "total_line",
+            "predicted_spread",
+            "predicted_total",
+            "predicted_spread_std_dev",
+            "predicted_total_std_dev",
+            "spread_lean",
+            "total_lean",
+            "edge_spread",
+            "edge_total",
+        )
+    )
+    provenance = {"source_config": None, "system_name": None, "model_id": None}
+    if lines:
+        provenance = {
+            "source_config": "conf/season/test.yaml",
+            "system_name": "Season Test",
+            "model_id": "season-test",
+        }
+    return {
+        "game_id": game_id,
+        "season": SEASON,
+        "week": week,
+        "start_date": TS,
+        "home_team": f"Home {game_id}",
+        "away_team": f"Away {game_id}",
+        **blank,
+        "high_confidence": False,
+        **(lines or {}),
+        **provenance,
+        "inserted_at": TS,
+        "updated_at": TS,
+    }
+
+
+def quote(quote_id: str, game_id: int) -> dict:
+    return {
+        "quote_id": quote_id,
+        "game_id": game_id,
+        "provider": "consensus",
+        "captured_at": TS,
+        "spread": -3.5,
+        "total": 51.5,
+        "source_capture_id": None,
+        "home_spread_price": -110.0,
+        "away_spread_price": -110.0,
+        "over_price": -110.0,
+        "under_price": -110.0,
+        "quote_updated_at": TS,
+        "source_event_id": None,
+    }
+
+
 def projections(spread: float) -> dict:
-    """Complete week-0 serving view; ``spread`` makes release contents differ."""
+    """Environment-free week-0 serving view with every release link populated.
+
+    ``spread`` makes release contents differ.
+    """
     lines = {
         "home_team_spread_line": -3.5,
         "total_line": 51.5,
@@ -255,20 +326,31 @@ def projections(spread: float) -> dict:
     }
     views = {base: [] for base in release.PROJECTION_KEYS}
     views.update(
-        games=[
+        games=[game(401, lines=lines)],
+        game_venues=[
             {
                 "game_id": 401,
-                "season": SEASON,
-                "week": 0,
-                "start_date": TS,
-                "home_team": "Home U",
-                "away_team": "Away St",
-                **lines,
-                "source_config": "conf/season/test.yaml",
-                "system_name": "Season Test",
-                "model_id": "season-test",
-                "inserted_at": TS,
+                "venue_id": 7,
+                "venue_name": "Home Field",
+                "city": "Hometown",
+                "state": "TX",
+                "country_code": "US",
+                "timezone": "America/Chicago",
+                "neutral_site": False,
+                "source": "cfbd",
                 "updated_at": TS,
+            }
+        ],
+        game_results=[
+            {
+                "completion_state": "completed",
+                "source_dataset_version_id": None,
+                "game_id": 401,
+                "home_points": 31,
+                "away_points": 20,
+                "spread_result": "win",
+                "total_result": "push",
+                "scored_at": TS,
             }
         ],
         predictions=[
@@ -283,7 +365,56 @@ def projections(spread: float) -> dict:
                 "spread_model_version": "v-test",
                 "total_model_version": "v-test",
                 "created_at": TS,
-                "market_snapshot_id": None,
+                "market_snapshot_id": "msnap-401",
+            }
+        ],
+        prediction_grades=[
+            {
+                "run_id": RUN_ID,
+                "game_id": 401,
+                "target": "spread",
+                "market_snapshot_id": "msnap-401",
+                "market_quote_id": "quote-401",
+                "side": "home",
+                "result": "win",
+                "profit_units": "0.9091",
+                "grading_version": "model_side_best_quote_v2:test",
+                "graded_at": TS,
+            }
+        ],
+        market_quotes=[quote("quote-401", 401)],
+        market_snapshots=[
+            {
+                "snapshot_id": "msnap-401",
+                "game_id": 401,
+                "captured_at": TS,
+                "spread": -3.5,
+                "total": 51.5,
+                "spread_rule": "consensus",
+                "total_rule": "consensus",
+                "spread_provider_count": 1,
+                "total_provider_count": 1,
+                "source_quote_ids": ["quote-401"],
+                "policy_version": "consensus_then_median_v1",
+                "created_at": TS,
+            }
+        ],
+        market_snapshot_quotes=[
+            {"snapshot_id": "msnap-401", "quote_id": "quote-401", "target": "spread"}
+        ],
+        prediction_market_selections=[
+            {
+                "run_id": RUN_ID,
+                "game_id": 401,
+                "target": "spread",
+                "snapshot_id": "msnap-401",
+                "quote_id": "quote-401",
+                "side": "home",
+                "point": -3.5,
+                "price": -110.0,
+                "edge": 1.5,
+                "policy_version": "model_side_best_quote_v2",
+                "created_at": TS,
             }
         ],
         site_week_selections=[
@@ -316,17 +447,68 @@ def projections(spread: float) -> dict:
                 "created_at": TS,
             }
         ],
+        team_rating_components=[
+            {
+                "component_id": "component-home-u-offense",
+                "v5_snapshot_id": "snap-home-u",
+                "lineage": "historical_replay",
+                "candidate_id": "candidate-test",
+                "source_manifest_sha256": "9" * 64,
+                "snapshot_class": "pregame",
+                "season": SEASON,
+                "as_of_week": 0,
+                "game_id": None,
+                "cutoff_utc": TS,
+                "rating_team": "Home U",
+                "team": "Home U",
+                "unit_role": "offense",
+                "rating_mean": 1.25,
+                "rating_variance": 0.5,
+                "prior_mean": 1.0,
+                "prior_variance": 0.6,
+                "prior_weight": 1.0,
+                "prior_contribution": 1.0,
+                "evidence_weight": 0.0,
+                "process_variance": 0.1,
+                "k": 0.0,
+                "usable_exposure": 0.0,
+                "completed_games": 0,
+                "evidence": [],
+                "excluded_observations": [],
+                "prior_detail": {"source": "preseason"},
+                "fallback_reason": None,
+                "created_at": TS,
+            }
+        ],
+        matchup_data_publications=[
+            {
+                "publication_id": "season-run:r1#matchup",
+                "season": SEASON,
+                "lineage": "historical_replay",
+                "rating_manifest_sha256": "1" * 64,
+                "rating_manifest_uri": "season-run:r1#ratings",
+                "measurement_manifest_sha256": "2" * 64,
+                "measurement_manifest_uri": "season-run:r1#measurements",
+                "observations_records_sha": "3" * 64,
+                "as_of_weeks": [0],
+                "rating_scale": {"points": 1},
+                "row_counts": {"team_rating_components": 1},
+                "payload_sha256": "4" * 64,
+                "code_sha": "d" * 40,
+                "published_at": TS,
+            }
+        ],
         system_stats=[
             {
                 "season": SEASON,
                 "as_of_week": 0,
-                "spread_wins": 0,
+                "spread_wins": 1,
                 "spread_losses": 0,
                 "spread_pushes": 0,
                 "total_wins": 0,
                 "total_losses": 0,
                 "total_pushes": 0,
-                "spread_profit_units": "0.0000",
+                "spread_profit_units": "0.9091",
                 "total_profit_units": "0.0000",
                 "updated_at": TS,
             }
@@ -335,17 +517,16 @@ def projections(spread: float) -> dict:
     return views
 
 
-def candidate(
+def seal(
     label: str,
+    views: dict,
     *,
-    spread: float = -2.0,
     model_sha: str = POLICY["model_manifest_sha256"],
-    verification_state: str = "passed",
+    report=None,
 ) -> dict[str, bytes]:
-    """Sealed manifest/verification/projection bytes, chained by checksums."""
-    projection_raw = _encoded(
-        {**projections(spread), "prediction_runs": [run_record()]}
-    )
+    """Manifest/report/payload bytes chained by checksums; ``report`` edits it."""
+    payload = {**views, "prediction_runs": [run_record()]}
+    projection_raw = _encoded(payload)
     manifest = {
         "schema_version": "season_run_v1",
         "release_id": label,
@@ -365,20 +546,21 @@ def candidate(
             }
         },
     }
-    verification_raw = _encoded(
-        {
-            "state": verification_state,
-            "identity": {key: manifest[key] for key in release.IDENTITY_FIELDS},
-            "checks": {"complete": True},
-            "output_refs": manifest["output_refs"],
-        }
-    )
+    document = report_for(payload, manifest)
+    if report:
+        report(document)
+    verification_raw = _encoded(document)
     manifest["verification_sha256"] = hashlib.sha256(verification_raw).hexdigest()
     return {
         "manifest_raw": _encoded(manifest),
         "verification_raw": verification_raw,
         "projection_raw": projection_raw,
     }
+
+
+def candidate(label: str, *, spread: float = -2.0, **kwargs) -> dict[str, bytes]:
+    """Sealed manifest/verification/projection bytes, chained by checksums."""
+    return seal(label, projections(spread), **kwargs)
 
 
 def stage(cluster, dbname, label, environment="preview", payload=None, **kwargs):
@@ -1018,10 +1200,14 @@ def test_activation_without_installed_policy_refused(cluster, db):
     assert release_state(cluster, db) == before
 
 
+def _fail_check(report: dict) -> None:
+    report["checks"]["paired_predictions"]["passed"] = False
+
+
 def _tampered(fault: str) -> dict[str, bytes]:
     payload = candidate("r1")
     if fault == "verification-failed":
-        return candidate("r1", verification_state="failed")
+        return candidate("r1", report=_fail_check)
     if fault == "verification-bytes":
         payload["verification_raw"] += b" "
     elif fault == "verification-missing":
@@ -1054,22 +1240,10 @@ def test_stage_of_unverified_candidate_refused_without_writes(cluster, db, fault
     assert release_state(cluster, db) == before
 
 
-def test_stage_failing_after_inserts_leaves_no_partial_rows(cluster, db):
-    payload = candidate("r1")
-    views = json.loads(payload["projection_raw"])
+def test_stage_with_unknown_payload_column_leaves_no_partial_rows(cluster, db):
+    views = projections(-2.0)
     views["system_stats"][0]["unexpected_column"] = 1
-    raw = _encoded(views)
-    manifest = json.loads(payload["manifest_raw"])
-    manifest["output_refs"]["serving_projections"]["sha256"] = hashlib.sha256(
-        raw
-    ).hexdigest()
-    verification = json.loads(payload["verification_raw"])
-    verification["output_refs"] = manifest["output_refs"]
-    payload["verification_raw"] = _encoded(verification)
-    manifest["verification_sha256"] = hashlib.sha256(
-        payload["verification_raw"]
-    ).hexdigest()
-    payload.update(manifest_raw=_encoded(manifest), projection_raw=raw)
+    payload = seal("r1", views)
     before = release_state(cluster, db)
 
     with pytest.raises(
@@ -1293,6 +1467,266 @@ def test_production_activation_without_matching_preview_refused(cluster, db):
                 environment="production",
                 preview_conn=preview,
             )
+
+    assert release_state(cluster, db) == before
+
+
+# --------------------------------------------------------------------------
+# B2. Environment-free payloads, enforced links, verified reports
+# --------------------------------------------------------------------------
+
+
+def _release_row(cluster, dbname, release_id) -> dict:
+    with cluster.connect(dbname, OWNER, autocommit=True) as conn:
+        checks, run_sha, verify_sha = conn.execute(
+            "SELECT projection_checks, run_manifest_sha256, verification_sha256"
+            " FROM season_releases WHERE release_id = %s",
+            (release_id,),
+        ).fetchone()
+        environments = [
+            row[0]
+            for row in conn.execute(
+                "SELECT environment FROM season_release_matchup_data_publications"
+                " WHERE release_id = %s",
+                (release_id,),
+            )
+        ]
+    return {
+        "projection_checks": checks,
+        "run_manifest_sha256": run_sha,
+        "verification_sha256": verify_sha,
+        "environments": environments,
+    }
+
+
+def test_same_payload_bytes_stage_identically_in_preview_and_production(cluster, db):
+    payload = candidate("r1")
+    pinned = json.loads(payload["manifest_raw"])["output_refs"]["serving_projections"]
+
+    preview_id = stage(cluster, db, "r1", payload=payload)
+    preview_receipt = activate(cluster, db, preview_id, None)
+    production_id = stage(cluster, db, "r1", "production", payload=payload)
+    with preview_connection(cluster, db) as preview:
+        production_receipt = activate(
+            cluster, db, production_id, None, "production", preview_conn=preview
+        )
+
+    preview_row = _release_row(cluster, db, preview_id)
+    production_row = _release_row(cluster, db, production_id)
+    assert hashlib.sha256(payload["projection_raw"]).hexdigest() == pinned["sha256"]
+    assert preview_row["projection_checks"] == production_row["projection_checks"]
+    assert preview_row["projection_checks"] == {
+        base: release.projection_check(rows) for base, rows in projections(-2.0).items()
+    }
+    assert preview_receipt["readback_sha256"] == production_receipt["readback_sha256"]
+    assert preview_row["run_manifest_sha256"] == production_row["run_manifest_sha256"]
+    assert preview_row["environments"] == ["preview"]
+    assert production_row["environments"] == ["production"]
+    assert statuses(cluster, db)[production_id] == "active"
+
+
+@pytest.mark.parametrize(
+    "table,column,value",
+    [
+        ("matchup_data_publications", "environment", "preview"),
+        ("games", "environment", "preview"),
+        ("system_stats", "release_id", "preview-r1"),
+    ],
+)
+def test_payload_row_with_server_column_refused_without_writes(
+    cluster, db, table, column, value
+):
+    views = projections(-2.0)
+    views[table][0][column] = value
+    before = release_state(cluster, db)
+
+    with pytest.raises(release.SeasonReleaseError, match="server-filled column"):
+        stage(cluster, db, "r1", payload=seal("r1", views))
+
+    assert release_state(cluster, db) == before
+
+
+def test_activation_refuses_projection_row_of_another_environment(cluster, db):
+    release_id = stage(cluster, db, "r1")
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
+        row = projections(-2.0)["matchup_data_publications"][0]
+        conn.execute(
+            "INSERT INTO season_release_matchup_data_publications (release_id,"
+            " environment, publication_id, season, lineage, rating_manifest_sha256,"
+            " rating_manifest_uri, measurement_manifest_sha256,"
+            " measurement_manifest_uri, observations_records_sha, as_of_weeks,"
+            " payload_sha256) VALUES (%s, 'production', 'foreign', %s, %s, %s, %s,"
+            " %s, %s, %s, %s, %s)",
+            (
+                release_id,
+                SEASON,
+                row["lineage"],
+                row["rating_manifest_sha256"],
+                row["rating_manifest_uri"],
+                row["measurement_manifest_sha256"],
+                row["measurement_manifest_uri"],
+                row["observations_records_sha"],
+                row["as_of_weeks"],
+                row["payload_sha256"],
+            ),
+        )
+    before = release_state(cluster, db)
+
+    with pytest.raises(
+        release.SeasonReleaseError, match="projection rows of another environment"
+    ):
+        activate(cluster, db, release_id, None)
+
+    assert release_state(cluster, db) == before
+
+
+def _broken_link(fault: str) -> dict:
+    views = projections(-2.0)
+    if fault == "result-unknown-game":
+        views["game_results"].append({**views["game_results"][0], "game_id": 999})
+    elif fault == "selection-quote-of-other-game":
+        views["games"].append(game(402))
+        views["market_quotes"].append(quote("quote-402", 402))
+        views["prediction_market_selections"][0]["quote_id"] = "quote-402"
+    elif fault == "grade-without-prediction":
+        views["games"].append(game(402))
+        views["prediction_grades"].append(
+            {**views["prediction_grades"][0], "game_id": 402}
+        )
+    elif fault == "component-missing-rating-snapshot":
+        views["team_rating_components"][0]["v5_snapshot_id"] = "snap-missing"
+    elif fault == "snapshot-quote-missing-quote":
+        views["market_snapshot_quotes"].append(
+            {"snapshot_id": "msnap-401", "quote_id": "quote-missing", "target": "total"}
+        )
+    elif fault == "prediction-missing-market-snapshot":
+        views["predictions"][0]["market_snapshot_id"] = "msnap-missing"
+    return views
+
+
+LINK_FAULTS = {
+    "result-unknown-game": "season_release_game_results_game_fk",
+    "selection-quote-of-other-game": "season_release_selections_quote_game_fk",
+    "grade-without-prediction": "season_release_prediction_grades_prediction_fk",
+    "component-missing-rating-snapshot": (
+        "season_release_team_rating_components_snapshot_fk"
+    ),
+    "snapshot-quote-missing-quote": "season_release_market_snapshot_quotes_quote_fk",
+    "prediction-missing-market-snapshot": "season_release_predictions_snapshot_fk",
+}
+
+
+@pytest.mark.parametrize("fault,constraint", LINK_FAULTS.items())
+def test_database_links_refuse_broken_payload_at_stage_without_writes(
+    cluster, db, monkeypatch, fault, constraint
+):
+    # Disable the payload scope check so the 0025 foreign keys alone decide.
+    monkeypatch.setattr(release, "_check_projection_scope", lambda *args: None)
+    before = release_state(cluster, db)
+
+    with pytest.raises(release.SeasonReleaseError, match=constraint):
+        stage(cluster, db, "r1", payload=seal("r1", _broken_link(fault)))
+
+    assert release_state(cluster, db) == before
+
+
+def test_release_links_are_deferred_composite_foreign_keys(cluster, migrated_db):
+    with cluster.connect(migrated_db, OWNER, autocommit=True) as conn:
+        links = conn.execute(
+            "SELECT conrelid::regclass::text, conname, condeferrable, condeferred,"
+            " confmatchtype FROM pg_constraint WHERE contype = 'f'"
+            " AND confrelid::regclass::text LIKE 'season\\_release\\_%'"
+            " AND conkey @> ARRAY[(SELECT attnum FROM pg_attribute"
+            "  WHERE attrelid = conrelid AND attname = 'release_id')]"
+        ).fetchall()
+        unique = conn.execute(
+            "SELECT pg_get_constraintdef(oid) FROM pg_constraint"
+            " WHERE conname = 'season_release_market_quotes_game_key'"
+        ).fetchone()
+
+    assert len(links) == 16
+    assert all(link[2:] == (True, True, "s") for link in links), links
+    assert unique == ("UNIQUE (release_id, quote_id, game_id)",)
+
+
+def test_full_schedule_with_unpredicted_games_stages(cluster, db):
+    views = projections(-2.0)
+    views["games"] += [game(402), game(403, week=5)]
+
+    release_id = stage(cluster, db, "r1", payload=seal("r1", views))
+    receipt = activate(cluster, db, release_id, None)
+
+    state = release_state(cluster, db)
+    assert receipt["release_id"] == release_id
+    assert len(state["season_release_games"]) == 3
+    assert len(state["season_release_predictions"]) == 1
+
+
+def test_prediction_for_game_outside_schedule_refused_without_writes(cluster, db):
+    views = projections(-2.0)
+    views["predictions"].append({**views["predictions"][0], "game_id": 999})
+    before = release_state(cluster, db)
+
+    with pytest.raises(release.SeasonReleaseError, match="outside the release"):
+        stage(cluster, db, "r1", payload=seal("r1", views))
+
+    assert release_state(cluster, db) == before
+
+
+def _forged_rederivation(projections, manifest):
+    checks = derived_checks(projections, manifest)
+    checks["market_links"] = {**checks["market_links"], "passed": False}
+    return checks
+
+
+def _extra_check(report):
+    report["checks"]["self_declared"] = {
+        "passed": True,
+        "observed": {},
+        "source": "projection",
+    }
+
+
+def _bare_boolean(report):
+    report["checks"]["market_links"] = True
+
+
+def _forged_observation(report):
+    report["checks"]["market_links"]["observed"] = {"games": 99}
+
+
+@pytest.mark.parametrize(
+    "forgery",
+    ["rederived-failure", "extra-check", "missing-check", "bare-boolean", "observed"],
+)
+def test_forged_verification_report_refused_without_writes(
+    cluster, db, monkeypatch, forgery
+):
+    edit = {
+        "extra-check": _extra_check,
+        "missing-check": lambda report: report["checks"].pop("market_links"),
+        "bare-boolean": _bare_boolean,
+        "observed": _forged_observation,
+    }.get(forgery)
+    if forgery == "rederived-failure":
+        monkeypatch.setattr(verifier, "derive_checks", _forged_rederivation)
+    before = release_state(cluster, db)
+
+    with pytest.raises(release.SeasonReleaseError, match="check"):
+        stage(cluster, db, "r1", payload=candidate("r1", report=edit))
+
+    assert release_state(cluster, db) == before
+
+
+def test_verification_module_rejection_refuses_stage(cluster, db, monkeypatch):
+    def reject(report, *, projections):
+        raise ValueError("row_counts do not match projections")
+
+    monkeypatch.setattr(verifier, "validate_report", reject)
+    before = release_state(cluster, db)
+
+    with pytest.raises(release.SeasonReleaseError, match="row_counts"):
+        stage(cluster, db, "r1")
 
     assert release_state(cluster, db) == before
 

@@ -17,6 +17,7 @@ from psycopg import errors, sql
 from psycopg.types.json import Jsonb
 
 from cks_picks_cfb.ops.v5_release import assert_v5_database_environment
+from cks_picks_cfb.season.projection_common import PROJECTION_ORDER, SERVER_COLUMNS
 
 PROJECTION_KEYS = {
     "games": ("game_id",),
@@ -90,15 +91,44 @@ def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def validate_candidate(manifest: Mapping, verification: Mapping) -> None:
+def _plain(value: Any) -> Any:
+    """JSON-native form, so derived and decoded check entries compare exactly."""
+    return json.loads(json.dumps(value, sort_keys=True, allow_nan=False))
+
+
+def validate_candidate(
+    manifest: Mapping,
+    verification: Mapping,
+    projections: Mapping,
+    *,
+    derive=None,
+    validate=None,
+) -> None:
+    """Refuse a candidate whose report does not pass on the verified payload.
+
+    ``projections`` is the parsed, checksum-verified payload (``prediction_runs``
+    plus every table of ``PROJECTION_ORDER``). Projection checks are re-derived
+    with ``derive(projections, manifest)`` (default
+    ``verification.derive_checks``) and must equal the reported entries, so a
+    self-reported pass is never trusted; ``validate(report, projections=...)``
+    (default ``verification.validate_report``) then checks the whole report.
+    """
+    from cks_picks_cfb.season import verification as verifier
+
+    derive = derive or verifier.derive_checks
+    validate = validate or verifier.validate_report
     if manifest.get("schema_version") != "season_run_v1":
         raise SeasonReleaseError("unknown season run schema")
-    if verification.get("state") != "passed":
-        raise SeasonReleaseError("candidate verification did not pass")
-    identity = verification.get("identity", {})
+    if verification.get("schema_version") != verifier.SCHEMA_VERSION:
+        raise SeasonReleaseError("unknown season verification schema")
+    if (
+        not isinstance(manifest.get("release_id"), str)
+        or not manifest["release_id"].strip()
+    ):
+        raise SeasonReleaseError("release identity missing")
     for field in IDENTITY_FIELDS:
-        if field not in manifest or identity.get(field) != manifest[field]:
-            raise SeasonReleaseError(f"verification identity mismatch: {field}")
+        if field not in manifest:
+            raise SeasonReleaseError(f"release identity missing: {field}")
     for field in (
         "model_manifest_sha256",
         "revision_manifest_sha256",
@@ -112,22 +142,43 @@ def validate_candidate(manifest: Mapping, verification: Mapping) -> None:
             or any(c not in "0123456789abcdef" for c in digest)
         ):
             raise SeasonReleaseError(f"invalid checksum: {field}")
-    if verification.get("output_refs") != manifest.get(
-        "output_refs"
-    ) or not manifest.get("output_refs"):
-        raise SeasonReleaseError("verification output bindings differ")
+    refs = manifest.get("output_refs")
+    if not isinstance(refs, Mapping) or "serving_projections" not in refs:
+        raise SeasonReleaseError("manifest output bindings missing")
+    projection_names = verifier.REQUIRED_PROJECTION_CHECKS
     checks = verification.get("checks")
-    if (
-        not isinstance(checks, dict)
-        or not checks
-        or any(value is not True for value in checks.values())
+    if not isinstance(checks, Mapping) or set(checks) != (
+        projection_names | verifier.REQUIRED_PREPARE_CHECKS
     ):
-        raise SeasonReleaseError("candidate checks missing or failed")
-    if (
-        not isinstance(manifest.get("release_id"), str)
-        or not manifest["release_id"].strip()
-    ):
-        raise SeasonReleaseError("release identity missing")
+        raise SeasonReleaseError("candidate checks missing or unexpected")
+    for name, entry in checks.items():
+        source = "projection" if name in projection_names else "prepare"
+        if (
+            not isinstance(entry, Mapping)
+            or entry.get("passed") is not True
+            or entry.get("source") != source
+        ):
+            raise SeasonReleaseError(f"candidate check failed: {name}")
+    try:
+        derived = derive(projections, manifest)
+        validate(verification, projections=projections)
+    except ValueError as error:
+        raise SeasonReleaseError(f"verification report rejected: {error}") from error
+    if not isinstance(derived, Mapping) or set(derived) != projection_names:
+        raise SeasonReleaseError("re-derived checks are incomplete")
+    for name in sorted(projection_names):
+        entry = _plain(derived[name])
+        if not isinstance(entry, dict) or entry.get("passed") is not True:
+            raise SeasonReleaseError(f"re-derived check failed: {name}")
+        if _plain(checks[name]) != entry:
+            raise SeasonReleaseError(f"reported check differs from payload: {name}")
+    tables = {base: projections[base] for base in PROJECTION_ORDER}
+    if verification.get("projection_checks") != {
+        base: projection_check(rows) for base, rows in tables.items()
+    } or verification.get("row_counts") != {
+        base: len(rows) for base, rows in tables.items()
+    }:
+        raise SeasonReleaseError("verified projection checks differ from payload")
 
 
 def _normal(value: Any, column: str = "") -> Any:
@@ -154,10 +205,14 @@ def _normal(value: Any, column: str = "") -> Any:
 
 
 def projection_check(rows: list[dict]) -> dict:
-    """Stable full-row content identity; timestamps are normalized, not dropped."""
+    """Stable full-row content identity; timestamps are normalized, not dropped.
+
+    Server-filled columns (``release_id``, ``environment``) are never part of it,
+    so one payload has the same identity in every environment.
+    """
     encoded = sorted(
         json.dumps(
-            {k: v for k, v in _normal(row).items() if k != "environment"},
+            {k: v for k, v in _normal(row).items() if k not in SERVER_COLUMNS},
             sort_keys=True,
             separators=(",", ":"),
             allow_nan=False,
@@ -167,33 +222,46 @@ def projection_check(rows: list[dict]) -> dict:
     return {"rows": len(rows), "sha256": _sha(("\n".join(encoded) + "\n").encode())}
 
 
-def _columns(cur, base: str) -> dict[str, str]:
+def _columns(cur, base: str) -> tuple[dict[str, str], tuple[str, ...]]:
+    """(payload columns -> data type, server-filled columns), in schema order."""
     cur.execute(
         "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = %s ORDER BY ordinal_position",
         ("season_release_" + base,),
     )
     columns = dict(cur.fetchall())
-    columns.pop("release_id", None)
-    if not columns:
+    server = tuple(column for column in columns if column in SERVER_COLUMNS)
+    if "release_id" not in server:
         raise SeasonReleaseError(f"projection schema missing: {base}")
-    return columns
+    payload = {k: v for k, v in columns.items() if k not in SERVER_COLUMNS}
+    return payload, server
 
 
-def _readback(cur, release_id: str, checks: Mapping) -> dict:
+def _readback(cur, release_id: str, checks: Mapping, environment: str) -> dict:
     if set(checks) != set(PROJECTION_KEYS):
         raise SeasonReleaseError("all serving projection checks are required")
     actual = {}
-    for base in PROJECTION_KEYS:
-        columns = _columns(cur, base)
+    for base in PROJECTION_ORDER:
+        columns, server = _columns(cur, base)
+        table = sql.Identifier("season_release_" + base)
         cur.execute(
             sql.SQL("SELECT {} FROM {} WHERE release_id = %s").format(
-                sql.SQL(", ").join(map(sql.Identifier, columns)),
-                sql.Identifier("season_release_" + base),
+                sql.SQL(", ").join(map(sql.Identifier, columns)), table
             ),
             (release_id,),
         )
         rows = [dict(zip(columns, row, strict=True)) for row in cur.fetchall()]
         actual[base] = projection_check(rows)
+        if "environment" in server:
+            cur.execute(
+                sql.SQL(
+                    "SELECT count(*) FROM {} WHERE release_id = %s AND environment IS DISTINCT FROM %s"
+                ).format(table),
+                (release_id, environment),
+            )
+            if cur.fetchone()[0]:
+                raise SeasonReleaseError(
+                    f"projection rows of another environment: {base}"
+                )
     if actual != checks:
         raise SeasonReleaseError("entire-view projection readback differs")
     return actual
@@ -257,6 +325,11 @@ def _policy(cur, release: Mapping) -> None:
 def _check_projection_scope(
     projections: Mapping, season: int, active_week: int
 ) -> None:
+    """Payload-level scope; the 0025 foreign keys are the database backstop.
+
+    ``games`` is the full season schedule, so it may hold games without
+    predictions; every other game-keyed row must reference a release game.
+    """
     if set(projections) != set(PROJECTION_KEYS):
         raise SeasonReleaseError("complete fixed serving projections are required")
     for base, keys in PROJECTION_KEYS.items():
@@ -265,11 +338,17 @@ def _check_projection_scope(
             raise SeasonReleaseError(f"invalid projection rows: {base}")
         seen = set()
         for row in rows:
+            if SERVER_COLUMNS & row.keys():
+                raise SeasonReleaseError(
+                    f"server-filled column in projection payload: {base}"
+                )
+            if any(k not in row for k in keys):
+                raise SeasonReleaseError(f"projection key missing: {base}")
             key = tuple(row[k] for k in keys)
             if key in seen:
                 raise SeasonReleaseError(f"duplicate projection key: {base}")
             seen.add(key)
-            if "release_id" in row or ("season" in row and row["season"] != season):
+            if "season" in row and row["season"] != season:
                 raise SeasonReleaseError(f"foreign projection scope: {base}")
     selections = projections["site_week_selections"]
     if {row["week"] for row in selections} != set(range(active_week + 1)):
@@ -280,14 +359,21 @@ def _check_projection_scope(
     results = {row["game_id"] for row in projections["game_results"]}
     if not games or results - set(games):
         raise SeasonReleaseError("release schedule/finals mismatch")
+    for base in (
+        "game_venues",
+        "predictions",
+        "prediction_grades",
+        "market_quotes",
+        "market_snapshots",
+        "prediction_market_selections",
+    ):
+        if any(row.get("game_id") not in games for row in projections[base]):
+            raise SeasonReleaseError(f"{base} reference a game outside the release")
     selected = {row["week"]: row["run_id"] for row in selections}
     for row in projections["predictions"]:
-        game = games.get(row["game_id"])
-        if not game or selected.get(game["week"]) != row["run_id"]:
+        if selected.get(games[row["game_id"]]["week"]) != row["run_id"]:
             raise SeasonReleaseError("prediction is outside the selected schedule")
-    predicted = {row["game_id"] for row in projections["predictions"]}
-    if predicted != set(games):
-        raise SeasonReleaseError("full release schedule must have predictions")
+    predicted = {(row["run_id"], row["game_id"]) for row in projections["predictions"]}
     prior = {gid for gid, row in games.items() if row["week"] < active_week}
     if prior - results:
         raise SeasonReleaseError("prior-week finals are incomplete")
@@ -295,11 +381,13 @@ def _check_projection_scope(
         if row.get("home_points") is None or row.get("away_points") is None:
             raise SeasonReleaseError("final score missing")
     for row in projections["prediction_grades"]:
-        game = games.get(row["game_id"])
-        if not game or selected.get(game["week"]) != row["run_id"]:
+        if (row["run_id"], row["game_id"]) not in predicted:
             raise SeasonReleaseError("grade is outside the selected run")
-        if row["game_id"] not in results or row["game_id"] not in predicted:
+        if row["game_id"] not in results:
             raise SeasonReleaseError("grade lacks prediction or final")
+    for row in projections["prediction_market_selections"]:
+        if (row["run_id"], row["game_id"]) not in predicted:
+            raise SeasonReleaseError("market selection lacks its prediction")
     if active_week > 0 and any(
         not projections[name]
         for name in (
@@ -376,7 +464,12 @@ def stage_release(
     projection_raw: bytes,
     environment: str,
 ) -> str:
-    """Stage fully verified rows without altering public selection; never commits."""
+    """Stage fully verified rows without altering public selection; never commits.
+
+    The payload is environment-free: ``release_id`` (and ``environment`` where the
+    schema has it) are filled in here, so the same bytes stage in every
+    environment with identical projection checks.
+    """
     if getattr(conn, "autocommit", False):
         raise SeasonReleaseError(
             "release operations require a caller-owned transaction"
@@ -385,19 +478,21 @@ def stage_release(
     verification = _json(verification_raw, "verification")
     if _sha(verification_raw) != manifest.get("verification_sha256"):
         raise SeasonReleaseError("verification bytes changed")
-    validate_candidate(manifest, verification)
-    ref = manifest["output_refs"].get("serving_projections", {})
-    if _sha(projection_raw) != ref.get("sha256"):
+    refs = manifest.get("output_refs")
+    ref = refs.get("serving_projections") if isinstance(refs, Mapping) else None
+    if not isinstance(ref, Mapping) or _sha(projection_raw) != ref.get("sha256"):
         raise SeasonReleaseError("serving projection bytes are not verified")
-    projections = _json(projection_raw, "projections")
-    registry = projections.pop("prediction_runs", [])
-    _check_projection_scope(projections, manifest["season"], manifest["active_week"])
-    if any(
-        row.get("environment", environment) != environment
-        for rows in projections.values()
-        for row in rows
-    ):
-        raise SeasonReleaseError("projection belongs to another environment")
+    payload = _json(projection_raw, "projections")
+    if set(payload) != {"prediction_runs", *PROJECTION_ORDER}:
+        raise SeasonReleaseError("complete fixed serving projections are required")
+    projections = {base: payload[base] for base in PROJECTION_ORDER}
+    registry = payload["prediction_runs"]
+    try:
+        season, active_week = manifest["season"], manifest["active_week"]
+    except KeyError as error:
+        raise SeasonReleaseError("release identity missing") from error
+    _check_projection_scope(projections, season, active_week)
+    validate_candidate(manifest, verification, payload)
     checks = {base: projection_check(rows) for base, rows in projections.items()}
     release_id = f"{environment}-{manifest['release_id']}"
     record = {
@@ -412,8 +507,12 @@ def stage_release(
     }
     with conn.cursor() as cur:
         assert_v5_database_environment(cur, environment)
-        _lock(cur, environment, manifest["season"])
-        _register_runs(cur, registry, manifest["season"])
+        _lock(cur, environment, season)
+        schemas = {base: _columns(cur, base) for base in PROJECTION_ORDER}
+        for base, rows in projections.items():
+            if any(set(row) != set(schemas[base][0]) for row in rows):
+                raise SeasonReleaseError(f"projection columns differ: {base}")
+        _register_runs(cur, registry, season)
         cur.execute(
             "SELECT release_id FROM season_releases WHERE release_id = %s",
             (release_id,),
@@ -422,7 +521,7 @@ def stage_release(
             existing = _release(cur, release_id)
             if any(existing[k] != record[k] for k in RELEASE_COLUMNS):
                 raise SeasonReleaseError("immutable release collision")
-            _readback(cur, release_id, checks)
+            _readback(cur, release_id, checks, environment)
             return release_id
         cur.execute(
             sql.SQL("INSERT INTO season_releases ({}) VALUES ({})").format(
@@ -434,30 +533,35 @@ def stage_release(
                 for k in RELEASE_COLUMNS
             ),
         )
-        for base, rows in projections.items():
-            columns = _columns(cur, base)
-            for row in rows:
-                if set(row) != set(columns):
-                    raise SeasonReleaseError(f"projection columns differ: {base}")
-            statement = sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
-                sql.Identifier("season_release_" + base),
-                sql.SQL(", ").join(map(sql.Identifier, ("release_id", *columns))),
-                sql.SQL(", ").join(sql.Placeholder() for _ in range(len(columns) + 1)),
-            )
-            cur.executemany(
-                statement,
-                [
-                    (
-                        release_id,
-                        *(
-                            Jsonb(row[k]) if columns[k] == "jsonb" else row[k]
-                            for k in columns
-                        ),
-                    )
-                    for row in rows
-                ],
-            )
-        _readback(cur, release_id, checks)
+        filled = {"release_id": release_id, "environment": environment}
+        try:
+            # Parents first; the deferred 0025 links are all checked below.
+            for base in PROJECTION_ORDER:
+                columns, server = schemas[base]
+                names = (*server, *columns)
+                cur.executemany(
+                    sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
+                        sql.Identifier("season_release_" + base),
+                        sql.SQL(", ").join(map(sql.Identifier, names)),
+                        sql.SQL(", ").join(sql.Placeholder() for _ in names),
+                    ),
+                    [
+                        (
+                            *(filled[k] for k in server),
+                            *(
+                                Jsonb(row[k]) if columns[k] == "jsonb" else row[k]
+                                for k in columns
+                            ),
+                        )
+                        for row in projections[base]
+                    ],
+                )
+            cur.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        except errors.ForeignKeyViolation as error:
+            raise SeasonReleaseError(
+                f"projection links are broken: {error.diag.message_primary}"
+            ) from error
+        _readback(cur, release_id, checks, environment)
     return release_id
 
 
@@ -519,7 +623,7 @@ def _preview_proof(conn, candidate: Mapping) -> None:
                 json.dumps(checks, sort_keys=True, separators=(",", ":")).encode()
             )
             if any(row[0] == expected for row in cur.fetchall()):
-                _readback(cur, release_id, checks)
+                _readback(cur, release_id, checks, "preview")
                 return
     raise SeasonReleaseError("matching verified Preview activation is absent")
 
@@ -562,7 +666,7 @@ def _activate(
             _policy(cur, candidate)
             if environment == "production":
                 _preview_proof(preview_conn, candidate)
-        checks = _readback(cur, release_id, candidate["projection_checks"])
+        checks = _readback(cur, release_id, candidate["projection_checks"], environment)
         digest = _sha(
             json.dumps(checks, sort_keys=True, separators=(",", ":")).encode()
         )
@@ -598,7 +702,7 @@ def _activate(
                 raise SeasonReleaseError(error.diag.message_primary) from error
         if _active(cur, environment, season) != release_id:
             raise SeasonReleaseError("activation pointer readback differs")
-        _readback(cur, release_id, checks)
+        _readback(cur, release_id, checks, environment)
         return {
             "environment": environment,
             "season": season,

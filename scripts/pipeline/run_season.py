@@ -10,7 +10,8 @@ import subprocess
 from pathlib import Path
 
 from cks_picks_cfb.data.storage import get_storage
-from cks_picks_cfb.season.runner import prepare, status
+from cks_picks_cfb.season.manifest import canonical, sha
+from cks_picks_cfb.season.runner import prepare, status, verify_outputs
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -46,8 +47,11 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--initial", action="store_true")
         if verb == "release":
             command.add_argument("--run-manifest", type=Path, required=True)
-            command.add_argument("--projection-payload", type=Path, required=True)
-            command.add_argument("--projection-payload-sha256", required=True)
+            command.add_argument(
+                "--projection-payload-sha256",
+                required=True,
+                help="operator pin; must equal the manifest's serving_projections ref",
+            )
         else:
             command.add_argument("--season", type=int, default=2026)
             command.add_argument("--release-id", required=True)
@@ -81,10 +85,28 @@ def main(argv: list[str] | None = None) -> int:
     return _release(args)
 
 
+def _sealed_candidate(manifest: dict, pinned_sha256: str) -> tuple[bytes, bytes]:
+    """Re-read and re-hash every prepared output; return (payload, verification).
+
+    The payload comes only from the manifest's ``serving_projections`` ref, and
+    the operator's pinned checksum must name that same ref.
+    """
+    ref = manifest["output_refs"]["serving_projections"]
+    if pinned_sha256 != ref["sha256"]:
+        raise ValueError("pinned projection payload checksum differs from manifest")
+    verify_outputs(manifest)
+    projection = Path(ref["uri"]).read_bytes()
+    verification = Path(manifest["verification_uri"]).read_bytes()
+    if sha(projection) != ref["sha256"]:
+        raise ValueError("projection payload checksum differs")
+    if sha(verification) != manifest["verification_sha256"]:
+        raise ValueError("verification checksum changed")
+    return projection, verification
+
+
 def _release(args: argparse.Namespace) -> int:
     import psycopg
 
-    from cks_picks_cfb.season.manifest import canonical, sha
     from cks_picks_cfb.season.release import (
         activate_release,
         rollback_release,
@@ -107,6 +129,16 @@ def _release(args: argparse.Namespace) -> int:
     url = os.getenv(key)
     if not url:
         raise ValueError(f"{key} is required")
+    if args.command == "release":
+        raw = args.run_manifest.read_bytes()
+        manifest = json.loads(raw)
+        if manifest["code_sha"] != executing_sha or manifest["config_sha"] != sha(
+            canonical({})
+        ):
+            raise ValueError("executing code/config differs from prepared candidate")
+        projection, verification = _sealed_candidate(
+            manifest, args.projection_payload_sha256
+        )
     with psycopg.connect(url) as conn:
         if args.command == "rollback":
             result = rollback_release(
@@ -119,22 +151,11 @@ def _release(args: argparse.Namespace) -> int:
                 decision_ref=args.decision_ref,
             )
         else:
-            raw = args.run_manifest.read_bytes()
-            manifest = json.loads(raw)
-            if manifest["code_sha"] != executing_sha or manifest["config_sha"] != sha(
-                canonical({})
-            ):
-                raise ValueError(
-                    "executing code/config differs from prepared candidate"
-                )
-            projection = args.projection_payload.read_bytes()
-            if sha(projection) != args.projection_payload_sha256:
-                raise ValueError("projection payload checksum differs")
             release_id = stage_release(
                 conn,
                 manifest_raw=raw,
                 run_manifest_uri=str(args.run_manifest.resolve()),
-                verification_raw=Path(manifest["verification_uri"]).read_bytes(),
+                verification_raw=verification,
                 projection_raw=projection,
                 environment=args.environment,
             )
