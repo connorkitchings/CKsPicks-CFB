@@ -19,7 +19,8 @@
 - [x] Build/verify/publish Week 6 frames.
 - [x] Commit generated successor/live pins (`ee87c529`, fast-forwarded to dev; no push) and build/verify/publish corrected ratings to Preview.
 - [x] Week 7 display-only forecast/serving build through package (Preview R2, run `2026w7-v5repair-20261014-w7`).
-- [ ] Preview authorization/selection for the Week 7 candidate (needs exact decision references) and decision on the 4 games lacking a total line.
+- [x] Preview authorization, schedule, venues, publish, select, bridge verifier, matchup publish/verify and rollback dry run for the Week 7 candidate; 4 games lacking a total line accepted by the owner.
+- [ ] Rollback apply (owner/migrator login, not run) and Production gates.
 - [ ] Build Week 7 Preview candidate and complete exact Production gate.
 - [ ] Implement season runner and canonical model/revision adapters.
 - [ ] Implement atomic schema, readers and publisher.
@@ -95,3 +96,11 @@ Owner authorized the two local commits and fast-forward integration into dev wit
 - Market snapshot ref `artifacts/research/data-first-football-v1/market/w7-20261014-r3/market_snapshots_ref.json`.
 - Forecast (`--display-only --weeks 7`, `--live-as-of 2026-10-14T14:42:04Z`): 57 games, state candidate, pending, live. Serving manifest sha `5ca2e5cb27929d055aae2434908de42c4e5c9612935f085631b779c5b1d178ba` (57 games, 4 unlined: 401858492, 401858494, 401864523, 401866442 have a spread but no total in the snapshot, though CFBD lists totals). Verifier receipt `46d4d57e49864fcfebda5bec2b6e87be1d747c43cedc950d183ec035609d22bf`. Packet `012b9dde911bcaf7ae1d3cc4f0ba50f0e0c36787d4164b08f6234ff4da3785bd` (53 lined games); identical package retry wrote nothing new.
 - No authorization, selection, database apply or Production write was made.
+
+## Week 7 Preview rehearsal P1-P10 evidence (2026-10-14)
+- Owner accepted the 4 unlined totals and supplied decision references. Authorization row `preview-2026w7-v5repair-20261014-w7-f460617dbb22` (record `717dbd96696295f042ab4d6ffac8db3e5e5f3a90c3eafe721818a994f79b5ac7`) is in `v5_intended_update_release_authorizations`, decision ref `preview-rehearsal-display-only-week7`.
+- Schedule: seeded 59 week 7 rows from the lock (retry 0). Venues: Silver lacked three venue IDs; `conf/venue_supplement_2026_w7_v1.json` (commit `6dd45971`, values from the CFBD venues API: 3714 Fargodome, 3757 Hornet Stadium, 3647 Elliott T. Bowers Stadium) filled them; 59 `game_venues` rows upserted with city, retry 0.
+- Publish: `publish_to_db.py` needed `--allow-partial-slate` (the 2 kicked-off games are scheduled but omitted); 57 predictions, 53 with both lines, state `published`, evidence class `pending`, `rating_manifest_sha256` `201711c7...`. `select_public_run.py` found the run already selected (reason on the row stays `validated V5 publication`).
+- Bridge verifier: 11 gates ok, payload `f850ab26b6fe9adbf04ea76e80d6299d37b1ec3b8827dc0ce4bb270a9a8ea965`, written once, identical retry no write. Matchup publish (payload pinned) wrote `team_possession_stats` 1656, `team_possession_adjusted` 551, `team_rating_components` 512; `verify_matchup_data.py` VERIFIED, 0 differing rows.
+- Readback: `current_week` (2026, 7, active run = the candidate); selection present; 59 games, all with a city; 1880 rating snapshot rows under one manifest SHA.
+- Rollback dry run (`preview-rehearsal-proof`): would restore `current_week` to week 6 (`2026w6-v5repair-20261008-d2`) and deselect week 7; without a release receipt it keeps stats and snapshots. Per the script, the published `team_rating_components` rows block a rollback apply until the prior matchup payload is restored. Apply was not run.
