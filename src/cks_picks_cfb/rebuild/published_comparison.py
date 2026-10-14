@@ -11,6 +11,7 @@ unexplained finding.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
 import re
 from collections.abc import Callable, Iterable, Iterator
@@ -265,25 +266,97 @@ def addition_scope(table: str, additions: dict[str, dict[str, Any]]):
     return (game_scope if table in GAME_TABLES else week_scope)(additions[table])
 
 
-def kickoff_revision(scope: dict[str, Any]):
-    """Name a ``cutoff_utc`` difference only when it is a recorded kickoff revision."""
+UNEVIDENCED_CUTOFF = "unevidenced_cutoff"
+
+
+def kickoff_revision(scope: dict[str, Any], *, strict: bool = False):
+    """Name a ``cutoff_utc`` difference only when it is a recorded kickoff revision.
+
+    ``strict`` names every other ``cutoff_utc`` difference ``unevidenced_cutoff`` so no
+    broader bucket (such as the history correction) can absorb it.
+    """
+    otherwise = UNEVIDENCED_CUTOFF if strict else None
 
     def override(row: pd.Series, column: str) -> str | None:
-        if column != "cutoff_utc" or not scope["revisions"]:
+        if column != "cutoff_utc":
             return None
         game = row.get("game_id_built")
         if pd.isna(game) or int(game) not in scope["revisions"]:
-            return None
+            return otherwise
         old, new = scope["revisions"][int(game)]
         built, published = (
             pd.Timestamp(row["cutoff_utc_built"]),
             pd.Timestamp(row["cutoff_utc_pub"]),
         )
         if built.tzinfo is None or published.tzinfo is None:
-            return None
-        return "kickoff_revision" if (built, published) == (new, old) else None
+            return otherwise
+        return "kickoff_revision" if (built, published) == (new, old) else otherwise
 
     return override
+
+
+EVIDENCE_SCHEMA = "task4_kickoff_revision_evidence_v1"
+KICKOFF_EVIDENCE_INPUT = "kickoff_revision_evidence"
+
+
+def kickoff_evidence(
+    evidence: dict[str, Any],
+    lock: dict[str, Any],
+    lock_sha256: str,
+    scope: dict[str, Any],
+    controls: dict[str, dict[str, Any]],
+) -> dict[int, tuple[pd.Timestamp, pd.Timestamp]]:
+    """The evidenced kickoff revisions as game -> (published kickoff, built kickoff).
+
+    The evidence binds each game's published kickoff to the rating manifest of the run that
+    published it and its built kickoff to the pinned source lock, by full hashes; the lock
+    must hold the game at the built kickoff. A revision the lock chain recorded must appear
+    with the same pair, and the expected cell count must follow from the games listed.
+    """
+    if evidence.get("schema_version") != EVIDENCE_SCHEMA:
+        raise GateError("kickoff evidence: unknown schema")
+    if evidence["built_source"]["sha256"] != lock_sha256:
+        raise GateError("kickoff evidence is bound to a different source lock")
+    sources = evidence["published_sources"]
+    for run_id, source in sources.items():
+        control = controls.get(run_id)
+        if control is None or (
+            source["rating_manifest_uri"],
+            source["rating_manifest_sha256"],
+        ) != (control["uri"], control["sha256"]):
+            raise GateError(
+                f"kickoff evidence names a published source for {run_id} that "
+                "is not its pinned rating manifest"
+            )
+    columns = {name: i for i, name in enumerate(lock["games"]["columns"])}
+    starts = {
+        int(r[columns["game_id"]]): pd.Timestamp(r[columns["start_date"]])
+        for r in lock["games"]["rows"]
+    }
+    revisions: dict[int, tuple[pd.Timestamp, pd.Timestamp]] = {}
+    for record in evidence["revisions"]:
+        game = int(record["game_id"])
+        published = pd.Timestamp(record["published_utc"])
+        built = pd.Timestamp(record["built_utc"])
+        if game in revisions:
+            raise GateError(f"kickoff evidence lists game {game} twice")
+        if record["published_run"] not in sources:
+            raise GateError(f"kickoff evidence for {game}: unbound published run")
+        if published.tzinfo is None or built.tzinfo is None or published == built:
+            raise GateError(f"kickoff evidence for {game} is not an exact UTC change")
+        if starts.get(game) != built:
+            raise GateError(f"the source lock does not hold game {game} at {built}")
+        revisions[game] = (published, built)
+    for game, pair in scope["revisions"].items():
+        if revisions.get(game) != pair:
+            raise GateError(
+                f"kickoff evidence conflicts with the lock's revision of {game}"
+            )
+    if int(evidence["expected_cutoff_cells"]) != int(
+        evidence["components_per_game"]
+    ) * len(revisions):
+        raise GateError("kickoff evidence: expected cells do not follow from its games")
+    return revisions
 
 
 def published_rating_runs(policies: dict[str, Any]) -> dict[int, str]:
@@ -596,7 +669,9 @@ def build(context: StageContext) -> StageOutput:
     run = PublishedRun(context)
     storage = run.storage
     pin_file = json.loads(context.read_input("silver_2026_parents"))
-    lock = json.loads(context.read_input("source_lock_2026"))
+    lock_raw = context.read_input("source_lock_2026")
+    lock = json.loads(lock_raw)
+    evidence = json.loads(context.read_input(KICKOFF_EVIDENCE_INPUT))
     states = {name: run.frame(f"states_2026/{name}.parquet") for name in STATE_FILES}
     cutoffs = {int(w): pd.Timestamp(c) for w, c in lock["post_week_cutoffs"].items()}
     root_sha = run.root["manifest_sha256"]
@@ -607,6 +682,8 @@ def build(context: StageContext) -> StageOutput:
     url = resolve_runtime_target("preview").database_url
     published: dict[str, pd.DataFrame] = {}
     with psycopg.connect(url) as conn:
+        # One snapshot for every table and the publication metadata.
+        conn.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
         conn.read_only = True
         with conn.cursor() as cur:
             assert_preview_database(cur)
@@ -681,6 +758,10 @@ def build(context: StageContext) -> StageOutput:
         publications,
     )
     parts = partition_components(published["team_rating_components"], controls)
+    revisions = kickoff_evidence(
+        evidence, lock, hashlib.sha256(lock_raw).hexdigest(), scope, controls
+    )
+    evidenced = kickoff_revision({"revisions": revisions}, strict=True)
     replay = None
     control_reports = {}
     for run_id, bound in controls.items():
@@ -699,9 +780,7 @@ def build(context: StageContext) -> StageOutput:
         control_reports[run_id] = {
             **{k: v for k, v in bound.items() if k != "input"},
             "description": CONTROL_METHODS[bound["method"]],
-            "team_rating_components": control_diff(
-                built, parts[run_id], md, kickoff_revision(scope)
-            ),
+            "team_rating_components": control_diff(built, parts[run_id], md, evidenced),
         }
     control = summarize_controls(control_reports)
     components_expected = (
@@ -732,7 +811,7 @@ def build(context: StageContext) -> StageOutput:
             jsonb=[c for c in jsonb if c in values],
             expected=components_expected if components else None,
             added_scope=addition_scope(table, additions),
-            bucket_override=kickoff_revision(scope) if components else None,
+            bucket_override=evidenced if components else None,
         )
     stats, fbs_source = season_stats_frame(
         run, storage, pin_file, game_names, range(1, scope["latest_post_week"] + 2)
@@ -770,6 +849,13 @@ def build(context: StageContext) -> StageOutput:
                 for g, (old, new) in sorted(scope["revisions"].items())
             },
         },
+        "kickoff_evidence": {
+            "games": {
+                str(g): {"published": old.isoformat(), "built": new.isoformat()}
+                for g, (old, new) in sorted(revisions.items())
+            },
+            "expected_cutoff_cells": int(evidence["expected_cutoff_cells"]),
+        },
         "control_baseline_history": control,
         "summary": published_diff.summarize(tables),
         "explanations": {
@@ -781,8 +867,10 @@ def build(context: StageContext) -> StageOutput:
                 "were written (the lock extension); set aside and counted, never compared"
             ),
             "kickoff_revision": (
-                "a provider kickoff revision recorded in the lock extension; only a "
-                "cutoff_utc difference on a listed game, from the old to the new kickoff"
+                "a provider kickoff revision in the pinned evidence (which includes every "
+                "revision the lock chain recorded); only a cutoff_utc difference on a "
+                "listed game, from its published to its built kickoff. Any other cutoff_utc "
+                "difference is unevidenced_cutoff, an unexplained finding"
             ),
             "history_correction": (
                 "2026 priors and the rating scale come from the corrected 2025 terminal; "
@@ -829,6 +917,16 @@ def verify(context: StageContext) -> list[str]:
     control = report.get("control_baseline_history", {})
     if not control.get("matches_published"):
         problems.append("the rating controls do not reproduce the published components")
+    explained = (
+        report["tables"]["team_rating_components"]["differences_by_bucket"]
+        .get("kickoff_revision", {})
+        .get("cutoff_utc", 0)
+    )
+    if explained != report["kickoff_evidence"]["expected_cutoff_cells"]:
+        problems.append(
+            f"{explained} cutoff_utc cells match the kickoff evidence; it expects "
+            f"{report['kickoff_evidence']['expected_cutoff_cells']}"
+        )
     partitioned = control.get("team_rating_components", {}).get("rows_published")
     if partitioned != report["tables"]["team_rating_components"]["rows_published"]:
         problems.append(

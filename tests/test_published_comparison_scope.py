@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -532,3 +533,140 @@ def test_a_control_reproduces_its_partition_and_an_altered_week6_value_fails():
     assert not summary["matches_published"]
     assert summary["team_rating_components"]["rows_with_a_difference"] == 1
     assert summary["team_rating_components"]["rows_published"] == 4
+
+
+# ---- kickoff-revision evidence ---------------------------------------------------------
+
+LOCK_PATH = Path("conf/rebuild/source_lock_2026_w6_v1.json")
+EVIDENCE_PATH = Path("conf/rebuild/task4_w6_kickoff_revisions_v1.json")
+GAMES = {401862787, 401862797, 401856827, 401856808}
+
+
+def _evidence_inputs():
+    raw = LOCK_PATH.read_bytes()
+    lock = json.loads(raw)
+    return (
+        json.loads(EVIDENCE_PATH.read_text()),
+        lock,
+        hashlib.sha256(raw).hexdigest(),
+        pc.lock_scope(lock),
+        _controls(),
+    )
+
+
+def test_the_pinned_evidence_binds_four_games_to_the_lock_and_the_controls():
+    assert PINS["kickoff_revision_evidence"].sha256 == (
+        hashlib.sha256(EVIDENCE_PATH.read_bytes()).hexdigest()
+    )
+    evidence, *rest = _evidence_inputs()
+    revisions = pc.kickoff_evidence(evidence, *rest)
+    assert set(revisions) == GAMES and evidence["expected_cutoff_cells"] == 16
+    # The Week 5 revision is the one the lock chain recorded.
+    assert revisions[401862787] == rest[2]["revisions"][401862787]
+
+
+def _mutated(edit):
+    evidence, *rest = _evidence_inputs()
+    edit(evidence)
+    return evidence, *rest
+
+
+@pytest.mark.parametrize(
+    ("edit", "word"),
+    [
+        (
+            lambda e: e["revisions"][0].update(built_utc="2026-10-03T16:00:00Z"),
+            "does not hold",
+        ),
+        (  # conflicts with the revision the lock chain recorded
+            lambda e: e["revisions"][0].update(published_utc="2026-10-03T19:00:00Z"),
+            "conflicts",
+        ),
+        (lambda e: e["revisions"].pop(0), "conflicts"),
+        (lambda e: e["revisions"].append(dict(e["revisions"][1])), "twice"),
+        (lambda e: e["built_source"].update(sha256="0" * 64), "different source lock"),
+        (
+            lambda e: e["published_sources"][W6LIVE].update(
+                rating_manifest_sha256=V1_SHA
+            ),
+            "not its pinned",
+        ),
+        (lambda e: e["revisions"][1].update(published_run="other"), "unbound"),
+        (
+            lambda e: e["revisions"][1].update(published_utc="2026-10-10T17:00:00Z"),
+            "not an exact",
+        ),
+        (lambda e: e.update(expected_cutoff_cells=12), "expected cells"),
+    ],
+)
+def test_conflicting_or_unbound_evidence_is_refused(edit, word):
+    with pytest.raises(GateError, match=word):
+        pc.kickoff_evidence(*_mutated(edit))
+
+
+def _cutoff_frames(cutoffs, rating=1.0):
+    """Four components per game, one frame per side, from ``{game: utc}``."""
+    rows = [
+        {
+            "component_id": f"{game}:{team}:{role}",
+            "game_id": game,
+            "cutoff_utc": pd.Timestamp(utc),
+            "rating_mean": rating,
+        }
+        for game, utc in cutoffs.items()
+        for team in ("home", "away")
+        for role in ("offense", "defense")
+    ]
+    return pd.DataFrame(rows)
+
+
+def _evidenced_diff(built, published, metric):
+    revisions = pc.kickoff_evidence(*_evidence_inputs())
+    return pd_.diff_frames(
+        built,
+        published,
+        keys=["component_id"],
+        columns=["game_id", "cutoff_utc", "rating_mean"],
+        metric_of=lambda row: metric,
+        expected={"kickoff_revision", "history_correction"},
+        bucket_override=pc.kickoff_revision({"revisions": revisions}, strict=True),
+    )
+
+
+EVIDENCE = json.loads(EVIDENCE_PATH.read_text())["revisions"]
+PUBLISHED = {r["game_id"]: r["published_utc"] for r in EVIDENCE}
+BUILT = {r["game_id"]: r["built_utc"] for r in EVIDENCE}
+
+
+def test_exactly_the_sixteen_evidenced_cells_are_explained():
+    report = _evidenced_diff(
+        _cutoff_frames(BUILT), _cutoff_frames(PUBLISHED), "history_correction"
+    )
+    assert report["differences_by_bucket"] == {"kickoff_revision": {"cutoff_utc": 16}}
+    assert not report["unexplained"]
+
+
+@pytest.mark.parametrize(
+    ("built", "published"),
+    [
+        (PUBLISHED, BUILT),  # reversed
+        (BUILT | {401862797: "2026-10-10T18:00:00Z"}, PUBLISHED),  # altered
+        ({999: "2026-10-10T18:00:00Z"}, {999: "2026-10-10T17:00:00Z"}),  # unlisted
+    ],
+)
+def test_a_reversed_altered_or_unlisted_cutoff_is_never_absorbed(built, published):
+    # Even where the history correction is expected, an unevidenced cutoff stays a finding.
+    report = _evidenced_diff(
+        _cutoff_frames(built), _cutoff_frames(published), "history_correction"
+    )
+    assert report["unexplained"]
+    assert pc.UNEVIDENCED_CUTOFF in report["unexplained_buckets"]
+
+
+def test_numeric_drift_alongside_a_valid_revision_is_still_unexplained():
+    # Controls attribute no rating change (metric None -> "ratings").
+    report = _evidenced_diff(
+        _cutoff_frames(BUILT, rating=1.5), _cutoff_frames(PUBLISHED), None
+    )
+    assert report["differences_by_bucket"]["kickoff_revision"] == {"cutoff_utc": 16}
+    assert report["unexplained_buckets"] == {"ratings": {"rating_mean": 16}}
