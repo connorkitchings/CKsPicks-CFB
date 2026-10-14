@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import io
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
@@ -45,6 +45,17 @@ class SeasonInputs:
     historical_events: pd.DataFrame
     quotes: pd.DataFrame
     historical_lines: pd.DataFrame
+    #: Completed-game plays and drives with raw provider team names (team stats).
+    byplay: pd.DataFrame = field(default_factory=pd.DataFrame)
+    drives: pd.DataFrame = field(default_factory=pd.DataFrame)
+    #: Optional pinned Silver games (venue id/name/neutral), venues and teams;
+    #: ``None`` when the revision does not carry them.
+    venue_games: pd.DataFrame | None = None
+    venues: pd.DataFrame | None = None
+    teams: pd.DataFrame | None = None
+
+
+OPTIONAL_REVISION_INPUTS = ("venue_games", "venues", "teams")
 
 
 def load_inputs(
@@ -113,6 +124,7 @@ def load_inputs(
             raise ValueError(f"missing required {name}: {sorted(ids - table_ids)}")
     byplay = byplay[byplay.season.eq(2026) & byplay.game_id.isin(ids)].copy()
     drives = drives[drives.season.eq(2026) & drives.game_id.isin(ids)].copy()
+    provider_byplay, provider_drives = byplay.copy(), drives.copy()
     play_key = (
         ["season", "game_id", "source_play_id"]
         if "source_play_id" in byplay
@@ -318,4 +330,10 @@ def load_inputs(
         frame(reader, r["historical_lines"])
         if "historical_lines" in r
         else pd.DataFrame(),
+        provider_byplay,
+        provider_drives,
+        *(
+            frame(reader, r[name]) if name in r else None
+            for name in OPTIONAL_REVISION_INPUTS
+        ),
     )
