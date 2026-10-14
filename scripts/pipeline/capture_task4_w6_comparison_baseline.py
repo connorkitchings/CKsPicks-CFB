@@ -2,7 +2,7 @@
 """Capture (or re-verify) the published Preview baseline Task 4 r2 compares against.
 
 Read-only. One REPEATABLE READ, read-only transaction on the Preview pipeline login
-(``DATABASE_URL``) records:
+(``PREVIEW_DATABASE_URL``) records:
 - for each matchup table, a content fingerprint (sha256 of canonically ordered rows,
   every column as Postgres text) and row count per (season, week, provenance), where
   provenance is the component's rating run (``v5_snapshot_id`` prefix), the stats and
@@ -13,12 +13,16 @@ Read-only. One REPEATABLE READ, read-only transaction on the Preview pipeline lo
 
 The baseline also declares, explicitly and with fixed counts, the only keys a rebuild may
 add: the Week 5 (56) and Week 6 (58) game ids from the source lock's chained extensions
-for ``team_game_measurements``, and the 276 new ``team_rating_components`` ids from the
-build output. A declared key that is already published is refused, so published rows can
+for ``team_game_measurements``, and the 276 new ``team_rating_components`` ids derived from the
+hash-checked published 6A states. A declared key that is already published is refused, so published rows can
 never be relabelled as additions. ``check_additions()`` applies the declaration: a
 published row missing from the build, an extra row outside the declared set, or a
 declared key the build did not produce all fail.
 
+    zsh scripts/ops/with_preview_env.sh uv run python \\
+      scripts/pipeline/capture_task4_w6_comparison_baseline.py \\
+      --derive-component-additions --plan conf/rebuild/6a_task4_w6_v2.yaml \\
+      --out conf/rebuild/task4_w6_component_additions_v1.json
     zsh scripts/ops/with_preview_env.sh uv run python \\
       scripts/pipeline/capture_task4_w6_comparison_baseline.py \\
       --component-additions <new component ids .json> --out <baseline.json>
@@ -34,283 +38,124 @@ import hashlib
 import json
 import os
 import sys
-from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any
 
-SCHEMA = "task4_w6_comparison_baseline_v1"
-SEASON = 2026
-RATING_RUNS = (
-    "v5-intended-update-2026-ratings-v1",
-    "v5-intended-update-2026-corrected-w6live-r1",
-)
-LOCK = Path("conf/rebuild/source_lock_2026_w6_v1.json")
-#: Lock extension (post-week) -> expected number of newly final games.
-MEASUREMENT_GAMES = {5: 56, 6: 58}
-NEW_COMPONENTS = 276
-#: table -> week column; provenance comes from ``provenance()``.
-WEEK_COLUMN = {
-    "team_game_measurements": "week",
-    "team_possession_stats": "as_of_week",
-    "team_possession_adjusted": "as_of_week",
-    "team_rating_components": "as_of_week",
-}
-PUBLICATION_COLUMNS = (
-    "publication_id",
-    "season",
-    "lineage",
-    "rating_manifest_uri",
-    "rating_manifest_sha256",
-    "measurement_manifest_uri",
-    "measurement_manifest_sha256",
-    "observations_records_sha",
-    "as_of_weeks",
-    "rating_scale",
-    "row_counts",
-    "payload_sha256",
-    "code_sha",
-    "environment",
-    "published_at",
-)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT))
+
+from cks_picks_cfb.rebuild import comparison_baseline as shared  # noqa: E402
+from cks_picks_cfb.rebuild.errors import RebuildError  # noqa: E402
+
+# Preserve existing importers of the original CLI helpers.
+BaselineError = shared.BaselineError
+LOCK, SCHEMA, SEASON = shared.LOCK, shared.SCHEMA, shared.SEASON
+check_additions = shared.check_additions
+component_declaration = shared.component_declaration
+declared_overlap = shared.declared_overlap
+diff_captures = shared.diff_captures
+fingerprint = shared.fingerprint
+measurement_declaration = shared.measurement_declaration
+read_snapshot = shared.read_snapshot
+validate_baseline = shared.validate_baseline
 
 
-class BaselineError(ValueError):
-    """The capture, the declaration or a comparison does not hold."""
-
-
-def provenance(table: str, row: Mapping[str, str | None]) -> str | None:
-    if table == "team_rating_components":
-        return str(row["v5_snapshot_id"]).split(":", 1)[0]
-    if table == "team_game_measurements":
-        return row["measurement_manifest_sha256"]
-    return row["rating_manifest_sha256"]
-
-
-def fingerprint(
-    table: str,
-    rows: Iterable[Mapping[str, str | None]],
-    columns: Iterable[str],
-    keys: Iterable[str],
-) -> list[dict[str, Any]]:
-    """Row count and sha256 of canonically ordered rows, per (season, week, provenance)."""
-    columns, keys = list(columns), list(keys)
-    groups: dict[tuple, list[tuple]] = {}
-    for row in rows:
-        group = (row["season"], row[WEEK_COLUMN[table]], provenance(table, row))
-        ordered = tuple(row[k] for k in keys)
-        groups.setdefault(group, []).append((ordered, [row[c] for c in columns]))
-    out = []
-    for (season, week, source), members in sorted(
-        groups.items(), key=lambda item: tuple(str(v) for v in item[0])
-    ):
-        members.sort(key=lambda m: m[0])
-        if any(a[0] == b[0] for a, b in zip(members, members[1:], strict=False)):
-            raise BaselineError(f"{table}: duplicate primary key in a group")
-        digest = hashlib.sha256()
-        for _, values in members:
-            digest.update(json.dumps(values, separators=(",", ":")).encode() + b"\n")
-        out.append(
-            {
-                "season": season,
-                "week": week,
-                "provenance": source,
-                "rows": len(members),
-                "sha256": digest.hexdigest(),
-            }
-        )
-    return out
-
-
-def diff_captures(baseline: Mapping[str, Any], current: Mapping[str, Any]) -> list[str]:
-    """Every difference between two captures' tables and publications (empty = equal)."""
-    problems: list[str] = []
-    for table in sorted(set(baseline["tables"]) | set(current["tables"])):
-        before = {
-            (g["season"], g["week"], g["provenance"]): g
-            for g in baseline["tables"].get(table, [])
-        }
-        after = {
-            (g["season"], g["week"], g["provenance"]): g
-            for g in current["tables"].get(table, [])
-        }
-        for key in sorted(set(before) | set(after), key=lambda k: tuple(map(str, k))):
-            if key not in after:
-                problems.append(f"{table} {key}: group removed")
-            elif key not in before:
-                problems.append(f"{table} {key}: group added")
-            elif before[key]["sha256"] != after[key]["sha256"]:
-                problems.append(
-                    f"{table} {key}: content changed "
-                    f"(rows {before[key]['rows']} -> {after[key]['rows']})"
-                )
-    if baseline["publications"] != current["publications"]:
-        problems.append("publication metadata of the rating runs changed")
-    return problems
-
-
-def declared_overlap(
-    published: Iterable[Mapping[str, str | None]], declaration: Mapping[str, Any]
-) -> list[str]:
-    """Declared addition keys that are already published (must be empty)."""
-    declared = {str(v) for v in declaration["values"]}
-    return sorted(
-        {str(row[declaration["column"]]) for row in published} & declared, key=str
-    )
-
-
-def check_additions(
-    table: str,
-    published: Iterable[Mapping[str, Any]],
-    built: Iterable[Mapping[str, Any]],
-    keys: Iterable[str],
-    declaration: Mapping[str, Any] | None,
-) -> list[str]:
-    """Population check of a build against the published rows and the declaration.
-
-    Missing published rows always fail; they are never excused as additions. Extra rows
-    must carry a declared value, every declared value must be added, and no published row
-    may carry a declared value.
-    """
-    keys = list(keys)
-
-    def index(rows):
-        return {tuple(str(row[k]) for k in keys): row for row in rows}
-
-    old, new = index(published), index(built)
-    problems = []
-    if missing := set(old) - set(new):
-        problems.append(
-            f"{table}: {len(missing)} published rows missing from the build"
-        )
-    extra = [new[k] for k in set(new) - set(old)]
-    if declaration is None:
-        if extra:
-            problems.append(f"{table}: {len(extra)} rows added with no declaration")
-        return problems
-    column, declared = declaration["column"], {str(v) for v in declaration["values"]}
-    if len(declared) != declaration["count"]:
-        problems.append(
-            f"{table}: declaration lists {len(declared)} values, count says "
-            f"{declaration['count']}"
-        )
-    if overlap := declared_overlap(old.values(), declaration):
-        problems.append(f"{table}: declared values already published: {overlap[:5]}")
-    added = {str(row[column]) for row in extra}
-    if outside := added - declared:
-        problems.append(
-            f"{table}: rows added outside the declaration: {sorted(outside)[:5]}"
-        )
-    if absent := declared - added:
-        problems.append(f"{table}: declared additions not built: {sorted(absent)[:5]}")
-    return problems
-
-
-def measurement_declaration(lock: Mapping[str, Any], lock_sha: str) -> dict[str, Any]:
-    """Week 5 and Week 6 game ids from the lock's chained extensions, counts enforced."""
-    found: dict[int, list[int]] = {}
-    extension = lock.get("extends")
-    while extension:
-        week = int(extension["added_post_week"])
-        if week in found:
-            raise BaselineError(f"lock extends post-week {week} twice")
-        found[week] = [int(g) for g in extension["newly_final_game_ids"]]
-        extension = extension.get("previous_extension")
-    counts = {week: len(found.get(week, [])) for week in MEASUREMENT_GAMES}
-    if counts != MEASUREMENT_GAMES:
-        raise BaselineError(
-            f"lock extension games {counts}; expected {MEASUREMENT_GAMES}"
-        )
-    games = sorted(g for week in MEASUREMENT_GAMES for g in found[week])
-    if len(set(games)) != len(games):
-        raise BaselineError("a game is newly final in two extensions")
-    return {
-        "column": "game_id",
-        "count": len(games),
-        "counts_by_post_week": {str(w): n for w, n in MEASUREMENT_GAMES.items()},
-        "source": {"uri": str(LOCK), "sha256": lock_sha},
-        "values": games,
-    }
-
-
-def component_declaration(path: Path) -> dict[str, Any]:
-    raw = path.read_bytes()
-    ids = json.loads(raw)
-    if not isinstance(ids, list) or len(set(map(str, ids))) != len(ids):
-        raise BaselineError("component additions must be a JSON list of unique ids")
-    if len(ids) != NEW_COMPONENTS:
-        raise BaselineError(
-            f"{len(ids)} component additions; expected {NEW_COMPONENTS}"
-        )
-    return {
-        "column": "component_id",
-        "count": NEW_COMPONENTS,
-        "source": {"uri": str(path), "sha256": hashlib.sha256(raw).hexdigest()},
-        "values": sorted(map(str, ids)),
-    }
-
-
-def capture(cur) -> tuple[dict[str, Any], dict[str, list[dict[str, Any]]]]:
-    """Fingerprints, publications and the raw published rows, in the caller's snapshot."""
-    from cks_picks_cfb.data import matchup_data as md
-
-    tables, rows_by_table = {}, {}
-    for table, (columns, keys, _jsonb) in md.TABLES.items():
-        select = ", ".join(f"{c}::text" for c in columns)
-        cur.execute(f"SELECT {select} FROM {table} WHERE season = %s", (SEASON,))  # noqa: S608
-        rows = [dict(zip(columns, r, strict=True)) for r in cur.fetchall()]
-        rows_by_table[table] = rows
-        tables[table] = fingerprint(table, rows, columns, keys)
-    select = ", ".join(f"{c}::text" for c in PUBLICATION_COLUMNS)
-    cur.execute(
-        f"SELECT {select} FROM matchup_data_publications WHERE season = %s "  # noqa: S608
-        "ORDER BY publication_id",
-        (SEASON,),
-    )
-    publications: dict[str, list[dict[str, Any]]] = {run: [] for run in RATING_RUNS}
-    for values in cur.fetchall():
-        row = dict(zip(PUBLICATION_COLUMNS, values, strict=True))
-        run = row["rating_manifest_uri"].rstrip("/").split("/")[-2]
-        if run in publications:
-            publications[run].append(row)
-    if empty := [run for run, rows in publications.items() if not rows]:
-        raise BaselineError(f"no publication rows for rating runs {empty}")
-    cur.execute("SELECT now()")
-    snapshot_at = str(cur.fetchone()[0])
-    return (
-        {"snapshot_at": snapshot_at, "tables": tables, "publications": publications},
-        rows_by_table,
-    )
-
-
-def read_snapshot(url: str):
+def derive_from_plan(path: Path, url: str) -> list[str]:
+    """Hash-check comparison inputs, reconstruct in memory, never stage artifacts."""
     import psycopg
+    import yaml
 
+    from cks_picks_cfb.rebuild import common
+    from cks_picks_cfb.rebuild import published_comparison as pc
+    from cks_picks_cfb.rebuild.comparison_baseline import capture, derive_component_ids
+    from cks_picks_cfb.rebuild.inputs import (
+        no_implicit_latest,
+        reject_legacy_parents,
+        resolve_input,
+    )
+    from cks_picks_cfb.rebuild.orchestrator import StageContext
+    from cks_picks_cfb.rebuild.plan import RebuildPlan
     from cks_picks_cfb.rebuild.targets import assert_preview_database
 
-    with psycopg.connect(url) as conn:
+    plan = RebuildPlan.from_dict(yaml.safe_load(path.read_text()))
+    plan.validate()
+    reject_legacy_parents(plan)
+    stage = next(s for s in plan.stages if s.name == "published_comparison")
+    context = StageContext(
+        plan,
+        stage,
+        {},
+        {},
+        lambda *_: (_ for _ in ()).throw(
+            BaselineError("derivation cannot read staged artifacts")
+        ),
+    )
+    storage = common.preview_storage(context)
+    pins = {pin.name: pin for pin in plan.inputs}
+    checked = {}
+    for name in stage.inputs:
+        if name == "comparison_baseline":
+            continue  # Only this unfinished pin is exempt from derivation.
+        pin = pins[name]
+        resolve_input(pin, repo_root=REPO_ROOT, read_remote=storage.read_bytes)
+        raw = (
+            (REPO_ROOT / pin.uri).read_bytes()
+            if pin.kind == "git_file"
+            else storage.read_bytes(pin.uri)
+        )
+        if hashlib.sha256(raw).hexdigest() != pin.sha256:
+            raise BaselineError(f"input {name} changed during derivation")
+        checked[name] = raw
+    context.read_input = checked.__getitem__
+    with no_implicit_latest(), psycopg.connect(url) as conn:
         conn.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
         conn.read_only = True
         with conn.cursor() as cur:
             assert_preview_database(cur)
-            result = capture(cur)
+            _, published = capture(cur)
+            rebuilt, _, _, lock, _ = pc.reconstruct_frames(context, cur)
+            additions = pc.table_additions(dict(plan.policies), pc.lock_scope(lock))
+            ids = derive_component_ids(
+                published["team_rating_components"],
+                rebuilt["team_rating_components"].to_dict("records"),
+                additions["team_rating_components"]["first_as_of_week"],
+            )
         conn.rollback()
-    return result
+    return ids
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    mode = parser.add_mutually_exclusive_group(required=True)
+    mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--verify", type=Path, help="baseline to re-capture and compare")
-    mode.add_argument("--out", type=Path, help="where to write a new baseline")
+    mode.add_argument("--derive-component-additions", action="store_true")
+    parser.add_argument(
+        "--out", type=Path, help="exclusive output for capture or derived IDs"
+    )
+    parser.add_argument("--plan", type=Path)
     parser.add_argument("--component-additions", type=Path)
     args = parser.parse_args(argv)
-    url = os.getenv("DATABASE_URL")
+    url = os.getenv("PREVIEW_DATABASE_URL")
     if not url:
-        print("Set DATABASE_URL (Preview pipeline login).", file=sys.stderr)
+        print("Set PREVIEW_DATABASE_URL (Preview pipeline login).", file=sys.stderr)
         return 2
     try:
+        if args.verify and (args.out or args.plan or args.component_additions):
+            raise BaselineError("verify cannot capture or derive")
+        if args.derive_component_additions:
+            if not args.plan or not args.out or args.component_additions:
+                raise BaselineError("derive requires --plan and --out only")
+            if args.out.exists():
+                raise BaselineError(f"{args.out} already exists; create once")
+            ids = derive_from_plan(args.plan, url)
+            with args.out.open("x") as handle:
+                handle.write(json.dumps(ids, indent=2) + "\n")
+            print(f"Derived {len(ids)} component IDs to {args.out}.")
+            return 0
+        if args.plan:
+            raise BaselineError("--plan requires --derive-component-additions")
         if args.verify:
-            baseline = json.loads(args.verify.read_text())
+            baseline = validate_baseline(args.verify.read_bytes(), LOCK.read_bytes())
             if baseline.get("schema_version") != SCHEMA or not baseline.get("tables"):
                 raise BaselineError(f"{args.verify} is not a captured {SCHEMA}")
             current, _ = read_snapshot(url)
@@ -321,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             print(f"Published baseline unchanged ({current['snapshot_at']}).")
             return 0
+        if args.out is None:
+            raise BaselineError("--out is required to capture")
         if args.out.exists() and json.loads(args.out.read_text()).get("tables"):
             raise BaselineError(f"{args.out} already holds a capture; create once")
         if args.component_additions is None:
@@ -346,10 +193,12 @@ def main(argv: list[str] | None = None) -> int:
             **current,
             "expected_additions": declarations,
         }
-        args.out.write_text(json.dumps(baseline, indent=2, sort_keys=True) + "\n")
+        raw = (json.dumps(baseline, indent=2, sort_keys=True) + "\n").encode()
+        validate_baseline(raw, lock_raw)
+        args.out.write_bytes(raw)
         print(f"Baseline written to {args.out}.")
         return 0
-    except BaselineError as exc:
+    except (RebuildError, OSError, ValueError) as exc:
         print(f"Refusing: {exc}", file=sys.stderr)
         return 3
 

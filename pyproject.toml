@@ -63,6 +63,8 @@ extend-exclude = [
     "**/*.ipynb",
     "archive/**",
     "scripts/archive/**",
+    # Retained Week 6 operator evidence; owner-approved validation exclusion.
+    "docs/plans/2026-10-11/week6-closeout-evidence/**/capture-tools/**",
 ]
 force-exclude = true
 

@@ -20,6 +20,7 @@ from typing import Any
 import pandas as pd
 
 from cks_picks_cfb.rebuild import common, parity, published_diff, states_2026
+from cks_picks_cfb.rebuild import comparison_baseline as baseline
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.published import PublishedRun
@@ -657,6 +658,48 @@ def summarize_controls(controls: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def reconstruct_frames(context: StageContext, cur):
+    """Shared hash-checked published-state payload reconstruction, entirely in memory."""
+    from cks_picks_cfb.data import matchup_publish as mp
+    from contracts.teams import TEAM_LOGO_MAP
+
+    run = PublishedRun(context)
+    lock_raw = context.read_input("source_lock_2026")
+    lock = json.loads(lock_raw)
+    states = {name: run.frame(f"states_2026/{name}.parquet") for name in STATE_FILES}
+    cutoffs = {int(w): pd.Timestamp(c) for w, c in lock["post_week_cutoffs"].items()}
+    root_sha = run.root["manifest_sha256"]
+    week_runs = published_rating_runs(dict(context.plan.policies))
+
+    game_names = mp.season_game_names(cur, SEASON)
+    artifacts = mp.Artifacts(
+        lineage="intended_update",
+        run_id=week_runs[max(week_runs)],
+        candidate_id=str(states["pregame_roles"]["candidate_id"].iloc[0]),
+        rating_manifest={},
+        rating_sha256=root_sha,
+        rating_uri="",
+        measurement_manifest={},
+        measurement_sha256=root_sha,
+        measurement_uri="",
+        observations=states["observations"],
+        observations_records_sha="corrected",
+        observations_version_id="corrected",
+        priors=states["priors"],
+        pregame_roles=states["pregame_roles"],
+        current_roles=states["current_roles"],
+        post_week_cutoffs=cutoffs,
+    )
+    rebuilt = build_frames(
+        artifacts,
+        week_runs,
+        lambda a: mp.build_payload(
+            a, season=SEASON, game_names=game_names, alias_map=TEAM_LOGO_MAP
+        ),
+    )
+    return rebuilt, artifacts, run, lock, game_names
+
+
 def build(context: StageContext) -> StageOutput:
     import psycopg
 
@@ -664,21 +707,15 @@ def build(context: StageContext) -> StageOutput:
     from cks_picks_cfb.data import matchup_publish as mp
     from cks_picks_cfb.data.runtime import resolve_runtime_target
     from cks_picks_cfb.rebuild.targets import assert_preview_database
-    from contracts.teams import TEAM_LOGO_MAP
 
-    run = PublishedRun(context)
-    storage = run.storage
-    pin_file = json.loads(context.read_input("silver_2026_parents"))
     lock_raw = context.read_input("source_lock_2026")
     lock = json.loads(lock_raw)
+    baseline_raw = context.read_input("comparison_baseline")
+    pinned_baseline = baseline.validate_baseline(baseline_raw, lock_raw)
     evidence = json.loads(context.read_input(KICKOFF_EVIDENCE_INPUT))
-    states = {name: run.frame(f"states_2026/{name}.parquet") for name in STATE_FILES}
-    cutoffs = {int(w): pd.Timestamp(c) for w, c in lock["post_week_cutoffs"].items()}
-    root_sha = run.root["manifest_sha256"]
     scope = lock_scope(lock)
     additions = table_additions(dict(context.plan.policies), scope)
     week_runs = published_rating_runs(dict(context.plan.policies))
-
     url = resolve_runtime_target("preview").database_url
     published: dict[str, pd.DataFrame] = {}
     with psycopg.connect(url) as conn:
@@ -687,7 +724,15 @@ def build(context: StageContext) -> StageOutput:
         conn.read_only = True
         with conn.cursor() as cur:
             assert_preview_database(cur)
-            game_names = mp.season_game_names(cur, SEASON)
+            current, _ = baseline.capture(cur)
+            if drift := baseline.diff_captures(pinned_baseline, current):
+                raise GateError("baseline drift: " + "; ".join(drift))
+            rebuilt, artifacts, run, lock, game_names = reconstruct_frames(context, cur)
+            storage = run.storage
+            states = {
+                name: run.frame(f"states_2026/{name}.parquet") for name in STATE_FILES
+            }
+            pin_file = json.loads(context.read_input("silver_2026_parents"))
             cur.execute(
                 "SELECT DISTINCT split_part(v5_snapshot_id, ':', 1) "
                 "FROM team_rating_components WHERE season = %s",
@@ -723,30 +768,10 @@ def build(context: StageContext) -> StageOutput:
                 for row in cur.fetchall()
             ]
 
-    artifacts = mp.Artifacts(
-        lineage="intended_update",
-        run_id=week_runs[max(week_runs)],
-        candidate_id=str(states["pregame_roles"]["candidate_id"].iloc[0]),
-        rating_manifest={},
-        rating_sha256=root_sha,
-        rating_uri="",
-        measurement_manifest={},
-        measurement_sha256=root_sha,
-        measurement_uri="",
-        observations=states["observations"],
-        observations_records_sha="corrected",
-        observations_version_id="corrected",
-        priors=states["priors"],
-        pregame_roles=states["pregame_roles"],
-        current_roles=states["current_roles"],
-        post_week_cutoffs=cutoffs,
-    )
-    rebuilt = build_frames(
-        artifacts,
-        week_runs,
-        lambda a: mp.build_payload(
-            a, season=SEASON, game_names=game_names, alias_map=TEAM_LOGO_MAP
-        ),
+    population_checks = baseline.enforce_populations(
+        {table: frame.to_dict("records") for table, frame in published.items()},
+        {table: frame.to_dict("records") for table, frame in rebuilt.items()},
+        pinned_baseline["expected_additions"],
     )
     tables = {}
     controls = bind_publications(
@@ -825,6 +850,12 @@ def build(context: StageContext) -> StageOutput:
         added_scope=addition_scope("team_season_stats", additions),
     )
     report = {
+        "baseline_enforcement": {
+            "baseline_sha256": hashlib.sha256(baseline_raw).hexdigest(),
+            "fingerprints_passed": True,
+            "capture": current,
+            "populations": population_checks,
+        },
         "season": SEASON,
         "database_role": "cks_preview_pipeline (read-only transaction)",
         "published_rating_runs": {str(w): r for w, r in sorted(week_runs.items())},
@@ -896,6 +927,50 @@ def verify(context: StageContext) -> list[str]:
     prefix = PREFIX.format(run_id=context.plan.run_id)
     report = json.loads(context.read_artifact(stage, prefix + "report.json"))
     problems: list[str] = []
+    try:
+        baseline_raw = context.read_input("comparison_baseline")
+        pinned = baseline.validate_baseline(
+            baseline_raw, context.read_input("source_lock_2026")
+        )
+        enforcement = report.get("baseline_enforcement") or {}
+        if (
+            enforcement.get("baseline_sha256")
+            != hashlib.sha256(baseline_raw).hexdigest()
+        ):
+            problems.append("baseline enforcement missing or bound to another hash")
+        if enforcement.get("fingerprints_passed") is not True:
+            problems.append("baseline fingerprint enforcement did not pass")
+        if enforcement.get("capture") is None or baseline.diff_captures(
+            pinned, enforcement["capture"]
+        ):
+            problems.append("recorded baseline fingerprints differ")
+        populations = enforcement.get("populations") or {}
+        if set(populations) != set(pinned["expected_additions"]):
+            problems.append("baseline population enforcement is missing")
+        for table, declaration in pinned["expected_additions"].items():
+            evidence = populations.get(table) or {}
+            counts = report["tables"][table]
+            if (
+                evidence.get("passed") is not True
+                or evidence.get("declaration") != declaration
+                or evidence.get("published_rows") != counts["rows_published"]
+                or evidence.get("built_rows") != counts["rows_built"]
+                or evidence.get("added_rows")
+                != counts["rows_built"] - counts["rows_published"]
+                or (
+                    table == "team_rating_components"
+                    and evidence.get("added_rows") != baseline.NEW_COMPONENTS
+                )
+            ):
+                problems.append(f"{table}: population enforcement invalid")
+        from cks_picks_cfb.data.runtime import resolve_runtime_target
+
+        current, _ = baseline.read_snapshot(
+            resolve_runtime_target("preview").database_url
+        )
+        problems.extend(baseline.diff_captures(pinned, current))
+    except (GateError, KeyError, TypeError, ValueError) as error:
+        problems.append(f"baseline enforcement refused: {error}")
     expected = {
         "team_game_measurements",
         "team_possession_stats",

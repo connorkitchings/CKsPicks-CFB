@@ -1,4 +1,4 @@
-# Week 7 standalone fallback (frozen Week 7 on corrected ratings through Week 6)
+# Week 7 standalone fallback (display-only on corrected ratings through Week 6)
 
 - **Status:** Draft, awaiting owner approval. It adds no authority of its own; it releases nothing until the owner gives it an exact release decision.
 - **Created:** 2026-10-12 (command chain rewritten the same day after checking every script's argparse on `dev` at `f8848bfa`)
@@ -14,7 +14,7 @@
 
 ## When this applies
 
-The run sheet's pivot gate is Tuesday 2026-10-13 14:00Z. If the Preview rehearsal of the Advance-Mode cutover, including the owner-login rollback proof and readback, is not fully verified by then, the Week 0–6 corrected-replay cutover is barred. Week 7 is then served on its own: a frozen Week 7 run whose ratings come from the corrected chain through Week 6, with Weeks 0–6 left as currently selected (Week 6 stays on the display-only run `2026w6-v5repair-20261008-d2`, see [Current Status](../../status.md)).
+The run sheet's pivot gate is Tuesday 2026-10-13 14:00Z. If the Preview rehearsal of the Advance-Mode cutover, including the owner-login rollback proof and readback, is not fully verified by then, the Week 0–6 corrected-replay cutover is barred. Week 7 is then served on its own: a display-only, published/pending Week 7 run whose ratings come from the corrected chain through Week 6, with Weeks 0–6 left as currently selected (Week 6 stays on the display-only run `2026w6-v5repair-20261008-d2`, see [Current Status](../../status.md)).
 
 The owner has also approved taking this single-week route for Week 7 if the three missing Advance-Mode producers (finals-certification receipts, prospective-records payloads, R2 ref uploader) are not small; Advance Mode stays the route for Week 8.
 
@@ -22,16 +22,16 @@ If the Weeks 0–6 corrected replay set or its audit receipt is the part that fa
 
 ## Why Week 7 cannot be skipped
 
-The Week 8 Advance-Mode selection requires Weeks 0..7 selected and `current_week` at 7, with a Week 7 freeze receipt. So a Week 7 run must exist, be selected and be frozen before its first kickoff even in the fallback. Week 6 is never frozen or closed.
+The Week 7 continuation does not freeze this slate. Week 8 Advance-Mode predecessor policy requires a separate disposition; do not manufacture a Week 7 freeze receipt. Week 6 remains unfrozen.
 
-## Clock (UTC)
+## Historical clock (UTC; freeze targets superseded)
 
 | When | Event |
 |---|---|
 | Tue Oct 13 14:00 | Pivot gate (run sheet) |
-| Tue Oct 13 ~20:00 | Target time for the Production `freeze_week.py` |
-| Tue Oct 13 21:30 | Latest operational time for the Production freeze |
-| Tue Oct 13 22:00 | Hard boundary: `freeze_week.py` compares the database clock with the run's earliest predicted kickoff minus one hour. At or after it, the run is marked `evidence_class = 'missed'`; that is irreversible and the run can never be frozen |
+| Tue Oct 13 ~20:00 | Superseded Production freeze target; do not execute |
+| Tue Oct 13 21:30 | Superseded latest freeze target; do not execute |
+| Tue Oct 13 22:00 | Historical prospective-freeze boundary (superseded; do not execute): `freeze_week.py` compares the database clock with the run's earliest predicted kickoff minus one hour. At or after it, the run is marked `evidence_class = 'missed'`; that is irreversible and the run can never be frozen |
 | Tue Oct 13 23:00 | First Week 7 kickoff |
 
 ## Ratings input
@@ -55,11 +55,11 @@ Checked against the argparse definitions and main bodies of each script. Default
 | `build_v5_intended_update_2026.py` | `--apply` | R2 | `--run-id --expected-code-sha --source-lock --local-output` (required), `--previous-manifest`, `--preflight-evidence` |
 | `verify_v5_intended_update_2026.py` | `--apply` | R2 | `--source-lock` (required), `--manifest-uri`, `--local-output` |
 | `publish_v5_intended_update_ratings.py` | `--apply` | `--environment` | `--rating-manifest-uri` (required) |
-| `build_v5_intended_update_forecasts.py` | `--apply` | R2 | `--release-tag --expected-code-sha --source-lock --local-output --bridge-source --rating-source` (required), `--live-as-of`, `--preflight-evidence`; never `--display-only` here |
-| `build_v5_corrected_live_serving.py` | `--apply` | R2 | `--source-lock --release-tag --market-ref-uri --as-of --local-output` (required), `--expected-manifest-sha`, `--expected-code-sha`; never `--display-only` here. The run ID is `2026w7-v5repair-<release-tag>` |
+| `build_v5_intended_update_forecasts.py` | `--apply` | R2 | `--release-tag --expected-code-sha --source-lock --local-output --bridge-source --rating-source` (required), `--live-as-of`, `--preflight-evidence`; `--display-only` is required for this Week 7 continuation |
+| `build_v5_corrected_live_serving.py` | `--apply` | R2 | `--source-lock --release-tag --market-ref-uri --as-of --local-output` (required), `--expected-manifest-sha`, `--expected-code-sha`; `--display-only` is required for this Week 7 continuation. The run ID is `2026w7-v5repair-<release-tag>` |
 | `verify_v5_corrected_live_serving.py` | `--apply` | R2 | `--source-lock --release-tag` (required), `--expected-receipt-sha`, `--expected-code-sha` |
 | `package_v5_corrected_live_run.py` | `--apply` | R2 | `--source-lock --release-tag --bridge-uri --rating-uri` (required), `--expected-packet-sha`, `--expected-code-sha` |
-| `authorize_v5_intended_update_preview.py` | `--apply` | Preview only | Legacy single-run mode: `--week --decision-ref --release-tag`; apply adds `--expected-record-sha --expected-code-sha`, needs a clean tree and the Preview **migrator** login |
+| `authorize_v5_intended_update_preview.py` | `--apply` | Preview only | Legacy single-run mode: `--week --approval-decision-ref --decision-ref --release-tag`; apply adds `--expected-record-sha --expected-code-sha`, needs a clean tree and the Preview **migrator** login |
 | `seed_week_schedule.py` | `--apply` | `--environment` | `--source-lock --week` (required) |
 | `publish_game_venues.py` | **writes** | `--environment` | `--dry-run` for the dry run; `--only-missing` never touches existing rows; `--supplement` for reviewed venue records |
 | `publish_to_db.py` | **writes** (no dry run) | `DATABASE_URL` + `CFB_ARTIFACT_ENV` | No `--environment` flag. `--year --week --from-artifact --run-id --config --state`; `--allow-partial-slate` is not used for a frozen run |
@@ -69,7 +69,7 @@ Checked against the argparse definitions and main bodies of each script. Default
 | `verify_matchup_data.py` | read-only | `--environment` | Same rating, measurement/6A and `--weeks` flags as the publisher |
 | `stage_v5_artifacts.py` | `--apply` | `--source`/`--target` (default preview → production) | `--run WEEK=RUN_ID` (repeatable), `--receipt` (required), `--predictions-only`; apply adds `--expected-receipt-sha256 --expected-code-sha` and needs a clean tree |
 | `freeze_week.py` | **writes** (no dry run) | `DATABASE_URL` + `CFB_ARTIFACT_ENV` | `--year --week --decision-ref`, `--waiver`. Never run it as a check |
-| `rollback_week_release.py` | — | — | **Being built in parallel; not on `dev` yet.** Its flags must be confirmed against its argparse before step P10 is approved |
+| `rollback_week_release.py` | — | — | Available on `dev`: `--environment --season --week --run-id --reason`, default dry run; `--apply` requires separate owner approval. Omit `--release-receipt` for pointer-only rollback; stats and snapshots remain retained |
 
 **Roles and wrappers.** `zsh scripts/ops/with_preview_env.sh` sets `PREVIEW_DATABASE_URL` to the Preview pipeline login (`cks_preview_pipeline`), `DATABASE_URL` to the Preview **migrator** login and `CFB_ARTIFACT_ENV=preview`. V5 writes require both `session_user` and `current_user` to be the pipeline role, so the scripts that read `DATABASE_URL` (`publish_to_db.py`, `freeze_week.py`) must run in Preview with `DATABASE_URL` re-pointed at the pipeline URL inside the wrapper (form below). The Preview authorizer is the exception: it requires the migrator. `zsh scripts/ops/with_production_pipeline_env.sh` sets `DATABASE_URL` to `cks_prod_pipeline` and `CFB_ARTIFACT_ENV=production`. All commands below run from a clean committed tree with `PYTHONPATH=src:.`.
 
@@ -106,19 +106,21 @@ Each step is its own go-ahead. Record run IDs, root hashes and receipts in the s
    The dry run must show no change to as-of weeks 1–6.
 9. **Fresh Week 7 market capture:** `capture_data_first_phase2.py --kind pregame --mode dry-run --run-id <id> --environment preview --season 2026 --max-requests <n> --expected-code-sha $(git rev-parse HEAD)`, then `--mode apply`. Reconcile all 59 FBS games separately for spread and total; record the capture time, missing game IDs and the next refresh (AGENTS.md session rule 6). The serving builder refuses an incomplete market, so a gap means a later capture, not a waiver.
 10. **Forecasts, serving, verify, package** (same `--release-tag` throughout; the run ID becomes `2026w7-v5repair-<release-tag>`):
-    - `build_v5_intended_update_forecasts.py --release-tag <tag> --expected-code-sha $(git rev-parse HEAD) --source-lock conf/rebuild/successor_lock_w7live_v1.json --local-output <dir> --bridge-source <B2 bridge-manifest URI> --rating-source <w7live rating manifest> --live-as-of <forecast time>` (preflight, then `--apply --preflight-evidence <file>`). The B2 bridge is `artifacts/research/data-first-football-v1/forecasts/intended-update/runs/v5-intended-update-corrected-w5-r1/bridge-manifest.json` unless the bundle changes.
-    - `build_v5_corrected_live_serving.py --source-lock conf/rebuild/successor_lock_w7live_v1.json --release-tag <tag> --market-ref-uri <step 9 snapshots ref> --as-of <ISO time> --local-output <dir>` (dry run, then `--apply --expected-manifest-sha <sha> --expected-code-sha <sha>`).
+    - `build_v5_intended_update_forecasts.py --display-only --release-tag <tag> --expected-code-sha $(git rev-parse HEAD) --source-lock conf/rebuild/successor_lock_w7live_v1.json --local-output <dir> --bridge-source <B2 bridge-manifest URI> --rating-source <w7live rating manifest> --live-as-of <forecast time>` (preflight, then `--apply --preflight-evidence <file>`). The B2 bridge is `artifacts/research/data-first-football-v1/forecasts/intended-update/runs/v5-intended-update-corrected-w5-r1/bridge-manifest.json` unless the bundle changes.
+    - `build_v5_corrected_live_serving.py --display-only --source-lock conf/rebuild/successor_lock_w7live_v1.json --release-tag <tag> --market-ref-uri <step 9 snapshots ref> --as-of <ISO time> --local-output <dir>` (dry run, then `--apply --expected-manifest-sha <sha> --expected-code-sha <sha>`).
     - `verify_v5_corrected_live_serving.py --source-lock conf/rebuild/successor_lock_w7live_v1.json --release-tag <tag>` (dry run, then `--apply --expected-receipt-sha <sha> --expected-code-sha <sha>`).
     - `package_v5_corrected_live_run.py --source-lock conf/rebuild/successor_lock_w7live_v1.json --release-tag <tag> --bridge-uri <B2 bridge> --rating-uri <w7live rating manifest>` (dry run, then `--apply --expected-packet-sha <sha> --expected-code-sha <sha>`).
-    All three refuse once the first Week 7 game has started; build well before 22:00Z.
+    Use `--display-only` where supported. Omit games kicked off at or before the fresh forecast cutoff. Before publication and selection, require the candidate to be less than six hours old and every included kickoff still in the future; rebuild a stale candidate.
 11. **Preview authorization:**
     ```bash
     PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/authorize_v5_intended_update_preview.py \
-      --week 7 --release-tag <tag> --decision-ref preview-rehearsal-display-only-week6
+      --week 7 --release-tag <tag> \
+      --approval-decision-ref <existing B2 approval decision> \
+      --decision-ref <exact Week 7 release decision>
     # apply with the printed record_sha256:
     #   ... --apply --expected-record-sha <record_sha256> --expected-code-sha $(git rev-parse HEAD)
     ```
-    The decision reference is the one stored on the existing Preview B2 approval row. In this legacy single-run mode the authorizer re-reads that approval and requires `first_live_week = 5`; if the owner has already run the cutover's `UPDATE … SET first_live_week = 6` in Preview, this step fails closed and needs an owner decision (revert the row or use packet mode), not a workaround.
+    `--approval-decision-ref` matches the decision stored on the existing Preview B2 approval row; `--decision-ref` names this exact Week 7 release authorization. In this legacy single-run mode the authorizer re-reads that approval and requires `first_live_week = 5`; if the owner has already run the cutover's `UPDATE … SET first_live_week = 6` in Preview, this step fails closed and needs an owner decision (revert the row or use packet mode), not a workaround.
 
 ## Preview sequence
 
@@ -135,16 +137,16 @@ In the table, `with_preview_env.sh` is shorthand for `PYTHONPATH=src:. zsh scrip
 | P7 | `with_preview_env.sh uv run python scripts/pipeline/publish_matchup_data.py --season 2026 --weeks 7 --rating-manifest-uri <w7live rating manifest> --six-a-run-id 6a-rebuild-w6-20261012-r2 --six-a-root-sha256 <6A root> --environment preview` | default dry run (prints the payload sha) → `--apply --expect-payload-sha <sha>` |
 | P8 | `verify_matchup_data.py` with the same `--season --weeks --rating-manifest-uri --six-a-run-id --six-a-root-sha256 --environment preview` | read-only; must report VERIFIED with 0 differing rows |
 | P9 | Readback: `current_week` (2026, 7, run); Week 7 selection; Weeks 0–6 selections byte-equal to P1; run `published`/`pending`, predicted = expected = lined; ratings, as-of-7 stats and Week 7 matchups served; local site via `CFB_PUBLICATION_MODE=predictions zsh scripts/ops/run_web_local.sh preview` | read-only |
-| P10 | Rollback proof under the Preview owner/migrator login: `rollback_week_release.py` (in progress; described as removing the unfrozen, published, pending Week 7 selection and restoring `current_week` to (2026, 6) with d2 active). Review its dry run first | dry run → apply, then readback equal to P1. The rollback only handles an unfrozen run, so it is proven before any freeze |
+| P10 | Pointer-only rollback proof under the Preview owner/migrator login: `rollback_week_release.py --environment preview --season 2026 --week 7 --run-id <run_id> --reason <reviewed reason>`. Omit `--release-receipt`; stats, snapshots and matchup data are retained | default dry run → **separate owner approval before `--apply`**, then compare restored selections and `current_week` to P1; account for retained data and audit history |
 | P11 | Re-apply: the same P4 and P5 commands (the run row insert is `ON CONFLICT DO NOTHING`; the rerun proves the re-publish of an existing published run), then P8 and P9 again | as P4–P9 |
 
-A Preview freeze is not part of the gate. If the owner wants the freeze guard rehearsed, it runs only after P11, in the pipeline-role form (`freeze_week.py --year 2026 --week 7 --decision-ref <ref>`), as its own go-ahead and before 22:00Z; after it the Preview run can no longer be rolled back by P10.
+A Preview freeze is prohibited for this display-only Week 7 continuation. P10 restores pointers only and P11 must recheck freshness before reapplying.
 
 ## Production sequence (user-run or explicitly instructed applies)
 
 | Step | Command (Production) | Dry run → apply |
 |---|---|---|
-| R1 | Separate exact owner release decision naming the ratings input option, run ID, artifact sha, Preview evidence and the freeze decision reference | — |
+| R1 | Separate exact owner release decision naming the ratings input option, run ID, artifact sha, Preview evidence and the display-only release decision reference | — |
 | R2 | `uv run python scripts/pipeline/stage_v5_artifacts.py --run 7=<run_id> --receipt <receipt path> --predictions-only` (defaults `--source preview --target production`) | dry run → review receipt → `--apply --expected-receipt-sha256 <sha> --expected-code-sha <sha>` from a clean tree, then byte readback |
 | R3 | If the Production catalog lacks the post-Week-6 Silver versions used by team stats: `promote_silver_versions.py --season 2026 --from preview --to production --datasets … --version …` | `--dry-run` → apply (user-run) |
 | R4 | Owner SQL on the Production branch: one `v5_intended_update_release_authorizations` row for production/2026/7/run, with the fields of `authorization_record()` in `authorize_v5_intended_update_preview.py` but `environment = 'production'` and the Production-staged artifact URI and sha (ID pattern `production-<run_id>-<artifact sha first 12>`). The B2 bundle approval already exists in Production with `first_live_week = 6`, so no approval insert | user-run, then a read-only check as `cks_prod_pipeline` that exactly one row exists |
@@ -156,10 +158,10 @@ A Preview freeze is not part of the gate. If the owner wants the freeze guard re
 | R10 | `select_public_run.py --year 2026 --week 7 --run-id <run_id> --reason "<decision reason>" --environment production` | guard re-check; no-op after R9 |
 | R11 | `publish_matchup_data.py --season 2026 --weeks 7 --rating-manifest-uri <w7live> --six-a-run-id 6a-rebuild-w6-20261012-r2 --six-a-root-sha256 <6A root> --environment production`, then `verify_matchup_data.py` with the same flags | dry run → `--apply --expect-payload-sha <the Preview P7 sha>` → verify. The bridge verifier from P6 lives in the shared bucket and is reused |
 | R12 | Readback as in P9 against Production, plus the live site | read-only |
-| R13 | `with_production_pipeline_env.sh uv run python scripts/pipeline/freeze_week.py --year 2026 --week 7 --decision-ref <approved ref>` at about 20:00Z, no later than 21:30Z | No dry run. Requires predicted = expected and, without a recorded `--waiver`, lined = expected. Read back `state = 'frozen'`, `evidence_class = 'live'`, `frozen_at` and the freeze receipt |
+| R13 | **Deferred; never execute for Week 7 display-only** | The run stays `published`/`pending`, `display_only=true`, with no freeze receipt |
 | R14 | Update `docs/status.md` from actual results | — |
 
-Every `R*` command runs as `PYTHONPATH=src:. zsh scripts/ops/with_production_pipeline_env.sh uv run python scripts/pipeline/<script>.py …` except R2 and R3 (storage and catalog tools run with plain `uv run`) and the owner SQL in R4. A Production rollback before R13 uses the same `rollback_week_release.py` under the Production owner login after its own go-ahead; after R13 the frozen run stays.
+Every `R*` command runs as `PYTHONPATH=src:. zsh scripts/ops/with_production_pipeline_env.sh uv run python scripts/pipeline/<script>.py …` except R2 and R3 (storage and catalog tools run with plain `uv run`) and the owner SQL in R4. A Production pointer rollback uses `rollback_week_release.py` under the Production owner login after its own exact approval. R13 is prohibited for this release.
 
 ## What the fallback does not do
 
@@ -169,7 +171,7 @@ Every `R*` command runs as `PYTHONPATH=src:. zsh scripts/ops/with_production_pip
 
 ## Release decision
 
-If the pivot gate trips, the owner issues a separate exact release decision naming: the ratings input option, the Week 7 run ID, the artifact and receipt hashes and the freeze decision reference. Nothing here is pre-authorized.
+If the pivot gate trips, the owner issues a separate exact release decision naming: the ratings input option, the Week 7 run ID, the artifact and receipt hashes and the display-only release decision reference. Nothing here is pre-authorized.
 
 ## Follow-up after the fallback
 
@@ -177,6 +179,6 @@ The corrected Weeks 0–6 replay cutover remains an open obligation. It runs as 
 
 ## Not verified when this was written
 
-- `rollback_week_release.py` does not exist on `dev` yet; P10 and the Production rollback depend on its final CLI and scope (for example, whether it also touches the Week 7 matchup rows).
+- `rollback_week_release.py` is available on `dev`. Pointer-only scope omits a release receipt and retains stats, snapshots and matchup rows; every rollback apply remains separately owner-approved.
 - Re-publishing an existing published run (P11) has not been exercised; if `publish_to_db.py` refuses, stop and decide rather than deleting rows.
 - The successor lock and live lock CLIs were checked by flags only; the Week 6 inputs (6B frames, Task 4 receipt) do not exist yet.
