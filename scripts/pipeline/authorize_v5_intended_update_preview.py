@@ -63,18 +63,19 @@ APPROVAL_COLUMNS = (
 )
 
 
-def register_authorization(
+def check_approval(
     cur,
     record: dict,
     *,
     approval_id: str,
     approval_bundle_sha256: str,
     approval_decision_ref: str,
-) -> bool:
-    """Match the reviewed B2 approval, then write the authorization once.
+    lock: bool,
+) -> None:
+    """Match the stored B2 approval to the reviewed identity and the record's week.
 
-    Expected approval identity comes from the caller, never from the stored
-    row. Returns whether a row was written; an identical retry writes nothing.
+    Expected approval identity comes from the caller, never from the stored row.
+    ``lock`` takes FOR SHARE for a writing transaction; a read-only dry run cannot.
     """
     if record["environment"] != "preview":
         raise ValueError("Preview authorizer only writes Preview authorizations")
@@ -82,8 +83,8 @@ def register_authorization(
         raise ValueError("run bundle differs from the reviewed approval bundle")
     cur.execute(
         f"SELECT {', '.join(APPROVAL_COLUMNS)} FROM v5_model_bundle_approvals "
-        "WHERE approval_id = %s OR (model_id = %s AND inference_bundle_sha256 = %s) "
-        "FOR SHARE",
+        "WHERE approval_id = %s OR (model_id = %s AND inference_bundle_sha256 = %s)"
+        + (" FOR SHARE" if lock else ""),
         (approval_id, record["model_id"], approval_bundle_sha256),
     )
     rows = cur.fetchall()
@@ -110,6 +111,27 @@ def register_authorization(
             f"after requested week {record['week']}"
         )
 
+
+def register_authorization(
+    cur,
+    record: dict,
+    *,
+    approval_id: str,
+    approval_bundle_sha256: str,
+    approval_decision_ref: str,
+) -> bool:
+    """Match the reviewed B2 approval, then write the authorization once.
+
+    Returns whether a row was written; an identical retry writes nothing.
+    """
+    check_approval(
+        cur,
+        record,
+        approval_id=approval_id,
+        approval_bundle_sha256=approval_bundle_sha256,
+        approval_decision_ref=approval_decision_ref,
+        lock=True,
+    )
     values = tuple(record[name] for name in AUTH_COLUMNS)
     select_auth = (
         f"SELECT {', '.join(AUTH_COLUMNS)} FROM v5_intended_update_release_authorizations "
@@ -131,6 +153,38 @@ def register_authorization(
     if cur.fetchone() != values:
         raise ValueError("Preview run authorization conflicts with reviewed record")
     return True
+
+
+def check_or_register(
+    connect,
+    url: str,
+    record: dict,
+    *,
+    apply: bool,
+    approval_id: str,
+    approval_bundle_sha256: str,
+    approval_decision_ref: str,
+) -> bool:
+    """Check the stored approval read-only, or (``apply``) register as the migrator.
+
+    The dry run runs the same approval checks on a read-only connection, so it fails
+    wherever ``--apply`` would refuse the approval. Returns whether a row was written.
+    """
+    approval = {
+        "approval_id": approval_id,
+        "approval_bundle_sha256": approval_bundle_sha256,
+        "approval_decision_ref": approval_decision_ref,
+    }
+    with connect(url) as conn:
+        conn.read_only = not apply
+        with conn.cursor() as cur:
+            if not apply:
+                check_approval(cur, record, **approval, lock=False)
+                return False
+            cur.execute("SELECT current_user, session_user")
+            if cur.fetchone() != ("cks_preview_migrator", "cks_preview_migrator"):
+                raise ValueError("Preview authorization requires exact migrator role")
+            return register_authorization(cur, record, **approval)
 
 
 def main() -> None:
@@ -233,7 +287,6 @@ def main() -> None:
     if record["inference_bundle_sha256"] != args.approval_bundle_sha256:
         raise SystemExit("Preview run bundle differs from the reviewed approval bundle")
     record_sha = hashlib.sha256(canonical_json(record)).hexdigest()
-    written = False
     if args.apply:
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
         dirty = subprocess.check_output(
@@ -247,23 +300,20 @@ def main() -> None:
             raise SystemExit(
                 "Preview authorization differs from committed reviewed record"
             )
-        url = os.getenv("DATABASE_URL")
-        if not url:
-            raise SystemExit("Preview migrator DATABASE_URL is required")
-        with psycopg.connect(url) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT current_user, session_user")
-                if cur.fetchone() != ("cks_preview_migrator", "cks_preview_migrator"):
-                    raise ValueError(
-                        "Preview authorization requires exact migrator role"
-                    )
-                written = register_authorization(
-                    cur,
-                    record,
-                    approval_id=args.approval_id,
-                    approval_bundle_sha256=args.approval_bundle_sha256,
-                    approval_decision_ref=args.approval_decision_ref,
-                )
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        raise SystemExit(
+            "Preview DATABASE_URL is required (the migrator login for --apply)"
+        )
+    written = check_or_register(
+        psycopg.connect,
+        url,
+        record,
+        apply=args.apply,
+        approval_id=args.approval_id,
+        approval_bundle_sha256=args.approval_bundle_sha256,
+        approval_decision_ref=args.approval_decision_ref,
+    )
     print(
         json.dumps(
             {
