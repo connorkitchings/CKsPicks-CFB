@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import re
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from cks_picks_cfb.season.projection_football import (
     football_report,
     run_id_of,
 )
+from cks_picks_cfb.season.verification import VerificationError
 from tests.season_fixtures import build_season
 
 MIGRATION = (
@@ -223,10 +225,19 @@ def drop_city(game_id):
     return edit
 
 
-def test_active_week_game_without_city_blocks(tmp_path):
-    season = build_season(tmp_path, drop_city(5))
+def with_inputs(season, **changes):
+    """The prepared season with edited builder inputs (preparation unchanged)."""
+    return {**season, "inputs": dataclasses.replace(season["inputs"], **changes)}
+
+
+def test_active_week_game_without_city_blocks(season, tmp_path):
+    venues = season["inputs"].venues.copy()
+    venues.loc[venues.id.eq(105), "city"] = None
     with pytest.raises(ValueError, match=r"venue city missing.*\[5\]"):
-        build_football(**season)
+        build_football(**with_inputs(season, venues=venues))
+    # The real preparation runs the builder and refuses the run.
+    with pytest.raises(ValueError, match=r"venue city missing.*\[5\]"):
+        build_season(tmp_path, drop_city(5))
 
 
 def test_later_week_game_without_city_is_reported_not_blocking(tmp_path):
@@ -238,21 +249,27 @@ def test_later_week_game_without_city_is_reported_not_blocking(tmp_path):
     assert report["required_games"] == 6
 
 
-def test_absent_venue_inputs_yield_no_venue_rows(tmp_path):
+def test_absent_venue_inputs_yield_no_venue_rows(season, tmp_path):
+    edited = with_inputs(season, venue_games=None, venues=None)
+    payload = build_football(**edited)
+    assert payload["game_venues"] == []
+    assert payload["v5_rating_snapshots"]
+    assert football_report(**edited)["game_venues"]["state"] == "missing_inputs"
+
     def edit(tables):
         del tables["venue_games"], tables["venues"]
 
-    season = build_season(tmp_path, edit)
-    payload = build_football(**season)
-    assert payload["game_venues"] == []
-    assert payload["v5_rating_snapshots"]
-    assert football_report(**season)["game_venues"]["state"] == "missing_inputs"
+    # A release must cover every game through the active week with a venue.
+    with pytest.raises(VerificationError, match="venues_cover"):
+        build_season(tmp_path, edit)
 
 
-def test_missing_teams_input_is_a_clear_error(tmp_path):
+def test_missing_teams_input_is_a_clear_error(season, tmp_path):
+    with pytest.raises(FootballProjectionError, match="pinned 'teams' input"):
+        build_football(**with_inputs(season, teams=None))
+
     def edit(tables):
         del tables["teams"]
 
-    season = build_season(tmp_path, edit)  # preparation itself does not need it
     with pytest.raises(FootballProjectionError, match="pinned 'teams' input"):
-        build_football(**season)
+        build_season(tmp_path, edit)

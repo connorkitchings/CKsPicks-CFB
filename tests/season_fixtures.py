@@ -294,9 +294,44 @@ def raw_tables() -> dict[str, pd.DataFrame]:
             for r in ("offense", "defense")
         ]
     )
+    # Retained lake quotes (paired spread/total rows, home-signed spreads): two
+    # books before game 1, a spread-only book before game 3 and a live-week quote
+    # for game 5 captured before the run as-of. Game 2 only has a retrospective
+    # CFBD line; games 4, 6, 7 and 8 have no market at all.
+    quote_columns = (
+        "game_id", "quote_id", "provider", "captured_at", "spread", "total",
+        "home_spread_price", "away_spread_price", "over_price", "under_price",
+    )  # fmt: skip
+    market_quotes = pd.DataFrame(
+        [
+            (1, "g1-book1", "book1", "2026-09-05T09:00:00Z", -3.5, 45.5)
+            + (-105.0, -115.0, -110.0, -110.0),
+            (1, "g1-book2", "book2", "2026-09-05T09:30:00Z", -3.0, 46.0)
+            + (-110.0, -110.0, -108.0, -112.0),
+            (3, "g3-book1", "book1", "2026-09-12T09:00:00Z", 2.5, None)
+            + (-120.0, 100.0, None, None),
+            (5, "g5-book1", "book1", "2026-09-13T11:00:00Z", -1.0, 50.0)
+            + (-110.0, -110.0, -110.0, -110.0),
+        ],
+        columns=quote_columns,
+    )
+    historical_lines = pd.DataFrame(
+        [
+            {
+                "game_id": 2,
+                "quote_id": "g2-cfbd",
+                "provider": "CFBD",
+                "captured_at": "2026-09-13T11:30:00Z",
+                "spread": -6.5,
+                "total": 41.0,
+            }
+        ]
+    )
     return {
         "schedule": schedule,
         "finals": finals,
+        "market_quotes": market_quotes,
+        "historical_lines": historical_lines,
         "byplay": plays,
         "drives": drives,
         "reconciliation": pd.DataFrame({"game_id": finals.game_id, "blocking": False}),
