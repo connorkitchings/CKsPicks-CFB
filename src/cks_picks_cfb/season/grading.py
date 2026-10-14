@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict
 
 import numpy as np
@@ -64,6 +65,7 @@ def select_market(
         or slate.provider.isna().any()
     ):
         raise ValueError("market rows require quote identity and provider")
+    rule, provider_count = None, None
     if not {"snapshot_id", "canonical_line"} <= set(slate):
         # The checked lake quote set itself defines this snapshot; preserve real capture times.
         from cks_picks_cfb.season.manifest import sha
@@ -90,6 +92,12 @@ def select_market(
         slate["canonical_line"] = (
             snapshot.spread if target == "spread" else snapshot.total
         )
+        rule = snapshot.spread_rule if target == "spread" else snapshot.total_rule
+        provider_count = (
+            snapshot.spread_provider_count
+            if target == "spread"
+            else snapshot.total_provider_count
+        )
         slate["snapshot_id"] = sha(
             slate.sort_values("quote_id")
             .to_json(date_format="iso", orient="records")
@@ -104,6 +112,18 @@ def select_market(
     if len(canonical_lines) != 1 or not np.isfinite(canonical_lines[0]):
         raise ValueError("snapshot has conflicting/missing consensus line")
     canonical_line = float(canonical_lines[0])
+    # Snapshot lineage: every quote linked to the chosen snapshot for this target.
+    lineage = {
+        "canonical_line": canonical_line,
+        "snapshot_rule": rule,
+        "provider_count": (
+            provider_count
+            if provider_count is not None
+            else int(linked.provider.nunique())
+        ),
+        "source_quote_ids": json.dumps(sorted(linked.quote_id.astype(str))),
+        "snapshot_captured_at": linked.captured_at.max().isoformat(),
+    }
     if historical:
         side = pick_direction(prediction, canonical_line, target=target)
         candidates = []
@@ -116,7 +136,12 @@ def select_market(
         best = min(
             candidates, key=lambda row: _sort_key(row, target=target, direction=side)
         )
-        return {**best, "side": side, "benchmark_type": "cfbd_retrospective"}
+        return {
+            **best,
+            **lineage,
+            "side": side,
+            "benchmark_type": "cfbd_retrospective",
+        }
     selected = select_best_quote(
         target=target,
         prediction=prediction,
@@ -131,7 +156,7 @@ def select_market(
         return None
     chosen = asdict(selected)
     chosen["provider"] = linked.set_index("quote_id").loc[selected.quote_id, "provider"]
-    return {**chosen, "benchmark_type": "retained_prekickoff"}
+    return {**chosen, **lineage, "benchmark_type": "retained_prekickoff"}
 
 
 def grade_predictions(
@@ -205,6 +230,11 @@ def grade_predictions(
             "captured_at": None,
             "result": None,
             "units": None,
+            "canonical_line": None,
+            "snapshot_rule": None,
+            "provider_count": None,
+            "source_quote_ids": None,
+            "snapshot_captured_at": None,
         }
         if selected:
             for name in (
@@ -215,6 +245,11 @@ def grade_predictions(
                 "quote_id",
                 "snapshot_id",
                 "provider",
+                "canonical_line",
+                "snapshot_rule",
+                "provider_count",
+                "source_quote_ids",
+                "snapshot_captured_at",
             ):
                 row[name] = selected[name]
             row["captured_at"] = utc(selected["captured_at"]).isoformat()
@@ -234,7 +269,7 @@ def grade_predictions(
                 )
                 row.update(
                     units=units,
-                    result="Win" if units > 0 else "Loss" if units < 0 else "Push",
+                    result="win" if units > 0 else "loss" if units < 0 else "push",
                 )
         rows.append(row)
     return pd.DataFrame(rows)
