@@ -10,8 +10,46 @@ import pandas as pd
 import pytest
 
 from cks_picks_cfb.forecast.live import DEVELOPMENT_SEASONS
+from cks_picks_cfb.season import projection_football, projection_serving
+from cks_picks_cfb.season import verification as v
+from cks_picks_cfb.season.inputs import load_inputs
 from cks_picks_cfb.season.manifest import canonical, sha
 from cks_picks_cfb.season.runner import prepare, status
+from tests.test_season_verification import synthetic_payload
+
+
+def _fake_builder(keys, calls=None):
+    """Stand-in for the real builders: a consistent payload for this run."""
+
+    def build(*, frames, inputs, revision, identity, ratings_id, measurement_id):
+        if calls is not None:
+            calls.append(identity)
+        payload = synthetic_payload(
+            identity["release_id"],
+            ratings_id,
+            measurement_id,
+            as_of=identity["as_of"],
+            next_week_mode=identity["next_week_mode"],
+        )
+        return {key: payload[key] for key in keys}
+
+    return build
+
+
+@pytest.fixture(autouse=True)
+def builder_calls(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        projection_serving,
+        "build_serving_core",
+        _fake_builder(projection_serving.SERVING_KEYS, calls),
+    )
+    monkeypatch.setattr(
+        projection_football,
+        "build_football",
+        _fake_builder(projection_football.FOOTBALL_KEYS),
+    )
+    return calls
 
 
 class MemoryReader:
@@ -492,3 +530,225 @@ def test_correction_report_counts_later_changed_forecasts(fixture, tmp_path):
     assert report["source_revision_changed"] is True
     assert report["output_changes"]["predictions"]["changed"] > 0
     assert report["output_changes"]["predictions"]["added"] == 0
+
+
+def _bytes(manifest):
+    return {
+        "manifest": Path(manifest["output_refs"]["model_manifest"]["uri"])
+        .parent.joinpath("run-manifest.json")
+        .read_bytes(),
+        "verification": Path(manifest["verification_uri"]).read_bytes(),
+        "payload": Path(
+            manifest["output_refs"]["serving_projections"]["uri"]
+        ).read_bytes(),
+    }
+
+
+def test_payload_is_written_and_bound_before_verification(
+    fixture, tmp_path, builder_calls
+):
+    manifest = run(fixture, tmp_path)
+    ref = manifest["output_refs"]["serving_projections"]
+    raw = Path(ref["uri"]).read_bytes()
+    payload = json.loads(raw)
+    assert sha(raw) == ref["sha256"] and raw == canonical(payload)
+    assert ref["logical_uri"] == (
+        f"season-run:{manifest['release_id']}/serving-projections.json"
+    )
+    assert ref["rows"] == sum(map(len, payload.values()))
+    assert builder_calls[0]["release_id"] == manifest["release_id"]
+    report = json.loads(Path(manifest["verification_uri"]).read_bytes())
+    assert report["schema_version"] == "season_verification_v2"
+    assert report["output_refs"] == manifest["output_refs"]
+    assert manifest["identities"] == v.lineage_identities(
+        manifest["identity"], manifest["output_refs"]
+    )
+    assert set(report["checks"]["checksums_at_read"]["observed"]["outputs"]) == set(
+        manifest["output_refs"]
+    )
+    v.validate_report(report, projections=payload, manifest=manifest)
+
+
+def test_failed_projection_check_fails_closed_and_keeps_last_passed(
+    fixture, tmp_path, monkeypatch
+):
+    first = run(fixture, tmp_path)
+    passed = json.loads((tmp_path / "last-passed.json").read_bytes())
+
+    def corrupt(**kwargs):
+        tables = _fake_builder(projection_serving.SERVING_KEYS)(**kwargs)
+        tables["system_stats"][0]["total_losses"] = 7
+        return tables
+
+    monkeypatch.setattr(projection_serving, "build_serving_core", corrupt)
+    fixture[2]["revision_id"] = "r2"
+    with pytest.raises(v.VerificationError, match="system_stats_match"):
+        run(fixture, tmp_path)
+    record = status(tmp_path)
+    assert record["state"] == "failed"
+    assert record["failed_checks"] == ["system_stats_match"]
+    assert record["last_passed"] == passed
+    assert passed["manifest_uri"].startswith(str(tmp_path / first["release_id"]))
+    failed_dir = tmp_path / record["release_id"]
+    assert not (failed_dir / "run-manifest.json").exists()
+    assert not (failed_dir / "verification.json").exists()
+    assert (failed_dir / "verification-failed.json").exists()
+
+
+def test_failed_prepare_check_fails_closed(fixture, tmp_path, monkeypatch):
+    monkeypatch.setattr("cks_picks_cfb.season.runner._reread", lambda refs: [])
+    with pytest.raises(v.VerificationError, match="checksums_at_read"):
+        run(fixture, tmp_path)
+    assert status(tmp_path)["failed_checks"] == ["checksums_at_read"]
+    assert not (tmp_path / "last-passed.json").exists()
+
+
+def test_failed_input_read_keeps_last_passed_for_correction_report(fixture, tmp_path):
+    first = run(fixture, tmp_path)
+    reader, _, revision = fixture
+    good = reader.objects["observations"]
+    reader.objects["observations"] = good + b"changed"
+    with pytest.raises(ValueError, match="checksum"):
+        run(fixture, tmp_path)
+    record = status(tmp_path)
+    assert record["state"] == "failed"
+    assert record["last_passed"]["manifest_uri"].endswith(
+        f"{first['release_id']}/run-manifest.json"
+    )
+    reader.objects["observations"] = good
+    revision["revision_id"] = "r2"
+    second = run(fixture, tmp_path)
+    report = json.loads(
+        Path(second["output_refs"]["correction_report"]["uri"]).read_bytes()
+    )
+    assert report["previous_revision_sha256"] == first["revision_manifest_sha256"]
+    assert status(tmp_path)["release_id"] == second["release_id"]
+
+
+def test_preview_and_production_prepare_identical_bytes(fixture, tmp_path):
+    import shutil
+
+    reader, model, revision = fixture
+    output = tmp_path / "prepared"
+    outputs = {}
+    for environment in ("preview", "production"):
+        if output.exists():
+            shutil.rmtree(output)
+        manifest = prepare(
+            model_raw=canonical(model),
+            revision_raw=canonical(revision),
+            reader=reader,
+            through_week=1,
+            next_week=2,
+            as_of="2026-09-13T12:00:00Z",
+            output=output,
+            code_sha="a" * 40,
+            environment=environment,
+        )
+        outputs[environment] = _bytes(manifest)
+    assert outputs["preview"] == outputs["production"]
+    for raw in outputs["preview"].values():
+        content = raw.replace(str(output.resolve()).encode(), b"")
+        assert b"preview" not in content and b"production" not in content
+    with pytest.raises(ValueError, match="environment"):
+        prepare(
+            model_raw=canonical(model),
+            revision_raw=canonical(revision),
+            reader=reader,
+            through_week=1,
+            next_week=2,
+            as_of="2026-09-13T12:00:00Z",
+            output=output,
+            code_sha="a" * 40,
+            environment="staging",
+        )
+
+
+@pytest.fixture
+def prepared(fixture, tmp_path):
+    reader, model, revision = fixture
+    manifest = run(fixture, tmp_path)
+    frames = {
+        name: pd.read_parquet(ref["uri"])
+        for name, ref in manifest["output_refs"].items()
+        if ref["uri"].endswith(".parquet")
+    }
+    return {
+        "frames": frames,
+        "inputs": load_inputs(reader, model, revision, 1),
+        "model": model,
+        "identity": manifest["identity"],
+        "output_refs": manifest["output_refs"],
+        "verified_outputs": sorted(manifest["output_refs"]),
+    }
+
+
+def _failed_prepare(arguments):
+    checks = v.derive_prepare_checks(arguments.pop("frames"), **arguments)
+    assert set(checks) == v.REQUIRED_PREPARE_CHECKS
+    return {name for name, entry in checks.items() if not entry["passed"]}
+
+
+def _shift_evidence(arguments):
+    frame = arguments["frames"]["rating_roles"].copy()
+    row = frame.index[frame.target_week.eq(1)][0]
+    explanation = json.loads(frame.at[row, "explanation"])
+    explanation["evidence_contributions"][0]["source_week"] = 1
+    frame.at[row, "explanation"] = json.dumps(explanation)
+    arguments["frames"]["rating_roles"] = frame
+
+
+def _assign(name, **columns):
+    def mutate(arguments):
+        frame = arguments["frames"][name]
+        arguments["frames"][name] = frame.assign(
+            **{k: f(frame) if callable(f) else f for k, f in columns.items()}
+        )
+
+    return mutate
+
+
+def _tail(name):
+    def mutate(arguments):
+        arguments["frames"][name] = arguments["frames"][name].iloc[1:]
+
+    return mutate
+
+
+def _unverify(arguments):
+    arguments["verified_outputs"] = arguments["verified_outputs"][1:]
+
+
+PREPARE_NEGATIVES = {
+    "required_prior_week_data": _tail("measurements"),
+    "score_reconciliation": _assign("scoring_events", score_increment=2.0),
+    "earlier_week_only": _shift_evidence,
+    "fixed_model_no_refit": _assign("predictions", model_ref="model:refit#margin"),
+    "no_market_in_features": _assign("features", spread_line=-3.0),
+    "ratings_equal_features": _assign(
+        "features", home_offense=lambda f: f.home_offense + 1e-6
+    ),
+    "paired_predictions": _tail("predictions"),
+    "checksums_at_read": _unverify,
+}
+
+
+def test_prepare_checks_pass_on_real_frames(prepared):
+    assert _failed_prepare(prepared) == set()
+
+
+@pytest.mark.parametrize("name", sorted(PREPARE_NEGATIVES))
+def test_each_prepare_check_detects_its_violation(prepared, name):
+    PREPARE_NEGATIVES[name](prepared)
+    assert _failed_prepare(prepared) == {name}
+
+
+def test_pinned_bridge_change_fails_fixed_model_check(prepared):
+    prepared["model"] = {
+        **prepared["model"],
+        "inputs": {
+            **prepared["model"]["inputs"],
+            "bridge": {"uri": "bridge", "sha256": "0" * 64},
+        },
+    }
+    assert _failed_prepare(prepared) == {"fixed_model_no_refit"}
