@@ -24,17 +24,27 @@ def build_projections(
     """Return the full payload: ``prediction_runs`` then :data:`PROJECTION_ORDER`.
 
     ``manifest_context`` holds the run ``identity`` and the prepared
-    ``output_refs`` (at least the rating and measurement outputs). The builders
-    receive ``identity`` plus ``release_id`` (the run id they derive weekly run,
-    snapshot and ``season-run:`` ids from).
+    ``output_refs`` (the written frames, at least the rating, measurement and
+    ``predictions`` outputs). ``inputs`` is the ``inputs.SeasonInputs`` whose
+    ``schedule`` is the FULL season (``frames["schedule"]`` stops at the active
+    week). The builders receive ``identity`` plus ``run_id`` / ``release_id`` (the
+    run id they derive weekly run, snapshot and ``season-run:`` ids from) and
+    ``predictions_sha256`` (the written predictions artifact).
     """
     identity = manifest_context["identity"]
-    lineage = lineage_identities(identity, manifest_context["output_refs"])
+    refs = manifest_context["output_refs"]
+    lineage = lineage_identities(identity, refs)
+    run_id = run_id_for(identity)
     arguments = {
         "frames": frames,
         "inputs": inputs,
         "revision": revision,
-        "identity": {**identity, "release_id": run_id_for(identity)},
+        "identity": {
+            **identity,
+            "run_id": run_id,
+            "release_id": run_id,
+            "predictions_sha256": refs["predictions"]["sha256"],
+        },
         "ratings_id": lineage["rating"],
         "measurement_id": lineage["measurement"],
     }
