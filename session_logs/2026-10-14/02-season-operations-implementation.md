@@ -18,7 +18,8 @@
 - [x] Commit reviewed plan and configuration before operational build — explicitly authorized by owner.
 - [x] Build/verify/publish Week 6 frames.
 - [x] Commit generated successor/live pins (`ee87c529`, fast-forwarded to dev; no push) and build/verify/publish corrected ratings to Preview.
-- [ ] Week 7 display-only forecast/serving build: fresh line capture, FBS schedule reconcile, then forecast, serving, verify, package back to back (`--display-only`; apply within `MAX_DISPLAY_AGE_HOURS` of `--as-of`).
+- [x] Week 7 display-only forecast/serving build through package (Preview R2, run `2026w7-v5repair-20261014-w7`).
+- [ ] Preview authorization/selection for the Week 7 candidate (needs exact decision references) and decision on the 4 games lacking a total line.
 - [ ] Build Week 7 Preview candidate and complete exact Production gate.
 - [ ] Implement season runner and canonical model/revision adapters.
 - [ ] Implement atomic schema, readers and publisher.
@@ -86,3 +87,11 @@ Owner authorized the two local commits and fast-forward integration into dev wit
 - `current_post_w6` states exist for all 138 teams (so every team in the 59 games); latest observation cutoff `2026-10-11T15:00:00Z`.
 - Preview database `publish_v5_intended_update_ratings.py --apply`: inserted 1880 rows (966 current + 914 pregame) into `v5_rating_snapshots`, all carrying manifest SHA `201711c7...`; identical retry inserted 0, unchanged 1880. Rows for `ratings-v1`, `corrected-w6live-r1` and the replay runs remain present with single manifest SHAs. Production untouched.
 - Operational note: the worktree has no `.env`; R2 steps used a Preview-only env file built from the primary checkout's `.env` (no Production R2/database variables), database steps used `scripts/ops/with_preview_env.sh`.
+
+## Week 7 display-only candidate evidence (Preview only, 2026-10-14)
+- Log commit `377d26b9` fast-forwarded to `dev`. Primary checkout still shows the pre-existing untracked `scratch/` directory; the worktree is clean.
+- The `capture_data_first_phase2.py --kind pregame` command in the fallback run sheet captures schedule/returning-production/recruiting/coaching, not lines, so it was not applied. Lines come from `ingest_week.py --entities betting_lines` (run ID `<id>:betting_lines`) plus `fetch_odds_api_market_quotes.py --confirm` (run ID `<id>:market_quotes`), then `build_week_market_snapshot.py`. The first CFBD attempt with `--require-full-line-coverage` refused to write (3 FBS-vs-FCS games without lines: Charleston Southern @ Clemson, The Citadel @ Texas A&M, Elon @ Stanford; none are in the lock). Two attempts used wrong run-ID shapes; one Odds API request (about 2 credits) was spent and discarded. Final capture: pipeline ID `w7-lines-20261014-r3`, CFBD 118 records, Odds API 474 quotes (53 events; 41 board events skipped as unmatched to the Silver schedule).
+- Schedule reconcile: API 62 games vs lock 59 (the 3 extras above); 2 already kicked off (401871067, 401871053) omitted; Silver/lock kickoff for 401858492 (Nebraska @ Oregon, lock 10-17T04:00Z vs live 10-18T03:00Z) and 401858494 (Wisconsin @ UCLA, lock 10-17T04:00Z vs live 10-17T23:30Z) are stale.
+- Market snapshot ref `artifacts/research/data-first-football-v1/market/w7-20261014-r3/market_snapshots_ref.json`.
+- Forecast (`--display-only --weeks 7`, `--live-as-of 2026-10-14T14:42:04Z`): 57 games, state candidate, pending, live. Serving manifest sha `5ca2e5cb27929d055aae2434908de42c4e5c9612935f085631b779c5b1d178ba` (57 games, 4 unlined: 401858492, 401858494, 401864523, 401866442 have a spread but no total in the snapshot, though CFBD lists totals). Verifier receipt `46d4d57e49864fcfebda5bec2b6e87be1d747c43cedc950d183ec035609d22bf`. Packet `012b9dde911bcaf7ae1d3cc4f0ba50f0e0c36787d4164b08f6234ff4da3785bd` (53 lined games); identical package retry wrote nothing new.
+- No authorization, selection, database apply or Production write was made.
