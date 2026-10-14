@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import unicodedata
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timezone
 from typing import Any
@@ -61,6 +62,22 @@ CFBD_NAME_EXPANSIONS = {
     "usf": "southflorida",
 }
 
+# Spellings that differ between CFBD and The Odds API beyond accents and
+# punctuation. Applied to both sides after normalization; keys and values are
+# normalized form. Values are the provider's leading token so mascot-suffixed
+# provider names (``UMass Minutemen``) still prefix-match.
+TEAM_NAME_ALIASES = {
+    "massachusetts": "umass",
+}
+
+
+def _normalize_team_name(value: object) -> str:
+    """Accent-strip, casefold, drop non-alphanumerics, then apply aliases."""
+    decomposed = unicodedata.normalize("NFKD", str(value))
+    unaccented = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    base = re.sub(r"[^a-z0-9]", "", unaccented.casefold())
+    return TEAM_NAME_ALIASES.get(base, base)
+
 
 def match_odds_events_to_schedule(
     events: Sequence[Mapping[str, Any]],
@@ -71,7 +88,8 @@ def match_odds_events_to_schedule(
 ) -> dict[str, int]:
     """Return only unambiguous provider-event to canonical-game matches.
 
-    Team names are compared after alphanumeric normalization (plus the
+    Team names are compared after accent-stripping, alphanumeric
+    normalization and ``TEAM_NAME_ALIASES`` (plus the
     ``CFBD_NAME_EXPANSIONS`` table on the schedule side). ``allow_prefix``
     additionally accepts a schedule name that is a prefix of the provider
     name (CFBD short names vs The Odds API mascot names, e.g. ``Texas Tech``
@@ -84,7 +102,7 @@ def match_odds_events_to_schedule(
         raise ValueError(f"Schedule is missing event-matching columns: {missing}")
 
     def normalized(value: object) -> str:
-        base = re.sub(r"[^a-z0-9]", "", str(value).casefold())
+        base = _normalize_team_name(value)
         return CFBD_NAME_EXPANSIONS.get(base, base)
 
     schedule_rows = schedule.copy()
@@ -104,8 +122,8 @@ def match_odds_events_to_schedule(
         )
         if not event_id or pd.isna(kickoff):
             continue
-        home = re.sub(r"[^a-z0-9]", "", str(event.get("home_team")).casefold())
-        away = re.sub(r"[^a-z0-9]", "", str(event.get("away_team")).casefold())
+        home = _normalize_team_name(event.get("home_team"))
+        away = _normalize_team_name(event.get("away_team"))
         same_slot = (schedule_rows["start_date"] - kickoff).abs() <= tolerance
         exact = schedule_rows[
             (schedule_rows["__home"] == home)

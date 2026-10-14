@@ -202,6 +202,79 @@ def test_abbreviation_expansions_apply_to_schedule_names():
     assert matches == {"e-1": 9}
 
 
+def _one_game_schedule(home_team, away_team="Utah State"):
+    return pd.DataFrame(
+        [
+            {
+                "game_id": 11,
+                "home_team": home_team,
+                "away_team": away_team,
+                "start_date": "2026-10-17T02:30:00Z",
+            }
+        ]
+    )
+
+
+def _event(home_team, away_team="Utah State Aggies"):
+    return {
+        "id": "e-1",
+        "home_team": home_team,
+        "away_team": away_team,
+        "commence_time": "2026-10-17T02:30:00Z",
+    }
+
+
+@pytest.mark.parametrize(
+    ("schedule_name", "event_name"),
+    [
+        ("San José State", "San Jose State Spartans"),
+        ("San Jose State", "San José State Spartans"),
+        ("Massachusetts", "UMass Minutemen"),
+    ],
+)
+def test_accent_and_alias_name_variants_match_same_game(schedule_name, event_name):
+    schedule = _one_game_schedule(schedule_name)
+
+    matches = match_odds_events_to_schedule(
+        [_event(event_name)], schedule, allow_prefix=True
+    )
+
+    assert matches == {"e-1": 11}
+
+
+def test_umass_and_massachusetts_match_in_exact_mode():
+    schedule = _one_game_schedule("Massachusetts", away_team="UMass")
+
+    matches = match_odds_events_to_schedule(
+        [_event("UMass", away_team="Massachusetts")], schedule
+    )
+
+    assert matches == {"e-1": 11}
+
+
+def test_near_miss_team_name_stays_unmatched():
+    schedule = _one_game_schedule("San José State")
+
+    matches = match_odds_events_to_schedule(
+        [_event("San Jose Spartans")], schedule, allow_prefix=True
+    )
+
+    assert matches == {}
+
+
+def test_accent_normalized_names_still_raise_on_ambiguity():
+    schedule = pd.concat(
+        [_one_game_schedule("San José State"), _one_game_schedule("San Jose State")],
+        ignore_index=True,
+    )
+    schedule.loc[1, "game_id"] = 12
+
+    with pytest.raises(ValueError, match="Ambiguous"):
+        match_odds_events_to_schedule(
+            [_event("San Jose State Spartans")], schedule, allow_prefix=True
+        )
+
+
 LIVE_PAYLOAD = [
     {
         "id": "event-1",

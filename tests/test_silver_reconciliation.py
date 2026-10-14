@@ -384,6 +384,46 @@ def test_market_quotes_decode_captured_sdk_mapping_string():
     assert result.iloc[0]["total"] == 47.5
 
 
+def _cfbd_quote(game_id, over_under):
+    return {
+        "game_id": game_id,
+        "line_data": {"provider": "Consensus", "spread": -3.5, "overUnder": over_under},
+        "__capture_id": f"cfbd-{game_id}",
+        "__captured_at": "2026-10-10T14:00:00+00:00",
+        "__capture_provider": "cfbd",
+    }
+
+
+def _odds_quote(game_id, total):
+    return {
+        "quote_id": f"odds-{game_id}",
+        "game_id": game_id,
+        "provider": "draftkings",
+        "captured_at": "2026-10-10T14:05:00+00:00",
+        "spread": -4.0,
+        "total": total,
+    }
+
+
+def test_mixed_cfbd_and_odds_quotes_cfbd_rows_keep_their_totals():
+    records = [_cfbd_quote(1, 51.5), _odds_quote(2, 44.5), _odds_quote(3, 60.0)]
+    # A row carrying both keeps its own total even if over_under disagrees.
+    records[2]["over_under"] = 99.0
+
+    result = normalize_market_quotes(records).set_index("quote_id")
+
+    assert result.loc["odds-2", "total"] == 44.5
+    assert result.loc["odds-3", "total"] == 60.0
+    cfbd_row = result[result["game_id"] == 1].iloc[0]
+    assert cfbd_row["total"] == 51.5
+
+
+def test_cfbd_only_quotes_without_total_column_get_total_from_over_under():
+    result = normalize_market_quotes([_cfbd_quote(1, 51.5)])
+
+    assert result.iloc[0]["total"] == 51.5
+
+
 def test_team_game_stats_flatten_to_exact_team_game_rows():
     result = normalize_team_game_stats(
         [
