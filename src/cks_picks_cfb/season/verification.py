@@ -47,7 +47,8 @@ Payload conventions these checks assume (builders must satisfy them)
 * A selection's benchmark is the suffix of its grade's ``grading_version``
   (``retained_prekickoff`` / ``cfbd_retrospective``). Retained (and ungraded
   live-week) selections use a quote captured strictly before kickoff.
-* ``system_stats.as_of_week`` equals ``through_week`` (the last scored week).
+* ``system_stats.as_of_week`` is the latest week with a graded game, ``0`` when
+  nothing is graded (legacy ``score_to_db``: ``COALESCE(MAX(g.week), 0)``).
 * Stats/measurement tables use ``games`` (provider) team names; rating tables use
   canonical names and ``team_rating_components.rating_team`` matches
   ``v5_rating_snapshots.team``.
@@ -485,9 +486,10 @@ def _predictions_in_games(p: _Payload) -> tuple[list[str], dict]:
     for row in p.rows("predictions"):
         per_run[row["run_id"]] += 1
         games_seen[row["game_id"]] += 1
+        # Legacy publish_to_db: a lined game carries BOTH a spread and a total line.
         if (
             row.get("home_team_spread_line") is not None
-            or row.get("total_line") is not None
+            and row.get("total_line") is not None
         ):
             lined[row["run_id"]] += 1
         if row["game_id"] not in p.games:
@@ -753,7 +755,12 @@ def _system_stats_match(p: _Payload) -> tuple[list[str], dict]:
         return [f"{len(rows)} system_stats rows"], {}
     stats = rows[0]
     columns = {"win": "wins", "loss": "losses", "push": "pushes"}
-    expected: dict[str, Any] = {"season": p.season, "as_of_week": p.through}
+    # Legacy score_to_db: as_of_week = COALESCE(MAX(week of a graded game), 0).
+    graded_weeks = [p.games[game_id]["week"] for (_, game_id, _) in p.grades]
+    expected: dict[str, Any] = {
+        "season": p.season,
+        "as_of_week": max(graded_weeks, default=0),
+    }
     expected |= {f"{t}_{c}": 0 for t in ("spread", "total") for c in columns.values()}
     profits = {"spread": Decimal(0), "total": Decimal(0)}
     for (_, _, target), grade in p.grades.items():

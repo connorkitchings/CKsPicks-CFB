@@ -295,10 +295,8 @@ def synthetic_payload(
             "predicted_games": sum(predicted[g]["run_id"] == run[w] for g in predicted),
             "lined_games": sum(
                 p["run_id"] == run[w]
-                and (
-                    p["home_team_spread_line"] is not None
-                    or p["total_line"] is not None
-                )
+                and p["home_team_spread_line"] is not None
+                and p["total_line"] is not None
                 for p in predictions
             ),
             "data_as_of": as_of,
@@ -945,6 +943,31 @@ def test_retrospective_line_in_live_week_fails(payload):
         "prediction_grades", [*payload["prediction_grades"], grade]
     )
     assert "market_links" in failing(payload)
+
+
+def test_stats_as_of_week_is_latest_graded_week_like_legacy(payload):
+    """Legacy score_to_db: as_of_week = COALESCE(MAX(graded game week), 0); a
+    release whose completed weeks carry no graded line reports week 0."""
+    payload["prediction_grades"] = []
+    for row in payload["game_results"]:
+        row.update(spread_result=None, total_result=None)
+    stats = payload["system_stats"][0]
+    zeroed = {k: 0 for k in stats if k.endswith(("_wins", "_losses", "_pushes"))}
+    stats.update(zeroed, spread_profit_units=0.0, total_profit_units=0.0)
+    stats["as_of_week"] = 1  # through_week, but nothing graded
+    assert "system_stats_match" in failing(payload)
+    stats["as_of_week"] = 0
+    assert "system_stats_match" not in failing(payload)
+
+
+def test_lined_games_counts_only_games_with_both_lines_like_legacy(payload):
+    """Legacy publish_to_db counts a game as lined only when it has both a spread
+    and a total line; game 2 (week 1) has a spread line only."""
+    week1 = _row(payload, "prediction_runs", week=1)
+    assert week1["lined_games"] == 0
+    assert "predictions_in_games" not in failing(payload)
+    week1["lined_games"] = 1  # the former "any line" count
+    assert failing(payload) == {"predictions_in_games"}
 
 
 def test_malformed_payload_fails_closed_instead_of_crashing(payload):
