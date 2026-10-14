@@ -94,20 +94,26 @@ def collect(
     return entries
 
 
-VERSION_COLUMNS = (
-    "version_id",
-    "dataset",
-    "tier",
-    "schema_version",
-    "content_sha",
-    "uri",
-    "manifest_uri",
-    "row_count",
-)
+def _existing_versions(cur, ids: Sequence[str]) -> dict[str, tuple]:
+    """The registered rows of these version ids, in ``register_entries``' column set."""
+    cur.execute(
+        f"SELECT version_id, {', '.join(catalog_publish.VERSION_COLUMNS)} "  # noqa: S608
+        "FROM catalog.dataset_versions WHERE version_id = ANY(%s)",
+        (list(ids),),
+    )
+    return {row[0]: tuple(row[1:]) for row in cur.fetchall()}
 
 
-def _identity(entry: catalog_publish.Entry) -> tuple:
-    return tuple(str(getattr(entry, c)) for c in VERSION_COLUMNS)
+def _mismatched(
+    rows: dict[str, tuple], entries: Sequence[catalog_publish.Entry]
+) -> list[str]:
+    """Entries whose registered row differs in any column ``register_entries`` checks."""
+    return sorted(
+        e.version_id
+        for e in entries
+        if e.version_id in rows
+        and not catalog_publish.version_matches(rows[e.version_id], e)
+    )
 
 
 def catalog_state(cur, entries: Sequence[catalog_publish.Entry]) -> dict[str, Any]:
@@ -117,17 +123,8 @@ def catalog_state(cur, entries: Sequence[catalog_publish.Entry]) -> dict[str, An
     batch must already be registered. Either refuses the recovery.
     """
     ids = [e.version_id for e in entries]
-    cur.execute(
-        f"SELECT {', '.join(VERSION_COLUMNS)} FROM catalog.dataset_versions "  # noqa: S608
-        "WHERE version_id = ANY(%s)",
-        (ids,),
-    )
-    existing = {row[0]: tuple(map(str, row)) for row in cur.fetchall()}
-    conflicts = sorted(
-        e.version_id
-        for e in entries
-        if e.version_id in existing and existing[e.version_id] != _identity(e)
-    )
+    existing = _existing_versions(cur, ids)
+    conflicts = _mismatched(existing, entries)
     external = sorted({p for e in entries for p in e.parents} - set(ids))
     found: set[str] = set()
     if external:
@@ -152,12 +149,7 @@ def catalog_state(cur, entries: Sequence[catalog_publish.Entry]) -> dict[str, An
 def readback(cur, entries: Sequence[catalog_publish.Entry]) -> dict[str, Any]:
     """Every version, edge, capture and quality result present and as recorded."""
     ids = [e.version_id for e in entries]
-    cur.execute(
-        f"SELECT {', '.join(VERSION_COLUMNS)} FROM catalog.dataset_versions "  # noqa: S608
-        "WHERE version_id = ANY(%s)",
-        (ids,),
-    )
-    rows = {row[0]: tuple(map(str, row)) for row in cur.fetchall()}
+    rows = _existing_versions(cur, ids)
     counts = {}
     for name, table, column in (
         ("dependencies", "dataset_dependencies", "child_version_id"),
@@ -175,7 +167,8 @@ def readback(cur, entries: Sequence[catalog_publish.Entry]) -> dict[str, Any]:
         "quality": sum(len(e.validation) for e in entries),
     }
     mismatched = sorted(
-        e.version_id for e in entries if rows.get(e.version_id) != _identity(e)
+        {e.version_id for e in entries if e.version_id not in rows}
+        | set(_mismatched(rows, entries))
     )
     return {
         "versions_expected": len(ids),

@@ -144,9 +144,7 @@ class FakeCursor:
                 db.edges[name].add(tuple(params[:2]))
                 self.rowcount = 1
         elif sql.startswith("SELECT version_id, dataset"):
-            self._rows = [
-                (v, *db.versions[v][:7]) for v in params[0] if v in db.versions
-            ]
+            self._rows = [(v, *db.versions[v]) for v in params[0] if v in db.versions]
         elif sql.startswith("SELECT version_id FROM"):
             known = set(db.versions) | db.external
             self._rows = [(v,) for v in params[0] if v in known]
@@ -298,6 +296,22 @@ def test_a_conflicting_existing_version_is_refused():
     with pytest.raises(GateError, match="conflict"):
         _recover(db, apply=True)
     assert db.state() == snapshot
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [(7, {"seasons": [1999]}), (9, "c" * 40), (11, "draft"), (13, "f" * 64)],
+)
+def test_the_dry_run_refuses_any_column_the_apply_would_refuse(column, value):
+    db = FakeDB()
+    _recover(db, apply=True)
+    row = list(db.versions["s2025"])
+    row[column] = value  # partitions, code_sha, state, schema_sha
+    db.versions["s2025"] = tuple(row)
+    with pytest.raises(GateError, match="conflict"):
+        _recover(db)
+    with pytest.raises(GateError, match="conflict"):
+        _recover(db, apply=True)
 
 
 def test_missing_parents_are_refused():
