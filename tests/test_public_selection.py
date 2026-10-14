@@ -463,11 +463,12 @@ def _wrote_selection(cur):
 @pytest.mark.parametrize(
     ("window", "message"),
     [
-        ((False, 0, 0), "older than 6 hours"),
-        ((True, 1, 0), "game that has kicked off"),
-        ((True, 0, 1), "differ from the games scheduled after its cutoff"),
+        ((False, 0, 0, False), "older than 6 hours"),
+        ((True, 1, 0, False), "game that has kicked off"),
+        ((True, 0, 1, False), "differ from the games scheduled after its cutoff"),
+        ((True, 0, 0, True), "later than the database clock"),
     ],
-    ids=["older-than-6h", "game-kicked-off", "slate-differs"],
+    ids=["older-than-6h", "game-kicked-off", "slate-differs", "future-cutoff"],
 )
 def test_pending_run_outside_its_window_is_never_selected(monkeypatch, window, message):
     _pending_manifest(monkeypatch)
@@ -479,7 +480,7 @@ def test_pending_run_outside_its_window_is_never_selected(monkeypatch, window, m
 
 def test_fresh_pending_run_is_selected_against_its_manifest_cutoff(monkeypatch):
     _pending_manifest(monkeypatch)
-    cur = _pending_cursor((True, 0, 0))
+    cur = _pending_cursor((True, 0, 0, False))
     assert _select_pending(cur) is None
     window = next(
         params
@@ -514,7 +515,7 @@ def test_reselection_after_rollback_still_enforces_the_window(
 ):
     """Rollback deselects Week 7; re-applying (or repeating) a stale run must fail."""
     _pending_manifest(monkeypatch)
-    cur = _pending_cursor((False, 0, 0))
+    cur = _pending_cursor((False, 0, 0, False))
     cur.results[-1] = prior_selection
     with pytest.raises(PublicSelectionError, match="older than 6 hours"):
         _select_pending(cur)
@@ -536,6 +537,7 @@ requires_db = pytest.mark.skipif(
         ("1 hour", ["-10 minutes", "2 hours"], [1, 2], "kicked off"),
         ("1 hour", ["1 hour", "2 hours"], [1], "differ"),
         ("1 hour", ["-2 hours", "2 hours"], [2], None),
+        ("-1 hour", ["2 hours"], [1], "later than the database clock"),
     ],
     ids=[
         "fresh",
@@ -543,6 +545,7 @@ requires_db = pytest.mark.skipif(
         "started-since-cutoff",
         "missing-game",
         "omits-earlier-kickoff",
+        "future-cutoff",
     ],
 )
 def test_pending_window_against_database_clock(as_of_age, kickoffs, predicted, message):

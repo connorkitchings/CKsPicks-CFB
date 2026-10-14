@@ -33,7 +33,9 @@ def _require_open_pending_window(
     """A pending run is selectable only while it is recent and none of its games has started.
 
     Its games must be exactly the week's games scheduled after its cutoff, so a run cannot
-    hide a game that kicked off since it was built. One database clock reading decides it.
+    hide a game that kicked off since it was built. A cutoff in the future would stretch both
+    the age limit and the scheduled-after-cutoff slate, so it fails closed. One database
+    clock reading decides it.
     """
     if not as_of:
         raise PublicSelectionError("pending run manifest has no data cutoff")
@@ -42,14 +44,19 @@ def _require_open_pending_window(
         "SELECT (SELECT now FROM clock) < %s::timestamptz + make_interval(hours => %s), "
         "COUNT(*) FILTER (WHERE p.game_id IS NOT NULL "
         "AND g.start_date <= (SELECT now FROM clock)), "
-        "COUNT(*) FILTER (WHERE p.game_id IS NULL OR g.start_date <= %s::timestamptz) "
+        "COUNT(*) FILTER (WHERE p.game_id IS NULL OR g.start_date <= %s::timestamptz), "
+        "%s::timestamptz > (SELECT now FROM clock) "
         "FROM games g LEFT JOIN predictions p "
         "ON p.game_id = g.game_id AND p.run_id = %s "
         "WHERE g.season = %s AND g.week = %s "
         "AND (g.start_date > %s::timestamptz OR p.game_id IS NOT NULL)",
-        (as_of, MAX_DISPLAY_AGE_HOURS, as_of, run_id, season, week, as_of),
+        (as_of, MAX_DISPLAY_AGE_HOURS, as_of, as_of, run_id, season, week, as_of),
     )
-    fresh, started, mismatched = cur.fetchone()
+    fresh, started, mismatched, future = cur.fetchone()
+    if future:
+        raise PublicSelectionError(
+            f"pending run's data cutoff {as_of} is later than the database clock"
+        )
     if not fresh:
         raise PublicSelectionError(
             f"pending run is older than {MAX_DISPLAY_AGE_HOURS} hours"
