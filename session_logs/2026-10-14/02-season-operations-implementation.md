@@ -6,7 +6,7 @@
 - **Plan Contract:** docs/plans/2026-10-14/01-season-operations-and-week7-bridge.md
 - **Approval / Status:** Owner explicitly authorized implementation; contract In Progress.
 - **Blockers:** Clean reviewed plan/configuration commits precede operational builds. Exact Production release and rollback gates remain.
-- **Next:** Complete configuration review and clean-commit gate, then Week 6 frames preflight/build/verify.
+- **Next:** Week 7 display-only forecast/serving build (fresh line capture first).
 
 ## TODO
 - [x] Persist and validate full approved plan.
@@ -17,7 +17,8 @@
 - [x] Prepare/review bridge configuration.
 - [x] Commit reviewed plan and configuration before operational build — explicitly authorized by owner.
 - [x] Build/verify/publish Week 6 frames.
-- [ ] Commit generated successor/live pins and build/verify corrected ratings.
+- [x] Commit generated successor/live pins (`ee87c529`, fast-forwarded to dev; no push) and build/verify/publish corrected ratings to Preview.
+- [ ] Week 7 display-only forecast/serving build: fresh line capture, FBS schedule reconcile, then forecast, serving, verify, package back to back (`--display-only`; apply within `MAX_DISPLAY_AGE_HOURS` of `--as-of`).
 - [ ] Build Week 7 Preview candidate and complete exact Production gate.
 - [ ] Implement season runner and canonical model/revision adapters.
 - [ ] Implement atomic schema, readers and publisher.
@@ -75,3 +76,13 @@ Owner authorized the two local commits and fast-forward integration into dev wit
 - Independent pins/population check:329 historical +59 Week7 live-source games, unchanged completed-week cutoffs, exact published parent raw hashes. Forecast population will dynamically omit kicked-off games at actual build time.
 - Focused successor/intended-update tests:26 passed; diff check passes. Newly generated pins await the separately reviewed clean-commit gate before rating execution.
 - Parallel isolated workers implement season preparation, additive atomic-release schema and request-consistent web queries; they do not modify bridge checkout.
+
+## Corrected ratings operational evidence (Preview only)
+- Pins committed as `ee87c529` and fast-forwarded to `dev`; both trees clean; 68 focused tests passed (successor, intended-update seam/package, preview authorization).
+- Kickoff pre-check: the passed first Week 7 kickoff is handled only with `--display-only` (forecast omits kicked-off games; serving `apply_window_open` uses the data-age window). Forecast, serving, verify and package must pass `--display-only` and run back to back; the run sheet's "no `--display-only`" is superseded by Amendment 16.
+- Previous manifest for w6-r1: `corrected-w5-r1` read back from Preview R2, signed payload verified, raw SHA `855f4dd717bef1c16c91cdca69b240e9bc8fce0336457cb592696ac14c632437`. Weeks 0-5 generation hashes did not drift.
+- `v5-intended-update-2026-corrected-w6-r1` (329 games): rating manifest raw SHA `ff99a4e0e8cf7bc6c0bef9a54b1abcfe97ef0c092a296343a9253fe0a57d81bd`; preflight identical to apply; verifier dry run max difference 8.9e-16, verifier receipt raw SHA `0fa5071d716cc709b369bcc7f92ed170b570aa1e10172f7166175bc2de39eb0a`; identical re-apply wrote nothing new and returned the same SHA.
+- `v5-intended-update-2026-corrected-w7live-r1` (388 games = 329 + 59), previous manifest w6-r1 (R2 copy byte-identical to local, signed): rating manifest raw SHA `201711c79105419cd0e32fe5a995274c6dea5736aa1abe53e19a6d922bb64dfb`; pregame_w0..w6 and current_post_w0..w5 did not drift; verifier max difference 8.9e-16, receipt raw SHA `ae36af9fa5672e14d4a501f313368a79f6dee7c8ba4322d812c27018d72f2b9a`.
+- `current_post_w6` states exist for all 138 teams (so every team in the 59 games); latest observation cutoff `2026-10-11T15:00:00Z`.
+- Preview database `publish_v5_intended_update_ratings.py --apply`: inserted 1880 rows (966 current + 914 pregame) into `v5_rating_snapshots`, all carrying manifest SHA `201711c7...`; identical retry inserted 0, unchanged 1880. Rows for `ratings-v1`, `corrected-w6live-r1` and the replay runs remain present with single manifest SHAs. Production untouched.
+- Operational note: the worktree has no `.env`; R2 steps used a Preview-only env file built from the primary checkout's `.env` (no Production R2/database variables), database steps used `scripts/ops/with_preview_env.sh`.
