@@ -2,46 +2,223 @@
 
 from __future__ import annotations
 
+import copy
 import dataclasses
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
 import pytest
+import yaml
 
 from cks_picks_cfb.rebuild import published_comparison as pc
 from cks_picks_cfb.rebuild import published_diff as pd_
 from cks_picks_cfb.rebuild.errors import GateError
+from cks_picks_cfb.rebuild.lock_extension import rows_sha256
 
-EXTENDED = {
-    "extends": {
-        "added_post_week": 5,
-        "newly_final_game_ids": [10, 11],
-        "kickoff_revisions": [
-            {
-                "game_id": 11,
-                "old_start_date": "2026-10-03T19:30:00Z",
-                "new_start_date": "2026-10-03T15:00:00Z",
-            }
-        ],
-    }
+COLUMNS = ["week", "game_id", "start_date", "home_team", "away_team"]
+ROWS_BASE = [
+    [1, 1, "2026-09-05T16:00:00Z", "A", "B"],
+    [1, 2, "2026-09-05T19:00:00Z", "C", "D"],
+]
+ROWS_W2 = [
+    *ROWS_BASE,
+    [2, 10, "2026-09-12T16:00:00Z", "A", "C"],
+    [2, 11, "2026-10-03T15:00:00Z", "B", "D"],
+]
+ROWS_W3 = [*ROWS_W2, [3, 20, "2026-09-19T16:00:00Z", "A", "D"]]
+REVISION_11 = {
+    "game_id": 11,
+    "old_start_date": "2026-10-03T19:30:00Z",
+    "new_start_date": "2026-10-03T15:00:00Z",
 }
 
 
+def chained_lock() -> dict:
+    """Base through post-week 1; post-week 2 adds games 10 and 11 (11 revised); 3 adds 20."""
+    week2 = {
+        "added_post_week": 2,
+        "added_cutoff": "2026-09-14T00:00:00Z",
+        "newly_final_game_ids": [10, 11],
+        "completed_games_before": 2,
+        "completed_games_after": 4,
+        "base_game_rows_sha256": rows_sha256(ROWS_BASE),
+        "game_rows_sha256": rows_sha256(ROWS_W2),
+        "kickoff_revisions": [dict(REVISION_11)],
+    }
+    week3 = {
+        "added_post_week": 3,
+        "added_cutoff": "2026-09-21T00:00:00Z",
+        "newly_final_game_ids": [20],
+        "completed_games_before": 4,
+        "completed_games_after": 5,
+        "base_game_rows_sha256": rows_sha256(ROWS_W2),
+        "game_rows_sha256": rows_sha256(ROWS_W3),
+        "kickoff_revisions": [],
+        "previous_extension": week2,
+    }
+    return {
+        "post_week_cutoffs": {
+            "0": "2026-09-01T00:00:00Z",
+            "1": "2026-09-07T00:00:00Z",
+            "2": "2026-09-14T00:00:00Z",
+            "3": "2026-09-21T00:00:00Z",
+        },
+        "game_rows_sha256": rows_sha256(ROWS_BASE),
+        "games": {"columns": COLUMNS, "rows": copy.deepcopy(ROWS_W3)},
+        "extends": week3,
+    }
+
+
+def coverage(games_through: int, weeks_through: int) -> dict:
+    return {
+        "published_coverage": {
+            "team_game_measurements": games_through,
+            **dict.fromkeys(pc.WEEK_TABLES, weeks_through),
+        }
+    }
+
+
 def test_an_unextended_lock_adds_nothing():
-    scope = pc.lock_scope({})
+    scope = pc.lock_scope({"post_week_cutoffs": {"0": "2026-09-01T00:00:00Z"}})
+    assert scope["added"] == {} and scope["revisions"] == {}
     assert pc.game_scope(scope) is None and pc.week_scope(scope) is None
-    assert (
-        pc.kickoff_revision(scope)(pd.Series({"game_id_built": 11}), "cutoff_utc")
-        is None
+    additions = pc.table_additions(coverage(0, 0), scope)
+    assert all(pc.addition_scope(table, additions) is None for table in additions)
+
+
+def test_the_chain_is_followed_to_every_extension_and_revision():
+    scope = pc.lock_scope(chained_lock())
+    assert scope["added"] == {2: {10, 11}, 3: {20}}
+    assert (scope["base_post_week"], scope["latest_post_week"]) == (1, 3)
+    assert list(scope["revisions"]) == [11]  # recorded by the older extension
+
+
+def test_each_table_takes_its_own_coverage():
+    scope = pc.lock_scope(chained_lock())
+    additions = pc.table_additions(coverage(1, 2), scope)
+    games = pc.addition_scope("team_game_measurements", additions)
+    frame = pd.DataFrame({"game_id": [2, 10, 11, 20]})
+    assert games(frame).tolist() == [False, True, True, True]
+    assert additions["team_game_measurements"]["first_as_of_week"] is None
+    weeks = pc.addition_scope("team_rating_components", additions)
+    assert weeks(pd.DataFrame({"as_of_week": [3, 4]})).tolist() == [False, True]
+    current = pc.table_additions(coverage(3, 3), scope)
+    assert all(pc.addition_scope(t, current) is None for t in current)
+
+
+@pytest.mark.parametrize(
+    "policies",
+    [
+        coverage(0, 2),  # before the chain's base: those additions cannot be enumerated
+        coverage(1, 4),  # past the lock
+        {"published_coverage": {"team_game_measurements": 1}},  # tables left out
+        {},
+    ],
+)
+def test_coverage_outside_the_chain_or_incomplete_is_refused(policies):
+    with pytest.raises(GateError, match="published_coverage"):
+        pc.table_additions(policies, pc.lock_scope(chained_lock()))
+
+
+def _week2(lock):
+    return lock["extends"]["previous_extension"]
+
+
+@pytest.mark.parametrize(
+    ("mutate", "word"),
+    [
+        (lambda lock: _week2(lock).update(completed_games_after=5), "game count"),
+        (
+            lambda lock: lock["extends"].update(
+                completed_games_before=3, completed_games_after=4
+            ),
+            "follow",
+        ),
+        (lambda lock: _week2(lock).update(base_game_rows_sha256="0" * 64), "follow"),
+        (lambda lock: lock["extends"].update(newly_final_game_ids=[11]), "twice"),
+        (lambda lock: lock["extends"].update(newly_final_game_ids=[21]), "missing"),
+        (lambda lock: lock["extends"].update(added_post_week=4), "continue"),
+        (
+            lambda lock: lock["extends"].update(added_cutoff="2026-09-22T00:00:00Z"),
+            "continue",
+        ),
+        (lambda lock: lock["extends"].pop("completed_games_before"), "malformed"),
+        (lambda lock: lock["games"]["rows"][0].__setitem__(4, "Z"), "game rows"),
+        (lambda lock: lock.pop("post_week_cutoffs"), "malformed"),
+    ],
+)
+def test_malformed_or_inconsistent_history_is_refused(mutate, word):
+    lock = chained_lock()
+    mutate(lock)
+    with pytest.raises(GateError, match=word):
+        pc.lock_scope(lock)
+
+
+def test_conflicting_or_unlocked_revisions_are_refused():
+    lock = chained_lock()
+    lock["extends"]["kickoff_revisions"] = [
+        {**REVISION_11, "new_start_date": "2026-10-03T16:00:00Z"}
+    ]
+    with pytest.raises(GateError, match="conflicting"):
+        pc.lock_scope(lock)
+    lock = chained_lock()
+    lock["extends"]["kickoff_revisions"] = [
+        {
+            "game_id": 20,
+            "old_start_date": "2026-09-19T19:00:00Z",
+            "new_start_date": "2026-09-19T17:00:00Z",
+        }
+    ]
+    with pytest.raises(GateError, match="new kickoff"):
+        pc.lock_scope(lock)
+
+
+def test_the_week6_lock_and_plan_enumerate_the_week5_and_week6_additions():
+    plan = yaml.safe_load(Path("conf/rebuild/6a_task4_w6_v2.yaml").read_text())
+    lock = json.loads(Path("conf/rebuild/source_lock_2026_w6_v1.json").read_text())
+    scope = pc.lock_scope(lock)
+    assert {week: len(games) for week, games in scope["added"].items()} == {
+        5: 56,
+        6: 58,
+    }
+    assert list(scope["revisions"]) == [401862787]
+    additions = pc.table_additions(plan["policies"], scope)
+    assert len(additions["team_game_measurements"]["games"]) == 114
+    assert {additions[t]["first_as_of_week"] for t in pc.WEEK_TABLES} == {7}
+
+
+def _components(weeks):
+    return pd.DataFrame(
+        {
+            "component_id": [f"c{w}" for w in weeks],
+            "as_of_week": weeks,
+            "rating_mean": [1.0] * len(weeks),
+        }
     )
 
 
-def test_an_extension_scopes_games_and_the_next_as_of_week():
-    scope = pc.lock_scope(EXTENDED)
-    games = pc.game_scope(scope)(pd.DataFrame({"game_id": [9, 10, 11]}))
-    assert games.tolist() == [False, True, True]
-    weeks = pc.week_scope(scope)(pd.DataFrame({"as_of_week": [5, 6]}))
-    assert weeks.tolist() == [False, True]
+def _diff(built, published, additions):
+    return pd_.diff_frames(
+        built,
+        published,
+        keys=["component_id"],
+        columns=["as_of_week", "rating_mean"],
+        metric_of=lambda row: None,
+        added_scope=pc.addition_scope("team_rating_components", additions),
+    )
+
+
+def test_additions_never_hide_a_missing_published_row_or_cover_a_published_one():
+    additions = pc.table_additions(coverage(1, 2), pc.lock_scope(chained_lock()))
+    clean = _diff(_components([2, 3, 4]), _components([2, 3]), additions)
+    assert not clean["unexplained"] and clean["added_scope"]["rows"] == 1
+    missing = _diff(_components([2, 4]), _components([2, 3]), additions)
+    assert missing["unexplained"] and missing["population"]["only_published"] == 1
+    covered = _diff(_components([2, 3, 4]), _components([2, 3, 4]), additions)
+    assert covered["unexplained"]
+    assert covered["added_scope"]["published_rows_in_scope"] == 1
 
 
 def _row(game, built, published):
@@ -51,7 +228,7 @@ def _row(game, built, published):
 
 
 def test_only_the_recorded_revision_is_named():
-    override = pc.kickoff_revision(pc.lock_scope(EXTENDED))
+    override = pc.kickoff_revision(pc.lock_scope(chained_lock()))
     new, old = (
         pd.Timestamp("2026-10-03T15:00:00Z"),
         pd.Timestamp("2026-10-03T19:30:00Z"),
@@ -66,7 +243,7 @@ def test_only_the_recorded_revision_is_named():
 
 
 def test_the_revision_makes_a_cutoff_difference_explained_but_not_a_rating_change():
-    override = pc.kickoff_revision(pc.lock_scope(EXTENDED))
+    override = pc.kickoff_revision(pc.lock_scope(chained_lock()))
     old, new = "2026-10-03T19:30:00+00:00", "2026-10-03T15:00:00+00:00"
 
     def frame(cutoff, rating):
@@ -100,12 +277,9 @@ W6LIVE = "v5-intended-update-2026-corrected-w6live-r1"
 POLICY = {"published_rating_runs": {RATINGS_V1: [0, 1, 2, 3, 4, 5], W6LIVE: [6]}}
 
 
-def test_the_week6_plan_maps_weeks_0_to_5_and_week_6_to_their_runs():
-    from pathlib import Path
-
-    import yaml
-
-    plan = yaml.safe_load(Path("conf/rebuild/6a_task4_w6_v1.yaml").read_text())
+@pytest.mark.parametrize("path", ["6a_task4_w6_v1.yaml", "6a_task4_w6_v2.yaml"])
+def test_the_week6_plans_map_weeks_0_to_5_and_week_6_to_their_runs(path):
+    plan = yaml.safe_load((Path("conf/rebuild") / path).read_text())
     week_runs = pc.published_rating_runs(plan["policies"])
     assert week_runs == {**dict.fromkeys(range(6), RATINGS_V1), 6: W6LIVE}
 

@@ -40,15 +40,12 @@ def fetch_table(cur, table: str, columns, jsonb, where: str, params) -> pd.DataF
     return pd.DataFrame(cur.fetchall(), columns=list(columns))
 
 
-STATS_WEEKS = tuple(range(1, 6))
-
-
 def season_stats_frame(
     run: PublishedRun,
     storage,
     pin_file: dict[str, Any],
     fallback_names: set[str],
-    weeks: Iterable[int] = STATS_WEEKS,
+    weeks: Iterable[int],
 ) -> tuple[pd.DataFrame, str]:
     """The website table rebuilt from the corrected 2026 Silver, week by week."""
     from cks_picks_cfb.data.lake import read_dataset
@@ -85,38 +82,176 @@ def season_stats_frame(
     return pd.concat(frames, ignore_index=True), source
 
 
-def lock_scope(lock: dict[str, Any]) -> dict[str, Any]:
-    """What a lock extension adds to the published scope (empty for an unextended lock)."""
+def extension_chain(lock: dict[str, Any]) -> list[dict[str, Any]]:
+    """The lock's extensions, oldest first (each nests its predecessor)."""
+    chain = []
     extension = lock.get("extends")
-    if not extension:
-        return {"games": frozenset(), "first_as_of_week": None, "revisions": {}}
-    revisions = {
-        int(r["game_id"]): (
-            pd.Timestamp(r["old_start_date"]),
-            pd.Timestamp(r["new_start_date"]),
-        )
-        for r in extension.get("kickoff_revisions", [])
+    while extension:
+        chain.append(extension)
+        extension = extension.get("previous_extension")
+    return chain[::-1]
+
+
+def _revision(record: dict[str, Any]) -> tuple[int, pd.Timestamp, pd.Timestamp]:
+    try:
+        game = int(record["game_id"])
+        old = pd.Timestamp(record["old_start_date"])
+        new = pd.Timestamp(record["new_start_date"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise GateError(f"malformed kickoff revision {record!r}") from error
+    if old.tzinfo is None or new.tzinfo is None or old == new:
+        raise GateError(f"kickoff revision of {game} is not an exact UTC change")
+    return game, old, new
+
+
+def lock_scope(lock: dict[str, Any]) -> dict[str, Any]:
+    """Every game and kickoff revision the lock's chained extensions added.
+
+    Each extension must continue the one before it (post-week, completed-game count and
+    game-rows hash), add exactly as many games as its counts say, and add no game twice;
+    the newest must hash to the lock's own game rows. A game revised twice must carry the
+    same revision, and every revision must name a locked game at its new kickoff.
+    """
+    from cks_picks_cfb.rebuild.lock_extension import rows_sha256
+
+    try:
+        cutoffs = {
+            int(w): pd.Timestamp(c) for w, c in lock["post_week_cutoffs"].items()
+        }
+        latest = max(cutoffs)
+        chain = extension_chain(lock)
+        rows = lock["games"]["rows"] if chain else []
+        columns = lock["games"]["columns"] if chain else []
+    except (KeyError, TypeError, ValueError) as error:
+        raise GateError(f"malformed source lock: {error!r}") from error
+    if set(cutoffs) != set(range(latest + 1)):
+        raise GateError(f"lock post-week cutoffs are not contiguous: {sorted(cutoffs)}")
+    starts = {}
+    if chain:
+        index = {name: i for i, name in enumerate(columns)}
+        starts = {
+            int(r[index["game_id"]]): pd.Timestamp(r[index["start_date"]]) for r in rows
+        }
+    base = latest - len(chain)
+    added: dict[int, frozenset[int]] = {}
+    revisions: dict[int, tuple[pd.Timestamp, pd.Timestamp]] = {}
+    previous = {
+        "game_rows_sha256": lock.get("game_rows_sha256"),
+        "completed_games_after": None,
     }
+    for offset, extension in enumerate(chain, start=1):
+        try:
+            week = int(extension["added_post_week"])
+            games = [int(g) for g in extension["newly_final_game_ids"]]
+            before = int(extension["completed_games_before"])
+            after = int(extension["completed_games_after"])
+            cutoff = pd.Timestamp(extension["added_cutoff"])
+            links = (extension["base_game_rows_sha256"], extension["game_rows_sha256"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise GateError(f"malformed lock extension: {error!r}") from error
+        if week != base + offset or cutoffs.get(week) != cutoff:
+            raise GateError(f"extension post-week {week} does not continue the chain")
+        if links[0] != previous["game_rows_sha256"] or previous[
+            "completed_games_after"
+        ] not in (None, before):
+            raise GateError(f"extension post-week {week} does not follow its parent")
+        if len(set(games)) != len(games) or len(games) != after - before:
+            raise GateError(f"extension post-week {week}: game count is inconsistent")
+        if seen := set(games) & set().union(*added.values()):
+            raise GateError(f"games added twice: {sorted(seen)}")
+        if missing := set(games) - set(starts):
+            raise GateError(f"added games missing from the lock: {sorted(missing)}")
+        added[week] = frozenset(games)
+        for record in extension.get("kickoff_revisions") or []:
+            game, old, new = _revision(record)
+            if revisions.get(game, (old, new)) != (old, new):
+                raise GateError(f"conflicting kickoff revisions of game {game}")
+            if starts.get(game) != new:
+                raise GateError(f"revised game {game} is not locked at its new kickoff")
+            revisions[game] = (old, new)
+        previous = {"game_rows_sha256": links[1], "completed_games_after": after}
+    if chain and (
+        previous["game_rows_sha256"] != rows_sha256(rows)
+        or previous["completed_games_after"] != len(rows)
+    ):
+        raise GateError("the newest extension does not describe the lock's game rows")
     return {
-        "games": frozenset(int(g) for g in extension["newly_final_game_ids"]),
-        # Post-week W is published as as_of_week W + 1.
-        "first_as_of_week": int(extension["added_post_week"]) + 1,
+        "base_post_week": base,
+        "latest_post_week": latest,
+        "added": added,
         "revisions": revisions,
+        # The newest extension alone, for callers that compare against the lock it extends.
+        "games": added.get(latest, frozenset()),
+        "first_as_of_week": latest + 1 if chain else None,
     }
 
 
-def game_scope(scope: dict[str, Any]):
+GAME_TABLES = ("team_game_measurements",)
+WEEK_TABLES = (
+    "team_possession_stats",
+    "team_possession_adjusted",
+    "team_rating_components",
+    "team_season_stats",
+)
+
+
+def table_additions(
+    policies: dict[str, Any], scope: dict[str, Any]
+) -> dict[str, dict[str, Any]]:
+    """Each table's additions, from the plan's ``published_coverage`` policy.
+
+    The policy names, per compared table, the last post-week its published rows cover.
+    Everything the lock chain added after it is that table's addition scope: the added
+    games for the game log, the as-of weeks past it (post-week W is as-of week W + 1)
+    for the weekly tables. Coverage before the chain's base cannot be enumerated.
+    """
+    raw = policies.get("published_coverage") or {}
+    if set(raw) != {*GAME_TABLES, *WEEK_TABLES}:
+        raise GateError(
+            f"published_coverage must name exactly {sorted({*GAME_TABLES, *WEEK_TABLES})}"
+        )
+    additions = {}
+    for table, through in raw.items():
+        through = int(through)
+        if not scope["base_post_week"] <= through <= scope["latest_post_week"]:
+            raise GateError(
+                f"published_coverage {table}: post-week {through} is outside the lock "
+                f"chain ({scope['base_post_week']}..{scope['latest_post_week']})"
+            )
+        games = frozenset().union(
+            *(g for week, g in scope["added"].items() if week > through)
+        )
+        additions[table] = {
+            "through_post_week": through,
+            "games": games if table in GAME_TABLES else frozenset(),
+            "first_as_of_week": (
+                through + 2
+                if table in WEEK_TABLES and through < scope["latest_post_week"]
+                else None
+            ),
+        }
+    return additions
+
+
+# Both scopes take a table's additions or ``lock_scope()`` itself (its newest extension).
+def game_scope(additions: dict[str, Any]):
     """Rows of games completed after the published rows were written."""
-    if not scope["games"]:
+    if not additions["games"]:
         return None
-    return lambda frame: frame["game_id"].astype(int).isin(scope["games"])
+    return lambda frame: frame["game_id"].astype(int).isin(additions["games"])
 
 
-def week_scope(scope: dict[str, Any]):
+def week_scope(additions: dict[str, Any]):
     """Rows of as-of weeks that did not exist when the published rows were written."""
-    if scope["first_as_of_week"] is None:
+    if additions["first_as_of_week"] is None:
         return None
-    return lambda frame: frame["as_of_week"].astype(int) >= scope["first_as_of_week"]
+    return (
+        lambda frame: frame["as_of_week"].astype(int) >= additions["first_as_of_week"]
+    )
+
+
+def addition_scope(table: str, additions: dict[str, dict[str, Any]]):
+    return (game_scope if table in GAME_TABLES else week_scope)(additions[table])
 
 
 def kickoff_revision(scope: dict[str, Any]):
@@ -209,6 +344,7 @@ def baseline_history_control(
     mp,
     md,
     scope: dict[str, Any],
+    additions: dict[str, dict[str, Any]],
     week_runs: dict[int, str],
 ) -> dict[str, Any]:
     """2026 states rebuilt from the SERVED terminal: must equal the published components."""
@@ -262,7 +398,7 @@ def baseline_history_control(
         metric_of=lambda row: None,
         jsonb=[c for c in jsonb if c in values],
         expected={"kickoff_revision"},
-        added_scope=week_scope(scope),
+        added_scope=addition_scope("team_rating_components", additions),
         bucket_override=kickoff_revision(scope),
     )
     return {
@@ -290,6 +426,7 @@ def build(context: StageContext) -> StageOutput:
     cutoffs = {int(w): pd.Timestamp(c) for w, c in lock["post_week_cutoffs"].items()}
     root_sha = run.root["manifest_sha256"]
     scope = lock_scope(lock)
+    additions = table_additions(dict(context.plan.policies), scope)
     week_runs = published_rating_runs(dict(context.plan.policies))
 
     url = resolve_runtime_target("preview").database_url
@@ -370,6 +507,7 @@ def build(context: StageContext) -> StageOutput:
         mp,
         md,
         scope,
+        additions,
         week_runs,
     )
     components_expected = (
@@ -377,12 +515,6 @@ def build(context: StageContext) -> StageOutput:
         | {"kickoff_revision"}
         | ({"history_correction"} if control["matches_published"] else set())
     )
-    added = {
-        "team_game_measurements": game_scope(scope),
-        "team_possession_stats": week_scope(scope),
-        "team_possession_adjusted": week_scope(scope),
-        "team_rating_components": week_scope(scope),
-    }
     metric_column = {
         "team_game_measurements": "measurement_id",
         "team_possession_stats": "metric",
@@ -405,16 +537,19 @@ def build(context: StageContext) -> StageOutput:
             ),
             jsonb=[c for c in jsonb if c in values],
             expected=components_expected if components else None,
-            added_scope=added[table],
+            added_scope=addition_scope(table, additions),
             bucket_override=kickoff_revision(scope) if components else None,
         )
-    stats, fbs_source = season_stats_frame(run, storage, pin_file, game_names)
+    stats, fbs_source = season_stats_frame(
+        run, storage, pin_file, game_names, range(1, scope["latest_post_week"] + 2)
+    )
     tables["team_season_stats"] = published_diff.diff_frames(
         stats,
         published["team_season_stats"],
         keys=["as_of_week", "team", "role", "metric"],
         columns=list(SEASON_STATS_COLUMNS),
         metric_of=lambda row: row["metric"],
+        added_scope=addition_scope("team_season_stats", additions),
     )
     report = {
         "season": SEASON,
@@ -424,8 +559,18 @@ def build(context: StageContext) -> StageOutput:
         "fbs_source": fbs_source,
         "tables": tables,
         "scope": {
-            "added_games": len(scope["games"]),
-            "first_added_as_of_week": scope["first_as_of_week"],
+            "lock_post_weeks": [scope["base_post_week"], scope["latest_post_week"]],
+            "extension_games": {
+                str(week): len(games) for week, games in sorted(scope["added"].items())
+            },
+            "additions": {
+                table: {
+                    "published_through_post_week": a["through_post_week"],
+                    "added_game_ids": sorted(a["games"]),
+                    "first_added_as_of_week": a["first_as_of_week"],
+                }
+                for table, a in sorted(additions.items())
+            },
             "kickoff_revisions": {
                 str(g): [old.isoformat(), new.isoformat()]
                 for g, (old, new) in sorted(scope["revisions"].items())
