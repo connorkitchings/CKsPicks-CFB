@@ -1,7 +1,9 @@
 import { isDisplayOnly } from "./display-only";
 import { eq, asc, and, inArray, lte, sql, notLike, or } from "drizzle-orm";
 import { cache } from "react";
-import { db, schema } from "./db";
+import { db as legacyDb, schema } from "./db";
+import { publicationScope } from "./publication.ts";
+import { getSeasonDb, getSeasonReleaseContext } from "./season-release";
 import { existsFrom } from "./db-result";
 import { tiedExistsSql } from "./tie-sql";
 import { isSelectableRun, V5_RECORD_EVIDENCE } from "./run-selection";
@@ -121,6 +123,18 @@ export const getCurrentWeek = cache(async (): Promise<{
   updatedAt: Date;
   activeRunId: string | null;
 } | null> => {
+  const release = await getSeasonReleaseContext();
+  if (release) {
+    const db = await getSeasonDb(release.season);
+    const rows = await db.select({ runId: schema.siteWeekSelections.runId })
+      .from(schema.siteWeekSelections).where(and(
+        eq(schema.siteWeekSelections.season, release.season),
+        eq(schema.siteWeekSelections.week, release.activeWeek),
+      )).limit(1);
+    if (!rows[0]) throw new Error("Active season release lacks current week selection");
+    return { season: release.season, week: release.activeWeek, updatedAt: release.activatedAt, activeRunId: rows[0].runId };
+  }
+  const db = legacyDb;
   const rows = await db
     .select({
       season: schema.currentWeek.season,
@@ -155,6 +169,7 @@ export type RunSummary = {
  * so eligibility is validated after the join rather than filtered to V5.
  */
 export const getRunForWeek = cache(async (season: number, week: number): Promise<RunSummary | null> => {
+  const db = await getSeasonDb(season);
   const rows = await db.select({
     runId: schema.predictionRuns.runId,
     modelId: schema.predictionRuns.modelId,
@@ -192,6 +207,7 @@ export const getRunForWeek = cache(async (season: number, week: number): Promise
 
 /** Distinct weeks with published games for a season, ascending. Used by the week nav. */
 export async function getAvailableWeeks(season: number): Promise<number[]> {
+  const db = await getSeasonDb(season);
   const rows = await db.select({
     week: schema.siteWeekSelections.week,
     modelId: schema.predictionRuns.modelId,
@@ -213,6 +229,7 @@ export async function getScoredWeeks(season: number): Promise<number[]> {
   if (process.env.CFB_UI_TEST_MODE === "1") {
     return [0, 1, 2];
   }
+  const db = await getSeasonDb(season);
   const rows = await db.select({
     week: schema.siteWeekSelections.week,
     modelId: schema.predictionRuns.modelId,
@@ -239,6 +256,7 @@ export async function getUpcomingWeeks(season: number): Promise<number[]> {
   if (process.env.CFB_UI_TEST_MODE === "1") {
     return [0];
   }
+  const db = await getSeasonDb(season);
   const rows = await db.select({
     week: schema.siteWeekSelections.week,
     modelId: schema.predictionRuns.modelId,
@@ -269,6 +287,7 @@ type CompletedGameRow = {
  * historical week pages never leak later results.
  */
 const getSeasonCompletedGames = cache(async (season: number): Promise<CompletedGameRow[]> => {
+  const db = await getSeasonDb(season);
   const rows = await db
     .select({
       startDate: schema.games.startDate,
@@ -346,6 +365,7 @@ async function frozenLinesForWeek(
   season: number,
   week: number,
 ): Promise<Map<number, FrozenLine>> {
+  const db = await getSeasonDb(season);
   const runs = await db
     .select({
       runId: schema.predictionRuns.runId,
@@ -448,9 +468,10 @@ type GameSelections = {
  * Check whether prediction_market_selections table exists in the current database.
  * Cached to avoid querying the catalog repeatedly.
  */
-export const hasSelectionsTable = cache(async (): Promise<boolean> => {
+export const hasSelectionsTable = cache(async (season = publicationScope.season): Promise<boolean> => {
+  if (await getSeasonReleaseContext(season)) return true;
   try {
-    const res = await db.execute(
+    const res = await legacyDb.execute(
       sql`SELECT to_regclass('public.prediction_market_selections') IS NOT NULL AS exists`
     );
     return existsFrom(res);
@@ -464,9 +485,11 @@ export const hasSelectionsTable = cache(async (): Promise<boolean> => {
  * Returns an empty map if unmigrated or no selections exist.
  */
 export async function getMarketSelectionsForRun(
-  runId: string
+  runId: string,
+  season = publicationScope.season,
 ): Promise<Map<number, GameSelections>> {
-  const tableExists = await hasSelectionsTable();
+  const db = await getSeasonDb(season);
+  const tableExists = await hasSelectionsTable(season);
   if (!tableExists) return new Map();
 
   try {
@@ -520,9 +543,10 @@ export async function getMarketSelectionsForRun(
  * Whether the game_venues table exists. Cached; false before migration 0019 is
  * applied, so the site keeps working and simply shows no location.
  */
-export const hasGameVenuesTable = cache(async (): Promise<boolean> => {
+export const hasGameVenuesTable = cache(async (season = publicationScope.season): Promise<boolean> => {
+  if (await getSeasonReleaseContext(season)) return true;
   try {
-    const res = await db.execute(
+    const res = await legacyDb.execute(
       sql`SELECT to_regclass('public.game_venues') IS NOT NULL AS exists`,
     );
     return existsFrom(res);
@@ -532,9 +556,10 @@ export const hasGameVenuesTable = cache(async (): Promise<boolean> => {
 });
 
 /** Whether team_season_stats exists. Cached; false before migration 0020 is applied. */
-export const hasTeamSeasonStatsTable = cache(async (): Promise<boolean> => {
+export const hasTeamSeasonStatsTable = cache(async (season = publicationScope.season): Promise<boolean> => {
+  if (await getSeasonReleaseContext(season)) return true;
   try {
-    const res = await db.execute(
+    const res = await legacyDb.execute(
       sql`SELECT to_regclass('public.team_season_stats') IS NOT NULL AS exists`,
     );
     return existsFrom(res);
@@ -552,7 +577,8 @@ export async function getTeamSeasonStats(
   asOfWeek: number,
   teams: string[],
 ): Promise<TeamStatRow[]> {
-  if (teams.length === 0 || !(await hasTeamSeasonStatsTable())) return [];
+  const db = await getSeasonDb(season);
+  if (teams.length === 0 || !(await hasTeamSeasonStatsTable(season))) return [];
   try {
     const t = schema.teamSeasonStats;
     const rows = await db
@@ -590,9 +616,10 @@ export async function getTeamSeasonStats(
 }
 
 /** Whether team_possession_stats exists. Cached; false before migration 0021 is applied. */
-export const hasTeamPossessionStatsTable = cache(async (): Promise<boolean> => {
+export const hasTeamPossessionStatsTable = cache(async (season = publicationScope.season): Promise<boolean> => {
+  if (await getSeasonReleaseContext(season)) return true;
   try {
-    const res = await db.execute(
+    const res = await legacyDb.execute(
       sql`SELECT to_regclass('public.team_possession_stats') IS NOT NULL AS exists`,
     );
     return existsFrom(res);
@@ -612,7 +639,8 @@ export async function getTeamPossessionStats(
   asOfWeek: number,
   teams: string[],
 ): Promise<TeamStatRow[]> {
-  if (teams.length === 0 || !(await hasTeamPossessionStatsTable())) return [];
+  const db = await getSeasonDb(season);
+  if (teams.length === 0 || !(await hasTeamPossessionStatsTable(season))) return [];
   try {
     const t = schema.teamPossessionStats;
     const rows = await db
@@ -651,9 +679,11 @@ export async function getTeamPossessionStats(
 /** Attach venue city/state/neutral-site to games. Never throws; missing data stays null. */
 async function withVenues<T extends { gameId: number }>(
   games: T[],
+  season: number,
 ): Promise<(T & { venueCity: string | null; venueState: string | null; neutralSite: boolean | null })[]> {
+  const db = await getSeasonDb(season);
   const empty = games.map((g) => ({ ...g, venueCity: null, venueState: null, neutralSite: null }));
-  if (games.length === 0 || !(await hasGameVenuesTable())) return empty;
+  if (games.length === 0 || !(await hasGameVenuesTable(season))) return empty;
   try {
     const rows = await db
       .select({
@@ -681,6 +711,7 @@ async function withVenues<T extends { gameId: number }>(
 
 /** Return all games (with optional results) for a given season/week, sorted by start time. */
 export async function getGamesForWeek(season: number, week: number): Promise<Game[]> {
+  const db = await getSeasonDb(season);
   const run = await getRunForWeek(season, week);
   if (run) {
     const [rows, selectionsMap] = await Promise.all([
@@ -735,7 +766,7 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
         .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
         .where(eq(schema.predictions.runId, run.runId))
         .orderBy(asc(schema.games.startDate), asc(schema.games.gameId)),
-      getMarketSelectionsForRun(run.runId),
+      getMarketSelectionsForRun(run.runId, season),
     ]);
 
     guardRows("games_for_week", rows, PREDICTION_GAME_SPEC);
@@ -745,7 +776,7 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
 
     const completed = await getSeasonCompletedGames(season);
     const games = await withFrozenLines(
-      (await withVenues(rowsWithSelections)).map((row) => ({
+      (await withVenues(rowsWithSelections, season)).map((row) => ({
         ...row,
         publicationMode: "predictions" as const,
         runState: run.state,
@@ -822,6 +853,7 @@ export async function getMarketGamesForWeek(
   season: number,
   week: number,
 ): Promise<MarketGame[]> {
+  const db = await getSeasonDb(season);
   // A settled grade is safe to disclose, but it must remain tied to the exact
   // versioned run selected for this week. Legacy rows have no run identity.
   const run = await getRunForWeek(season, week);
@@ -866,7 +898,7 @@ export async function getMarketGamesForWeek(
 
   const completed = await getSeasonCompletedGames(season);
   return withRecords(
-    (await withVenues(rows)).map((row) => ({ ...row, publicationMode: "market" as const })),
+    (await withVenues(rows, season)).map((row) => ({ ...row, publicationMode: "market" as const })),
     completed,
   );
 }
@@ -894,6 +926,7 @@ export const getSystemStatsThroughWeek = cache(async (
   season: number,
   throughWeek: number,
 ): Promise<Stats> => {
+  const db = await getSeasonDb(season);
   const candidates = await db
     .select({
       runId: schema.predictionRuns.runId,
@@ -966,6 +999,7 @@ export const getHistoricalModelContext = cache(async (
   comparisonSeason: number,
   selectedWeek: number,
 ): Promise<HistoricalModelContext | null> => {
+  const db = legacyDb;
   const rows = await db
     .select()
     .from(schema.historicalModelContext)
