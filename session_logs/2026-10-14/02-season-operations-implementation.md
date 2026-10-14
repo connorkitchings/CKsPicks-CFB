@@ -20,7 +20,8 @@
 - [x] Commit generated successor/live pins (`ee87c529`, fast-forwarded to dev; no push) and build/verify/publish corrected ratings to Preview.
 - [x] Week 7 display-only forecast/serving build through package (Preview R2, run `2026w7-v5repair-20261014-w7`).
 - [x] Preview authorization, schedule, venues, publish, select, bridge verifier, matchup publish/verify and rollback dry run for the Week 7 candidate; 4 games lacking a total line accepted by the owner.
-- [ ] Rollback apply (owner/migrator login, not run) and Production gates.
+- [x] Production display-only release of Week 7 (R1-R12, R14); R13 freeze prohibited and not run.
+- [ ] Rollback apply (owner/migrator login, not run); grading after finals; corrected Weeks 0-6 replay cutover.
 - [ ] Build Week 7 Preview candidate and complete exact Production gate.
 - [ ] Implement season runner and canonical model/revision adapters.
 - [ ] Implement atomic schema, readers and publisher.
@@ -104,3 +105,10 @@ Owner authorized the two local commits and fast-forward integration into dev wit
 - Bridge verifier: 11 gates ok, payload `f850ab26b6fe9adbf04ea76e80d6299d37b1ec3b8827dc0ce4bb270a9a8ea965`, written once, identical retry no write. Matchup publish (payload pinned) wrote `team_possession_stats` 1656, `team_possession_adjusted` 551, `team_rating_components` 512; `verify_matchup_data.py` VERIFIED, 0 differing rows.
 - Readback: `current_week` (2026, 7, active run = the candidate); selection present; 59 games, all with a city; 1880 rating snapshot rows under one manifest SHA.
 - Rollback dry run (`preview-rehearsal-proof`): would restore `current_week` to week 6 (`2026w6-v5repair-20261008-d2`) and deselect week 7; without a release receipt it keeps stats and snapshots. Per the script, the published `team_rating_components` rows block a rollback apply until the prior matchup payload is restored. Apply was not run.
+
+## Week 7 Production release evidence (2026-10-14)
+- Owner decision reference `production-display-only-week7`. R2: `stage_v5_artifacts.py --predictions-only` staged `predictions.csv` (`f460617d…`) and `manifest.json` to Production R2; dry-run receipt `b06b6e83…`, apply receipt `eb95958c…`, readback both objects `present`.
+- R4: owner SQL inserted `production-2026w7-v5repair-20261014-w7-f460617dbb22`; read-only check as `cks_prod_pipeline` found exactly one row, no mismatched fields, Production approval `production-intended-update-a507d0c7cba5` live from week 6.
+- R5-R11 were run by the owner (the Production publish commands were blocked for the assistant by the permission classifier): ratings 1,880 rows (`201711c7…`), as-of-7 team stats 3,036 rows, schedule 59, venues 59 with city, `publish_to_db.py --allow-partial-slate`, selection, matchup data (payload `f850ab26…`, verified, 0 differing rows).
+- R12 readback as `cks_prod_pipeline`: `current_week` (2026, 7) active run = the candidate; selections 0-7 present and Weeks 0-6 unchanged; run `published`/`pending`, no freeze or score time, 57 predictions (57 spreads, 53 totals); 59 games and 59 venues with city; 1,880 rating snapshot rows under one manifest SHA with all earlier runs present; as-of 1-7 team stats present (as-of 4-7 at 3,036); one Production authorization row for Week 7. The live site shows Week 7 with 57 games, "Run published Oct 14, 12:07 PM ET".
+- Rollback note: a rollback apply needs the owner login and, because Week 7 matchup rows reference the rating snapshots, the prior matchup payload restored first.
