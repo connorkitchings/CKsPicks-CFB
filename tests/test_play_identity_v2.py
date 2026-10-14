@@ -232,6 +232,59 @@ def test_byplay_v1_still_fails_closed_on_the_same_population():
         allplays_to_byplay(cross_period_collision())
 
 
+def test_listed_v1_collision_keeps_the_first_row_like_the_legacy_build():
+    frame = pd.concat(
+        [cross_period_collision(), pd.DataFrame([play(play_number=2, ppa=0.3)])],
+        ignore_index=True,
+    )
+    legacy_rows = len(frame.drop_duplicates(["game_id", "drive_number", "play_number"]))
+    for listed in (9, "9", 9.0):
+        byplay = allplays_to_byplay(frame, v1_collision_exceptions=frozenset({listed}))
+        assert len(byplay) == legacy_rows == 2
+        kept = byplay.loc[byplay["play_number"] == 1].iloc[0]
+        assert kept["offense"] == "Buffalo"
+        assert kept["ppa"] == pytest.approx(0.1)
+
+
+def test_unlisted_v1_collision_still_fails_closed():
+    other_game = cross_period_collision().assign(game_id=10)
+    frame = pd.concat([cross_period_collision(), other_game], ignore_index=True)
+    with pytest.raises(ValueError, match=r"byplay_v1 cannot represent.*\['10'\]"):
+        allplays_to_byplay(frame, v1_collision_exceptions=frozenset({9}))
+
+
+def test_v1_collision_exception_without_a_collision_is_refused():
+    frame = pd.concat(
+        [cross_period_collision(), pd.DataFrame([play(game_id=11)])],
+        ignore_index=True,
+    )
+    with pytest.raises(
+        ValueError, match=r"unused byplay_v1 collision exceptions.*'11'"
+    ):
+        allplays_to_byplay(frame, v1_collision_exceptions=frozenset({9, 11}))
+    exact_repeat = pd.DataFrame([play(__capture_id="a"), play(__capture_id="b")])
+    with pytest.raises(ValueError, match="unused"):
+        allplays_to_byplay(exact_repeat, v1_collision_exceptions=frozenset({9}))
+
+
+def test_v1_without_exceptions_is_unchanged():
+    exact_repeat = pd.DataFrame([play(__capture_id="a"), play(__capture_id="b")])
+    assert len(allplays_to_byplay(exact_repeat)) == 1
+    with pytest.raises(ValueError, match="byplay_v1 cannot represent distinct"):
+        allplays_to_byplay(
+            cross_period_collision(), v1_collision_exceptions=frozenset()
+        )
+
+
+def test_pipeline_threads_v1_collision_exceptions():
+    with pytest.raises(ValueError, match="byplay_v1 cannot represent distinct"):
+        build_preaggregation_pipeline(cross_period_collision())
+    byplay, *_ = build_preaggregation_pipeline(
+        cross_period_collision(), v1_collision_exceptions=frozenset({9})
+    )
+    assert len(byplay) == 1
+
+
 def test_byplay_v2_exact_repeats_collapse_and_divergent_versions_block():
     base = play(__capture_id="a")
     assert len(v2_byplay(pd.DataFrame([base, {**base, "__capture_id": "b"}]))) == 1

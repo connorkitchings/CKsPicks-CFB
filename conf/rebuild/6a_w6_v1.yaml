@@ -1,7 +1,7 @@
 # Stage 6A pinned rebuild plan (contract 02, Amendment 1). Every input is an explicit
 # uri + sha256. Hashes for R2 pins (Bronze capture sets, repair manifest) are added
 # only after a verified read-only readback; nothing here is "latest".
-run_id: 6a-rebuild-w6-20261011-r1
+run_id: 6a-rebuild-w6-20261012-r2
 storage_identity: "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview"  # verified against CFB_R2_PREVIEW_*; same physical bucket as production, so the namespace allow-list is the isolation
 seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
 registry_checksum: "2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281"
@@ -24,6 +24,9 @@ policies:
     uri: lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet
     content_sha: 1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f
   website_population: regular_season_fbs_vs_fbs
+  byplay_v1_collision_exceptions:   # games whose pinned byplay_v1 lineage kept the first of distinct plays at one sequence
+    "2021": [401310699]
+    "2025": [401756916, 401761632, 401762831]
 inputs:
   - {name: admission_decisions, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_decisions.csv, sha256: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db}
   - {name: admission_report, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_report.json, sha256: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609}
@@ -43,14 +46,14 @@ inputs:
   - {name: silver_2026_parents, kind: git_file, uri: conf/rebuild/silver_2026_parents_w6_v1.json, sha256: f6e02b23606ce6a766a1e6eb44999896977b2d3623c9918f5fe23a3114a54a71}  # parents of the Week 6 2026 byplay (prepare-week w6-closeout-ingest-20261011-r2)
   - {name: source_lock_2026, kind: git_file, uri: conf/rebuild/source_lock_2026_w6_v1.json, sha256: ce1b379786f4665b89db5a201c9314d7f1728a7ef9db67b457307585262fd653}  # w5 lock appended with Week 6 (329 games), extends: base sha d9086411…
 stages:
-  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status, cfbd_drives_manifest, repair_v2_manifest, r1_source_set, r1_derived_ref_set, r1_comparison_ref_set], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/baseline/], legacy_allowed: true}
-  - {name: silver, inputs: [r1_source_set, phase2c_silver_parents, data_corrections], parents: [baseline_reproduction], outputs: [lake/silver/, rebuild/6a/6a-rebuild-w6-20261011-r1/silver/]}
-  - {name: eligibility, inputs: [phase2c_silver_parents, r1_source_set], parents: [silver], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/eligibility/]}
-  - {name: step5_comparison, inputs: [admission_decisions, corroboration_group_status, repair_v2_manifest, phase2c_silver_parents], parents: [baseline_reproduction, eligibility], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/comparison/], legacy_allowed: true}
-  - {name: gold, inputs: [phase2c_silver_parents, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/, rebuild/6a/6a-rebuild-w6-20261011-r1/gold/]}
-  - {name: measurements_parity, inputs: [repair_v2_manifest, r9_measurement_manifest], parents: [gold], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/measurements_parity/], legacy_allowed: true}
-  - {name: ratings_parity, inputs: [repair_v2_manifest, r9_measurement_manifest, r9cert_rating_manifest], parents: [measurements_parity], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/ratings_parity/], legacy_allowed: true}
-  - {name: measurements_ratings, inputs: [phase2c_silver_parents], parents: [gold, ratings_parity], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/ratings/]}
-  - {name: offsets_refit, inputs: [phase2c_silver_parents, forecast_config], parents: [measurements_ratings], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/forecast/]}
-  - {name: silver_2026, inputs: [silver_2026_parents], parents: [offsets_refit], outputs: [lake/silver/, rebuild/6a/6a-rebuild-w6-20261011-r1/silver_2026/]}
-  - {name: states_2026, inputs: [silver_2026_parents, source_lock_2026], parents: [silver_2026, measurements_ratings], outputs: [rebuild/6a/6a-rebuild-w6-20261011-r1/states_2026/]}
+  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status, cfbd_drives_manifest, repair_v2_manifest, r1_source_set, r1_derived_ref_set, r1_comparison_ref_set], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/baseline/], legacy_allowed: true}
+  - {name: silver, inputs: [r1_source_set, phase2c_silver_parents, data_corrections], parents: [baseline_reproduction], outputs: [lake/silver/, rebuild/6a/6a-rebuild-w6-20261012-r2/silver/]}
+  - {name: eligibility, inputs: [phase2c_silver_parents, r1_source_set], parents: [silver], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/eligibility/]}
+  - {name: step5_comparison, inputs: [admission_decisions, corroboration_group_status, repair_v2_manifest, phase2c_silver_parents], parents: [baseline_reproduction, eligibility], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/comparison/], legacy_allowed: true}
+  - {name: gold, inputs: [phase2c_silver_parents, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/, rebuild/6a/6a-rebuild-w6-20261012-r2/gold/]}
+  - {name: measurements_parity, inputs: [repair_v2_manifest, r9_measurement_manifest], parents: [gold], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/measurements_parity/], legacy_allowed: true}
+  - {name: ratings_parity, inputs: [repair_v2_manifest, r9_measurement_manifest, r9cert_rating_manifest], parents: [measurements_parity], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/ratings_parity/], legacy_allowed: true}
+  - {name: measurements_ratings, inputs: [phase2c_silver_parents], parents: [gold, ratings_parity], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/ratings/]}
+  - {name: offsets_refit, inputs: [phase2c_silver_parents, forecast_config], parents: [measurements_ratings], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/forecast/]}
+  - {name: silver_2026, inputs: [silver_2026_parents], parents: [offsets_refit], outputs: [lake/silver/, rebuild/6a/6a-rebuild-w6-20261012-r2/silver_2026/]}
+  - {name: states_2026, inputs: [silver_2026_parents, source_lock_2026], parents: [silver_2026, measurements_ratings], outputs: [rebuild/6a/6a-rebuild-w6-20261012-r2/states_2026/]}

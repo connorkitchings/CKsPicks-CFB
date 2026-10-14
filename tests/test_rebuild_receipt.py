@@ -58,6 +58,31 @@ def test_markdown_is_deterministic_and_lists_every_non_claim():
     for claim in receipt.NON_CLAIMS:
         assert claim in first
     assert "| epa_only | 1 | 2 | 0.5000 | 3.000 |" in first
+    assert "- Main run `r`: build `aaaaaaaa`, publisher `bbbbbbbb`\n" in first
+
+
+def test_build_renders_missing_publisher_sha_and_keeps_payload_null(monkeypatch):
+    base = _receipt()
+    staged = signed_payload(
+        {**base, "identity": {**base["identity"], "publisher_code_sha": None}}
+    )
+    monkeypatch.setattr(receipt, "derive_receipt", lambda context: staged)
+    ctx = SimpleNamespace(plan=SimpleNamespace(run_id="6a-task4-r1"))
+
+    def staged_bytes() -> dict[str, bytes]:
+        return {
+            key.rsplit("/", 1)[-1]: data for key, data in receipt.build(ctx).artifacts
+        }
+
+    first = staged_bytes()
+    assert first == staged_bytes()
+    assert (
+        b"- Main run `r`: build `aaaaaaaa`, publisher `none recorded`\n"
+        in first["receipt.md"]
+    )
+    payload = json.loads(first["receipt.json"])
+    assert payload["identity"]["publisher_code_sha"] is None
+    assert payload["manifest_sha256"] == staged["manifest_sha256"]
 
 
 def test_verify_flags_a_receipt_that_differs_from_fresh_derivation(monkeypatch):

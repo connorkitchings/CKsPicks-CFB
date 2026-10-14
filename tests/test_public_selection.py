@@ -1,5 +1,9 @@
 """Focused tests for explicit public week selection, including V4 fallback."""
 
+import os
+from contextlib import nullcontext
+
+import psycopg
 import pytest
 
 from cks_picks_cfb.ops import public_selection
@@ -39,9 +43,11 @@ class FakeCursor:
         self.results = list(results)
         self.identities = identities
         self.executed = []
+        self.params = []
 
     def execute(self, sql, params=()):
         self.executed.append(sql)
+        self.params.append(params)
 
     def fetchone(self):
         if self.executed and "session_user" in self.executed[-1]:
@@ -403,3 +409,170 @@ def test_reselecting_the_same_run_writes_nothing():
     )
     assert previous == "2026w0-v4"
     assert not any("INSERT" in sql for sql in cur.executed)
+
+
+AS_OF = "2026-10-14T16:00:00+00:00"
+
+
+def _pending_manifest(monkeypatch, *, data_as_of=AS_OF):
+    import cks_picks_cfb.artifacts as artifacts_module
+    import cks_picks_cfb.data.storage as storage_module
+
+    monkeypatch.setattr(storage_module, "get_storage", lambda **_: object())
+    monkeypatch.setattr(
+        artifacts_module,
+        "read_json_artifact",
+        lambda *_: {"artifact_sha256": "a" * 64, "data_as_of": data_as_of},
+    )
+
+
+def _select_pending(cur, *, week=7):
+    return select_week_run(
+        cur,
+        season=2026,
+        week=week,
+        run_id="2026w7-display",
+        reason="display-only Week 7",
+        environment="preview",
+    )
+
+
+def _pending_cursor(window, *, state="published", evidence_class="pending"):
+    """Candidate, approval, stored-count, window and existing-selection rows in order."""
+    rows = [
+        _candidate(
+            week=7,
+            state=state,
+            model_id=V5_MODEL,
+            evidence_class=evidence_class,
+            bundle_sha256=V5_BUNDLE,
+        ),
+        ("approval-1", V5_MODEL, V5_BUNDLE, 2026, 5),
+        (8, 0),
+    ]
+    if window is not None:
+        rows.append(window)
+    rows.append(None)
+    return FakeCursor(rows)
+
+
+def _wrote_selection(cur):
+    return any("INSERT" in sql or "UPDATE current_week" in sql for sql in cur.executed)
+
+
+@pytest.mark.parametrize(
+    ("window", "message"),
+    [
+        ((False, 0, 0, False), "older than 6 hours"),
+        ((True, 1, 0, False), "game that has kicked off"),
+        ((True, 0, 1, False), "differ from the games scheduled after its cutoff"),
+        ((True, 0, 0, True), "later than the database clock"),
+    ],
+    ids=["older-than-6h", "game-kicked-off", "slate-differs", "future-cutoff"],
+)
+def test_pending_run_outside_its_window_is_never_selected(monkeypatch, window, message):
+    _pending_manifest(monkeypatch)
+    cur = _pending_cursor(window)
+    with pytest.raises(PublicSelectionError, match=message):
+        _select_pending(cur)
+    assert not _wrote_selection(cur)
+
+
+def test_fresh_pending_run_is_selected_against_its_manifest_cutoff(monkeypatch):
+    _pending_manifest(monkeypatch)
+    cur = _pending_cursor((True, 0, 0, False))
+    assert _select_pending(cur) is None
+    window = next(
+        params
+        for sql, params in zip(cur.executed, cur.params)
+        if "clock_timestamp" in sql
+    )
+    assert AS_OF in window
+    assert any("INSERT INTO site_week_selections" in sql for sql in cur.executed)
+
+
+def test_pending_manifest_without_a_cutoff_is_rejected(monkeypatch):
+    _pending_manifest(monkeypatch, data_as_of=None)
+    cur = _pending_cursor(None)
+    with pytest.raises(PublicSelectionError, match="no data cutoff"):
+        _select_pending(cur)
+    assert not _wrote_selection(cur)
+
+
+@pytest.mark.parametrize(
+    ("state", "evidence_class"), [("frozen", "live"), ("scored", "live")]
+)
+def test_frozen_and_scored_runs_skip_the_pending_window(state, evidence_class):
+    cur = _pending_cursor(None, state=state, evidence_class=evidence_class)
+    assert _select_pending(cur) is None
+    assert not any("clock_timestamp" in sql for sql in cur.executed)
+    assert any("INSERT INTO site_week_selections" in sql for sql in cur.executed)
+
+
+@pytest.mark.parametrize("prior_selection", [None, ("2026w7-display",)])
+def test_reselection_after_rollback_still_enforces_the_window(
+    monkeypatch, prior_selection
+):
+    """Rollback deselects Week 7; re-applying (or repeating) a stale run must fail."""
+    _pending_manifest(monkeypatch)
+    cur = _pending_cursor((False, 0, 0, False))
+    cur.results[-1] = prior_selection
+    with pytest.raises(PublicSelectionError, match="older than 6 hours"):
+        _select_pending(cur)
+    assert not _wrote_selection(cur)
+
+
+requires_db = pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
+
+
+@requires_db
+@pytest.mark.parametrize(
+    ("as_of_age", "kickoffs", "predicted", "message"),
+    [
+        ("1 hour", ["1 hour", "2 hours"], [1, 2], None),
+        ("7 hours", ["1 hour", "2 hours"], [1, 2], "older than 6 hours"),
+        ("1 hour", ["-10 minutes", "2 hours"], [1, 2], "kicked off"),
+        ("1 hour", ["1 hour", "2 hours"], [1], "differ"),
+        ("1 hour", ["-2 hours", "2 hours"], [2], None),
+        ("-1 hour", ["2 hours"], [1], "later than the database clock"),
+    ],
+    ids=[
+        "fresh",
+        "stale",
+        "started-since-cutoff",
+        "missing-game",
+        "omits-earlier-kickoff",
+        "future-cutoff",
+    ],
+)
+def test_pending_window_against_database_clock(as_of_age, kickoffs, predicted, message):
+    """Kickoffs and the cutoff are relative to the database clock (negative = past)."""
+    with psycopg.connect(os.environ["TEST_DATABASE_URL"]) as conn, conn.cursor() as cur:
+        cur.execute(
+            "CREATE TEMP TABLE games (game_id BIGINT, season INT, week INT, "
+            "start_date TIMESTAMPTZ)"
+        )
+        cur.execute("CREATE TEMP TABLE predictions (run_id TEXT, game_id BIGINT)")
+        for game_id, offset in enumerate(kickoffs, start=1):
+            cur.execute(
+                "INSERT INTO games VALUES (%s, 2026, 7, now() + %s::interval)",
+                (game_id, offset),
+            )
+        cur.executemany(
+            "INSERT INTO predictions VALUES ('run', %s)", [(g,) for g in predicted]
+        )
+        cur.execute("SELECT (now() - %s::interval)::text", (as_of_age,))
+        as_of = cur.fetchone()[0]
+        expectation = (
+            nullcontext()
+            if message is None
+            else pytest.raises(PublicSelectionError, match=message)
+        )
+        with expectation:
+            public_selection._require_open_pending_window(
+                cur, season=2026, week=7, run_id="run", as_of=as_of
+            )
+        conn.rollback()

@@ -368,21 +368,27 @@ def audit(
                     "run bundle differs from audited bundle",
                 )
             )
-        if (
-            week == 6
-            and (
-                pd.to_datetime(f.forecast_as_of, utc=True)
-                >= pd.Timestamp("2026-10-07T00:00:00Z")
-            ).any()
-        ):
-            violations.append(
-                violation(
-                    "c_forecast_time",
-                    None,
-                    week,
-                    "Week 6 forecast must precede 2026-10-07T00:00:00Z",
-                )
+        if not r["per_game_cutoffs"]:
+            # A display/live run forecasts its slate from one as_of; it must precede
+            # the slate's first scheduled kickoff. Replays are checked per game on
+            # event time by run_audit.
+            lock = locks[week]
+            schedule = pd.DataFrame(
+                lock["games"]["rows"], columns=lock["games"]["columns"]
             )
+            first_kickoff = pd.to_datetime(
+                schedule.loc[schedule.week.astype(int).eq(week), "start_date"], utc=True
+            ).min()
+            if (pd.to_datetime(f.forecast_as_of, utc=True) >= first_kickoff).any():
+                violations.append(
+                    violation(
+                        "c_forecast_time",
+                        None,
+                        week,
+                        f"display/live forecast must precede the slate's first kickoff "
+                        f"{first_kickoff.isoformat()}",
+                    )
+                )
         if week == 6 and len(g) != 58:
             violations.append(
                 violation(
@@ -473,21 +479,22 @@ def audit(
     return receipt
 
 
-def main():
-    load_dotenv()
+MAX_WEEK = 7
+# Corrected replay runs that already pass the audit; later weeks must be named with --run.
+DEFAULT_REPLAY_RUN_WEEKS = range(6)
+
+
+def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--environment", choices=["preview", "production"], required=True)
     p.add_argument("--season", type=int, choices=[2026], required=True)
-    p.add_argument("--through-week", type=int, choices=range(7), required=True)
+    p.add_argument(
+        "--through-week", type=int, choices=range(MAX_WEEK + 1), required=True
+    )
     p.add_argument(
         "--source-lock",
         type=Path,
         default=Path("conf/rebuild/successor_lock_w5_v1.json"),
-    )
-    p.add_argument(
-        "--live-source-lock",
-        type=Path,
-        default=Path("conf/rebuild/successor_lock_w6live_v1.json"),
     )
     p.add_argument("--bridge-uri", default=DEFAULT_BRIDGE)
     p.add_argument(
@@ -496,10 +503,13 @@ def main():
         + "v5-intended-update-2026-corrected-w5-r1/rating-manifest.json",
     )
     p.add_argument(
-        "--live-rating-uri",
-        default=RATING_ROOT
-        + "v5-intended-update-2026-corrected-w6live-r1/rating-manifest.json",
+        "--live-week",
+        type=int,
+        choices=range(MAX_WEEK + 1),
+        help="week audited with --live-source-lock/--live-rating-uri (default: none)",
     )
+    p.add_argument("--live-source-lock", type=Path)
+    p.add_argument("--live-rating-uri")
     p.add_argument(
         "--run", action="append", default=[], help="override exact WEEK=RUN_ID"
     )
@@ -508,7 +518,42 @@ def main():
         type=Path,
         default=Path("artifacts/audit/leakage_audit_receipt_2026.json"),
     )
-    args = p.parse_args()
+    args = p.parse_args(argv)
+    weeks = range(args.through_week + 1)
+    args.runs = {
+        w: f"2026w{w}-v5repair-20261008-c2"
+        for w in weeks
+        if w in DEFAULT_REPLAY_RUN_WEEKS
+    }
+    for item in args.run:
+        week, sep, run = item.partition("=")
+        if not sep or not week.isdigit() or int(week) not in weeks or not run:
+            p.error(f"--run must be WEEK=RUN_ID with WEEK in 0..{args.through_week}")
+        args.runs[int(week)] = run
+    if missing := [w for w in weeks if w not in args.runs]:
+        p.error(f"--run WEEK=RUN_ID required for week(s) {missing}")
+    if args.live_week is not None:
+        if args.live_week not in weeks:
+            p.error("--live-week must be within --through-week")
+        if args.live_source_lock is None or args.live_rating_uri is None:
+            p.error("--live-week requires --live-source-lock and --live-rating-uri")
+    return args
+
+
+def week_inputs(args):
+    """Each audited week's source lock and rating URI; only --live-week uses the live pair."""
+    locks, ratings = {}, {}
+    for week in args.runs:
+        live = week == args.live_week
+        raw = (args.live_source_lock if live else args.source_lock).read_bytes()
+        locks[week] = {**json.loads(raw), "_audit_raw_sha256": sha(raw)}
+        ratings[week] = args.live_rating_uri if live else args.rating_uri
+    return locks, ratings
+
+
+def main():
+    load_dotenv()
+    args = parse_args()
     if os.getenv("CFB_STORAGE_BACKEND") != "r2":
         raise SystemExit("audit requires explicit R2 backend")
     if Path("data").resolve() in [
@@ -516,18 +561,8 @@ def main():
         *args.output.resolve().parents,
     ]:
         raise SystemExit("audit output cannot be repository ./data")
-    runs = {
-        w: f"2026w{w}-v5repair-20261008-" + ("d2" if w == 6 else "c2")
-        for w in range(args.through_week + 1)
-    }
-    for item in args.run:
-        w, run = item.split("=", 1)
-        runs[int(w)] = run
-    locks = {}
-    for week in runs:
-        raw = (args.live_source_lock if week == 6 else args.source_lock).read_bytes()
-        locks[week] = {**json.loads(raw), "_audit_raw_sha256": sha(raw)}
-    ratings = {w: args.live_rating_uri if w == 6 else args.rating_uri for w in runs}
+    runs = args.runs
+    locks, ratings = week_inputs(args)
     url = os.getenv(
         "PREVIEW_DATABASE_URL" if args.environment == "preview" else "DATABASE_URL"
     )

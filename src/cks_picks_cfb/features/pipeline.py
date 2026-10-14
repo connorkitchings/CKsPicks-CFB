@@ -65,6 +65,7 @@ def build_preaggregation_pipeline(
     *,
     nullable_ppa: bool = False,
     play_identity: str = "byplay_v1",
+    v1_collision_exceptions: frozenset[int | str] = frozenset(),
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run plays → byplay → drives → team-game → team-season pipeline.
 
@@ -76,6 +77,9 @@ def build_preaggregation_pipeline(
     from ``ppa`` then average the non-null plays; the withhold semantics for EPA metrics live
     in ``team_game_metrics``, not in those legacy columns. The default reproduces every
     existing Silver version.
+
+    ``v1_collision_exceptions`` lists the byplay_v1 games whose pinned lineage kept the
+    first of several distinct source plays at one sequence (see ``allplays_to_byplay``).
 
     Args:
         plays_raw_df: Raw plays DataFrame containing at minimum season and week.
@@ -107,10 +111,13 @@ def build_preaggregation_pipeline(
             "Input DataFrame to pipeline is missing required 'week' column."
         )
 
-    # The v1 call is left exactly as it was; only v2 passes the identity option.
+    # The v1 call is left exactly as it was unless the plan lists collision exceptions;
+    # only v2 passes the identity option.
     identity_options = (
         {} if play_identity == "byplay_v1" else {"play_identity": play_identity}
     )
+    if v1_collision_exceptions:
+        identity_options["v1_collision_exceptions"] = v1_collision_exceptions
     byplay = allplays_to_byplay(
         plays_raw_df,
         corrections=corrections_df,

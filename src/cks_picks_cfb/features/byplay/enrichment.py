@@ -236,12 +236,20 @@ def calculate_st_analytics(df: pd.DataFrame) -> pd.DataFrame:
     return df_copy
 
 
+def _game_key(game_id: object) -> str:
+    """One spelling per game ID whether the frame holds it as int, float or string."""
+    if isinstance(game_id, float) and game_id.is_integer():
+        return str(int(game_id))
+    return str(game_id).strip()
+
+
 def allplays_to_byplay(
     data: pd.DataFrame,
     corrections: pd.DataFrame | None = None,
     *,
     nullable_ppa: bool = False,
     play_identity: str = BYPLAY_V1,
+    v1_collision_exceptions: frozenset[int | str] = frozenset(),
 ) -> pd.DataFrame:
     """Transform raw plays into enriched by-play dataset.
 
@@ -251,6 +259,11 @@ def allplays_to_byplay(
     displayed drive/play number are all kept. Row order inside such a tie follows the input
     and carries no meaning; ordering and unresolved ties are a separate contract step. The
     default ``byplay_v1`` keeps the sequence key and fails closed on a collision.
+
+    ``v1_collision_exceptions`` names the games whose pinned byplay_v1 lineage was built
+    before that guard, by keeping the first row at each sequence. Those games keep that
+    behaviour; a collision in any other game still blocks, and a listed game without a
+    collision blocks too so a stale exception cannot linger. Ignored for byplay_v2.
 
     ``ppa_missing`` is always derived from the provider value before any conversion.
     With the default ``nullable_ppa=False`` a missing PPA is then zero-filled, which is what
@@ -270,16 +283,25 @@ def allplays_to_byplay(
         # or scoring play. Exact repeated records may be collapsed safely.
         sequence = ["game_id", "drive_number", "play_number"]
         collisions = df.loc[df.duplicated(sequence, keep=False)]
-        if not collisions.empty:
-            provider_fields = [
-                column for column in collisions if not column.startswith("__capture_")
-            ]
-            distinct = collisions[provider_fields].drop_duplicates()
-            if distinct.duplicated(sequence).any():
-                raise ValueError(
-                    "byplay_v1 cannot represent distinct source plays at one sequence; "
-                    "resolve provider identity under a versioned schema"
-                )
+        provider_fields = [
+            column for column in collisions if not column.startswith("__capture_")
+        ]
+        distinct = collisions[provider_fields].drop_duplicates()
+        colliding = set(
+            distinct.loc[distinct.duplicated(sequence), "game_id"].map(_game_key)
+        )
+        allowed = {_game_key(game_id) for game_id in v1_collision_exceptions}
+        if blocked := colliding - allowed:
+            raise ValueError(
+                "byplay_v1 cannot represent distinct source plays at one sequence; "
+                "resolve provider identity under a versioned schema "
+                f"(games {sorted(blocked)})"
+            )
+        if unused := allowed - colliding:
+            raise ValueError(
+                f"unused byplay_v1 collision exceptions: games {sorted(unused)} "
+                "have no distinct source plays at one sequence"
+            )
         df = df.drop_duplicates(subset=sequence, keep="first")
 
     # --- Normalize column names first ---

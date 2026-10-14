@@ -216,8 +216,10 @@ def verify(context: StageContext) -> list[str]:
             problems.append(f"{column} changes differ from the punt fix")
     if not fix["fits_punt_return_fix"]:
         problems.append("special-teams changes are not the punt fix")
-    if differences.get("ppa") != summary["ppa"]["null_ppa"]:
-        problems.append("ppa changes are not exactly the nulled values")
+    # Only legacy zero PPA may change (to null); a legacy byplay that is already
+    # nullable has no zeros, so it must show no PPA differences at all.
+    if differences.get("ppa", 0) != summary["ppa"]["legacy_zero_ppa"]:
+        problems.append("ppa changes are not exactly the legacy zero values")
     if summary["ppa"]["null_ppa"] <= 0:
         problems.append("no null PPA: nullable mode not in effect")
     for dataset, info in summary["datasets"].items():
