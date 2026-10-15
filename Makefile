@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem season-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -28,13 +28,10 @@ help:
 	@echo "  make fetch-source YEAR=2026 WEEK=0 ENTITY=games ENV=preview"
 	@echo "  make build-silver YEAR=2026 DATASET=games CAPTURE_ID=... AS_OF=... ENV=preview"
 	@echo "  make readiness YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview"
-	@echo "  make publish-week YEAR=2026 WEEK=1  - Legacy V4 pregame publish / rollback path"
 	@echo "  make prepare-week YEAR=2026 WEEK=1 - Rebuild cumulative Silver/Gold before publish"
 	@echo "  make team-stats YEAR=2026 WEEK=6 ENV=preview [DRY=1] - Publish pre-game team stats for the week"
 	@echo "  make promote-silver YEAR=2026 [DRY=1] - Register Preview Silver in the production catalog"
 	@echo "  make matchup-data YEAR=2026 ENV=preview RATING_URI=... MEASUREMENT_URI=... [APPLY=1] - Publish V5 matchup data (dry run by default)"
-	@echo "  make freeze-week YEAR=2026 WEEK=1  - Freeze the active run before kickoff"
-	@echo "  make close-week YEAR=2026 WEEK=1  - Postgame close (refresh scores → score → stats)"
 	@echo "  make reconcile YEAR=2026 ENV=preview - Catalog orphaned immutable artifacts"
 	@echo "  make audit-data YEAR=2026 ENV=preview - Audit Gold training data and lineage"
 	@echo "  make train-week0 - Generate temporal regime candidate predictions"
@@ -43,8 +40,13 @@ help:
 	@echo "  make generate-game-ordinal STAGE=selection|locked FEATURE_REF_URI=... OUTPUT=... ENV=preview"
 	@echo "  make evaluate-game-ordinal STAGE=selection|locked CANDIDATES=... REPORT_URI=... ENV=preview"
 	@echo "  make refit-game-ordinal FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"
-	@echo "  make weekly YEAR=2026 WEEK=1  - Alias for legacy V4 publish-week (unchanged)"
-	@echo "  V5: follow docs/ops/v5_weekly_operator.md for reviewed stage commands and release gates"
+	@echo ""
+	@echo "Weekly season release (docs/ops/weekly_runbook.md; WEEK = upcoming week):"
+	@echo "  make season-revision WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
+	@echo "  make season-prepare WEEK=8 AS_OF=... [RECONSTRUCT=1]  - Prepare the candidate from a clean committed tree"
+	@echo "  make season-release ENV=preview|production RELEASE_ID=season-2026-... PROJECTION_SHA=... EXPECTED_PREVIOUS=...|INITIAL=1"
+	@echo "  make season-rollback RELEASE_ID=... EXPECTED_PREVIOUS=... DECISION_REF=... OWNER_AUTHORIZED=1  - Production, owner credential"
+	@echo "  make weekly / publish-week / freeze-week / close-week  - Removed (legacy path); they exit with an error"
 	@echo ""
 	@echo "Database (requires DATABASE_URL):"
 	@echo "  make db-publish YEAR=2026 WEEK=1  - Publish predictions CSV to Postgres"
@@ -212,25 +214,40 @@ readiness:
 	fi
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops readiness --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),)
 
-publish-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make publish-week YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview|production"; exit 1; \
-	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),) $(if $(PREPARED_GOLD_REF_URI),--prepared-gold-ref-uri $(PREPARED_GOLD_REF_URI),)
+# Legacy publication path: it writes public.prediction_runs, which the atomic
+# season release now serves. Removed from operation; the code goes in Phase 3.
+publish-week freeze-week close-week weekly:
+	@echo "make $@ is removed — see docs/ops/weekly_runbook.md (make season-revision / season-prepare / season-release)" >&2; exit 1
 
-freeze-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make freeze-week YEAR=2026 WEEK=1 ENV=preview|production [WAIVER='reason'] [DECISION_REF=ref (required for 2026 Week 5+ V5 freezes)]"; exit 1; \
-	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops freeze-week --year $(YEAR) --week $(WEEK) --environment $(ENV) $(if $(WAIVER),--waiver "$(WAIVER)",) $(if $(DECISION_REF),--decision-ref "$(DECISION_REF)",)
+# Atomic season releases (docs/ops/weekly_runbook.md). WEEK is the upcoming
+# week being forecast; the completed week is WEEK-1. Data commands run under the
+# Keychain wrappers in scripts/ops/, never against .env defaults.
+SEASON_OUTPUT := artifacts/season/2026/preview
+SEASON_ENV := CFB_STORAGE_BACKEND=r2 PYTHONPATH=src:.
 
-close-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make close-week YEAR=2026 WEEK=1 AS_OF=ISO-8601 ENV=preview|production"; exit 1; \
+season-revision:
+	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(PRE_WEEK_CUTOFF)" ] || [ -z "$(RUN_ID)" ]; then \
+		echo "Usage: make season-revision WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops close-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(foreach WAIVER,$(CANCELLATION_WAIVERS),--cancellation-waiver "$(WAIVER)")
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/build_season_revision.py --season 2026 --week $(WEEK) --environment preview --as-of $(AS_OF) --pre-week-cutoff $(PRE_WEEK_CUTOFF) --pipeline-run-id $(RUN_ID) $(if $(DRY),--dry-run,)
 
-weekly: publish-week
+season-prepare:
+	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ]; then \
+		echo "Usage: make season-prepare WEEK=<upcoming week> AS_OF=<PRE_WEEK_CUTOFF> [RECONSTRUCT=1] (clean committed tree required)" >&2; exit 1; \
+	fi
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/run_season.py prepare --model-manifest conf/season/2026/model_manifest_v1.json --revision-manifest conf/season/2026/revision_manifest_w$(WEEK)_v1.json --through-week $$(( $(WEEK) - 1 )) --next-week $(WEEK) $(if $(RECONSTRUCT),--reconstruct-next-week,) --as-of $(AS_OF) --output $(SEASON_OUTPUT) --environment preview
+
+season-release:
+	@if [ "$(ENV)" != "preview" ] && [ "$(ENV)" != "production" ] || [ -z "$(RELEASE_ID)" ] || [ -z "$(PROJECTION_SHA)" ] || { [ -z "$(EXPECTED_PREVIOUS)" ] && [ -z "$(INITIAL)" ]; }; then \
+		echo "Usage: make season-release ENV=preview|production RELEASE_ID=season-2026-... PROJECTION_SHA=<sha256> EXPECTED_PREVIOUS=<active release id> (or INITIAL=1)" >&2; exit 1; \
+	fi
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh $(if $(filter production,$(ENV)),zsh scripts/ops/with_production_pipeline_env.sh,) uv run python scripts/pipeline/run_season.py release --environment $(ENV) $(if $(INITIAL),--initial,--expected-previous-release-id $(EXPECTED_PREVIOUS)) --run-manifest $(SEASON_OUTPUT)/$(patsubst production-%,%,$(patsubst preview-%,%,$(RELEASE_ID)))/run-manifest.json --projection-payload-sha256 $(PROJECTION_SHA)
+
+season-rollback:
+	@if [ -z "$(RELEASE_ID)" ] || [ -z "$(EXPECTED_PREVIOUS)" ] || [ -z "$(DECISION_REF)" ] || [ "$(OWNER_AUTHORIZED)" != "1" ]; then \
+		echo "Usage: make season-rollback RELEASE_ID=<prior release id> EXPECTED_PREVIOUS=<active release id> DECISION_REF=<ref> OWNER_AUTHORIZED=1 (Production, owner credential)" >&2; exit 1; \
+	fi
+	$(SEASON_ENV) zsh scripts/ops/with_production_owner_env.sh uv run python scripts/pipeline/run_season.py rollback --environment production --season 2026 --release-id $(RELEASE_ID) --expected-previous-release-id $(EXPECTED_PREVIOUS) --owner-authorized --decision-ref "$(DECISION_REF)"
 
 replay-season:
 	@if [ -z "$(YEAR)" ] || [ "$(ENV)" != "preview" ]; then \

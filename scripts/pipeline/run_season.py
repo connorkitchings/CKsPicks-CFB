@@ -105,6 +105,20 @@ def _sealed_candidate(manifest: dict, pinned_sha256: str) -> tuple[bytes, bytes]
     return projection, verification
 
 
+def database_release_id(value: str | None, environment: str) -> str | None:
+    """The database release ID: prefixed IDs as given, bare run IDs prefixed.
+
+    Staging records ``<environment>-<run id>``; the local run folder is the bare ID.
+    """
+    if value is None or value.startswith(f"{environment}-"):
+        return value
+    if value.startswith(("preview-", "production-")):
+        raise ValueError(f"release ID {value} does not belong to {environment}")
+    if not value.startswith("season-"):
+        raise ValueError(f"unrecognized release ID: {value}")
+    return f"{environment}-{value}"
+
+
 def _release(args: argparse.Namespace) -> int:
     import psycopg
 
@@ -116,6 +130,11 @@ def _release(args: argparse.Namespace) -> int:
 
     if bool(args.initial) == bool(args.expected_previous_release_id):
         raise ValueError("choose --initial or --expected-previous-release-id")
+    args.expected_previous_release_id = database_release_id(
+        args.expected_previous_release_id, args.environment
+    )
+    if args.command == "rollback":
+        args.release_id = database_release_id(args.release_id, args.environment)
     if (
         os.getenv("CFB_STORAGE_BACKEND") != "r2"
         or os.getenv("CFB_ARTIFACT_ENV") != args.environment

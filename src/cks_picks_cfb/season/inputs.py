@@ -12,11 +12,10 @@ import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.preseason_features import canonical_team
-from cks_picks_cfb.ratings.possession_measurements import (
-    _MALFORMED_SCORE_REASONS,
-    build_measurements,
-)
+from cks_picks_cfb.ratings.possession_measurements import build_measurements
 from cks_picks_cfb.season.manifest import canonical, sha, utc, validate_ref
+
+REPOSITORY = Path(__file__).resolve().parents[3]
 
 
 class Reader(Protocol):
@@ -56,9 +55,81 @@ class SeasonInputs:
     venue_games: pd.DataFrame | None = None
     venues: pd.DataFrame | None = None
     teams: pd.DataFrame | None = None
+    #: Declared non-reconciling team-games: ``{(game_id, team): reason}``.
+    score_exceptions: dict = field(default_factory=dict)
 
 
 OPTIONAL_REVISION_INPUTS = ("venue_games", "venues", "teams")
+
+
+def score_exceptions(revision: dict) -> dict[tuple[int, str], str]:
+    """The revision's pinned ``score_reconciliation_exceptions`` file, if any.
+
+    The file is a JSON list of ``{"game_id", "team", "reason"}`` entries.
+    """
+    ref = revision.get("score_reconciliation_exceptions")
+    if ref is None:
+        return {}
+    raw = (REPOSITORY / ref["uri"]).read_bytes()
+    if sha(raw) != ref["sha256"]:
+        raise ValueError(f"input checksum changed: {ref['uri']}")
+    entries = json.loads(raw)
+    declared = {}
+    for entry in entries if isinstance(entries, list) else [None]:
+        if (
+            not isinstance(entry, dict)
+            or set(entry) != {"game_id", "team", "reason"}
+            or not isinstance(entry["game_id"], int)
+            or not all(
+                isinstance(entry[k], str) and entry[k] for k in ("team", "reason")
+            )
+        ):
+            raise ValueError("score exception requires game_id, team and reason")
+        key = (entry["game_id"], canonical_team(entry["team"]))
+        if key in declared:
+            raise ValueError(f"duplicate score exception: game {key[0]}, team {key[1]}")
+        declared[key] = entry["reason"]
+    return declared
+
+
+def score_reconciliation_problems(
+    completed: pd.DataFrame,
+    finals: pd.DataFrame,
+    events: pd.DataFrame,
+    exceptions: dict[tuple[int, str], str],
+) -> list[str]:
+    """Exact per team-game reconciliation of scoring-event totals to final scores.
+
+    A team-game whose total differs passes only when declared in ``exceptions``; a
+    declared team-game that reconciles fails, so no exception outlives its repair.
+    """
+    totals = {
+        (int(game_id), team): float(total)
+        for (game_id, team), total in events.assign(
+            score_increment=pd.to_numeric(events.score_increment)
+        )
+        .groupby(["game_id", "team"])
+        .score_increment.sum()
+        .items()
+    }
+    scores = finals.set_index("game_id")
+    differs = {
+        (int(game.game_id), team)
+        for game in completed.itertuples()
+        for team, column in (
+            (game.home_team, "home_points"),
+            (game.away_team, "away_points"),
+        )
+        if totals.get((int(game.game_id), team), 0.0)
+        != float(scores.loc[game.game_id, column])
+    }
+    return [
+        f"score reconciliation differs: game {g}, team {t}"
+        for g, t in sorted(differs - set(exceptions))
+    ] + [
+        f"unused score reconciliation exception: game {g}, team {t}"
+        for g, t in sorted(set(exceptions) - differs)
+    ]
 
 
 def load_inputs(
@@ -262,7 +333,8 @@ def load_inputs(
         raise ValueError("PPP observations do not cover completed team-game roles")
     events = events[events.season.eq(2026) & events.game_id.isin(ids)].copy()
     events["team"] = events.team.map(canonical_team)
-    # Require independently reconciled exact score totals, including unresolved allocations.
+    # Every team-game's scoring events must sum exactly to its final score, unless
+    # the revision declares that team-game in its pinned score exceptions.
     if {"team", "score_increment"} - set(events):
         raise ValueError("scoring events lack score reconciliation")
     participants = {
@@ -280,36 +352,9 @@ def load_inputs(
     increments = pd.to_numeric(events.score_increment, errors="raise")
     if increments.isna().any() or (increments < 0).any():
         raise ValueError("scoring events contain unresolved score amounts")
-    totals = (
-        events.assign(score_increment=increments)
-        .groupby(["game_id", "team"])
-        .score_increment.sum()
-    )
-    score_by_id = finals.set_index("game_id")
-    malformed_teams = set()
-    if "quality_reason" in events:
-        for (g, t), grp in events.groupby(["game_id", "team"]):
-            if grp["quality_reason"].isin(_MALFORMED_SCORE_REASONS).any():
-                malformed_teams.add((int(g), t))
-    exact, expected = 0, 0
-    for game in completed.itertuples():
-        for team, column in (
-            (game.home_team, "home_points"),
-            (game.away_team, "away_points"),
-        ):
-            if (int(game.game_id), team) in malformed_teams:
-                continue
-            expected += 1
-            if (
-                totals.get((game.game_id, team), 0)
-                == score_by_id.loc[game.game_id, column]
-            ):
-                exact += 1
-    rate = (exact / expected) if expected else 0.0
-    if rate < 0.94:
-        raise ValueError(
-            f"season final-score reconciliation is below 94%: {rate:.4f} ({exact}/{expected})"
-        )
+    exceptions = score_exceptions(revision)
+    if problems := score_reconciliation_problems(completed, finals, events, exceptions):
+        raise ValueError("; ".join(problems))
     terminal = frame(reader, m["terminal"])
     historical_population = frame(reader, m["historical_population"])
     historical_events = frame(reader, m["historical_events"])
@@ -355,4 +400,5 @@ def load_inputs(
             frame(reader, r[name]) if name in r else None
             for name in OPTIONAL_REVISION_INPUTS
         ),
+        score_exceptions=exceptions,
     )

@@ -1,0 +1,212 @@
+[
+  {
+    "game_id": 401856661,
+    "team": "Louisville",
+    "reason": "Week 1 scoring events sum to 16, final is 38; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401856695,
+    "team": "Vanderbilt",
+    "reason": "Week 3 scoring events sum to 28, final is 35; play-by-play score stream flagged score_regression_rollback"
+  },
+  {
+    "game_id": 401856716,
+    "team": "Missouri",
+    "reason": "Week 6 scoring events sum to 7, final is 27; play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
+    "game_id": 401856783,
+    "team": "Texas Tech",
+    "reason": "Week 2 scoring events sum to 21, final is 35; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401856790,
+    "team": "UCF",
+    "reason": "Week 2 scoring events sum to 0, final is 7; play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
+    "game_id": 401856793,
+    "team": "Northern Illinois",
+    "reason": "Week 3 scoring events sum to 10, final is 17; play-by-play score stream flagged score_regression_rollback"
+  },
+  {
+    "game_id": 401856816,
+    "team": "Utah",
+    "reason": "Week 4 scoring events sum to 6, final is 31; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401856825,
+    "team": "Houston",
+    "reason": "Week 6 scoring events sum to 7, final is 35; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858201,
+    "team": "Stanford",
+    "reason": "Week 0 scoring events sum to 14, final is 37; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858206,
+    "team": "Miami",
+    "reason": "Week 1 scoring events sum to 7, final is 45; play-by-play score stream flagged score_regression_or_nonintegral, score_regression_rollback"
+  },
+  {
+    "game_id": 401858206,
+    "team": "Stanford",
+    "reason": "Week 1 scoring events sum to 0, final is 6; play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
+    "game_id": 401858224,
+    "team": "Purdue",
+    "reason": "Week 2 scoring events sum to 7, final is 36; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858224,
+    "team": "Wake Forest",
+    "reason": "Week 2 scoring events sum to 7, final is 38; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858245,
+    "team": "Pittsburgh",
+    "reason": "Week 5 scoring events sum to 7, final is 35; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401858247,
+    "team": "California",
+    "reason": "Week 5 scoring events sum to 7, final is 31; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858259,
+    "team": "Virginia Tech",
+    "reason": "Week 6 scoring events sum to 7, final is 20; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858433,
+    "team": "Oregon",
+    "reason": "Week 1 scoring events sum to 14, final is 34; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858436,
+    "team": "USC",
+    "reason": "Week 1 scoring events sum to 0, final is 39; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401858445,
+    "team": "USC",
+    "reason": "Week 2 scoring events sum to 7, final is 49; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401858454,
+    "team": "Ohio State",
+    "reason": "Week 3 scoring events sum to 0, final is 59; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858460,
+    "team": "Wisconsin",
+    "reason": "Week 3 scoring events sum to 35, final is 54; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858464,
+    "team": "Nebraska",
+    "reason": "Week 4 scoring events sum to 18, final is 31; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858475,
+    "team": "Maryland",
+    "reason": "Week 5 scoring events sum to 0, final is 23; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858482,
+    "team": "Northwestern",
+    "reason": "Week 6 scoring events sum to 21, final is 45; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401859184,
+    "team": "Notre Dame",
+    "reason": "Week 2 scoring events sum to 7, final is 52; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401860899,
+    "team": "Colorado State",
+    "reason": "Week 5 scoring events sum to 7, final is 26; play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
+    "game_id": 401860899,
+    "team": "Oregon State",
+    "reason": "Week 5 scoring events sum to 14, final is 56; play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
+    "game_id": 401860900,
+    "team": "San Diego State",
+    "reason": "Week 5 scoring events sum to 11, final is 31; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401861970,
+    "team": "Miami (OH)",
+    "reason": "Week 4 scoring events sum to 1, final is 24; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401862703,
+    "team": "Florida Atlantic",
+    "reason": "Week 2 scoring events sum to 14, final is 38; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401862710,
+    "team": "Old Dominion",
+    "reason": "Week 3 scoring events sum to 0, final is 17; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401862771,
+    "team": "Florida Atlantic",
+    "reason": "Week 3 scoring events sum to 0, final is 16; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401864502,
+    "team": "Air Force",
+    "reason": "Week 2 scoring events sum to 0, final is 32; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401864502,
+    "team": "North Dakota State",
+    "reason": "Week 2 scoring events sum to 14, final is 38; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401864514,
+    "team": "New Mexico",
+    "reason": "Week 5 scoring events sum to 7, final is 61; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401864579,
+    "team": "New Mexico State",
+    "reason": "Week 4 scoring events sum to 6, final is 18; play-by-play score stream flagged score_regression_rollback"
+  },
+  {
+    "game_id": 401866425,
+    "team": "Kent State",
+    "reason": "Week 4 scoring events sum to 7, final is 26; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401869933,
+    "team": "South Alabama",
+    "reason": "Week 6 scoring events sum to 0, final is 56; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401869942,
+    "team": "Coastal Carolina",
+    "reason": "Week 5 scoring events sum to 0, final is 24; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401869961,
+    "team": "James Madison",
+    "reason": "Week 4 scoring events sum to 0, final is 46; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401869965,
+    "team": "Louisiana",
+    "reason": "Week 6 scoring events sum to 0, final is 31; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401871049,
+    "team": "New Mexico State",
+    "reason": "Week 5 scoring events sum to 6, final is 34; play-by-play score stream flagged impossible_score_increment"
+  }
+]

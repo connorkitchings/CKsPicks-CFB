@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from pathlib import PurePosixPath
 from typing import Any
 
 import pandas as pd
@@ -82,5 +83,12 @@ def validate_revision(revision: dict) -> None:
         validate_ref(revision["inputs"][name])
     for name, ref in revision["inputs"].items():
         validate_ref(ref)
+    if "score_reconciliation_exceptions" in revision:
+        # A repository file pinned by raw sha256, so the revision hash binds it.
+        ref = revision["score_reconciliation_exceptions"]
+        validate_ref(ref)
+        path = PurePosixPath(ref["uri"])
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("score exceptions must be a repository-relative path")
     for value in revision["pre_week_cutoffs"].values():
         utc(value)

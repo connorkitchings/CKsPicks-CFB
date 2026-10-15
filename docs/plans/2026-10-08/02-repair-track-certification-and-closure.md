@@ -381,7 +381,7 @@ The Sunday-evening checkpoint in the 2026-10-08 decisions was **not met**: `buil
 - The forecast manifest records `current_teams` (`uri`, `raw_sha256`) and the post-Week-6 generation identity.
 - `scripts/pipeline/verify_v5_corrected_live_serving.py` requires `#pregame:` refs on replay predictions and `#current:` refs on live predictions, requires every live ref's sha to equal the rating manifest's `current_teams.raw_sha256`, and recomputes the live ratings from that frame.
 
-**6A `-r2` provenance, from [the October 13 session log](../../../session_logs/2026-10-13/01-week7-prep-6a-w6-publish-and-task4-build.md).**
+**6A `-r2` provenance, from the October 13 session log at `session_logs/2026-10-13/01-week7-prep-6a-w6-publish-and-task4-build.md`.**
 
 - *Build/verify/publish split.* The first `verify` of `6a-rebuild-w6-20261012-r2` failed on `silver_2026: ppa changes are not exactly the nulled values`; the fix (`2147c5fb`) compares against `legacy_zero_ppa`. The run was re-preflighted at the fix commit after the user moved the create-once `preflight.json` and failed `verify.json` aside. The published root therefore records code `2147c5fb` and preflight `eb3983ce…`, while the 11 stage manifests still carry build code `30a12a6d` and preflight `e2609793…`.
 - *Null publisher sha.* The root was published with `rebuild_6a.py publish` rather than the designed `scripts/pipeline/publish_6a.py`, so it carries `publisher_code_sha: null` and no catalog registration. The root is create-once and cannot be corrected; the Task 4 receipt renders the publisher as "none recorded", and catalog registration is recovered separately (Task 4 contract Step 4). Future 6A publishes use `publish_6a.py` with `--apply` from a clean tree.

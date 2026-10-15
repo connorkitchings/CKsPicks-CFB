@@ -4,7 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-14 (Migration 0025 applied and atomic season release `production-season-2026-d0272a48d3a0252fd4196db3` activated in Production; Preview release `preview-season-2026-d0272a48d3a0252fd4196db3`; full historical reconstruction Weeks 0–6 with complete mid-week coverage for Weeks 6 and 7) · **Verified from:**
+> **Last updated:** 2026-10-15 (Phase 1 review-fixes closeout; serving state last verified 2026-10-14: Migration 0025 applied and atomic season release `production-season-2026-d0272a48d3a0252fd4196db3` activated in Production; Preview release `preview-season-2026-d0272a48d3a0252fd4196db3`; full historical reconstruction Weeks 0–6 with complete mid-week coverage for Weeks 6 and 7) · **Verified from:**
 > `session_logs/2026-10-14/07-web-ui-cleanup-and-early-games-reconstruction.md`,
 > `session_logs/2026-10-14/06-stages-1-to-3-preview-cutover.md`,
 > `docs/plans/2026-10-14/01-season-operations-and-week7-bridge.md`.
@@ -57,6 +57,10 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 The display-only Week 6 run was published and selected in Production on 2026-10-09 ([contract `02`](plans/2026-10-09/02-week6-display-production-release.md), Amendment 7). `main` and `dev` carry the same contents (`656cf320`; `main`'s tip is the merge commit `b26ecca4`) and CI on `main` passed. Basic live-site checks were confirmed by the user, but contract `02` Task 6 (deployed revision, visual check, notice setting, post-grade readback) is not closed. **Still open:** `CFB_DISPLAY_ONLY_NOTICE=0` in Vercel, the post-finals grades-only backfill, and contract `02` Tasks 6-7. Week 6 is never frozen or closed.
 
 ## Open work
+
+- **Weeks 6–7 review fixes, Phase 1 (2026-10-15):** revision builder, exact per-team-game score reconciliation with pinned exceptions, release-ID normalization, owner rollback wrapper, season Make targets, rewritten [weekly runbook](ops/weekly_runbook.md) and active-release health reporting are implemented locally. [Review contract](plans/2026-10-15/01-review-fixes-and-v5-streamline.md) remains In Progress; Phase 1 validation is complete and the proposed commit awaits the owner. Phases 2 and 3 are gated on that commit. Week 8 Preview execution awaits Week 7 finals/controller inputs after Sunday October 18; refresh the reconciliation exceptions first and remove the stale untracked Week 8 manifest before regeneration. The Week 8 revision dry run has not passed. The owner must create the Production owner Keychain credential; Preview rollback is unsupported.
+
+- **Accepted quote rebuild, pending activation (2026-10-15):** the owner confirmed registration of the three Week 2–4 CFBD captures in Preview and accepted rebuilt-quote results: spread 164-156-6, total 160-164-1, with Week 6 games 401871090, 401871051 and 401871066 ungraded for both targets because their quotes were captured after kickoff. The active releases and published scoreboard above remain unchanged. Other unregistered market files still require owner review. Evidence and parity results are retained in `session_logs/2026-10-15/02-review-fixes-implementation.md` and the review contract.
 
 - **Week 7 display-only release (2026-10-14):** published and selected in Production and Preview; evidence in `session_logs/2026-10-14/02-season-operations-implementation.md` and the [bridge contract](plans/2026-10-14/01-season-operations-and-week7-bridge.md). Open: the 4 spread-only games (the totals were absent from the market snapshot though CFBD listed them), stale kickoff times for 401858492 and 401858494 in the source lock, grading after finals, and the corrected Weeks 0-6 replay cutover.
 

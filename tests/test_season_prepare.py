@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 from cks_picks_cfb.forecast.live import DEVELOPMENT_SEASONS
+from cks_picks_cfb.season import inputs as season_inputs
 from cks_picks_cfb.season import projection_football, projection_serving
 from cks_picks_cfb.season import verification as v
 from cks_picks_cfb.season.inputs import load_inputs
@@ -335,13 +336,63 @@ def test_prior_week_availability_cannot_be_waived(fixture, tmp_path):
         run(fixture, tmp_path)
 
 
-def test_score_reconciliation_mismatch_is_rejected(fixture, tmp_path):
+def _mismatch_game_1(fixture, *, malformed=False):
     reader, _, revision = fixture
     events = pd.read_parquet(io.BytesIO(reader.objects["scoring_events"]))
     events.loc[0, "score_increment"] = 2
+    if malformed:
+        events.loc[0, "quality_reason"] = "impossible_score_increment"
     revision["inputs"]["scoring_events"] = reader.add("bad-events", events)
-    with pytest.raises(ValueError, match="score reconciliation"):
-        run(fixture, tmp_path)
+
+
+def _declare(fixture, tmp_path, monkeypatch, entries):
+    """Pin ``entries`` as the revision's score exceptions file."""
+    monkeypatch.setattr(season_inputs, "REPOSITORY", tmp_path)
+    raw = json.dumps(entries).encode()
+    (tmp_path / "exceptions.json").write_bytes(raw)
+    fixture[2]["score_reconciliation_exceptions"] = {
+        "uri": "exceptions.json",
+        "sha256": sha(raw),
+    }
+
+
+@pytest.mark.parametrize("malformed", [False, True])
+def test_unlisted_score_mismatch_is_rejected(fixture, tmp_path, malformed):
+    _mismatch_game_1(fixture, malformed=malformed)
+    with pytest.raises(
+        ValueError, match="score reconciliation differs: game 1, team A"
+    ):
+        run(fixture, tmp_path / "out")
+
+
+def test_listed_score_mismatch_passes(fixture, tmp_path, monkeypatch):
+    _mismatch_game_1(fixture)
+    entry = {"game_id": 1, "team": "A", "reason": "provider omits a field goal"}
+    _declare(fixture, tmp_path, monkeypatch, [entry])
+    manifest = run(fixture, tmp_path / "out")
+    reader, model, revision = fixture
+    assert load_inputs(reader, model, revision, 1).score_exceptions == {
+        (1, "A"): entry["reason"]
+    }
+    assert manifest["revision_manifest_sha256"] == sha(canonical(revision))
+
+
+def test_unused_score_exception_is_rejected(fixture, tmp_path, monkeypatch):
+    _declare(
+        fixture, tmp_path, monkeypatch, [{"game_id": 1, "team": "A", "reason": "x"}]
+    )
+    with pytest.raises(ValueError, match="unused score reconciliation exception"):
+        run(fixture, tmp_path / "out")
+
+
+def test_changed_score_exceptions_file_is_rejected(fixture, tmp_path, monkeypatch):
+    _mismatch_game_1(fixture)
+    _declare(
+        fixture, tmp_path, monkeypatch, [{"game_id": 1, "team": "A", "reason": "x"}]
+    )
+    (tmp_path / "exceptions.json").write_bytes(b"[]")
+    with pytest.raises(ValueError, match="checksum"):
+        run(fixture, tmp_path / "out")
 
 
 def test_nullable_measurement_is_retained_without_fake_value(fixture, tmp_path):
@@ -752,3 +803,33 @@ def test_pinned_bridge_change_fails_fixed_model_check(prepared):
         },
     }
     assert _failed_prepare(prepared) == {"fixed_model_no_refit"}
+
+
+@pytest.mark.parametrize(
+    "mismatch, declared",
+    [(True, False), (True, True), (False, True), (False, False)],
+    ids=["unlisted", "listed", "unused", "exact"],
+)
+def test_prepare_and_verification_agree_on_score_reconciliation(
+    fixture, prepared, tmp_path, monkeypatch, mismatch, declared
+):
+    if mismatch:
+        _mismatch_game_1(fixture)
+    if declared:
+        entry = {"game_id": 1, "team": "A", "reason": "x"}
+        _declare(fixture, tmp_path, monkeypatch, [entry])
+    reader, model, revision = fixture
+    try:
+        load_inputs(reader, model, revision, 1)
+        refused = []
+    except ValueError as error:
+        refused = str(error).split("; ")
+    events = pd.read_parquet(
+        io.BytesIO(reader.read_bytes(revision["inputs"]["scoring_events"]["uri"]))
+    )
+    prepared["frames"]["scoring_events"] = events
+    prepared["inputs"].score_exceptions = season_inputs.score_exceptions(revision)
+    check = v.derive_prepare_checks(prepared.pop("frames"), **prepared)
+    assert check["score_reconciliation"]["passed"] is (not refused)
+    assert check["score_reconciliation"]["observed"]["examples"] == refused
+    assert bool(refused) is (mismatch != declared)

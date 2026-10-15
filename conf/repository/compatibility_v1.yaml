@@ -17,9 +17,10 @@ public_make_targets:
   - preflight
   - prepare-week
   - readiness
-  - publish-week
-  - freeze-week
-  - close-week
+  - season-revision
+  - season-prepare
+  - season-release
+  - season-rollback
   - replay-season
   - reconcile
   - audit-data

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { db, schema } from "@/lib/db";
+import { schema } from "@/lib/db";
 import { publicationScope } from "@/lib/publication";
-import { getRunForWeek } from "@/lib/queries";
+import { getCurrentWeek, getRunForWeek } from "@/lib/queries";
+import { getSeasonDb, getSeasonReleaseContext } from "@/lib/season-release";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -49,11 +50,13 @@ export async function GET(request: NextRequest) {
     );
   }
   try {
-    const currentRows = await db.select().from(schema.currentWeek)
-      .where(eq(schema.currentWeek.id, 1)).limit(1);
-    const current = currentRows[0];
+    // Active release first; getCurrentWeek falls back to the legacy
+    // current_week pointer only when no release is active.
+    const release = await getSeasonReleaseContext();
+    const current = await getCurrentWeek();
     const runRows = current?.activeRunId
-      ? await db.select().from(schema.predictionRuns)
+      ? await (await getSeasonDb(current.season))
+          .select().from(schema.predictionRuns)
           .where(eq(schema.predictionRuns.runId, current.activeRunId)).limit(1)
       : [];
     const run = runRows[0];
@@ -63,7 +66,7 @@ export async function GET(request: NextRequest) {
     let selectedWeek: Record<string, unknown> | null = null;
     if (requested) {
       const selection = await getRunForWeek(requested.season, requested.week);
-      const sameSlate = current !== undefined
+      const sameSlate = current !== null
         && current.season === requested.season
         && current.week === requested.week;
       selectedWeek = {
@@ -98,6 +101,9 @@ export async function GET(request: NextRequest) {
         weeks: publicationScope.weeks,
         mode: publicationScope.mode,
       },
+      activeRelease: release
+        ? { releaseId: release.releaseId, season: release.season, week: release.activeWeek }
+        : null,
       activeRun: run ? {
         runId: run.runId,
         season: run.season,
