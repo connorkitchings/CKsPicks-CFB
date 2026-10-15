@@ -51,8 +51,8 @@
       "sha256": "02069967769664c6dfa042535b61d30116926ffcadb0be64d478d559843eabdd"
     },
     "market_quotes": {
-      "uri": "lake/silver/dataset=market_quotes/version=ab4313d2f604e5a3686c838b/data.parquet",
-      "sha256": "a59cb4204d857891991b0dd7b3110fe7100b51368b8bb421f1539864c9bf8b3d"
+      "uri": "lake/silver/dataset=market_quotes/version=season_2026_w7_cumulative/data.parquet",
+      "sha256": "9a3dadc26647b09f525b1ba41d2e1e39f56151aa84ed22b1b05cf34131ddaec6"
     },
     "venue_games": {
       "uri": "lake/silver/dataset=games/version=cf1fcc2f3a5ff4d14c8b774b/data.parquet",
