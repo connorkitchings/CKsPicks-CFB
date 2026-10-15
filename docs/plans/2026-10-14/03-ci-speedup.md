@@ -1,6 +1,6 @@
 # Speed up CI while preserving regression coverage
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-10-14
 - **Planner:** Sol
 - **Approval source:** User explicitly requested implementation of the revised plan in this chat.
@@ -41,3 +41,12 @@ Implementation and local checks complete: automatic partition 3,160 passed/19 sk
 ### Publication authorization
 
 After reviewing the delivered changes and the PR-trigger correction, the user asked "can you proceed?", authorizing the scoped commit, fast-forward integration into dev, push and PR creation for hosted verification. This supersedes the manual-only git restriction for these publication steps. No merge to main or deployment is authorized. Publication evidence is tracked in session_logs/2026-10-14/11-ci-speedup-publication.md.
+
+
+### Hosted acceptance completed
+
+PR https://github.com/connorkitchings/CKsPicks-CFB/pull/7, implementation revision bf53e5a6396b21ade868cbd7309386661a0bb7bc, CI https://github.com/connorkitchings/CKsPicks-CFB/actions/runs/38673650571: all six CI jobs passed. General 3,012 passed/19 skipped, ratings 7 passed, database 141 passed/zero skips with host PostgreSQL 16.15. Coverage artifacts transferred and combined successfully: 69%, above 60%. Vercel Preview passed.
+
+Observed first-job-to-final-gate elapsed time was 4m32s; run creation to completion was 6m09s including queueing behind a superseded run. Summed job elapsed time was 11m31s versus 39m00s for baseline run 38601940715 (which ended cancelled after the database hang). The timing API reports zero billable milliseconds for both runs, so these figures describe elapsed runner work rather than billed minutes or cost. This single-run comparison is evidence, not a guaranteed duration.
+
+Implementation acceptance is complete. Separate PR release blocker: GitGuardian scans the earlier commit 8aa6a4f5 and flags its disposable postgres:postgres test URL. Current workflow uses github.run_id for the temporary service and client password. No production credential was involved. Resolve the false positive in GitGuardian; do not rewrite published dev history without separate authorization. No main merge or production deployment performed.
