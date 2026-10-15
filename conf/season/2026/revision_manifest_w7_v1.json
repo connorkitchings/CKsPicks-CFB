@@ -10,7 +10,8 @@
     "3": "2026-09-13T21:00:00Z",
     "4": "2026-09-20T19:00:00Z",
     "5": "2026-09-29T20:29:00Z",
-    "6": "2026-10-05T00:00:00Z"
+    "6": "2026-10-05T00:00:00Z",
+    "7": "2026-10-13T18:00:00Z"
   },
   "post_week_cutoffs": {
     "0": "2026-09-03T04:00:00Z",
@@ -51,8 +52,8 @@
       "sha256": "02069967769664c6dfa042535b61d30116926ffcadb0be64d478d559843eabdd"
     },
     "market_quotes": {
-      "uri": "lake/silver/dataset=market_quotes/version=season_2026_w7_cumulative/data.parquet",
-      "sha256": "9a3dadc26647b09f525b1ba41d2e1e39f56151aa84ed22b1b05cf34131ddaec6"
+      "uri": "lake/silver/dataset=market_quotes/version=season_2026_w7_cumulative_v2/data.parquet",
+      "sha256": "1286e9566d453bd7afb043c9f639d8a831f8274fae9072a0d95f862abbc24511"
     },
     "venue_games": {
       "uri": "lake/silver/dataset=games/version=cf1fcc2f3a5ff4d14c8b774b/data.parquet",
