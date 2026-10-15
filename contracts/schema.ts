@@ -14,6 +14,7 @@ import {
   primaryKey,
   numeric,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Enums ---------------------------------------------------------------------
@@ -726,3 +727,394 @@ export const teamRatingComponents = pgTable(
     check("team_rating_components_role_check", sql`${table.unitRole} IN ('offense', 'defense')`),
   ],
 );
+
+// Immutable release projections; active seasonReleases row is the sole pointer.
+export const seasonReleasePolicies = pgTable("season_release_policies", {
+  environment: text("environment").notNull(), season: integer("season").notNull(),
+  modelManifestSha256: text("model_manifest_sha256").notNull(),
+  workflowVersion: text("workflow_version").notNull(),
+  gradingPolicySha256: text("grading_policy_sha256").notNull(),
+  enabled: boolean("enabled").notNull().default(false),
+  decisionRef: text("decision_ref").notNull(),
+  installedAt: timestamp("installed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [primaryKey({ columns: [table.environment, table.season] })]);
+export const seasonReleases = pgTable("season_releases", {
+  releaseId: text("release_id").primaryKey(), environment: text("environment").notNull(),
+  season: integer("season").notNull(), modelManifestSha256: text("model_manifest_sha256").notNull(),
+  revisionManifestSha256: text("revision_manifest_sha256").notNull(),
+  workflowVersion: text("workflow_version").notNull(), gradingPolicySha256: text("grading_policy_sha256").notNull(),
+  codeSha: text("code_sha").notNull(), configSha: text("config_sha").notNull(),
+  runManifestUri: text("run_manifest_uri").notNull(), runManifestSha256: text("run_manifest_sha256").notNull(),
+  verificationUri: text("verification_uri").notNull(), verificationSha256: text("verification_sha256").notNull(),
+  activeWeek: integer("active_week").notNull(), status: text("status").notNull().default("staged"),
+  projectionChecks: jsonb("projection_checks").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
+}, (table) => [uniqueIndex("season_releases_one_active").on(table.environment, table.season).where(sql`${table.status} = 'active'`)]);
+export const seasonReleaseHistory = pgTable("season_release_history", {
+  activationId: bigint("activation_id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+  environment: text("environment").notNull(), season: integer("season").notNull(),
+  priorReleaseId: text("prior_release_id").references(() => seasonReleases.releaseId),
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+  action: text("action").notNull(), decisionRef: text("decision_ref").notNull(),
+  readbackSha256: text("readback_sha256").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const seasonReleaseGames = pgTable("season_release_games", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+
+    homeTeam: text("home_team").notNull(),
+    awayTeam: text("away_team").notNull(),
+
+    // Market lines (nullable)
+    homeTeamSpreadLine: doublePrecision("home_team_spread_line"),
+    totalLine: doublePrecision("total_line"),
+
+    // Model predictions
+    predictedSpread: doublePrecision("predicted_spread"),
+    predictedTotal: doublePrecision("predicted_total"),
+    predictedSpreadStdDev: doublePrecision("predicted_spread_std_dev"),
+    predictedTotalStdDev: doublePrecision("predicted_total_std_dev"),
+
+    // Derived leans + edges
+    spreadLean: leanSide("spread_lean"),
+    totalLean: totalSide("total_lean"),
+    edgeSpread: doublePrecision("edge_spread"),
+    edgeTotal: doublePrecision("edge_total"),
+    highConfidence: boolean("high_confidence").notNull().default(false),
+
+    // Provenance
+    sourceConfig: text("source_config"),
+    systemName: text("system_name"),
+    modelId: text("model_id"),
+
+    insertedAt: timestamp("inserted_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.gameId] })]);
+
+export const seasonReleaseGameVenues = pgTable("season_release_game_venues", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    venueId: bigint("venue_id", { mode: "number" }),
+    venueName: text("venue_name"),
+    city: text("city"),
+    state: text("state"),
+    countryCode: text("country_code"),
+    timezone: text("timezone"),
+    neutralSite: boolean("neutral_site"),
+    source: text("source").notNull().default("cfbd"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.gameId] })]);
+
+export const seasonReleaseGameResults = pgTable("season_release_game_results", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    homePoints: integer("home_points"),
+    awayPoints: integer("away_points"),
+    spreadResult: betResult("spread_result"),
+    totalResult: betResult("total_result"),
+    completionState: text("completion_state").notNull().default("completed"),
+    sourceDatasetVersionId: text("source_dataset_version_id"),
+    scoredAt: timestamp("scored_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.gameId] })]);
+
+export const seasonReleasePredictions = pgTable("season_release_predictions", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    runId: text("run_id").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    homeTeamSpreadLine: doublePrecision("home_team_spread_line"),
+    totalLine: doublePrecision("total_line"),
+    predictedSpread: doublePrecision("predicted_spread"),
+    predictedTotal: doublePrecision("predicted_total"),
+    predictedSpreadStdDev: doublePrecision("predicted_spread_std_dev"),
+    predictedTotalStdDev: doublePrecision("predicted_total_std_dev"),
+    spreadLean: leanSide("spread_lean"),
+    totalLean: totalSide("total_lean"),
+    edgeSpread: doublePrecision("edge_spread"),
+    edgeTotal: doublePrecision("edge_total"),
+    highConfidence: boolean("high_confidence").notNull().default(false),
+    highConfidenceEligible: boolean("high_confidence_eligible").notNull().default(false),
+    homeCompletedGames: integer("home_completed_games").notNull().default(0),
+    awayCompletedGames: integer("away_completed_games").notNull().default(0),
+    regime: text("regime").notNull(),
+    spreadModelVersion: text("spread_model_version"),
+    totalModelVersion: text("total_model_version"),
+    marketSnapshotId: text("market_snapshot_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.runId, table.gameId] })]);
+
+export const seasonReleasePredictionGrades = pgTable("season_release_prediction_grades", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    runId: text("run_id").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    target: text("target").notNull(),
+    marketSnapshotId: text("market_snapshot_id"),
+    marketQuoteId: text("market_quote_id"),
+    side: text("side").notNull(),
+    result: betResult("result").notNull(),
+    profitUnits: numeric("profit_units", { precision: 10, scale: 4 }).notNull(),
+    gradingVersion: text("grading_version").notNull(),
+    gradedAt: timestamp("graded_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.runId, table.gameId, table.target] })]);
+
+export const seasonReleaseMarketQuotes = pgTable("season_release_market_quotes", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    quoteId: text("quote_id").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    provider: text("provider").notNull(),
+    capturedAt: timestamp("captured_at", { withTimezone: true }).notNull(),
+    spread: doublePrecision("spread"),
+    total: doublePrecision("total"),
+    sourceCaptureId: text("source_capture_id"),
+    homeSpreadPrice: doublePrecision("home_spread_price"),
+    awaySpreadPrice: doublePrecision("away_spread_price"),
+    overPrice: doublePrecision("over_price"),
+    underPrice: doublePrecision("under_price"),
+    quoteUpdatedAt: timestamp("quote_updated_at", { withTimezone: true }),
+    sourceEventId: text("source_event_id"),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.quoteId] })]);
+
+export const seasonReleaseMarketSnapshots = pgTable("season_release_market_snapshots", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    snapshotId: text("snapshot_id").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    capturedAt: timestamp("captured_at", { withTimezone: true }).notNull(),
+    spread: doublePrecision("spread"),
+    total: doublePrecision("total"),
+    spreadRule: text("spread_rule"),
+    totalRule: text("total_rule"),
+    spreadProviderCount: integer("spread_provider_count").notNull().default(0),
+    totalProviderCount: integer("total_provider_count").notNull().default(0),
+    sourceQuoteIds: jsonb("source_quote_ids").notNull().default([]),
+    policyVersion: text("policy_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.snapshotId] })]);
+
+export const seasonReleaseMarketSnapshotQuotes = pgTable("season_release_market_snapshot_quotes", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    snapshotId: text("snapshot_id").notNull(),
+    quoteId: text("quote_id").notNull(),
+    target: text("target").notNull(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.snapshotId, table.quoteId, table.target] })]);
+
+export const seasonReleasePredictionMarketSelections = pgTable("season_release_prediction_market_selections", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    runId: text("run_id").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    target: text("target").notNull(),
+    snapshotId: text("snapshot_id").notNull(),
+    quoteId: text("quote_id").notNull(),
+    side: text("side").notNull(),
+    point: doublePrecision("point").notNull(),
+    price: doublePrecision("price").notNull(),
+    edge: doublePrecision("edge").notNull(),
+    policyVersion: text("policy_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.runId, table.gameId, table.target] })]);
+
+export const seasonReleaseSystemStats = pgTable("season_release_system_stats", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+  season: integer("season").notNull(),
+  asOfWeek: integer("as_of_week").notNull(),
+  spreadWins: integer("spread_wins").notNull().default(0),
+  spreadLosses: integer("spread_losses").notNull().default(0),
+  spreadPushes: integer("spread_pushes").notNull().default(0),
+  totalWins: integer("total_wins").notNull().default(0),
+  totalLosses: integer("total_losses").notNull().default(0),
+  totalPushes: integer("total_pushes").notNull().default(0),
+  spreadProfitUnits: numeric("spread_profit_units", { precision: 12, scale: 4 }).notNull().default("0"),
+  totalProfitUnits: numeric("total_profit_units", { precision: 12, scale: 4 }).notNull().default("0"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season] })]);
+
+export const seasonReleaseV5RatingSnapshots = pgTable("season_release_v5_rating_snapshots", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    snapshotId: text("snapshot_id").notNull(),
+    sourceRunId: text("source_run_id").notNull(),
+    sourceManifestSha256: text("source_manifest_sha256").notNull(),
+    team: text("team").notNull(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    gameId: bigint("game_id", { mode: "number" }),
+    snapshotClass: text("snapshot_class").notNull(),
+    cutoffUtc: timestamp("cutoff_utc", { withTimezone: true }).notNull(),
+    offenseRating: doublePrecision("offense_rating").notNull(),
+    offenseVariance: doublePrecision("offense_variance").notNull(),
+    defenseRating: doublePrecision("defense_rating").notNull(),
+    defenseVariance: doublePrecision("defense_variance").notNull(),
+    overallRating: doublePrecision("overall_rating").notNull(),
+    overallVariance: doublePrecision("overall_variance").notNull(),
+    fallbackReason: text("fallback_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.snapshotId] })]);
+
+export const seasonReleaseTeamSeasonStats = pgTable("season_release_team_season_stats", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    asOfWeek: integer("as_of_week").notNull(),
+    team: text("team").notNull(),
+    role: text("role").notNull(),
+    metric: text("metric").notNull(),
+    value: doublePrecision("value"),
+    n: integer("n").notNull().default(0),
+    games: integer("games").notNull().default(0),
+    rank: integer("rank"),
+    cohortSize: integer("cohort_size"),
+    sourceVersions: jsonb("source_versions").notNull().default({}),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.asOfWeek, table.team, table.role, table.metric] })]);
+
+export const seasonReleaseMatchupDataPublications = pgTable("season_release_matchup_data_publications", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    publicationId: text("publication_id").notNull(),
+    season: integer("season").notNull(),
+    lineage: text("lineage").notNull(),
+    ratingManifestSha256: text("rating_manifest_sha256").notNull(),
+    ratingManifestUri: text("rating_manifest_uri").notNull(),
+    measurementManifestSha256: text("measurement_manifest_sha256").notNull(),
+    measurementManifestUri: text("measurement_manifest_uri").notNull(),
+    observationsRecordsSha: text("observations_records_sha").notNull(),
+    asOfWeeks: integer("as_of_weeks").array().notNull(),
+    ratingScale: jsonb("rating_scale").notNull().default({}),
+    rowCounts: jsonb("row_counts").notNull().default({}),
+    payloadSha256: text("payload_sha256").notNull(),
+    codeSha: text("code_sha"),
+    environment: text("environment").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.publicationId] })]);
+
+export const seasonReleaseTeamGameMeasurements = pgTable("season_release_team_game_measurements", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    team: text("team").notNull(),
+    unitRole: text("unit_role").notNull(),
+    measurementId: text("measurement_id").notNull(),
+    week: integer("week").notNull(),
+    seasonType: text("season_type"),
+    kickoffUtc: timestamp("kickoff_utc", { withTimezone: true }),
+    opponent: text("opponent").notNull(),
+    side: text("side"),
+    numerator: doublePrecision("numerator"),
+    denominator: doublePrecision("denominator"),
+    rawValue: doublePrecision("raw_value"),
+    usableExposure: doublePrecision("usable_exposure"),
+    exposureUnit: text("exposure_unit"),
+    coverageStatus: text("coverage_status").notNull(),
+    missingReason: text("missing_reason"),
+    qualityFlags: text("quality_flags"),
+    timingClass: text("timing_class"),
+    ratingUsable: boolean("rating_usable").notNull().default(false),
+    opponentFbs: boolean("opponent_fbs"),
+    measurementManifestSha256: text("measurement_manifest_sha256").notNull(),
+    sourceVersions: jsonb("source_versions").notNull().default({}),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.gameId, table.team, table.unitRole, table.measurementId] })]);
+
+export const seasonReleaseTeamPossessionStats = pgTable("season_release_team_possession_stats", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    asOfWeek: integer("as_of_week").notNull(),
+    team: text("team").notNull(),
+    role: text("role").notNull(),
+    metric: text("metric").notNull(),
+    value: doublePrecision("value"),
+    numerator: doublePrecision("numerator"),
+    denominator: doublePrecision("denominator"),
+    n: doublePrecision("n").notNull().default(0),
+    games: integer("games").notNull().default(0),
+    gamesExcluded: integer("games_excluded").notNull().default(0),
+    excluded: jsonb("excluded").notNull().default([]),
+    rank: integer("rank"),
+    cohortSize: integer("cohort_size"),
+    asOfCutoff: timestamp("as_of_cutoff", { withTimezone: true }),
+    ratingManifestSha256: text("rating_manifest_sha256").notNull(),
+    measurementManifestSha256: text("measurement_manifest_sha256").notNull(),
+    sourceVersions: jsonb("source_versions").notNull().default({}),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.asOfWeek, table.team, table.role, table.metric] })]);
+
+export const seasonReleaseTeamPossessionAdjusted = pgTable("season_release_team_possession_adjusted", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    asOfWeek: integer("as_of_week").notNull(),
+    team: text("team").notNull(),
+    role: text("role").notNull(),
+    measurementId: text("measurement_id").notNull(),
+    rawValue: doublePrecision("raw_value"),
+    adjustedValue: doublePrecision("adjusted_value"),
+    opponentAdjustment: doublePrecision("opponent_adjustment"),
+    adjustedRank: integer("adjusted_rank"),
+    cohortSize: integer("cohort_size"),
+    primaryExposure: doublePrecision("primary_exposure"),
+    games: integer("games").notNull().default(0),
+    adjustmentMethod: text("adjustment_method").notNull(),
+    asOfCutoff: timestamp("as_of_cutoff", { withTimezone: true }),
+    ratingManifestSha256: text("rating_manifest_sha256").notNull(),
+    measurementManifestSha256: text("measurement_manifest_sha256").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.asOfWeek, table.team, table.role, table.measurementId] })]);
+
+export const seasonReleaseTeamRatingComponents = pgTable("season_release_team_rating_components", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    componentId: text("component_id").notNull(),
+    v5SnapshotId: text("v5_snapshot_id"),
+    lineage: text("lineage").notNull(),
+    candidateId: text("candidate_id").notNull(),
+    sourceManifestSha256: text("source_manifest_sha256").notNull(),
+    snapshotClass: text("snapshot_class").notNull(),
+    season: integer("season").notNull(),
+    asOfWeek: integer("as_of_week").notNull(),
+    gameId: bigint("game_id", { mode: "number" }),
+    cutoffUtc: timestamp("cutoff_utc", { withTimezone: true }).notNull(),
+    ratingTeam: text("rating_team").notNull(),
+    team: text("team").notNull(),
+    unitRole: text("unit_role").notNull(),
+    ratingMean: doublePrecision("rating_mean").notNull(),
+    ratingVariance: doublePrecision("rating_variance").notNull(),
+    priorMean: doublePrecision("prior_mean"),
+    priorVariance: doublePrecision("prior_variance"),
+    priorWeight: doublePrecision("prior_weight"),
+    priorContribution: doublePrecision("prior_contribution"),
+    evidenceWeight: doublePrecision("evidence_weight"),
+    processVariance: doublePrecision("process_variance"),
+    k: doublePrecision("k"),
+    usableExposure: doublePrecision("usable_exposure"),
+    completedGames: integer("completed_games"),
+    evidence: jsonb("evidence").notNull().default([]),
+    excludedObservations: jsonb("excluded_observations").notNull().default([]),
+    priorDetail: jsonb("prior_detail").notNull().default({}),
+    fallbackReason: text("fallback_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.componentId] })]);
+
+export const seasonReleaseSiteWeekSelections = pgTable("season_release_site_week_selections", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    runId: text("run_id").notNull(),
+    selectedAt: timestamp("selected_at", { withTimezone: true }).notNull().defaultNow(),
+    reason: text("reason").notNull(),
+
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.week] })]);

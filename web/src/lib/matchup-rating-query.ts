@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, lte } from "drizzle-orm";
-import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
+import type { getSeasonDb } from "./season-release";
 import * as schema from "./schema.ts";
 
 /** The identity travels with the exact rows rendered by getRatingsAsOf. */
@@ -18,7 +18,7 @@ export function renderedRatingSource(
 
 /** Keep the ordering column in DISTINCT so PostgreSQL can order provenance. */
 export function matchupRatingQuery(
-  db: NeonHttpDatabase<typeof schema>,
+  db: Awaited<ReturnType<typeof getSeasonDb>>,
   season: number,
   kickoff: Date,
   teams: string[],

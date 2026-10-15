@@ -1,7 +1,8 @@
 import { V5_RECORD_EVIDENCE } from "./run-selection";
 import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
-import { db, schema } from "./db";
+import { schema } from "./db";
+import { getSeasonDb } from "./season-release";
 import { withGameNameAliases } from "./rating-names.ts";
 import { PERFORMANCE_DETAIL_SPEC, RATING_SPEC, guardRows } from "./row-guard.ts";
 import {
@@ -28,6 +29,7 @@ export {
 };
 
 const getSelectedRatingSource = cache(async (season: number): Promise<string | null> => {
+  const db = await getSeasonDb(season);
   const rows = await db.select({ sha: schema.predictionRuns.ratingManifestSha256 })
     .from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
@@ -40,6 +42,7 @@ const getSelectedRatingSource = cache(async (season: number): Promise<string | n
 });
 
 export const getCurrentRatings = cache(async (season: number): Promise<Rating[]> => {
+  const db = await getSeasonDb(season);
   const sourceSha = await getSelectedRatingSource(season);
   if (!sourceSha) return [];
   const rows = await db.select({
@@ -106,6 +109,7 @@ export const getTeamRankMap = cache(async (season: number): Promise<Map<string, 
  * never drift: each one is served from its own frozen rows.
  */
 export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta[]> => {
+  const db = await getSeasonDb(season);
   const sourceSha = await getSelectedRatingSource(season);
   if (!sourceSha) return [PRESEASON_META];
   const rows = await db.selectDistinct({ cutoffUtc: schema.v5RatingSnapshots.cutoffUtc })
@@ -153,6 +157,7 @@ const RATING_SELECT = {
 };
 
 async function getPreseasonPriors(season: number, sourceSha?: string | null): Promise<Rating[]> {
+  const db = await getSeasonDb(season);
   // `undefined` preserves the preseason tab's "active model state" meaning via
   // the selected source. An explicit `null` means no owning source was found:
   // return no priors so frozen tabs degrade to frozen-rows-only (fail closed).
@@ -172,6 +177,7 @@ export const getWeeklyRatings = cache(async (
   season: number,
   targetPeriod?: string | null
 ): Promise<{ ratings: Rating[]; period: RatingPeriod; periodMeta: PeriodMeta }> => {
+  const db = await getSeasonDb(season);
   const periods = await getRatingPeriods(season);
   const generations = periods.filter((p) => p.cutoffUtc !== undefined);
 
@@ -263,6 +269,7 @@ export const getWeeklyRatings = cache(async (
 });
 
 export const getTeamHistory = cache(async (season: number, team: string): Promise<Rating[]> => {
+  const db = await getSeasonDb(season);
   const sourceSha = await getSelectedRatingSource(season);
   if (!sourceSha) return [];
   const rows = await db.select({
@@ -288,6 +295,7 @@ export const getTeamHistory = cache(async (season: number, team: string): Promis
 });
 
 export const getTeamGames = cache(async (season: number, team: string) => {
+  const db = await getSeasonDb(season);
   return db.select({
     week: schema.games.week,
     startDate: schema.games.startDate,
@@ -397,6 +405,7 @@ export const getV5Performance = cache(async (
   season: number,
   beforeWeek?: number,
 ): Promise<Performance[]> => {
+  const db = await getSeasonDb(season);
   const rows = await db.select({
     evidenceClass: schema.predictionRuns.evidenceClass,
     predictedMargin: schema.predictions.predictedSpread,
@@ -605,6 +614,7 @@ function summarizeDetail(
 export const getV5PerformanceDetail = cache(async (
   season: number,
 ): Promise<PerformanceDetail> => {
+  const db = await getSeasonDb(season);
   const fields = {
     evidenceClass: schema.predictionRuns.evidenceClass,
     week: schema.siteWeekSelections.week,

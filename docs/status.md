@@ -4,13 +4,10 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-14 (Week 7 display-only run published and selected in Production, see the week table; earlier checkpoint 2026-10-11: gate-waiver checkpoint: Week 7 cutover attempted, 24-hour finals rule removed; earlier same-day read-only closeout checkpoint; history moved to [`status_history.md`](status_history.md); serving facts as of 2026-10-09: the display-only Week 6 run, corrected post-Week-5 ratings and as-of-6 team stats are applied in Production; Weeks 0-5 selections unchanged) · **Verified from:**
-> `session_logs/2026-10-11/05-week7-waiver-planning.md` (code and documentation only; no serving or cloud state changed),
-> `session_logs/2026-10-11/02-week6-closeout-preflight.md`,
-> `session_logs/2026-10-09/08-week6-production-release.md` and [Week 6 release contract](plans/2026-10-09/02-week6-display-production-release.md) Amendment 7,
-> `session_logs/2026-10-07/03-pre-week6-audit.md` (read-only audit of Preview and Production),
-> `session_logs/2026-09-30/01-verify-deploy-freeze-week5-close-contract.md`,
-> the Step 5 close-out and pre-6A planning records (2026-10-04; no new cloud-state verification), and the [repaired-V5 release packet](plans/2026-09-29/v5-intended-update-production-release-packet.md).
+> **Last updated:** 2026-10-14 (Migration 0025 applied and atomic season release `production-season-2026-d0272a48d3a0252fd4196db3` activated in Production; Preview release `preview-season-2026-d0272a48d3a0252fd4196db3`; full historical reconstruction Weeks 0–6 with complete mid-week coverage for Weeks 6 and 7) · **Verified from:**
+> `session_logs/2026-10-14/07-web-ui-cleanup-and-early-games-reconstruction.md`,
+> `session_logs/2026-10-14/06-stages-1-to-3-preview-cutover.md`,
+> `docs/plans/2026-10-14/01-season-operations-and-week7-bridge.md`.
 
 ## Product and model
 
@@ -20,27 +17,14 @@
 - **Serving model family:** V5 possession ratings + Ridge bridge, repaired
   "intended-update" release (2026-09-30). Model development is complete and
   accepted ([V5 status](modeling/v5_status.md)).
-- **Rollback:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
-  (frozen V4 runs) and the prior V5 best-quote replay runs.
-- **V6 ratings lab:** closed 2026-09-30, `RETAINED_AS_BENCHMARK`; does not
-  affect production.
-
-## Corrected lineage (Preview; Week 6 slice also in Production, 2026-10-09)
-
-The corrected lineage through Week 5 is published in Preview R2/catalog and not served: 6A `6a-rebuild-w5-20261007-r2` (root raw sha `7865d353…`), Task 4 `6a-task4-w5-r2` (receipt `1cd439de…`), and 6B `6b-replay-w5-20261008-r2` (root `c253022a…`; it uses the successor bundle B2, which supersedes `-r1`). On that lineage the successor chain produced the Weeks 0-5 replay set `2026w{0..5}-v5repair-20261008-c2` with provider team names (packaged in the Preview namespace; release records validated by dry run, none registered) and the display-only Week 6 run `2026w6-v5repair-20261008-d2` (selected in Preview and, since 2026-10-09, in Production). Corrected team stats as-of 1-5 and the matchup candidate payloads for Weeks 0-5 exist locally and are verified, not applied; the as-of-6 stats (3,036 rows), corrected ratings snapshots and Week 6 matchup data are applied in Preview and Production. Production still serves the uncorrected Weeks 0-4 replays and the frozen Week 5. **Route (updated 2026-10-09):** Week 6 is released display-only to Production under [contract `02`](plans/2026-10-09/02-week6-display-production-release.md), superseding the earlier hold-until-cutover choice for Week 6 only; the rest of the corrected lineage reaches Production at the cutover (Week 7 at the earliest, Week 8 or later if integrity closure slips; see Open work) using the packet builder and staging tool (Amendments 10 and 11 of the [Stage 1 contract](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md); [decision brief](plans/2026-10-08/01-stage1-decision-brief.md)).
+- **Rollback:** Atomic rollback via `run_season.py rollback` using Migration 0025 projections.
 
 ## Week state (2026 season)
 
 | Week | State | Selected run |
 |---|---|---|
-| 0–4 | Scored; part of the unified 2026 V5 record (generated retrospectively from point-in-time inputs) | `2026w{0..4}-v5repair-20260929-p1` |
-| 5 | **Scored** 2026-10-04, 56/56/56, 112 grades (56 spread, 56 total).  Part of the unified record; frozen before kickoff (immutable receipt). | `2026w5-v5repair-20260929-p2` |
-| 6 | **Production: display-only run active (2026-10-09).** The Week 6 run `2026w6-v5repair-20261008-d2` covers the 55 of 58 games that had not started when it was built (Oct 8, 16:53Z; market capture 16:19Z, so Saturday lines may have moved; 3 games kicked off Oct 6-7 are omitted). Evidence class `pending`, never frozen (a post-kickoff freeze would be fabricated; it has no freeze receipt, [Amendments 9-10](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md), [Amendment 12](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md)). **Finals loaded and graded 2026-10-11 in Preview and Production** (58 finals; 55 games, 110 grades: spread 35-19-1, total 23-32-0; recomputed independently, 0 mismatches; Weeks 0-5 unchanged; the run stays `published`/`pending`, never frozen). Run `w6-closeout-ingest-20261011-r2`, Silver `game_outcomes` `63198fa7…`, evidence in [`20261011T150908Z`](plans/2026-10-11/week6-closeout-evidence/20261011T150908Z/session-receipt.json). `current_week` was (2026, 6) with the run active until Week 7 opened on 2026-10-14; Weeks 0-5 selections are unchanged. Selecting it moved the site-wide rating source to the corrected post-Week-5 manifest `c83b1423…`, so Weeks 0-5 matchup pages show "Forecast and rating snapshots use different published lineages" until the cutover rebinds them (accepted 2026-10-09). Its corrected replay (all 58 games, three on a declared CFBD line) replaces it in the counted record at the cutover; Week 6 joins the corrected replay set after its finals stabilize ([Stage 7B plan](plans/2026-10-06/02-stage7b-exact-release-and-cutover.md)). | `2026w6-v5repair-20261008-d2` in Preview and Production. Rollback: `scripts/pipeline/rollback_week6_display.py` (owner login; rehearsed in Preview 2026-10-09). |
-| 7 | **Production: display-only run active (2026-10-14).** Run `2026w7-v5repair-20261014-w7` (state `published`, evidence class `pending`, never frozen, no freeze receipt; owner decision reference `production-display-only-week7`). It covers 57 of the 59 scheduled FBS-vs-FBS games: the 2 that had kicked off at the 14:42Z forecast cutoff are omitted (`--allow-partial-slate`). All 57 have a spread line; 53 also have a total (4 games, 401858492, 401858494, 401864523 and 401866442, have a spread only; accepted by the owner). Ratings are the corrected post-Week-6 manifest `201711c7…` (1,880 `v5_rating_snapshots` rows), market capture and forecast cutoff 2026-10-14 (capture 14:41Z). Production also holds the 59 schedule rows, 59 `game_venues` rows (3 from `conf/venue_supplement_2026_w7_v1.json`), the 3,036-row as-of-7 `team_season_stats` snapshot and the matchup data (payload `f850ab26…`, verified, 0 differing rows). `current_week` is (2026, 7) with the run active; Weeks 0-6 selections are unchanged. The live site shows 57 Week 7 games. Release authorization `production-2026w7-v5repair-20261014-w7-f460617dbb22`. Not frozen or graded; a rollback needs the owner login and first restoring the prior matchup payload. | `2026w7-v5repair-20261014-w7` in Preview and Production. Rollback: `scripts/pipeline/rollback_week_release.py` (owner login; dry run rehearsed in Preview 2026-10-14). |
-
-**Rollback set (exact):** `2026w{0..4}-v5replay-bestquote-20260926-r3` and
-`2026w5-5d436e58c072`. An earlier Week 5 run, `2026w5-d6366e59fd43`, is
-superseded and kept only as an audit record.
+| 0–6 | **Scored; reconstructed 2026 V5 record** (all 329 FBS games including mid-week games; 657 graded bets: spread 166-157-6, total 163-164-1). Served via Migration 0025 atomic release projections. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-d0272a48d3a0252fd4196db3`) |
+| 7 | **Active Picks slate (2026-10-14).** Complete 59-game FBS schedule including mid-week games (Delaware @ MTSU, FIU @ Jax State, etc.). Clean display without disclaimer banner or retrospective badge on active slate. Served via Migration 0025 atomic release projections. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-d0272a48d3a0252fd4196db3`). Rollback: `run_season.py rollback` (owner login). |
 
 ## Scoreboard
 
@@ -51,7 +35,7 @@ calibration and the pre-registered promotion gates remain diagnostics.
 
 | Record | Spread | Total | Notes |
 |---|---|---|---|
-| **2026 V5, cumulative (Weeks 0–6 as graded)** | 163-158-5 (50.8%) | 160-164-1 (49.4%) | Weeks 0–5 as served (`p1`, `p2`: 128-139-4 and 137-132-1) plus the graded Week 6 display run (35-19-1 and 23-32-0): 321 decided spreads, 324 decided totals; 1 unlined W3 total. The `system_stats` table still reads Weeks 0–5 because it counts only `scored` runs, and the deployed `main` site does not show Week 6 until the `dev` release (see Release state). Weeks 0–6 are replaced by the corrected replays at the cutover |
+| **2026 V5, cumulative (Weeks 0–6 full reconstruction)** | 166-157-6 (51.4%) | 163-164-1 (49.8%) | All 329 FBS games across Weeks 0–6: 329 decided spreads (166-157-6), 328 decided totals (163-164-1; 1 unlined total). Served atomically via Migration 0025 release projections |
 
 Neither target clears 52.4% YTD. In the 2025 holdout the market had
 lower error than V5 on both targets, and the docs do not claim V5 beats V4.

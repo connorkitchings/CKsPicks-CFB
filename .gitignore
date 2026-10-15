@@ -255,6 +255,7 @@ artifacts/experiments/**/*.pkl
 
 # Preview operational state (user-owned R2/Neon rehearsal artifacts; never committed)
 artifacts/preview/
+artifacts/season/
 
 # Production (keep predictions, exclude scored & monitoring)
 artifacts/production/scored/

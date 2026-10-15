@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, schema } from "./db.ts";
+import { schema } from "./db.ts";
+import { getSeasonDb } from "./season-release";
 import { getRatingsAsOf } from "./v5.ts";
 import { ratingName } from "./rating-names.ts";
 import { matchupRatingQuery, renderedRatingSource } from "./matchup-rating-query.ts";
@@ -118,6 +119,7 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     const fx = await import("@/test/fixtures/matchup");
     return fx.fixtureMatchupForId(gameId);
   }
+  const db = await getSeasonDb(publicationScope.season);
   const identity = await db
     .select({ season: schema.games.season, week: schema.games.week })
     .from(schema.games)

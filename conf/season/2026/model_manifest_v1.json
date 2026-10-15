@@ -1,0 +1,39 @@
+{
+  "schema_version": "season_model_v1",
+  "model_id": "v5-intended-update-2026-v1",
+  "design": "ppp__rho_0_60__exposure",
+  "development_seasons": [
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "inputs": {
+    "bridge": {
+      "uri": "artifacts/research/data-first-football-v1/forecasts/intended-update/runs/v5-intended-update-corrected-w5-r1/bundle.json",
+      "sha256": "a507d0c7cba5419868eac5c0955853d3e2855fc857aabf36f5cd192d5e7a90f1"
+    },
+    "priors": {
+      "uri": "rebuild/6a/6a-rebuild-w6-20261012-r2/states_2026/priors.parquet",
+      "sha256": "6091ef53492928b3b95c185373bf6f23954200b3c876699cdfc6bc6d31d127cc"
+    },
+    "terminal": {
+      "uri": "rebuild/6a/6a-rebuild-w6-20261012-r2/ratings/terminal.parquet",
+      "sha256": "4dfdbbe34be29fe31e7624c0fcc87e3db1e09477e9f1ee3e6f7c1eaff5cb4bb2"
+    },
+    "historical_population": {
+      "uri": "rebuild/6a/6a-rebuild-w6-20261012-r2/eligibility/population_raw.parquet",
+      "sha256": "e35f679239dbf5730571ede6000a675092e04e42228b7c2b76ae92aabfbb2501"
+    },
+    "historical_events": {
+      "uri": "rebuild/6a/6a-rebuild-w6-20261012-r2/comparison/admitted_events.parquet",
+      "sha256": "fda63e7931f91afbd6d4cd94adba182516c71d2e7924fa8c22a33bc609fd6a8b"
+    }
+  }
+}

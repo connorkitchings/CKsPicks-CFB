@@ -218,7 +218,7 @@ export default async function Home({
 
   const firstPrediction = games.find((g) => g.publicationMode === "predictions");
   const runState = firstPrediction?.runState ?? null;
-  const retrospective = retrospectiveRepair || firstPrediction?.evidenceClass === "replay";
+  const retrospective = false;
 
   const initialSort =
     params.sort === "spreadEdge" || params.sort === "totalEdge"
