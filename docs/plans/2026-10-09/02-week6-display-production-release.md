@@ -1,12 +1,14 @@
 # Week 6 Display-Only Run: Production Release
 
-- **Status:** In Progress (Terra execution started 2026-10-09 ~14:00Z)
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Created:** 2026-10-09
 - **Planner:** Sol (Plan Mode investigation; read-only review of Preview/Production state, run artifacts and tooling)
 - **Approval source:** User decisions in session 2026-10-09 — existing d2 run, full publish scope, Preview rollback rehearsal kept, local-site verification loop; explicit `implement-plan` instruction on this exact path
 - **Implementation log:** `session_logs/2026-10-09/03-week6-display-production-implementation.md`
 - **Commit policy:** Commit with implementation
 - **Parent decisions:** [Contract 04 Amendment 9](../2026-10-07/04-stage1-week5-corrected-data-finalization.md#amendment-9-2026-10-08-labeled-display-only-week-6-on-the-corrected-lineage) (display-only mode rules; Production publication is a separate go-ahead — this contract is that go-ahead), Amendment 10 (Week 6 waiver in the prospective check), Amendment 11 (Task 7 chain delivered). Supersedes the hold-until-cutover decision for Week 6 only ([decision brief](../2026-10-08/01-stage1-decision-brief.md), Outcome).
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: In Progress (Terra execution started 2026-10-09 ~14:00Z)
 
 ## Goal
 

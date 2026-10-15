@@ -38,7 +38,6 @@ def test_current_entry_points_link_single_v5_guide(name: str):
     if name != "docs/modeling/v5_status.md":
         first = _plain(text)
         assert "v5" in first
-        assert "week 4" in first or "week4" in first
         assert "v4" in first
 
 
@@ -46,21 +45,46 @@ def test_current_guide_records_model_completion_and_live_release():
     text = _plain(CURRENT.read_text())
     for required in (
         "model development: complete and accepted",
-        # V5 replay serves historical weeks; the later exact release selected
-        # the refreshed Week 5 run. The prior V5 run is the same-week
-        # rollback; V4 runs remain frozen/scored for prior slates.
-        "same-week rollback",
-        "stabilized week 4 finals",
-        "`2026w5-5d436e58c072` is selected in production",
-        "separately authorized exact packet then published and selected",
-        "future live publications require separate exact authorizations",
-        "not a prerequisite",
+        "run_season.py",
+        "season_verification_v2",
+        "weekly_runbook.md",
+        "../status.md",
+        "atomic release",
+        "first controller weekly update",
+        "forecast cutoffs",
+        "pre-kickoff",
         "like-for-like point-in-time v4 backtest",
-        "2026 outcomes",
+        "2026 outcomes never refit",
     ):
         assert required in text
-    assert "they do not establish that v5 is superior to v4" in text
+    assert "do not establish superiority over v4" in text
+    assert "not the weekly operational path" in text
+    assert "pending activation" in text
     assert "no prospective production activation" not in text
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "README.md",
+        "AGENTS.md",
+        ".agent/CONTEXT.md",
+        ".codex/QUICKSTART.md",
+        "docs/index.md",
+    ),
+)
+def test_operational_entry_points_use_atomic_v5_runbook(name: str):
+    text = _plain((ROOT / name).read_text())
+    assert "weekly_runbook.md" in text
+    assert "v5" in text
+    assert "release" in text
+    assert "rollback" in text
+    for stale_guide in (
+        "ops/weekly_pipeline.md",
+        "ops/v5_weekly_operator.md",
+        "ops/production_runbook.md",
+    ):
+        assert stale_guide not in text
 
 
 def test_current_plan_index_points_to_the_v5_authority():
@@ -69,7 +93,9 @@ def test_current_plan_index_points_to_the_v5_authority():
     assert "v5 product transformation" in index
     assert "v5 contract archive" in index
     assert "six slates are not a launch prerequisite" in index
-    assert "week 4 refresh awaits stabilized finals" in index
+    assert "season-operations-and-week7-bridge.md" in index
+    assert "awaiting first controller weekly update" in index
+    assert "phase 3 is deferred" in index
 
 
 def test_archived_contracts_preserve_dated_status_and_history():

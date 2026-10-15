@@ -1,6 +1,6 @@
 # Data Integrity Repair in Two Windows
 
-- **Status:** In Progress (Window 1 closed for implementation; Window 2 Step 5 closed 2026-10-04; 6A Implemented 2026-10-05, 6B 2026-10-06, 7A 2026-10-06; 7B cutover pending; Window 1 promoted to Production 2026-10-07); Amendment 3 Approved 2026-10-04 (pre-6A execution contract approved; Preview R2 and Preview catalog writes permitted for 6A only; no serving or production writes)
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Created:** 2026-10-03
 - **Planner:** Sol
 - **Approval source:** The user resolved the decision packet in this session and explicitly requested that the final plan be documented before implementation.
@@ -8,6 +8,8 @@
 - **Implementation log:** `session_logs/2026-10-03/08-data-integrity-two-window-implementation.md` (existing partial Window 1 work; no release completion asserted).
 - **Commit policy:** Make a separate documentation/plan commit on `dev`. Implementation commits are separate. Preview and production data writes remain user-run and require the exact release packet specified below.
 - **Supersedes:** [01-unified-data-fix-and-matchup-rollout.md](01-unified-data-fix-and-matchup-rollout.md) as implementation authority. Its investigation is retained as evidence. This plan also absorbs the remaining Phase 2 scope in [team-stats-feeds-ratings](../2026-10-02/03-team-stats-feeds-ratings.md) and Phase B in [matchup-data-layer-v2](../2026-10-02/01-matchup-data-layer-v2.md).
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: In Progress (Window 1 closed for implementation; Window 2 Step 5 closed 2026-10-04; 6A Implemented 2026-10-05, 6B 2026-10-06, 7A 2026-10-06; 7B cutover pending; Window 1 promoted to Production 2026-10-07); Amendment 3 Approved 2026-10-04 (pre-6A execution contract approved; Preview R2 and Preview catalog writes permitted for 6A only; no serving or production writes)
 
 ## Goal
 

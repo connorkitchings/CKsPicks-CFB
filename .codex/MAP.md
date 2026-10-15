@@ -1,265 +1,74 @@
 # Project File Map
 
-> **Quick navigation guide for the CKsPicks-CFB codebase**
->
-> Find files fast. Know where things live.
->
-> _Regenerated 2026-09-05 against the Phase 0 compatibility baseline._
+Use [current status](../docs/status.md) for live release/week state and the [weekly runbook](../docs/ops/weekly_runbook.md) for operations. V5 is the only operational model; [V4](../docs/modeling/v4_retrospective.md) is historical evidence.
 
----
+## Entrypoints and tooling
 
-## Project Root
-
-```
-CKsPicks-CFB/
-├── AGENTS.md                    # 👈 START HERE - Universal AI assistant guide
-├── CLAUDE.md                    # Redirect to AGENTS.md
-├── GEMINI.md                    # Redirect to AGENTS.md
-├── README.md                    # User-facing project overview
-├── Makefile                     # All pipeline/web/ops targets (make help)
-├── pyproject.toml               # Dependencies and tool config (uv)
-├── nx.json / project.json       # Nx task runner (pipeline + web projects)
-├── mkdocs.yml                   # Docs site
-├── .env                         # Environment variables (create from .env.example)
-└── .pre-commit-config.yaml      # Pre-commit hooks
-```
-
----
-
-## AI Assistant Files
-
-```
-.agent/                          # AI assistant workspace
-├── CONTEXT.md                   # Project architecture and domain knowledge
-└── skills/                      # Workflow automation
-    ├── CATALOG.md               # Skills catalog
-    ├── start-session/SKILL.md   # Session initialization
-    ├── plan-session/            # Sol planning → implementation contracts
-    │   ├── SKILL.md
-    │   └── assets/implementation-contract-template.md
-    ├── implement-plan/SKILL.md  # Terra contract execution
-    └── end-session/SKILL.md     # Session cleanup
-
-.codex/                          # Quick reference guides
-├── QUICKSTART.md                # Essential commands
-├── HYDRA.md                     # Hydra config guide
-└── MAP.md                       # This file
-```
-
----
-
-## Source Code (`src/cks_picks_cfb/`)
-
-```
-src/cks_picks_cfb/
-├── train.py                     # Canonical Hydra training entry point
-├── model_bundle.py / model_bundle_v3.py   # Bundle manifests, loading, validation
-├── preseason.py                 # Compatibility facade for focused preseason modules
-├── preseason_features.py / preseason_matchups.py / preseason_blends.py
-├── scoring.py / artifacts.py
-├── config/                      # experiments.py
-├── data/                        # Ingestion + lake
-│   ├── storage/                 # Storage abstraction (base, local, r2, factory)
-│   ├── silver/                  # Silver layer (contracts, builders)
-│   ├── the_odds_api.py          # Timestamped market quotes (canonical)
-│   ├── sources.py / schema_contracts.py    # Typed source contracts
-│   ├── lake.py / catalog.py     # Immutable Bronze/Silver/Gold + catalog registry
-│   ├── history.py               # Historical bootstrap
-│   ├── reconciliation.py        # Cross-source game reconciliation
-│   ├── week_policy.py           # Canonical Week policy routing
-│   ├── runtime.py               # ENV resolution + guards
-│   └── games.py, plays.py, teams.py, venues.py, game_stats.py,
-│       betting_lines.py, weather (ingest at scripts/pipeline/ingest_weather.py),
-│       coaches.py, rosters.py, recruiting.py, rankings.py, ratings.py,
-│       external_ratings.py
-├── features/
-│   ├── pipeline.py              # Feature engineering pipeline
-│   ├── point_in_time.py         # Kickoff-ordered PIT loading + regime routing
-│   ├── aggregations/            # Aggregations (drives, team_game, team_season, opponent_adj)
-│   ├── byplay/                  # Play enrichment & data corrections (enrichment, corrections)
-│   ├── core.py                  # Backward-compatible shim -> aggregations
-│   ├── regimes.py / rolling_ewma.py  # Pure routing + point-in-time EWMA helpers
-│   ├── weather.py / situational.py / external.py
-│   ├── selector.py / persist.py
-│   └── internal_ratings.py
-├── models/
-│   ├── regime_training.py       # Route candidates (Ridge/CatBoost/blend)
-│   ├── game_ordinal_training.py # Games 1–4 ordinal tournament
-│   ├── early_season.py / v4_feature_variants.py / baselines.py
-│   ├── training_policy.py       # Result-only promotion + chronology guards
-│   ├── promotion.py             # Predictive gates
-│   ├── market_grading.py / predictive_evaluation.py
-│   └── v1_baseline.py, v2_*.py  # Legacy V2-era variants (history)
-├── ops/                         # Resumable state machine
-│   ├── __main__.py              # python -m cks_picks_cfb.ops (publish/freeze/close/replay)
-│   ├── state_machine.py / lease.py / data_audit.py
-├── inference/                   # Weekly input, routing, edge, and manifest helpers
-├── db/                          # migrations.py (applies contracts/migrations)
-├── analysis/                    # unadjusted.py
-├── utils/                       # validation.py (DataValidationService),
-│                                # mlflow_tracking.py, local_storage.py, ...
-```
-
----
-
-## Scripts
-
-```
-scripts/
-├── cli.py                       # Main CLI (ingest etc.)
-├── data/                        # CFBD → R2/local ingestion CLIs
-│   ├── ingest_season.py, ingest_week.py, ingest_preseason.py
-│   └── estimate_historical_odds_backfill.py
-├── ops/
-│   └── with_preview_env.sh      # Preview Keychain DB wrapper
-├── pipeline/                    # ~40 production pipeline scripts, incl.:
-│   ├── preflight.py             # Weekly env/storage/DB checks
-│   ├── migrate_db.py            # Append-only migrations (0002–0008)
-│   ├── build_silver.py, build_history_silver.py, build_team_game_dataset.py,
-│   │   build_temporal_matchups.py, build_regime_features.py,
-│   │   assemble_model_ready_features.py, build_v4_preseason_feature_reference.py
-│   ├── build_schedule_week_policy.py, build_week_market_snapshot.py
-│   ├── generate_game_ordinal_candidates.py, evaluate_game_ordinal_predictions.py,
-│   │   refit_game_ordinal_bundle.py, refit_regime_bundle.py,
-│   │   generate_baseline_predictions.py, evaluate_regimes.py,
-│   │   select_preseason_blend.py
-│   ├── generate_weekly_bets.py  # Weekly predictions
-│   ├── publish_to_db.py         # R2 artifact → Neon (--from-artifact)
-│   ├── publish_model_artifact.py, publish_model_bundle_v2.py
-│   ├── freeze_week.py, replay_season.py, refresh_game_outcomes.py
-│   ├── score_to_db.py, score_weekly_bets.py, generate_system_stats.py
-│   ├── export_cfbd_pickem.py    # CFBD Model Pick'em exporter
-│   ├── ingest_weather.py, snapshot_week_inputs.py, cache_running_season_stats.py,
-│   │   cache_weekly_stats.py, combine_history_versions.py, seed_data_corrections.py
-│   └── compare_preview_model_bundles.py, publish_review.py
-│       # Archived wrappers and legacy publishers live in scripts/archive/.
-├── research/                    # New data-first executable research commands
-│   └── README.md                # Command/library/production boundaries
-└── archive/                     # points_for, tests (historical)
-```
-
----
-
-## Configuration (`conf/`)
-
-```
-conf/
-├── config.yaml                  # defaults: model=linear, features=matchup_v1,
-│                                #   training=default, preprocessing=none
-├── model/                       # linear, elastic_net, catboost_v1, xgboost_v1,
-│                                #   champion, ensemble_v1, stacking_v1, catboost_classifier
-├── features/                    # matchup_v1/v2/v2_pruned, opponent_adjusted_v1,
-│                                #   recency_weighted_v1, extended_v1, interaction_v1,
-│                                #   internal_*, cover_classifier_v1, ablation_baseline
-├── experiment/                  # week0_regimes, preseason_regimes
-├── training/                    # default, week0_2026 (frozen chronology)
-├── weekly_bets/                 # v4_2026 (LAUNCH), v3_preview_games_ordinal_2026,
-│                                #   v2_preview_2026, v2_champion
-├── policy/                      # canonical_week_2026_v1.yaml (Week 0 game IDs)
-├── repository/                 # Machine-readable compatibility manifest
-├── research/data_first_football_v1/ # New-program configs (empty in Phase 0)
-├── preprocessing/ paths/ hydra/ sweeper/ legacy/ validation.yaml
-```
-
----
-
-## Tests
-
-```
-tests/                           # 67 files — 673 passed / 2 skipped (2026-09-05)
-├── test_migrations.py           # Empty + legacy schema migration validation
-├── test_history_bootstrap.py    # Import resumability/checksums
-├── test_silver_reconciliation.py
-├── test_model_bundle_v3.py / test_game_ordinal_training.py
-├── test_v4_feature_reference.py
-├── test_repository_boundaries.py # Static ownership and compatibility checks
-├── test_legacy_market_references*.py  # Quarantine contract tests (17)
-├── test_runtime_target.py, test_training_policy.py, test_aggregations_core.py, ...
-└── fixtures/
-```
-
-Run: `uv run pytest -q` (or `make test`, or `npx nx run pipeline:test`).
-
----
-
-## Contracts (single source of truth)
-
-```
-contracts/
-├── schema.sql / schema.ts       # Canonical DB schema (web copies must sync)
-├── teams.py / teams.ts          # Team-name mappings
-├── validation.py                # make contracts-check
-└── migrations/                  # Append-only: 0002_prediction_runs …
-                                 # 0008_game_4_ordinal_regime
-```
-
----
-
-## Web App (`web/`)
-
-```
-web/
-├── README.md                    # Local-dev + deployment guide
-├── package.json                 # Own toolchain (npm); scripts: dev/build/lint/typecheck
-└── src/
-    ├── app/                     # App Router: page.tsx, api/health/route.ts
-    ├── components/              # Header, GameRow, LeanBadge, RecordBanner, WeekNav, ...
-    └── lib/
-        ├── db.ts / schema.ts    # Drizzle client + synced schema copy
-        ├── publication.ts       # Fail-closed market/predictions boundary
-        ├── queries.ts / teams.ts
-```
-
----
-
-## Documentation (`docs/`)
-
-```
-docs/
-├── index.md                     # Documentation hub + MkDocs landing
-├── architecture/                # repository_boundaries.md (authority), data platform
-├── ops/                         # weekly_pipeline.md, production_runbook.md,
-│                                #   validation.md, mlflow_mcp.md
-├── modeling/                    # rating_system_requirements.md,
-│                                #   measurement_catalog.md, evaluation.md, V4 regime contract
-├── planning/                    # data-first roadmap + production/historical roadmap
-├── plans/                       # 👈 Task-level Sol→Terra implementation contracts
-│   ├── index.md                 # Lifecycle rules
-│   └── 2026-09-05/              # Data-first Phase 0–6 contracts
-├── decisions/                   # decision_log.md (read for rationale)
-├── cfbd/                        # Provider audit
-├── data/                        # Current ingestion/data orientation
-├── project_org/ experiments/    # V4 feature and experiment lineage
-├── archive/                     # Historical V2, research, plans, schemas
-```
-
----
-
-## Data & Artifacts (NOT in repo)
-
-- **Durable data:** Cloudflare R2 immutable lake (`CFB_STORAGE_BACKEND='r2'`); buckets incl. `cks-picks-cfb-preview` (shared by preview + production artifact store).
-- **Local dev fallback:** external drive via `CFB_MODEL_DATA_ROOT` (`CFB_STORAGE_BACKEND='local'`).
-- **Working artifacts:** `artifacts/preview|production/...` (runs, refs, bundles, comparisons); MLflow tracking at `artifacts/mlruns/` (development only).
-- **Never** create `./data/` in the project root.
-
----
-
-## Find by Task
-
-| Task | Go to |
+| Path | Purpose |
 |---|---|
-| Weekly publish/freeze/close | `make publish-week` / `freeze-week` / `close-week` → `src/cks_picks_cfb/ops/` |
-| Add a pipeline step | `scripts/pipeline/` + `Makefile` target |
-| Change DB schema | `contracts/migrations/` (append-only) + `contracts/schema.{sql,ts}` → `make contracts-check` |
-| Modify measurements | `src/cks_picks_cfb/features/` + `conf/features/` + `docs/modeling/measurement_catalog.md` |
-| Train/tune models | `PYTHONPATH=src uv run python -m cks_picks_cfb.train` (`conf/experiment/`) |
-| Regime/tournament logic | `src/cks_picks_cfb/models/regime_training.py`, `game_ordinal_training.py` |
-| Model bundles | `src/cks_picks_cfb/model_bundle*.py`, `conf/weekly_bets/v4_2026.yaml` |
-| Market quotes policy | `src/cks_picks_cfb/data/the_odds_api.py` + `legacy_market_references` contracts |
-| Web publication modes | `web/src/lib/publication.ts` + `CFB_PUBLICATION_*` envs |
-| Validate data | `make audit-data`, `src/cks_picks_cfb/utils/validation.py` |
-| Health check prod | `GET https://c-ks-picks-cfb.vercel.app/api/health` |
+| `AGENTS.md`, `CLAUDE.md` | Assistant instructions and redirect |
+| `.agent/CONTEXT.md`, `.agent/skills/CATALOG.md` | Architecture and session workflows |
+| `.codex/QUICKSTART.md` | Current command interfaces and guardrails |
+| `Makefile`, `pyproject.toml`, `uv.lock` | Pipeline tasks, Python dependencies and lock |
+| `package.json`, `nx.json`, `project.json`, `web/project.json` | Retained Nx toolchain, pending Phase 3 cleanup |
+| `web/package.json` | Isolated Next.js npm toolchain |
+| `mkdocs.yml` | Documentation navigation |
 
----
+## Live season path
 
-_Last Updated: 2026-10-01_
+| Path | Purpose |
+|---|---|
+| `scripts/pipeline/build_season_revision.py` | Controller ingestion/Silver refresh, cumulative registered market quotes, pinned revision manifest |
+| `scripts/pipeline/run_season.py` | Prepare, status, release and rollback CLI |
+| `src/cks_picks_cfb/season/` | Input validation, chronological runner, grading, verification, projections and atomic release |
+| `conf/season/2026/` | Sealed model manifest, revision manifests, score reconciliation exceptions |
+| `scripts/ops/with_preview_env.sh` | Preview credentials and artifact environment |
+| `scripts/ops/with_production_pipeline_env.sh` | Production pipeline credentials |
+| `scripts/ops/with_production_owner_env.sh` | Production owner/migrator rollback credentials |
+| `artifacts/season/2026/preview/` | Ignored local candidate outputs; not the durable lake |
+
+Use `make season-revision`, `season-prepare`, `season-release` and `season-rollback` as specified in the runbook. Legacy publish/freeze/close Make targets refuse execution.
+
+## Football data and research
+
+| Path | Purpose |
+|---|---|
+| `src/cks_picks_cfb/data/` | Provider adapters, immutable storage/lake/catalog, Silver, reconciliation, timing |
+| `src/cks_picks_cfb/features/` | Measurements, by-play enrichment, point-in-time assembly and opponent adjustment |
+| `src/cks_picks_cfb/ratings/`, `forecast/` | V5 rating/forecast implementation and retained research |
+| `src/cks_picks_cfb/ratings_lab/`, `audit/` | Isolated research and audit libraries |
+| `scripts/data/` | Source ingestion/capture CLIs; use the intended environment wrapper |
+| `scripts/research/`, `scripts/analysis/`, `conf/research/` | Research/analysis commands and configurations |
+| `conf/repository/compatibility_v1.yaml` | Machine-readable ownership and compatibility manifest |
+
+V4 training (`train.py`, `models/`, `model_bundle*.py`, Hydra config groups), old `ops/` publication/inference, and `rebuild/` 6A/6B tooling remain pending deferred Phase 3 cleanup. They are historical compatibility code, not current weekly commands. Research code stays.
+
+## Shared contracts and web
+
+| Path | Purpose |
+|---|---|
+| `contracts/schema.sql`, `schema.ts` | Canonical schema snapshot and Drizzle contract |
+| `contracts/migrations/` | Append-only upgrades through `0025_season_releases.sql` |
+| `contracts/teams.py`, `teams.ts`, `validation.py` | Shared team mappings and sync validation |
+| `src/cks_picks_cfb/db/migrations.py`, `scripts/pipeline/migrate_db.py` | Verified-target migration mechanism |
+| `web/src/lib/schema.ts`, `teams.ts` | Synchronized contract copies |
+| `web/src/lib/season-release-context.ts`, `season-release-query.ts` | Active season release resolution and projections |
+| `web/src/lib/publication.ts`, `queries.ts` | Publication policy and legacy read fallback |
+| `web/src/app/`, `components/` | Public routes and UI; health at `api/health/route.ts` |
+| `web/README.md`, `web/playwright.config.ts` | Local development, flags and fixture UI verification |
+
+## Documentation and checks
+
+| Path | Purpose |
+|---|---|
+| `docs/index.md`, `docs/status.md`, `docs/status_history.md` | Authority map, live state and dated history |
+| `docs/ops/weekly_runbook.md` | Sole recurring operational guide |
+| `docs/ops/data_first_capture.md` | Isolated research capture workflow |
+| `docs/data/validation.md`, `docs/architecture/` | Data checks and architecture |
+| `docs/modeling/v5_status.md`, `record_methodology.md`, `v4_retrospective.md` | Accepted model, public record policy and historical V4 |
+| `docs/planning/`, `docs/plans/index.md`, `docs/decisions/` | Strategy, implementation contracts and decisions |
+| `docs/archive/ops/` | Superseded runbooks; old paths retain redirect stubs |
+| `tests/`, `web/src/**/*.test.ts` | Python and web behavioral tests |
+| `session_logs/` | Dated execution evidence |
+
+Run `make test`, `make contracts-check`, `make quality-check` and affected web scripts; see quickstart for strict docs and non-mutating lint checks. Database tests require disposable PostgreSQL. Durable football data lives in R2 or the external `CFB_MODEL_DATA_ROOT`, never repository-local `./data/`.

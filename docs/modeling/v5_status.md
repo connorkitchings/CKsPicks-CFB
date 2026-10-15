@@ -1,77 +1,25 @@
-# V5 Ratings Successor: Current Status
+# V5 Blitzkrieg: Current Status
 
-> **Model development:** Complete and accepted on 2026-09-22.
-> **Live run IDs and week state:** see [Current Status](../status.md). Week 5 `p2` was frozen 2026-09-30T12:34:06Z; where the dated notes below say a freeze is "due", they predate that freeze.
-> **Historical checkpoint (2026-09-30 to 2026-10-02; superseded, see [Current Status](../status.md)):** the repaired intended-update V5 release selected replay runs for Weeks 0–4 and a frozen, later scored Week 5. The dated notes below describe earlier V5 releases and the preserved rollback lineage; they are history, not current serving state.
->
-> **Historical, 2026-09-27 (superseded; current state is in [Current Status](../status.md)):** After stabilized Week 4 finals, refreshed and independently verified 07/08 parents supported the verified Week 5 live forecast `forecast-v1-2026w5-live-r2` (56 games). Candidate picks were published to Preview as `2026w5-d6366e59fd43` and authorized for production (`session_logs/2026-09-27/06.md`).
-> **Historical public site, 2026-09-27 (superseded):** V5 best-quote replay was selected for 2026 Weeks 0–4. The refreshed Week 5 live run (`session_logs/2026-09-27/14-week5-line-refresh-candidate.md`) `2026w5-5d436e58c072` is selected in production (56 predicted games, all 56 with spread and total lines) as of that date. The earlier Week 5 V5 run is the immediate same-week rollback; V4 runs remain frozen/scored for prior slates.
+> **Model development:** complete and accepted on 2026-09-22. **Live releases, week state and public record:** [Current Status](../status.md). **Weekly operations:** [weekly runbook](../ops/weekly_runbook.md).
 
-The [manual weekly operator](../ops/v5_weekly_operator.md) and exact one-slate
-release guard are implemented and rehearsed. Migrations 0014 and 0015 and
-separate replay authorizations enabled the Weeks 0–4 production replay cutover;
-the Week 5 live run used its own exact authorization. Future live publications
-require separate exact authorizations.
-Production V5 publication/selection requires the restricted
-`cks_prod_pipeline` login through `scripts/ops/with_production_pipeline_env.sh`
-(both `session_user` and `current_user` are checked; the owner credential is
-rejected). A fixture-class Preview operator rehearsal (cycle
-`v5-rehearsal-2026w4`, repair run `repair-2026-rehearsal-20260925` on the
-stabilized Weeks 0–3 inputs, 157/157/157 games) exercised preflight, apply with
-independent verification, status, and idempotent resume. That rehearsal is not
-live evidence. The production replay selection is retrospective for Weeks 0–3;
-Week 4 closed after 58 certified finals on 2026-09-27. The refreshed 07/08
-parents and independently verified Week 5 forecast supported the authorized
-Week 5 production release.
+## Accepted model
 
-## What V5 is
+V5 estimates each team's offensive and defensive scoring efficiency per possession, adjusts for opponents, and updates one continuous season-long rating as games finish. The selected candidate is `ppp__rho_0_60__exposure`: true points per possession, a 0.60 carryover prior, and exposure-weighted updates. A fixed Ridge bridge converts pregame states and earlier-only non-offense offsets into home margin and total forecasts. The selected bridge uses expanding fitting history, alpha 10 reference heads and a verified through-2025 final fit. Bookmaker lines never enter model features; 2026 outcomes never refit the sealed model. See the [methodology](possession_rating_methodology.md).
 
-The [2026-09-28 ratings audit](../research/2026-09-28-current-v5-ratings-audit.md)
-reconstructed all 138 current ratings exactly and documents weekly prior weights.
-It also records a default-view cutoff-label mismatch during projection before
-selection and a cumulative-snapshot observation concern. The
-serving mismatch is fixed under
-[default-view selection binding](../plans/2026-09-28/v5-default-view-selection-binding.md):
-the default label now derives from the served rows and frozen-tab backfill is
-pinned to the cutoff-owning source. The
-[intended-update repair experiment](../research/2026-09-28-v5-intended-update-repair-experiment.md)
-reproduced the certified historical states exactly, found sparse historical
-boundary evidence, and compared the repaired, single-cumulative, and
-first-boundary arms on identical forecast keys. The historical repair improves
-pooled 2022–2025 MAE, especially at the 4+ game stage, but the historical and
-live evidence paths differ; no successor has been selected or promoted. No
-accepted artifact or production model was changed.
+Development uses 2015–2019 and 2021–2025, excluding 2020 throughout. Opponent adjustment belongs primarily to football measurement; ratings must not double-count schedule strength. V5 is distinct from the historical V4 feature-schema-v5 diagnostic. V4 is a documented historical benchmark, not the weekly operational path; see the [V4 retrospective](v4_retrospective.md).
 
-The [2026 counterfactual replay](../research/2026-09-28-v5-2026-counterfactual.md)
-now provides concrete repaired pregame ratings and paired predictions for
-Weeks 0–5. On 215 retrospectively reconstructed completed games, replacing
-only live 2026 ratings improves margin MAE by 0.53 points; refitting the
-through-2025 bridge on repaired historical states improves it by 1.40 points.
-Total gains are small. Week 5 has 56 unscored paired forecasts. This remains
-research evidence and does not change the accepted V5 production status.
+## Evidence and limits
 
-V5 estimates each team's offensive and defensive scoring efficiency per possession, adjusts for opponents, and updates one continuous season-long rating as games finish. The selected candidate is `ppp__rho_0_60__exposure`: true points per possession, a 0.60 carryover prior, and exposure-weighted rating updates. A fixed Ridge bridge turns pregame team states and earlier-only non-offense offsets into predicted home margin and game total. The selected bridge uses an expanding fitting history, alpha 10 reference heads, and a verified through-2025 final fit. Neither bookmaker lines nor 2026 outcomes select or refit V5. See the [full methodology](possession_rating_methodology.md).
+The acceptance lineage is Repair v2, r9 measurements, r9 certified ratings, the through-2025 bridge final fit and independent 11D forecast verification. The [historical review](../research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md) accepted 7,318 prediction rows across 2022–2025 with zero exclusions. For 2025, margin MAE was 14.160 and total MAE 13.356 across 934 games per target; 80% intervals covered 80.1% of margins and 82.0% of totals. The separate 762-game postseason-recorded market diagnostic had lower market error on both targets. No like-for-like point-in-time V4 backtest under this protocol exists, so these results do not establish superiority over V4.
 
-V5 ratings successor is unrelated to the V4 *feature schema v5* diagnostic.
+The [ratings audit](../research/2026-09-28-current-v5-ratings-audit.md), [intended-update repair experiment](../research/2026-09-28-v5-intended-update-repair-experiment.md) and [counterfactual replay](../research/2026-09-28-v5-2026-counterfactual.md) preserve the investigation history. Their dated references to a pending promotion do not describe current release state. The accepted repaired intended-update model and the October 14 atomic season-controller cutover are governed by the [season operations contract](../plans/2026-10-14/01-season-operations-and-week7-bridge.md).
 
-## What is verified
+## Operational and record policy
 
-The accepted lineage is Repair v2; r9 measurements `possession-v1-measurements-20260921-r9`; r9 ratings `possession-v1-ratings-20260921-11d59ee-r9cert`; bridge and through-2025 final fit `forecast-v1-20260921-5afd577-11c`; and independent 11D forecast verification (`4cfe5ef8…`). All four historical audit findings are closed. The [historical review](../research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md) independently accepted 7,318 prediction rows across 2022–2025 with zero exclusions.
+`run_season.py` prepares immutable season artifacts, verifies `season_verification_v2`, and stages and activates one atomic release for the website. The [weekly runbook](../ops/weekly_runbook.md) is the operating authority. The older leakage-audit receipt and per-slate publication instructions are historical evidence; they are not the controller's release gate. The first controller weekly update remains an acceptance requirement; Phase 1 review safeguards are committed, while Week 8 execution still needs Week 7 finals and refreshed controller inputs.
 
-For 2025, V5 margin MAE was 14.160 and total MAE was 13.356 across 934 games per target. Its 80% intervals covered 80.1% of margins and 82.0% of totals. The separate 762-game, postseason-recorded market diagnostic had lower market error than V5 for both targets. A like-for-like point-in-time V4 backtest under this evaluation protocol is unavailable. These results support completion and live testing; they do not establish that V5 is superior to V4.
+The public record is one cumulative V5 record from Week 0. Started and reconstructed games remain on Picks without a retrospective label because forecasts use only observations available before their recorded forecast cutoffs. Build time can be later than kickoff; input cutoff must precede kickoff. A pre-kickoff freeze establishes prospective provenance only. Six slates are not a launch prerequisite; they are a useful monitoring window. See [record methodology](record_methodology.md) for market precedence, grading and limitations.
 
-## What remains operational
+Early Week 6 games have forecasts and currently published grades. The owner-approved rebuilt-quote candidate instead leaves games `401871090`, `401871051` and `401871066` ungraded for both targets because their real quote captures are after kickoff. That candidate is pending activation; the active public record is unchanged. Other unregistered captures still require owner review. Live totals and release IDs belong only in [Current Status](../status.md).
 
-**Current operational state:** see [Current Status](../status.md). Open work is governed by the [repair-track contract](../plans/2026-10-08/02-repair-track-certification-and-closure.md) and the [Stage 7B cutover plan](../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md). Items 1–4 below are historical (Weeks 0–5 setup) and are kept for lineage.
-
-1. Contracts 07 and 08 were refreshed and independently verified through Week 4: 215 completed games and 860 rating states under `possession-v1-measurements-20260927-w4` and `possession-v1-rating-replay-20260927-w4`. V5 ratings were projected to Preview and production Neon.
-2. Weekly ratings history is complete: independently verified post-Week 0/1/2 generations (`possession-v1-rating-replay-2026w{0,1,2}`, 8/51/100 games) join the certified post-Week 3/4 generations in production, serving six week tabs with priors backfill for teams yet to play. Fresh W3/W4 reruns reproduced the certified generations bit-for-bit and were never projected. See the [history replay contract](../plans/2026-09-27/05-weekly-ratings-history-replay.md) (Implemented).
-3. Contract 09 produced and independently verified Week 5 live forecast `forecast-v1-2026w5-live-r2` (112 target predictions across 56 games). Preview candidate run `2026w5-d6366e59fd43` contains 56 games, 34 with market quotes at publication. Follow the [weekly operator](../ops/v5_weekly_operator.md) and [weekly pipeline](../ops/weekly_pipeline.md) for further line refreshes and readiness checks.
-4. The initial exact Week 5 release authorized `2026w5-d6366e59fd43` with 34 lined games. A fresh capture found spread and total lines for all 56; a separately authorized exact packet then published and selected `2026w5-5d436e58c072`. Recheck markets and freeze the reviewed run before first kickoff (2026-10-02 00:00Z), subject to the existing lead-time gate. No Week 4 or later result may refit the fixed V5 identity.
-5. Keep immutable prospective freezes and outcome-versioned reports after live activation. Six slates are a useful review window, not a prerequisite for declaring V5 developed or proposing prospective activation. Historical and diagnostic runs never become frozen (prospective) observations; the public 2026 record nevertheless counts every point-in-time V5 run from Week 0 ([record methodology](record_methodology.md)).
-6. **Full-slate grading policy (`model_side_best_quote_v1` / `frozen_line_v2`) — edge constraints removed (2026-10-02).** Thresholds are set to 0.0 across the pipeline; every game with a model forecast and a market line generates a lean and receives a certified grade upon completion. All five 2026 weeks serve the rebuilt runs: 429 W0–4 grades across 215 games (215 spread + 214 total; Houston @ Texas Tech in W3 was unlined on totals). Weeks 0–4 (generated retrospectively from point-in-time inputs) total 100–112–3 spread (47.2%, 212 decided) and 112–102–0 total (52.3%, 214 decided); with Week 5 the cumulative served record is 128–139–4 spread and 137–132–1 total (see [status](../status.md)). Frozen Week 5 live predictions remain immutable; close-week grades all 56 games post-kickoff without mutating frozen prediction records. See [contract 04](../plans/2026-10-02/04-remove-edge-constraints-grade-all-games.md) (Implemented).
-
-
-## Contract map
-
-The many numbered contracts record **how the evidence was produced**, not a list of unfinished model features. Contracts 00–04 built the original method; 10–12 audited, corrected, verified, and accepted the historical result. Contract 05 built live shadow tooling. Contracts 07–09 are the 2026 application chain. Contract 06 operates freeze-provenance monitoring; the public record itself is the cumulative 2026 record. The [contracts index](../plans/index.md) links current procedures and the [archive](../archive.md) preserves completed and superseded decisions. The [current product transformation contract](../plans/2026-09-23/01-v5-product-transformation.md) tracks the remaining implementation work.
+Remaining EPA replacement, quality follow-ups, scoring recertification, non-monotonic running-score work and 2025 matchup backfill are deferred obligations in [Current Status](../status.md) and [known issues](../data/known_issues.md), not unfinished model development. Further model research remains isolated from public publication until separately approved.

@@ -1,11 +1,13 @@
 # Week 7 cutover gate waiver and readiness
 
-- **Status:** Approved
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Created:** 2026-10-11
 - **Planner:** Sol (planning session) · **Implementer:** Terra
 - **Approval source:** The user approved the plan in Plan Mode on 2026-10-11 after three decisions (below). Approval covers local code, tests, documentation and the exact data steps listed here, each still run as its own user go-ahead. It is not a Production release authorization.
 - **Planning log:** `session_logs/2026-10-11/05-week7-waiver-planning.md`
 - **Commit policy:** Separate commits; the user controls Git.
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: Approved
 
 ## User decisions (2026-10-11)
 

@@ -118,3 +118,22 @@ Leave `conf/season/2026/revision_manifest_w8_v1.json` and `session_logs/2026-10-
 
 
 Phase 1 closeout validation: the release/revision-builder PostgreSQL suites and migration tests passed together (120 tests, zero skips) on disposable local clusters; strict MkDocs, contracts validation, the 32-check quality registry and `git diff --check` passed. Prior full Python/web/Ruff results are retained in the implementation log. Phase 1 is ready for the owner commit; this contract remains In Progress because Phases 2 and 3 have not started and Week 8 execution remains pending.
+
+
+## Phase 2 execution amendment — 2026-10-15
+
+Phase 1 is committed as `2807e087`; the owner confirmed the commit in chat after the agreed Phase 2 handoff. Phase 2 is now In Progress with log `session_logs/2026-10-15/03-phase2-documentation-truth.md`. Phase 3 remains deferred; no runtime, dependency or CI cleanup is included in this documentation phase.
+
+The documentation-authority test contains obsolete assertions for a selected Week 5 run, Week 4 entry-point wording and separate exact-packet publication. Update those assertions to the approved season-release/runbook authority while retaining fixed-mathematics, historical provenance, leakage and six-slate-policy protections. This is a mechanical validation amendment required by the approved documentation changes, with no runtime interface or acceptance relaxation. Prior Phase 1 readiness paragraphs above are dated history; its commit gate is now satisfied.
+
+
+Phase 2 mechanical scope note: deleting the Hydra guide exposed a current reference in `CLAUDE.md`; replace that one guide reference with the canonical weekly runbook while preserving its `AGENTS.md` redirect. Historical audit/inventory mentions remain as evidence. No Phase 3 runtime/dependency deletion is included.
+
+
+## Phase 2 closeout — 2026-10-15
+
+Phase 2 documentation is complete locally and ready for the owner commit. The V4 retrospective is written with verified recovery commit `2807e0871c53a659943c5c23e5def888e0be5fbc`; the seven ops runbooks are archived with redirects, validation is moved, entry points and authority tests are current, ten overlapping contracts are Superseded with backlog pointers, and dated log corrections are appended. Section 4 documentation in the season-operations contract is delivered locally; that contract remains In Progress until its first controller weekly update. This review contract stays In Progress because Phase 3 remains deferred, not implemented. No runtime/model/dependency/CI cleanup was performed.
+
+Validation: full Python suite 3,227 passed and 33 skipped; expanded serial database suite 147 passed with zero skips in UTC client sessions; web lint/typecheck/publication tests/build, Ruff format/lint, contracts, the 32-check quality registry, strict MkDocs and diff checks pass. The first expanded database run exposed a preexisting non-UTC timestamp serialization limitation in the legacy publisher (146 passed, 1 failed); fresh cluster `PGTZ=UTC` retry matches CI and passes. The implementation log records the limitation and environment correction without changing legacy runtime code. The two untracked exclusions remain unchanged; Week 8 revision dry run is still blocked by Week 7 finals/controller inputs and was not claimed as passed.
+
+Proposed Phase 2 commit: `docs(season): consolidate V5 operations and preserve V4 history`. No commit, staging, push or stash was performed. Resume with owner review/commit; Phase 3 requires its import-graph and combined-coverage checks before any deletion.

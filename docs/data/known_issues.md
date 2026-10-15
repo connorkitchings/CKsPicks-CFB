@@ -1,18 +1,20 @@
 # Known Data Issues
 
-> **Current repair closure authority:** See the [completion matrix](../plans/2026-10-08/02-repair-track-certification-and-closure.md). Stage 1 is closed; remaining ingestion, scoring, full-population metric and 2025 matchup requirements remain open. Historical findings below are not current release instructions.
+> **Current authority (2026-10-15):** [Current Status](../status.md) owns live release state and deferred repair obligations; the [weekly runbook](../ops/weekly_runbook.md) owns operations. The [review contract](../plans/2026-10-15/01-review-fixes-and-v5-streamline.md) supersedes earlier operating and repair sequencing. Dated investigations below preserve their evidence and do not describe current serving state unless explicitly updated.
 
-Open and resolved data-quality issues that affect what the product shows. Add an entry when an issue is found; move it to **Resolved** with the fixing commit.
+## Current disposition
 
-## Repair authority (updated 2026-10-04)
+The October 14 controller cutover serves one atomic season release in both environments. The older repair completion matrix and two-window/stage-gate instructions are historical. EPA replacement, six quality follow-ups, scoring/descendant recertification, the 2025 matchup backfill and non-monotonic running scores remain deferred work; successful cutover does not close them. Matchup pages remain live with `CFB_MATCHUP_ENABLED=0` as the emergency opt-out.
 
-[Contract 04](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) governs the two independent windows. Window 1 code is committed on `dev` (`850ca38`, `562b2b2`); its Preview serving rehearsal passed and implementation was closed by the user; the production release decision remains open. Amendment 2 is **Approved (2026-10-04)**, with [data/certification](../plans/2026-10-03/window2/data-contracts-and-certification.md) and [release/schema/web](../plans/2026-10-03/window2/release-schema-and-web.md) specifications. No implementation or production completion is asserted by this documentation update.
+`season_verification_v2` now requires exact scoring-event-to-final reconciliation for every completed team-game. Explicit `(game_id, team, reason)` exceptions are pinned in the revision manifest; unlisted mismatches and unused exceptions fail both preparation and verification. Score anomaly tags never bypass this check. The exceptions record residual feed defects, not repairs, and must be refreshed before Week 8 inputs are built.
 
-Window 1 owns market selection/ties, Silver display masking and punt filtering, venue validation and accuracy presentation. Window 2 evaluates full R1, admits corroborated allocation changes (otherwise retains baseline), rebuilds the complete historical measurement/rating lineage under the unchanged model design, and publishes the corrected replay set plus the pending Week N run at the cutover. No EPA imputation. Neutral-site model changes (#9) require a separate contract.
+Provider-keyed play identity, corrected market selection and complete venue ingestion are implemented; earlier Preview-only and pending-cutover statements below are dated history. Supplement-free Production and Preview venue readback is recorded in the [October 14 venue-catalog fix](../plans/2026-10-14/02-venues-complete-catalog-fix.md#implementation-progress-2026-10-14-terra). This does not establish closure of historical scoring or metric-recertification work.
 
-Matchup pages remain live by the October 3 user decision; `CFB_MATCHUP_ENABLED=0` remains the emergency opt-out. The earlier one-batch rerun/open-page checklist is superseded. Production team stats were republished with the punt-return fix on 2026-10-07 and the as-of-6 snapshot on 2026-10-09; production venues are complete (issue 4). Remaining stale-stat limitations below remain open. Preview verification alone does not close a production issue.
+The public record remains the active release's record. The owner-approved October 15 rebuilt-quote candidate is pending activation and makes Week 6 games `401871090`, `401871051` and `401871066` ungraded for both targets because their real captures were after kickoff. Other unregistered captures remain pending owner review. See [record methodology](../modeling/record_methodology.md).
 
-Issues #4, #5 and #18 are reconciled under **Resolved**. Issue #5 uses the original investigation evidence and was not repaired by unpushed Window 1 code. The remaining issue bodies retain dated observations; the contract governs current sequencing.
+## Historical investigation register
+
+Entries retain measured findings and dated updates. An old “pending” or “current gate” within an entry describes that investigation date; use the disposition above and [Current Status](../status.md) for today's obligations.
 
 ## Open
 

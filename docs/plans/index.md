@@ -1,45 +1,60 @@
 # Implementation Contracts
 
-`docs/plans/` holds task-level Sol-to-Terra contracts; `docs/planning/` holds strategic roadmaps. Start with [Current Status](../status.md) for selected runs, week state and the scoreboard, or the [V5 status guide](../modeling/v5_status.md) for the accepted model and V4 rollback boundaries.
+`docs/plans/` holds execution contracts; `docs/planning/` holds strategic roadmaps. Start with [Current Status](../status.md) for live releases, week state and the scoreboard, the [V5 status guide](../modeling/v5_status.md) for model meaning, and the [weekly runbook](../ops/weekly_runbook.md) for recurring operations. Historical freeze/cutover contracts do not add gates to the installed atomic season workflow.
 
 ## Current Execution
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
-| [Weeks 6–7 review fixes and V5 streamline](2026-10-15/01-review-fixes-and-v5-streamline.md) | Fix Week 8 revision/reconciliation/release blockers, then documentation and deferred cleanup | In Progress; Phase 1 closeout validated, awaiting owner commit. Phases 2 and 3 start only after that commit. Week 8 Preview execution awaits Week 7 finals/controller inputs. |
-| [CI speedup](2026-10-14/03-ci-speedup.md) | Parallel Python validation, database cleanup repair and manual historical 6B integration | Implemented; hosted CI passed with PostgreSQL 16, 69% coverage and 4m32s execution. GitGuardian false positive ignored; PR #7 release authorized, refreshed checks pending. |
-| [Season operations and Week 7 bridge](2026-10-14/01-season-operations-and-week7-bridge.md) | Governing two-phase bridge and simplified season workflow; replaces overlapping weekly/cutover requirements as migration completes | In Progress; plan/configuration committed locally, Week 6 frames fully verified/published in Preview with zero-write retry and all-object readback. Successor/live pins committed (`ee87c529`); `corrected-w6-r1` and `corrected-w7live-r1` ratings built, verified and published to Preview (1,880 database rows, zero-write retries). Next gate: Week 7 display-only forecast/serving build (fresh line capture first, then forecast, serving, verify, package back to back). Bridge exact Production gates remain; automatic routine releases start only after new policy installation. |
-| [Week 6 closeout and transition review](2026-10-11/01-week6-closeout-and-transition-review.md) | Grade the served Week 6 run and certify its complete corrected replay; Week 7 held | In Progress; retained preflight and bounded extender tooling delivered. The 24-hour stability gate is removed ([contract 02](2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md)); clean apply code and operational replay certification remain required. [Transition review](2026-10-11/week7-transition-review.md). |
-| [Week 7 cutover gate waiver and readiness](2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md) | Waives the Sunday checkpoint and integrity-first rule for the Week 7 cutover; removes the 24-hour finals rule | Approved; code delivered locally. Data steps, release and Production remain separate user decisions. |
-| [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Authoritative completion matrix for the October 4 repair objective | In Progress; integrity closure waived for the Week 7 cutover only (Amendment 14). Amendment 16 (2026-10-13): Week 7 uses ratings corrected through Week 6 and ships display-only, unfrozen; live-rating provenance fix required. Stage 1 closure does not close this track. |
-| [Task 4 baseline and Week 7 display continuation](2026-10-13/03-task4-baseline-and-week7-display-continuation.md) | Complete baseline derivation/enforcement, Task 4 r2, Week 6 frames and corrected Week 7 display-only release | In Progress; Section 1 delivered/reviewed (2,858 passed, 30 skipped), catalog readback passed. Owner-approved Ruff exclusion and reviewed code are integrated locally; baseline derived/captured/pinned and fresh verification passed. Task 4 r2 built; full verification stopped on 3,036 existing as-of-7 stats inside declared addition scope. Owner approved stats coverage6 and newr3 retry; no publication until full verification passes. Production P0/user-run prerequisites and rollback apply remain owner gates. |
-| [Task 4 verification and catalog repair](2026-10-13/02-task4-verification-and-catalog-repair.md) | Correct population scope, two-lineage rating controls, kickoff revisions (four games, 16 `cutoff_utc` cells), and recover 6A catalog registration for Task 4 r2 | In Progress; baseline reconciliation complete. Week 7 publication now waits on `6a-task4-w6-r2` and the 6B Week 6 frames. |
-| [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Ordered execution, pivot gate and fallback under the repair contract | Draft; adds no release authority. Stable finals, certification and Preview rehearsal remain required. |
-| [Week 7 standalone fallback](2026-10-11/03-week7-standalone-fallback.md) | Single-week Week 7 publish and select if the cutover misses the pivot gate | Draft; 2026-10-13 note: ratings option 2 withdrawn and the freeze set aside (first kickoff passed), so Week 7 ships display-only on ratings corrected through Week 6. Needs `rollback_week_release.py` and an exact release decision. |
+| [Weeks 6–7 review fixes and V5 streamline](2026-10-15/01-review-fixes-and-v5-streamline.md) | Week 8 safeguards, documentation truth and optional cleanup | In Progress; Phase 1 committed as `2807e087`; Phase 2 documentation validated, awaiting owner commit. Phase 3 is deferred. Week 8 Preview execution awaits Week 7 finals/controller inputs. |
+| [Season operations and Week 7 bridge](2026-10-14/01-season-operations-and-week7-bridge.md) | Governing atomic season workflow and first recurring update | In Progress; cutover complete; awaiting first controller weekly update. Section 4 documentation is delivered locally by Phase 2 of the review contract, awaiting its owner commit; local checks do not close the weekly-update acceptance gate. |
 
 ## Supporting / In-Progress
 
-Supporting contracts retain their own approval and acceptance criteria. The repair matrix maps their unfinished repair/release obligations; independent work keeps its original owner.
-
 | Contract | Role / remaining obligation |
 | --- | --- |
-| [Bounded source-lock extender repair](2026-10-11/01-bounded-source-lock-extender-repair.md) | Implemented; fixture-only append and successor compatibility verified. Operational lock generation remains stability-gated. |
-| [Week 6 display-only Production release](2026-10-09/02-week6-display-production-release.md) | In Progress; Tasks 6–7 verification, configuration follow-through and post-finals grades-only backfill. No freeze or close. |
-| [Stage 7B exact release and cutover](2026-10-06/02-stage7b-exact-release-and-cutover.md) | In Progress; foundations delivered, exact packet execution, freeze, repin, readback and rollback still gated. |
-| [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) | In Progress; retains product/workflow acceptance and dependency-checked retirement obligations. Current record presentation follows the unified [record methodology](../modeling/record_methodology.md). |
-| [06: prospective monitoring](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Ongoing immutable attempt/freeze records, outcome reports and quote diagnostics. Six slates are not a launch prerequisite; the count is a monitoring window. |
-| [Matchup data layer v2](2026-10-02/01-matchup-data-layer-v2.md) | Approved supporting contract; corrected repinning and 2025 historical backfill remain mapped to repair closure. Delivered phases do not close the backfill. |
-| [Team stats as the source of basic stats](2026-10-02/03-team-stats-feeds-ratings.md) | Draft with Phase 1 implemented; Phase 2 repair scope belongs to D4 of the two-window contract, not a separate rebuild. |
-| [Week 5 data-issue investigation](2026-10-03/02-week5-data-issue-investigation.md) | Approved read-only evidence scope; Amendment 3 records delivered findings. Repair writes are governed by the successor contract. |
-| [Data integrity repair in two windows](2026-10-03/04-data-integrity-two-window-implementation.md) | In Progress historical parent; [data specification](2026-10-03/window2/data-contracts-and-certification.md) and [release/schema/web specification](2026-10-03/window2/release-schema-and-web.md) retain normative gates, as amended. Remaining execution is tracked in the repair matrix. |
+| [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) | Retained product and dependency-checked retirement obligations; record presentation follows the unified [methodology](../modeling/record_methodology.md). |
+| [06: prospective monitoring](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Continuing 2026 outcome monitoring and immutable provenance. Six slates are not a launch prerequisite. |
+| [Matchup data layer v2](2026-10-02/01-matchup-data-layer-v2.md) | Retained requirements for corrected repinning and 2025 backfill; unfinished work is in the [deferred backlog](../status.md#deferred-backlog). |
+| [Team stats as the source of basic stats](2026-10-02/03-team-stats-feeds-ratings.md) | Draft with Phase 1 implementation; remaining numerical repair is backlog, not a weekly gate. |
+| [Week 5 data-issue investigation](2026-10-03/02-week5-data-issue-investigation.md) | Retained read-only findings and supporting specifications; not a separate publication path. |
+
+## Superseded Operating Contracts
+
+The following contracts are Superseded by [season operations](2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](2026-10-15/01-review-fixes-and-v5-streamline.md). Their files, amendments and evidence stay at their original paths. Supersession does not mean unfinished repairs were implemented: remaining data obligations are retained in the [deferred backlog](../status.md#deferred-backlog), with detailed historical evidence in the repair matrix.
+
+| Contract | Historical role |
+| --- | --- |
+| [Stage 7B exact release and cutover](2026-10-06/02-stage7b-exact-release-and-cutover.md) | Component packet, freeze and repin cutover. |
+| [Repair-track certification and closure](2026-10-08/02-repair-track-certification-and-closure.md) | Historical completion matrix; unfinished quality/numerical work survives in backlog. |
+| [Week 6 display-only Production release](2026-10-09/02-week6-display-production-release.md) | Single-week display release and follow-through. |
+| [Week 7 cutover run sheet](2026-10-10/01-week7-cutover-run-sheet.md) | Dated pivot, exact packet and fallback instructions. |
+| [Week 6 closeout and transition review](2026-10-11/01-week6-closeout-and-transition-review.md) | Historical finals/grades/replay preflight. |
+| [Week 7 cutover gate waiver and readiness](2026-10-11/02-week7-cutover-gate-waiver-and-readiness.md) | Historical checkpoint/finals-stability waiver. |
+| [Week 7 standalone fallback](2026-10-11/03-week7-standalone-fallback.md) | Unused standalone alternative. |
+| [Task 4 verification and catalog repair](2026-10-13/02-task4-verification-and-catalog-repair.md) | Bounded predecessor repair and catalog recovery. |
+| [Task 4 baseline and Week 7 display continuation](2026-10-13/03-task4-baseline-and-week7-display-continuation.md) | Baseline enforcement and display bridge. |
+| [Data integrity repair in two windows](2026-10-03/04-data-integrity-two-window-implementation.md) | Historical parent specifications; unfinished numerical work remains backlog. |
+
+## Completed and Supporting Evidence
+
+| Contract | State / retained evidence |
+| --- | --- |
+| [CI speedup](2026-10-14/03-ci-speedup.md) | Merged, PR #7. Hosted PostgreSQL 16 checks passed; retained result is 69% coverage and 4m32s execution. No new hosted run is claimed here. |
+| [Permanent venue-catalog fix](2026-10-14/02-venues-complete-catalog-fix.md) | Implemented; complete 11-season catalog and supplement-free Preview/Production readback recorded in the contract. |
+| [Pre-finals integrity and cutover preparation](2026-10-10/03-pre-finals-integrity-and-cutover-preparation.md) | Implemented documentation preparation only; dated operating gates are historical under the superseded parent. |
+| [95 database-only adjusted rows investigation](2026-10-10/04-investigate-database-only-adjusted-rows.md) | Implemented read-only investigation; replacement and cleanup remain deferred. |
+| [Bounded source-lock extender repair](2026-10-11/01-bounded-source-lock-extender-repair.md) | Implemented bounded compatibility evidence; no recurring legacy controller requirement. |
 
 ## Deferred Backlog
 
-| Contract / effort | Owner and resume gate |
+| Contract / effort | Resume gate |
 | --- | --- |
-| [Archive unique local artifacts](2026-09-27/03-archive-unique-local-artifacts.md) | In Progress; 11 backups byte-verified, lifecycle proof and approved prune remain open. No artifact deletion is authorized by documentation housekeeping. |
-| [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Draft; separate architecture acceptance and approval, outside repair execution. |
-| Physical historical-plan archival; weekly-runbook consolidation | Deferred to Week 8 steady-state after repair/cutover closure; needs a separate reviewed scope. All plan and pinned-input paths stay unchanged now. |
+| [Data correctness backlog](../status.md#deferred-backlog) | Separately scope EPA replacement, six quality follow-ups, scoring/descendant recertification, 2025 matchup backfill and non-monotonic scores. |
+| [Archive unique local artifacts](2026-09-27/03-archive-unique-local-artifacts.md) | Retained lifecycle proof and approved prune remain open; no artifact deletion is authorized by documentation housekeeping. |
+| [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Draft; separate architecture acceptance and approval. |
+| [V5 streamlining, Phase 3](2026-10-15/01-review-fixes-and-v5-streamline.md#phase-3--streamline-deferrable) | Deferred; check import reachability and record combined coverage before any deletion, stop below 60%. |
+| Physical historical-plan archival | No plan/evidence paths move in this cleanup. |
 
 ## Historical Records
 
@@ -56,7 +71,7 @@ Lifecycle metadata remains in each original file. This table is navigation, not 
 | Earlier model/audit evidence | [V5 contract archive](../archive/v5-contracts/index.md): completed/superseded methodology, audits, diagnostics and code readiness, including the unrelated V4 feature-schema-v5 diagnostic |
 | This documentation cleanup | [Cutover-safe documentation consolidation](2026-10-10/02-cutover-safe-documentation-consolidation.md): logical indexing and compact template only; no repair or release closure |
 
-The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md) retains research context. The [V5 weekly operator](../ops/v5_weekly_operator.md) governs recurring stages and exact gates; the [production runbook](../ops/production_runbook.md) retains V4 rollback procedures. These runbooks remain separate through cutover.
+The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md) retains independent research context. The [weekly runbook](../ops/weekly_runbook.md) is the sole recurring operational authority; old runbooks are archived with redirects. V4 is documented in the [retrospective](../modeling/v4_retrospective.md), not operated.
 
 **Numbering notes:** `2026-10-01/` has no `09` (the former `02` matchup-stats draft became `10`) and `2026-09-30/` has no `04`; numbering stays stable. The October 1 close-out of twenty older contracts is recorded in their status lines.
 
@@ -70,6 +85,7 @@ Store contracts at `docs/plans/YYYY-MM-DD/<descriptive-slug>.md`; use numeric pr
 | `Approved` | Ready for Terra under recorded approval or an explicit handoff naming the exact path. |
 | `In Progress` | Implementation underway. |
 | `Implemented` | All acceptance criteria and required validation passed. |
+| `Merged` | Implemented and merged; integration evidence is recorded in the contract. |
 | `Superseded` | A later contract replaces this scope. |
 
 Use Sol planning → approval → persisted contract → fresh Terra implementation for architecture, data/model lineage, schemas/migrations, production/deployment, security-sensitive or multi-subsystem work. A Draft requires explicit authorization naming its exact path before implementation; record approval first. Use the established fast path for localized changes.

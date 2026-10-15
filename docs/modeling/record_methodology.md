@@ -1,56 +1,44 @@
 # 2026 record methodology
 
-> **Status:** Active (decided 2026-10-10). This is the internal statement of how the public 2026 V5 record is admitted and what it does and does not guarantee. Live numbers are in [`status.md`](../status.md); the decision is in the [decision log](../decisions/decision_log.md).
+> **Status:** active; updated 2026-10-15 for the atomic season controller. Live numbers and release IDs are in [Current Status](../status.md). Decisions are in the [decision log](../decisions/decision_log.md).
 
-## Policy
+## One continuous record
 
-The demonstrated 2026 record is **one continuous, cumulative V5 record from Week 0 onward**, presented as if V5 had been the active model for the whole season. Weeks 0 and later are scored the same way: a pick is the model side against the best eligible pre-kickoff line, graded win, loss or push against the certified final. The public site shows one record and does not split it by how each week was produced; the provenance below lives here, in the database and in the contract amendments.
+The public 2026 record is one cumulative V5 record from Week 0, presented as if V5 had been active for the whole season. A selection is the model side against its chosen eligible quote, settled win, loss or push against the certified final. Spread and total records are separate. Every forecast with an eligible line can receive a grade; there is no edge threshold. Missing lines remain ungraded.
 
-## Admission criterion: strict point-in-time inputs
+Started and reconstructed games stay on Picks without a retrospective label. The point-in-time claim concerns the observations used by the forecast, not when the replay was built. Freeze receipts, original runs and reconstruction provenance remain audit evidence. “Prospective” describes predictions frozen before kickoff only; it does not define a separate public record or a six-slate admission requirement.
 
-A game enters the record only if every check of the point-in-time audit (`scripts/pipeline/audit_point_in_time_leakage.py`) passes for it. The audit measures **event time**, never build time: replays were generated after the games, so "generated before kickoff" is not the test. The test is that every input was available at the forecast `as_of`, and the `as_of` is not after kickoff.
+## Admission and verification
 
-| Rule | What must hold |
+The controller requires a passing `season_verification_v2` report, produced during `run_season.py prepare`, covering both football preparation and serving projections. This replaces the legacy `audit_point_in_time_leakage.py` receipt as the operational release gate. A passing historical leakage receipt alone cannot authorize a release. Follow the [weekly runbook](../ops/weekly_runbook.md) for exact commands and release approval requirements.
+
+| Check | Required behavior |
 |---|---|
-| a. Rating inputs | every observation behind a team's state became available (source kickoff + 6 h) at or before the forecast `as_of`; none from the same or a later week |
-| b. Rating state | the state's cutoff is at or before the forecast `as_of` |
-| c. Forecast time | the forecast `as_of` is at or before kickoff (Week 6: before 2026-10-07T00:00:00Z, the first Week 6 kickoff, so all 58 games are forecast without Week 6 results in the ratings) |
-| d. Quote time | the selected quote was captured before kickoff and no later than the market cutoff, **or** it is on the declared accepted-late list below |
-| e. Model parameters | the inference bundle was developed on 2015-2019 and 2021-2025 only: no 2026 outcome and no 2020 |
-| f. Team stats | matchup statistics for a week-w game use `as_of_week <= w`; the builder counts only games completed before `as_of_week` |
-| g. Cutoff coherence | both Week 6 cutoffs (forecast and market) are recorded, and the forecast one is at or before the first kickoff |
+| Earlier-week evidence | Pregame ratings use only earlier-week games available by the rating cutoff; forecasts have a cutoff strictly before kickoff. Offsets use earlier-week observations. Post-week ratings may use that completed week's evidence. |
+| Fixed identity | Model parameters retain the sealed 2015–2019 and 2021–2025 design and through-2025 fit; no 2020 or 2026 refit. |
+| Feature integrity | Market fields do not enter model features; selected rating states match forecast features; predictions remain paired. |
+| Football inputs | Required prior-week finals and play inputs are present; scoring events reconcile exactly per team-game unless an exact declared exception applies. |
+| Provenance | Reads verify checksums; the model, revision, grading policy, code and configuration identities bind the release. |
+| Serving integrity | Schedule, grades, quote links, summary records, rating lineage, matchup publication, venues and completed-game regimes pass independent projection checks. |
 
-The audit writes a checksummed receipt; the cutover packet must carry a passing receipt that covers every selected run.
+Score exceptions identify an exact `game_id`, `team` and reason in `conf/season/2026/score_reconciliation_exceptions.json`, pinned by the revision manifest. An unlisted mismatch or an unused exception fails preparation and verification. Malformed-score tags are not an automatic bypass, and there is no season-wide percentage waiver. Refresh the exceptions against new completed-week inputs; acceptance records a known limitation, not a repaired score stream.
 
-## Declared exception: CFBD lines fetched after kickoff
+## Market precedence and settlement
 
-A line captured at or after kickoff is normally ineligible. CFBD publishes one line per provider per game with no timestamp of its own, and our capture time is the fetch time. For a game that had already kicked off when we fetched, the CFBD line is accepted as the game's pregame consensus line if, and only if:
-- the quote is on the market lock's accepted-late list with `reason: "cfbd_pregame_consensus_fetched_post_kickoff"`, provider `cfbd` and source entity `betting_lines` (no Odds API or in-game feed);
-- the empirical check (re-fetching current CFBD lines for already-completed Weeks 0-5 games and comparing them with the stored pre-kickoff captures) supports that a post-game fetch returns the pregame line.
+Selection is independent for each game and each target. Retained quotes captured strictly before kickoff take precedence (`retained_prekickoff`); the live week also applies the preparation `as_of` cutoff. The cumulative registered capture set retains real fetch times. When it supplies raw quotes, the selector keeps the latest eligible quote per provider, builds the canonical target snapshot using valid CFBD Consensus first and otherwise provider median, then fixes model direction against that canonical line. It shops only linked quotes for the chosen side under `model_side_best_quote_v2`; an exact directional tie is Away/Under. Spread points are stored home-signed and reversed for Away settlement. Selection records quote, snapshot, provider, point, price and benchmark provenance.
 
-**Assumption, stated plainly:** that CFBD's lines endpoint returns pregame lines only. Its documentation was not found to say so; the comparison above is the evidence. If it fails, the exception is withdrawn and those games are ungraded.
+For a completed non-live game with no retained eligible quote, an explicitly supplied CFBD retrospective benchmark may be used (`cfbd_retrospective`). This is recorded separately; it is not authentic pre-kickoff capture evidence. Live-week selections never use that fallback. Without either permitted source, the game-target is ungraded. Fallback is per game-target, not an entire-week switch. Best-quote grading of reconstructed forecasts is the owner's intended policy; it is a retrospective comparison and does not prove the quoted execution was available when an original pick was published.
 
-Games covered (late-quote exception currently disabled): Week 6 games 401871051, 401871066 and 401871090. Week 3 Houston @ Texas Tech total (401856811) is covered only if a CFBD total exists in a capture and the Week 3 replay is rebuilt.
+## Published state and the accepted quote correction
 
-## What the guarantee does not cover (known caveats)
+The current active release includes grades for the three early Week 6 games. On October 15, the owner confirmed registration of three Week 2–4 CFBD captures in Preview and accepted a rebuilt-quote candidate. The rebuilt data restore the real capture time for six Week 6 target quotes: games `401871090`, `401871051` and `401871066` have no eligible pre-kickoff quotes and become ungraded for both spread and total in that candidate. No late-quote exception is enabled to rescue them. The candidate remains pending activation; [Current Status](../status.md) holds both the unchanged public scoreboard and accepted candidate result. Other unregistered market captures remain pending owner review because adding quotes can change best-quote selections.
 
-These are facts about how the record was produced, kept here so the claim is not stronger than the evidence:
-- **Later data corrections were adopted.** The corrected rebuild uses CFBD's updated play-by-play for past weeks (Stage 1 Option B). Event-time cutoffs hold, but a correction published after the original week is used.
-- **CFBD capture times are fetch times.** The audit can show a line was fetched before kickoff, not when the book posted it.
-- **Design choices were made with results known.** The V5 repair, the B2 bundle and the removal of the edge thresholds were decided after Weeks 0-3 had been played. No 2026 outcome was used to fit parameters; the choices themselves are not blind.
-- **Week 6 has two cutoffs.** The forecast `as_of` is before 2026-10-07T00:00Z; the only market snapshot was captured 2026-10-08T16:19Z. Both are recorded in the receipt.
-- **Verified gaps stay ungraded.** A game with no eligible line has no selection and no grade.
+## Limits and historical evidence
 
-## Provenance that is still recorded
+- Later provider corrections to past play-by-play were adopted. Event-time boundaries hold, but the corrected content may have been published after the original forecast week.
+- CFBD capture timestamps are fetch times, not bookmaker posting times. Retained pre-kickoff eligibility proves capture timing only.
+- Design and repair decisions were made with early 2026 outcomes known, although those outcomes do not fit parameters. Reconstructed records are not blind forward testing.
+- A quote or final missing for one target leaves that target ungraded; a complete schedule does not imply complete grading.
+- Non-monotonic score streams and declared reconciliation exceptions remain quality limitations; verification does not claim those feeds were repaired.
 
-Evidence class (`replay`, `pending`, `live`), freeze receipts and the Week 5 legacy attestation, run manifests and authorizations remain in the database and artifacts. The frozen Week 5 run and its receipt are immutable; after the cutover the counted run for every week 0-6 is the corrected replay. Hard rules that do not change: training strictly precedes prediction, no 2026 outcome refits the V5 identity, no freeze receipt is created after kickoff, and market data never enters model inputs.
-
-## Audit execution and October 10 findings
-
-Run `uv run python scripts/pipeline/audit_point_in_time_leakage.py --environment preview --season 2026 --through-week 6` from the repository root. It reads R2 and the serving database without writes, verifies hashes and source-game histories, checks both cutoffs, and independently excludes all same/later-week games before rebuilding statistics from their recorded Silver versions. The receipt is created at `artifacts/audit/leakage_audit_receipt_2026.json`; an existing receipt is preserved, so use a fresh `--output` for a subsequent audit. Exact run, source-lock, rating and bridge arguments must follow the reviewed lineage when it changes. Environment is explicit; the default evidence names the current Preview corrected candidates, not a Production activation.
-
-Completed-week replays use the pregame cutoff of each game's bound rating state; their serving `data_as_of` records the separately captured market cutoff. Both appear in the receipt. Forecast generation time is not substituted for event time.
-
-The October 10 read-only execution passed all seven rules for the 271 corrected Week 0–5 games. Including the existing Week 6 display run failed: its 220 rating-role cutoffs are after its declared forecast time, that time is after the required October 7 boundary, and its slate omits three games. No future outcome was found in the rating histories. The receipt remains failed until a complete corrected Week 6 replay passes; it cannot authorize a cutover.
-
-`verify_cfbd_closing_lines.py` sampled three completed games from each of Weeks 0–5 and compared 59 pre-kickoff provider/target captures with fresh CFBD lines: 19 matched, 40 differed. The comparison **does not support enabling the declared late-quote exception**. Differences may be legitimate pregame movement after our capture, so they do not establish post-kickoff line movement either. The three early Week 6 games remain ungraded unless new evidence satisfies the acceptance gate. Exact late-quote declarations are supported by the market lock and serving paths, but a failed or missing signed comparison is refused.
+The October 10 leakage audit and `verify_cfbd_closing_lines.py` comparison remain historical evidence in `session_logs/2026-10-10/`. The comparison found 19 matches and 40 differences among 59 sampled provider/target captures; it did not support a blanket post-kickoff CFBD-line exception. Frozen Week 5 originals and their receipts remain immutable even where the public record now uses reconstructed forecasts. Training precedes prediction, no 2026 outcome refits the V5 identity, no freeze receipt is created after kickoff, and bookmaker data stays outside model inputs.

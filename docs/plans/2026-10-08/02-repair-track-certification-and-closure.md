@@ -1,10 +1,12 @@
 # Repair-track certification and closure
 
-- **Status:** In Progress
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Approval:** User explicitly requested implementation of the complete updated plan after `04cd53ce` in this chat. This contract persists that approved scope; it does not authorize automatic Production activation.
 - **Baseline:** `04cd53ce`; Stage 1 is closed. B2 successor chain, provider names, packet/staging tools, display-only Week 6 and frame-week policies already exist.
 - **Implementation log:** `session_logs/2026-10-08/02-repair-track-certification.md`
 - **Commit policy:** User-run commits; preserve unrelated work. No automatic merge, deployment or serving change.
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: In Progress
 
 ## Goal and constraints
 

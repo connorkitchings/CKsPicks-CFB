@@ -32,10 +32,10 @@
 | `CFB_ARTIFACT_ENV` set by wrapper | `preview` | `production` |
 | R2 credential set | `CFB_R2_PREVIEW_*` | `CFB_R2_*` |
 
-- **Credentials** live only in the local macOS Keychain and are injected by the wrappers; no database URL is written to the repository, Vercel, shell history or logs. `with_preview_env.sh` sets `PREVIEW_DATABASE_URL` (pipeline role) and `DATABASE_URL` (migrator role, for migrations only). Never use a pipeline or migrator connection in Vercel.
+- **Pipeline and owner credentials** live in the local macOS Keychain and are injected by the wrappers; never copy them into the repository, Vercel, shell history or logs. Vercel receives only the separate read-only web `DATABASE_URL`. `with_preview_env.sh` sets `PREVIEW_DATABASE_URL` (pipeline role) and `DATABASE_URL` (migrator role, for migrations only). Never use a pipeline or migrator connection in Vercel.
 - **Roles (Migration 0025):** the pipeline group role (`cks_pipeline`) may `SELECT`/`INSERT` `season_releases` and the `season_release_*` projection tables and activates only through `activate_season_release()`; it cannot change `season_release_policies`. The web group role (`cks_web`) has `SELECT` only. Rollback refuses any login whose role ends in `_pipeline` or `_web` (`src/cks_picks_cfb/season/release.py`).
 - **Object storage:** `CFB_ARTIFACT_ENV` selects the R2 credential set (`CFB_R2_PREVIEW_*` for `preview`, `CFB_R2_*` otherwise). Both sets currently name the same bucket, `cks-picks-cfb-preview`; immutable artifacts are checksummed and environment-neutral, and environment separation is by Neon branch. Any command run *without* a wrapper defaults to `CFB_ARTIFACT_ENV=production`, so every data command below runs under a wrapper.
-- **Vercel:** the site (`https://c-ks-picks-cfb.vercel.app`, Root Directory `web/`) deploys from `main` and reads Production through `cks_prod_web`. `dev` is the working branch.
+- **Vercel:** the [site](https://c-ks-picks-cfb.vercel.app) (Root Directory `web/`) deploys from `main` and reads Production through `cks_prod_web`. `dev` is the working branch.
 - **Run locally against an environment:** `make web-local ENV=preview` (or `ENV=production`).
 
 ---

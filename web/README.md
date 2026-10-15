@@ -2,13 +2,13 @@
 
 Next.js 16 / React 19 / Tailwind v4 application served from Vercel and backed
 by Neon Postgres. The Python pipeline owns football-model generation; this app
-only renders the selected immutable run under the configured publication policy.
+only renders the active immutable season release under the configured publication policy.
 
 ## Current boundary
 
-V5 is the 2026 serving family; V4 is the rollback path. Research/shadow models
-must not alter web schemas, queries, publication, or the V4 rollback path until
-separately promoted.
+V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves Picks, Results, Ratings, Performance and `/api/health` to the same atomic release. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
+
+Current release IDs and week state belong in [`docs/status.md`](../docs/status.md). Follow the [weekly runbook](../docs/ops/weekly_runbook.md) for revision, prepare, Preview rehearsal, owner-approved Production release and rollback.
 
 `CFB_PUBLICATION_MODE=predictions` is an explicit approved release mode.
 Anything else is fail-closed market-only rendering. Prediction publication does
@@ -20,11 +20,11 @@ flag and its freeze/evidence guards are independent of this presentation flag.
 
 ## Local matchup pages
 
-The matchup pages are meant to be run locally for now; production stays closed and nothing in Vercel needs to change.
+Matchup pages are a public feature. Use local Preview reads for development and verification.
 
 ```bash
 make web-local                    # preview data (default), http://127.0.0.1:3000/matchup
-make web-local ENV=production     # the same Week 5 data from the production database
+make web-local ENV=production     # read the active Production release locally
 # or: zsh scripts/ops/run_web_local.sh [preview|production]
 ```
 
@@ -40,7 +40,7 @@ npm run dev
 ```
 
 Use the explicit Preview migration command in the
-[weekly pipeline](../docs/ops/weekly_pipeline.md) and
+[weekly runbook](../docs/ops/weekly_runbook.md) and
 `make contracts-check`; `contracts/schema.ts` is canonical and the web copy
 must remain synchronized.
 
@@ -86,6 +86,4 @@ Output: `public/logos/v2/{sm,lg}/{light,dark}/<id>.webp`, `public/logos/v2/manif
 an initials tile for unknown teams. Alternate spellings are mapped to the CFBD
 name in `src/lib/team-logos.ts`. The Python leaderboards read the same manifest. Contract: `docs/plans/2026-10-01/07-high-quality-team-logos.md`.
 
-See the [weekly pipeline](../docs/ops/weekly_pipeline.md) and
-[production runbook](../docs/ops/production_runbook.md) for publish, freeze,
-close, health, and rollback operations.
+Started and reconstructed games remain visible on Picks: forecasts use pre-cutoff observations, and grades select eligible pre-kickoff quotes per game/target. See the [record methodology](../docs/modeling/record_methodology.md). Operational release and rollback instructions live only in the [weekly runbook](../docs/ops/weekly_runbook.md).

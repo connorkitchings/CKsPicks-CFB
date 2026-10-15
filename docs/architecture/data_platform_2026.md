@@ -2,146 +2,41 @@
 
 ## Authority boundaries
 
-- R2 is authoritative for immutable provider captures, normalized datasets,
-  feature/evaluation datasets, model bundles, prediction runs, and scored files.
-- Neon `catalog` selects exact dataset versions and stores lineage/quality results.
-- Neon `ops` owns pipeline attempts, step resumption, waivers, activation history,
-  and reconciliation. `current_week` and `prediction_runs` are the only active and
-  frozen run authority.
-- Neon `public` is the derived serving model. The web application has read-only
-  access and continues to use Drizzle over Neon HTTP.
-- Local disks are explicit scratch/cache space only. Production code may not infer
-  a local `./data` root or read a mutable latest dataset.
+- R2 is authoritative for immutable provider captures, normalized datasets, model bundles, season runs, verification reports and serving projections. Local disks are explicit scratch/cache space; no implicit local `./data` root or mutable latest dataset is permitted.
+- Neon `catalog` records captures, exact dataset versions, lineage and quality results. Neon `ops` retains source/build attempts and reconciliation history.
+- Neon `public.season_releases` is the active season-serving authority. Its unique active row per `(environment, season)` binds the active week, model/revision/grading-policy identities, code/config identities, run manifest and verification checksums. Release-scoped projection tables provide one consistent website snapshot.
+- `season_release_history` records activation and rollback transitions. Legacy `current_week`, `prediction_runs` and selected-week records remain readable fallback/history when there is no active season release; they do not override an active release.
+- The web application has read-only access and uses Drizzle over Neon HTTP. See the [weekly runbook](../ops/weekly_runbook.md) for environments, credentials and operations, and [Current Status](../status.md) for active identities.
 
-## Immutable paths
+## Immutable capture and build contracts
 
 ```text
 lake/bronze/provider=cfbd/entity=<entity>/content_sha=<sha>/data.parquet
 lake/bronze/provider=cfbd/entity=<entity>/content_sha=<sha>/observations/<capture>.json
 lake/silver/dataset=<dataset>/version=<version>/data.parquet
 lake/gold/dataset=<dataset>/version=<version>/data.parquet
-artifacts/<environment>/models/<bundle>/manifest.json
-artifacts/<environment>/predictions/year=<year>/week=<week>/run_id=<run>/
-artifacts/<environment>/scored/year=<year>/week=<week>/run_id=<run>/
 ```
 
-Identical provider payloads reuse one content object but create distinct observation
-records. New v2 Silver and Gold version IDs include content, explicit parent
-identities, normalized cutoff, partitions, schema SHA, code SHA, and config SHA;
-parent URIs are deliberately excluded. V1 manifests remain readable historical
-evidence. A v2 rebuild with identical inputs reuses the version; failed validation
-writes no canonical lake object or manifest.
+Identical provider payloads reuse a content object but create distinct observation records. New v2 dataset identities bind content, explicit parents, normalized cutoff, partitions, schema, code and configuration; parent URIs are excluded. V1 manifests remain historical evidence. Dataset reads verify SHA-256 before decoding. Failed validation does not publish a canonical lake object or manifest. `DatasetRef`, `SourceCapture`, `BuildRequest`, `MarketQuote` and `MarketSnapshot` define the lake interfaces.
 
-## Data contracts
+The revision builder resolves the registered Preview capture inventory into explicit schedule, finals, by-play, drives, reconciliation and cumulative market refs. It records truthful capture times and pins exact score-reconciliation exceptions. The prepared run does not silently pick the latest dataset by creation time. A changed manifest or code identity can change provenance strings even when football business content is identical; parity comparisons may normalize only documented provenance identities, never market selections or grades.
 
-`cks_picks_cfb.data.lake` defines `DatasetRef`, `SourceCapture`, `BuildRequest`,
-`MarketQuote`, and `MarketSnapshot`. Dataset reads verify SHA-256 before decoding.
-Corrupt partition objects are copied to `lake/quarantine/` and fail the operation.
+Canonical schedule policy preserves `provider_week` and assigns canonical weeks through versioned game-ID mappings. Source lineage retains provider labels; the website and controller use canonical weeks.
 
-`SourceAdapter` is provider-neutral. CFBD is the only Week 0 adapter; retry is
-bounded with exponential backoff and jitter, failures are classified, and incomplete
-pagination fails closed. R2 ingestion dual-write defaults on for the R2 backend.
-Set `CFB_REQUIRE_CATALOG=1` in production so capture registration cannot be skipped.
+## Football model and market separation
 
-Market policy `consensus_then_median_v1` selects spread and total independently:
-valid CFBD Consensus first, otherwise the median of each provider's newest valid
-quote. Every quote remains in Bronze; the selected quote IDs, rule, provider counts,
-and deterministic snapshot ID travel with the prediction.
+V5 uses the sealed model manifest, through-2025 fit and earlier-only observations. Its development seasons are 2015–2019 and 2021–2025, with 2020 excluded. `season_verification_v2` verifies earlier-week cutoffs, no refit, no market fields in features, paired predictions, checksums, exact reconciliation and serving integrity. V4's old ten-route `model_bundle_v3` interface is historical; see the [V4 retrospective](../modeling/v4_retrospective.md).
 
-Historical betting-line exports lack authentic quote timestamps. They are
-preserved as a separate `legacy_market_references` Silver dataset stamped with
-`exact_replay_eligible=false`, `grading_eligible=false`,
-`lean_eligible=false`, and `timestamp_status=missing_authentic_timestamp`. They
-may not enter canonical `market_quotes`, model features, leans, grades, ROI,
-or model selection. Provider routing (`DATASET_PROVIDERS`) ensures canonical
-market datasets only consume `cfbd` captures while `legacy_market_references`
-only consumes `legacy_cfbd_export` captures. Use `make audit-data MODE=exact-market`
-to verify quarantine and lineage purity.
+Retained pre-kickoff quotes have precedence per game-target; only completed non-live targets may use an explicitly supplied CFBD retrospective fallback. Direction comes from the canonical target snapshot and grading shops the best linked quote for that side. Quote timestamps, prices, benchmark class and lineage remain recorded. Missing eligible quotes leave targets ungraded. See [record methodology](../modeling/record_methodology.md).
 
-Silver schedules preserve `provider_week` exactly. A versioned
-`schedule_week_policy` dataset assigns `canonical_week` by explicit game-ID
-assignments (e.g. `conf/policy/canonical_week_2026_v1.yaml` assigns the August 29
-opening slate to canonical Week 0). The site and operational commands use
-canonical weeks; source lineage and provider reconciliation retain provider weeks.
+Untimestamped exports remain quarantined as `legacy_market_references` with `exact_replay_eligible=false`, `grading_eligible=false`, `lean_eligible=false` and `timestamp_status=missing_authentic_timestamp`. They cannot masquerade as retained canonical quotes or enter model features; a separately declared retrospective benchmark must retain its provenance class.
 
-## ML inputs and bundles
+## Database and release lifecycle
 
-Production `model_bundle_v3` inference (the config key; V4-era bundles such as
-`week0-2026-v4-strict-20260818-r2` use it — `model_bundle_v2` is the
-legacy/readable predecessor) requires:
+`contracts/schema.sql` reconstructs the current schema. Existing databases apply append-only `contracts/migrations/` via `scripts/pipeline/migrate_db.py`; `schema_migrations` pins checksums and rejects rewritten history. Objective finals remain distinct from target/line-dependent grades. In the controller path, release-scoped grades and summaries are the serving source; legacy `prediction_grades` and `system_stats` are fallback/history only.
 
-- All ten spread/total × 0/1/2/3/4+ routes.
-- Durable artifact URIs and checksums for every route.
-- Explicit feature lists with bookmaker-derived columns rejected by contract.
-- Monotone spread and total prior weights for completed-game counts 0–4.
-- Exact Gold training feature refs in the model bundle. Weekly Silver/Gold refs are
-  catalog-selected and frozen in the pipeline-run manifest.
-- Labeled training years 2021–2025, with 2019 allowed only as the early-2021 prior
-  source and 2020 excluded from all data lineage.
+The supported sequence is revision build → commit inputs → prepare from a clean tree → verify → stage/release in Preview → exact approved Production release. A commit between prepare and release invalidates the prepared code identity. Activation switches the complete season atomically; Production requires matching Preview proof. The restricted pipeline login stages and activates through guarded database interfaces, while owner rollback uses the separate owner credential. Legacy publish/freeze/close writers are not the weekly operating path.
 
-The generator reads those refs via checksum verification and records them in the
-prediction-run manifest and `prediction_runs.input_dataset_refs`. MLflow and local
-model paths are development-only; production fails without durable artifacts.
+Release IDs in the database are environment-prefixed; the controller accepts bare `season-2026-...` IDs and normalizes them for the explicit environment, refusing a mismatched prefix. `season_releases` enforces one active release per environment and season. Signed on-demand Vercel revalidation refreshes caches after activation; five-minute ISR remains the fallback.
 
-## Database changes
-
-`contracts/schema.sql` is the reconstructed current schema. Existing databases use
-the append-only files in `contracts/migrations/`; `scripts/pipeline/migrate_db.py`
-records checksums in `schema_migrations` and rejects edited history.
-
-`game_results` holds objective outcomes. `prediction_grades` holds line-dependent
-spread/total grades keyed by run, game, and target. Records and ROI derive from the
-selected scored run per week, never from one global grade on a game.
-
-Group roles are created for least privilege: `cks_web` (read), `cks_pipeline`
-(operational writes), and `cks_migrator` (DDL). Deployment login roles should inherit
-exactly one group role.
-
-## Weekly state machine
-
-```bash
-python -m cks_picks_cfb.ops readiness ...
-python -m cks_picks_cfb.ops publish-week ...
-python -m cks_picks_cfb.ops freeze-week ...
-python -m cks_picks_cfb.ops close-week ...
-python -m cks_picks_cfb.ops replay-season ...
-python -m cks_picks_cfb.ops reconcile ...
-python -m cks_picks_cfb.ops audit-data ...
-```
-
-Each command uses a durable database lease per environment/season/week and records
-durable step attempts. Resume with the same `--pipeline-run-id` requires an exact
-operation/step-definition match; completed steps skip only after their outputs
-validate. Prediction run IDs are chosen before generation and passed through every
-later step. R2 objects are staged first, and activation is a Neon transaction.
-
-Set `CFB_REVALIDATION_URL` and `REVALIDATION_SECRET` for signed on-demand Vercel
-revalidation. The site's five-minute ISR remains the fallback.
-
-## Deployment sequence — executed 2026-08-18
-
-1. ✅ Migrations 0002–0008 applied on the isolated Neon branch
-   (`preview-2026`) with `make migrate-db`.
-2. ✅ R2 dual-write verified; Bronze/Silver/Gold history for 2019, 2021–2026
-   imported from the read-only source (7,156 eligible objects, checksums
-   verified; no 2020 lineage).
-3. ✅ Complete preview bundles published and rehearsed (V2 preview → V3 → V4);
-   each run selects its own dataset refs.
-4. ✅ 2025 preview replay + Week 0 readiness/publish/freeze rehearsed on the
-   preview bucket, Neon branch, and Vercel Preview.
-5. ✅ Production promoted 2026-08-18: Neon production branch (0002–0008,
-   catalog hydrated from Preview via COPY — 7,163 source captures, 85 dataset
-   versions), `cks_prod_web` read-only login role for Vercel, production R2
-   credentials on the shared `cks-picks-cfb-preview` bucket (immutable
-   artifacts are environment-neutral; separation is by Neon branch), Vercel
-   production deployed in `market` mode with published run
-   `2026w0-79ec2aebcb00` (8/8 games, 8/8 lined, 0 high-confidence) and a
-   green `/api/health`.
-
-Game-week operations (progressive publishes, freeze, predictions-mode flip,
-close-out) are tracked by the
-[Week 0 launch contract](../plans/2026-08-18/week0-launch-execution.md) and
-the [Production Runbook](../ops/production_runbook.md).
-
-Legacy serving columns/views remain available through the first successfully closed
-2026 week. No new production run may depend on them.
+The August 18 lake/bootstrap and V4 launch are historical milestones in the [launch contract](../plans/2026-08-18/week0-launch-execution.md). The October 14 controller cutover supersedes that per-week serving design; its first weekly update remains an acceptance requirement in the [season operations contract](../plans/2026-10-14/01-season-operations-and-week7-bridge.md).

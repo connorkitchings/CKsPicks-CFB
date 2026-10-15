@@ -1,273 +1,63 @@
 # Project Context
 
-> **Domain Knowledge and Architecture for CKsPicks-CFB**
->
-> This file contains project-specific context that AI assistants should understand when working with this codebase.
+## Product and current authority
 
----
+CKsPicks-CFB publishes college-football spread and total leans through a Next.js 16 / React 19 / Tailwind v4 web app. Python 3.12 produces V5 Blitzkrieg forecasts; Neon serves derived projections; Cloudflare R2 preserves immutable data and artifacts. See [`docs/status.md`](../docs/status.md) for live release IDs, week state and the scoreboard, the [V5 guide](../docs/modeling/v5_status.md) for the accepted model, and the [weekly runbook](../docs/ops/weekly_runbook.md) for all recurring operations.
 
-## Project Overview
+V5 is the only operational model. V4 lineage, windows and results are [historical evidence](../docs/modeling/v4_retrospective.md), no longer an operational rollback path. Rollback reactivates a prior verified V5 season release. Six slates are not a prelaunch gate; the cumulative 2026 record is monitoring evidence.
 
-A college football betting model that predicts point spreads and over/under
-totals, published as weekly leans on a public Vercel web app.
-
-**Domain:** Sports betting / predictive analytics
-**Sport:** NCAA Division I FBS College Football
-**Prediction Targets:** Point spreads, over/under totals (per completed-game regime)
-**Data Sources:** CollegeFootballData.com API (games/plays/stats/preseason) + The Odds API (timestamped market quotes) + weather ingestion
-**Time Period:** V4 uses its immutable 2021–2025 lineage. New data-first research
-uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and relies
-on future pre-kickoff freezes for independent evidence.
-**Production:** https://c-ks-picks-cfb.vercel.app (Neon Postgres + Cloudflare R2)
-
----
-
-## Architecture Overview (2026, as built)
-
-### Data Platform: immutable Bronze/Silver/Gold lake
-
-```
-CFBD / The Odds API / weather
-    ↓ hardened, fail-closed ingestion (point-in-time captures)
-Bronze (src/cks_picks_cfb/data/) — immutable request-level captures,
-    SHA-256 checksums, Neon catalog registry (7,163 captures)
-    ↓ resumable builders (make build-silver / import-history)
-Silver (src/cks_picks_cfb/data/silver/, history.py) — reconciled
-    season-scoped teams/venues/schedules/games/plays/outcomes/weather/
-    market_quotes + quarantined legacy_market_references
-    ↓ kickoff-ordered point-in-time assembly
-Gold / model-ready (scripts/pipeline/assemble_model_ready_features.py,
-    build_temporal_matchups.py, build_v4_preseason_feature_reference.py)
-    — regime-routed features + 2022–2024 OOF baselines
-    ↓ sealed tournament → locked 2025 → unchanged refit
-Model bundles (model_bundle.py, model_bundle_v3.py) — checksummed
-    ten-route manifests in R2 (artifacts/preview|production/models/...)
-    ↓ ops state machine (publish → freeze → close)
-Neon Postgres (prediction_runs, predictions, games, game_results,
-    system_stats, current_week + catalog/ops schemas) → Vercel (ISR 5-min)
-```
-
-Key invariants:
-
-- R2 is the durable source of truth; Neon is the derived web-serving DB.
-- `CFB_STORAGE_BACKEND='r2'` is the production path; `'local'` + `CFB_MODEL_DATA_ROOT` is the dev fallback. Never `./data/`.
-- Untimestamped legacy betting lines live in `legacy_market_references` and can never produce leans, grades, ROI, model features, or selection input.
-- 2020 is excluded from every input, label, fold, prior, and successor-v2
-  artifact. The expanded 2015–2019 corpus is research-only; it does not alter
-  V4's sealed lineage.
-- Every production mutating operation goes through `python -m cks_picks_cfb.ops` with an explicit `ENV`; failed steps activate nothing.
-
-### Modeling: ten-route regime design
-
-The production model evaluates spread and total **independently per
-completed-game regime**: `game_1`, `game_2`, `game_3`, `game_4`, and
-`established` (4+ completed games). A matchup uses the route of its
-least-experienced team; each team keeps its own exposure count and
-empirical-Bayes shrinkage weight. Legacy labels (`preseason`, `one_game`,
-`two_games`, `three_games`) remain readable for historic artifacts only.
-
-Chronology (frozen):
-
-- Selection folds: train 2021→test 2022, 2021–2022→2023, 2021–2023→2024 (OOF).
-- Locked test: train 2021–2024, evaluate 2025 once after the design SHA freezes.
-- Production refit: unchanged design on 2021–2025.
-
-Candidate families per route: prior-only baseline, direct Ridge, direct
-CatBoost, points-derived Ridge/CatBoost, and frozen blends. Lowest OOF MAE
-wins inside a 0.10 MAE tie ordered by simplicity; failed challengers revert
-to the prior-only baseline. Market data never enters features or selection.
-
-**Current production bundle (V4):** `week0-2026-v4-strict-20260818-r2`
-(design SHA `ae34ddc7…`, config `conf/weekly_bets/v4_2026.yaml`). Selected
-2026-08-18 via sealed tournament (4/8 challenger routes beat baseline);
-locked-2025 anti-regression passed on all 8 routes. Uses the strict
-point-in-time reference with `prior_core` features only
-(`prior_only_fallback` — additive preseason families lacked pre-kickoff
-effective-time evidence). All 8 Week 0 games route to `game_1`
-(spread: direct CatBoost; total: prior-quality baseline fallback).
-Model lineage: V2 preview (`week0-2026-preview-20260814`) → V3 games-ordinal
-(`week0-2026-games-ordinal-v3-20260816-r2`) → V4 strict.
-
-The as-built modeling flow is:
+## Architecture
 
 ```text
-immutable canonical data → team-game measurements → recency aggregation
-→ iterative opponent adjustment → point-in-time matchup features
-→ empirical-Bayes shrinkage → V4 regime routing → spread/total prediction
-→ market edge and publication
+CFBD / Odds API → immutable Bronze captures + catalog registry
+→ reconciled Silver schedules, outcomes, plays, drives, market quotes
+→ revision manifest with URIs, hashes, capture times and exact score exceptions
+→ season engine: point-in-time measurements → ratings → forecasts → grades
+→ verified serving projections → stage + atomic activate → Neon → Vercel
 ```
 
-These foundations are reusable, but team quality is implicit across adjusted
-measurements, priors, shrinkage, and route-specific prediction models. The
-canonical intermediate product is a matchup feature row rather than a durable
-team-state estimate. Predictive uncertainty is not yet modeled; weekly
-inference emits null spread and total standard-deviation fields.
+`build_season_revision.py` reuses controller ingestion/Silver steps and creates cumulative registered market inputs. `run_season.py prepare` reconstructs completed weeks and forecasts the next slate at its pre-week cutoff; `season_verification_v2` enforces 22 verification checks. `run_season.py release` stages immutable projections and atomically activates the release after verification/readback, expected-prior-release checks and, for Production, independent Preview rehearsal proof. Active-release context makes Picks, Results, Ratings, Performance and health resolve the same release. Legacy web reads remain only as a fallback when there is no active season release.
 
-### Approved direction: data-first football forecasting
+Neon `season_releases`, `season_release_policies` and `season_release_*` projection tables are defined by migration `0025`. Earlier `prediction_runs`, `current_week`, `games`, grades and optional matchup tables remain for compatibility. Schema upgrades are append-only under `contracts/migrations/`; `contracts/schema.sql` and `schema.ts` are canonical. Web copies must pass `make contracts-check`.
 
-V4 remains the unchanged 2026 rollback benchmark. V5 is the selected
-public family (see `docs/status.md`). The approved
-target architecture is:
+## Operational invariants
 
-```text
-verified data → validated football measurements → opponent adjustment
-→ simple offense/defense ratings + uncertainty → spread/total forecasts
-→ prospective evaluation → timestamped line comparison
-```
+- R2 is the durable source of truth; Neon is derived serving state and catalog metadata. `CFB_STORAGE_BACKEND=r2` selects the lake; `local` requires the external `CFB_MODEL_DATA_ROOT`. Never use repository-local `./data/`.
+- Preview and Production use separate Neon branches and credentials. R2 credentials currently name the same immutable bucket; select the correct credential set with `CFB_ARTIFACT_ENV` through the environment wrappers. See the runbook's Environments section for roles and Keychain setup; never print secrets.
+- Capture current lines before building the revision; reconcile the full FBS schedule against fresh spread and total coverage. Only registered captures enter cumulative market inputs. Registering additional captures can change best-quote grades and needs authorization.
+- Exact per-team-game score reconciliation is mandatory, except for declared hash-pinned exceptions; unused exceptions fail too.
+- Commit reviewed revision inputs before preparing from a clean tree. Do not commit between prepare and the last release: the code commit is part of candidate identity.
+- Preview rehearsal precedes owner-approved Production activation. Production rollback requires owner authorization and the owner/migrator credential; the provided wrappers do not support Preview rollback.
+- `make weekly`, `publish-week`, `freeze-week` and `close-week` refuse execution. Remaining legacy writers and the old ops publishing state machine are not the operational path.
 
-Ratings are the canonical offense, defense, overall-quality, and
-uncertainty-bearing representation of team strength. Priors dominate when
-evidence is sparse and observed performance gains credibility continuously;
-the long-term design does not change modeling philosophy at hard completed-game
-boundaries. Initial opponent adjustment remains upstream of rating estimation,
-and later rating-assisted adjustment is a separately attributable challenger.
+## Modeling and evidence
 
-**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md); V5 is the serving family and V4 remains selectable for rollback. Week 4 is scored and the 2026 record is one continuous V5 record from Week 0 ([record methodology](../docs/modeling/record_methodology.md)); current week state is maintained only in `docs/status.md`. V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; the cumulative record is a monitoring window. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
+V5 uses validated football measurements, primarily upstream opponent adjustment, continuous team ratings with changing prior/evidence credibility, and a rating-to-margin/total Ridge bridge. Market information never enters football features, ratings or model selection. Do not double-count schedule strength or rating variance. Polls/direct-core models are diagnostic-only; the original Phase 4B retained manifest is prohibited as a forecasting parent.
 
-V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
-contract 01 closes that independent diagnostic. The first V5 release uses a
-rating-to-margin/total Ridge bridge with separate non-offense translation offsets.
-Volume arithmetic is a later challenger. September 8 Phase 4A–6 contracts are
-Superseded, with only explicitly inherited mathematics retained. The original
-Phase 4B retained manifest remains prohibited as a forecasting parent. Football
-inputs require proven meaning, coverage and timing; polls/direct models are
-diagnostic-only. V4 production remains unchanged.
+Research development windows are 2015–2019 and 2021–2025, excluding 2020 throughout. V4's sealed 2021–2025 chronology is historical and remains unchanged. Training and all target-aware transforms must precede prediction. Point-in-time data loading is mandatory for feature work.
 
-### Feature Engineering
+The public 2026 record is one continuous V5 record from Week 0. Forecasts for started/reconstructed games use only pre-cutoff observations and remain visible on Picks. Grading uses the best eligible pre-kickoff quote per game/target under the [record methodology](../docs/modeling/record_methodology.md). Pre-kickoff forecast freezes distinguish prospective provenance; historical point-in-time reconstruction does not become prospective evidence. Betting decisions are deferred; research stays isolated until separately promoted.
 
-- **Opponent adjustment:** iterative additive normalization (`adjustment_iteration`, typically 2–4) with league-mean centering.
-- **Point-in-time correctness:** `src/cks_picks_cfb/features/point_in_time.py` — kickoff-ordered team-side views; no future leakage.
-- **Regime routing:** completed-game counts per team; separate prior (preseason) and current-season blocks; empirical-Bayes shrinkage toward prior by exposure (plays/drives/games grids).
-- **Naming:** `{home|away}_{off|def}_{metric}[_adj{N}][_last{M}]`; keep `season`, `week`, `game_id`, `team` keys.
-- **Weather:** outdoor-game integrations via `features/weather.py`.
-- Full catalog: `docs/modeling/measurement_catalog.md`; requirements:
-  `docs/modeling/rating_system_requirements.md`; registry:
-  `docs/project_org/feature_registry.md`.
+Maintain `season`, `week`, `game_id` and `team` keys, with consistent `off_*`, `def_*` and `adj_*` naming. See the [measurement catalog](../docs/modeling/measurement_catalog.md) and [rating requirements](../docs/modeling/rating_system_requirements.md).
 
-### Configuration (Hydra)
+## Code and tooling
 
-```
-conf/
-├── config.yaml            # defaults: model=linear, features=matchup_v1,
-│                          #   training=default, preprocessing=none, hydra=default
-├── model/                 # linear, elastic_net, catboost_v1, xgboost_v1,
-│                          #   champion, ensemble_v1, stacking_v1, catboost_classifier
-├── features/              # matchup_v1/v2*, opponent_adjusted_v1, recency_weighted_v1,
-│                          #   extended_v1, interaction_v1, internal_*, cover_classifier_v1
-├── experiment/            # week0_regimes, preseason_regimes, v2_* (history), legacy/
-├── training/              # default, week0_2026 (frozen chronology)
-├── weekly_bets/           # v4_2026 (launch), v3_preview_games_ordinal_2026,
-│                          #   v2_preview_2026, v2_champion
-├── policy/                # canonical_week_2026_v1 (Week 0 game-ID assignments)
-├── preprocessing/ paths/ hydra/ research/
-└── validation.yaml
-```
-
-Override patterns: `model=catboost_v1`, `features=matchup_v2`,
-`experiment=week0_regimes`, `+key=value` to add, `~key` to delete. Debug with
-`PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve`.
-See `.codex/HYDRA.md` for the full guide.
-
----
-
-## Data Storage
-
-### Durable store: Cloudflare R2 immutable lake (`CFB_STORAGE_BACKEND='r2'`)
-
-- Bronze/Silver/Gold datasets as Parquet with SHA-256 checksums, registered in the Neon `catalog` schema with dataset versions.
-- Buckets: preview `cks-picks-cfb-preview` (production R2 credentials point at the same bucket — immutable artifacts are environment-neutral; environment separation is by Neon branch).
-- Weekly run artifacts: `artifacts/{preview|production}/...` (predictions, scored runs, refs, model bundles) — reproducible from run IDs.
-- Local `artifacts/preview/` holds only working copies; durable refs live in R2.
-
-### Dev fallback: local backend (`CFB_STORAGE_BACKEND='local'`)
-
-Reads/writes the external drive at `CFB_MODEL_DATA_ROOT`
-(`/Volumes/CK SSD/Coding Projects/cfb_model/`). Legacy layout
-(`raw/`, `aggregated/`, `features/adj_iter_*`) is research-compat only.
-
-### Web-serving: Neon Postgres
-
-`games`, `game_results`, `system_stats`, `current_week` (web schema) +
-`catalog`/`ops` schemas + `prediction_runs`/`predictions`. Append-only
-migrations `contracts/migrations/0002`–`0018` applied via
-`scripts/pipeline/migrate_db.py --database-url` (the `make migrate-db` target is disabled).
-Branches: `preview-2026` and production. Web access uses the read-only
-`cks_prod_web` role.
-
----
-
-## Key Modules (actual paths)
-
-| Area | Path |
+| Concern | Location |
 |---|---|
-| Ingestion adapters (CFBD, Odds API, weather) | `src/cks_picks_cfb/data/` (`sources.py`, `the_odds_api.py`, `runtime.py`) |
-| Lake/catalog/reconciliation | `src/cks_picks_cfb/data/` (`lake.py`, `catalog.py`, `history.py`, `silver/`, `reconciliation.py`, `week_policy.py`) |
-| Features | `src/cks_picks_cfb/features/` (`pipeline.py`, `point_in_time.py`, `aggregations/`, `byplay/`, `weather.py`, `situational.py`) |
-| Regime/game-ordinal training | `src/cks_picks_cfb/models/` (`regime_training.py`, `game_ordinal_training.py`, `early_season.py`, `v4_feature_variants.py`, `baselines.py`, `training_policy.py`, `promotion.py`) |
-| Market grading / evaluation | `src/cks_picks_cfb/models/` (`market_grading.py`, `predictive_evaluation.py`) |
-| Bundles | `src/cks_picks_cfb/model_bundle.py`, `model_bundle_v3.py` |
-| Ops state machine | `src/cks_picks_cfb/ops/` (`__main__.py`, `state_machine.py`, `contracts.py`, `notifier.py`, `lease.py`, `data_audit.py`) |
-| Inference | `src/cks_picks_cfb/inference/weekly.py` + `scripts/pipeline/generate_weekly_bets.py` |
-| Canonical training entry | `src/cks_picks_cfb/train.py` (Hydra) |
-| Migrations | `src/cks_picks_cfb/db/migrations.py` + `contracts/migrations/` |
-| Pipeline CLIs | `scripts/pipeline/` (~40 scripts: preflight, publish/freeze/close, silver/gold builders, tournament, refit, pickem export) |
-| Validation service | `src/cks_picks_cfb/utils/validation.py` (`conf/validation.yaml`) |
+| Season preparation, grading, verification, serving and release | `src/cks_picks_cfb/season/` |
+| Revision and season CLI | `scripts/pipeline/build_season_revision.py`, `run_season.py` |
+| Pinned model and weekly revision contracts | `conf/season/2026/` |
+| Lake, catalog, providers, Silver and reconciliation | `src/cks_picks_cfb/data/` |
+| Football measurements | `src/cks_picks_cfb/features/` |
+| Accepted V5 and isolated rating/forecast research | `src/cks_picks_cfb/ratings/`, `forecast/`, `ratings_lab/`, `audit/`; `scripts/research/` |
+| Shared schema and migrations | `contracts/`, `src/cks_picks_cfb/db/` |
+| Read-only release resolution and publication rendering | `web/src/lib/season-release-context.ts`, `queries.ts`, `publication.ts` |
+| Keychain environment wrappers | `scripts/ops/` |
 
-Legacy V2-era model variants (`v1_baseline.py`, `v2_*.py`) are retained for
-experiment history under `conf/experiment/v2_*` and `conf/legacy/`.
+Python remains at the root; web owns its npm toolchain in `web/`. Make targets and Nx coexist. V4/Hydra/MLflow, old inference and 6A/6B rebuild code still exist for compatibility pending deferred Phase 3 cleanup; do not infer live operational authority from their presence.
 
----
+## Validation and workflow
 
-## Testing
+Use [quickstart](../.codex/QUICKSTART.md) and `make help` for commands. Validate changed components, contracts and quality registry, Python/Ruff, web lint/typecheck/tests/build, strict MkDocs and `git diff --check`. CI combines Python-suite coverage with a 60% threshold. Database suites use disposable local clusters, never serving databases.
 
-- Full source-scope, branch-aware coverage gate is **60%**; the latest verified
-  closure run recorded **1543 passed, 3 skipped** (2026-10-01; coverage gate 60%).
-- Coverage of: routing/edge cases (byes, cancellations, legacy labels), lake immutability + checksums, legacy-market quarantine (17 contract tests), migrations (empty + legacy schemas), publication fail-closed boundary (`web`), ops state machine, bundle loading.
-- Quality gates: `uv run ruff format . && uv run ruff check .`, `uv run python contracts/validation.py`, `uv run mkdocs build --quiet`, `make contracts-check`, web lint/typecheck/build.
-- Pattern: minimal fixtures, edge cases (empty DataFrames, single rows, missing columns); see existing tests in `tests/` for templates.
-
----
-
-## Production Workflow (weekly cycle)
-
-```bash
-# Pregame: refresh schedule/lines → capture markets → predict → R2 artifact → Neon
-make publish-week YEAR=2026 WEEK=0 AS_OF=<ts> ENV=production CONFIG=conf/weekly_bets/v4_2026.yaml
-
-# Freeze the validated active run before kickoff (grades freeze against it)
-make freeze-week YEAR=2026 WEEK=0 ENV=production
-
-# Postgame: refresh finals → immutable outcomes → scored artifact → system_stats
-make close-week YEAR=2026 WEEK=0 AS_OF=<ts> ENV=production
-
-# Before a later week, rebuild cumulative 2026 Silver/Gold in Preview first
-make prepare-week YEAR=2026 WEEK=1 AS_OF=<ts> ENV=preview
-```
-
-- Every production mutating op runs through `python -m cks_picks_cfb.ops` with explicit `ENV`; failed steps activate nothing.
-- `AS_OF` must be set ~5 minutes ahead of the publish run so the market capture falls before the cutoff.
-- Publication modes: `market` (fail-closed, no model output) vs `predictions`.
-  Production currently uses the explicitly approved `predictions` mode; every
-  other value remains fail-closed.
-- Health: `GET /api/health` (schema version, active run state, predicted/lined coverage, freshness).
-- Pick'em export: `make export-pickem` (submission needs `CFBD_PREDICTION_TOKEN` + explicit approval).
-- Rollback: frozen runs are immutable; reselect `current_week.active_run_id` to a prior frozen run. See `docs/ops/production_runbook.md`.
-
----
-
-## Key Concepts
-
-- **Point-in-time correctness:** only information available before kickoff may produce features; strict vs. reconstructed V4 reference tracks encode this (`docs/modeling/early_season_regimes.md`).
-- **Opponent-adjusted stats:** raw stats are normalized against opponent quality via iterative additive adjustment.
-- **Sealed selection:** candidates are chosen on 2022–2024 OOF only; the 2025 locked test runs once against a frozen design SHA; the unchanged design is refit on 2021–2025.
-- **Fail-closed publication:** missing data, failed gates, or unapproved modes must degrade to display-only, never to inferred or leaked model output.
-- **Kelly criterion / betting policy:** policy is documentation-first (`docs/modeling/betting_policy.md`); the 2026 site is display-only (post-MVP: auth/tracking).
-
----
-
-_Last Updated: 2026-10-01_
-_Domain knowledge and architecture reference_
-
-## Pre-Stage-6 repair authority (2026-10-04)
-
-Step 5 is closed as local evidence. The approved [pre-6A execution contract](../docs/plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) governs the remaining shared-contract repairs and manifest-driven rebuild/refit. It permits immutable Preview R2 plus verified Preview catalog metadata, not serving or production writes. Stage 6B reconstructs completed weeks; Stages 7–8 retain exact release, freeze, rollback and matchup gates. Current state remains in [status](../docs/status.md).
+Substantial work follows a durable Sol-to-Terra contract in `docs/plans/`; review recent logs before editing, preserve unrelated changes, and leave staging/commits to the owner. Update status only when current release/week state changes. Historical contracts and dated logs are evidence, not operating authority.

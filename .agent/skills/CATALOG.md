@@ -2,7 +2,7 @@
 # Skills Catalog
 # Index of all available skills for AI assistants working on CFB Model
 
-**Last Updated:** 2026-10-01
+**Last Updated:** 2026-10-15
 
 ---
 
@@ -79,15 +79,9 @@ Skills are reusable, documented workflows for common tasks. Each skill lives in 
 
 ---
 
-## Planned Skills
+## Operational authority
 
-*The following skills will be added as they are developed:*
-
-- `add-feature` - Add a new feature to the model
-- `train-model` - Train a new model with proper tracking
-- `run-experiment` - Execute a V2 workflow experiment
-- `validate-data` - Run data validation checks
-- `generate-bets` - Generate weekly betting predictions
+These skills govern session workflow; the sole recurring V5 operating guide is [`docs/ops/weekly_runbook.md`](../../docs/ops/weekly_runbook.md). Use the revision builder and `run_season.py` prepare/release/rollback path. V4 training, old V2 experiments and legacy publish/freeze/close workflows are historical compatibility, not planned operational skills. Isolated research follows its approved contract and `scripts/research/README.md`.
 
 ---
 

@@ -1,10 +1,12 @@
 # Task 4 Verification and Catalog Registration Repair (6a-task4-w6-r2)
 
-- **Status:** In Progress
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Author:** Sol (reconstructed) / Terra Implementation Contract
 - **Approved By:** User (2026-10-13)
 - **Implementation Session Log:** `session_logs/2026-10-13/03-task4-verification-repair.md`
 - **Scope:** Repair Task 4 population scope across chained extensions, two-lineage rating controls, kickoff revision evidence binding, recover Preview catalog registration for published 6A root, and generate/verify/publish 6a-task4-w6-r2.
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: In Progress
 
 ---
 

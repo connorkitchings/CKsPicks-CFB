@@ -1,5 +1,19 @@
 # Decision Log
 
+## 2026-10-15: Exact reconciliation and accepted rebuilt market provenance
+
+- **Decision:** require exact scoring-event-to-final reconciliation per team-game. Only explicit `game_id`, `team` and reason exceptions pinned by the revision manifest are permitted; unlisted mismatches and unused exceptions fail preparation and `season_verification_v2`. Malformed-score tags and a season-wide percentage threshold cannot waive the check.
+- **Market correction:** the owner confirmed registration of the three Week 2–4 CFBD captures in Preview and accepted the rebuilt-quote candidate, including the real capture times that leave Week 6 games `401871090`, `401871051` and `401871066` ungraded for both targets. The candidate is pending activation; live release IDs and the unchanged published scoreboard are in [Current Status](../status.md). No other unregistered captures are approved.
+- **Authority:** [review and streamline contract](../plans/2026-10-15/01-review-fixes-and-v5-streamline.md), owner decisions and Phase 1 closeout amendment.
+
+## 2026-10-14: Atomic season controller and one public V5 record
+
+- **Decision:** serve one verified atomic season release through `run_season.py`, with `season_releases` as the active authority and legacy per-week reads retained only as fallback/history. `season_verification_v2` replaces the old leakage-audit receipt as the operational release gate. Cutover is complete; the first controller weekly update remains an acceptance gate.
+- **Picks display:** started and reconstructed games remain visible without a retrospective label because forecasts use only observations available by their pre-kickoff input cutoffs. Build time is not the forecast cutoff. Prospective means frozen before kickoff; reconstructed records remain part of the same cumulative public record.
+- **Grading:** retained pre-kickoff quotes have precedence per game-target, then an explicitly supplied CFBD retrospective benchmark for completed non-live targets, otherwise ungraded. Model direction is fixed against the canonical snapshot before shopping the best eligible linked quote for that side. Best-pre-kickoff-quote grading for reconstructed games is intended; it does not claim blind prospective execution. Real capture times are retained.
+- **Authority:** [season operations contract](../plans/2026-10-14/01-season-operations-and-week7-bridge.md), [review contract owner decisions](../plans/2026-10-15/01-review-fixes-and-v5-streamline.md) and [record methodology](../modeling/record_methodology.md). Remaining repair obligations are deferred in [Current Status](../status.md); older entries below retain their dated decisions rather than current operating instructions.
+
+
 ## 2026-10-11: Waive the Week 7 checkpoint and integrity-first rule; remove the 24-hour finals-stability rule
 
 - **Decision:** the user chose to attempt the Week 7 cutover, waiving the Sunday-evening checkpoint (successor Week 6 certification integration built and tested, otherwise move to Week 8) and the October 9 "integrity closure precedes cutover" direction for that cutover only. The user also removed the 24-hour finals-stability rule from operations: finals load once every game is complete in a fresh capture and a certified outcomes ref covers them.

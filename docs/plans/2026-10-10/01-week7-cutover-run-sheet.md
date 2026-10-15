@@ -1,8 +1,10 @@
 # Week 7 cutover run sheet (Weeks 0-6 corrected replays + pending Week 7)
 
-- **Status:** Draft (run sheet under the [repair-track contract](../2026-10-08/02-repair-track-certification-and-closure.md), Amendments 3–14, and the [Stage 7B plan](../2026-10-06/02-stage7b-exact-release-and-cutover.md); it adds no authority of its own)
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Created:** 2026-10-10
 - **Rule:** every Preview write and every Production write is its own go-ahead. Preview first, always. Owner-role SQL is user-run. Dry run, then apply, then read-only readback.
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: Draft (run sheet under the [repair-track contract](../2026-10-08/02-repair-track-certification-and-closure.md), Amendments 3–14, and the [Stage 7B plan](../2026-10-06/02-stage7b-exact-release-and-cutover.md); it adds no authority of its own)
 
 ## Clock (UTC)
 

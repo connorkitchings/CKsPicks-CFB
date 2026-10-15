@@ -30,18 +30,12 @@ nav:
       - Ingestion Guide: data/ingestion_guide.md
       - Historical Data Inventory: data/historical_data_inventory.md
       - Data Quality Checks: data/data_quality_checks.md
+      - Validation: data/validation.md
       - Provider Audit: cfbd/2026_provider_audit.md
   - Operations:
-      - Weekly Pipeline: ops/weekly_pipeline.md
-      - V5 Weekly Operator: ops/v5_weekly_operator.md
-      - Production Runbook: ops/production_runbook.md
-      - Data-First Capture: ops/data_first_capture.md
-      - V5 Shadow Runbook: ops/v5_shadow_runbook.md
-      - Historical Successor-v2 Compatibility: ops/rating_successor_research.md
-      - Historical Candidate-v1 Shadow: ops/rating_shadow_operations.md
-      - Validation: ops/validation.md
-      - MLflow Development Tooling: ops/mlflow_mcp.md
+      - Weekly Operational Runbook: ops/weekly_runbook.md
   - Research Notes:
+      - Data-First Capture: ops/data_first_capture.md
       - Ratings Laboratory v1: research/ratings-lab-v1.md
       - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md
   - Model and Experiment Lineage:

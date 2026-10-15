@@ -42,3 +42,7 @@
 - **Watch out for:** Ensure production credentials (`DATABASE_URL`) are targeted during Stage 4 cutover, leaving Preview intact as the staging environment.
 
 **tags:** ["web-ui", "reconstruction", "early-games", "performance", "preview", "week7"]
+
+## Correction (2026-10-15)
+
+The cited `scripts/pipeline/reconstruct_next_week.py`, `scripts/data/export_market_quotes.py` and `run_season.py full` did not exist in the reviewed Git history. The actual reconstruction-manifest commits were `5a7196d4` (early-week quote/cutoff pins) and `16656098` (cumulative market-quote pin); the earlier attribution does not identify these manifest changes. The governing contract is `docs/plans/2026-10-14/01-season-operations-and-week7-bridge.md`, not the nonexistent `season-operations-pipeline.md` path above. The committed cumulative quote/revision producer is now `scripts/pipeline/build_season_revision.py` (Phase 1 commit `2807e087`). Quotes retain actual capture times; the earlier "full closing market lines" description does not establish verified closing-line provenance. The owner accepted rebuilt-quote candidate changes that leave three Week 6 games ungraded for both targets; that candidate is not activated by this correction. See `docs/status.md` for the active record.

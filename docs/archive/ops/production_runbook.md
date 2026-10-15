@@ -1,0 +1,277 @@
+# Production Runbook — 2026 Season
+
+> **Archived 2026-10-15:** historical procedures and evidence only. Current operations use the [weekly operational runbook](../../ops/weekly_runbook.md); live state is in [Current Status](../../status.md).
+
+> **Repair track:** corrected-lineage work and the cutover are governed by the [repair-track contract](../../plans/2026-10-08/02-repair-track-certification-and-closure.md) and the [Stage 7B plan](../../plans/2026-10-06/02-stage7b-exact-release-and-cutover.md). Week 6 is a display-only run: never freeze it (a post-kickoff freeze would be fabricated); it is graded by the grades-only backfill and counts in the unified 2026 record (see the [weekly operator](v5_weekly_operator.md)). Live week state is in [status](../../status.md).
+
+> **Status:** see [Current Status](../../status.md) for the selected runs and week state. See also the [current V5 status](../../modeling/v5_status.md) and [weekly operator](v5_weekly_operator.md).
+
+The [manual V5 weekly operator](v5_weekly_operator.md) is the reviewed
+stage cadence. Its exact release guard is deployed on Preview and production,
+and production V5 publication and selection require the restricted `cks_prod_pipeline` login
+via `zsh scripts/ops/with_production_pipeline_env.sh`. An immutable candidate
+can be prepared without Neon activation. Live V5 publication and
+selection fail closed until a separately approved, admin-written authorization
+for that exact slate and artifact is present. The existing replay selections
+used their own exact authorizations.
+
+For every close/open or freeze request, follow the operator's [full weekly
+checklist](v5_weekly_operator.md#weekly-close-open-and-freeze-checklist).
+Reconcile fresh source coverage for spread and total against the complete
+schedule before each release or freeze decision. If lines arrive after a
+partial publish, prepare a new immutable run and obtain its own exact V5
+authorization; the earlier authorization cannot be reused.
+
+## Ratings checkpoint between weeks
+
+After `close-week (N-1)` and verified finals, run the operator-controlled
+repair → measurements → rating replay chain with independent verification.
+Project that verified rating manifest to the target Neon branch before
+`prepare-week (N)`, then run readiness and the separately reviewed publication
+path. The generation is labeled `preseason` before Week 0, `post-week 0` for
+Week 1, `post-week 1` for Week 2, and so on. The exact manifest SHA and UTC
+cutoff, rather than the label, bind the data.
+
+```bash
+# Preview example; replace the URI with the independently verified replay.
+zsh scripts/ops/with_preview_env.sh \
+  uv run python -m cks_picks_cfb.ops project-v5-ratings \
+    --year 2026 --environment preview \
+    --rating-manifest-uri artifacts/research/data-first-football-v1/possession-v1/rating-replay/runs/<run_id>/retained-rating-replay-manifest.json
+zsh scripts/ops/with_preview_env.sh make prepare-week \
+  YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+zsh scripts/ops/with_preview_env.sh make readiness \
+  YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+```
+
+Before applying migration 0017 to a branch, audit existing V5 runs with
+`SELECT run_id FROM prediction_runs WHERE model_id LIKE 'v5-%' AND
+rating_manifest_sha256 IS NULL;`; any row is a blocker requiring a revised
+contract. `prepare-week` now fails closed if the projected target-week rating
+generation does not cover completed results and target teams. Its successful
+JSON summary records `rating_cutoff_utc` and `rating_manifest_sha256`; retain
+those values in the weekly ledger. The separate V5 operator's `prepare`
+component writes a candidate prediction artifact and does not invoke this
+Gold `prepare-week` gate. Prospective production activation still needs the
+exact release authorization described below.
+
+> **V4 launch and rollback procedures below:** The topology and command
+> examples in this section record the 2026-08-18 V4 deployment. They remain
+> available for V4 rollback and historical reproduction; use the V5 weekly
+> operator for current V5 stages. Superseded V2 material is in the
+> [documentation archive](../../archive.md).
+
+## Production topology (as built)
+
+| Component | Value |
+|---|---|
+| Site | https://c-ks-picks-cfb.vercel.app (Root Directory `web/`) |
+| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026` (Vercel env). Week availability is owned by `web/src/lib/publication.ts` (`PUBLISHED_WEEKS`) plus explicit Neon public selections — there is no weeks variable to update; the retired `CFB_PUBLICATION_WEEKS` value is ignored |
+| Matchup pages | Default on. `CFB_MATCHUP_ENABLED=0` is the emergency opt-out for `/matchup/[gameId]`; verify its data under the current [two-window repair contract](../../plans/2026-10-03/04-data-integrity-two-window-implementation.md). (The `/test-picks` and `/test-results` prototype routes were removed when the prototypes were ported to the real Picks/Results cards.) |
+| Database | Neon **production branch** (separate from `preview-2026`); migrations through 0024 applied and verified in Preview and Production (Stage 7B, 2026-10-07; 0024 is the latest in `contracts/migrations/`; confirm applied state before adding a migration) |
+| Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
+| Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |
+| Object storage | R2 bucket `cks-picks-cfb-preview` — **shared with Preview** (immutable artifacts are checksummed, environment-neutral); separation is by Neon branch |
+| Public model | V5 (selected runs listed in [Current Status](../../status.md)) |
+| Rollback model | V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`, bundle SHA `72429375…`), config `conf/weekly_bets/v4_2026.yaml`; frozen runs preserved |
+| Historical V2 | V2 preview bundle (`week0-2026-preview-20260814`, frozen run `2026w0-a0edb9e72cb1`) — never mutated |
+| Active run | Query `/api/health` or `current_week.active_run_id`; each progressive publish activates a new immutable run. |
+
+Invariant for the V4 cycle below: a failed or partial pipeline step never
+activates anything. V4 ops commands run through `python -m cks_picks_cfb.ops`
+with an explicit `ENV`; V5 uses the reviewed operator and exact release path.
+
+## V4 weekly operating cycle (rollback and historical reference)
+
+### 1. Pregame publish (progressive, as lines arrive)
+
+```bash
+# AS_OF must be ~5 minutes AHEAD of the run so the market capture
+# falls before the cutoff (fail-closed otherwise).
+make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ \
+  ENV=production CONFIG=conf/weekly_bets/v4_2026.yaml
+```
+
+- Each rerun creates a **new immutable run** (new R2 prefix, new `prediction_runs` row) and moves `current_week.active_run_id` on activation.
+- Missing lines are allowed — the site shows the game without a lean ("Line unavailable—model prediction shown, no lean").
+- During game week (e.g. Aug 25–28) rerun daily or as lines move; verify coverage each time (see Health).
+- **The Odds API capture (optional):** set `CFB_ODDS_API_ENABLED=1` and
+  `THE_ODDS_API_KEY` to add a ~2-credit live per-book capture after the CFBD
+  market step. It is **soft-fail**: on provider error the publish completes
+  CFBD-only with a loud warning recorded in the run's step outputs — to
+  unblock, unset `CFB_ODDS_API_ENABLED` and rerun; never debug with the flag
+  on in production. Resumes never re-issue the paid request.
+
+- **Best-quote market-line policy (`model_side_best_quote_v1`).** Before
+  each freeze, the selection service picks the best pre-kickoff executable
+  quote for each target from the frozen snapshot's linked quotes.  The
+  canonical snapshot still sets the model's side; the selected raw quote
+  determines the public point, edge, and grade.  Targets with no eligible
+  pre-kickoff quote show no lean and receive no grade.  The selection is
+  stored in `prediction_market_selections` and the quote ID is written to
+  `prediction_grades.market_quote_id`.  Do not display or grade against a
+  synthetic consensus average for any new run.  Unified no-bet rule: an edge
+  below 1.0 publishes no lean for either target (artifact "No Bet" labels
+  are authoritative); sub-1.0 targets keep quote lineage but get no grade,
+  and totals in [1.0, 1.5) display a side without a grade.
+
+
+
+### 2. Manual snapshot ledger and final freeze (before kickoff)
+
+Every progressive publish is a durable timing observation, not a replacement
+for an earlier one. After each successful manual publish, record the run ID,
+prediction artifact checksum, market capture time, requested `AS_OF`, and
+8/8/8 health coverage in the current session log or launch ledger. The public
+site deliberately advances to the newest published run; the immutable R2
+artifacts preserve the full captured history for later edge analysis.
+
+The first public Week 0 snapshot is:
+
+| Run | Prediction checksum | Market capture | `AS_OF` |
+| --- | --- | --- | --- |
+| `2026w0-55de0317120d` | `47dbbd55b62172d0c8cd52162c0070774afcf5ca829223b166298fb767398dc8` | `2026-08-20T13:17:39Z` | `2026-08-20T13:19:14Z` |
+
+No scheduler is configured for Week 0. The timing record contains only
+manually published captures; it must not be described as a continuous
+best-time-to-bet feed.
+
+> **Week 0 completion note (2026-08-31):** Week 0 games were played Aug 29–30.
+> The run `2026w0-55de0317120d` was published but never frozen before kickoff.
+> Freeze-week can still be applied post-hoc (the freeze script checks 8/8/8
+> coverage, not a timestamp) before running `close-week`. See Stage 5 of the
+> launch contract for the freeze → close sequence.
+
+Before kickoff, make one final progressive publish, review it, then freeze it:
+
+```bash
+# Final publish (Aug 28 pattern)
+make publish-week YEAR=2026 WEEK=0 AS_OF=... ENV=production \
+  CONFIG=conf/weekly_bets/v4_2026.yaml
+
+# User reviews the run, then freeze:
+make freeze-week YEAR=2026 WEEK=0 ENV=production
+# Waiver for a genuine provider exception, if needed:
+make freeze-week YEAR=2026 WEEK=0 ENV=production \
+  WAIVER="provider did not list total for game 123"
+```
+
+Freeze requires predictions and both line types for every eligible game.
+Frozen runs are immutable and are what scoring later resolves.
+
+### 3. Public predictions reveal (completed 2026-08-21)
+
+The reviewed `2026w0-55de0317120d` run is public in `predictions` mode while
+its state remains `published`; it is not the final grading authority. The
+homepage shows the latest immutable model-vs-market snapshot, numeric edges,
+and the model-accuracy panel. `CFB_PUBLICATION_MODE` is fail-closed: only the
+exact value `predictions` exposes model fields; every other value remains
+market-only.
+
+## Regular-week operating cycle
+
+For Week 1 and beyond, before publishing a new week, rebuild the cumulative
+current-season Gold from completed-game results:
+
+```bash
+make prepare-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+make readiness  YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+```
+
+Then publish progressively as lines arrive, freeze before kickoff, and
+close after finals. Weeks appear publicly once their run is published and
+explicitly selected — no Vercel variable change is needed.
+
+### 4. Postgame close (after finals)
+
+```bash
+make close-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=production
+```
+
+Scoring resolves the frozen run from Neon, verifies that run's immutable R2
+artifact, writes run-specific `prediction_grades`, and derives
+`system_stats`/records from them.
+
+### 5. Optional: CFBD Model Pick'em
+
+```bash
+# Reconcile against the authenticated contest slate (needs CFBD_PREDICTION_TOKEN)
+make export-pickem YEAR=2026 WEEK=0 VALIDATE=1
+make export-pickem YEAR=2026 WEEK=0 DRY_RUN=1
+# Submission only after explicit user approval of game IDs and margins:
+make export-pickem YEAR=2026 WEEK=0 SUBMIT=1
+```
+
+Pass the exact frozen run CSV with `--input-csv`. The Pick'em token is
+separate from `CFBD_API_KEY` and short-lived.
+
+## Health checks
+
+```bash
+# Endpoint: schema version, active run/state, expected/predicted/lined
+# coverage, artifact freshness, data cutoff, last successful publish
+curl https://c-ks-picks-cfb.vercel.app/api/health
+
+# Run inventory + active pointer
+psql "$DATABASE_URL" -c "SELECT run_id, season, week, state, expected_games, predicted_games, lined_games FROM prediction_runs ORDER BY created_at DESC;"
+psql "$DATABASE_URL" -c "SELECT season, week, active_run_id FROM current_week WHERE id = 1;"
+```
+
+Freshness expectations: predictions republish as lines arrive pregame; after
+freeze the run must not change. Each publish/activation fires a signed
+on-demand ISR revalidation (`CFB_REVALIDATION_URL` + `REVALIDATION_SECRET`,
+configured 2026-08-20), so the homepage refreshes immediately; the five-minute
+ISR remains the fallback if the signed call fails. `catalog.quality_results`
+in production was truncated at hydration (preview-specific data) and
+repopulates as production audits run — this is expected.
+
+## Rollback / recovery
+
+The V5 replay cutover rehearsed same-week V4 reselection on Preview. For a
+live V5 cutover with a same-week V4 run, retain that reviewed immutable
+run and verify rollback through `current_week.active_run_id`, `/api/health`,
+and the rendered system name. For a V5 line refresh, retain the prior selected
+V5 run as the immediate same-week rollback. Week 5 has no production V4 run;
+its previous V5 run `2026w5-d6366e59fd43` remains selectable. Preserve the
+immutable artifacts and require a separate decision for each new V5 release.
+
+There is no MLflow/joblib rollback in this system. Runs are immutable; rollback = reselection:
+
+1. Identify the last good frozen/scored run (`prediction_runs` query above).
+2. Repoint `current_week.active_run_id` to it (single Neon transaction — the same activation mechanism the publisher uses; do not hand-edit prediction rows).
+3. If a bad run was never activated, no action is needed — failed/partial steps activate nothing by design.
+4. Resume an interrupted operation with the same `--pipeline-run-id` via the Python CLI; `make reconcile YEAR=2026 ENV=production` catalogs inactive/orphaned artifacts.
+
+Never mutate a frozen run or its R2 artifacts. Create a new run instead.
+
+## Failure modes
+
+| Symptom | Meaning / action |
+|---|---|
+| Publish exits nonzero | Correct the failure and create a new run; never continue manually to activation |
+| `AS_OF` before market capture | Build fails closed — set `AS_OF` ~5 min ahead and rerun |
+| Game missing a line | Allowed; site shows no lean for it. Rerun publish later as lines arrive |
+| Freeze blocked on missing line types | Record an explicit `WAIVER` only for genuine provider exceptions |
+| Health shows stale run / low coverage | Rerun `publish-week`; check `prediction_runs` for a failed activation |
+| Vercel upload file-count error | Root `.vercelignore` limits upload to `web/`; retry the deploy |
+| Wrong-database guard trips | `CFB_RUNTIME_TARGET_RESOLVED` marks resolved envs for child steps; do not unset it when shelling into ops steps |
+
+## Environment / credential notes
+
+### Optional failed-step alerts
+
+Set `CFB_OPS_ALERT_WEBHOOK_URL` to receive a best-effort JSON notification when
+a `publish-week`, `freeze-week`, or `close-week` step fails after its failure is
+recorded in Neon. `CFB_OPS_ALERT_TIMEOUT_SECONDS` defaults to `5`. Alert delivery
+is observability only: a missing, slow, or failing webhook never changes the
+pipeline's original failure or activation boundary.
+
+- Production credentials live in `.env` / macOS Keychain per the preview pattern; never commit them.
+- Preview operations use `zsh scripts/ops/with_preview_env.sh <cmd>` so legacy `.env` values cannot target the wrong branch. (The stale `PREVIEW_DATABASE_URL` entry pointing at the deleted `ep-delicate-sun` branch was removed from `.env` on 2026-08-20; duplicate lines were collapsed.)
+- Production V5 publisher, selector, and operator commands must run through `zsh scripts/ops/with_production_pipeline_env.sh <cmd>`. The wrapper reads only the restricted `cks_prod_pipeline` branch URL from macOS Keychain (`ckspicks-cfb/production/pipeline-url`); the `.env` owner URL is an admin/migration credential and is rejected by the V5 publication and selection guards (`session_user` and `current_user` must both equal `cks_prod_pipeline`).
+- On-demand revalidation (2026-08-20): `REVALIDATION_SECRET` is set in Vercel (production) and `.env` (`CFB_REVALIDATION_URL=https://c-ks-picks-cfb.vercel.app/api/revalidate`); the route rejects missing/invalid signatures (401) and stale timestamps (>5 min). Rotating the secret requires updating both sides and redeploying.
+- R2 source/destination separation guard still applies to import workflows; the shared preview/production artifact bucket is an explicit, approved exception (launch contract Amendment 2).
+
+---
+
+_Status summary updated: 2026-09-27. V4 procedures retained for rollback._

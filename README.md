@@ -1,85 +1,54 @@
 # CKsPicks-CFB
 
-College-football spread and total prediction system: Python pipeline, immutable
-Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
+College-football spread and total forecasts from a Python V5 season engine, an immutable Cloudflare R2 lake, Neon Postgres and a Vercel web app.
 
-## Current status
+## Current status and operations
 
-See [`docs/status.md`](docs/status.md) for live run IDs, week state and the scoreboard. [V5 model development is complete and accepted](docs/modeling/v5_status.md). Week 4 is scored and the 2026 record is one continuous V5 record from Week 0 ([record methodology](docs/modeling/record_methodology.md)); V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; the cumulative record is a monitoring window. V5 ratings successor is distinct from the V4 feature schema v5 diagnostic. The primary success metric is the cumulative 2026 V5 ATS win % vs the 52.4% break-even.
+See [`docs/status.md`](docs/status.md) for the active release, week state and published scoreboard. [V5 model development is complete and accepted](docs/modeling/v5_status.md). The 2026 record is one continuous point-in-time V5 record from Week 0 ([record methodology](docs/modeling/record_methodology.md)); six slates are not a prelaunch requirement. V4 is historical evidence, documented in the [V4 retrospective](docs/modeling/v4_retrospective.md), and is no longer an operational model.
 
-## 2026 posture
+The [weekly runbook](docs/ops/weekly_runbook.md) is the sole operational authority. `build_season_revision.py` produces pinned inputs; `run_season.py prepare` recomputes and verifies the season; `run_season.py release` stages and atomically activates its serving projections. Preview rehearsal is mandatory before Production activation. Rollback reactivates a prior verified V5 season release through the owner credential. Legacy publish/freeze/close commands are not the weekly path.
 
-V5 is the selected public model family for 2026. The V4
-ten-route bundle `week0-2026-v4-strict-20260818-r2` and its frozen runs remain
-the tested rollback path. Follow the [weekly pipeline](docs/ops/weekly_pipeline.md)
-and the [V5 operator](docs/ops/v5_weekly_operator.md) for current commands.
+Revision manifests and score exceptions must be committed before preparing from a clean tree. Do not commit between prepare and the last release: release requires the exact prepared commit. Production activation and all git commits remain owner-controlled.
 
-New research follows the approved data-first football forecasting architecture:
+## Modeling and research
 
 ```text
-audited football data → validated measurements → opponent adjustment
-→ offense/defense team state + uncertainty → spread/total forecast
-→ prospective evaluation → timestamped line comparison
+verified football data → validated measurements → opponent adjustment
+→ continuous team ratings/state → spread/total forecast
+→ point-in-time evaluation → timestamped line comparison
 ```
 
-The program uses 2015–2019 and 2021–2025 as development evidence and excludes
-2020. It starts by preserving and clarifying repository architecture, auditing
-and repairing data, then testing measurements, preseason priors, team ratings
-and rating-based forecasts. Research cannot alter V4 bundles, Neon activation,
-or public publication. Future frozen forecasts provide independent evidence. Market lines
-are comparison evidence only; betting decisions are deferred.
+V5 Blitzkrieg is the only operational model. Research uses 2015–2019 and 2021–2025 as development evidence and excludes 2020. Market lines enter only after football forecasting. Research remains isolated from serving and publication until separately promoted; betting decisions are deferred. Started and reconstructed games remain visible on Picks because forecasts use pre-cutoff observations; grades use the best eligible pre-kickoff quote under the record methodology.
 
 ## Documentation
 
 - [Documentation home](docs/index.md)
-- [2026 roadmap](docs/planning/roadmap.md)
-- [Data-first football forecasting roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
-- [Rating-system requirements](docs/modeling/rating_system_requirements.md)
-- [Measurement catalog](docs/modeling/measurement_catalog.md)
-- [V4 regime contract](docs/modeling/early_season_regimes.md)
-- [Evaluation policy](docs/modeling/evaluation.md)
-- [Weekly pipeline](docs/ops/weekly_pipeline.md)
-- [Production runbook](docs/ops/production_runbook.md)
+- [Weekly runbook](docs/ops/weekly_runbook.md)
+- [V5 status guide](docs/modeling/v5_status.md)
+- [Rating requirements](docs/modeling/rating_system_requirements.md) and [measurement catalog](docs/modeling/measurement_catalog.md)
+- [Research roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
+- [Implementation contracts](docs/plans/index.md)
 - [AI assistant guide](AGENTS.md)
 
-## Local setup
+## Local setup and checks
 
 ```bash
 uv sync --extra dev
-uv run pytest -q
+make test
+make contracts-check
+make quality-check
 uv run mkdocs build --strict
+npm --prefix web install
+npm --prefix web run lint
+npm --prefix web run typecheck
+npm --prefix web run test:publication
+npm --prefix web run build
 ```
 
-Production data uses `CFB_STORAGE_BACKEND=r2` and immutable R2 lineage. The
-local backend requires `CFB_STORAGE_BACKEND=local` and an external
-`CFB_MODEL_DATA_ROOT`; never create or use repository-local `./data/`.
+Use `CFB_STORAGE_BACKEND=r2` with the intended environment wrapper for lake operations. The local backend requires `CFB_STORAGE_BACKEND=local` and an accessible external `CFB_MODEL_DATA_ROOT`; never create repository-local `./data/`. Credentials come from the Keychain wrappers and must not appear in logs. See [web development](web/README.md) and the [quickstart](.codex/QUICKSTART.md).
 
-The web app is isolated in `web/`; see [its README](web/README.md) for local
-development and publication boundaries.
+## CI and retained historical tooling
 
-## CI and historical rebuild validation
+CI combines general Python, rating-publication and database-suite coverage with a 60% gate, alongside contracts, lint and web checks. Database tests use disposable PostgreSQL instances; never point `TEST_DATABASE_URL` at a serving database.
 
-Automatic CI runs Python lint/contracts, general tests (four workers), rating
-publication, database integration, and web checks independently. The **Python
-tests** gate requires lint and all three Python suites to pass, combines their
-coverage, and enforces the 60% threshold. Each suite uploads JUnit results and
-coverage artifacts for diagnosis. Database integration uses both a PostgreSQL 16
-TCP service for shared-schema tests and host PostgreSQL 16 binaries for the
-season-release tests' separate socket-only cluster.
-
-The full historical 6B rebuild suite is manual-only. Before releasing changes to
-historical reconstruction, shared numerical dependencies, or persisted rebuild
-contracts, open **Actions → Historical 6B rebuild → Run workflow** and select the
-branch or tag containing the exact release candidate. Alternatively:
-
-```bash
-gh workflow run rebuild-6b.yml --ref <release-candidate-branch-or-tag>
-```
-
-Wait for the run to pass and record its full tested commit SHA (shown in the run
-summary) and run URL in the release/session evidence. A passing run for an older
-revision does not validate subsequent relevant changes. The workflow runs all
-historical flow tests with unchanged computations and fixtures, reports slow
-tests in the log, and uploads JUnit results. Smaller rebuild component tests and
-current season-operation tests remain automatic. No production credentials or
-data refresh are required by this fixture-only suite.
+The manual `rebuild-6b.yml` fixture workflow and V4/Hydra/MLflow code remain for historical compatibility pending the separately gated Phase 3 cleanup. They do not define the live release path. Nx remains available until that cleanup; direct web scripts and Make targets are also supported.

@@ -57,28 +57,22 @@ print(f"✅ Data root verified: {data_root}")
 - No target-aware transforms on full dataset
 - Use `load_point_in_time_data()` to avoid future data leakage
 
-**Training Windows:**
+**Historical V4 Training Windows (not the operational V5 design):**
 - Selection: expanding temporal folds validated in 2022-2024
 - Locked test: train 2021-2024, evaluate 2025 once
 - Production refit: unchanged design on 2021-2025 for 2026
 - V4 retains its sealed 2021–2025 lineage. Successor-v2 research uses
   2015–2019 and 2021–2025; skip 2020 entirely in every boundary.
-- Completed games: route 0/1/2/3/4+ separately; 4+ is the established route
+- Historical V4 completed-game routes: 0/1/2/3/4+ separately; 4+ is the established route
 
 **Data-First Forecasting Transition:**
-- V4 remains the unchanged 2026 rollback benchmark; V5 (repaired intended-update release) is the selected public family — live run IDs and week state are in `docs/status.md`
+- V5 Blitzkrieg is the only operational model; live release IDs and week state are in `docs/status.md`. V4 is documented historical evidence in [the retrospective](docs/modeling/v4_retrospective.md), not an operational rollback path. Rollback reactivates a prior verified V5 season release.
 - Approved target flow: repository alignment → data audit/repair → validated measurements → simple team ratings/state → spread/total forecasts → prospective evaluation → timestamped line comparison
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
 - The approved 2026-09-13 V5 package compares two possession definitions, learned preseason priors and one Kalman challenger. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Polls and direct-core models are diagnostic-only.
 - Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff (the public 2026 V5 record is the unified point-in-time record described in `docs/modeling/record_methodology.md`; "prospective" now names freeze provenance only)
-- The original target was to complete initial requirements before Week 0; that
-  date has passed, so any unfinished requirement remains an explicit blocker.
-  V5 model development is complete and accepted. The Week 5 live forecast and
-  Preview candidate were verified as of 2026-09-27; that release was subsequently
-  activated (see `docs/status.md`). Any new corrected-lineage activation still
-  needs its separate exact release decision. The cumulative 2026 V5
-  record continues as monitoring; six slates are not a prelaunch gate.
+- V5 model development is complete and accepted. Atomic season releases are the serving authority; Production activation requires a separate owner decision and verified Preview rehearsal. The cumulative 2026 record continues as monitoring; six slates are not a prelaunch gate.
 - Further model research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
 
 **Column Conventions:**
@@ -110,12 +104,8 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 3. Review recent session logs (`session_logs/` last 3 days)
 4. Route substantial work through the Sol planning → Terra implementation workflow
 5. Use the fast path only for established, localized changes
-6. For a request to close one week, open the next, publish, or freeze, use the full
-   [V5 weekly operator checklist](docs/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist).
-   Reconcile the complete FBS schedule against fresh spread and total source
-   coverage; record capture time, missing game IDs, the next refresh, and the
-   exact release/freeze gates. A prior capture's null lines do not prove that
-   the provider still lacks lines.
+6. For a weekly update, use the full [weekly runbook](docs/ops/weekly_runbook.md), the sole operational authority. Reconcile the complete FBS schedule against fresh spread and total coverage; record capture time, missing game IDs, the next refresh and exact release gates. Prior null lines do not prove the provider still lacks lines.
+7. Build the revision, refresh exact per-team-game score exceptions, and commit pinned inputs before preparing from a clean tree. Do not commit between prepare and the last release. Use `run_season.py` for prepare/release/rollback; legacy publish/freeze/close targets refuse execution. Production rollback requires the owner credential; provided wrappers do not support Preview rollback.
 
 **Ending a Session:**
 1. Create session log in `session_logs/YYYY-MM-DD/NN-slug.md`
@@ -166,7 +156,7 @@ amendment, and commit-policy rules.
   2015–2019 and 2021–2025 in R2 (`CFB_STORAGE_BACKEND='r2'`); 2020 excluded
 - **2026 Deliverable:** Vercel web app at `web/` featuring a full 4-tab operational interface (Picks, Results, Ratings, Performance) showing every FBS game's spread + total lean against market lines, certified Blitzkrieg V5 team ratings, and transparent performance tracking
 - **Commands:** See `.codex/QUICKSTART.md` (Python + Nx task runner) and `web/README.md` (Next.js)
-- **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_pipeline.md` (data flow to web app)
+- **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_runbook.md` (data flow to web app)
 
 ### Dual-Stack Architecture (2026)
 
@@ -174,15 +164,15 @@ This is a **monorepo with two toolchains**:
 
 | Component | Location | Stack | Test/Build |
 |---|---|---|---|
-| ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv, Hydra, MLflow | `npx nx run pipeline:test` or `make test` |
+| ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv (legacy Hydra/MLflow retained pending cleanup) | `npx nx run pipeline:test` or `make test` |
 | Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `npx nx run web:build` or `make web-build` |
 | Shared contracts | `contracts/` | SQL + TypeScript + Python | `make contracts-check` |
 | Research | `scripts/research/` | Python (data-first runners and verifiers; see contract 2026-10-01/04) | — |
 | Task runner | root (`nx.json`, `project.json`) | Nx 20 — cached cross-stack tasks | `npx nx run-many -t lint typecheck test build` |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
-| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` + catalog/ops schemas | `scripts/pipeline/migrate_db.py --database-url` (verified target; append-only migrations through 0020; optional tables `game_venues`, `team_season_stats`) |
+| Web data | Neon Postgres | `season_releases`, `season_release_*` + legacy compatibility and catalog/ops schemas | `scripts/pipeline/migrate_db.py --database-url` (verified target; append-only migrations through 0025; optional tables `game_venues`, `team_season_stats`) |
 
-**Data flow:** Python pipeline writes a local working CSV (`data/production/...`) and durable R2 artifact (`artifacts/production/...`) → `scripts/pipeline/publish_to_db.py --from-artifact` upserts the durable artifact to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate). R2 is the source of truth; Neon is the derived web-serving database.
+**Data flow:** Immutable R2 captures and reconciled Silver inputs → hash-pinned revision manifest → `run_season.py prepare` computes V5 measurements, ratings, predictions, grades and verified serving projections → Preview rehearsal → owner-approved atomic Production release in Neon → Vercel reads the active release through Drizzle with ISR. R2 is the durable source of truth; Neon is derived serving state. Legacy `publish_to_db.py` and direct `current_week` mutation are not the operational path.
 
 **Web flags:** Matchup pages (`/matchup/[gameId]`) are a full-time site feature (emergency killswitch `CFB_MATCHUP_ENABLED=0`); `CFB_UI_TEST_MODE=1` serves fixture data for local runs and Playwright. See `web/README.md`.
 
@@ -202,19 +192,17 @@ The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
 Production is live at `https://c-ks-picks-cfb.vercel.app` in approval-gated
 `predictions` publication mode (revealed 2026-08-21). Active work is the
-weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
-`docs/ops/production_runbook.md`.
+weekly operating cadence documented in `docs/ops/weekly_runbook.md`.
 
 Dated checkpoints (Weeks 0-3, the Phase 1-6 buildout, the September V5 acceptance record and
 the 2026-10-04 "current focus") now live in [`docs/status_history.md`](docs/status_history.md). They are
 history, not current authority; use [`docs/status.md`](docs/status.md) for live state. The accepted
-V5 model, its lineage and the V4 rollback are summarized in the
+V5 model, its lineage and historical V4 are summarized in the
 [V5 status guide](docs/modeling/v5_status.md). The 2026 record is one continuous V5 record from Week 0 (Week 4 and earlier were generated
 retrospectively from point-in-time inputs; Week 5 was the first slate frozen before kickoff).
 
 **Roadmap (2026 transition):** `docs/planning/roadmap.md` ·
-**Weekly ops:** `docs/ops/weekly_pipeline.md` ·
-**Production runbook:** `docs/ops/production_runbook.md`
+**Weekly operations and release/rollback:** `docs/ops/weekly_runbook.md`
 
 **Historical reference:** V2 workflow and prior rating research are retained in
 `docs/archive/`; they are evidence, not current operating authority.
@@ -256,23 +244,11 @@ uv run pytest tests/test_aggregations_core.py
 uv run ruff format . && uv run ruff check .
 ```
 
-### Model Training
+### Weekly V5 Operations and Research
 
-```bash
-# Basic training with defaults
-PYTHONPATH=src uv run python -m cks_picks_cfb.train
+Use `make season-revision`, `season-prepare`, `season-release` and `season-rollback` under the [weekly runbook](docs/ops/weekly_runbook.md). Exact cutoff, environment, checksum, clean-tree and owner-approval requirements are mandatory. Started/reconstructed games remain visible because forecasts use only pre-cutoff observations; grading uses eligible pre-kickoff quotes under the [record methodology](docs/modeling/record_methodology.md).
 
-# Run specific experiment
-PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
-
-# Hyperparameter optimization
-PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
-
-# Debug configuration
-PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
-```
-
-**See `.codex/QUICKSTART.md` for complete command reference.**
+Research lives in `scripts/research/` and requires an approved contract before changing the selected model or serving behavior. V4 training/Hydra/MLflow and Nx code remain pending deferred Phase 3 cleanup; their presence does not authorize operating V4. See `.codex/QUICKSTART.md` for current commands.
 
 ---
 
@@ -290,14 +266,10 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 3. Confirm path exists: `ls "$CFB_MODEL_DATA_ROOT"`
 4. Check script uses environment variable, not hardcoded paths
 
-**Hydra Config Errors:**
-- Debug with: `PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve`
-- Check `conf/config.yaml` and experiment configs
-
-**MLflow Tracking Issues:**
-1. Ensure `artifacts/mlruns/` directory exists and is writable
-2. Start MLflow UI: `MLFLOW_PORT=5050 docker compose -f docker/mlops/docker-compose.yml up mlflow`
-3. Check `MLFLOW_TRACKING_URI` if using custom location
+**Season Prepare / Release Refusal:**
+- Confirm the revision URIs and SHA-256s, the intended wrapper and exact score-reconciliation exceptions.
+- Prepare requires a clean tree; release requires the same commit as prepare.
+- Check `season_verification_v2` failures and follow the weekly runbook rather than bypassing gates.
 
 **Test Failures:**
 - Run verbose: `uv run pytest -v`
@@ -322,7 +294,7 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 
 **Training on 2020 Data:**
 - ❌ Problem: Including COVID-disrupted 2020 season
-- ✅ Solution: use the versioned `conf/training/week0_2026.yaml` chronology
+- ✅ Solution: exclude 2020 from all V5/research inputs and boundaries; preserve historical V4 chronology only for historical reproduction.
 
 **Future Data Leakage:**
 - ❌ Problem: Using future data in historical analysis
@@ -377,7 +349,7 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 
 - **Commands:** `.codex/QUICKSTART.md` - All essential commands
 - **Architecture:** `.agent/CONTEXT.md` - Project structure and domain knowledge
-- **Config Guide:** `.codex/HYDRA.md` - Hydra configuration system
+- **Season operations:** `docs/ops/weekly_runbook.md` - Revision, prepare, release and rollback
 - **File Map:** `.codex/MAP.md` - Project file locations
 - **Contracts:** `contracts/` - DB schema and team mappings (single source of truth)
 - **Session Skills:** `.agent/skills/` - Start/end session workflows
@@ -393,18 +365,18 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 
 ### Configuration
 
-- **Main Config:** `conf/config.yaml` - Hydra entry point
-- **Models:** `conf/model/` - Model configurations
-- **Features:** `conf/features/` - Feature set definitions
-- **Experiments:** `conf/experiment/` - Pre-configured experiments
+- **Operational config:** `conf/season/2026/` - Sealed model, revision manifests and exact score exceptions
+- **Research:** `conf/research/` - Isolated candidate configurations
+- **Historical configs:** `conf/model/`, `conf/features/`, `conf/experiment/` - Retained V4/Hydra compatibility, not operational authority
+
 
 ### Core Code
 
 - **Config:** `src/cks_picks_cfb/config/` - Path configuration
 - **Features:** `src/cks_picks_cfb/features/pipeline.py` - Feature engineering
-- **Training:** `src/cks_picks_cfb/train.py` - Canonical model training
-- **Ops state machine:** `src/cks_picks_cfb/ops/` - Publish/freeze/close/replay orchestration
-- **Inference:** `scripts/pipeline/generate_weekly_bets.py` - Predictions
+- **Season engine:** `src/cks_picks_cfb/season/` - Chronological forecasts, verification, grading and atomic releases
+- **Revision builder:** `scripts/pipeline/build_season_revision.py` - Controller inputs and cumulative registered market quotes
+- **Operational CLI:** `scripts/pipeline/run_season.py` - Prepare, status, release and rollback
 - **Contracts:** `contracts/` - DB schema and team mappings (single source of truth)
 - **Research:** `scripts/research/` - Data-first research runners and verifiers
 
@@ -463,5 +435,5 @@ See `.agent/skills/CATALOG.md` for full list.
 
 ---
 
-_Last Updated: 2026-10-01_
+_Last Updated: 2026-10-15_
 _Universal entry point for all AI coding assistants_

@@ -41,3 +41,7 @@
 - **Watch out for:** Verify Vercel deployment completes successfully on `https://c-ks-picks-cfb.vercel.app`.
 
 **tags:** ["production-cutover", "migration-0025", "season-release", "weekly-runbook", "status"]
+
+## Correction (2026-10-15)
+
+The "Plan is now Complete" and "Blockers: None" statements above overstate contract completion. Migration/cutover was delivered, but `docs/plans/2026-10-14/01-season-operations-and-week7-bridge.md` remains In Progress until a subsequent weekly update runs through the same controller and section 4 documentation obligations are satisfied. Phase 2 documentation is being completed under `docs/plans/2026-10-15/01-review-fixes-and-v5-streamline.md`; Week 8 operational proof still awaits Week 7 finals/controller inputs. This correction preserves the recorded cutover evidence and makes no new deployment or database claim.

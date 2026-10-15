@@ -1,9 +1,11 @@
 # Week 7 standalone fallback (display-only on corrected ratings through Week 6)
 
-- **Status:** Draft, awaiting owner approval. It adds no authority of its own; it releases nothing until the owner gives it an exact release decision.
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Created:** 2026-10-12 (command chain rewritten the same day after checking every script's argparse on `dev` at `f8848bfa`)
 - **Governed by:** the [Week 7 cutover run sheet](../2026-10-10/01-week7-cutover-run-sheet.md), the [gate waiver contract](02-week7-cutover-gate-waiver-and-readiness.md) and the [repair-track contract](../2026-10-08/02-repair-track-certification-and-closure.md) Amendments 14 and 15.
 - **Rule:** Preview first, always. Every Preview write and every Production write is its own go-ahead: dry run, then apply, then read-only readback. Owner-role SQL is user-run.
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: Draft, awaiting owner approval. It adds no authority of its own; it releases nothing until the owner gives it an exact release decision.
 
 > **2026-10-13 note ([repair Amendment 16](../2026-10-08/02-repair-track-certification-and-closure.md#amendment-16--2026-10-13-week-7-ratings-decision-display-only-release-and-live-rating-provenance)).** Two parts of this document are superseded:
 >

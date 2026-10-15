@@ -27,11 +27,11 @@ For AI assistant guidance when working with this repository, please refer to **A
 
 - **Commands:** `.codex/QUICKSTART.md` - All essential commands
 - **Architecture:** `.agent/CONTEXT.md` - Project structure and domain knowledge
-- **Config Guide:** `.codex/HYDRA.md` - Hydra configuration system
+- **Weekly Operations:** [Weekly runbook](docs/ops/weekly_runbook.md) - V5 revision, prepare, release and rollback
 - **File Map:** `.codex/MAP.md` - Project file locations
 - **Session Skills:** `.agent/skills/` - Start/end session workflows
 
 ---
 
-_Last Updated: 2026-10-01_
+_Last Updated: 2026-10-15_
 _This file now redirects to AGENTS.md as the universal entry point_

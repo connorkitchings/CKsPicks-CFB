@@ -13,13 +13,16 @@ Single source of truth for shared contracts between the Python pipeline and the 
 | `teams.ts` | TypeScript `TEAM_LOGO_MAP` (must match `teams.py`) |
 | `validation.py` | Cross-validation script to ensure all copies stay in sync |
 
-## Recent additions
+## Serving contract
 
 | Migration | Table | Purpose |
 |---|---|---|
+| `0025_season_releases.sql` | `season_releases`, `season_release_policies`, `season_release_*` | Verified immutable serving projections and atomic stage/activate/rollback |
 | `0019_game_venues.sql` | `game_venues` | Venue, city and state per game |
 | `0020_team_season_stats.sql` | `team_season_stats` | Pre-game team stats and national ranks (long format) |
 | `0016`/`0017` | `prediction_market_selections` | Best-quote selection per lean (source book) |
+
+The active V5 season release is serving authority. Legacy `prediction_runs` and `current_week` remain for compatibility; the web fallback is used only when no season release is active. Weekly publication must use `run_season.py`, not direct writes to legacy tables. Pipeline, web and owner/migrator privileges are distinct; see the runbook for verified environment and role selection.
 
 ## Usage
 
@@ -44,7 +47,7 @@ PYTHONPATH=src uv run python scripts/pipeline/migrate_db.py \
 
 Set `REVIEWED_MIGRATOR_DATABASE_URL` to the verified URL for the intended branch.
 For the repository's Preview branch, use the Keychain wrapper described in the
-[weekly pipeline](../docs/ops/weekly_pipeline.md). `make migrate-db` is disabled
+[weekly runbook](../docs/ops/weekly_runbook.md). `make migrate-db` is disabled
 because `ENV=preview` never selected a database for that target.
 
 An empty database is bootstrapped from the reconstructed `schema.sql` snapshot.

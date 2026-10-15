@@ -1,6 +1,6 @@
 # Speed up CI while preserving regression coverage
 
-- **Status:** Implemented
+- **Status:** Merged (PR #7; 2026-10-15 review confirmed integration)
 - **Created:** 2026-10-14
 - **Planner:** Sol
 - **Approval source:** User explicitly requested implementation of the revised plan in this chat.

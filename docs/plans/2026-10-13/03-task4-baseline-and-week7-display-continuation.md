@@ -1,12 +1,14 @@
 # Task 4 Baseline Enforcement and Week 7 Display-Only Continuation
 
-- **Status:** In Progress
+- **Status:** Superseded (2026-10-15; recurring operations replaced by the atomic season workflow)
 - **Created:** 2026-10-13 (America/New_York)
 - **Planner:** Sol
 - **Approval source:** Owner's “Strongly Approve” response to the continuation plan in this chat, including the three operational guardrails; subsequent “proceed” authorizes persistence.
 - **Planning log:** `session_logs/2026-10-13/04-task4-week7-continuation-planning.md`
 - **Implementation log:** `session_logs/2026-10-13/05-task4-week7-continuation-implementation.md`
 - **Commit policy:** Separate user-controlled plan commit; implementation and operational pin/lock commits remain user-controlled. Do not commit, merge, or push automatically.
+
+> **Lifecycle correction (2026-10-15):** Superseded by [season operations](../2026-10-14/01-season-operations-and-week7-bridge.md) and the [review/documentation contract](../2026-10-15/01-review-fixes-and-v5-streamline.md). Use the [weekly runbook](../../ops/weekly_runbook.md) for recurring operations. Unfinished repair obligations remain in the [deferred backlog](../../status.md#deferred-backlog); supersession does not mean they were implemented or certified. The original requirements and evidence below are historical. Previous status: In Progress
 
 ## Goal and acceptance
 
