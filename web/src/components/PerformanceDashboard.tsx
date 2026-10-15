@@ -28,12 +28,7 @@ function recordFor(games: GradedGamePick[], pick: (g: GradedGamePick) => Accurac
 
 export function PerformanceDashboard({ data, title }: { data: PerformanceDetail; title: string }) {
   const [targetFilter, setTargetFilter] = useState<TargetFilter>("all");
-  const [confidenceOnly, setConfidenceOnly] = useState<boolean>(false);
-
-  const games = useMemo(
-    () => data.gradedGames.filter((g) => !confidenceOnly || g.highConfidence),
-    [data.gradedGames, confidenceOnly],
-  );
+  const games = data.gradedGames;
 
   const overall = useMemo(() => {
     const spread = recordFor(games, (g) => g.spreadResult);
@@ -200,20 +195,6 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
           })}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setConfidenceOnly(!confidenceOnly)}
-          aria-pressed={confidenceOnly}
-          className={clsx(
-            "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-            confidenceOnly
-              ? "border-accent bg-accent-soft text-accent-ink"
-              : "border-line bg-surface-inset text-ink-muted hover:text-ink",
-          )}
-        >
-          <span className={confidenceOnly ? "text-accent" : "text-ink-faint"}>★</span>
-          High Confidence Only
-        </button>
       </section>
 
       {/* Weekly breakdown: mobile cards and desktop table */}

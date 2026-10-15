@@ -111,15 +111,6 @@ export function SlateView({
               />
             )}
 
-            {retrospectiveRepair && (
-              <p
-                role="note"
-                className="rounded-xl border border-line bg-surface-card px-4 py-3 text-sm text-ink-muted"
-              >
-                Retrospective replay: these predictions and grades were recalculated after the games
-                using the repaired V5 ratings. They were not the picks originally published before kickoff.
-              </p>
-            )}
 
             {displayOnlyNotice && (
               <p
