@@ -168,13 +168,13 @@ jobs:
     env:
       COVERAGE_FILE: .coverage.database
       CFBD_API_KEY: ci-placeholder
-      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cks_picks_test
+      TEST_DATABASE_URL: postgresql://postgres:${{ github.run_id }}@localhost:5432/cks_picks_test
     services:
       postgres:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ${{ github.run_id }}
           POSTGRES_DB: cks_picks_test
         ports:
           - 5432:5432
