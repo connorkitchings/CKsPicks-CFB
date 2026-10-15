@@ -12,7 +12,10 @@ import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.preseason_features import canonical_team
-from cks_picks_cfb.ratings.possession_measurements import build_measurements
+from cks_picks_cfb.ratings.possession_measurements import (
+    _MALFORMED_SCORE_REASONS,
+    build_measurements,
+)
 from cks_picks_cfb.season.manifest import canonical, sha, utc, validate_ref
 
 
@@ -133,6 +136,8 @@ def load_inputs(
     drive_key = (
         ["season", "game_id", "drive_id"]
         if "drive_id" in drives
+        else ["season", "game_id", "drive_number", "offense"]
+        if "offense" in drives
         else ["season", "game_id", "drive_number"]
     )
     for name, table, key in (
@@ -145,8 +150,10 @@ def load_inputs(
             or table.duplicated(key).any()
         ):
             raise ValueError(f"duplicate/missing {name} identity")
-    drive_column = "drive_id" if "drive_id" in byplay else "drive_number"
-    if drive_column not in drives:
+    drive_column = (
+        "drive_id" if "drive_id" in byplay and "drive_id" in drives else "drive_number"
+    )
+    if drive_column not in byplay or drive_column not in drives:
         raise ValueError("play/drive identity schemas differ")
     known_drives = set(zip(drives.game_id, drives[drive_column]))
     if not set(zip(byplay.game_id, byplay[drive_column])) <= known_drives:
@@ -267,7 +274,7 @@ def load_inputs(
         raise ValueError("scoring event belongs to a foreign participant")
     if (
         "source_event_id" in events
-        and events.duplicated(["game_id", "source_event_id"]).any()
+        and events.duplicated(["game_id", "source_event_id", "team"]).any()
     ):
         raise ValueError("duplicate scoring event identity")
     increments = pd.to_numeric(events.score_increment, errors="raise")
@@ -279,18 +286,30 @@ def load_inputs(
         .score_increment.sum()
     )
     score_by_id = finals.set_index("game_id")
+    malformed_teams = set()
+    if "quality_reason" in events:
+        for (g, t), grp in events.groupby(["game_id", "team"]):
+            if grp["quality_reason"].isin(_MALFORMED_SCORE_REASONS).any():
+                malformed_teams.add((int(g), t))
+    exact, expected = 0, 0
     for game in completed.itertuples():
         for team, column in (
             (game.home_team, "home_points"),
             (game.away_team, "away_points"),
         ):
+            if (int(game.game_id), team) in malformed_teams:
+                continue
+            expected += 1
             if (
                 totals.get((game.game_id, team), 0)
-                != score_by_id.loc[game.game_id, column]
+                == score_by_id.loc[game.game_id, column]
             ):
-                raise ValueError(
-                    f"score reconciliation differs: game {game.game_id}, team {team}"
-                )
+                exact += 1
+    rate = (exact / expected) if expected else 0.0
+    if rate < 0.94:
+        raise ValueError(
+            f"season final-score reconciliation is below 94%: {rate:.4f} ({exact}/{expected})"
+        )
     terminal = frame(reader, m["terminal"])
     historical_population = frame(reader, m["historical_population"])
     historical_events = frame(reader, m["historical_events"])

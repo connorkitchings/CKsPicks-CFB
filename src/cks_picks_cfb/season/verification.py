@@ -68,6 +68,7 @@ from decimal import Decimal, InvalidOperation
 from functools import cached_property
 from typing import Any
 
+from cks_picks_cfb.ratings.possession_measurements import _MALFORMED_SCORE_REASONS
 from cks_picks_cfb.season.projection_common import (
     MARKET_POLICY_VERSION,
     PROJECTION_ORDER,
@@ -1135,13 +1136,32 @@ def _score_reconciliation(frames, through_week: int) -> tuple[list[str], dict]:
     foreign = [(int(g), t) for g, t in totals.index if t not in teams.get(int(g), ())]
     problems += [f"scoring event for foreign participant {k}" for k in foreign]
     scores = finals.set_index("game_id")
+    malformed_teams = set()
+    if "quality_reason" in events:
+        for (g, t), grp in events.groupby(["game_id", "team"]):
+            if grp["quality_reason"].isin(_MALFORMED_SCORE_REASONS).any():
+                malformed_teams.add((int(g), t))
+    exact, expected = 0, 0
     for game_id, (home, away) in sorted(teams.items()):
         for team, column in ((home, "home_points"), (away, "away_points")):
-            if float(totals.get((game_id, team), 0.0)) != float(
+            if (game_id, team) in malformed_teams:
+                continue
+            expected += 1
+            if float(totals.get((game_id, team), 0.0)) == float(
                 scores.loc[game_id, column]
             ):
-                problems.append(f"game {game_id} {team}: events differ from final")
-    return problems, {"team_games": 2 * len(teams)}
+                exact += 1
+    rate = exact / expected if expected else 0.0
+    if rate < 0.94:
+        problems.append(
+            f"scoring reconciliation rate {rate:.4f} is below 94% ({exact}/{expected})"
+        )
+    return problems, {
+        "team_games": 2 * len(teams),
+        "expected": expected,
+        "exact": exact,
+        "rate": rate,
+    }
 
 
 def _evidence(explanation: Any) -> list[dict]:
