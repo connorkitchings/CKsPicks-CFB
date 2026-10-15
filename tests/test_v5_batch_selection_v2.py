@@ -1,13 +1,16 @@
 import hashlib
 import json
+import logging
 import os
 import threading
 import time
+from datetime import timedelta
 from pathlib import Path
 
 import psycopg
 import pytest
 
+from cks_picks_cfb.artifacts import prediction_run_manifest_path
 from cks_picks_cfb.data.data_first_phase2d import signed_payload
 from cks_picks_cfb.db.migrations import apply_migrations
 from cks_picks_cfb.ops import v5_batch_selection_v2 as batch_v2
@@ -379,7 +382,35 @@ def test_v2_packet_current_pointer_must_bind_to_the_exact_expected_run():
         validate_v2_packet(packet, environment="preview", storage=storage)
 
 
-def _seed_run(cur, run_id, week, game_id):
+def _connect(conn_url, **kwargs):
+    return psycopg.connect(
+        conn_url,
+        connect_timeout=5,
+        options="-c statement_timeout=15000 -c lock_timeout=10000",
+        **kwargs,
+    )
+
+
+def _reset_schemas(conn_url):
+    try:
+        with _connect(conn_url, autocommit=True) as conn, conn.cursor() as cur:
+            for schema in ("ops", "catalog", "public"):
+                cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+            cur.execute("CREATE SCHEMA public")
+    except psycopg.Error:
+        with _connect(conn_url, autocommit=True) as conn:
+            activity = conn.execute(
+                "SELECT pid, state, wait_event_type, wait_event, query, "
+                "pg_blocking_pids(pid) FROM pg_stat_activity "
+                "WHERE datname = current_database() AND pid <> pg_backend_pid()"
+            ).fetchall()
+        logging.getLogger(__name__).error(
+            "Schema cleanup failed; database sessions: %s", activity
+        )
+        raise
+
+
+def _seed_run(cur, run_id, week, game_id, anchor):
     replay = week < 5
     cur.execute(
         "INSERT INTO games (game_id, season, week, start_date, home_team, away_team) "
@@ -387,7 +418,7 @@ def _seed_run(cur, run_id, week, game_id):
         (
             game_id,
             week,
-            "2026-10-20 18:00:00+00" if week == 5 else "2026-09-01 18:00:00+00",
+            anchor + timedelta(days=7) if week >= 5 else anchor - timedelta(days=30),
         ),
     )
     cur.execute(
@@ -414,13 +445,18 @@ def _seed_run(cur, run_id, week, game_id):
 
 
 def _prepare_database(conn_url, storage):
-    with psycopg.connect(conn_url, autocommit=True) as conn, conn.cursor() as cur:
-        for schema in ("ops", "catalog", "public"):
-            cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
-        cur.execute("CREATE SCHEMA public")
+    _reset_schemas(conn_url)
     apply_migrations(conn_url, Path("contracts/migrations"))
 
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    with _connect(conn_url) as conn, conn.cursor() as cur:
+        cur.execute("SELECT clock_timestamp() - interval '1 minute'")
+        anchor = cur.fetchone()[0]
+        for run_id in ("old-5", "new-5"):
+            storage.objects[prediction_run_manifest_path(2026, 5, run_id)] = (
+                canonical_json(
+                    {"artifact_sha256": "f" * 64, "data_as_of": anchor.isoformat()}
+                )
+            )
         cur.execute(
             "INSERT INTO v5_model_bundle_approvals "
             "(approval_id, model_id, inference_bundle_sha256, first_live_season, "
@@ -432,13 +468,13 @@ def _prepare_database(conn_url, storage):
             game_id = 20260000 + week
             for prefix in ("old", "new"):
                 run_id = f"{prefix}-{week}"
-                _seed_run(cur, run_id, week, game_id)
+                _seed_run(cur, run_id, week, game_id, anchor)
             cur.execute(
                 "INSERT INTO site_week_selections (season, week, run_id, reason) "
                 "VALUES (2026, %s, %s, 'fixture before')",
                 (week, f"old-{week}"),
             )
-        _seed_run(cur, "old-6", 6, 20260006)
+        _seed_run(cur, "old-6", 6, 20260006, anchor)
         cur.execute(
             "INSERT INTO site_week_selections (season, week, run_id, reason) "
             "VALUES (2026, 6, 'old-6', 'protected fixture')"
@@ -553,6 +589,86 @@ def _make_rollback_packet(packet, storage):
     not os.getenv("TEST_DATABASE_URL"),
     reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
 )
+def test_unexpected_transaction_failure_releases_schema_locks():
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    _, storage = _packet()
+    _prepare_database(conn_url, storage)
+    with pytest.raises(RuntimeError, match="unexpected fixture failure"):
+        with _connect(conn_url) as conn:
+            assert conn.execute("SHOW statement_timeout").fetchone() == ("15s",)
+            assert conn.execute("SHOW lock_timeout").fetchone() == ("10s",)
+            conn.execute("UPDATE current_week SET week = 99 WHERE id = 1")
+            raise RuntimeError("unexpected fixture failure")
+    assert conn.closed
+    with _connect(conn_url) as observer:
+        assert observer.execute(
+            "SELECT week FROM current_week WHERE id = 1"
+        ).fetchone() == (5,)
+    # This blocked indefinitely when the failed test retained an open transaction.
+    _reset_schemas(conn_url)
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
+def test_schema_cleanup_times_out_with_blocking_session_diagnostics(caplog):
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    _, storage = _packet()
+    _prepare_database(conn_url, storage)
+    with _connect(conn_url, application_name="cleanup_regression_blocker") as blocker:
+        blocker.execute("SELECT * FROM ops.pipeline_runs LIMIT 1")
+        started = time.monotonic()
+        with pytest.raises(psycopg.errors.LockNotAvailable):
+            _reset_schemas(conn_url)
+        assert time.monotonic() - started < 15
+        assert "Schema cleanup failed; database sessions:" in caplog.text
+        assert str(blocker.info.backend_pid) in caplog.text
+        assert "idle in transaction" in caplog.text
+    _reset_schemas(conn_url)
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
+def test_database_relative_fixture_preserves_pending_kickoff_boundary():
+    from cks_picks_cfb.ops.public_selection import (
+        PublicSelectionError,
+        _require_open_pending_window,
+    )
+
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    _, storage = _packet()
+    _prepare_database(conn_url, storage)
+    manifest = json.loads(
+        storage.objects[prediction_run_manifest_path(2026, 5, "new-5")]
+    )
+    with _connect(conn_url) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT min(start_date) < clock_timestamp() FROM games WHERE week < 5"
+        )
+        assert cur.fetchone() == (True,)
+        cur.execute(
+            "SELECT min(start_date) > clock_timestamp() FROM games WHERE week >= 5"
+        )
+        assert cur.fetchone() == (True,)
+        _require_open_pending_window(
+            cur, season=2026, week=5, run_id="new-5", as_of=manifest["data_as_of"]
+        )
+        cur.execute(
+            "UPDATE games SET start_date = clock_timestamp() - interval '1 second' WHERE week = 5"
+        )
+        with pytest.raises(PublicSelectionError, match="has kicked off"):
+            _require_open_pending_window(
+                cur, season=2026, week=5, run_id="new-5", as_of=manifest["data_as_of"]
+            )
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
 def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
     monkeypatch,
 ):
@@ -571,7 +687,7 @@ def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
         v5_release, "assert_v5_database_environment", lambda *_args: None
     )
 
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         assert (
             batch_v2.preflight_v2_packet(
                 cur, packet, environment="preview", storage=storage
@@ -579,6 +695,9 @@ def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
             == "preflight"
         )
 
+    from cks_picks_cfb.data import storage as storage_module
+
+    monkeypatch.setattr(storage_module, "get_storage", lambda **_kwargs: storage)
     original_select = batch_v2.select_week_run
 
     def fail_after_three_selections(cur, **kwargs):
@@ -587,16 +706,18 @@ def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
             raise RuntimeError("injected transaction failure")
         return previous
 
-    conn = psycopg.connect(conn_url)
     with pytest.raises(RuntimeError, match="injected transaction failure"):
-        with conn.cursor() as cur, monkeypatch.context() as scoped:
+        with (
+            _connect(conn_url) as conn,
+            conn.cursor() as cur,
+            monkeypatch.context() as scoped,
+        ):
             scoped.setattr(batch_v2, "select_week_run", fail_after_three_selections)
             batch_v2.apply_v2_packet(
                 cur, packet, environment="preview", storage=storage
             )
-    conn.rollback()
-    conn.close()
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    assert conn.closed
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         cur.execute(
             "SELECT week, run_id FROM site_week_selections WHERE season = 2026 ORDER BY week"
         )
@@ -618,18 +739,16 @@ def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
                 )
             return self.cursor.execute(query, params)
 
-    conn = psycopg.connect(conn_url)
     with pytest.raises(RuntimeError, match="after selection and team-stat writes"):
-        with conn.cursor() as raw_cur:
+        with _connect(conn_url) as conn, conn.cursor() as raw_cur:
             batch_v2.apply_v2_packet(
                 FailDuringStatsRefresh(raw_cur),
                 packet,
                 environment="preview",
                 storage=storage,
             )
-    conn.rollback()
-    conn.close()
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    assert conn.closed
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         cur.execute(
             "SELECT week, run_id FROM site_week_selections WHERE season = 2026 ORDER BY week"
         )
@@ -639,7 +758,7 @@ def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
         cur.execute("SELECT value FROM team_season_stats WHERE season = 2026")
         assert cur.fetchone()[0] == 0.2
 
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         assert (
             batch_v2.apply_v2_packet(
                 cur, packet, environment="preview", storage=storage
@@ -650,7 +769,7 @@ def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
             "SELECT COUNT(*) FROM site_week_selection_history WHERE season = 2026"
         )
         history_count = cur.fetchone()[0]
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         assert (
             batch_v2.apply_v2_packet(
                 cur, packet, environment="preview", storage=storage
@@ -663,14 +782,14 @@ def test_v2_database_preflight_apply_retry_failure_rollback_and_compensation(
         assert cur.fetchone()[0] == history_count
 
     rollback = _make_rollback_packet(packet, storage)
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         assert (
             batch_v2.apply_v2_packet(
                 cur, rollback, environment="preview", storage=storage
             )["state"]
             == "rolled_back"
         )
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         cur.execute(
             "SELECT week, run_id FROM site_week_selections WHERE season = 2026 ORDER BY week"
         )
@@ -693,9 +812,7 @@ def test_v2_revocation_waits_for_selection_shared_advisory_lock():
 
     def revoke():
         try:
-            with psycopg.connect(
-                conn_url, application_name="v5_stage7a_revoker_test"
-            ) as conn:
+            with _connect(conn_url, application_name="v5_stage7a_revoker_test") as conn:
                 with conn.cursor() as cur:
                     started.set()
                     append_release_revocation(
@@ -709,31 +826,37 @@ def test_v2_revocation_waits_for_selection_shared_advisory_lock():
         finally:
             finished.set()
 
-    selection_conn = psycopg.connect(conn_url)
-    with selection_conn.cursor() as cur:
-        lock_release_records(cur, [("bundle_approval", "bundle-7a")])
-    thread = threading.Thread(target=revoke, daemon=True)
-    thread.start()
-    assert started.wait(2)
-    deadline = time.monotonic() + 3
-    observed_wait = False
-    while time.monotonic() < deadline:
-        with psycopg.connect(conn_url) as observer, observer.cursor() as cur:
-            cur.execute(
-                "SELECT wait_event_type, wait_event FROM pg_stat_activity "
-                "WHERE application_name = 'v5_stage7a_revoker_test'"
+    thread = threading.Thread(target=revoke)
+    try:
+        with _connect(conn_url) as selection_conn:
+            with selection_conn.cursor() as cur:
+                lock_release_records(cur, [("bundle_approval", "bundle-7a")])
+            thread.start()
+            assert started.wait(2)
+            deadline = time.monotonic() + 3
+            observed_wait = False
+            while time.monotonic() < deadline:
+                with _connect(conn_url) as observer, observer.cursor() as cur:
+                    cur.execute(
+                        "SELECT wait_event_type, wait_event FROM pg_stat_activity "
+                        "WHERE application_name = 'v5_stage7a_revoker_test'"
+                    )
+                    observed_wait = cur.fetchone() == ("Lock", "advisory")
+                if observed_wait:
+                    break
+                time.sleep(0.05)
+            assert observed_wait, (
+                "revocation writer did not wait on the shared selection lock"
             )
-            observed_wait = cur.fetchone() == ("Lock", "advisory")
-        if observed_wait:
-            break
-        time.sleep(0.05)
-    assert observed_wait, "revocation writer did not wait on the shared selection lock"
-    selection_conn.commit()
-    selection_conn.close()
-    assert finished.wait(3)
-    thread.join(timeout=1)
+    finally:
+        if thread.ident is not None:
+            thread.join(timeout=15)
+            assert not thread.is_alive(), (
+                "revocation writer did not stop after lock release"
+            )
+    assert finished.is_set()
     assert not errors
-    with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
+    with _connect(conn_url) as conn, conn.cursor() as cur:
         with pytest.raises(V5RevocationError, match="has been revoked"):
             assert_release_records_active(cur, [("bundle_approval", "bundle-7a")])
 

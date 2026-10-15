@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import psycopg
@@ -405,12 +406,16 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
             )
             assert cur.fetchone() == (True, True, False, True, False, True, False, True)
 
-            future_kickoff = "2026-10-10 18:00:00+00"
+            cur.execute("SELECT clock_timestamp()")
+            anchor = cur.fetchone()[0]
+            future_kickoff = anchor + timedelta(days=7)
+            future_frozen_a = anchor - timedelta(hours=2)
+            future_frozen_b = anchor - timedelta(hours=1)
             historical_kickoff = "2026-09-10 18:00:00+00"
             sha = "a" * 64
             for week, run_id, kickoff, frozen_at in (
-                (5, "v5-prospective-5a", future_kickoff, "2026-10-06 12:00:00+00"),
-                (5, "v5-prospective-5b", future_kickoff, "2026-10-06 13:00:00+00"),
+                (5, "v5-prospective-5a", future_kickoff, future_frozen_a),
+                (5, "v5-prospective-5b", future_kickoff, future_frozen_b),
                 (6, "v5-prospective-6a", historical_kickoff, "2026-09-09 12:00:00+00"),
                 (6, "v5-prospective-6b", historical_kickoff, "2026-09-09 13:00:00+00"),
             ):
@@ -444,12 +449,12 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
             )
             cur.execute(
                 insert_record,
-                (5, "v5-prospective-5a", sha, "2026-10-06 12:00:00+00", future_kickoff),
+                (5, "v5-prospective-5a", sha, future_frozen_a, future_kickoff),
             )
             cur.execute(
                 "UPDATE public.prospective_week_records SET run_id = %s, frozen_at = %s "
                 "WHERE season = 2026 AND week = 5",
-                ("v5-prospective-5b", "2026-10-06 13:00:00+00"),
+                ("v5-prospective-5b", future_frozen_b),
             )
             with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
                 cur.execute(

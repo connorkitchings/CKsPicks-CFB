@@ -51,30 +51,18 @@ jobs:
       - name: Verify data-quality check registry
         run: PYTHONPATH=src uv run python -m cks_picks_cfb.quality --verify-registry
 
-  pytest:
-    name: Python tests
+  general:
+    name: Python general tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: cks_picks_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    env:
+      COVERAGE_FILE: .coverage.general
+      CFBD_API_KEY: ci-placeholder
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
         with:
-          # test_v5_legacy_freeze_attestation reads the legacy freeze source
-          # at a historical commit, which a depth-1 clone does not contain.
+          # Legacy freeze attestation reads source at a historical commit.
           fetch-depth: 0
 
       - name: Set up Python
@@ -91,9 +79,7 @@ jobs:
         run: uv sync --frozen --extra dev
 
       - name: Parallel Python tests
-        # The files below either reset the one service database or run a
-        # threaded rating publication. loadfile only serializes tests within
-        # a file; it does not isolate different files from one another.
+        # Shared-database resets and threaded rating publication need isolation.
         run: >-
           PYTHONPATH=src:. uv run pytest tests/ -q -W error
           -n 4 --dist loadfile
@@ -103,47 +89,38 @@ jobs:
           --ignore=tests/test_v5_batch_selection_v2.py
           --ignore=tests/test_publish_matchup_data.py
           --ignore=tests/test_publish_null_lean_database.py
+          --ignore=tests/test_season_release_postgres.py
           --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
+          --junitxml=junit-general.xml
           --durations=15 -o faulthandler_timeout=300
-        env:
-          CFBD_API_KEY: ci-placeholder
 
-      - name: Rating publication tests
-        run: >-
-          PYTHONPATH=src:. uv run pytest
-          tests/test_data_first_possession_rating_runner.py
-          -q -W error
-          --cov=cks_picks_cfb --cov-append --cov-report= --cov-fail-under=0
-          --durations=15 -o faulthandler_timeout=300
-        env:
-          CFBD_API_KEY: ci-placeholder
+      - name: Upload general coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-general
+          path: .coverage.general
+          include-hidden-files: true
+          if-no-files-found: error
 
-      - name: PostgreSQL integration tests and total coverage
-        # These files reset public/ops/catalog schemas. Run them in one
-        # process so a worker cannot drop another test's tables mid-query.
-        run: >-
-          PYTHONPATH=src:. uv run pytest
-          tests/test_migration_integration.py
-          tests/test_v5_batch_selection_v2.py
-          tests/test_publish_matchup_data.py
-          tests/test_publish_null_lean_database.py
-          -q -W error
-          --cov=cks_picks_cfb --cov-append
-          --cov-report=term-missing:skip-covered
-          --durations=15 -o faulthandler_timeout=300
-        env:
-          CFBD_API_KEY: ci-placeholder
-          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cks_picks_test
+      - name: Upload general test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-general
+          path: junit-general.xml
+          if-no-files-found: warn
 
-  rebuild-flow:
-    name: Python 6B rebuild flow
+  ratings:
+    name: Python rating publication
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
+    env:
+      COVERAGE_FILE: .coverage.ratings
+      CFBD_API_KEY: ci-placeholder
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -158,15 +135,177 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --frozen --extra dev
 
-      - name: Twelve-stage rebuild flow
-        # Runs all twelve 6B stages (about ten minutes on a runner), so it has
-        # its own job instead of pinning one xdist worker for the whole suite.
-        # Coverage is measured by the main Python job.
+      - name: Rating publication tests
         run: >-
-          PYTHONPATH=src:. uv run pytest tests/test_rebuild_6b_flow.py
-          -q -W error --durations=5 -o faulthandler_timeout=600
+          PYTHONPATH=src:. uv run pytest
+          tests/test_data_first_possession_rating_runner.py
+          -q -W error
+          --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
+          --junitxml=junit-ratings.xml
+          --durations=15 -o faulthandler_timeout=300
+
+      - name: Upload ratings coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-ratings
+          path: .coverage.ratings
+          include-hidden-files: true
+          if-no-files-found: error
+
+      - name: Upload ratings test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-ratings
+          path: junit-ratings.xml
+          if-no-files-found: warn
+
+  database:
+    name: Python database integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COVERAGE_FILE: .coverage.database
+      CFBD_API_KEY: ci-placeholder
+      TEST_DATABASE_URL: postgresql://postgres:${{ github.run_id }}@localhost:5432/cks_picks_test
+    services:
+      postgres:
+        image: postgres:16
         env:
-          CFBD_API_KEY: ci-placeholder
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ github.run_id }}
+          POSTGRES_DB: cks_picks_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Provide PostgreSQL 16 server binaries for the private cluster
+        shell: bash
+        run: |
+          if [[ ! -x /usr/lib/postgresql/16/bin/initdb || ! -x /usr/lib/postgresql/16/bin/pg_ctl || ! -x /usr/lib/postgresql/16/bin/postgres ]]; then
+            sudo apt-get update
+            sudo apt-get install --yes postgresql-16
+          fi
+          for tool in initdb pg_ctl postgres; do
+            test -x "/usr/lib/postgresql/16/bin/$tool"
+            "/usr/lib/postgresql/16/bin/$tool" --version
+          done
+          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
+
+      - name: Require discoverable PostgreSQL 16 server binaries
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+          from tests.pg_harness import find_pg_bin
+          assert find_pg_bin() == Path("/usr/lib/postgresql/16/bin"), "Private PostgreSQL suite must not skip for missing binaries"
+          PY
+
+      - name: PostgreSQL integration tests
+        # The first four files reset shared schemas and must run serially.
+        # Season-release tests keep their separate, socket-only private cluster.
+        run: >-
+          PYTHONPATH=src:. uv run pytest
+          tests/test_migration_integration.py
+          tests/test_v5_batch_selection_v2.py
+          tests/test_publish_matchup_data.py
+          tests/test_publish_null_lean_database.py
+          tests/test_season_release_postgres.py
+          -q -W error
+          --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
+          --junitxml=junit-database.xml
+          --durations=15 -o faulthandler_timeout=300
+
+      - name: Upload database coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-database
+          path: .coverage.database
+          include-hidden-files: true
+          if-no-files-found: error
+
+      - name: Upload database test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-database
+          path: junit-database.xml
+          if-no-files-found: warn
+
+  pytest:
+    name: Python tests
+    if: always()
+    needs: [lint, general, ratings, database]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require successful lint and every Python suite
+        env:
+          PREREQUISITE_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          results = json.loads(os.environ["PREREQUISITE_RESULTS"])
+          failed = {job: info["result"] for job, info in results.items() if info["result"] != "success"}
+          if failed:
+              raise SystemExit(f"Required CI jobs did not succeed: {failed}")
+          PY
+
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Download suite coverage
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Require complete coverage and enforce threshold
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          expected = {".coverage.general", ".coverage.ratings", ".coverage.database"}
+          actual = {path.name for path in Path(".").glob(".coverage.*") if path.is_file()}
+          assert actual == expected, f"Incomplete or unexpected coverage files: {actual}"
+          assert all(Path(name).stat().st_size for name in expected), "Empty coverage file"
+          PY
+          uv run coverage combine
+          uv run coverage report --fail-under=60
 
   web:
     name: Web
