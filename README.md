@@ -56,3 +56,30 @@ local backend requires `CFB_STORAGE_BACKEND=local` and an external
 
 The web app is isolated in `web/`; see [its README](web/README.md) for local
 development and publication boundaries.
+
+## CI and historical rebuild validation
+
+Automatic CI runs Python lint/contracts, general tests (four workers), rating
+publication, database integration, and web checks independently. The **Python
+tests** gate requires lint and all three Python suites to pass, combines their
+coverage, and enforces the 60% threshold. Each suite uploads JUnit results and
+coverage artifacts for diagnosis. Database integration uses both a PostgreSQL 16
+TCP service for shared-schema tests and host PostgreSQL 16 binaries for the
+season-release tests' separate socket-only cluster.
+
+The full historical 6B rebuild suite is manual-only. Before releasing changes to
+historical reconstruction, shared numerical dependencies, or persisted rebuild
+contracts, open **Actions → Historical 6B rebuild → Run workflow** and select the
+branch or tag containing the exact release candidate. Alternatively:
+
+```bash
+gh workflow run rebuild-6b.yml --ref <release-candidate-branch-or-tag>
+```
+
+Wait for the run to pass and record its full tested commit SHA (shown in the run
+summary) and run URL in the release/session evidence. A passing run for an older
+revision does not validate subsequent relevant changes. The workflow runs all
+historical flow tests with unchanged computations and fixtures, reports slow
+tests in the log, and uploads JUnit results. Smaller rebuild component tests and
+current season-operation tests remain automatic. No production credentials or
+data refresh are required by this fixture-only suite.

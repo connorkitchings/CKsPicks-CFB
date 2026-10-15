@@ -1,0 +1,51 @@
+name: Historical 6B rebuild
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild-flow:
+    name: Python 6B rebuild flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Record tested revision
+        run: |
+          echo "### Historical 6B rebuild" >> "$GITHUB_STEP_SUMMARY"
+          echo "Revision: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Twelve-stage rebuild flow
+        # Keep full historical computations, populations and tamper checks.
+        run: >-
+          PYTHONPATH=src:. uv run pytest tests/test_rebuild_6b_flow.py
+          -q -W error --durations=15 -o faulthandler_timeout=600
+          --junitxml=junit-rebuild-6b.xml
+        env:
+          CFBD_API_KEY: ci-placeholder
+
+      - name: Upload rebuild test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-rebuild-6b
+          path: junit-rebuild-6b.xml
+          if-no-files-found: warn
