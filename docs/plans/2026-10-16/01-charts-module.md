@@ -1,6 +1,6 @@
 # Charts module: weekly team charts
 
-- **Status:** In Progress. Tasks 1–7 committed; Preview prepared, verified, activated and inspected. Follow-up chart organization and PNG focus-ring fixes are implemented and validated locally, awaiting owner commit. Production remains separately owner-gated.
+- **Status:** In Progress. Tasks 1–7 committed; Preview prepared, verified, activated and inspected. Follow-up chart organization, PNG focus-ring fixes and accepted baseline logo spacing are committed and pushed to `dev` at `b2335ae5`. Production remains separately owner-gated.
 - **Created:** 2026-10-16
 - **Approval source:** Owner approved revision 3 of the plan in chat on 2026-10-16, after two owner code reviews.
 - **Implementation log:** `session_logs/2026-10-16/02-charts-module-implementation.md` (planning log: `session_logs/2026-10-16/01-charts-module-planning.md`)
@@ -179,7 +179,7 @@ Safe deviations from the approved text, each narrower than or equal to the contr
 
 ## Status
 
-Tasks 1–7 are committed. Migration 0026 is applied to Preview, and the chart release was activated from clean commit `749ee12c`. All 23 checks passed; parity against all 18 existing projection tables and the real-data chart coverage/interaction checks passed. The initial saved bar and adjusted-scatter PNGs exposed keyboard-focus outlines. The follow-up implementation omits focus-ring elements from noninteractive exports while retaining live keyboard focus; focused export regressions pass and a saved 138-team real-data efficiency PNG was visually verified without rings. All 67 browser tests, publication tests, typecheck and build pass. Chart/week controls and team filters/actions are now grouped responsively. These presentation fixes await owner commit and integration into `dev`; no model, projection payload or database state changed in the follow-up. Production migration, deployment and activation remain separately owner-gated. Live release identity is in [current status](../../status.md); evidence is in `session_logs/2026-10-16/03-preview-chart-rehearsal.md` and `session_logs/2026-10-16/04-chart-navigation-and-export-polish.md`.
+Tasks 1–7 are committed. Migration 0026 is applied to Preview, and the chart release was activated from clean commit `749ee12c`. All 23 checks passed; parity against all 18 existing projection tables and the real-data chart coverage/interaction checks passed. The initial saved bar and adjusted-scatter PNGs exposed keyboard-focus outlines. The follow-up implementation omits focus-ring elements from noninteractive exports while retaining live keyboard focus; focused export regressions pass and a saved 138-team real-data efficiency PNG was visually verified without rings. All 67 browser tests, publication tests, typecheck and build pass. Chart/week controls and team filters/actions are now grouped responsively. The owner committed and fast-forwarded the presentation fixes into `dev`, then pushed `b2335ae5`; no model, projection payload or database state changed in the follow-up. Production migration, deployment and activation remain separately owner-gated. Live release identity is in [current status](../../status.md); evidence is in `session_logs/2026-10-16/03-preview-chart-rehearsal.md` and `session_logs/2026-10-16/04-chart-navigation-and-export-polish.md`.
 
 ### Amendment 12: chart organization and export polish
 
