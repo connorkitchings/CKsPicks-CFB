@@ -175,7 +175,7 @@ export type ScatterPoint = {
   conference: string | null;
   x: number;
   y: number;
-  /** Plays behind the point (eligible EPA observations). */
+  /** Plays behind the point (eligible PPA observations). */
   n: number;
 };
 export type ScatterData = {
@@ -194,7 +194,7 @@ function byTeam<T extends { team: string }>(a: T, b: T): number {
 }
 
 /**
- * Cumulative success rate (x) against EPA/play (y) through `throughWeek`, FBS roster
+ * Cumulative success rate (x) against PPA/play (y) through `throughWeek`, FBS roster
  * teams only. Averages are pooled over all plays of roster teams in the window, so teams
  * with more plays weigh more. Teams with no eligible games or a null metric are listed
  * as unavailable.
@@ -343,6 +343,29 @@ export function matchesSearch(query: string, team: string): boolean {
   return team.toLowerCase().includes(q) || teamAbbr(team).toLowerCase() === q;
 }
 
+/** National per-axis competition ranks, computed from the full plotted population. */
+export function scatterRanks(data: ScatterData): Map<string, { x: number; y: number }> {
+  const rankAxis = (axis: "x" | "y", lowerBetter: boolean) => {
+    const sorted = [...data.points].sort((a, b) => lowerBetter ? a[axis] - b[axis] : b[axis] - a[axis]);
+    const ranks = new Map<string, number>();
+    let rank = 1;
+    sorted.forEach((point, index) => {
+      if (index === 0 || point[axis] !== sorted[index - 1][axis]) rank = index + 1;
+      ranks.set(point.team, rank);
+    });
+    return ranks;
+  };
+  const x = rankAxis("x", data.invertX);
+  const y = rankAxis("y", data.invertY);
+  return new Map(data.points.map((point) => [point.team, { x: x.get(point.team)!, y: y.get(point.team)! }]));
+}
+
+/** Filter actual rows; a game qualifies when either participant belongs to the group. */
+export function filterNetSuccessBars(bars: readonly NetSuccessBar[], roster: readonly RosterRow[], filter: ConferenceFilter): NetSuccessBar[] {
+  const conferences = new Map(roster.map((row) => [row.team, row.conference]));
+  return bars.filter((bar) => matchesConference(filter, bar.winner, conferences.get(bar.winner) ?? null) || matchesConference(filter, bar.loser, conferences.get(bar.loser) ?? null));
+}
+
 // ---------------------------------------------------------------------------
 // Ticks and domains
 // ---------------------------------------------------------------------------
@@ -380,14 +403,14 @@ export function domainFor(values: readonly number[], pad = 0.06): Domain {
 
 export const CHART_TITLES: Record<ChartKind, string> = {
   "net-success": "Did We Really Get Beat That Bad?",
-  efficiency: "Efficiency and EPA/play",
-  adjusted: "Opponent-adjusted EPA/play",
+  efficiency: "Efficiency and PPA/play",
+  adjusted: "Opponent-adjusted PPA/play",
 };
 
 export const CHART_TAB_LABELS: Record<ChartKind, string> = {
   "net-success": "Net success rate",
   efficiency: "Efficiency",
-  adjusted: "Adjusted EPA/play",
+  adjusted: "Adjusted PPA/play",
 };
 
 export function chartSubtitle(kind: ChartKind, season: number, week: number, side: Side): string {
@@ -400,11 +423,11 @@ export function chartSubtitle(kind: ChartKind, season: number, week: number, sid
 
 export const CHART_FOOTNOTES: Record<ChartKind, string> = {
   "net-success":
-    "Bar = winner's offensive success rate minus loser's, on eligible plays (garbage time and special teams excluded). Label = winner and final score. Reconstructed from this release's data.",
+    "Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded). Label = winner and final score. Reconstructed from this release's data.",
   efficiency:
-    "Cumulative success rate and EPA/play on eligible plays (garbage time and special teams excluded), FBS vs FBS games. Dashed lines are FBS averages. On defense, axes are inverted so up and right is better. Reconstructed from this release's data.",
+    "Cumulative success rate and CFBD Predicted Points Added/play (valid PPA only) on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are FBS averages. On defense, axes are inverted so up and right is better. Reconstructed from this release's data.",
   adjusted:
-    "EPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. Dashed lines are play-weighted FBS averages; diagonals mark equal net (offense minus defense allowed). Reconstructed from this release's data.",
+    "PPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. Dashed lines are play-weighted FBS averages; diagonals mark equal net (offense minus defense allowed). Reconstructed from this release's data.",
 };
 
 /** WCAG relative luminance of a `#rrggbb` color (0 = black, 1 = white). */

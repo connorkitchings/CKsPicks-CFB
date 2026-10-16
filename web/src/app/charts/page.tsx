@@ -231,7 +231,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
       </div>
       {tabs && (
         <div className="space-y-3 rounded-xl border border-line bg-surface-inset p-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-col items-start gap-3">
             {tabs}
             {weekNav}
           </div>

@@ -11,6 +11,8 @@ import {
   domainFor,
   efficiencyPoints,
   efficiencyThroughWeeks,
+  filterNetSuccessBars,
+  scatterRanks,
   formatEpa,
   formatPercent,
   isoNetSegments,
@@ -247,4 +249,44 @@ test("bar colors keep a visible mid-tone on both themes", () => {
   assert.equal(formatPercent(0.4821), "48.2%");
   assert.equal(formatEpa(0.1214), "+0.121");
   assert.equal(formatEpa(-0.05), "-0.050");
+});
+
+
+test("actual game filtering includes either team and preserves bar ordering", () => {
+  const { bars } = netSuccessBars([
+    ...game(1, 2, ["Alabama", 10, 10, 3], ["Tulane", 20, 10, 5]),
+    ...game(2, 2, ["Michigan", 20, 10, 7], ["Notre Dame", 10, 10, 3]),
+  ], 2);
+  assert.deepEqual(filterNetSuccessBars(bars, roster, "SEC").map((b) => b.gameId), [1], "losing selected-group team includes game");
+  assert.deepEqual(filterNetSuccessBars(bars, roster, "p4"), bars);
+  assert.deepEqual(filterNetSuccessBars(bars, roster, "Sun Belt"), []);
+});
+
+test("national ranks use competition ties and independent axis directions before filtering", () => {
+  const points = [
+    { team: "A", conference: "SEC", x: 0.6, y: 0.1, n: 10 },
+    { team: "B", conference: "SEC", x: 0.6, y: 0.3, n: 30 },
+    { team: "C", conference: "Big Ten", x: 0.4, y: 0.1, n: 10 },
+  ];
+  const base = { points, average: { x: 0.56, y: 0.22 }, unavailable: [], invertX: false, invertY: false };
+  const ranks = scatterRanks(base);
+  assert.deepEqual([...ranks.values()], [{ x: 1, y: 2 }, { x: 1, y: 1 }, { x: 3, y: 2 }]);
+  const defense = scatterRanks({ ...base, invertX: true, invertY: true });
+  assert.deepEqual([...defense.values()], [{ x: 2, y: 1 }, { x: 2, y: 3 }, { x: 1, y: 1 }]);
+  const adjusted = scatterRanks({ ...base, invertY: true });
+  assert.deepEqual(adjusted.get("A"), { x: 1, y: 1 });
+  const filtered = points.filter((p) => p.conference === "Big Ten");
+  assert.equal(ranks.get(filtered[0].team)?.x, 3, "national rank stays national in small groups");
+});
+
+test("cumulative profile pools unequal independent exposures and excludes later games", () => {
+  const rows = [
+    row({ gameId: 1, week: 1, team: "Alabama", opponent: "Michigan", offSuccessN: 10, offSuccessSum: 8, offEpaN: 5, offEpaSum: 1 }),
+    row({ gameId: 2, week: 2, team: "Alabama", opponent: "Tulane", offSuccessN: 90, offSuccessSum: 36, offEpaN: 30, offEpaSum: 0 }),
+    row({ gameId: 3, week: 3, team: "Alabama", opponent: "Tulane", offSuccessN: 10, offSuccessSum: 10, offEpaN: 10, offEpaSum: 10 }),
+  ];
+  const profile = efficiencyPoints(roster, rows, 2, "offense");
+  assert.equal(profile.points[0].x, 44 / 100);
+  assert.equal(profile.points[0].y, 1 / 35);
+  assert.deepEqual(profile.average, { x: 44 / 100, y: 1 / 35 });
 });

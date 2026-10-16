@@ -121,5 +121,13 @@ export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[]
     rows.push(build(5000 + i, home, away, "home", homePoints, awayPoints, homeSuccess, awaySuccess));
     rows.push(build(5000 + i, away, home, "away", awayPoints, homePoints, awaySuccess, homeSuccess));
   }
+  // Keep Week 0 as the full 69-game export slate; a second completed window
+  // also exercises dense national scatter layouts without changing that slate.
+  const later = rows.map((row) => ({ ...row, week: 2, gameId: row.gameId + 1000, offEpaSum: Number(((random() - 0.5) * 0.5 * row.offEpaN).toFixed(3)) }));
+  for (let i = 0; i < later.length; i += 2) {
+    later[i].defEpaSum = later[i + 1].offEpaSum;
+    later[i + 1].defEpaSum = later[i].offEpaSum;
+  }
+  rows.push(...later);
   return { roster: names.map((team) => ({ team, conference: "Fixture" })), rows };
 }

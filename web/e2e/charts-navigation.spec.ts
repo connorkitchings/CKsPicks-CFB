@@ -13,6 +13,7 @@ test("Charts is reachable from the main navigation and keeps the selected side w
   await expect(page.getByTestId("chart-subtitle")).toContainText("Through Week 2");
   await expect(page.getByTestId("chart-subtitle")).toContainText("Defense");
   await page.getByRole("searchbox", { name: "Find a team" }).fill("Michigan");
+  await page.getByTestId("team-highlight").selectOption("Michigan");
   await expect(page.locator("g[data-team='Michigan']")).toHaveAttribute("data-state", "searched");
   await page.getByRole("button", { name: "Show as table", exact: true }).click();
   await expect(page.getByTestId("chart-table")).toBeVisible();

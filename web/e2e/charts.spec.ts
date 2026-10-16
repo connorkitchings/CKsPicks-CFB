@@ -12,16 +12,19 @@ function pngSize(path: string): { width: number; height: number } {
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
-async function exportPng(page: Page): Promise<{ file: string; report: { logos: number; decoded: number } }> {
+async function exportPng(page: Page): Promise<{ file: string; report: { logos: number; decoded: number }; capture: { teams: string[]; games: string[]; text: string } }> {
   // The static card exists only during capture. Observe it from mount to download,
   // so transient keyboard decorations cannot silently leak into the saved PNG.
   await page.evaluate(() => {
     const root = document.querySelector('[data-testid="chart-export"]')!;
-    const probe = { seen: false, rings: 0, focusStops: 0 };
+    const probe = { seen: false, rings: 0, focusStops: 0, teams: [] as string[], games: [] as string[], text: "" };
     const observer = new MutationObserver(() => {
       const svg = root.querySelector("div[aria-hidden] svg");
       if (!svg) return;
       probe.seen = true;
+      probe.teams = [...svg.querySelectorAll("g[data-team]")].map((node) => node.getAttribute("data-team")!);
+      probe.games = [...svg.querySelectorAll("g[data-game]")].map((node) => node.getAttribute("data-game")!);
+      probe.text = root.querySelector("[data-testid=export-card]")?.textContent ?? "";
       probe.rings = Math.max(probe.rings, svg.querySelectorAll(".focus-ring").length);
       probe.focusStops = Math.max(probe.focusStops, svg.querySelectorAll("[tabindex]").length);
     });
@@ -35,14 +38,14 @@ async function exportPng(page: Page): Promise<{ file: string; report: { logos: n
   await page.getByTestId("chart-download").click();
   const file = await (await download).path();
   const capture = await page.evaluate(() => {
-    const state = window as typeof window & { chartCaptureProbe?: () => { seen: boolean; rings: number; focusStops: number } };
+    const state = window as typeof window & { chartCaptureProbe?: () => { seen: boolean; rings: number; focusStops: number; teams: string[]; games: string[]; text: string } };
     const result = state.chartCaptureProbe!();
     delete state.chartCaptureProbe;
     return result;
   });
-  expect(capture).toEqual({ seen: true, rings: 0, focusStops: 0 });
+  expect(capture).toMatchObject({ seen: true, rings: 0, focusStops: 0 });
   const raw = await page.getByTestId("chart-export").getAttribute("data-last-export");
-  return { file, report: JSON.parse(raw ?? "{}") };
+  return { file, report: JSON.parse(raw ?? "{}"), capture };
 }
 
 test.describe("team charts", () => {
@@ -67,7 +70,7 @@ test.describe("team charts", () => {
     await expect(page).toHaveURL(/week=2/);
     await expect(page.getByTestId("chart-subtitle")).toContainText("Through Week 2");
     await expect(page.getByText("Success Rate").first()).toBeVisible();
-    await expect(page.getByText("EPA/play").first()).toBeVisible();
+    await expect(page.getByText("PPA/play").first()).toBeVisible();
     await expect(page.getByTestId("average-lines")).toBeVisible();
   });
 
@@ -79,7 +82,7 @@ test.describe("team charts", () => {
       await expect(page).toHaveURL(/chart=efficiency/);
       await expect(page).toHaveURL(/week=2/);
       await expect(page.locator("#week-select")).toHaveValue("2");
-      await page.getByRole("link", { name: "Adjusted EPA/play" }).click();
+      await page.getByRole("link", { name: "Adjusted PPA/play" }).click();
       await expect(page).toHaveURL(/chart=adjusted/);
       await expect(page).toHaveURL(/week=2/);
       await expect(page.getByTestId("corner-labels")).toBeVisible();
@@ -88,29 +91,116 @@ test.describe("team charts", () => {
 
   test("adjusted chart has dashed averages, diagonals and corner labels but no free-hand notes", async ({ page }) => {
     await page.goto("/charts?chart=adjusted&week=3");
-    await expect(page.getByText("Good Offense, Good Defense")).toBeVisible();
-    await expect(page.getByText("Bad Offense, Bad Defense")).toBeVisible();
+    await expect(page.getByText("Better offense / Better defense")).toBeVisible();
+    await expect(page.getByText("Lower offense / Higher defense allowed")).toBeVisible();
     await expect(page.getByTestId("average-lines")).toBeVisible();
     expect(await page.locator("[data-iso-net]").count()).toBeGreaterThan(0);
   });
 
-  test("the conference filter dims other teams and search enlarges one", async ({ page }) => {
+  test("conference filtering removes excluded points and preserves national geometry", async ({ page }) => {
     await page.goto("/charts?chart=efficiency&week=3");
     const marks = page.locator("g[data-team]");
     await expect(marks).toHaveCount(PLOTTED);
+    const alabama = page.locator("g[data-team='Alabama'] image").first();
+    const position = await alabama.evaluate((node) => [node.getAttribute("x"), node.getAttribute("y")]);
+    const averages = await page.getByTestId("average-lines").innerHTML();
+    const domains = await page.getByTestId("scatter-chart").evaluate((node) => [node.getAttribute("data-x-domain"), node.getAttribute("data-y-domain")]);
     await page.getByTestId("conference-filter").selectOption("SEC");
-    await expect(page.locator("g[data-team][data-state='active']")).toHaveCount(SEC_TEAMS);
-    await expect(page.locator("g[data-team][data-state='dim']")).toHaveCount(PLOTTED - SEC_TEAMS);
-    await expect(page.locator("g[data-team][data-state='dim']").first()).toHaveAttribute("opacity", "0.15");
+    await expect(marks).toHaveCount(SEC_TEAMS);
+    await expect(page.locator("g[data-team='Michigan']")).toHaveCount(0);
+    expect(await alabama.evaluate((node) => [node.getAttribute("x"), node.getAttribute("y")])).toEqual(position);
+    expect(await page.getByTestId("average-lines").innerHTML()).toEqual(averages);
+    expect(await page.getByTestId("scatter-chart").evaluate((node) => [node.getAttribute("data-x-domain"), node.getAttribute("data-y-domain")])).toEqual(domains);
+    await page.getByTestId("table-toggle").click();
+    await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(SEC_TEAMS);
     await page.getByTestId("conference-filter").selectOption("p4");
-    await expect(page.locator("g[data-team][data-state='dim']")).toHaveCount(3); // Tulane, Boise State, App State
-    await page.getByTestId("team-search").fill("michigan");
-    await expect(page.locator("g[data-team='Michigan']")).toHaveAttribute("data-state", "searched");
+    await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(13);
+    await page.getByTestId("table-toggle").click();
+    await expect(marks).toHaveCount(13);
+  });
+
+  test("net-success group filtering includes a game when either team qualifies", async ({ page }) => {
+    await page.goto("/charts?chart=net-success&week=3");
+    await expect(page.getByTestId("team-search")).toHaveCount(0);
+    await page.getByTestId("conference-filter").selectOption("SEC");
+    // Week 3 has one SEC matchup and two cross-conference games.
+    await expect(page.locator("g[data-game]")).toHaveCount(3);
+    await page.getByTestId("table-toggle").click();
+    const rows = page.getByTestId("chart-table").locator("tbody tr");
+    await expect(rows).toHaveCount(3);
+    for (const row of await rows.all()) {
+      expect(await row.innerText()).toMatch(/Alabama|Georgia|Texas|LSU/);
+    }
+  });
+
+  test("highlight persists independently of tooltips and toggles by dropdown, click, Enter and Space", async ({ page }) => {
+    await page.goto("/charts?chart=efficiency&week=3");
+    const michigan = page.locator("g[data-team='Michigan']");
+    const boise = page.locator("g[data-team='Boise State']");
+    const select = page.getByTestId("team-highlight");
+    await page.getByTestId("team-search").fill("Michigan");
+    await select.selectOption("Michigan");
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+    await boise.hover();
+    await expect(page.getByTestId("chart-tooltip")).toContainText("Boise State");
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+    await boise.focus();
+    await expect(page.getByTestId("chart-tooltip")).toContainText("Boise State");
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("chart-tooltip")).toHaveCount(0);
+    await expect(page.getByTestId("highlight-status")).toContainText("Michigan");
+    await michigan.click();
+    await expect(page.getByTestId("highlight-status")).toHaveCount(0);
+    await michigan.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("highlight-status")).toContainText("Michigan");
+    await page.keyboard.press("Space");
+    await expect(page.getByTestId("highlight-status")).toHaveCount(0);
+    await select.selectOption("Michigan");
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+    await select.selectOption("Michigan");
+    await expect(michigan).toHaveAttribute("aria-pressed", "false");
+    await select.selectOption("Michigan");
+    await select.selectOption("");
+    await expect(michigan).toHaveAttribute("aria-pressed", "false");
+    await select.selectOption("Michigan");
+    await page.getByTestId("conference-filter").selectOption("SEC");
+    await expect(page.getByTestId("highlight-status")).toHaveCount(0);
+    await expect(michigan).toHaveCount(0);
+  });
+
+  test("highlight survives week navigation and reports an unavailable observation", async ({ page }) => {
+    await page.goto("/charts?chart=adjusted&week=2");
+    await page.getByTestId("team-highlight").selectOption("Notre Dame");
+    await expect(page.locator("g[data-team='Notre Dame']")).toHaveAttribute("aria-pressed", "true");
+    await page.locator("#week-select").selectOption("3");
+    await expect(page.getByTestId("highlight-status")).toContainText("Notre Dame");
+    await expect(page.locator("g[data-team='Notre Dame']")).toHaveCount(0);
+    await expect(page.getByTestId("highlight-status")).toContainText("no available observation Through Week 3");
+    await page.getByRole("link", { name: "Previous through week" }).click();
+    await expect(page.locator("g[data-team='Notre Dame']")).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("link", { name: "Next through week" }).click();
+    await expect(page.getByTestId("highlight-status")).toContainText("no available observation Through Week 3");
+  });
+
+  test("per-axis national ranks remain unchanged when a conference is selected", async ({ page }) => {
+    for (const chart of ["efficiency&side=offense", "efficiency&side=defense", "adjusted"]) {
+      await page.goto(`/charts?chart=${chart}&week=3`);
+      await page.getByTestId("table-toggle").click();
+      const table = page.getByTestId("chart-table");
+      await expect(table.getByRole("button", { name: /national rank/ })).toHaveCount(2);
+      const national = await table.locator("tbody tr").filter({ has: page.getByRole("cell", { name: "Alabama", exact: true }) }).innerText();
+      await page.getByTestId("conference-filter").selectOption("SEC");
+      const filtered = await table.locator("tbody tr").filter({ has: page.getByRole("cell", { name: "Alabama", exact: true }) }).innerText();
+      expect(filtered).toEqual(national);
+      await expect(table.locator("tbody tr")).toHaveCount(SEC_TEAMS);
+    }
   });
 
   test("markers are keyboard reachable; arrows move focus and a tooltip appears", async ({ page }) => {
     await page.goto("/charts?chart=efficiency&week=3");
-    const first = page.locator("g[data-team]:not([data-state='dim'])").first();
+    const first = page.locator("g[data-team]").first();
     const tooltip = page.getByTestId("chart-tooltip");
     // Focus handlers attach on hydration; retry until the tooltip responds.
     await expect(async () => {
@@ -126,8 +216,8 @@ test.describe("team charts", () => {
     expect(focused).not.toBe(firstTeam);
     await expect(tooltip).toContainText(focused ?? "");
     await expect(page.locator("g[data-team]:focus .focus-ring")).toHaveCSS("opacity", "1");
-    await expect(first).toHaveAttribute("role", "img");
-    await expect(first).toHaveAttribute("aria-label", /success rate .*EPA\/play .* plays/);
+    await expect(first).toHaveAttribute("role", "button");
+    await expect(first).toHaveAttribute("aria-label", /success rate .*PPA\/play .* plays/);
     await page.keyboard.press("Escape");
     await expect(tooltip).toHaveCount(0);
   });
@@ -151,9 +241,11 @@ test.describe("team charts", () => {
     await page.getByTestId("table-toggle").click();
     const table = page.getByTestId("chart-table");
     await expect(table.locator("tbody tr")).toHaveCount(PLOTTED);
-    await table.getByRole("button", { name: /EPA\/play/ }).click();
-    const first = await table.locator("tbody tr").first().locator("td").nth(3).innerText();
-    const last = await table.locator("tbody tr").last().locator("td").nth(3).innerText();
+    await table.getByRole("button", { name: /^PPA\/play(?:\s*[↑↓])?$/ }).click();
+    const headers = await table.locator("thead th").allTextContents();
+    const ppaColumn = headers.findIndex((header) => /^PPA\/play/.test(header));
+    const first = await table.locator("tbody tr").first().locator("td").nth(ppaColumn).innerText();
+    const last = await table.locator("tbody tr").last().locator("td").nth(ppaColumn).innerText();
     expect(parseFloat(first)).toBeLessThanOrEqual(parseFloat(last));
     await page.getByTestId("table-toggle").click();
     await expect(page.getByTestId("scatter-chart")).toBeVisible();
@@ -218,6 +310,73 @@ test.describe("team charts", () => {
         return Math.abs((navBox?.width ?? 0) - (mainBox?.width ?? 0));
       })
       .toBeLessThanOrEqual(2);
+  });
+
+  test("filtered export contains the chart population, group, metric and persistent highlight", async ({ page }) => {
+    await page.goto("/charts?chart=efficiency&week=3");
+    await page.getByTestId("conference-filter").selectOption("SEC");
+    await page.getByTestId("team-highlight").selectOption("Alabama");
+    const teams = await page.locator("g[data-team]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-team")!).sort());
+    const { file, capture } = await exportPng(page);
+    expect(capture.teams.sort()).toEqual(teams);
+    expect(capture.text).toContain("Through Week 3");
+    expect(capture.text).toContain("SEC");
+    expect(capture.text).toContain("PPA/play");
+    expect(capture.text).toContain("Highlight: Alabama");
+    const labelBox = await page.getByTestId("highlight-label").boundingBox();
+    const axisBox = await page.getByTestId("scatter-chart").locator("svg > text").first().boundingBox();
+    expect(labelBox!.y + labelBox!.height).toBeLessThan(axisBox!.y);
+    fs.mkdirSync("test-results/chart-visuals", { recursive: true });
+    fs.copyFileSync(file, "test-results/chart-visuals/filtered-scatter-export.png");
+    await page.screenshot({ path: "test-results/chart-visuals/filtered-scatter-desktop.png", fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: "test-results/chart-visuals/filtered-scatter-mobile.png", fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  });
+
+  test("net-success export includes exactly the selected group's table games", async ({ page }) => {
+    await page.goto("/charts?chart=net-success&week=3");
+    await page.getByTestId("conference-filter").selectOption("SEC");
+    const games = await page.locator("g[data-game]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-game")!).sort());
+    await page.getByTestId("table-toggle").click();
+    await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(games.length);
+    const { capture } = await exportPng(page);
+    expect(capture.games.sort()).toEqual(games);
+    expect(capture.text).toContain("Week 3");
+    expect(capture.text).toContain("SEC");
+  });
+
+  test("dense national scatter stays responsive and exports readable labels", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/charts?chart=efficiency&week=2&fixture=slate");
+    await expect(page.locator("g[data-team]")).toHaveCount(138);
+    fs.mkdirSync("test-results/chart-visuals", { recursive: true });
+    await page.screenshot({ path: "test-results/chart-visuals/dense-national-desktop.png", fullPage: true });
+    const { file } = await exportPng(page);
+    fs.copyFileSync(file, "test-results/chart-visuals/dense-national-export.png");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: "test-results/chart-visuals/dense-national-mobile.png", fullPage: true });
+    const scroll = page.getByTestId("scatter-scroll");
+    await expect(scroll).toHaveAttribute("tabindex", "0");
+    expect(await scroll.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+    await scroll.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => scroll.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  });
+
+  test("touch activation selects a team while controls remain within the mobile viewport", async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+    const page = await context.newPage();
+    await page.goto("/charts?chart=efficiency&week=3");
+    const mark = page.locator("g[data-team='Boise State']");
+    await mark.tap();
+    await expect(mark).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("chart-tooltip")).toContainText("Boise State");
+    await mark.tap();
+    await expect(mark).toHaveAttribute("aria-pressed", "false");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    await context.close();
   });
 
   test("PNG export of a scatter is 2000x1125 with every logo decoded", async ({ page }) => {

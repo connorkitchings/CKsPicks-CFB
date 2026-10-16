@@ -1,6 +1,6 @@
 "use client";
 
-import { domainFor, isoNetSegments, niceTicks, type Domain, type ScatterPoint } from "@/lib/charts";
+import { isoNetSegments, niceTicks, type Domain, type ScatterPoint } from "@/lib/charts";
 import { TeamMark } from "./TeamMark";
 import { useChartSelection } from "./useChartSelection";
 
@@ -8,6 +8,9 @@ export type MarkerState = "active" | "dim" | "searched";
 
 export type ScatterChartProps = {
   points: readonly ScatterPoint[];
+  xDomain: Domain;
+  yDomain: Domain;
+  onToggleHighlight: (team: string) => void;
   average: { x: number; y: number } | null;
   invertX: boolean;
   invertY: boolean;
@@ -40,6 +43,9 @@ function rank(state: MarkerState): number {
 
 export function ScatterChart({
   points,
+  xDomain,
+  yDomain,
+  onToggleHighlight,
   average,
   invertX,
   invertY,
@@ -57,8 +63,8 @@ export function ScatterChart({
   label,
 }: ScatterChartProps) {
   const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom };
-  const xd = domainFor([...points.map((p) => p.x), ...(average ? [average.x] : [])], 0.08);
-  const yd = domainFor([...points.map((p) => p.y), ...(average ? [average.y] : [])], 0.08);
+  const xd = xDomain;
+  const yd = yDomain;
   const fraction = (value: number, domain: Domain) => (value - domain[0]) / (domain[1] - domain[0]);
   const sx = (v: number) => plot.left + (invertX ? 1 - fraction(v, xd) : fraction(v, xd)) * (plot.right - plot.left);
   const sy = (v: number) => plot.top + (invertY ? fraction(v, yd) : 1 - fraction(v, yd)) * (plot.bottom - plot.top);
@@ -71,7 +77,7 @@ export function ScatterChart({
   const tip = interactive && selected ? points.find((p) => p.team === selected) : undefined;
 
   return (
-    <div className="relative" data-testid="scatter-chart">
+    <div className="relative" data-testid="scatter-chart" data-x-domain={xd.join(",")} data-y-domain={yd.join(",")}>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
         <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-card)" stroke="var(--line)" />
         {niceTicks(xd[0], xd[1], 6).map((tick) => (
@@ -103,17 +109,18 @@ export function ScatterChart({
           />
         ))}
         {average && (
-          <g stroke="var(--ink-faint)" strokeDasharray="6 5" strokeWidth={1.1} data-testid="average-lines">
+          <g stroke="var(--ink-faint)" strokeDasharray="6 5" strokeWidth={1.1} data-testid="average-lines" data-average-x={average.x} data-average-y={average.y}>
             <line x1={sx(average.x)} x2={sx(average.x)} y1={plot.top} y2={plot.bottom} />
             <line x1={plot.left} x2={plot.right} y1={sy(average.y)} y2={sy(average.y)} />
           </g>
         )}
-        {cornerLabels && (
-          <g fontSize={13} fontWeight={600} fill="var(--ink-muted)" data-testid="corner-labels">
-            <text x={plot.left + 10} y={plot.top + 20}>Bad Offense, Good Defense</text>
-            <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">Good Offense, Good Defense</text>
-            <text x={plot.left + 10} y={plot.bottom - 10}>Bad Offense, Bad Defense</text>
-            <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">Good Offense, Bad Defense</text>
+        {average && (
+          <g fontSize={12} fontWeight={500} fill="var(--ink-faint)" data-testid="corner-labels" pointerEvents="none">
+            <text x={plot.left + 10} y={plot.top + 20}>{cornerLabels ? "Lower offense / Better defense" : invertX ? "Higher allowed success / Lower allowed PPA" : "Lower success / Higher PPA"}</text>
+            <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">{cornerLabels ? "Better offense / Better defense" : invertX ? "Lower allowed success / Lower allowed PPA" : "Higher success / Higher PPA"}</text>
+            <text x={plot.left + 10} y={plot.bottom - 10}>{cornerLabels ? "Lower offense / Higher defense allowed" : invertX ? "Higher allowed success / Higher allowed PPA" : "Lower success / Lower PPA"}</text>
+            <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">{cornerLabels ? "Better offense / Higher defense allowed" : invertX ? "Lower allowed success / Higher allowed PPA" : "Higher success / Lower PPA"}</text>
+            <text x={plot.left + 10} y={plot.top + 37} fontSize={10}>Relative to play-weighted FBS averages{cornerLabels ? "; diagonals: equal net PPA (offense − defense allowed)" : ""}</text>
           </g>
         )}
         <text x={(plot.left + plot.right) / 2} y={height - 10} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--ink)">
@@ -128,11 +135,19 @@ export function ScatterChart({
           const cx = sx(p.x);
           const cy = sy(p.y);
           const focusable = interactive && state !== "dim";
+          // Keep the persistent name inside the plot, including bottom and side edges.
+          const labelHalfWidth = p.team.length * 4;
+          const labelX = Math.max(plot.left + labelHalfWidth + 4, Math.min(cx, plot.right - labelHalfWidth - 4));
+          const labelY = Math.max(plot.top + 14, Math.min(
+            cy + size / 2 + 20 > plot.bottom ? cy - size / 2 - 10 : cy + size / 2 + 16,
+            plot.bottom - 8,
+          ));
           return (
             <g
               key={p.team}
               ref={register(p.team)}
-              role="img"
+              role={interactive ? "button" : "img"}
+              aria-pressed={interactive ? state === "searched" : undefined}
               aria-label={describe(p)}
               aria-hidden={state === "dim" ? true : undefined}
               tabIndex={focusable ? 0 : undefined}
@@ -141,10 +156,18 @@ export function ScatterChart({
               data-state={state}
               className="outline-none [&:focus-visible>circle.focus-ring]:opacity-100"
               {...(focusable ? handlers(p.team) : {})}
+              onClick={focusable ? () => { handlers(p.team).onFocus(); onToggleHighlight(p.team); } : undefined}
+              onKeyDown={focusable ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onToggleHighlight(p.team);
+                } else handlers(p.team).onKeyDown(event);
+              } : undefined}
             >
               {interactive && <circle className="focus-ring opacity-0" cx={cx} cy={cy} r={size / 2 + 3} fill="none" stroke="var(--accent)" strokeWidth={2.5} />}
               {state === "searched" && <circle cx={cx} cy={cy} r={size / 2 + 3} fill="var(--accent-soft)" stroke="var(--accent)" strokeWidth={2.5} />}
               <TeamMark team={p.team} cx={cx} cy={cy} size={size} />
+              {state === "searched" && <text x={labelX} y={labelY} textAnchor="middle" data-testid="highlight-label" fontSize={13} fontWeight={700} fill="var(--ink)" stroke="var(--surface-card)" strokeWidth={3} paintOrder="stroke">{p.team}</text>}
             </g>
           );
         })}

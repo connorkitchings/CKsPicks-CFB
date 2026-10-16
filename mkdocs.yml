@@ -36,6 +36,7 @@ nav:
   - Operations:
       - Weekly Operational Runbook: ops/weekly_runbook.md
   - Research Notes:
+      - Chart Explosiveness Comparison: research/chart-explosiveness-comparison-2026-10-16.md
       - Data-First Capture: ops/data_first_capture.md
       - Ratings Laboratory v1: research/ratings-lab-v1.md
       - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md

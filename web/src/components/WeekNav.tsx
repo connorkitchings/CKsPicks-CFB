@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import clsx from "clsx";
 
 /**
@@ -8,8 +9,8 @@ import clsx from "clsx";
  * season. Selecting or arrowing swaps the `?season=&week=` query params,
  * which the server component in app/page.tsx reads to fetch the right slice.
  *
- * Anchor-style navigation (full RSC refresh) is preferred over client state
- * so URLs stay shareable and ISR caches each combination.
+ * Client navigation keeps URLs shareable while preserving chart selections;
+ * the server reads each URL window and ISR caches each combination.
  */
 export function WeekNav({
   season,
@@ -62,14 +63,16 @@ export function WeekNav({
         compact ? "w-full sm:w-auto" : "rounded-xl border border-line bg-surface-card p-2 shadow-sm",
       )}
     >
-      <a
-        href={prev !== null ? hrefFor(prev) : undefined}
+      <Link
+        href={prev !== null ? hrefFor(prev) : "#"}
+        aria-disabled={prev === null}
+        tabIndex={prev === null ? -1 : undefined}
         aria-label={`Previous ${noun.toLowerCase()}`}
         className={clsx(arrow, compact ? "h-10 w-10 shrink-0" : "h-9 w-9", prev === null && "pointer-events-none opacity-40")}
       >
         {/* left arrow */}
         <span aria-hidden>&larr;</span>
-      </a>
+      </Link>
 
       <div className="flex items-center text-sm">
         <label htmlFor="week-select" className="sr-only">
@@ -92,13 +95,15 @@ export function WeekNav({
         </select>
       </div>
 
-      <a
-        href={next !== null ? hrefFor(next) : undefined}
+      <Link
+        href={next !== null ? hrefFor(next) : "#"}
+        aria-disabled={next === null}
+        tabIndex={next === null ? -1 : undefined}
         aria-label={`Next ${noun.toLowerCase()}`}
         className={clsx(arrow, compact ? "h-10 w-10 shrink-0" : "h-9 w-9", next === null && "pointer-events-none opacity-40")}
       >
         <span aria-hidden>&rarr;</span>
-      </a>
+      </Link>
     </nav>
   );
 }

@@ -10,6 +10,7 @@
 | [Season operations and Week 7 bridge](2026-10-14/01-season-operations-and-week7-bridge.md) | Governing atomic season workflow and first recurring update | In Progress; cutover complete; awaiting first controller weekly update. Section 4 documentation is delivered locally by Phase 2 of the review contract, awaiting its owner commit; local checks do not close the weekly-update acceptance gate. |
 | [Weekly-ingestion-repair integration](2026-10-15/03-weekly-ingestion-repair-integration.md) | Salvage the log-13 correction and fixture tests from `codex/weekly-ingestion-repair` (`bb2f1fe8`) | Implemented locally, awaiting owner commit; afterwards the two codex worktrees/branches are deleted. |
 | [Charts module: weekly team charts](2026-10-16/01-charts-module.md) | New Charts page (net-success bars, efficiency scatter, adjusted EPA/play) with atomic `charts_v1` release projections | Implemented and pushed to `dev` at `b2335ae5`; Preview migration 0026, preparation, parity, activation and chart inspection complete. Export-ring repair and accepted logo spacing are committed. Production promotion remains owner-gated; future visual tuning and export performance are follow-ups. |
+| [Chart purpose and explosiveness comparison](2026-10-16/02-chart-purpose-and-explosiveness.md) | Chart controls, PPA labels and pinned Week 7 offline comparison | Implemented locally; chart UI/PPA labels and real pinned Week 7 comparison validated. Owner metric selection precedes separate serving/publication work. |
 
 ## Supporting / In-Progress
 
