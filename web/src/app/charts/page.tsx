@@ -11,6 +11,7 @@ import {
   netSuccessWeeks,
   type AdjustedRow,
   type ChartKind,
+  type EfficiencyMetric,
   type RosterRow,
   type Side,
   type TeamGameRow,
@@ -36,7 +37,7 @@ export const revalidate = 300;
 
 const KINDS: ChartKind[] = ["net-success", "efficiency", "adjusted"];
 
-type SearchParams = Promise<{ chart?: string; side?: string; week?: string; fixture?: string }>;
+type SearchParams = Promise<{ chart?: string; side?: string; week?: string; fixture?: string; metric?: string }>;
 
 type Loaded =
   | { state: "unsupported" }
@@ -197,7 +198,19 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         const { bars, notCharted } = netSuccessBars(rows, week);
         body = <ChartsView kind={kind} side={side} season={season} week={week} roster={roster} bars={bars} notCharted={notCharted} />;
       } else if (kind === "efficiency") {
-        body = <ChartsView kind={kind} side={side} season={season} week={week} roster={roster} scatter={efficiencyPoints(roster, rows, week, side)} />;
+        const initialMetric: EfficiencyMetric = params.metric === "yards_per_success" ? "yards_per_success" : "explosive_rate";
+        body = (
+          <ChartsView
+            kind={kind}
+            side={side}
+            season={season}
+            week={week}
+            roster={roster}
+            rows={rows}
+            initialMetric={initialMetric}
+            scatter={efficiencyPoints(roster, rows, week, side, initialMetric)}
+          />
+        );
       } else {
         // "Through Week N" is the window with as_of_week N + 1.
         let adjustedRows: AdjustedRow[] | null = null;

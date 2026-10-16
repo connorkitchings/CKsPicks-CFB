@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useMemo, useSyncExternalStore } from "react";
 import clsx from "clsx";
 import {
   CHART_FOOTNOTES,
   CHART_TITLES,
   chartSubtitle,
   conferenceOptions,
+  efficiencyPoints,
   formatEpa,
   domainFor,
   filterNetSuccessBars,
@@ -16,12 +17,14 @@ import {
   matchesSearch,
   type ChartKind,
   type ConferenceFilter,
+  type EfficiencyMetric,
   type NetSuccessBar,
   type NotCharted,
   type RosterRow,
   type ScatterData,
   type ScatterPoint,
   type Side,
+  type TeamGameRow,
 } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
 import { ChartTable, type TableColumn } from "./ChartTable";
@@ -40,6 +43,8 @@ export type ChartsViewProps = {
   /** Net-success bars. */
   bars?: NetSuccessBar[] | null;
   notCharted?: NotCharted[];
+  rows?: TeamGameRow[];
+  initialMetric?: EfficiencyMetric;
 };
 
 const SCATTER_VIEW = { width: 1000, height: 640 };
@@ -62,17 +67,24 @@ function conferenceLabel(conference: string | null): string {
   return conference ?? "Independent";
 }
 
-export function ChartsView({ kind, side, season, week, roster, scatter, bars, notCharted = [] }: ChartsViewProps) {
+export function ChartsView({ kind, side, season, week, roster, scatter, bars, notCharted = [], rows, initialMetric }: ChartsViewProps) {
   const [filter, setFilter] = useState<ConferenceFilter>("all");
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState<string | null>(null);
   const [asTable, setAsTable] = useState(false);
+  const [efficiencyMetric, setEfficiencyMetric] = useState<EfficiencyMetric>(initialMetric ?? "explosive_rate");
   const narrow = useSyncExternalStore(subscribeNarrow, isNarrow, serverWide);
 
+  const activeScatter: (ScatterData & { netLevels?: number[] }) | null | undefined = useMemo(() => {
+    if (kind !== "efficiency") return scatter;
+    if (efficiencyMetric === "ppa" && scatter) return scatter;
+    return efficiencyPoints(roster, rows ?? [], week, side, efficiencyMetric);
+  }, [kind, efficiencyMetric, scatter, roster, rows, week, side]);
+
   const eligibleRoster = roster.filter((r) => matchesConference(filter, r.team, r.conference));
-  const filteredPoints = (scatter?.points ?? []).filter((p) => matchesConference(filter, p.team, p.conference));
+  const filteredPoints = (activeScatter?.points ?? []).filter((p) => matchesConference(filter, p.team, p.conference));
   const filteredBars = filterNetSuccessBars(bars ?? [], roster, filter);
-  const ranks = scatter ? scatterRanks(scatter) : new Map<string, { x: number; y: number }>();
+  const ranks = activeScatter ? scatterRanks(activeScatter) : new Map<string, { x: number; y: number }>();
   const highlightAvailable = filteredPoints.some((p) => p.team === highlight);
   function pointState(p: ScatterPoint): MarkerState {
     return p.team === highlight ? "searched" : "active";
@@ -84,38 +96,57 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
   const subtitle = chartSubtitle(kind, season, week, side);
   const adjusted = kind === "adjusted";
   const xLabel = adjusted ? "Adjusted offense PPA/play" : "Success Rate";
-  const yLabel = adjusted ? "Adjusted defense PPA/play allowed" : "PPA/play";
+  const yLabel = adjusted
+    ? "Adjusted defense PPA/play allowed"
+    : efficiencyMetric === "explosive_rate"
+    ? (side === "defense" ? "20+ Yard Play Rate Allowed" : "20+ Yard Play Rate")
+    : efficiencyMetric === "yards_per_success"
+    ? (side === "defense" ? "Yards / Success Allowed" : "Yards / Successful Play")
+    : "PPA/play";
   const formatX = adjusted ? formatEpa : (v: number) => formatPercent(v);
-  const formatY = formatEpa;
+  const formatY = adjusted
+    ? formatEpa
+    : efficiencyMetric === "explosive_rate"
+    ? (v: number) => formatPercent(v)
+    : efficiencyMetric === "yards_per_success"
+    ? (v: number) => `${v.toFixed(1)} yds`
+    : formatEpa;
 
   function describePoint(p: ScatterPoint): string {
     const where = conferenceLabel(p.conference);
-    return adjusted
-      ? `${p.team} (${where}): adjusted offense ${formatEpa(p.x)}, adjusted defense allowed ${formatEpa(p.y)} PPA/play`
-      : `${p.team} (${where}): success rate ${formatPercent(p.x)}, PPA/play ${formatEpa(p.y)}, ${p.n} plays`;
+    if (adjusted) {
+      return `${p.team} (${where}): adjusted offense ${formatEpa(p.x)}, adjusted defense allowed ${formatEpa(p.y)} PPA/play`;
+    }
+    if (efficiencyMetric === "explosive_rate") {
+      return `${p.team} (${where}): success rate ${formatPercent(p.x)}, 20+ yard rate ${formatPercent(p.y)}, ${p.n} plays`;
+    }
+    if (efficiencyMetric === "yards_per_success") {
+      return `${p.team} (${where}): success rate ${formatPercent(p.x)}, yards/success ${p.y.toFixed(2)} yds, ${p.n} plays`;
+    }
+    return `${p.team} (${where}): success rate ${formatPercent(p.x)}, PPA/play ${formatEpa(p.y)}, ${p.n} plays`;
   }
   function describeBar(b: NetSuccessBar): string {
     return `${b.winner} beat ${b.loser} ${b.winnerPoints}-${b.loserPoints}: offensive success rate ${formatPercent(b.winnerSuccessRate)} to ${formatPercent(b.loserSuccessRate)}, winner's success-rate ${b.value >= 0 ? "advantage" : "disadvantage"} ${Math.abs(b.value * 100).toFixed(1)} percentage points`;
   }
 
   const hasData = kind === "net-success" ? Boolean(filteredBars.length) : Boolean(filteredPoints.length);
-  const unavailable = kind === "net-success" ? [] : (scatter?.unavailable ?? []).filter((team) => eligibleRoster.some((r) => r.team === team));
+  const unavailable = kind === "net-success" ? [] : (activeScatter?.unavailable ?? []).filter((team) => eligibleRoster.some((r) => r.team === team));
 
   const scatterChart = (view: { width: number; height: number }, interactive: boolean) =>
-    scatter ? (
+    activeScatter ? (
       <ScatterChart
         points={filteredPoints}
-        xDomain={domainFor([...scatter.points.map((p) => p.x), ...(scatter.average ? [scatter.average.x] : [])], 0.08)}
-        yDomain={domainFor([...scatter.points.map((p) => p.y), ...(scatter.average ? [scatter.average.y] : [])], 0.08)}
+        xDomain={domainFor([...activeScatter.points.map((p) => p.x), ...(activeScatter.average ? [activeScatter.average.x] : [])], 0.08)}
+        yDomain={domainFor([...activeScatter.points.map((p) => p.y), ...(activeScatter.average ? [activeScatter.average.y] : [])], 0.08)}
         onToggleHighlight={toggleHighlight}
-        average={scatter.average}
-        invertX={scatter.invertX}
-        invertY={scatter.invertY}
+        average={activeScatter.average}
+        invertX={activeScatter.invertX}
+        invertY={activeScatter.invertY}
         xLabel={xLabel}
         yLabel={yLabel}
         width={view.width}
         height={view.height}
-        netLevels={adjusted ? scatter.netLevels : undefined}
+        netLevels={adjusted ? activeScatter.netLevels : undefined}
         cornerLabels={adjusted}
         stateOf={pointState}
         describe={describePoint}
@@ -128,10 +159,20 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
 
   const barCount = filteredBars.length;
   const groupLabel = filter === "all" ? "All FBS" : filter === "p4" ? "Power Four + Notre Dame" : filter;
-  const viewSubtitle = `${subtitle} | ${groupLabel}${kind === "net-success" ? "" : ` | Highlight: ${highlight ?? "None"}${highlight && !highlightAvailable ? " (unavailable in this window)" : ""}`}`;
+  const metricLabel = efficiencyMetric === "explosive_rate" ? "20+ Yard Rate" : efficiencyMetric === "yards_per_success" ? "Yards / Success" : "PPA/play";
+  const viewSubtitle = `${subtitle} | ${groupLabel}${kind === "efficiency" ? ` | ${metricLabel}` : ""}${kind === "net-success" ? "" : ` | Highlight: ${highlight ?? "None"}${highlight && !highlightAvailable ? " (unavailable in this window)" : ""}`}`;
   const exportWidth = kind === "net-success" ? netSuccessWidth(barCount) : EXPORT_SCATTER.width;
   const exportHeight = EXPORT_SCATTER.height;
   const exportChartHeight = exportHeight - EXPORT_HEADER - EXPORT_FOOTER;
+
+  const footnote =
+    kind === "efficiency"
+      ? efficiencyMetric === "explosive_rate"
+        ? "Cumulative success rate and 20+ yard play rate on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are FBS averages. On defense, axes are inverted so up and right is better. Research comparison dataset."
+        : efficiencyMetric === "yards_per_success"
+        ? "Cumulative success rate and yards per successful play on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are FBS averages. On defense, axes are inverted so up and right is better. Research comparison dataset."
+        : CHART_FOOTNOTES[kind]
+      : CHART_FOOTNOTES[kind];
 
   const exportCard = (
     <div className="flex h-full flex-col" data-testid="export-card">
@@ -155,7 +196,7 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
         )}
       </div>
       <div className="px-5 text-[11px] leading-snug text-ink-muted" style={{ height: EXPORT_FOOTER }}>
-        {CHART_FOOTNOTES[kind]} ckspicks-cfb.vercel.app
+        {footnote} ckspicks-cfb.vercel.app
       </div>
     </div>
   );
@@ -191,6 +232,37 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
       </header>
       <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-inset p-3 lg:flex-row lg:items-end lg:justify-between" data-testid="chart-controls">
         <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:flex" role="group" aria-label="Find teams">
+          {kind === "efficiency" && (
+            <div className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted" data-testid="efficiency-metric-switcher">
+              <span>Explosiveness metric</span>
+              <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-card p-1">
+                <button
+                  type="button"
+                  onClick={() => setEfficiencyMetric("explosive_rate")}
+                  aria-pressed={efficiencyMetric === "explosive_rate"}
+                  className={clsx(
+                    "inline-flex min-h-8 items-center rounded-md px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    efficiencyMetric === "explosive_rate" ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:text-ink hover:bg-surface-inset",
+                  )}
+                  data-testid="metric-toggle-explosive-rate"
+                >
+                  20+ Yard Rate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEfficiencyMetric("yards_per_success")}
+                  aria-pressed={efficiencyMetric === "yards_per_success"}
+                  className={clsx(
+                    "inline-flex min-h-8 items-center rounded-md px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    efficiencyMetric === "yards_per_success" ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:text-ink hover:bg-surface-inset",
+                  )}
+                  data-testid="metric-toggle-yards-per-success"
+                >
+                  Yards / Success
+                </button>
+              </div>
+            </div>
+          )}
           <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted">
             Conference
             <select
@@ -302,7 +374,7 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
           </p>
         </details>
       )}
-      <p className="text-[11px] leading-relaxed text-ink-faint">{CHART_FOOTNOTES[kind]}</p>
+      <p className="text-[11px] leading-relaxed text-ink-faint">{footnote}</p>
     </section>
   );
 }

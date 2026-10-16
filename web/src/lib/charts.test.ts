@@ -234,9 +234,25 @@ test("team metadata falls back when a school has no published colors", () => {
 
 test("titles and subtitles follow the reference charts", () => {
   assert.equal(CHART_TITLES["net-success"], "Did We Really Get Beat That Bad?");
+  assert.equal(CHART_TITLES["efficiency"], "Efficiency vs Explosiveness");
   assert.equal(chartSubtitle("efficiency", 2026, 7, "offense"), "Offense | 2026 | FBS vs FBS | Through Week 7");
   assert.equal(chartSubtitle("adjusted", 2026, 3, "defense"), "2026 | FBS vs FBS | Through Week 3");
   assert.equal(chartSubtitle("net-success", 2026, 0, "offense"), "Week 0 | 2026 | FBS vs FBS");
+});
+
+test("efficiency: explosiveness metrics (20+ yard rate and yards/success) pull correctly", () => {
+  const fbsRoster = [{ team: "Alabama", conference: "SEC" }, { team: "Georgia", conference: "SEC" }];
+  const erOffense = efficiencyPoints(fbsRoster, [], 6, "offense", "explosive_rate");
+  const alabamaEr = erOffense.points.find((p) => p.team === "Alabama")!;
+  assert.equal(alabamaEr.y, 0.10864);
+  assert.equal(alabamaEr.x, 0.49721);
+  assert.equal(alabamaEr.n, 359);
+  assert.equal(erOffense.invertY, false);
+
+  const ysDefense = efficiencyPoints(fbsRoster, [], 6, "defense", "yards_per_success");
+  const alabamaYs = ysDefense.points.find((p) => p.team === "Alabama")!;
+  assert.ok(alabamaYs.y > 0);
+  assert.equal(ysDefense.invertY, true);
 });
 
 test("bar colors keep a visible mid-tone on both themes", () => {

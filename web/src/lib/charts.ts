@@ -1,4 +1,5 @@
 import { teamAbbr } from "./team-logos.ts";
+import { EXPLOSIVENESS_DATA, EXPLOSIVENESS_AVERAGES } from "./explosiveness-data.generated.ts";
 
 /**
  * Pure transforms for the weekly team charts. Inputs are the rows of the release's
@@ -9,6 +10,7 @@ import { teamAbbr } from "./team-logos.ts";
 
 export type ChartKind = "net-success" | "efficiency" | "adjusted";
 export type Side = "offense" | "defense";
+export type EfficiencyMetric = "ppa" | "explosive_rate" | "yards_per_success";
 
 export type RosterRow = { team: string; conference: string | null };
 
@@ -204,7 +206,35 @@ export function efficiencyPoints(
   rows: readonly TeamGameRow[],
   throughWeek: number,
   side: Side,
+  metric: EfficiencyMetric = "ppa",
 ): ScatterData {
+  if (metric === "explosive_rate" || metric === "yards_per_success") {
+    const points: ScatterPoint[] = [];
+    const unavailable: string[] = [];
+    for (const { team, conference } of roster) {
+      const key = `${throughWeek}:${side}:${team}`;
+      const entry = EXPLOSIVENESS_DATA[key];
+      if (!entry || entry.sr === null || (metric === "explosive_rate" ? entry.er === null : entry.ys === null)) {
+        unavailable.push(team);
+        continue;
+      }
+      const yVal = metric === "explosive_rate" ? entry.er! : entry.ys!;
+      points.push({ team, conference, x: entry.sr, y: yVal, n: entry.n });
+    }
+    points.sort(byTeam);
+    unavailable.sort();
+    const avgKey = `${throughWeek}:${side}`;
+    const avgEntry = EXPLOSIVENESS_AVERAGES[avgKey];
+    let average: { x: number; y: number } | null = null;
+    if (avgEntry && avgEntry.sr !== null) {
+      const avgY = metric === "explosive_rate" ? avgEntry.er : avgEntry.ys;
+      if (avgY !== null && avgY !== undefined) {
+        average = { x: avgEntry.sr, y: avgY };
+      }
+    }
+    return { points, average, unavailable, invertX: side === "defense", invertY: side === "defense" };
+  }
+
   const prefix = side === "offense" ? "off" : "def";
   const sums = new Map<string, { sn: number; ss: number; en: number; es: number }>();
   const rosterNames = new Set(roster.map((r) => r.team));
@@ -403,7 +433,7 @@ export function domainFor(values: readonly number[], pad = 0.06): Domain {
 
 export const CHART_TITLES: Record<ChartKind, string> = {
   "net-success": "Did We Really Get Beat That Bad?",
-  efficiency: "Efficiency and PPA/play",
+  efficiency: "Efficiency vs Explosiveness",
   adjusted: "Opponent-adjusted PPA/play",
 };
 
@@ -425,7 +455,7 @@ export const CHART_FOOTNOTES: Record<ChartKind, string> = {
   "net-success":
     "Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded). Label = winner and final score. Reconstructed from this release's data.",
   efficiency:
-    "Cumulative success rate and CFBD Predicted Points Added/play (valid PPA only) on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are FBS averages. On defense, axes are inverted so up and right is better. Reconstructed from this release's data.",
+    "Cumulative success rate and explosiveness on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are FBS averages. On defense, axes are inverted so up and right is better. Reconstructed from this release's data.",
   adjusted:
     "PPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. Dashed lines are play-weighted FBS averages; diagonals mark equal net (offense minus defense allowed). Reconstructed from this release's data.",
 };
