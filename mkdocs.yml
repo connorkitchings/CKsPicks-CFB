@@ -21,6 +21,7 @@ nav:
       - Rating-System Requirements: modeling/rating_system_requirements.md
       - Possession Rating Methodology: modeling/possession_rating_methodology.md
       - Measurement Catalog: modeling/measurement_catalog.md
+      - Team Charts Methodology: modeling/team_charts_methodology.md
       - Evaluation: modeling/evaluation.md
       - V4 Regime Contract: modeling/early_season_regimes.md
   - Data Platform:

@@ -4,7 +4,7 @@ import { eq, getTableName, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import { PgDialect } from "drizzle-orm/pg-core";
 import * as schema from "./schema.ts";
-import { seasonReleaseDb, RELEASE_PROJECTIONS, RELEASE_TABLES } from "./season-release-query.ts";
+import { seasonReleaseDb, CHARTS_V1_KEYS, CHART_RELEASE_TABLES, CORE_RELEASE_TABLES, RELEASE_PROJECTIONS } from "./season-release-query.ts";
 import { createReleaseContextResolver, loadReleaseContext, releaseEnvironment } from "./season-release-context.ts";
 
 const db = drizzle.mock({ schema });
@@ -18,13 +18,13 @@ test("all serving relations and immutable run membership use a bound fixed relea
   const identity = "release-'injection";
   const query = seasonReleaseDb(db, identity).select({ gameId: schema.games.gameId })
     .from(schema.games).where(eq(schema.games.season, 2026)).toSQL();
-  for (const table of RELEASE_TABLES) {
+  for (const table of CORE_RELEASE_TABLES) {
     const name = getTableName(schema[table]);
     assert.ok(query.sql.includes(`"${name}" as (`), name);
     assert.ok(query.sql.includes(`"season_release_${name}"`), name);
   }
   assert.equal(query.sql.includes(identity), false);
-  assert.equal(query.params.filter((value) => value === identity).length, RELEASE_TABLES.length + 1);
+  assert.equal(query.params.filter((value) => value === identity).length, CORE_RELEASE_TABLES.length + 1);
   assert.match(query.sql, /public\.prediction_runs/);
   assert.match(query.sql, /SELECT run_id FROM season_release_site_week_selections WHERE release_id = \$/);
 });
@@ -87,4 +87,48 @@ test("missing-projection probe binds the projection names as one text[] paramete
   assert.match(rendered.sql, /unnest\(\$1::text\[\]\)/);
   assert.equal(rendered.sql.includes("($1,"), false);
   assert.deepEqual(rendered.params, [RELEASE_PROJECTIONS]);
+});
+
+test("chart CTEs are added only with charts enabled and bind the same release id", () => {
+  const without = seasonReleaseDb(db, "release-a").select().from(schema.games).toSQL();
+  const withCharts = seasonReleaseDb(db, "release-a", { charts: true }).select().from(schema.teamSeasonRoster).toSQL();
+  for (const key of CHART_RELEASE_TABLES) {
+    const name = getTableName(schema[key]);
+    assert.equal(without.sql.includes(`"season_release_${name}"`), false, name);
+    assert.ok(withCharts.sql.includes(`"${name}" as (`), name);
+    assert.ok(withCharts.sql.includes(`"season_release_${name}"`), name);
+  }
+  assert.equal(withCharts.params.filter((value) => value === "release-a").length, CORE_RELEASE_TABLES.length + CHART_RELEASE_TABLES.length + 1);
+  assert.ok(withCharts.params.every((value) => value === "release-a"));
+  assert.equal(seasonReleaseDb(db, "release-a", { charts: false }).select().from(schema.games).toSQL().sql, without.sql);
+});
+
+test("a chart query shadows the live chart table with the release rows, never the live table", () => {
+  const query = seasonReleaseDb(db, "release-a", { charts: true })
+    .select({ team: schema.teamAdjustedEpa.team }).from(schema.teamAdjustedEpa).toSQL();
+  assert.match(query.sql, /with[\s\S]*"team_adjusted_epa" as \(select[\s\S]* from "season_release_team_adjusted_epa" AS "team_adjusted_epa" WHERE release_id = \$/i);
+});
+
+const chartsRelease = { ...release, projection_keys: [...CHARTS_V1_KEYS].reverse(), chart_relations: true };
+const resolve = (row: Record<string, unknown>) => loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [row] }, { rows: [] }]), 2026, "preview");
+
+test("chartsAvailable requires the charts_v1 set and every chart relation", async () => {
+  assert.equal((await resolve(chartsRelease))?.chartsAvailable, true);
+  const chartNames: string[] = CHART_RELEASE_TABLES.map((k) => getTableName(schema[k]));
+  const core = CHARTS_V1_KEYS.filter((key) => !chartNames.includes(key));
+  assert.equal(core.length, CORE_RELEASE_TABLES.length);
+  assert.equal((await resolve({ ...chartsRelease, projection_keys: core }))?.chartsAvailable, false);
+  assert.equal((await resolve({ ...chartsRelease, projection_keys: CHARTS_V1_KEYS.slice(1) }))?.chartsAvailable, false);
+  assert.equal((await resolve({ ...chartsRelease, projection_keys: [...CHARTS_V1_KEYS, "extra"] }))?.chartsAvailable, false);
+  assert.equal((await resolve({ ...chartsRelease, chart_relations: false }))?.chartsAvailable, false);
+  assert.equal((await resolve({ ...chartsRelease, chart_relations: null }))?.chartsAvailable, false);
+  assert.equal((await resolve(release))?.chartsAvailable, false);
+});
+
+test("a core_v1 release still resolves and serves core pages without chart relations", async () => {
+  const context = await resolve({ ...release, projection_keys: CORE_RELEASE_TABLES.map((key) => getTableName(schema[key])).sort(), chart_relations: false });
+  assert.equal(context?.releaseId, "release-a");
+  assert.equal(context?.chartsAvailable, false);
+  const query = seasonReleaseDb(db, context!.releaseId).select().from(schema.games).toSQL();
+  assert.equal(RELEASE_PROJECTIONS.some((name) => !query.sql.includes(`"${name}"`)), false);
 });

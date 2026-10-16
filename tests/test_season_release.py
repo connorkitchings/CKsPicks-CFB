@@ -12,6 +12,10 @@ import pytest
 
 from cks_picks_cfb.season import release as r
 from cks_picks_cfb.season.manifest import canonical, sha
+from cks_picks_cfb.season.projection_common import (
+    PROJECTION_SETS,
+    recognized_projection_set,
+)
 from tests.season_candidates import (
     POLICY,
     candidate,
@@ -685,3 +689,128 @@ def test_release_refuses_unpinned_or_changed_prepared_outputs(tmp_path, fault):
 
     with pytest.raises(ValueError, match="checksum"):
         _sealed_candidate(manifest, pinned)
+
+
+# ---------------------------------------------------------------- projection sets
+
+
+def retained_core_release(db, label="core"):
+    """Turn a staged charts_v1 release into a retained core_v1 one (18 tables)."""
+    release_id = stage(db, label)
+    chart_tables = set(PROJECTION_SETS["charts_v1"]) - set(PROJECTION_SETS["core_v1"])
+    for table in chart_tables:
+        db.projections.pop((release_id, table), None)
+        del db.rows[release_id]["projection_checks"][table]
+    return release_id
+
+
+def test_staging_requires_charts_v1_and_records_its_checks():
+    db = Database()
+    release_id = stage(db)
+    assert set(db.rows[release_id]["projection_checks"]) == set(
+        PROJECTION_SETS["charts_v1"]
+    )
+
+
+def test_retained_core_v1_release_reads_back_and_activates_by_its_recorded_set():
+    db = Database()
+    release_id = retained_core_release(db)
+    checks = db.rows[release_id]["projection_checks"]
+    assert recognized_projection_set(checks) == "core_v1"
+    with db.cursor() as cur:
+        assert r._readback(cur, release_id, checks, "preview") == checks
+    assert activate(db, release_id)["release_id"] == release_id
+
+
+def test_retained_core_v1_release_survives_owner_rollback():
+    db = Database()
+    old = retained_core_release(db, "old")
+    activate(db, old)
+    new = stage(db, "new")
+    activate(db, new, old)
+    db.owner = True
+    db.role = "cks_preview_migrator"
+    receipt = r.rollback_release(
+        db,
+        environment="preview",
+        season=2026,
+        release_id=old,
+        expected_previous_release_id=new,
+        owner_authorized=True,
+        decision_ref="owner rollback",
+    )
+    assert receipt["action"] == "rollback"
+    assert db.rows[old]["status"] == "active"
+
+
+def test_readback_compares_only_the_recorded_set_and_detects_drift_in_it():
+    db = Database()
+    release_id = retained_core_release(db)
+    checks = db.rows[release_id]["projection_checks"]
+    db.projections[(release_id, "games")][0]["game_id"] = 999
+    with db.cursor() as cur, pytest.raises(r.SeasonReleaseError, match="differs"):
+        r._readback(cur, release_id, checks, "preview")
+
+
+@pytest.mark.parametrize("drop", ["games", "team_adjusted_epa"])
+def test_partial_and_unknown_recorded_sets_fail_readback(drop):
+    db = Database()
+    release_id = stage(db)
+    checks = dict(db.rows[release_id]["projection_checks"])
+    del checks[drop]
+    with db.cursor() as cur, pytest.raises(r.SeasonReleaseError, match="required"):
+        r._readback(cur, release_id, checks, "preview")
+    checks = {**db.rows[release_id]["projection_checks"], "extra_table": {}}
+    with db.cursor() as cur, pytest.raises(r.SeasonReleaseError, match="required"):
+        r._readback(cur, release_id, checks, "preview")
+
+
+CHART_ONLY = set(PROJECTION_SETS["charts_v1"]) - set(PROJECTION_SETS["core_v1"])
+
+
+def test_core_v1_candidates_are_refused_at_staging():
+    db = Database()
+    full = payload_for("core-candidate")
+    core = {k: v for k, v in full.items() if k not in CHART_ONLY}
+    sealed = seal("core-candidate", core, reported_payload=full)
+    schema_for(db, full)
+    with pytest.raises(r.SeasonReleaseError, match="core_v1 candidates"):
+        r.stage_release(
+            db,
+            run_manifest_uri=manifest_uri(sealed),
+            environment="preview",
+            **sealed,
+        )
+    assert not db.rows and not db.projections
+
+
+def test_partial_set_candidates_are_refused_at_staging():
+    db = Database()
+    full = payload_for("partial")
+    partial = {k: v for k, v in full.items() if k != "team_adjusted_epa"}
+    sealed = seal("partial", partial, reported_payload=full)
+    schema_for(db, full)
+    with pytest.raises(r.SeasonReleaseError, match="complete fixed"):
+        r.stage_release(
+            db, run_manifest_uri=manifest_uri(sealed), environment="preview", **sealed
+        )
+
+
+def test_candidate_without_the_chart_reconciliation_check_is_refused():
+    def drop_check(report):
+        del report["checks"]["team_chart_reconciliation"]
+
+    db = Database()
+    sealed = candidate("no-chart-check", edit_report=drop_check)
+    with pytest.raises(r.SeasonReleaseError, match="checks missing"):
+        stage(db, sealed=sealed)
+
+
+def test_candidate_with_a_failed_chart_check_is_refused():
+    def fail(payload):
+        payload["team_game_stats"].pop()
+
+    db = Database()
+    sealed = candidate("bad-chart", edit_payload=fail)
+    with pytest.raises(ValueError):
+        stage(db, sealed=sealed)

@@ -5,6 +5,7 @@ description = "An end-to-end college football betting model that predicts point 
 requires-python = ">=3.12,<3.13"
 authors = [{ name = "Connor Kitchings", email = "connor.kitchings@gmail.com" }]
 dependencies = [
+    "numpy>=2.0",
     "pandas>=2.0",
     "scikit-learn>=1.4",
     "scipy>=1.13",

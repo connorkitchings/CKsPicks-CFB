@@ -87,6 +87,42 @@ def _sorted(table: str, rows: list[dict]) -> list[dict]:
     return sorted(rows, key=lambda row: tuple(row[k] for k in keys))
 
 
+#: game_id -> (home off plays/success/epa, away off plays/success/epa), eligible plays.
+CHART_OFFENSE = {
+    1: ((6, 6, 3.0, 6, 1.2), (5, 5, 2.0, 5, 0.5)),
+    2: ((7, 7, 4.0, 6, -0.6), (8, 7, 3.0, 8, 2.4)),
+    3: ((4, 4, 1.0, 4, -1.0), (9, 8, 5.0, 8, 1.6)),
+}
+
+
+def chart_tables() -> tuple[list[dict], list[dict]]:
+    """Roster and mirrored team-game rows of the completed synthetic games."""
+    roster = [{"season": 2026, "team": team, "conference": "Fixture"} for team in TEAMS]
+    fields = ("plays", "success_n", "success_sum", "epa_n", "epa_sum")
+    rows = []
+    for game, (home_off, away_off) in CHART_OFFENSE.items():
+        week, _, home, away, final = GAMES[game]
+        for team, opponent, site, own, other, scored, allowed in (
+            (home, away, "home", home_off, away_off, final[0], final[1]),
+            (away, home, "away", away_off, home_off, final[1], final[0]),
+        ):
+            rows.append(
+                {
+                    "season": 2026,
+                    "week": week,
+                    "game_id": game,
+                    "team": team,
+                    "opponent": opponent,
+                    "site": site,
+                    "points_for": scored,
+                    "points_against": allowed,
+                    **{f"off_{k}": v for k, v in zip(fields, own, strict=True)},
+                    **{f"def_{k}": v for k, v in zip(fields, other, strict=True)},
+                }
+            )
+    return roster, rows
+
+
 def synthetic_payload(
     release_id: str = RELEASE_ID,
     rating: str = LINEAGE["rating"],
@@ -539,6 +575,7 @@ def synthetic_payload(
         }
         for w in range(3)
     ]
+    roster, team_games = chart_tables()
     tables = {
         "prediction_runs": runs,
         "games": games,
@@ -559,6 +596,9 @@ def synthetic_payload(
         "team_possession_adjusted": adjusted,
         "team_rating_components": components,
         "site_week_selections": site,
+        "team_season_roster": roster,
+        "team_game_stats": team_games,
+        "team_adjusted_epa": [],  # active_week 2 < 3: no adjusted window yet
     }
     return {name: _sorted(name, rows) for name, rows in tables.items()}
 
@@ -677,7 +717,7 @@ NEGATIVES = {
     # prior_finals_complete
     "missing_prior_final": (
         _drop("game_results", game_id=3),
-        {"prior_finals_complete", "stats_games"},
+        {"prior_finals_complete", "stats_games", "team_chart_reconciliation"},
     ),
     "final_for_live_game": (
         _append(
@@ -688,7 +728,7 @@ NEGATIVES = {
     ),
     "negative_score": (
         _set("game_results", {"game_id": 3}, home_points=-1),
-        {"prior_finals_complete"},
+        {"prior_finals_complete", "team_chart_reconciliation"},
     ),
     # grades_recomputed
     "wrong_result": (
@@ -831,7 +871,36 @@ NEGATIVES = {
     # stats_games
     "season_stats_games": (
         _set("team_season_stats", {"team": "C"}, games=1),
-        {"stats_games"},
+        {"stats_games", "team_chart_reconciliation"},
+    ),
+    # team_chart_reconciliation
+    "chart_def_not_mirrored": (
+        _set("team_game_stats", {"game_id": 1, "team": "A"}, def_epa_sum=9.9),
+        {"team_chart_reconciliation"},
+    ),
+    "chart_points_not_mirrored": (
+        _set("team_game_stats", {"game_id": 2, "team": "C"}, points_for=99),
+        {"team_chart_reconciliation"},
+    ),
+    "chart_site_not_mirrored": (
+        _set("team_game_stats", {"game_id": 3, "team": "C"}, site="home"),
+        {"team_chart_reconciliation"},
+    ),
+    "chart_single_row_game": (
+        _drop("team_game_stats", game_id=3, team="C"),
+        {"team_chart_reconciliation"},
+    ),
+    "chart_team_outside_roster": (
+        _drop("team_season_roster", team="D"),
+        {"team_chart_reconciliation"},
+    ),
+    "chart_duplicate_roster_team": (
+        lambda p: p["team_season_roster"].append(dict(p["team_season_roster"][0])),
+        {"team_chart_reconciliation", "tables_complete"},
+    ),
+    "chart_unexpected_adjusted_row": (
+        lambda p: p["team_adjusted_epa"].append({"season": 2026}),
+        {"team_chart_reconciliation", "tables_complete"},
     ),
     "possession_games": (
         _set("team_possession_stats", {"team": "D"}, games=2),

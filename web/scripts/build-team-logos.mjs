@@ -6,6 +6,9 @@
  *
  * Flags: --dry-run  print the plan, download nothing
  *        --year N   CFBD season (default 2026)
+ *        --metadata-only  rewrite only src/lib/team-logos.generated.ts (abbreviation and
+ *                         color display metadata) after checking the teams and ids still
+ *                         match public/logos/v2/manifest.json; downloads no images
  *
  * Output (staged, then swapped in): public/logos/v2/{96,256 -> sm,lg}/{light,dark}/<id>.webp,
  * public/logos/v2/manifest.json, src/lib/team-logos.generated.ts, logo-report.json on failure.
@@ -20,6 +23,7 @@ import {
   assetPath,
   buildGeneratedTs,
   buildManifest,
+  manifestMismatches,
   parseTeams,
   sha256,
 } from "./team-logos-lib.mjs";
@@ -33,6 +37,7 @@ const REPORT = path.join(WEB, "logo-report.json");
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
+const metadataOnly = args.includes("--metadata-only");
 const yearIdx = args.indexOf("--year");
 const year = yearIdx >= 0 ? Number(args[yearIdx + 1]) : 2026;
 
@@ -66,6 +71,19 @@ async function main() {
   console.log("[logos] first three:", JSON.stringify(teams.slice(0, 3), null, 2));
   console.log(`[logos] teams without CFBD logos (ESPN fallback): ${noLogos.length}`, noLogos);
   if (dryRun) return;
+  if (metadataOnly) {
+    if (teams.length < 100) throw new Error(`only ${teams.length} teams parsed; refusing to write metadata`);
+    const manifest = JSON.parse(fs.readFileSync(path.join(OUT, "manifest.json"), "utf8"));
+    if (!Object.keys(manifest.teams ?? {}).length) throw new Error("logo manifest lists no teams");
+    const problems = manifestMismatches(teams, manifest);
+    if (problems.length) throw new Error(`teams differ from the logo manifest:\n${problems.join("\n")}`);
+    // Write beside the target and rename, so an interrupted write never truncates it.
+    fs.writeFileSync(`${GENERATED}.tmp`, buildGeneratedTs(teams));
+    fs.renameSync(`${GENERATED}.tmp`, GENERATED);
+    const missing = teams.filter((t) => !t.abbreviation || !t.color).map((t) => t.school);
+    console.log(`[logos] wrote display metadata for ${teams.length} teams; missing abbr/color: ${missing.length}`, missing);
+    return;
+  }
   if (teams.length < 100) throw new Error(`only ${teams.length} teams parsed; refusing to build`);
 
   fs.rmSync(STAGE, { recursive: true, force: true });

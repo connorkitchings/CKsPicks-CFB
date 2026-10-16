@@ -8,6 +8,7 @@ const items = [
   ["Picks", "/"],
   ["Results", "/results"],
   ["Ratings", "/ratings"],
+  ["Charts", "/charts"],
   ["Performance", "/performance"],
 ] as const;
 
@@ -65,6 +66,27 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
           />
         </svg>
       );
+    case "/charts":
+      return (
+        <svg
+          aria-hidden="true"
+          className="h-5 w-5 sm:hidden"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3.75 3v16.5a.75.75 0 00.75.75H21M7.5 15.75l3-4.5 3 2.25 4.5-6.75"
+          />
+          <circle cx="7.5" cy="15.75" r="0.9" fill="currentColor" />
+          <circle cx="10.5" cy="11.25" r="0.9" fill="currentColor" />
+          <circle cx="13.5" cy="13.5" r="0.9" fill="currentColor" />
+          <circle cx="18" cy="6.75" r="0.9" fill="currentColor" />
+        </svg>
+      );
     case "/performance":
       return (
         <svg
@@ -91,7 +113,7 @@ export function SiteNav() {
   const pathname = usePathname();
 
   // Align navigation container with page content widths on desktop.
-  const isSlate = pathname === "/" || pathname.startsWith("/results");
+  const isSlate = pathname === "/" || pathname.startsWith("/results") || pathname.startsWith("/charts");
   const wide = pathname.startsWith("/matchup");
   const containerClass = isSlate ? "sm:max-w-6xl" : wide ? "sm:max-w-5xl" : "sm:max-w-4xl";
 
@@ -102,7 +124,7 @@ export function SiteNav() {
     >
       <div
         className={clsx(
-          "mx-auto grid grid-cols-4 h-14 items-stretch px-2 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
+          "mx-auto grid grid-cols-5 h-14 items-stretch px-2 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
           containerClass,
         )}
       >

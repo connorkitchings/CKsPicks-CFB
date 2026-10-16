@@ -7,6 +7,7 @@ import pytest
 
 from cks_picks_cfb.season import projection_common as pc
 from cks_picks_cfb.season import release
+from cks_picks_cfb.season.projection_charts import CHART_KEYS
 from cks_picks_cfb.season.projection_football import FOOTBALL_KEYS
 from cks_picks_cfb.season.projection_serving import SERVING_KEYS
 
@@ -21,7 +22,7 @@ def test_projection_order_matches_release_keys():
 def test_builder_keys_partition_projection_tables():
     serving = set(SERVING_KEYS) - {"prediction_runs"}
     assert serving.isdisjoint(FOOTBALL_KEYS)
-    assert serving | set(FOOTBALL_KEYS) == set(pc.PROJECTION_ORDER)
+    assert serving | set(FOOTBALL_KEYS) | set(CHART_KEYS) == set(pc.PROJECTION_ORDER)
 
 
 def test_server_columns_are_release_and_environment():

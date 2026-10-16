@@ -26,3 +26,19 @@ export async function getSeasonDb(season = publicationScope.season) {
   const context = await getSeasonReleaseContext(season, environment);
   return dbForRelease(context?.releaseId ?? null, season, environment);
 }
+
+const chartsDbForRelease = cache((releaseId: string, season: number, environment: ReleaseEnvironment) => {
+  void season; void environment;
+  return seasonReleaseDb(db, releaseId, { charts: true });
+});
+/**
+ * Release-scoped database that includes the chart relations, or `null` when there is no
+ * active release or it was not staged with the chart projections. Chart queries never
+ * fall back to live tables.
+ */
+export async function getChartsDb(season = publicationScope.season) {
+  const environment = releaseEnvironment(process.env);
+  const context = await getSeasonReleaseContext(season, environment);
+  if (!context?.chartsAvailable) return null;
+  return chartsDbForRelease(context.releaseId, season, environment);
+}

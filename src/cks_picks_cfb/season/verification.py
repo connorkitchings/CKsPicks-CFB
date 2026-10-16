@@ -101,6 +101,7 @@ REQUIRED_PROJECTION_CHECKS: frozenset[str] = frozenset(
         "completed_counts_regime",
         "matchup_publication",
         "venues_cover",
+        "team_chart_reconciliation",
     }
 )
 REQUIRED_PREPARE_CHECKS: frozenset[str] = frozenset(
@@ -1020,6 +1021,21 @@ def _venues_cover(p: _Payload) -> tuple[list[str], dict]:
     return problems, {"venues": len(venues)}
 
 
+def _team_chart_reconciliation(p: _Payload) -> tuple[list[str], dict]:
+    from cks_picks_cfb.charts.reconciliation import chart_problems
+
+    return chart_problems(
+        roster=p.rows("team_season_roster"),
+        game_rows=p.rows("team_game_stats"),
+        adjusted_rows=p.rows("team_adjusted_epa"),
+        stats_rows=p.rows("team_season_stats"),
+        games=p.rows("games"),
+        results=p.rows("game_results"),
+        season=p.season,
+        active_week=p.active,
+    )
+
+
 _PROJECTION_CHECKS: dict[str, Callable[[_Payload], tuple[list[str], dict]]] = {
     "tables_complete": _tables_complete,
     "weeks_and_slate": _weeks_and_slate,
@@ -1035,6 +1051,7 @@ _PROJECTION_CHECKS: dict[str, Callable[[_Payload], tuple[list[str], dict]]] = {
     "completed_counts_regime": _completed_counts_regime,
     "matchup_publication": _matchup_publication,
     "venues_cover": _venues_cover,
+    "team_chart_reconciliation": _team_chart_reconciliation,
 }
 assert set(_PROJECTION_CHECKS) == REQUIRED_PROJECTION_CHECKS
 
@@ -1044,7 +1061,7 @@ def derive_checks(
 ) -> dict[str, dict]:
     """Return ``{name: check_entry}`` for exactly ``REQUIRED_PROJECTION_CHECKS``.
 
-    ``projections`` is the FULL payload (``prediction_runs`` plus the 18 tables);
+    ``projections`` is the FULL payload (``prediction_runs`` plus the ``charts_v1`` tables);
     ``manifest`` is the run manifest (or any mapping with its ``identity`` and
     ``output_refs``), see :func:`context_from_manifest`.
     """

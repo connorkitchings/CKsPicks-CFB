@@ -57,6 +57,18 @@ Contract 02 independently validates four-pass replay and membership-derived coun
 No possession artifact becomes an eligible model input merely because its schema
 or documentation exists. No catalog registration is authorized.
 
+## Team chart measurements
+
+These feed only the Charts page (see [Team Charts Methodology](team_charts_methodology.md)); they are descriptive, never rating or forecast inputs, and carry no certification claim.
+
+| Measurement | Roles | Exposure | Status |
+| --- | --- | --- | --- |
+| Success rate (`success_sum / success_n`) | Offense, defense | Eligible plays with a success flag | Reconstructed from release data; equals `team_season_stats.success_rate` |
+| EPA/play (`epa_sum / epa_n`) | Offense, defense | Eligible plays with a valid `ppa` | Reconstructed; equals `team_season_stats.ppa_per_play` |
+| Net success rate (winner offense minus loser offense) | Game | One game | Reconstructed per week |
+| Venue coefficient `h` | League window | Weighted team-game offenses | Weighted least squares; zero when not identified |
+| Adjusted EPA/play (`iterative_4pass_venue_v1`) | Offense, defense | Plays with a valid `ppa`, FBS vs FBS | Reconstructed; unchanged V5 adjuster on a venue-neutral baseline |
+
 ## Responsibility boundary
 
 ```text

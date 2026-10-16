@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 const built = fs.existsSync(path.join(process.cwd(), "public", "logos", "v2", "manifest.json"));
 
 // The pages that ship: logos render at 16-80 px on all of them.
-const PAGES = ["/", "/results", "/matchup/1"];
+const PAGES = ["/", "/results", "/matchup/1", "/charts"];
 
 test.describe("team logos", () => {
   test("every rendered logo loads and is never a broken image", async ({ page }) => {
@@ -39,11 +39,15 @@ test.describe("team logos", () => {
     for (const url of PAGES) {
       await page.goto(url);
       await page.waitForLoadState("networkidle");
-      const visible = await page.evaluate(() =>
-        [...document.querySelectorAll<HTMLImageElement>("img[data-logo]")]
+      const visible = await page.evaluate(() => [
+        ...[...document.querySelectorAll<HTMLImageElement>("img[data-logo]")]
           .filter((img) => img.offsetWidth > 0)
           .map((img) => img.src),
-      );
+        // Charts draw logos as SVG <image> pairs; the hidden variant has display: none.
+        ...[...document.querySelectorAll<SVGImageElement>("svg image")]
+          .filter((image) => getComputedStyle(image).display !== "none")
+          .map((image) => image.href.baseVal),
+      ]);
       expect(visible.length, url).toBeGreaterThan(0);
       expect(visible.every((src) => src.includes("/dark/")), url).toBe(true);
     }

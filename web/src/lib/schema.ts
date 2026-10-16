@@ -1118,3 +1118,98 @@ export const seasonReleaseSiteWeekSelections = pgTable("season_release_site_week
     reason: text("reason").notNull(),
 
 }, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.week] })]);
+
+export const teamSeasonRoster = pgTable("team_season_roster", {
+    season: integer("season").notNull(),
+    team: text("team").notNull(),
+    conference: text("conference"),
+}, (table) => [primaryKey({ columns: [table.season, table.team] })]);
+
+export const seasonReleaseTeamSeasonRoster = pgTable("season_release_team_season_roster", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    team: text("team").notNull(),
+    conference: text("conference"),
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.team] })]);
+
+export const teamGameStats = pgTable("team_game_stats", {
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    team: text("team").notNull(),
+    opponent: text("opponent").notNull(),
+    site: text("site").notNull(),
+    pointsFor: integer("points_for").notNull(),
+    pointsAgainst: integer("points_against").notNull(),
+    offPlays: integer("off_plays").notNull(),
+    offSuccessN: integer("off_success_n").notNull(),
+    offSuccessSum: doublePrecision("off_success_sum").notNull(),
+    offEpaN: integer("off_epa_n").notNull(),
+    offEpaSum: doublePrecision("off_epa_sum").notNull(),
+    defPlays: integer("def_plays").notNull(),
+    defSuccessN: integer("def_success_n").notNull(),
+    defSuccessSum: doublePrecision("def_success_sum").notNull(),
+    defEpaN: integer("def_epa_n").notNull(),
+    defEpaSum: doublePrecision("def_epa_sum").notNull(),
+}, (table) => [primaryKey({ columns: [table.season, table.gameId, table.team] })]);
+
+export const seasonReleaseTeamGameStats = pgTable("season_release_team_game_stats", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    team: text("team").notNull(),
+    opponent: text("opponent").notNull(),
+    site: text("site").notNull(),
+    pointsFor: integer("points_for").notNull(),
+    pointsAgainst: integer("points_against").notNull(),
+    offPlays: integer("off_plays").notNull(),
+    offSuccessN: integer("off_success_n").notNull(),
+    offSuccessSum: doublePrecision("off_success_sum").notNull(),
+    offEpaN: integer("off_epa_n").notNull(),
+    offEpaSum: doublePrecision("off_epa_sum").notNull(),
+    defPlays: integer("def_plays").notNull(),
+    defSuccessN: integer("def_success_n").notNull(),
+    defSuccessSum: doublePrecision("def_success_sum").notNull(),
+    defEpaN: integer("def_epa_n").notNull(),
+    defEpaSum: doublePrecision("def_epa_sum").notNull(),
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.gameId, table.team] })]);
+
+export const teamAdjustedEpa = pgTable("team_adjusted_epa", {
+    season: integer("season").notNull(),
+    asOfWeek: integer("as_of_week").notNull(),
+    team: text("team").notNull(),
+    role: text("role").notNull(),
+    rawEpaPerPlay: doublePrecision("raw_epa_per_play").notNull(),
+    venueCorrection: doublePrecision("venue_correction").notNull(),
+    neutralEpaPerPlay: doublePrecision("neutral_epa_per_play").notNull(),
+    opponentAdjustment: doublePrecision("opponent_adjustment").notNull(),
+    adjustedEpaPerPlay: doublePrecision("adjusted_epa_per_play").notNull(),
+    venueCoefficient: doublePrecision("venue_coefficient").notNull(),
+    venueIdentified: boolean("venue_identified").notNull(),
+    epaN: integer("epa_n").notNull(),
+    games: integer("games").notNull(),
+    adjustedRank: integer("adjusted_rank").notNull(),
+    cohortSize: integer("cohort_size").notNull(),
+    adjustmentMethod: text("adjustment_method").notNull(),
+}, (table) => [primaryKey({ columns: [table.season, table.asOfWeek, table.team, table.role] })]);
+
+export const seasonReleaseTeamAdjustedEpa = pgTable("season_release_team_adjusted_epa", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    asOfWeek: integer("as_of_week").notNull(),
+    team: text("team").notNull(),
+    role: text("role").notNull(),
+    rawEpaPerPlay: doublePrecision("raw_epa_per_play").notNull(),
+    venueCorrection: doublePrecision("venue_correction").notNull(),
+    neutralEpaPerPlay: doublePrecision("neutral_epa_per_play").notNull(),
+    opponentAdjustment: doublePrecision("opponent_adjustment").notNull(),
+    adjustedEpaPerPlay: doublePrecision("adjusted_epa_per_play").notNull(),
+    venueCoefficient: doublePrecision("venue_coefficient").notNull(),
+    venueIdentified: boolean("venue_identified").notNull(),
+    epaN: integer("epa_n").notNull(),
+    games: integer("games").notNull(),
+    adjustedRank: integer("adjusted_rank").notNull(),
+    cohortSize: integer("cohort_size").notNull(),
+    adjustmentMethod: text("adjustment_method").notNull(),
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.asOfWeek, table.team, table.role] })]);

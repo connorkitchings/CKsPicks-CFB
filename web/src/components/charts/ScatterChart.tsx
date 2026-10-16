@@ -1,0 +1,168 @@
+"use client";
+
+import { domainFor, isoNetSegments, niceTicks, type Domain, type ScatterPoint } from "@/lib/charts";
+import { TeamMark } from "./TeamMark";
+import { useChartSelection } from "./useChartSelection";
+
+export type MarkerState = "active" | "dim" | "searched";
+
+export type ScatterChartProps = {
+  points: readonly ScatterPoint[];
+  average: { x: number; y: number } | null;
+  invertX: boolean;
+  invertY: boolean;
+  xLabel: string;
+  yLabel: string;
+  /** ViewBox size; the SVG scales to its container. */
+  width: number;
+  height: number;
+  /** Equal-net levels (x - y) for diagonal lines, adjusted chart only. */
+  netLevels?: readonly number[];
+  /** "Good/Bad Offense/Defense" corner labels, adjusted chart only. */
+  cornerLabels?: boolean;
+  stateOf: (point: ScatterPoint) => MarkerState;
+  /** Accessible and tooltip text of one point. */
+  describe: (point: ScatterPoint) => string;
+  formatX: (value: number) => string;
+  formatY: (value: number) => string;
+  /** False in the static export card: no focus stops or tooltips. */
+  interactive?: boolean;
+  label: string;
+};
+
+const MARGIN = { top: 18, right: 22, bottom: 52, left: 84 };
+const BASE_SIZE = 26;
+const SEARCHED_SIZE = 44;
+
+function rank(state: MarkerState): number {
+  return state === "dim" ? 0 : state === "active" ? 1 : 2;
+}
+
+export function ScatterChart({
+  points,
+  average,
+  invertX,
+  invertY,
+  xLabel,
+  yLabel,
+  width,
+  height,
+  netLevels = [],
+  cornerLabels = false,
+  stateOf,
+  describe,
+  formatX,
+  formatY,
+  interactive = true,
+  label,
+}: ScatterChartProps) {
+  const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom };
+  const xd = domainFor([...points.map((p) => p.x), ...(average ? [average.x] : [])], 0.08);
+  const yd = domainFor([...points.map((p) => p.y), ...(average ? [average.y] : [])], 0.08);
+  const fraction = (value: number, domain: Domain) => (value - domain[0]) / (domain[1] - domain[0]);
+  const sx = (v: number) => plot.left + (invertX ? 1 - fraction(v, xd) : fraction(v, xd)) * (plot.right - plot.left);
+  const sy = (v: number) => plot.top + (invertY ? fraction(v, yd) : 1 - fraction(v, yd)) * (plot.bottom - plot.top);
+
+  const ordered = points.filter((p) => stateOf(p) !== "dim").map((p) => p.team);
+  const { selected, register, handlers } = useChartSelection(ordered);
+  const segments = isoNetSegments(xd, yd, netLevels);
+  // Dimmed first, then active, then the searched team on top.
+  const drawOrder = [...points].sort((a, b) => rank(stateOf(a)) - rank(stateOf(b)));
+  const tip = interactive && selected ? points.find((p) => p.team === selected) : undefined;
+
+  return (
+    <div className="relative" data-testid="scatter-chart">
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
+        <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-card)" stroke="var(--line)" />
+        {niceTicks(xd[0], xd[1], 6).map((tick) => (
+          <g key={`x${tick}`}>
+            <line x1={sx(tick)} x2={sx(tick)} y1={plot.top} y2={plot.bottom} stroke="var(--line)" strokeWidth={0.6} />
+            <text x={sx(tick)} y={plot.bottom + 18} textAnchor="middle" fontSize={12} fill="var(--ink-muted)">
+              {formatX(tick)}
+            </text>
+          </g>
+        ))}
+        {niceTicks(yd[0], yd[1], 6).map((tick) => (
+          <g key={`y${tick}`}>
+            <line x1={plot.left} x2={plot.right} y1={sy(tick)} y2={sy(tick)} stroke="var(--line)" strokeWidth={0.6} />
+            <text x={plot.left - 8} y={sy(tick)} textAnchor="end" dominantBaseline="central" fontSize={12} fill="var(--ink-muted)">
+              {formatY(tick)}
+            </text>
+          </g>
+        ))}
+        {segments.map((segment) => (
+          <line
+            key={`net${segment.net}`}
+            x1={sx(segment.from[0])}
+            y1={sy(segment.from[1])}
+            x2={sx(segment.to[0])}
+            y2={sy(segment.to[1])}
+            stroke="var(--line-strong)"
+            strokeWidth={0.8}
+            data-iso-net={segment.net}
+          />
+        ))}
+        {average && (
+          <g stroke="var(--ink-faint)" strokeDasharray="6 5" strokeWidth={1.1} data-testid="average-lines">
+            <line x1={sx(average.x)} x2={sx(average.x)} y1={plot.top} y2={plot.bottom} />
+            <line x1={plot.left} x2={plot.right} y1={sy(average.y)} y2={sy(average.y)} />
+          </g>
+        )}
+        {cornerLabels && (
+          <g fontSize={13} fontWeight={600} fill="var(--ink-muted)" data-testid="corner-labels">
+            <text x={plot.left + 10} y={plot.top + 20}>Bad Offense, Good Defense</text>
+            <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">Good Offense, Good Defense</text>
+            <text x={plot.left + 10} y={plot.bottom - 10}>Bad Offense, Bad Defense</text>
+            <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">Good Offense, Bad Defense</text>
+          </g>
+        )}
+        <text x={(plot.left + plot.right) / 2} y={height - 10} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--ink)">
+          {xLabel}
+        </text>
+        <text transform={`translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--ink)">
+          {yLabel}
+        </text>
+        {drawOrder.map((p) => {
+          const state = stateOf(p);
+          const size = state === "searched" ? SEARCHED_SIZE : BASE_SIZE;
+          const cx = sx(p.x);
+          const cy = sy(p.y);
+          const focusable = interactive && state !== "dim";
+          return (
+            <g
+              key={p.team}
+              ref={register(p.team)}
+              role="img"
+              aria-label={describe(p)}
+              aria-hidden={state === "dim" ? true : undefined}
+              tabIndex={focusable ? 0 : undefined}
+              opacity={state === "dim" ? 0.15 : 1}
+              data-team={p.team}
+              data-state={state}
+              className="outline-none [&:focus-visible>circle.focus-ring]:opacity-100"
+              {...(focusable ? handlers(p.team) : {})}
+            >
+              <circle className="focus-ring opacity-0" cx={cx} cy={cy} r={size / 2 + 3} fill="none" stroke="var(--accent)" strokeWidth={2.5} />
+              {state === "searched" && <circle cx={cx} cy={cy} r={size / 2 + 3} fill="var(--accent-soft)" stroke="var(--accent)" strokeWidth={2.5} />}
+              <TeamMark team={p.team} cx={cx} cy={cy} size={size} />
+            </g>
+          );
+        })}
+      </svg>
+      {tip && (
+        <div
+          role="status"
+          data-testid="chart-tooltip"
+          className="pointer-events-none absolute z-10 max-w-64 rounded-lg border border-line bg-surface-card px-2.5 py-1.5 text-xs leading-snug text-ink shadow-md"
+          style={{
+            left: `${(sx(tip.x) / width) * 100}%`,
+            top: `${(sy(tip.y) / height) * 100}%`,
+            transform: `translate(${sx(tip.x) > width * 0.6 ? "-105%" : "12px"}, ${sy(tip.y) > height * 0.65 ? "-105%" : "8px"})`,
+          }}
+        >
+          {describe(tip)}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -10,7 +10,11 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from cks_picks_cfb.season import projection_football, projection_serving
+from cks_picks_cfb.season import (
+    projection_charts,
+    projection_football,
+    projection_serving,
+)
 from cks_picks_cfb.season.projection_common import PROJECTION_ORDER
 from cks_picks_cfb.season.verification import lineage_identities, run_id_for
 
@@ -51,6 +55,7 @@ def build_projections(
     parts = (
         (projection_serving.SERVING_KEYS, projection_serving.build_serving_core),
         (projection_football.FOOTBALL_KEYS, projection_football.build_football),
+        (projection_charts.CHART_KEYS, projection_charts.build_charts),
     )
     tables: dict[str, list[dict]] = {}
     for keys, build in parts:

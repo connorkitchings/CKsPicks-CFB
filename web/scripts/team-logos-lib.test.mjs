@@ -4,7 +4,10 @@ import {
   assetPath,
   buildGeneratedTs,
   buildManifest,
+  cleanAbbreviation,
+  cleanColor,
   espnDarkUrl,
+  manifestMismatches,
   parseTeams,
 } from "./team-logos-lib.mjs";
 
@@ -46,4 +49,32 @@ test("assetPath, manifest and generated map are deterministic", () => {
   assert.deepEqual(Object.keys(buildManifest(entries, "2026-10-01").teams), ["1", "2"]);
   const ts = buildGeneratedTs(entries);
   assert.ok(ts.indexOf('"Alabama": 1') < ts.indexOf('"Auburn": 2'));
+});
+
+test("parseTeams keeps display metadata and nulls malformed values", () => {
+  const [good, bad] = parseTeams([
+    { id: 130, school: "Michigan", abbreviation: "mich", color: "#00274C", alternateColor: "#FFCB05", logos: [] },
+    { id: 131, school: "Plain", abbreviation: "", color: "blue", alt_color: 7, logos: [] },
+  ]);
+  assert.deepEqual([good.abbreviation, good.color, good.altColor], ["MICH", "#00274c", "#ffcb05"]);
+  assert.deepEqual([bad.abbreviation, bad.color, bad.altColor], [null, null, null]);
+  assert.equal(cleanColor("#abc"), null);
+  assert.equal(cleanAbbreviation("WAY TOO LONG"), null);
+});
+
+test("generated source carries display metadata beside the ids", () => {
+  const ts = buildGeneratedTs([
+    { id: 1, school: "Alabama", abbreviation: "ALA", color: "#9e1b32", altColor: null },
+    { id: 2, school: "Auburn" },
+  ]);
+  assert.ok(ts.includes('"Alabama": { abbr: "ALA", color: "#9e1b32", altColor: null },'));
+  assert.ok(ts.includes('"Auburn": { abbr: null, color: null, altColor: null },'));
+  assert.ok(ts.includes('"Alabama": 1,'));
+});
+
+test("metadata refresh refuses a changed team set", () => {
+  const manifest = { teams: { 1: { school: "Alabama" }, 2: { school: "Auburn" } } };
+  assert.deepEqual(manifestMismatches([{ id: 1, school: "Alabama" }, { id: 2, school: "Auburn" }], manifest), []);
+  const problems = manifestMismatches([{ id: 1, school: "Alabama" }, { id: 3, school: "New U" }], manifest);
+  assert.deepEqual(problems, ["New U (3) differs from the manifest", "Auburn (2) is absent from the response"]);
 });

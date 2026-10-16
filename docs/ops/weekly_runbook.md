@@ -11,7 +11,7 @@
 1. **Chronological Season Engine (`run_season.py`)**:
    - Reconstructs the 2026 season from Week 0 through completed weeks using pre-week observations only.
    - Computes point-in-time ratings, predictions, lines, edges, and grades.
-   - Enforces 22 strict verification rules (`season_verification_v2`).
+   - Enforces 23 strict verification rules (`season_verification_v2`).
 2. **Fixed-Schema Atomic Releases (Migration 0025)**:
    - Staging is completely isolated from live serving.
    - Activation checks owner policy, expected prior release, candidate verification, and readback hash consistency.
@@ -34,6 +34,7 @@
 
 - **Pipeline and owner credentials** live in the local macOS Keychain and are injected by the wrappers; never copy them into the repository, Vercel, shell history or logs. Vercel receives only the separate read-only web `DATABASE_URL`. `with_preview_env.sh` sets `PREVIEW_DATABASE_URL` (pipeline role) and `DATABASE_URL` (migrator role, for migrations only). Never use a pipeline or migrator connection in Vercel.
 - **Roles (Migration 0025):** the pipeline group role (`cks_pipeline`) may `SELECT`/`INSERT` `season_releases` and the `season_release_*` projection tables and activates only through `activate_season_release()`; it cannot change `season_release_policies`. The web group role (`cks_web`) has `SELECT` only. Rollback refuses any login whose role ends in `_pipeline` or `_web` (`src/cks_picks_cfb/season/release.py`).
+- **Chart tables (Migration 0026) and the `charts_v1` projection set.** Releases now carry three more projection tables (`team_season_roster`, `team_game_stats`, `team_adjusted_epa`) for the Charts page. **Apply `contracts/migrations/0026_team_chart_tables.sql` to Preview and then to Production, as the owner/migrator, before staging any release.** Staging now requires the `charts_v1` set and the `team_chart_reconciliation` verification check: a `core_v1` or partial candidate is refused, and staging fails with `projection schema missing` if 0026 is absent. Releases staged before 0026 keep their recorded `core_v1` set, so readback, activation and Production owner rollback of them still work (Preview has no supported rollback: recover Preview by preparing and releasing a new candidate, see [Rollback Procedure](#rollback-procedure)). The web app shows charts only for an active `charts_v1` release; until then `/charts` says charts arrive with the next weekly release. The pinned `teams` input must carry each team's `conference` (CFBD teams data). If the implementation merges before a weekly update but 0026 cannot be applied in time, stage that week's release from the pre-merge commit, still under the full clean-checkout, independent Preview rehearsal and owner-approved Production activation rules.
 - **Object storage:** `CFB_ARTIFACT_ENV` selects the R2 credential set (`CFB_R2_PREVIEW_*` for `preview`, `CFB_R2_*` otherwise). Both sets currently name the same bucket, `cks-picks-cfb-preview`; immutable artifacts are checksummed and environment-neutral, and environment separation is by Neon branch. Any command run *without* a wrapper defaults to `CFB_ARTIFACT_ENV=production`, so every data command below runs under a wrapper.
 - **Vercel:** the [site](https://c-ks-picks-cfb.vercel.app) (Root Directory `web/`) deploys from `main` and reads Production through `cks_prod_web`. `dev` is the working branch.
 - **Run locally against an environment:** `make web-local ENV=preview` (or `ENV=production`).
@@ -137,7 +138,7 @@ make season-prepare WEEK=<NEXT_WEEK> AS_OF="$PRE_WEEK_CUTOFF"
 
 The runner will:
 - Recompute measurements, ratings, predictions, and grades.
-- Execute the full verification suite (22 verification checks).
+- Execute the full verification suite (23 verification checks).
 - Output the candidate artifact under `artifacts/season/2026/preview/<RELEASE_ID>/`.
 - Print the candidate manifest including `release_id` and the `serving_projections` SHA-256.
 
@@ -249,7 +250,7 @@ make season-rollback RELEASE_ID=<TARGET_PRIOR_RELEASE_ID> \
 
 Both IDs may be bare (`season-2026-...`) or `production-`-prefixed. The rollback atomically reactivates the prior release's projections without deleting any data.
 
-**Preview rollback is not supported by the tooling.** `run_season.py rollback --environment preview` connects through `PREVIEW_DATABASE_URL`. `with_preview_env.sh` sets that to the `cks_preview_pipeline` login, which `release.py` refuses for rollback. No wrapper or make target supplies a Preview owner login. The code accepts any login whose session and current role match, that holds `UPDATE` on `season_release_policies`, and whose role does not end in `_pipeline` or `_web`. Whether `cks_preview_migrator` qualifies depends on database grants and has not been verified. To change what Preview serves, prepare and release a new candidate instead.
+**Preview rollback is not supported by the tooling.** `run_season.py rollback --environment preview` connects through `PREVIEW_DATABASE_URL`. `with_preview_env.sh` sets that to the `cks_preview_pipeline` login, which `release.py` refuses for rollback. No wrapper or make target supplies a Preview owner login. The code accepts any login whose session and current role match, that holds `UPDATE` on `season_release_policies`, and whose role does not end in `_pipeline` or `_web`. A read-only check on 2026-10-16 showed that `cks_preview_migrator` holds that `UPDATE` grant (it is not a superuser), but no sanctioned wrapper or CLI path uses it for Preview, so it is not a supported recovery procedure. To change what Preview serves, prepare and release a new candidate instead.
 
 ### Owner credential
 

@@ -11,7 +11,11 @@ import pytest
 
 from cks_picks_cfb.forecast.live import DEVELOPMENT_SEASONS
 from cks_picks_cfb.season import inputs as season_inputs
-from cks_picks_cfb.season import projection_football, projection_serving
+from cks_picks_cfb.season import (
+    projection_charts,
+    projection_football,
+    projection_serving,
+)
 from cks_picks_cfb.season import verification as v
 from cks_picks_cfb.season.inputs import load_inputs
 from cks_picks_cfb.season.manifest import canonical, sha
@@ -49,6 +53,11 @@ def builder_calls(monkeypatch):
         projection_football,
         "build_football",
         _fake_builder(projection_football.FOOTBALL_KEYS),
+    )
+    monkeypatch.setattr(
+        projection_charts,
+        "build_charts",
+        _fake_builder(projection_charts.CHART_KEYS),
     )
     return calls
 

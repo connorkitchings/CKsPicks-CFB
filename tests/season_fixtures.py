@@ -233,8 +233,8 @@ def raw_tables() -> dict[str, pd.DataFrame]:
         ]
     )
     teams = pd.DataFrame(
-        [{"team": t, "classification": "fbs"} for t in TEAMS]
-        + [{"team": "Echo Tech", "classification": "fcs"}]
+        [{"team": t, "classification": "fbs", "conference": "Fixture"} for t in TEAMS]
+        + [{"team": "Echo Tech", "classification": "fcs", "conference": "Other"}]
     )
     historical = pd.DataFrame(
         [

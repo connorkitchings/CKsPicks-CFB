@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
@@ -17,7 +17,13 @@ from psycopg import errors, sql
 from psycopg.types.json import Jsonb
 
 from cks_picks_cfb.ops.v5_release import assert_v5_database_environment
-from cks_picks_cfb.season.projection_common import PROJECTION_ORDER, SERVER_COLUMNS
+from cks_picks_cfb.season.projection_common import (
+    PROJECTION_ORDER,
+    PROJECTION_SETS,
+    SERVER_COLUMNS,
+    STAGING_PROJECTION_SET,
+    recognized_projection_set,
+)
 
 PROJECTION_KEYS = {
     "games": ("game_id",),
@@ -50,6 +56,9 @@ PROJECTION_KEYS = {
     ),
     "team_rating_components": ("component_id",),
     "site_week_selections": ("season", "week"),
+    "team_season_roster": ("season", "team"),
+    "team_game_stats": ("season", "game_id", "team"),
+    "team_adjusted_epa": ("season", "as_of_week", "team", "role"),
 }
 IDENTITY_FIELDS = (
     "season",
@@ -118,6 +127,8 @@ def validate_candidate(
 
     derive = derive or verifier.derive_checks
     validate = validate or verifier.validate_report
+    if isinstance(projections, Mapping):
+        _require_staging_set(set(projections) - {"prediction_runs"})
     if manifest.get("schema_version") != "season_run_v1":
         raise SeasonReleaseError("unknown season run schema")
     if verification.get("schema_version") != verifier.SCHEMA_VERSION:
@@ -248,10 +259,19 @@ def _columns(cur, base: str) -> tuple[dict[str, str], tuple[str, ...]]:
 
 
 def _readback(cur, release_id: str, checks: Mapping, environment: str) -> dict:
-    if set(checks) != set(PROJECTION_KEYS):
-        raise SeasonReleaseError("all serving projection checks are required")
+    """Read back exactly the projection set the release recorded.
+
+    Retained releases keep the set they were staged with (``core_v1`` or
+    ``charts_v1``); unknown or partial recorded sets fail.
+    """
+    try:
+        recorded = recognized_projection_set(checks)
+    except ValueError as error:
+        raise SeasonReleaseError(
+            "all serving projection checks are required"
+        ) from error
     actual = {}
-    for base in PROJECTION_ORDER:
+    for base in PROJECTION_SETS[recorded]:
         columns, server = _columns(cur, base)
         table = sql.Identifier("season_release_" + base)
         cur.execute(
@@ -333,6 +353,22 @@ def _policy(cur, release: Mapping) -> None:
         )
 
 
+def _require_staging_set(tables: Collection[str]) -> None:
+    """New candidates must carry exactly the current staging set (``charts_v1``)."""
+    names = set(tables)
+    if names == set(PROJECTION_ORDER):
+        return
+    try:
+        recorded = recognized_projection_set(names - {"prediction_runs"})
+    except ValueError:
+        recorded = None
+    if recorded is not None:
+        raise SeasonReleaseError(
+            f"{recorded} candidates are no longer staged; build a {STAGING_PROJECTION_SET} candidate"
+        )
+    raise SeasonReleaseError("complete fixed serving projections are required")
+
+
 def _check_projection_scope(
     projections: Mapping, season: int, active_week: int
 ) -> None:
@@ -341,8 +377,7 @@ def _check_projection_scope(
     ``games`` is the full season schedule, so it may hold games without
     predictions; every other game-keyed row must reference a release game.
     """
-    if set(projections) != set(PROJECTION_KEYS):
-        raise SeasonReleaseError("complete fixed serving projections are required")
+    _require_staging_set(projections)
     for base, keys in PROJECTION_KEYS.items():
         rows = projections[base]
         if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
@@ -413,6 +448,17 @@ def _check_projection_scope(
         raise SeasonReleaseError("complete football serving projections are required")
     if not projections["v5_rating_snapshots"] or not projections["system_stats"]:
         raise SeasonReleaseError("ratings and performance projections are required")
+
+
+def _check_chart_scope(projections: Mapping, active_week: int) -> None:
+    """The chart tables of a ``charts_v1`` candidate: the roster always, game
+    statistics once a week has completed, adjusted EPA from Week 3."""
+    if not projections["team_season_roster"]:
+        raise SeasonReleaseError("the FBS team roster is required")
+    if active_week > 0 and not projections["team_game_stats"]:
+        raise SeasonReleaseError("team game statistics are required")
+    if active_week >= 3 and not projections["team_adjusted_epa"]:
+        raise SeasonReleaseError("adjusted team EPA is required from Week 3")
 
 
 def _register_runs(cur, records: list[dict], season: int) -> None:
@@ -511,7 +557,8 @@ def stage_release(
     if not isinstance(ref, Mapping) or _sha(projection_raw) != ref.get("sha256"):
         raise SeasonReleaseError("serving projection bytes are not verified")
     payload = _json(projection_raw, "projections")
-    if set(payload) != {"prediction_runs", *PROJECTION_ORDER}:
+    _require_staging_set(set(payload) - {"prediction_runs"})
+    if "prediction_runs" not in payload:
         raise SeasonReleaseError("complete fixed serving projections are required")
     projections = {base: payload[base] for base in PROJECTION_ORDER}
     registry = payload["prediction_runs"]
@@ -520,6 +567,7 @@ def stage_release(
     except KeyError as error:
         raise SeasonReleaseError("release identity missing") from error
     _check_projection_scope(projections, season, active_week)
+    _check_chart_scope(projections, active_week)
     validate_candidate(manifest, verification, payload)
     checks = {base: projection_check(rows) for base, rows in projections.items()}
     release_id = f"{environment}-{manifest['release_id']}"

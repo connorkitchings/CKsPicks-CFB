@@ -1,6 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { rowsOf, existsFrom } from "./db-result.ts";
-import { RELEASE_PROJECTIONS } from "./season-release-query.ts";
+import { CHARTS_V1_KEYS, CHART_PROJECTIONS, RELEASE_PROJECTIONS } from "./season-release-query.ts";
 
 /** Release identity is pinned for the whole request, including fallback before cutover. */
 export type ReleaseEnvironment = "preview" | "production";
@@ -10,6 +10,8 @@ export type SeasonReleaseContext = {
   season: number;
   activeWeek: number;
   activatedAt: Date;
+  /** Chart relations exist and the release was staged with the `charts_v1` projection set. */
+  chartsAvailable: boolean;
 };
 
 export function releaseEnvironment(env: Record<string, string | undefined>): ReleaseEnvironment {
@@ -36,6 +38,14 @@ export function createReleaseContextResolver(
   };
 }
 
+/** Charts need every chart relation and a release whose recorded projection set is `charts_v1`. */
+function chartsAvailable(row: Record<string, unknown>): boolean {
+  const recorded = Array.isArray(row.projection_keys) ? row.projection_keys.map(String).sort() : [];
+  return row.chart_relations === true
+    && recorded.length === CHARTS_V1_KEYS.length
+    && recorded.every((key, index) => key === CHARTS_V1_KEYS[index]);
+}
+
 export async function loadReleaseContext(
   execute: (query: SQL) => Promise<unknown>,
   season: number, environment: ReleaseEnvironment,
@@ -43,7 +53,10 @@ export async function loadReleaseContext(
   const exists = await execute(sql`SELECT to_regclass('public.season_releases') IS NOT NULL AS exists`);
   if (!existsFrom(exists)) return null;
   const rows = rowsOf(await execute(sql`
-    SELECT release_id, environment, season, active_week, activated_at
+    SELECT release_id, environment, season, active_week, activated_at,
+      ARRAY(SELECT jsonb_object_keys(projection_checks) ORDER BY 1) AS projection_keys,
+      (SELECT bool_and(to_regclass('public.' || name) IS NOT NULL)
+         FROM unnest(${sql.param(CHART_PROJECTIONS)}::text[]) AS names(name)) AS chart_relations
     FROM season_releases WHERE environment = ${environment} AND season = ${season} AND status = 'active'
   `));
   if (rows.length === 0) return null;
@@ -59,5 +72,8 @@ export async function loadReleaseContext(
   if (!row.release_id || Number.isNaN(activatedAt.getTime()) || !Number.isInteger(row.active_week)) {
     throw new Error("Invalid active season release");
   }
-  return { releaseId: String(row.release_id), environment, season, activeWeek: Number(row.active_week), activatedAt };
+  return {
+    releaseId: String(row.release_id), environment, season, activeWeek: Number(row.active_week), activatedAt,
+    chartsAvailable: chartsAvailable(row),
+  };
 }

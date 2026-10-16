@@ -16,12 +16,16 @@ export function WeekNav({
   week,
   weeks,
   basePath = "/",
+  labelMode = "week",
 }: {
   season: number;
   week: number;
   weeks: number[];
   basePath?: string;
+  /** "through-week" labels cumulative windows ("Through Week N"); URLs still carry `week=N`. */
+  labelMode?: "week" | "through-week";
 }) {
+  const noun = labelMode === "through-week" ? "Through Week" : "Week";
   const router = useRouter();
   const params = useSearchParams();
 
@@ -54,7 +58,7 @@ export function WeekNav({
     >
       <a
         href={prev !== null ? hrefFor(prev) : undefined}
-        aria-label="Previous week"
+        aria-label={`Previous ${noun.toLowerCase()}`}
         className={clsx(arrow, prev === null && "pointer-events-none opacity-40")}
       >
         {/* left arrow */}
@@ -63,7 +67,7 @@ export function WeekNav({
 
       <div className="flex items-center text-sm">
         <label htmlFor="week-select" className="sr-only">
-          Week
+          {noun}
         </label>
         <select
           id="week-select"
@@ -73,7 +77,7 @@ export function WeekNav({
         >
           {weeks.map((w) => (
             <option key={w} value={w}>
-              Week {w}
+              {noun} {w}
             </option>
           ))}
         </select>
@@ -81,7 +85,7 @@ export function WeekNav({
 
       <a
         href={next !== null ? hrefFor(next) : undefined}
-        aria-label="Next week"
+        aria-label={`Next ${noun.toLowerCase()}`}
         className={clsx(arrow, next === null && "pointer-events-none opacity-40")}
       >
         <span aria-hidden>&rarr;</span>
