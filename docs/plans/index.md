@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | [Weeks 6–7 review fixes and V5 streamline](2026-10-15/01-review-fixes-and-v5-streamline.md) | Week 8 safeguards, documentation truth and optional cleanup | In Progress; Phase 1 committed as `2807e087`; Phase 2 documentation validated, awaiting owner commit. Phase 3 is deferred. Week 8 Preview execution awaits Week 7 finals/controller inputs. |
 | [Season operations and Week 7 bridge](2026-10-14/01-season-operations-and-week7-bridge.md) | Governing atomic season workflow and first recurring update | In Progress; cutover complete; awaiting first controller weekly update. Section 4 documentation is delivered locally by Phase 2 of the review contract, awaiting its owner commit; local checks do not close the weekly-update acceptance gate. |
+| [Weekly-ingestion-repair integration](2026-10-15/03-weekly-ingestion-repair-integration.md) | Salvage the log-13 correction and fixture tests from `codex/weekly-ingestion-repair` (`bb2f1fe8`) | Implemented locally, awaiting owner commit; afterwards the two codex worktrees/branches are deleted. |
 
 ## Supporting / In-Progress
 
@@ -35,6 +36,7 @@ The following contracts are Superseded by [season operations](2026-10-14/01-seas
 | [Task 4 verification and catalog repair](2026-10-13/02-task4-verification-and-catalog-repair.md) | Bounded predecessor repair and catalog recovery. |
 | [Task 4 baseline and Week 7 display continuation](2026-10-13/03-task4-baseline-and-week7-display-continuation.md) | Baseline enforcement and display bridge. |
 | [Data integrity repair in two windows](2026-10-03/04-data-integrity-two-window-implementation.md) | Historical parent specifications; unfinished numerical work remains backlog. |
+| [Repair weekly ingestion and stage an honest Week 8 template](2026-10-15/02-weekly-ingestion-repair.md) | Manual-ingestion checklist and pending Week 8 template from `codex/weekly-ingestion-repair` (`bb2f1fe8`), never merged. The operational repair landed in Phase 1 of the review contract (`2807e087`) via the controller flow; the log-13 correction and fixture tests were integrated by [the integration contract](2026-10-15/03-weekly-ingestion-repair-integration.md), and the manual runbook section and template were rejected. |
 
 ## Completed and Supporting Evidence
 
