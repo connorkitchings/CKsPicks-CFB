@@ -183,3 +183,24 @@ Run from the clean worktree with `CFB_PUBLICATION_MODE=predictions CFB_PUBLICATI
 | Other pages | `/ratings` and `/performance` return 200 with no error state (checked in the first run; unchanged code). |
 
 **Follow-up (separate, not fixed here): scored-week redirect.** `GET /?week=6` returns HTTP 200, not 307. The body shows this is a streamed Next.js redirect, not a missing redirect: it contains `NEXT_REDIRECT;replace;/results?week=6;307` and `<meta id="__next-page-redirect" http-equiv="refresh" content="1;url=/results?week=6"/>`, so browsers are sent to `/results?week=6` after the shell streams. The code path is unchanged by the chart work (`web/src/app/page.tsx`). A client that does not follow meta refresh (a crawler or a plain HTTP check) sees a 200 page rather than a 307. Whether that is acceptable, or whether the redirect should run before streaming starts (for example in middleware or before any suspending work), is a separate decision; a 200 alone does not show that no redirect happens.
+
+## Migration 0026 applied to Preview (2026-10-16, from clean `f480a6b8`)
+
+Owner-authorized, Preview only, following the runbook (step 3 of the rehearsal checklist). Production, release preparation and activation, push and merge were not touched.
+
+- **Identity reconfirmed before applying:** migrator and pipeline URLs resolve to the same host and database (`ep-steep-feather-atzstbh2.c-9.us-east-1.aws.neon.tech/neondb`); session and current user `cks_preview_migrator`, not a superuser; latest recorded migration `0025`, so only 0026 was pending. The migration file equals `HEAD` (SHA-256 `56b1b3cd...e1434c10`).
+- **Command:** `zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/migrate_db.py --database-env DATABASE_URL`, output `Applied migrations: 0026`.
+- **Receipt:** `schema_migrations` now lists `0026_team_chart_tables.sql` as the latest version with checksum `56b1b3cde7397766a3038dc293aebc06dceab1ef168466788b8d4ee5e1434c10`, identical to the file's SHA-256.
+- **Tables:** all six exist, owned by `cks_preview_migrator`, no row-level security: `team_season_roster`, `team_game_stats`, `team_adjusted_epa` and their `season_release_*` copies.
+- **Permissions** (S=SELECT, I=INSERT, U=UPDATE, D=DELETE, T=TRUNCATE, checked with `has_table_privilege`):
+
+  | Table | `cks_web` | `cks_pipeline` / `cks_preview_pipeline` | `cks_preview_migrator` |
+  | --- | --- | --- | --- |
+  | `season_release_team_season_roster`, `season_release_team_game_stats`, `season_release_team_adjusted_epa` | S | S, I | all |
+  | live `team_season_roster`, `team_game_stats`, `team_adjusted_epa` | none | none | all (owner only) |
+
+  The `immutable_projection` trigger exists on all three release copies.
+- **Active release unchanged:** `preview-season-2026-d0272a48d3a0252fd4196db3` is still the only active release (Week 7, 18 `core_v1` tables); the two superseded releases, every release's `projection_checks` hash, the active release's 54,745 projection rows (data fingerprint `4ff0e1ee...725e962`), the 3 history rows and the 1,150 legacy `games` rows are identical before and after.
+- **Web with the committed code against Preview** (`CFB_PUBLICATION_MODE=predictions CFB_PUBLICATION_SEASON=2026`, no fixtures): `/api/health?season=2026&week=7` is `ok` for the same release with coverage 59/59/55 and mode `predictions`; `/` shows 59 games with model lines; `/results` shows completed Week 6 (58 of 58); `/ratings` and `/performance` return 200; no server errors. `/charts` still shows "Charts arrive with the next weekly release." Now that the chart relations exist, this confirms the resolver's other condition: the active release records `core_v1`, so `chartsAvailable` stays false against the real Neon driver. The server was stopped.
+
+Task 8 remains pending: next are the weekly prepare, the Preview stage and activation, and the chart spot-checks (checklist steps 5 to 7). Production still needs its own 0026, owner-approved.
