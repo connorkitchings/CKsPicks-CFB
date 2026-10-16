@@ -108,6 +108,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
   let body: React.ReactNode;
   let tabs: React.ReactNode = null;
   let weekNav: React.ReactNode = null;
+  let sideNav: React.ReactNode = null;
   if (loaded.state === "unsupported") {
     body = notice("Charts arrive with the next weekly release.");
   } else if (loaded.state === "unavailable") {
@@ -141,7 +142,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
               href={href}
               aria-current={active ? "page" : undefined}
               className={clsx(
-                "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent sm:text-sm",
+                "inline-flex min-h-10 items-center rounded-lg px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-sm",
                 active ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
               )}
             >
@@ -149,25 +150,31 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
             </Link>
           );
         })}
-        {kind === "efficiency" && (
-          <span className="ml-auto inline-flex gap-1" role="group" aria-label="Side of the ball">
+      </nav>
+    );
+
+    if (kind === "efficiency") {
+      sideNav = (
+        <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Side of the ball">
+          <span className="text-xs font-semibold text-ink-muted">Side of the ball</span>
+          <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-inset p-1">
             {(["offense", "defense"] as const).map((target) => (
               <Link
                 key={target}
                 href={query("efficiency", target, week)}
                 aria-current={side === target ? "true" : undefined}
                 className={clsx(
-                  "rounded-lg px-2.5 py-1.5 text-xs font-semibold capitalize focus-visible:outline-2 focus-visible:outline-accent",
-                  side === target ? "bg-ink text-surface-card" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+                  "inline-flex min-h-10 items-center rounded-md px-3 py-2 text-xs font-semibold capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                  side === target ? "bg-ink text-surface-card" : "text-ink-muted hover:bg-surface-card hover:text-ink",
                 )}
               >
                 {target}
               </Link>
             ))}
-          </span>
-        )}
-      </nav>
-    );
+          </div>
+        </div>
+      );
+    }
 
     if (week === null) {
       body = notice(
@@ -182,6 +189,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
           week={week}
           weeks={available}
           basePath="/charts"
+          compact
           labelMode={kind === "net-success" ? "week" : "through-week"}
         />
       );
@@ -218,11 +226,18 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         </div>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">Team charts</h1>
         <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-          Weekly team analysis reconstructed from the current release&apos;s data. It does not feed the ratings or picks.
+          Compare weekly game performance and season-long team efficiency.
         </p>
       </div>
-      {tabs}
-      {weekNav}
+      {tabs && (
+        <div className="space-y-3 rounded-xl border border-line bg-surface-inset p-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            {tabs}
+            {weekNav}
+          </div>
+          {sideNav && <div className="border-t border-line pt-3">{sideNav}</div>}
+        </div>
+      )}
       {body}
     </main>
   );

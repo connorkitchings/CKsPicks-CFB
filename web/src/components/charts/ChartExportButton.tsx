@@ -77,7 +77,7 @@ const serverFalse = () => false;
 const canCopyImages = () => typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write);
 
 const buttonClass =
-  "inline-flex items-center rounded-lg border border-line bg-surface-elevated px-2.5 py-1 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink disabled:cursor-wait disabled:opacity-60";
+  "inline-flex min-h-10 items-center rounded-lg border border-line bg-surface-card px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60";
 
 /**
  * Exports the chart as one fixed-size image. The export card (`children`, laid out at

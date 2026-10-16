@@ -4,7 +4,9 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-15 (Phase 2 documentation reconciliation; serving state last verified 2026-10-14: Migration 0025 applied and atomic season release `production-season-2026-d0272a48d3a0252fd4196db3` activated in Production; Preview release `preview-season-2026-d0272a48d3a0252fd4196db3`; full historical reconstruction Weeks 0–6 with complete mid-week coverage for Weeks 6 and 7) · **Verified from:**
+> **Last updated:** 2026-10-16 (Preview-only chart release activated after all 23 verification checks and numerical parity against the prior release; chart data and live views verified for Weeks 0–6. Local chart organization and PNG focus-outline repairs validated in the worktree, awaiting owner commit/integration. Production remains unchanged and was not accessed.) · **Verified from:**
+> `session_logs/2026-10-16/03-preview-chart-rehearsal.md`,
+> `session_logs/2026-10-16/04-chart-navigation-and-export-polish.md`,
 > `session_logs/2026-10-14/08-stage4-production-migration-and-cutover.md`,
 > `session_logs/2026-10-14/07-web-ui-cleanup-and-early-games-reconstruction.md` (see its October 15 correction),
 > `session_logs/2026-10-14/06-stages-1-to-3-preview-cutover.md`,
@@ -24,8 +26,8 @@
 
 | Week | State | Selected run |
 |---|---|---|
-| 0–6 | **Scored; reconstructed 2026 V5 record** (all 329 FBS games including mid-week games; 657 graded bets: spread 166-157-6, total 163-164-1). Served via Migration 0025 atomic release projections. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-d0272a48d3a0252fd4196db3`) |
-| 7 | **Active Picks slate (2026-10-14).** Complete 59-game FBS schedule including mid-week games (Delaware @ MTSU, FIU @ Jax State, etc.). Clean display without disclaimer banner or retrospective badge on active slate. Served via Migration 0025 atomic release projections. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-d0272a48d3a0252fd4196db3`). Rollback: `run_season.py rollback` (owner login). |
+| 0–6 | **Scored; reconstructed 2026 V5 record** (all 329 FBS games including mid-week games; 657 graded bets: spread 166-157-6, total 163-164-1). Preview additionally serves Migration 0026 chart projections; Production retains its existing release. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-99c518e3bb66e7cc2adcc169`) |
+| 7 | **Active Picks slate.** Complete 59-game FBS schedule. Preview reconstructed at the existing pinned pre-week cutoff; forecasts, ratings and grades match the prior release. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-99c518e3bb66e7cc2adcc169`). Production rollback: `run_season.py rollback` (owner login). |
 
 ## Scoreboard
 
@@ -46,6 +48,10 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 `main` is production (Vercel deploys from it); `dev` is the working branch. Work on `dev`, then merge `dev` into `main` to release. No other long-lived branches. Details: `AGENTS.md` (Branching).
 
 ## Release state
+
+**Local UI follow-up (2026-10-16):** the initial PNG focus-outline defect described below is corrected in the working tree. Chart selectors/week navigation and team filters/display actions are grouped responsively. All 67 browser tests pass; a 138-team real-data efficiency export was saved and visually inspected without focus rings. The worktree UI is served on port 3200 against Preview; the primary `dev` checkout still lacks the feature until owner integration. These changes are uncommitted and do not alter the active release or Production. Real-data browser export latency remains a follow-up observation, not a completed performance fix.
+
+**Preview charts (2026-10-16):** prepared and released from clean commit `749ee12c`. Payload SHA-256 `5442a64c89fccd5df54228bc95f5b3e0a66054468fe05c7d4d72b068d3bdbd9b`; activation readback SHA-256 `77dfcc05eaff3e54beeb7593ae62d025084968b8f2722d287d0eddaa934bfcc7`. All 21 `charts_v1` projection tables verified, with 138 roster teams, 658 team-game rows for Weeks 0–6 and 1,378 adjusted rows for Through Weeks 2–6. Existing numerical serving data matches the prior release within `1e-9`, after explicit identity/provenance exclusions and timestamp normalization. Live charts, filters, search, tables, keyboard tooltips and core pages work. Both inspected PNG exports show unwanted blue keyboard-focus outlines, so chart export acceptance and task 8 remain incomplete. Production migration, deployment and activation are not authorized by this rehearsal. Rehearsal evidence is in `session_logs/2026-10-16/03-preview-chart-rehearsal.md`; see the [chart contract](plans/2026-10-16/01-charts-module.md).
 
 The atomic season release in the week table is the serving authority across Picks, Results, Ratings, Performance and matchup views. Migration 0025 cutover was recorded on October 14 in `session_logs/2026-10-14/08-stage4-production-migration-and-cutover.md`; this documentation session performed no new database or deployment readback. V5 Blitzkrieg is the only operational model. Rollback reactivates a retained atomic season release; V4 is historical methodology, not an operational rollback path.
 

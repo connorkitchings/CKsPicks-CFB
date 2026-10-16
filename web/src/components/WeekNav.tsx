@@ -17,6 +17,7 @@ export function WeekNav({
   weeks,
   basePath = "/",
   labelMode = "week",
+  compact = false,
 }: {
   season: number;
   week: number;
@@ -24,6 +25,8 @@ export function WeekNav({
   basePath?: string;
   /** "through-week" labels cumulative windows ("Through Week N"); URLs still carry `week=N`. */
   labelMode?: "week" | "through-week";
+  /** Fits the navigator into a page toolbar without changing its URL behavior. */
+  compact?: boolean;
 }) {
   const noun = labelMode === "through-week" ? "Through Week" : "Week";
   const router = useRouter();
@@ -49,17 +52,20 @@ export function WeekNav({
   }
 
   const arrow =
-    "inline-flex h-9 w-9 items-center justify-center rounded-md border border-line bg-surface-card text-base text-ink-muted transition-colors hover:bg-surface-inset disabled:cursor-not-allowed disabled:opacity-40";
+    "inline-flex items-center justify-center rounded-md border border-line bg-surface-card text-base text-ink-muted transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <nav
       aria-label="Week navigation"
-      className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm"
+      className={clsx(
+        "flex items-center justify-between gap-2",
+        compact ? "w-full sm:w-auto" : "rounded-xl border border-line bg-surface-card p-2 shadow-sm",
+      )}
     >
       <a
         href={prev !== null ? hrefFor(prev) : undefined}
         aria-label={`Previous ${noun.toLowerCase()}`}
-        className={clsx(arrow, prev === null && "pointer-events-none opacity-40")}
+        className={clsx(arrow, compact ? "h-10 w-10 shrink-0" : "h-9 w-9", prev === null && "pointer-events-none opacity-40")}
       >
         {/* left arrow */}
         <span aria-hidden>&larr;</span>
@@ -73,7 +79,10 @@ export function WeekNav({
           id="week-select"
           value={week}
           onChange={onSelect}
-          className="rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+          className={clsx(
+            "rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent",
+            compact && "min-h-10",
+          )}
         >
           {weeks.map((w) => (
             <option key={w} value={w}>
@@ -86,7 +95,7 @@ export function WeekNav({
       <a
         href={next !== null ? hrefFor(next) : undefined}
         aria-label={`Next ${noun.toLowerCase()}`}
-        className={clsx(arrow, next === null && "pointer-events-none opacity-40")}
+        className={clsx(arrow, compact ? "h-10 w-10 shrink-0" : "h-9 w-9", next === null && "pointer-events-none opacity-40")}
       >
         <span aria-hidden>&rarr;</span>
       </a>

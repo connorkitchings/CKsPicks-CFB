@@ -6,7 +6,7 @@ The **Charts** page shows three weekly team charts. They are descriptive analysi
 
 | Chart | What it shows |
 | --- | --- |
-| **Did We Really Get Beat That Bad?** | One bar per game of a single week: the winner's offensive success rate minus the loser's. The winner's logo sits at the bar tip, the loser's is mirrored across zero, and the label is the winner's abbreviation and the final score. Available from Week 0. |
+| **Did We Really Get Beat That Bad?** | One bar per game of a single week: the winner's offensive success rate minus the loser's. The winner's logo sits at the bar tip; the loser's sits just across the zero line, opposite the bar. The label is the winner's abbreviation and the final score. Available from Week 0. |
 | **Efficiency and EPA/play** | Cumulative success rate (x) against EPA/play (y) through Week N, offense or defense, with dashed FBS-average lines. Defense axes are inverted so up and right is better. Available from "Through Week 2". |
 | **Opponent-adjusted EPA/play** | Adjusted offense (x) against adjusted defense allowed (y, inverted), with dashed play-weighted averages, diagonal equal-net lines and corner labels. Available from "Through Week 2". |
 

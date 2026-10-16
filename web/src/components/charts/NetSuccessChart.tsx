@@ -115,12 +115,12 @@ export function NetSuccessChart({
           const focusable = interactive && state !== "dim";
           const c = center(index);
           const tip = along(bar.value);
-          const mirror = along(-bar.value);
-          // Logos sit just outside the bar tip and its mirror image across zero.
+          // Keep the winner beyond the bar tip and the loser just across the zero axis.
           const outward = bar.value >= 0 ? 1 : -1;
           const gap = logo * 0.6;
+          const loserGap = logo / 2 + 6;
           const winnerAt = horizontal ? { cx: tip + outward * gap, cy: c } : { cx: c, cy: tip - outward * gap };
-          const loserAt = horizontal ? { cx: mirror - outward * gap, cy: c } : { cx: c, cy: mirror + outward * gap };
+          const loserAt = horizontal ? { cx: zero - outward * loserGap, cy: c } : { cx: c, cy: zero + outward * loserGap };
           const key = String(bar.gameId);
           return (
             <g
@@ -136,16 +136,18 @@ export function NetSuccessChart({
               className="outline-none [&:focus-visible>rect.focus-ring]:opacity-100"
               {...(focusable ? handlers(key) : {})}
             >
-              <rect
-                className="focus-ring opacity-0"
-                x={horizontal ? plot.left : c - band / 2}
-                y={horizontal ? c - band / 2 : plot.top}
-                width={horizontal ? plot.right - plot.left : band}
-                height={horizontal ? band : plot.bottom - plot.top}
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth={2}
-              />
+              {interactive && (
+                <rect
+                  className="focus-ring opacity-0"
+                  x={horizontal ? plot.left : c - band / 2}
+                  y={horizontal ? c - band / 2 : plot.top}
+                  width={horizontal ? plot.right - plot.left : band}
+                  height={horizontal ? band : plot.bottom - plot.top}
+                  fill="none"
+                  stroke="var(--accent)"
+                  strokeWidth={2}
+                />
+              )}
               {state === "searched" && (
                 <rect
                   x={horizontal ? plot.left : c - band / 2}

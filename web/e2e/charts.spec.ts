@@ -13,9 +13,34 @@ function pngSize(path: string): { width: number; height: number } {
 }
 
 async function exportPng(page: Page): Promise<{ file: string; report: { logos: number; decoded: number } }> {
+  // The static card exists only during capture. Observe it from mount to download,
+  // so transient keyboard decorations cannot silently leak into the saved PNG.
+  await page.evaluate(() => {
+    const root = document.querySelector('[data-testid="chart-export"]')!;
+    const probe = { seen: false, rings: 0, focusStops: 0 };
+    const observer = new MutationObserver(() => {
+      const svg = root.querySelector("div[aria-hidden] svg");
+      if (!svg) return;
+      probe.seen = true;
+      probe.rings = Math.max(probe.rings, svg.querySelectorAll(".focus-ring").length);
+      probe.focusStops = Math.max(probe.focusStops, svg.querySelectorAll("[tabindex]").length);
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    (window as typeof window & { chartCaptureProbe?: () => typeof probe }).chartCaptureProbe = () => {
+      observer.disconnect();
+      return probe;
+    };
+  });
   const download = page.waitForEvent("download");
   await page.getByTestId("chart-download").click();
   const file = await (await download).path();
+  const capture = await page.evaluate(() => {
+    const state = window as typeof window & { chartCaptureProbe?: () => { seen: boolean; rings: number; focusStops: number } };
+    const result = state.chartCaptureProbe!();
+    delete state.chartCaptureProbe;
+    return result;
+  });
+  expect(capture).toEqual({ seen: true, rings: 0, focusStops: 0 });
   const raw = await page.getByTestId("chart-export").getAttribute("data-last-export");
   return { file, report: JSON.parse(raw ?? "{}") };
 }
@@ -100,10 +125,25 @@ test.describe("team charts", () => {
     expect(focused).toBeTruthy();
     expect(focused).not.toBe(firstTeam);
     await expect(tooltip).toContainText(focused ?? "");
+    await expect(page.locator("g[data-team]:focus .focus-ring")).toHaveCSS("opacity", "1");
     await expect(first).toHaveAttribute("role", "img");
     await expect(first).toHaveAttribute("aria-label", /success rate .*EPA\/play .* plays/);
     await page.keyboard.press("Escape");
     await expect(tooltip).toHaveCount(0);
+  });
+
+  test("net-success bars retain a visible keyboard focus ring", async ({ page }) => {
+    await page.goto("/charts?chart=net-success&week=3");
+    const first = page.locator("g[data-game]").first();
+    await expect(async () => {
+      await first.blur();
+      await first.focus();
+      await expect(page.getByTestId("chart-tooltip")).toBeVisible({ timeout: 500 });
+    }).toPass();
+    await page.keyboard.press("ArrowRight");
+    await expect(first).not.toBeFocused();
+    await expect(page.locator("g[data-game]:focus .focus-ring")).toHaveCSS("opacity", "1");
+    await expect(page.getByTestId("chart-tooltip")).toBeVisible();
   });
 
   test("the table view lists the same rows and sorts", async ({ page }) => {

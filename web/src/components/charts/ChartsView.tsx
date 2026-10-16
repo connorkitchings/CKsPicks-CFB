@@ -172,7 +172,7 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
   ];
 
   const field =
-    "rounded-md border border-line bg-surface-card px-2 py-1 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent";
+    "min-h-10 w-full rounded-lg border border-line bg-surface-card px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent";
 
   return (
     <section className="space-y-3" aria-label={title}>
@@ -182,54 +182,58 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
           {subtitle}
         </p>
       </header>
-      <div className="flex flex-wrap items-end gap-3" data-testid="chart-controls">
-        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Conference
-          <select
-            className={field}
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            data-testid="conference-filter"
+      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-inset p-3 lg:flex-row lg:items-end lg:justify-between" data-testid="chart-controls">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:flex" role="group" aria-label="Find teams">
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted">
+            Conference
+            <select
+              className={field}
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              data-testid="conference-filter"
+            >
+              <option value="all">All FBS</option>
+              <option value="p4">Power Four + Notre Dame</option>
+              {conferenceOptions(roster).map((conference) => (
+                <option key={conference} value={conference}>
+                  {conference}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted">
+            Find a team
+            <input
+              type="search"
+              className={clsx(field, "lg:w-56")}
+              value={query}
+              maxLength={40}
+              placeholder="Team or abbreviation"
+              onChange={(event) => setQuery(event.target.value)}
+              data-testid="team-search"
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Chart display and export">
+          <button
+            type="button"
+            aria-pressed={asTable}
+            onClick={() => setAsTable((current) => !current)}
+            className="min-h-10 rounded-lg border border-line bg-surface-card px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
+            data-testid="table-toggle"
           >
-            <option value="all">All FBS</option>
-            <option value="p4">Power Four + Notre Dame</option>
-            {conferenceOptions(roster).map((conference) => (
-              <option key={conference} value={conference}>
-                {conference}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Find a team
-          <input
-            type="search"
-            className={clsx(field, "w-44")}
-            value={query}
-            maxLength={40}
-            placeholder="Team or abbreviation"
-            onChange={(event) => setQuery(event.target.value)}
-            data-testid="team-search"
-          />
-        </label>
-        <button
-          type="button"
-          aria-pressed={asTable}
-          onClick={() => setAsTable((current) => !current)}
-          className="rounded-lg border border-line bg-surface-elevated px-2.5 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink aria-pressed:border-accent aria-pressed:text-accent-ink"
-          data-testid="table-toggle"
-        >
-          {asTable ? "Show chart" : "Show as table"}
-        </button>
-        {hasData && (
-          <ChartExportButton
-            filename={`ckspicks-${kind}${kind === "efficiency" ? `-${side}` : ""}-${season}-${kind === "net-success" ? "week" : "through-week"}-${week}.png`}
-            width={exportWidth}
-            height={exportHeight}
-          >
-            {exportCard}
-          </ChartExportButton>
-        )}
+            {asTable ? "Show chart" : "Show as table"}
+          </button>
+          {hasData && (
+            <ChartExportButton
+              filename={`ckspicks-${kind}${kind === "efficiency" ? `-${side}` : ""}-${season}-${kind === "net-success" ? "week" : "through-week"}-${week}.png`}
+              width={exportWidth}
+              height={exportHeight}
+            >
+              {exportCard}
+            </ChartExportButton>
+          )}
+        </div>
       </div>
 
       {!hasData ? (

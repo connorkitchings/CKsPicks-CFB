@@ -142,7 +142,7 @@ export function ScatterChart({
               className="outline-none [&:focus-visible>circle.focus-ring]:opacity-100"
               {...(focusable ? handlers(p.team) : {})}
             >
-              <circle className="focus-ring opacity-0" cx={cx} cy={cy} r={size / 2 + 3} fill="none" stroke="var(--accent)" strokeWidth={2.5} />
+              {interactive && <circle className="focus-ring opacity-0" cx={cx} cy={cy} r={size / 2 + 3} fill="none" stroke="var(--accent)" strokeWidth={2.5} />}
               {state === "searched" && <circle cx={cx} cy={cy} r={size / 2 + 3} fill="var(--accent-soft)" stroke="var(--accent)" strokeWidth={2.5} />}
               <TeamMark team={p.team} cx={cx} cy={cy} size={size} />
             </g>
