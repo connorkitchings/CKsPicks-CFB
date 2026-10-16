@@ -165,3 +165,21 @@ roll back by their recorded projection set; new candidates must be charts_v1.
 The Charts page reads only release-scoped tables and never falls back to live ones.
 MSG
 ```
+
+## Local Preview smoke test (2026-10-16, committed code `450c622c`)
+
+Run from the clean worktree with `CFB_PUBLICATION_MODE=predictions CFB_PUBLICATION_SEASON=2026 PORT=3200 zsh scripts/ops/run_web_local.sh preview` (settings scoped to the command; no fixture mode, `CFB_UI_TEST_MODE` unset). The server read the Preview database through the pipeline login, read-only use. Nothing was migrated, prepared, activated, pushed or merged, and the server was stopped afterwards.
+
+**Correction of the first run.** The first smoke test ran without publication settings (the worktree has no `web/.env`, which the main checkout sets to `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026`), so it rendered the default `market` view, and I misread `/results`' "Week 6 games" text as belonging to `/`. The rerun below replaces that evidence.
+
+| Check | Result |
+| --- | --- |
+| `/api/health` | `publication.mode = predictions`; `activeRelease = preview-season-2026-d0272a48d3a0252fd4196db3`, Week 7 (`core_v1`). |
+| `/api/health?season=2026&week=7` | `selectedWeek` = run `season-2026-d0272a48d3a0252fd4196db3:w7`, state `published`, model `v5-intended-update-2026-v1`, coverage expected/predicted/lined 59/59/55, `agreesWithCurrentWeek: true`. |
+| `/api/health?season=2026&week=6` | run `...:w6`, state `scored`, coverage 58/58/58, `agreesWithCurrentWeek: null` (not the current slate). `selectedWeek` is null without explicit `season` and `week` by design. |
+| `/` (Picks) | The Week 7 slate: 59 distinct matchup ids; day groups 2 + 2 + 3 + 3 + 49 = 59 games from Tue Oct 13; "Blitzkrieg Published, run published Oct 13"; per-game model lines ("Model: Delaware by 0.2", model total) beside the market spread and total. |
+| `/results` | "completed Week 6 games", 58 of 58 games, week selector Week 0 to Week 6. |
+| `/charts` | "Charts arrive with the next weekly release."; no chart rendered (active release is `core_v1`, charts correctly unavailable). |
+| Other pages | `/ratings` and `/performance` return 200 with no error state (checked in the first run; unchanged code). |
+
+**Follow-up (separate, not fixed here): scored-week redirect.** `GET /?week=6` returns HTTP 200, not 307. The body shows this is a streamed Next.js redirect, not a missing redirect: it contains `NEXT_REDIRECT;replace;/results?week=6;307` and `<meta id="__next-page-redirect" http-equiv="refresh" content="1;url=/results?week=6"/>`, so browsers are sent to `/results?week=6` after the shell streams. The code path is unchanged by the chart work (`web/src/app/page.tsx`). A client that does not follow meta refresh (a crawler or a plain HTTP check) sees a 200 page rather than a 307. Whether that is acceptable, or whether the redirect should run before streaming starts (for example in middleware or before any suspending work), is a separate decision; a 200 alone does not show that no redirect happens.
