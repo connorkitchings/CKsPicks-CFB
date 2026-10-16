@@ -12,6 +12,27 @@ test("known teams resolve to id-keyed light/dark paths", () => {
   assert.equal(logoSrc("Michigan", "lg", "dark"), "/logos/v2/lg/dark/130.webp");
 });
 
+test("readable primary marks retain team color at every size in both themes", () => {
+  for (const [team, id] of [
+    ["Tennessee", 2633], ["Clemson", 228], ["Sam Houston", 2534], ["Texas", 251],
+    ["North Texas", 249], ["Buffalo", 2084], ["Utah", 254],
+  ] as const) {
+    for (const size of ["sm", "lg"] as const) {
+      for (const theme of ["light", "dark"] as const) {
+        assert.equal(logoSrc(team, size, theme), `/logos/v2/${size}/light/${id}.webp`, team);
+      }
+    }
+  }
+});
+
+test("darker primary marks retain their dark contrast variants", () => {
+  for (const [team, id] of [["Alabama", 333], ["Michigan", 130], ["Duke", 150], ["Temple", 218]] as const) {
+    for (const size of ["sm", "lg"] as const) {
+      assert.equal(logoSrc(team, size, "dark"), `/logos/v2/${size}/dark/${id}.webp`, team);
+    }
+  }
+});
+
 test("alternate spellings resolve to the same logo as the CFBD name", () => {
   for (const [alias, canonical] of [
     ["Appalachian State", "App State"],

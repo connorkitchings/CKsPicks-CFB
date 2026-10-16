@@ -3,6 +3,10 @@ import { LOGO_IDS, TEAM_DISPLAY } from "./team-logos.generated.ts";
 export type LogoSize = "sm" | "lg";
 export type LogoTheme = "light" | "dark";
 
+// Audited primary marks remain readable on the dark surface. Their dark assets
+// are white, so retain team color; other schools keep their contrast variants.
+const PRIMARY_COLOR_LOGO_IDS = new Set([2633, 228, 2534, 251, 249, 2084, 254]);
+
 /** Other spellings of a school name -> the CFBD name used as the key in LOGO_IDS. */
 const LOGO_ALIASES: Record<string, string> = {
   "Appalachian State": "App State",
@@ -36,7 +40,8 @@ export function hasLogo(teamName: string): boolean {
 
 export function logoSrc(teamName: string, size: LogoSize, theme: LogoTheme): string | null {
   const id = logoId(teamName);
-  return id === null ? null : `/logos/v2/${size}/${theme}/${id}.webp`;
+  const assetTheme = id !== null && PRIMARY_COLOR_LOGO_IDS.has(id) ? "light" : theme;
+  return id === null ? null : `/logos/v2/${size}/${assetTheme}/${id}.webp`;
 }
 
 export function teamInitials(teamName: string): string {

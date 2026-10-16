@@ -86,4 +86,6 @@ Output: `public/logos/v2/{sm,lg}/{light,dark}/<id>.webp`, `public/logos/v2/manif
 an initials tile for unknown teams. Alternate spellings are mapped to the CFBD
 name in `src/lib/team-logos.ts`. The Python leaderboards read the same manifest. Contract: `docs/plans/2026-10-01/07-high-quality-team-logos.md`.
 
+The shared `logoSrc` policy preserves team colors where the standard mark remains readable on dark surfaces: Tennessee, Clemson, Sam Houston, Texas, North Texas, Buffalo and Utah use the existing `light` asset in both themes and sizes. Other schools retain their dark contrast variants, including Alabama, Michigan, Duke and Temple. This curated, visually audited policy applies to cards, charts and image exports; it changes asset selection without rewriting the assets or manifest. Audit evidence is in `session_logs/2026-10-16/10-dark-logo-color-repair.md`.
+
 Started and reconstructed games remain visible on Picks: forecasts use pre-cutoff observations, and grades select eligible pre-kickoff quotes per game/target. See the [record methodology](../docs/modeling/record_methodology.md). Operational release and rollback instructions live only in the [weekly runbook](../docs/ops/weekly_runbook.md).
