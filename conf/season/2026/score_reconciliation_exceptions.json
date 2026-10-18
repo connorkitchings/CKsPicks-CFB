@@ -120,6 +120,11 @@
     "reason": "Week 6 scoring events sum to 21, final is 45; play-by-play score stream flagged impossible_score_increment"
   },
   {
+    "game_id": 401858493,
+    "team": "Washington",
+    "reason": "Week 7 scoring events sum to 32, final is 38; play-by-play logged touchdown pass as Pass Reception"
+  },
+  {
     "game_id": 401859184,
     "team": "Notre Dame",
     "reason": "Week 2 scoring events sum to 7, final is 52; play-by-play score stream flagged impossible_score_increment"

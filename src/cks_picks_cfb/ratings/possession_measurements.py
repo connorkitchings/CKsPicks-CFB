@@ -1040,7 +1040,12 @@ def build_measurements(
         outcomes["game_id"] = pd.to_numeric(outcomes["game_id"], errors="raise").astype(
             int
         )
-        expected_by_game = population.merge(
+        pop = population.drop(
+            columns=[
+                c for c in ("home_points", "away_points") if c in population.columns
+            ]
+        )
+        expected_by_game = pop.merge(
             outcomes[["season", "game_id", "home_points", "away_points"]],
             on=["season", "game_id"],
             how="left",

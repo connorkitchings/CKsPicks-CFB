@@ -1,0 +1,69 @@
+{
+  "schema_version": "season_revision_v1",
+  "season": 2026,
+  "revision_id": "season-2026-w8-preview-r1",
+  "captured_at": "2026-10-18T14:23:51.323514Z",
+  "pre_week_cutoffs": {
+    "0": "2026-08-23T18:00:00Z",
+    "1": "2026-09-03T05:00:00Z",
+    "2": "2026-09-08T19:00:00Z",
+    "3": "2026-09-13T21:00:00Z",
+    "4": "2026-09-20T19:00:00Z",
+    "5": "2026-09-29T20:29:00Z",
+    "6": "2026-10-05T00:00:00Z",
+    "7": "2026-10-13T18:00:00Z",
+    "8": "2026-10-20T18:00:00Z"
+  },
+  "post_week_cutoffs": {
+    "0": "2026-09-03T04:00:00Z",
+    "1": "2026-09-08T15:35:00Z",
+    "2": "2026-09-13T18:18:22Z",
+    "3": "2026-09-22T14:58:00Z",
+    "4": "2026-09-27T14:15:00Z",
+    "5": "2026-10-05T00:00:00Z",
+    "6": "2026-10-11T15:00:00Z",
+    "7": "2026-10-18T14:00:00Z"
+  },
+  "inputs": {
+    "schedule": {
+      "uri": "lake/silver/dataset=games/version=33f7accd9440f6fe727fecf9/data.parquet",
+      "sha256": "f07beb5dcc70801799505233a4c103d89e5d062941d797330428e130e080e411"
+    },
+    "finals": {
+      "uri": "lake/silver/dataset=game_outcomes/version=f0108329bb88eb3c87033c94/data.parquet",
+      "sha256": "15e06f9cd83c1a65d6c48eb01bd5cbfeac9ce4028e945844b14d9e7c22055a01"
+    },
+    "byplay": {
+      "uri": "lake/silver/dataset=byplay/version=def44c3f435ae7d12701bba5/data.parquet",
+      "sha256": "03cf59e6b05a06015249aa4ed09dd3c09fd724d6388445ae28b16c091b116d3d"
+    },
+    "drives": {
+      "uri": "lake/silver/dataset=drives/version=5569be61e048aab1ab07a6b7/data.parquet",
+      "sha256": "7b2cb2ab94fda81b8f4fcf13ec1e850a16b9e574ccdf48b7a6515716135e9371"
+    },
+    "reconciliation": {
+      "uri": "lake/silver/dataset=source_reconciliation/version=9eb80883434dc9ad2852515a/data.parquet",
+      "sha256": "119cdc0065a1aaae4ceea3e18f90167fb005258c7ded81f9650da349a08cc6e9"
+    },
+    "market_quotes": {
+      "uri": "lake/silver/dataset=market_quotes/version=ed30fa7bc8f6d8f0fb912c48/data.parquet",
+      "sha256": "5c1007d4f908b4699eccec6853c4b9c6180fa1d0a5675c50a2bff57188cf3a30"
+    },
+    "venue_games": {
+      "uri": "lake/silver/dataset=games/version=33f7accd9440f6fe727fecf9/data.parquet",
+      "sha256": "f07beb5dcc70801799505233a4c103d89e5d062941d797330428e130e080e411"
+    },
+    "venues": {
+      "uri": "lake/silver/dataset=venues/version=c713b15888c8aaf66b7b0b93/data.parquet",
+      "sha256": "338f3e65f3454cb448213fa666fa408d4f9fafa60afd90225d8d75ea647486af"
+    },
+    "teams": {
+      "uri": "lake/silver/dataset=teams/version=590e986596436aa001ff77b7/data.parquet",
+      "sha256": "b02787de8cb46ddc42c9e008fd75a43b1174a95f79fd6a8b309d98d5381e12e1"
+    }
+  },
+  "score_reconciliation_exceptions": {
+    "uri": "conf/season/2026/score_reconciliation_exceptions.json",
+    "sha256": "081f9d0f78a22d56883285da6009b272de86e6d38b6a739f4cab0fd99957da4d"
+  }
+}
