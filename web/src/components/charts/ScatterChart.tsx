@@ -1,18 +1,11 @@
 "use client";
 
-import { isoNetSegments, niceTicks, type Domain, type ScatterPoint } from "@/lib/charts";
+import type { CornerCaptions } from "@/lib/chart-config";
+import { isoNetSegments, netLabel, niceTicks, type Domain, type ScatterPoint } from "@/lib/charts";
 import { TeamMark } from "./TeamMark";
 import { useChartSelection } from "./useChartSelection";
 
 export type MarkerState = "active" | "dim" | "searched";
-
-export type CornerCaptions = {
-  topLeft: string;
-  topRight: string;
-  bottomLeft: string;
-  bottomRight: string;
-  note?: string;
-};
 
 export type ScatterChartProps = {
   points: readonly ScatterPoint[];
@@ -27,11 +20,9 @@ export type ScatterChartProps = {
   /** ViewBox size; the SVG scales to its container. */
   width: number;
   height: number;
-  /** Equal-net levels (x - y) for diagonal lines, adjusted chart only. */
+  /** Equal-net levels (x - y) for labeled diagonal lines, adjusted chart only. */
   netLevels?: readonly number[];
-  /** "Good/Bad Offense/Defense" corner labels, adjusted chart only. */
-  cornerLabels?: boolean;
-  /** Custom quadrant captions tailored to metric and side. */
+  /** Quadrant captions, drawn with the average lines; none when omitted. */
   cornerCaptions?: CornerCaptions;
   stateOf: (point: ScatterPoint) => MarkerState;
   /** Accessible and tooltip text of one point. */
@@ -64,7 +55,6 @@ export function ScatterChart({
   width,
   height,
   netLevels = [],
-  cornerLabels = false,
   cornerCaptions,
   stateOf,
   describe,
@@ -73,31 +63,6 @@ export function ScatterChart({
   interactive = true,
   label,
 }: ScatterChartProps) {
-  const captions: CornerCaptions = cornerCaptions ?? (
-    cornerLabels
-      ? {
-          topLeft: "Lower offense / Better defense",
-          topRight: "Better offense / Better defense",
-          bottomLeft: "Lower offense / Higher defense allowed",
-          bottomRight: "Better offense / Higher defense allowed",
-          note: "Relative to play-weighted FBS averages; diagonals: equal net PPA (offense − defense allowed)",
-        }
-      : invertX
-      ? {
-          topLeft: "Higher allowed success / Lower allowed PPA",
-          topRight: "Lower allowed success / Lower allowed PPA",
-          bottomLeft: "Higher allowed success / Higher allowed PPA",
-          bottomRight: "Lower allowed success / Higher allowed PPA",
-          note: "Relative to play-weighted FBS averages",
-        }
-      : {
-          topLeft: "Lower success / Higher PPA",
-          topRight: "Higher success / Higher PPA",
-          bottomLeft: "Lower success / Lower PPA",
-          bottomRight: "Higher success / Lower PPA",
-          note: "Relative to play-weighted FBS averages",
-        }
-  );
   const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom };
   const xd = xDomain;
   const yd = yDomain;
@@ -132,31 +97,55 @@ export function ScatterChart({
             </text>
           </g>
         ))}
-        {segments.map((segment) => (
-          <line
-            key={`net${segment.net}`}
-            x1={sx(segment.from[0])}
-            y1={sy(segment.from[1])}
-            x2={sx(segment.to[0])}
-            y2={sy(segment.to[1])}
-            stroke="var(--line-strong)"
-            strokeWidth={0.8}
-            data-iso-net={segment.net}
-          />
-        ))}
+        {segments.map((segment) => {
+          const ends = [segment.from, segment.to].map(([x, y]) => ({ x: sx(x), y: sy(y) }));
+          // Label at a side edge, where parallel diagonals stack without colliding: the right
+          // edge when the line reaches it, else the left. Rows clear the corner captions.
+          const right = ends.find((end) => Math.abs(end.x - plot.right) < 1);
+          const left = ends.find((end) => Math.abs(end.x - plot.left) < 1);
+          const anchor = right ?? left ?? ends[1];
+          const labelY = Math.max(plot.top + 50, Math.min(anchor.y - 4, plot.bottom - 24));
+          return (
+            <g key={`net${segment.net}`}>
+              <line
+                x1={ends[0].x}
+                y1={ends[0].y}
+                x2={ends[1].x}
+                y2={ends[1].y}
+                stroke="var(--line-strong)"
+                strokeWidth={0.8}
+                data-iso-net={segment.net}
+              />
+              <text
+                x={right || !left ? anchor.x - 4 : anchor.x + 4}
+                y={labelY}
+                textAnchor={right || !left ? "end" : "start"}
+                fontSize={10}
+                fill="var(--ink-faint)"
+                stroke="var(--surface-card)"
+                strokeWidth={3}
+                paintOrder="stroke"
+                pointerEvents="none"
+                data-testid="iso-net-label"
+              >
+                {netLabel(segment.net)}
+              </text>
+            </g>
+          );
+        })}
         {average && (
           <g stroke="var(--ink-faint)" strokeDasharray="6 5" strokeWidth={1.1} data-testid="average-lines" data-average-x={average.x} data-average-y={average.y}>
             <line x1={sx(average.x)} x2={sx(average.x)} y1={plot.top} y2={plot.bottom} />
             <line x1={plot.left} x2={plot.right} y1={sy(average.y)} y2={sy(average.y)} />
           </g>
         )}
-        {average && (
+        {average && cornerCaptions && (
           <g fontSize={12} fontWeight={500} fill="var(--ink-faint)" data-testid="corner-labels" pointerEvents="none">
-            <text x={plot.left + 10} y={plot.top + 20}>{captions.topLeft}</text>
-            <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">{captions.topRight}</text>
-            <text x={plot.left + 10} y={plot.bottom - 10}>{captions.bottomLeft}</text>
-            <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">{captions.bottomRight}</text>
-            <text x={plot.left + 10} y={plot.top + 37} fontSize={10}>{captions.note ?? "Relative to play-weighted FBS averages"}</text>
+            <text x={plot.left + 10} y={plot.top + 20}>{cornerCaptions.topLeft}</text>
+            <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">{cornerCaptions.topRight}</text>
+            <text x={plot.left + 10} y={plot.bottom - 10}>{cornerCaptions.bottomLeft}</text>
+            <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">{cornerCaptions.bottomRight}</text>
+            <text x={plot.left + 10} y={plot.top + 37} fontSize={10}>{cornerCaptions.note}</text>
           </g>
         )}
         <text x={(plot.left + plot.right) / 2} y={height - 10} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--ink)">
@@ -212,7 +201,7 @@ export function ScatterChart({
         <div
           role="status"
           data-testid="chart-tooltip"
-          className="pointer-events-none absolute z-10 max-w-64 rounded-lg border border-line bg-surface-card px-2.5 py-1.5 text-xs leading-snug text-ink shadow-md"
+          className="pointer-events-none absolute z-10 max-w-72 rounded-lg border border-line bg-surface-card px-2.5 py-1.5 text-xs leading-snug text-ink shadow-md"
           style={{
             left: `${(sx(tip.x) / width) * 100}%`,
             top: `${(sy(tip.y) / height) * 100}%`,

@@ -178,6 +178,11 @@ def _release(args: argparse.Namespace) -> int:
                 run_manifest_uri=manifest["run_manifest_logical_uri"],
                 verification_raw=verification,
                 projection_raw=projection,
+                # Re-hashed with every output by _sealed_candidate; staging
+                # checks it against the run identity.
+                revision_raw=Path(
+                    manifest["output_refs"]["revision_manifest"]["uri"]
+                ).read_bytes(),
                 environment=args.environment,
             )
             if args.environment == "production":

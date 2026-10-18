@@ -22,7 +22,9 @@ builder by the table's natural key (``release.PROJECTION_KEYS``).
 Row columns
 -----------
 Every row dict has exactly the columns of ``season_release_<table>`` in
-``contracts/migrations/0025_season_releases.sql`` (core tables) or ``0026_team_chart_tables.sql`` (chart tables) minus :data:`SERVER_COLUMNS`.
+``contracts/migrations/0025_season_releases.sql`` (core tables), ``0026_team_chart_tables.sql``
+(``charts_v1`` chart tables) or ``0027_team_game_yardage.sql`` (``team_game_yardage``)
+minus :data:`SERVER_COLUMNS`.
 ``release_id`` and ``environment`` are filled in by staging; they NEVER appear in
 payload rows or in any checksum (payload sha, per-table ``projection_checks``,
 readback comparison; note ``release.projection_check`` currently strips only
@@ -61,9 +63,11 @@ Table semantics
   :func:`benchmark_grading_version` ``(benchmark_type)``.
   ``prediction_market_selections`` use :data:`SELECTION_POLICY_VERSION`; market
   snapshots use :data:`MARKET_POLICY_VERSION`.
-* ``team_season_roster``, ``team_game_stats`` and ``team_adjusted_epa`` (the chart
-  tables) are descriptive reconstructions from the pinned revision inputs, windowed by
-  week; they use provider team names and never feed ratings, forecasts or grading.
+* ``team_season_roster``, ``team_game_stats``, ``team_adjusted_epa`` and (``charts_v2``)
+  ``team_game_yardage`` (the chart tables) are descriptive reconstructions from the
+  pinned revision inputs, windowed by week; they use provider team names and never
+  feed ratings, forecasts or grading. ``team_game_yardage`` has exactly the key set
+  of ``team_game_stats``.
 * Rating snapshot ids (``v5_rating_snapshots.snapshot_id``):
   preseason ``{run}:pregame:{team}:preseason``; per-week pregame
   ``{run}:pregame:{team}:week-{w}`` (``w >= 1``); current
@@ -97,9 +101,10 @@ Verification report ``season_verification_v2``
       "row_counts": {table: int}
     }
 
-``checks`` keys are exactly ``verification.REQUIRED_PROJECTION_CHECKS |
-verification.REQUIRED_PREPARE_CHECKS``. ``projection_checks`` and ``row_counts``
-cover every table in :data:`PROJECTION_ORDER`.
+``checks`` keys are exactly the required projection and prepare checks of the
+payload's projection set (``verification.REQUIRED_CHECK_SETS``; the staging set
+adds ``chart_yardage_recomputed``). ``projection_checks`` and ``row_counts``
+cover every table of that set (:data:`PROJECTION_ORDER` for new candidates).
 """
 
 from __future__ import annotations
@@ -164,14 +169,16 @@ CHART_TABLES: tuple[str, ...] = (
     "team_game_stats",
     "team_adjusted_epa",
 )
-#: Versioned table sets. A release records the set it was staged with (its
-#: ``projection_checks`` keys); retained releases are read back against that set.
+#: Versioned table sets, frozen once released. A release records the set it was
+#: staged with (its ``projection_checks`` keys); retained releases are read back,
+#: activated and rolled back against that set.
 PROJECTION_SETS: dict[str, tuple[str, ...]] = {
     "core_v1": _CORE_V1_ORDER,
     "charts_v1": (*_CORE_V1_ORDER, *CHART_TABLES),
+    "charts_v2": (*_CORE_V1_ORDER, *CHART_TABLES, "team_game_yardage"),
 }
 #: The only set new candidates may be staged with.
-STAGING_PROJECTION_SET = "charts_v1"
+STAGING_PROJECTION_SET = "charts_v2"
 PROJECTION_ORDER: tuple[str, ...] = PROJECTION_SETS[STAGING_PROJECTION_SET]
 SERVER_COLUMNS = frozenset({"release_id", "environment"})
 

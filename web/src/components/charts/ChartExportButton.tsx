@@ -50,6 +50,10 @@ export async function settleImages(node: Element): Promise<{ logos: number; deco
 }
 
 async function renderPng(node: HTMLElement, width: number, height: number): Promise<{ blob: Blob; report: ExportReport }> {
+  // html-to-image deep-clones SVG roots without copying computed styles of
+  // descendants. Bake each logo variant's visibility into the temporary export
+  // card: ancestor-dependent dark: utilities cannot survive that SVG clone.
+  for (const image of node.querySelectorAll("image")) image.style.display = getComputedStyle(image).display;
   const { logos, decoded } = await settleImages(node);
   const { toBlob } = await import("html-to-image");
   const background = getComputedStyle(node).backgroundColor;

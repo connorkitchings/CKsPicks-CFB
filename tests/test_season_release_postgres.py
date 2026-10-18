@@ -1,4 +1,4 @@
-"""Real-Postgres tests for atomic season releases (migrations 0025, 0026 + release.py).
+"""Real-Postgres tests for atomic season releases (migrations 0025-0027 + release.py).
 
 Harness: ``tests/pg_harness.py`` runs ``initdb --auth=trust --no-sync`` into a
 pytest temporary directory and starts a server that listens only on a Unix
@@ -48,7 +48,10 @@ from psycopg import errors, sql
 from cks_picks_cfb.season import release
 from cks_picks_cfb.season import verification as verifier
 from cks_picks_cfb.season.manifest import canonical
-from cks_picks_cfb.season.projection_common import PROJECTION_SETS
+from cks_picks_cfb.season.projection_common import (
+    PROJECTION_SETS,
+    recognized_projection_set,
+)
 from scripts.pipeline.run_season import _sealed_candidate
 from tests.pg_harness import PgCluster, find_pg_bin
 from tests.season_candidates import (
@@ -71,8 +74,16 @@ if PG_BIN is None:
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "contracts" / "migrations"
+WEB_DIR = ROOT / "web"
+#: The web resolver checks run the TypeScript modules through node.
+WEB_AVAILABLE = (WEB_DIR / "node_modules").is_dir()
+ACTIVE_SQL = (
+    "SELECT release_id, active_week FROM season_releases"
+    " WHERE environment = %s AND season = %s AND status = 'active'"
+)
 MIGRATION_0025 = MIGRATIONS / "0025_season_releases.sql"
 MIGRATION_0026 = MIGRATIONS / "0026_team_chart_tables.sql"
+MIGRATION_0027 = MIGRATIONS / "0027_team_game_yardage.sql"
 SNAPSHOT_MARKER = "-- Additive season releases."
 
 OWNER = "cks_owner"
@@ -142,11 +153,15 @@ def _bootstrap(cluster: PgCluster) -> None:
     with cluster.connect("tpl_0025", OWNER, autocommit=True) as conn:
         conn.execute(MIGRATION_0025.read_text())
     _create_db(cluster, "tpl_0025_operable", "tpl_0025")
-    _create_db(cluster, "tpl_migrated", "tpl_0025")
-    with cluster.connect("tpl_migrated", OWNER, autocommit=True) as conn:
+    _create_db(cluster, "tpl_0026", "tpl_0025")
+    with cluster.connect("tpl_0026", OWNER, autocommit=True) as conn:
         conn.execute(MIGRATION_0026.read_text())
+    _create_db(cluster, "tpl_0026_operable", "tpl_0026")
+    _create_db(cluster, "tpl_migrated", "tpl_0026")
+    with cluster.connect("tpl_migrated", OWNER, autocommit=True) as conn:
+        conn.execute(MIGRATION_0027.read_text())
     _create_db(cluster, "tpl_operable", "tpl_migrated")
-    for template in ("tpl_0025_operable", "tpl_operable"):
+    for template in ("tpl_0025_operable", "tpl_0026_operable", "tpl_operable"):
         with cluster.connect(template, OWNER, autocommit=True) as conn:
             for environment in PIPELINE:
                 install_policy(conn, environment)
@@ -224,6 +239,12 @@ def db(make_db):
 def db_0025(make_db):
     """Operable database that has migration 0025 but not the 0026 chart tables."""
     return make_db("tpl_0025_operable")
+
+
+@pytest.fixture
+def db_0026(make_db):
+    """Operable database with the charts_v1 tables (0026) but not 0027 yardage."""
+    return make_db("tpl_0026_operable")
 
 
 @pytest.fixture
@@ -395,12 +416,14 @@ def owner_insert_release(
 # --------------------------------------------------------------------------
 
 
-def test_snapshot_tail_is_migrations_0025_and_0026_verbatim_matches():
+def test_snapshot_tail_is_migrations_0025_to_0027_verbatim_matches():
     schema = (ROOT / "contracts" / "schema.sql").read_text()
 
     tail = schema[schema.index(SNAPSHOT_MARKER) :]
 
-    assert tail == MIGRATION_0025.read_text() + MIGRATION_0026.read_text()
+    assert tail == "".join(
+        path.read_text() for path in (MIGRATION_0025, MIGRATION_0026, MIGRATION_0027)
+    )
 
 
 def test_shipped_0025_applies_to_pre0025_database_succeeds(cluster, pre0025_db):
@@ -786,7 +809,7 @@ def test_stage_is_invisible_to_active_pointer_and_legacy_tables(cluster, db):
     changed = {k for k in legacy_after if legacy_after[k] != legacy_before[k]}
     assert changed == {"public.prediction_runs"}  # registry row reused by the release
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        rows = conn.execute(web_sql()[1], active_params("preview")).fetchall()
+        rows = conn.execute(ACTIVE_SQL, ("preview", SEASON)).fetchall()
     assert rows == []
 
 
@@ -1587,85 +1610,144 @@ def test_concurrent_identical_stages_create_one_release(cluster, db):
 # --------------------------------------------------------------------------
 
 
-def _web_projection_names(literal: str) -> list[str]:
-    """Release relation names of one ``*_RELEASE_TABLES`` literal, via schema.ts."""
-    query_ts = (ROOT / "web/src/lib/season-release-query.ts").read_text()
-    block = re.search(rf"{literal} = \[(.*?)\] as const", query_ts, re.S)
-    assert block, f"{literal} literal not found in season-release-query.ts"
-    keys = re.findall(r'"(\w+)"', block[1])
-    schema_ts = (ROOT / "web/src/lib/schema.ts").read_text()
-    names = dict(re.findall(r'export const (\w+) = pgTable\(\s*"(\w+)"', schema_ts))
-    unknown = [key for key in keys if key not in names]
-    assert not unknown, f"{literal} keys missing from schema.ts: {unknown}"
-    return [f"season_release_{names[key]}" for key in keys]
+def _web_script(script: str, spec: dict) -> dict:
+    """Run a web module snippet (``--experimental-strip-types``) and parse its JSON."""
+    if not WEB_AVAILABLE:
+        if os.environ.get("CI"):
+            pytest.fail("web dependencies are required in CI; run npm ci --prefix web")
+        pytest.skip("web dependencies are not installed; run npm ci --prefix web")
+    result = subprocess.run(
+        ["node", "--experimental-strip-types", "--input-type=module", "-e", script],
+        cwd=WEB_DIR,
+        env={**os.environ, "WEB_SPEC": json.dumps(spec)},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+_WEB_PROJECTIONS = """
+import {
+  CHART_SET_KEYS, CHART_SET_PROJECTIONS, RELEASE_PROJECTIONS,
+} from "./src/lib/season-release-query.ts";
+console.log(JSON.stringify({
+  core: RELEASE_PROJECTIONS, charts: CHART_SET_PROJECTIONS, keys: CHART_SET_KEYS,
+}));
+"""
+
+
+def web_projections() -> dict:
+    """The web's core relations and, per chart set, its relations and recorded keys."""
+    return _web_script(_WEB_PROJECTIONS, {})
 
 
 def web_release_projections() -> list[str]:
-    """CORE_RELEASE_TABLES (the relations every active release must expose)."""
-    return _web_projection_names("CORE_RELEASE_TABLES")
+    """The core relations every active release must expose."""
+    return web_projections()["core"]
 
 
-def web_chart_projections() -> list[str]:
-    """CHART_RELEASE_TABLES (the ``charts_v1`` additions)."""
-    return _web_projection_names("CHART_RELEASE_TABLES")
+# The real resolver, run with an ``execute`` that replays rows Python read from
+# Postgres; an unanswered query stops the run so Python can execute it next.
+_WEB_CONTEXT = """
+import { PgDialect } from "drizzle-orm/pg-core";
+import { loadReleaseContext } from "./src/lib/season-release-context.ts";
+const spec = JSON.parse(process.env.WEB_SPEC);
+const dialect = new PgDialect();
+const queries = [];
+const pending = new Error("pending");
+let context;
+try {
+  context = await loadReleaseContext(async (query) => {
+    queries.push(dialect.sqlToQuery(query));
+    if (queries.length > spec.results.length) throw pending;
+    return { rows: spec.results[queries.length - 1] };
+  }, spec.season, spec.environment);
+} catch (error) {
+  if (error !== pending) throw error;
+  context = "pending";
+}
+console.log(JSON.stringify({ queries, context }));
+"""
 
 
-def active_params(environment: str) -> tuple:
-    """Parameters of the active-release query: chart relations, environment, season."""
-    return (web_chart_projections(), environment, SEASON)
+def _pg_query(query: dict) -> tuple[str, dict]:
+    statement = re.sub(r"\$(\d+)", r"%(p\1)s", query["sql"])
+    params = {f"p{i}": value for i, value in enumerate(query["params"], start=1)}
+    return statement, params
 
 
-def web_sql() -> list[str]:
-    """The three sql`` templates in loadReleaseContext, ${...} as %s."""
-    source = (ROOT / "web/src/lib/season-release-context.ts").read_text()
-    body = source[source.index("export async function loadReleaseContext") :]
-    templates = re.findall(r"sql`(.*?)`", body, re.S)
-    assert len(templates) == 3, "loadReleaseContext query count changed"
-    return [re.sub(r"\$\{[^}]+\}", "%s", template) for template in templates]
+def _json_rows(cursor) -> list[dict]:
+    names = [column.name for column in cursor.description]
+    return [
+        {
+            name: value.isoformat() if hasattr(value, "isoformat") else value
+            for name, value in zip(names, row, strict=True)
+        }
+        for row in cursor.fetchall()
+    ]
+
+
+def web_release_context(conn, environment="preview") -> tuple[dict | None, list]:
+    """``loadReleaseContext`` of the web app against this database.
+
+    Returns the resolved context (``None`` when there is no active release) and
+    the SQL statements it issued.
+    """
+    results: list[list[dict]] = []
+    while True:
+        spec = {"results": results, "season": SEASON, "environment": environment}
+        run = _web_script(_WEB_CONTEXT, spec)
+        if run["context"] != "pending":
+            return run["context"], run["queries"]
+        results.append(_json_rows(conn.execute(*_pg_query(run["queries"][-1]))))
+
+
+def chart_set(conn, environment="preview") -> str | None:
+    """The web resolver's chart capability for the active release."""
+    context, _ = web_release_context(conn, environment)
+    return context and context["chartSet"]
+
+
+def _created(path: Path) -> set[str]:
+    return set(
+        re.findall(r"CREATE TABLE IF NOT EXISTS (season_release_\w+)", path.read_text())
+    )
 
 
 def test_release_projection_list_matches_migration_and_release_module():
-    web = web_release_projections()
-    created = set(
-        re.findall(
-            r"CREATE TABLE IF NOT EXISTS (season_release_\w+)",
-            MIGRATION_0025.read_text(),
-        )
-    )
+    web = web_projections()
+    core = web["core"]
 
-    assert len(web) == len(set(web))
-    assert set(web) == created - CONTROL_TABLES, (
-        "web RELEASE_PROJECTIONS and 0025 projection tables drifted: "
-        f"web-only={sorted(set(web) - created)}, "
-        f"migration-only={sorted(created - CONTROL_TABLES - set(web))}"
+    assert len(core) == len(set(core))
+    assert set(core) == _created(MIGRATION_0025) - CONTROL_TABLES
+    assert set(core) == {f"season_release_{b}" for b in PROJECTION_SETS["core_v1"]}
+    assert set(web["charts"]["charts_v1"]) == _created(MIGRATION_0026)
+    assert set(web["charts"]["charts_v2"]) == _created(MIGRATION_0026) | _created(
+        MIGRATION_0027
     )
-    assert set(web) == {f"season_release_{b}" for b in PROJECTION_SETS["core_v1"]}
-    charts = set(web_chart_projections())
-    assert charts == set(
-        re.findall(
-            r"CREATE TABLE IF NOT EXISTS (season_release_\w+)",
-            MIGRATION_0026.read_text(),
-        )
-    )
-    assert set(web) | charts == {f"season_release_{b}" for b in release.PROJECTION_KEYS}
+    assert set(core) | set(web["charts"]["charts_v2"]) == {
+        f"season_release_{b}" for b in release.PROJECTION_KEYS
+    }
+    # The web recognizes a set exactly by the keys staging records for it.
+    for name in ("charts_v1", "charts_v2"):
+        assert web["keys"][name] == sorted(PROJECTION_SETS[name])
 
 
 def test_web_existence_probe_false_before_0025(cluster, pre0025_db):
     with cluster.connect(pre0025_db, WEB_LOGIN, autocommit=True) as conn:
-        exists = conn.execute(web_sql()[0]).fetchone()[0]
+        context, queries = web_release_context(conn)
 
-    assert exists is False
+    assert context is None and len(queries) == 1
 
 
 def test_web_active_query_returns_no_row_without_activation(cluster, db):
     stage(cluster, db, "r1")
 
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        exists = conn.execute(web_sql()[0]).fetchone()[0]
-        rows = conn.execute(web_sql()[1], active_params("preview")).fetchall()
+        context, queries = web_release_context(conn)
 
-    assert exists is True
-    assert rows == []
+    assert context is None and len(queries) == 2
 
 
 def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db):
@@ -1673,36 +1755,36 @@ def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db
     activate(cluster, db, first, None)
     second = stage(cluster, db, "r2")
     activate(cluster, db, second, first)
-    exists_sql, active_sql, missing_sql = web_sql()
 
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        rows = conn.execute(active_sql, active_params("preview")).fetchall()
-        other = conn.execute(active_sql, active_params("production")).fetchall()
-        missing = conn.execute(missing_sql, (web_release_projections(),)).fetchall()
+        context, queries = web_release_context(conn)
+        other, _ = web_release_context(conn, "production")
 
-    assert len(rows) == 1
-    release_id, environment, season, active_week, activated_at, *_ = rows[0]
-    assert (release_id, environment, season, active_week) == (
-        second,
-        "preview",
-        SEASON,
-        ACTIVE_WEEK,
-    )
-    assert activated_at is not None
-    assert other == []
-    assert missing == []
+    assert len(queries) == 3  # existence, active release, missing projections
+    assert (
+        context["releaseId"],
+        context["environment"],
+        context["season"],
+        context["activeWeek"],
+        context["chartSet"],
+    ) == (second, "preview", SEASON, ACTIVE_WEEK, "charts_v2")
+    assert context["activatedAt"]
+    assert other is None
 
 
 def test_web_missing_projection_query_with_one_array_parameter_succeeds(cluster, db):
     """season-release.test.ts pins drizzle's rendering to one ``$1::text[]``."""
+    first = stage(cluster, db, "r1")
+    activate(cluster, db, first, None)
     names = web_release_projections()
-    missing_sql = web_sql()[2]
 
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        missing = conn.execute(missing_sql, (names,)).fetchall()
-        absent = conn.execute(missing_sql, ([*names, "season_release_absent"],))
+        _, queries = web_release_context(conn)
+        statement, params = _pg_query(queries[2])
+        missing = conn.execute(statement, params).fetchall()
+        absent = conn.execute(statement, {"p1": [*names, "season_release_absent"]})
 
-        assert missing_sql.count("%s") == 1
+        assert params == {"p1": names}
         assert missing == []
         assert absent.fetchall() == [("season_release_absent",)]
 
@@ -1747,6 +1829,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
         _sealed_candidate(manifest1, "0" * 64)
 
     proj1, verif1 = _sealed_candidate(manifest1, pinned1)
+    rev1 = Path(manifest1["output_refs"]["revision_manifest"]["uri"]).read_bytes()
 
     # Install owner policy for s1 in preview and production
     with cluster.connect(db_name, OWNER, autocommit=True) as conn:
@@ -1782,6 +1865,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
                 run_manifest_uri=manifest1["run_manifest_logical_uri"],
                 verification_raw=verif1,
                 projection_raw=corrupted_raw,
+                revision_raw=rev1,
                 environment="preview",
             )
     assert release_state(cluster, db_name) == before_state
@@ -1794,6 +1878,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
             run_manifest_uri=manifest1["run_manifest_logical_uri"],
             verification_raw=verif1,
             projection_raw=proj1,
+            revision_raw=rev1,
             environment="preview",
         )
         prev_receipt1 = release.activate_release(
@@ -1814,6 +1899,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
             run_manifest_uri=manifest1["run_manifest_logical_uri"],
             verification_raw=verif1,
             projection_raw=proj1,
+            revision_raw=rev1,
             environment="production",
         )
         conn.commit()
@@ -1835,20 +1921,18 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
             conn.commit()
     assert prod_receipt1["release_id"] == prod_id1
 
-    # 5. Web read queries against Production
-    exists_sql, active_sql, missing_sql = web_sql()
+    # 5. Web reads against Production. With the web modules installed, the real
+    # resolver finds every projection and a charts_v2 release.
     with cluster.connect(db_name, WEB_LOGIN, autocommit=True) as conn:
-        exists = conn.execute(exists_sql).fetchone()[0]
-        active_prod = conn.execute(active_sql, active_params("production")).fetchall()
-        missing_prod = conn.execute(
-            missing_sql, (web_release_projections(),)
-        ).fetchall()
-
-    assert exists is True
-    assert len(active_prod) == 1
-    assert active_prod[0][0] == prod_id1
-    assert active_prod[0][3] == ACTIVE_WEEK
-    assert missing_prod == []
+        assert conn.execute(ACTIVE_SQL, ("production", SEASON)).fetchall() == [
+            (prod_id1, ACTIVE_WEEK)
+        ]
+        if WEB_AVAILABLE:
+            context, queries = web_release_context(conn, "production")
+            assert len(queries) == 3  # existence, active, no missing projections
+            assert context["releaseId"] == prod_id1
+            assert context["activeWeek"] == ACTIVE_WEEK
+            assert context["chartSet"] == "charts_v2"
 
     # 6. Prepare, stage, activate second candidate (s2)
     s2_dir = tmp_path / "s2"
@@ -1863,6 +1947,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
     manifest2 = json.loads(manifest_raw2)
     pinned2 = manifest2["output_refs"]["serving_projections"]["sha256"]
     proj2, verif2 = _sealed_candidate(manifest2, pinned2)
+    rev2 = Path(manifest2["output_refs"]["revision_manifest"]["uri"]).read_bytes()
 
     with cluster.connect(db_name, PIPELINE["preview"]) as conn:
         prev_id2 = release.stage_release(
@@ -1871,6 +1956,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
             run_manifest_uri=manifest2["run_manifest_logical_uri"],
             verification_raw=verif2,
             projection_raw=proj2,
+            revision_raw=rev2,
             environment="preview",
         )
         release.activate_release(
@@ -1889,6 +1975,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
             run_manifest_uri=manifest2["run_manifest_logical_uri"],
             verification_raw=verif2,
             projection_raw=proj2,
+            revision_raw=rev2,
             environment="production",
         )
         conn.commit()
@@ -1954,11 +2041,12 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
                 f"Table {table} rows changed during rollback"
             )
 
-    # Web query sees prod_id1 as active again
+    # Web reads see prod_id1 as active again
     with cluster.connect(db_name, WEB_LOGIN, autocommit=True) as conn:
-        active_after = conn.execute(active_sql, active_params("production")).fetchall()
-    assert len(active_after) == 1
-    assert active_after[0][0] == prod_id1
+        active_after = conn.execute(ACTIVE_SQL, ("production", SEASON)).fetchall()
+        if WEB_AVAILABLE:
+            assert web_release_context(conn, "production")[0]["releaseId"] == prod_id1
+    assert active_after == [(prod_id1, ACTIVE_WEEK)]
 
 
 # --------------------------------------------------------------------------
@@ -1966,124 +2054,147 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
 # --------------------------------------------------------------------------
 
 CHART_TABLES = ("team_season_roster", "team_game_stats", "team_adjusted_epa")
-WEB_DIR = ROOT / "web"
 _WEB_QUERY = """
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./src/lib/schema.ts";
 import { seasonReleaseDb } from "./src/lib/season-release-query.ts";
-const spec = JSON.parse(process.env.WEB_QUERY);
+const spec = JSON.parse(process.env.WEB_SPEC);
 const db = drizzle.mock({ schema });
 const table = schema[spec.table];
 const columns = Object.fromEntries(spec.columns.map((name) => [name, table[name]]));
-const query = seasonReleaseDb(db, spec.releaseId, { charts: spec.charts })
+const query = seasonReleaseDb(db, spec.releaseId, { chartSet: spec.chartSet })
   .select(columns).from(table).toSQL();
 console.log(JSON.stringify(query));
 """
 
 
-def web_query_rows(conn, release_id, table, columns, *, charts):
+def web_query_rows(conn, release_id, table, columns, *, chart_set):
     """Run the SQL the web app generates for ``select(columns).from(table)``.
 
     The statement comes from season-release-query.ts through drizzle itself, so it
-    is exactly the release-scoped CTE query a page would execute.
+    is exactly the release-scoped CTE query a page would execute for ``chart_set``.
     """
-    if not (WEB_DIR / "node_modules").is_dir():
-        pytest.skip("web dependencies are not installed")
     spec = {
         "releaseId": release_id,
-        "charts": charts,
+        "chartSet": chart_set,
         "table": table,
         "columns": columns,
     }
-    result = subprocess.run(
-        ["node", "--experimental-strip-types", "--input-type=module", "-e", _WEB_QUERY],
-        cwd=WEB_DIR,
-        env={**os.environ, "WEB_QUERY": json.dumps(spec)},
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    query = json.loads(result.stdout)
-    statement = re.sub(r"\$(\d+)", r"%(p\1)s", query["sql"])
-    params = {f"p{i}": value for i, value in enumerate(query["params"], start=1)}
-    return conn.execute(statement, params).fetchall()
+    query = _web_script(_WEB_QUERY, spec)
+    return conn.execute(*_pg_query(query)).fetchall()
 
 
-def charts_available(conn, environment="preview") -> bool:
-    """The resolver rule of season-release-context.ts, from the real query result."""
-    row = conn.execute(web_sql()[1], active_params(environment)).fetchone()
-    keys, relations = row[5], row[6]
-    return relations is True and sorted(keys) == sorted(PROJECTION_SETS["charts_v1"])
-
-
-def sealed_core_v1(label, **kwargs):
-    """A candidate in the shape releases had before charts (the 18 core tables)."""
-    core_tables = set(PROJECTION_SETS["core_v1"])
+def sealed_retained(label, projection_set, **kwargs):
+    """A candidate in the shape releases of an older set had (core_v1 or charts_v1)."""
+    tables = set(PROJECTION_SETS[projection_set])
+    projection_names, prepare_names = verifier.REQUIRED_CHECK_SETS[projection_set]
     full = payload_for(label)
     if edit := kwargs.get("edit_payload"):
         edit(full)
-    core = {k: v for k, v in full.items() if k in core_tables | {"prediction_runs"}}
 
     def trim(report):
         for key in ("projection_checks", "row_counts"):
-            report[key] = {k: v for k, v in report[key].items() if k in core_tables}
-        del report["checks"]["team_chart_reconciliation"]
-        for name, entry in _passing(None).items():
-            if name != "team_chart_reconciliation":
-                report["checks"][name] = entry
+            report[key] = {k: v for k, v in report[key].items() if k in tables}
+        passing = _passing(None)
+        report["checks"] = {
+            name: passing.get(name, entry)
+            for name, entry in report["checks"].items()
+            if name in projection_names | prepare_names
+        }
 
-    return seal(label, core, reported_payload=full, edit_report=trim)
+    older = {k: v for k, v in full.items() if k in tables | {"prediction_runs"}}
+    return seal(label, older, reported_payload=full, edit_report=trim)
 
 
-def patch_core_v1_staging(monkeypatch):
-    """Stage like the pre-charts code did (used only to create retained core_v1 releases)."""
-    core = PROJECTION_SETS["core_v1"]
-    monkeypatch.setattr(release, "PROJECTION_ORDER", core)
+def patch_retained_staging(monkeypatch, projection_set):
+    """Stage like the code of an older set did (only to create retained releases)."""
+    order = PROJECTION_SETS[projection_set]
+    projection_names, prepare_names = verifier.REQUIRED_CHECK_SETS[projection_set]
+    monkeypatch.setattr(release, "PROJECTION_ORDER", order)
     monkeypatch.setattr(
         release,
         "PROJECTION_KEYS",
-        {k: v for k, v in release.PROJECTION_KEYS.items() if k in core},
+        {k: v for k, v in release.PROJECTION_KEYS.items() if k in order},
     )
     monkeypatch.setattr(release, "_require_staging_set", lambda tables: None)
     monkeypatch.setattr(release, "_check_chart_scope", lambda *args: None)
-    monkeypatch.setattr(
-        verifier,
-        "REQUIRED_PROJECTION_CHECKS",
-        verifier.REQUIRED_PROJECTION_CHECKS - {"team_chart_reconciliation"},
-    )
+    monkeypatch.setattr(release, "_bind_yardage_evidence", lambda *args: None)
+    monkeypatch.setattr(verifier, "REQUIRED_PROJECTION_CHECKS", projection_names)
+    monkeypatch.setattr(verifier, "REQUIRED_PREPARE_CHECKS", prepare_names)
     monkeypatch.setattr(verifier, "derive_checks", lambda p, m: _passing(p))
     monkeypatch.setattr(verifier, "validate_report", lambda report, **kwargs: None)
 
 
-def stage_retained_core_v1(cluster, dbname, label, monkeypatch, **kwargs):
-    sealed = sealed_core_v1(label, **kwargs)
+def stage_retained(cluster, dbname, label, monkeypatch, projection_set, **kwargs):
+    sealed = sealed_retained(label, projection_set, **kwargs)
     with monkeypatch.context() as patch:
-        patch_core_v1_staging(patch)
+        patch_retained_staging(patch, projection_set)
         return stage(cluster, dbname, label, payload=sealed)
 
 
-def test_chart_tables_are_additive_and_0026_is_idempotent(cluster, make_db):
-    name = make_db("tpl_0025")
+def stage_retained_core_v1(cluster, dbname, label, monkeypatch, **kwargs):
+    return stage_retained(cluster, dbname, label, monkeypatch, "core_v1", **kwargs)
+
+
+def recorded_set(cluster, dbname, release_id) -> str:
+    with cluster.connect(dbname, OWNER, autocommit=True) as conn:
+        checks = conn.execute(
+            "SELECT projection_checks FROM season_releases WHERE release_id = %s",
+            (release_id,),
+        ).fetchone()[0]
+    return recognized_projection_set(checks)
+
+
+_CATALOG = (
+    "SELECT table_name || '.' || column_name || ':' || data_type || ':' || is_nullable"
+    " FROM information_schema.columns WHERE table_name = ANY(%s)"
+    " UNION ALL SELECT tgrelid::regclass || ':' || tgname FROM pg_trigger"
+    "  WHERE NOT tgisinternal AND tgrelid::regclass::text LIKE 'season\\_release\\_team\\_%%'"
+    " UNION ALL SELECT relname || ':' || coalesce(relacl::text, '') FROM pg_class"
+    "  WHERE relname = ANY(%s) ORDER BY 1"
+)
+
+
+@pytest.mark.parametrize(
+    "template, migration, tables",
+    [
+        ("tpl_0025", MIGRATION_0026, CHART_TABLES),
+        ("tpl_0026", MIGRATION_0027, ("team_game_yardage",)),
+    ],
+    ids=["0026", "0027"],
+)
+def test_chart_tables_are_additive_and_migration_is_idempotent(
+    cluster, make_db, template, migration, tables
+):
+    name = make_db(template)
     before = legacy_state(cluster, name)
-    catalog = (
-        "SELECT table_name || '.' || column_name || ':' || data_type || ':' || is_nullable"
-        " FROM information_schema.columns WHERE table_name = ANY(%s)"
-        " UNION ALL SELECT tgrelid::regclass || ':' || tgname FROM pg_trigger"
-        "  WHERE NOT tgisinternal AND tgrelid::regclass::text LIKE 'season\\_release\\_team\\_%%'"
-        " UNION ALL SELECT relname || ':' || coalesce(relacl::text, '') FROM pg_class"
-        "  WHERE relname = ANY(%s) ORDER BY 1"
-    )
-    names = [*CHART_TABLES, *(f"season_release_{t}" for t in CHART_TABLES)]
+    names = [*tables, *(f"season_release_{t}" for t in tables)]
     with cluster.connect(name, OWNER, autocommit=True) as conn:
-        conn.execute(MIGRATION_0026.read_text())
-        first = conn.execute(catalog, (names, names)).fetchall()
-        conn.execute(MIGRATION_0026.read_text())
-        second = conn.execute(catalog, (names, names)).fetchall()
+        conn.execute(migration.read_text())
+        first = conn.execute(_CATALOG, (names, names)).fetchall()
+        conn.execute(migration.read_text())
+        second = conn.execute(_CATALOG, (names, names)).fetchall()
     after = legacy_state(cluster, name)
 
     assert first == second and first
     assert {k: after[k] for k in before} == before
-    assert set(after) - set(before) == {f"public.{t}" for t in CHART_TABLES}
+    assert set(after) - set(before) == {f"public.{t}" for t in tables}
+
+
+def test_yardage_grants_follow_the_chart_tables(cluster, migrated_db):
+    with cluster.connect(migrated_db, OWNER, autocommit=True) as conn:
+        rows = conn.execute(
+            "SELECT relname, coalesce(relacl::text, '') FROM pg_class"
+            " WHERE relname IN ('season_release_team_game_stats',"
+            " 'season_release_team_game_yardage', 'team_game_stats',"
+            " 'team_game_yardage')"
+        ).fetchall()
+    acl = dict(rows)
+    assert (
+        acl["season_release_team_game_yardage"] == acl["season_release_team_game_stats"]
+    )
+    assert "cks_web" not in acl["team_game_yardage"]
+    assert "cks_pipeline" not in acl["team_game_yardage"]
 
 
 @pytest.mark.parametrize(
@@ -2092,6 +2203,9 @@ def test_chart_tables_are_additive_and_0026_is_idempotent(cluster, make_db):
         "UPDATE season_release_team_season_roster SET conference = 'x'",
         "DELETE FROM season_release_team_game_stats",
         "TRUNCATE season_release_team_adjusted_epa",
+        "UPDATE season_release_team_game_yardage SET off_yards_n = 0",
+        "DELETE FROM season_release_team_game_yardage",
+        "TRUNCATE season_release_team_game_yardage",
     ],
 )
 def test_pipeline_cannot_update_delete_or_truncate_chart_projections(
@@ -2108,6 +2222,8 @@ def test_chart_projection_rows_are_immutable_even_for_the_owner(cluster, db):
         for statement in (
             "UPDATE season_release_team_season_roster SET conference = 'x'",
             "DELETE FROM season_release_team_game_stats",
+            "UPDATE season_release_team_game_yardage SET off_yards_n = 0",
+            "DELETE FROM season_release_team_game_yardage",
         ):
             with pytest.raises(errors.RaiseException, match="immutable"):
                 conn.execute(statement)
@@ -2116,11 +2232,14 @@ def test_chart_projection_rows_are_immutable_even_for_the_owner(cluster, db):
                 "INSERT INTO season_release_team_season_roster (release_id, season, team)"
                 " VALUES ('absent', 2026, 'T')"
             )
-        count = conn.execute(
-            "SELECT count(*) FROM season_release_team_season_roster WHERE release_id = %s",
-            (release_id,),
-        ).fetchone()[0]
-    assert count == 4
+        counts = conn.execute(
+            "SELECT (SELECT count(*) FROM season_release_team_season_roster"
+            "  WHERE release_id = %(r)s),"
+            " (SELECT count(*) FROM season_release_team_game_yardage"
+            "  WHERE release_id = %(r)s)",
+            {"r": release_id},
+        ).fetchone()
+    assert counts == (4, 6)
 
 
 def test_chart_queries_return_release_values_never_live_rows(cluster, db):
@@ -2137,21 +2256,35 @@ def test_chart_queries_return_release_values_never_live_rows(cluster, db):
             "INSERT INTO team_season_roster (season, team, conference)"
             " VALUES (2026, 'Live Only', 'LIVE')"
         )
+        conn.execute(
+            "INSERT INTO team_game_yardage SELECT season, game_id, team, 99, 99, 99,"
+            " 99.0, 99, 99, 99, 99.0 FROM season_release_team_game_yardage"
+            " WHERE release_id = %s",
+            (release_id,),
+        )
         live = conn.execute(
             "SELECT DISTINCT conference FROM team_season_roster"
         ).fetchall()
     assert live == [("LIVE",)]
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        assert charts_available(conn)
+        assert chart_set(conn) == "charts_v2"
         rows = web_query_rows(
             conn,
             release_id,
             "teamSeasonRoster",
             ["team", "conference"],
-            charts=True,
+            chart_set="charts_v2",
+        )
+        yardage = web_query_rows(
+            conn,
+            release_id,
+            "teamGameYardage",
+            ["gameId", "team", "offYardsN"],
+            chart_set="charts_v2",
         )
     assert {team for team, _ in rows} == {"A", "B", "C", "D"}  # not 'Live Only'
     assert {conference for _, conference in rows} == {"Fixture"}
+    assert {(game, team): n for game, team, n in yardage}[(1, "A")] == 6  # not 99
 
 
 def test_charts_release_over_core_release_and_owner_rollback_round_trip(
@@ -2164,21 +2297,19 @@ def test_charts_release_over_core_release_and_owner_rollback_round_trip(
     receipt = activate(cluster, db, new, old)
     assert receipt["prior_release_id"] == old
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        assert charts_available(conn) is True
-        assert {
-            c
-            for (c,) in web_query_rows(conn, new, "gameVenues", ["city"], charts=False)
-        } == {"Elsewhere"}
+        assert chart_set(conn) == "charts_v2"
+        venues = web_query_rows(conn, new, "gameVenues", ["city"], chart_set=None)
+        assert {c for (c,) in venues} == {"Elsewhere"}
 
     # Owner rollback to the retained core_v1 release: readback uses its recorded set.
     rollback(cluster, db, old, new)
     assert statuses(cluster, db) == {old: "active", new: "rolled_back"}
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        assert charts_available(conn) is False
-        cities = web_query_rows(conn, old, "gameVenues", ["city"], charts=False)
-        missing = conn.execute(web_sql()[2], (web_release_projections(),)).fetchall()
+        context, queries = web_release_context(conn)
+        cities = web_query_rows(conn, old, "gameVenues", ["city"], chart_set=None)
+    assert context["releaseId"] == old and context["chartSet"] is None
+    assert len(queries) == 3  # no missing core projections
     assert {c for (c,) in cities} == {"City"}
-    assert missing == []
 
     # The chart release is rolled_back, so ordinary activation refuses it ...
     with pytest.raises(release.SeasonReleaseError, match="invalid activation status"):
@@ -2187,7 +2318,7 @@ def test_charts_release_over_core_release_and_owner_rollback_round_trip(
     rollback(cluster, db, new, old)
     assert statuses(cluster, db) == {old: "rolled_back", new: "active"}
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
-        assert charts_available(conn) is True
+        assert chart_set(conn) == "charts_v2"
     assert [row[2] for row in history(cluster, db)] == [
         "activate",
         "activate",
@@ -2196,12 +2327,68 @@ def test_charts_release_over_core_release_and_owner_rollback_round_trip(
     ]
 
 
-def test_core_v1_and_partial_candidates_are_refused_at_stage_without_writes(
-    cluster, db
+def test_charts_v1_rollback_over_charts_v2_and_back(cluster, db, monkeypatch):
+    old = stage_retained(cluster, db, "old", monkeypatch, "charts_v1")
+    assert recorded_set(cluster, db, old) == "charts_v1"
+    activate(cluster, db, old, None)
+    new = stage(cluster, db, "new", payload=candidate("new", edit_payload=rename_venue))
+    assert recorded_set(cluster, db, new) == "charts_v2"
+    activate(cluster, db, new, old)
+    with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
+        assert chart_set(conn) == "charts_v2"
+
+    # Rollback to charts_v1 reads back its 21 tables only; the web serves charts
+    # without explosiveness and never references the yardage relation.
+    rollback(cluster, db, old, new)
+    assert statuses(cluster, db) == {old: "active", new: "rolled_back"}
+    with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
+        assert chart_set(conn) == "charts_v1"
+        stats = web_query_rows(
+            conn, old, "teamGameStats", ["gameId", "team"], chart_set="charts_v1"
+        )
+    assert len(stats) == 6
+
+    rollback(cluster, db, new, old)
+    assert statuses(cluster, db) == {old: "rolled_back", new: "active"}
+    with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
+        assert chart_set(conn) == "charts_v2"
+
+
+def test_retained_charts_v1_release_serves_charts_without_migration_0027(
+    cluster, db_0026, monkeypatch
+):
+    release_id = stage_retained(cluster, db_0026, "old", monkeypatch, "charts_v1")
+    activate(cluster, db_0026, release_id, None)
+    with cluster.connect(db_0026, WEB_LOGIN, autocommit=True) as conn:
+        assert chart_set(conn) == "charts_v1"
+        stats = web_query_rows(
+            conn, release_id, "teamGameStats", ["gameId"], chart_set="charts_v1"
+        )
+    assert len(stats) == 6
+    # A charts_v2 candidate cannot be staged before 0027 exists.
+    with pytest.raises(release.SeasonReleaseError, match="projection schema missing"):
+        stage(cluster, db_0026, "new")
+
+
+def test_charts_v2_release_without_its_yardage_relation_serves_no_charts(cluster, db):
+    release_id = stage(cluster, db, "r1")
+    activate(cluster, db, release_id, None)
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
+        conn.execute("DROP TABLE season_release_team_game_yardage")
+    with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
+        context, _ = web_release_context(conn)
+    assert context["releaseId"] == release_id and context["chartSet"] is None
+
+
+@pytest.mark.parametrize("projection_set", ["core_v1", "charts_v1"])
+def test_older_set_and_partial_candidates_are_refused_at_stage_without_writes(
+    cluster, db, projection_set
 ):
     before = release_state(cluster, db)
-    with pytest.raises(release.SeasonReleaseError, match="core_v1 candidates"):
-        stage(cluster, db, "core", payload=sealed_core_v1("core"))
+    with pytest.raises(
+        release.SeasonReleaseError, match=f"{projection_set} candidates"
+    ):
+        stage(cluster, db, "old", payload=sealed_retained("old", projection_set))
     full = payload_for("partial")
     partial = {k: v for k, v in full.items() if k != "team_game_stats"}
     with pytest.raises(release.SeasonReleaseError, match="complete fixed"):
@@ -2220,11 +2407,10 @@ def test_resolver_without_migration_0026_serves_core_pages_without_charts(
     release_id = stage_retained_core_v1(cluster, db_0025, "old", monkeypatch)
     activate(cluster, db_0025, release_id, None)
     with cluster.connect(db_0025, WEB_LOGIN, autocommit=True) as conn:
-        exists, active, missing = web_sql()
-        assert conn.execute(exists).fetchone()[0] is True
-        row = conn.execute(active, active_params("preview")).fetchone()
-        assert row[0] == release_id and row[6] is False  # chart relations absent
-        assert conn.execute(missing, (web_release_projections(),)).fetchall() == []
-        assert charts_available(conn) is False
-        cities = web_query_rows(conn, release_id, "gameVenues", ["city"], charts=False)
+        context, queries = web_release_context(conn)
+        cities = web_query_rows(
+            conn, release_id, "gameVenues", ["city"], chart_set=None
+        )
+    assert context["releaseId"] == release_id and context["chartSet"] is None
+    assert len(queries) == 3  # no missing core projections
     assert {c for (c,) in cities} == {"City"}

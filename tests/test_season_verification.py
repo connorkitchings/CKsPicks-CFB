@@ -20,9 +20,21 @@ from cks_picks_cfb.season.projection_common import (
     weekly_run_id,
 )
 
+#: The revision manifest every synthetic run pins; only its byplay ref is read
+#: (staging binds the ``chart_yardage_recomputed`` evidence to it).
+REVISION = {
+    "schema_version": "season_revision_v1",
+    "inputs": {
+        "byplay": {
+            "uri": "lake/silver/byplay/season=2026/fixture.parquet",
+            "sha256": "9" * 64,
+        }
+    },
+}
+REVISION_RAW = canonical(REVISION)
 IDENTITY = {
     "model_manifest_sha256": "1" * 64,
-    "revision_manifest_sha256": "2" * 64,
+    "revision_manifest_sha256": sha(REVISION_RAW),
     "workflow_version": "season_workflow_v1",
     "grading_policy_sha256": "3" * 64,
     "code_sha": "a" * 40,
@@ -121,6 +133,37 @@ def chart_tables() -> tuple[list[dict], list[dict]]:
                 }
             )
     return roster, rows
+
+
+#: game_id -> (home offense, away offense) yardage: yards_n, explosive_n,
+#: success_yards_n, success_yards_sum. Within the CHART_OFFENSE plays/successes.
+CHART_YARDAGE = {
+    1: ((6, 1, 3, 21.0), (5, 0, 2, 9.0)),
+    2: ((7, 2, 4, 40.0), (8, 1, 3, 12.5)),
+    3: ((4, 0, 1, 5.0), (9, 2, 5, 61.0)),
+}
+
+
+def chart_yardage() -> list[dict]:
+    """Mirrored ``team_game_yardage`` rows, keyed like the team-game rows."""
+    fields = ("yards_n", "explosive_n", "success_yards_n", "success_yards_sum")
+    rows = []
+    for game, (home_off, away_off) in CHART_YARDAGE.items():
+        _, _, home, away, _ = GAMES[game]
+        for team, own, other in (
+            (home, home_off, away_off),
+            (away, away_off, home_off),
+        ):
+            rows.append(
+                {
+                    "season": 2026,
+                    "game_id": game,
+                    "team": team,
+                    **{f"off_{k}": v for k, v in zip(fields, own, strict=True)},
+                    **{f"def_{k}": v for k, v in zip(fields, other, strict=True)},
+                }
+            )
+    return rows
 
 
 def synthetic_payload(
@@ -599,6 +642,7 @@ def synthetic_payload(
         "team_season_roster": roster,
         "team_game_stats": team_games,
         "team_adjusted_epa": [],  # active_week 2 < 3: no adjusted window yet
+        "team_game_yardage": chart_yardage(),
     }
     return {name: _sorted(name, rows) for name, rows in tables.items()}
 
@@ -607,6 +651,22 @@ PASSING_PREPARE = {
     name: {"passed": True, "observed": {"violations": 0}, "source": "prepare"}
     for name in v.REQUIRED_PREPARE_CHECKS
 }
+
+
+def passing_prepare(payload: dict) -> dict:
+    """Passing prepare checks whose yardage evidence is bound to ``payload``."""
+    evidence = v.yardage_evidence(
+        payload["team_game_yardage"], REVISION["inputs"]["byplay"]
+    )
+    observed = {**evidence, "violations": 0, "examples": []}
+    return {
+        **copy.deepcopy(PASSING_PREPARE),
+        "chart_yardage_recomputed": {
+            "passed": True,
+            "observed": observed,
+            "source": "prepare",
+        },
+    }
 
 
 def failing(payload, manifest=MANIFEST) -> set[str]:
@@ -639,6 +699,42 @@ def test_synthetic_payload_passes_every_projection_check(payload):
     report = report_for(payload)
     assert report["state"] == "passed"
     v.validate_report(json.loads(canonical(report)), projections=payload)
+
+
+@pytest.mark.parametrize("projection_set", ["core_v1", "charts_v1", "charts_v2"])
+def test_retained_reports_validate_with_their_frozen_checks(payload, projection_set):
+    """Legacy reports neither require nor acquire checks introduced by later sets."""
+    from cks_picks_cfb.season.projection_common import PROJECTION_SETS
+
+    tables = PROJECTION_SETS[projection_set]
+    retained = {name: payload[name] for name in ("prediction_runs", *tables)}
+    projection_names = v.REQUIRED_PROJECTION_CHECKS
+    prepare_names = v.REQUIRED_PREPARE_CHECKS
+    if projection_set == "core_v1":
+        projection_names = projection_names - {"team_chart_reconciliation"}
+    if projection_set != "charts_v2":
+        prepare_names = prepare_names - {"chart_yardage_recomputed"}
+    prepare = {
+        name: entry
+        for name, entry in passing_prepare(payload).items()
+        if name in prepare_names
+    }
+
+    checks = v.derive_checks(retained, MANIFEST)
+    assert set(checks) == projection_names
+    assert all(entry["passed"] for entry in checks.values())
+    report = v.assemble_report(retained, MANIFEST, prepare)
+    assert report["state"] == "passed"
+    assert set(report["checks"]) == projection_names | prepare_names
+    assert set(report["projection_checks"]) == set(tables)
+    v.validate_report(
+        json.loads(canonical(report)), projections=retained, manifest=MANIFEST
+    )
+
+    forged = copy.deepcopy(report)
+    forged["checks"]["tables_complete"]["observed"]["unexpected"] = 1
+    with pytest.raises(v.VerificationError, match="not reproducible"):
+        v.validate_report(forged, projections=retained, manifest=MANIFEST)
 
 
 def test_report_is_deterministic_and_canonical(payload):

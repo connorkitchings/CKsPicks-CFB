@@ -59,6 +59,7 @@ PROJECTION_KEYS = {
     "team_season_roster": ("season", "team"),
     "team_game_stats": ("season", "game_id", "team"),
     "team_adjusted_epa": ("season", "as_of_week", "team", "role"),
+    "team_game_yardage": ("season", "game_id", "team"),
 }
 IDENTITY_FIELDS = (
     "season",
@@ -110,6 +111,7 @@ def validate_candidate(
     verification: Mapping,
     projections: Mapping,
     *,
+    revision_raw: bytes,
     derive=None,
     validate=None,
 ) -> None:
@@ -122,6 +124,11 @@ def validate_candidate(
     self-reported pass is never trusted; ``validate(report, projections=...,
     manifest=manifest)`` (default ``verification.validate_report``) then checks the
     whole report and binds its identity and output refs to the run manifest.
+
+    ``revision_raw`` is the revision manifest the run identity pins. The
+    ``chart_yardage_recomputed`` prepare evidence must name its pinned byplay
+    input and the payload's own ``team_game_yardage`` digest. Nothing is read
+    from storage: play-level recomputation happened at prepare.
     """
     from cks_picks_cfb.season import verification as verifier
 
@@ -193,12 +200,42 @@ def validate_candidate(
         if _plain(checks[name]) != entry:
             raise SeasonReleaseError(f"reported check differs from payload: {name}")
     tables = {base: projections[base] for base in PROJECTION_ORDER}
-    if verification.get("projection_checks") != {
-        base: projection_check(rows) for base, rows in tables.items()
-    } or verification.get("row_counts") != {
-        base: len(rows) for base, rows in tables.items()
-    }:
+    digests = {base: projection_check(rows) for base, rows in tables.items()}
+    if verification.get("projection_checks") != digests or verification.get(
+        "row_counts"
+    ) != {base: len(rows) for base, rows in tables.items()}:
         raise SeasonReleaseError("verified projection checks differ from payload")
+    _bind_yardage_evidence(checks, digests, manifest, revision_raw)
+
+
+def _bind_yardage_evidence(
+    checks: Mapping, digests: Mapping, manifest: Mapping, revision_raw: bytes
+) -> None:
+    """The passing ``chart_yardage_recomputed`` entry must be of this payload's
+    ``team_game_yardage`` digest and of the byplay input the revision pins."""
+    if _sha(revision_raw) != manifest["revision_manifest_sha256"]:
+        raise SeasonReleaseError("revision manifest bytes differ from the run identity")
+    revision = _json(revision_raw, "revision manifest")
+    inputs = revision.get("inputs")
+    byplay = inputs.get("byplay") if isinstance(inputs, Mapping) else None
+    if not isinstance(byplay, Mapping):
+        raise SeasonReleaseError("revision manifest pins no byplay input")
+    observed = checks["chart_yardage_recomputed"].get("observed")
+    if not isinstance(observed, Mapping):
+        raise SeasonReleaseError("chart yardage evidence missing")
+    digest = digests["team_game_yardage"]
+    if (observed.get("projection_sha256"), observed.get("rows")) != (
+        digest["sha256"],
+        digest["rows"],
+    ):
+        raise SeasonReleaseError("chart yardage evidence is for another payload")
+    if (observed.get("byplay_uri"), observed.get("byplay_sha256")) != (
+        byplay.get("uri"),
+        byplay.get("sha256"),
+    ):
+        raise SeasonReleaseError(
+            "chart yardage evidence is for another byplay input than the revision pins"
+        )
 
 
 def _normal(value: Any, column: str = "") -> Any:
@@ -354,7 +391,7 @@ def _policy(cur, release: Mapping) -> None:
 
 
 def _require_staging_set(tables: Collection[str]) -> None:
-    """New candidates must carry exactly the current staging set (``charts_v1``)."""
+    """New candidates must carry exactly the staging set (``charts_v2``)."""
     names = set(tables)
     if names == set(PROJECTION_ORDER):
         return
@@ -451,12 +488,14 @@ def _check_projection_scope(
 
 
 def _check_chart_scope(projections: Mapping, active_week: int) -> None:
-    """The chart tables of a ``charts_v1`` candidate: the roster always, game
-    statistics once a week has completed, adjusted EPA from Week 3."""
+    """The chart tables of a ``charts_v2`` candidate: the roster always, game
+    statistics and yardage once a week has completed, adjusted EPA from Week 3."""
     if not projections["team_season_roster"]:
         raise SeasonReleaseError("the FBS team roster is required")
     if active_week > 0 and not projections["team_game_stats"]:
         raise SeasonReleaseError("team game statistics are required")
+    if active_week > 0 and not projections["team_game_yardage"]:
+        raise SeasonReleaseError("team game yardage is required")
     if active_week >= 3 and not projections["team_adjusted_epa"]:
         raise SeasonReleaseError("adjusted team EPA is required from Week 3")
 
@@ -519,9 +558,13 @@ def stage_release(
     run_manifest_uri: str,
     verification_raw: bytes,
     projection_raw: bytes,
+    revision_raw: bytes,
     environment: str,
 ) -> str:
     """Stage fully verified rows without altering public selection; never commits.
+
+    ``revision_raw`` is the revision manifest the run identity pins (its sha256
+    is ``revision_manifest_sha256``); staging reads nothing from storage.
 
     The payload is environment-free: ``release_id`` (and ``environment`` where the
     schema has it) are filled in here, so the same bytes stage in every
@@ -568,7 +611,7 @@ def stage_release(
         raise SeasonReleaseError("release identity missing") from error
     _check_projection_scope(projections, season, active_week)
     _check_chart_scope(projections, active_week)
-    validate_candidate(manifest, verification, payload)
+    validate_candidate(manifest, verification, payload, revision_raw=revision_raw)
     checks = {base: projection_check(rows) for base, rows in projections.items()}
     release_id = f"{environment}-{manifest['release_id']}"
     record = {

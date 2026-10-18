@@ -1,7 +1,7 @@
-"""Chart tables of the ``charts_v1`` season release payload.
+"""Chart tables of the ``charts_v2`` season release payload.
 
-``team_season_roster``, ``team_game_stats`` and ``team_adjusted_epa`` are
-descriptive reconstructions from the revision's pinned inputs (see
+``team_season_roster``, ``team_game_stats``, ``team_adjusted_epa`` and
+``team_game_yardage`` are descriptive reconstructions from the revision's pinned inputs (see
 :mod:`cks_picks_cfb.charts`). They live apart from ``projection_football`` so the
 existing ``core_v1`` builders stay untouched. Team names are provider (game)
 names, as in ``team_season_stats``.
@@ -27,10 +27,15 @@ from cks_picks_cfb.charts.team_game_stats import (
     TEAM_GAME_COLUMNS,
     build_team_game_stats,
 )
+from cks_picks_cfb.charts.team_game_yardage import (
+    YARDAGE_COLUMNS,
+    TeamGameYardageError,
+    build_team_game_yardage,
+)
 from cks_picks_cfb.data.game_venues import build_game_venue_rows
 from cks_picks_cfb.season.projection_common import CHART_TABLES, clean_rows
 
-CHART_KEYS = CHART_TABLES
+CHART_KEYS = (*CHART_TABLES, "team_game_yardage")
 SEASON = 2026
 
 #: table -> natural key (``release.PROJECTION_KEYS``) used for row order.
@@ -38,8 +43,9 @@ ROW_KEYS = {
     "team_season_roster": ("season", "team"),
     "team_game_stats": ("season", "game_id", "team"),
     "team_adjusted_epa": ("season", "as_of_week", "team", "role"),
+    "team_game_yardage": ("season", "game_id", "team"),
 }
-#: INTEGER columns per table (migration 0026); builders may yield floats.
+#: INTEGER columns per table (migrations 0026, 0027); builders may yield floats.
 INTEGER_COLUMNS = {
     "team_season_roster": ("season",),
     "team_game_stats": (
@@ -63,11 +69,22 @@ INTEGER_COLUMNS = {
         "adjusted_rank",
         "cohort_size",
     ),
+    "team_game_yardage": (
+        "season",
+        "game_id",
+        "off_yards_n",
+        "off_explosive_n",
+        "off_success_yards_n",
+        "def_yards_n",
+        "def_explosive_n",
+        "def_success_yards_n",
+    ),
 }
 COLUMNS = {
     "team_season_roster": ROSTER_COLUMNS,
     "team_game_stats": TEAM_GAME_COLUMNS,
     "team_adjusted_epa": ADJUSTED_COLUMNS,
+    "team_game_yardage": YARDAGE_COLUMNS,
 }
 
 
@@ -90,6 +107,34 @@ def build_charts(
     inputs and ``identity['active_week']`` are read.
     """
     active_week = int(identity["active_week"])
+    roster, game_stats = _team_games(inputs, active_week)
+    adjusted = pd.DataFrame(
+        build_team_adjusted_epa(
+            game_stats, set(roster["team"]), season=SEASON, active_week=active_week
+        ),
+        columns=list(ADJUSTED_COLUMNS),
+    )
+    tables = {
+        "team_season_roster": roster,
+        "team_game_stats": game_stats,
+        "team_adjusted_epa": adjusted,
+        "team_game_yardage": _yardage(inputs, game_stats),
+    }
+    return {key: _rows(key, tables[key]) for key in CHART_KEYS}
+
+
+def build_yardage_rows(inputs: Any, active_week: int) -> list[dict]:
+    """``team_game_yardage`` payload rows recomputed from the pinned inputs alone.
+
+    The ``chart_yardage_recomputed`` prepare check compares the candidate's rows
+    with these; ``inputs.byplay`` is the checksum-verified pinned byplay frame.
+    """
+    _, game_stats = _team_games(inputs, active_week)
+    return _rows("team_game_yardage", _yardage(inputs, game_stats))
+
+
+def _team_games(inputs: Any, active_week: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """The roster and the ``team_game_stats`` frame (provider team names)."""
     try:
         roster = build_team_season_roster(inputs.teams, SEASON)
     except RosterError as error:
@@ -106,18 +151,14 @@ def build_charts(
         season=SEASON,
         active_week=active_week,
     )
-    adjusted = pd.DataFrame(
-        build_team_adjusted_epa(
-            game_stats, set(roster["team"]), season=SEASON, active_week=active_week
-        ),
-        columns=list(ADJUSTED_COLUMNS),
-    )
-    tables = {
-        "team_season_roster": roster,
-        "team_game_stats": game_stats,
-        "team_adjusted_epa": adjusted,
-    }
-    return {key: _rows(key, tables[key]) for key in CHART_KEYS}
+    return roster, game_stats
+
+
+def _yardage(inputs: Any, game_stats: pd.DataFrame) -> pd.DataFrame:
+    try:
+        return build_team_game_yardage(byplay=inputs.byplay, team_games=game_stats)
+    except TeamGameYardageError as error:
+        raise ChartProjectionError(str(error)) from error
 
 
 def _neutral_game_ids(inputs: Any, schedule: pd.DataFrame) -> set[int]:

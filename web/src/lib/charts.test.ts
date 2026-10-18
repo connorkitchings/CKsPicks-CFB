@@ -1,11 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  CHART_TITLES,
   adjustedPoints,
   adjustedThroughWeeks,
   chartColor,
-  chartSubtitle,
   coerceWeek,
   conferenceOptions,
   domainFor,
@@ -18,13 +16,18 @@ import {
   isoNetSegments,
   matchesConference,
   matchesSearch,
+  netLabel,
   netSuccessBars,
   netSuccessWeeks,
   niceTicks,
+  outplayedWinners,
   relativeLuminance,
+  sortNetSuccessBars,
+  withYardage,
   type AdjustedRow,
   type RosterRow,
   type TeamGameRow,
+  type TeamGameYardageRow,
 } from "./charts.ts";
 import { teamAbbr, teamAltColor, teamColor, FALLBACK_TEAM_COLOR } from "./team-logos.ts";
 
@@ -184,6 +187,42 @@ test("adjusted points need both roles; a one-role team is listed as unavailable"
   assert.ok(data.average && Math.abs(data.average.y - (-0.1 * 100 + 0.1 * 300) / 400) < 1e-12);
   assert.deepEqual([data.invertX, data.invertY], [false, true]);
   assert.ok(data.netLevels.every((level) => Number.isFinite(level)));
+  assert.deepEqual(Object.keys(data.roles), ["Alabama", "Michigan"], "the decomposition covers plotted teams only");
+  assert.equal(data.roles.Alabama.defense, rows[1]);
+});
+
+test("net success: winners-outplayed summary counts strictly lower winner success rates", () => {
+  const { bars } = netSuccessBars([
+    ...game(1, 3, ["Alabama", 31, 20, 12], ["Michigan", 10, 20, 6]), // +0.30
+    ...game(2, 3, ["Tulane", 28, 10, 3], ["Notre Dame", 24, 10, 7]), // Tulane wins, -0.40
+    ...game(3, 3, ["Michigan", 14, 10, 5], ["Notre Dame", 13, 10, 5]), // 0.00 is not outplayed
+  ], 3);
+  assert.deepEqual(outplayedWinners(bars), { outplayed: 1, total: 3 });
+  assert.deepEqual(outplayedWinners([]), { outplayed: 0, total: 0 });
+});
+
+test("net success: margin sort orders by final margin with ties by game id; gap sort is the default order", () => {
+  const { bars } = netSuccessBars([
+    ...game(7, 3, ["Alabama", 11, 20, 12], ["Michigan", 10, 20, 6]), // margin 1, +0.30
+    ...game(2, 3, ["Tulane", 17, 10, 3], ["Notre Dame", 14, 10, 7]), // margin 3, -0.40
+    ...game(5, 3, ["Michigan", 24, 10, 6], ["Notre Dame", 21, 10, 5]), // margin 3, +0.10
+    ...game(4, 3, ["Alabama", 45, 10, 9], ["Tulane", 0, 10, 1]), // margin 45, +0.80
+  ], 3);
+  assert.deepEqual(bars.map((b) => b.gameId), [2, 5, 7, 4]);
+  assert.deepEqual(sortNetSuccessBars(bars, "margin").map((b) => b.gameId), [7, 2, 5, 4]);
+  assert.deepEqual(sortNetSuccessBars([...bars].reverse(), "margin").map((b) => b.gameId), [7, 2, 5, 4], "the margin-3 tie falls back to game id, whatever the input order");
+  assert.deepEqual(sortNetSuccessBars([...bars].reverse(), "gap").map((b) => b.gameId), [2, 5, 7, 4]);
+  assert.deepEqual(bars.map((b) => b.gameId), [2, 5, 7, 4], "sorting copies; the input order is untouched");
+});
+
+test("diagonal labels name each equal-net level with two signed decimals", () => {
+  assert.equal(netLabel(0.2), "+0.20 net");
+  assert.equal(netLabel(-0.1), "-0.10 net");
+  assert.equal(netLabel(0), "0.00 net");
+  assert.equal(netLabel(-0.001), "0.00 net", "a rounded zero carries no sign");
+  assert.equal(netLabel(0.1 + 0.2), "+0.30 net", "floating noise is rounded away");
+  const segments = isoNetSegments([-0.3, 0.3], [-0.3, 0.3], [-0.2, 0, 0.2]);
+  assert.deepEqual(segments.map((s) => netLabel(s.net)), ["-0.20 net", "0.00 net", "+0.20 net"]);
 });
 
 test("iso-net lines are clipped to the plot rectangle", () => {
@@ -232,27 +271,74 @@ test("team metadata falls back when a school has no published colors", () => {
   assert.equal(teamAbbr("Appalachian State"), teamAbbr("App State"));
 });
 
-test("titles and subtitles follow the reference charts", () => {
-  assert.equal(CHART_TITLES["net-success"], "Did We Really Get Beat That Bad?");
-  assert.equal(CHART_TITLES["efficiency"], "Efficiency vs Explosiveness");
-  assert.equal(chartSubtitle("efficiency", 2026, 7, "offense"), "Offense | 2026 | FBS vs FBS | Through Week 7");
-  assert.equal(chartSubtitle("adjusted", 2026, 3, "defense"), "2026 | FBS vs FBS | Through Week 3");
-  assert.equal(chartSubtitle("net-success", 2026, 0, "offense"), "Week 0 | 2026 | FBS vs FBS");
+/** Yardage of one mirrored team-game: [yards_n, explosive_n, success_yards_n, success_yards_sum] per offense. */
+function yardage(gameId: number, team: string, own: number[], other: number[]): TeamGameYardageRow {
+  return {
+    gameId, team,
+    offYardsN: own[0], offExplosiveN: own[1], offSuccessYardsN: own[2], offSuccessYardsSum: own[3],
+    defYardsN: other[0], defExplosiveN: other[1], defSuccessYardsN: other[2], defSuccessYardsSum: other[3],
+  };
+}
+
+function yardageGames(): TeamGameRow[] {
+  const rows = [
+    ...game(1, 0, ["Alabama", 30, 10, 6], ["Michigan", 10, 10, 4]),
+    ...game(2, 1, ["Alabama", 30, 20, 8], ["Tulane", 10, 10, 2]),
+    ...game(3, 5, ["Michigan", 30, 10, 10], ["Tulane", 10, 10, 10]), // after the window
+  ];
+  const offense: Record<string, number[]> = {
+    "1:Alabama": [10, 2, 6, 60], "1:Michigan": [9, 0, 4, 30],
+    "2:Alabama": [30, 1, 8, 100], "2:Tulane": [10, 1, 0, 0],
+    "3:Michigan": [10, 9, 10, 500], "3:Tulane": [10, 9, 10, 500],
+  };
+  const counts = rows.map((r) => yardage(r.gameId, r.team, offense[`${r.gameId}:${r.team}`], offense[`${r.gameId}:${r.opponent}`]));
+  return withYardage(rows, [...counts].reverse());
+}
+
+test("efficiency: 20+ rate and yards/success come from release window sums with pooled averages", () => {
+  const rows = yardageGames();
+  const explosive = efficiencyPoints(roster, rows, 1, "offense", "explosive_rate");
+  const alabama = explosive.points.find((p) => p.team === "Alabama")!;
+  assert.deepEqual([alabama.x, alabama.y, alabama.n], [14 / 30, 3 / 40, 40], "ratio of sums, not mean of game rates");
+  assert.equal(explosive.points.find((p) => p.team === "Michigan")!.y, 0, "zero explosive plays over real exposure is zero");
+  assert.deepEqual(explosive.average, { x: (14 + 4 + 2) / 50, y: (2 + 0 + 1 + 1) / (10 + 9 + 30 + 10) });
+  assert.deepEqual(explosive.unavailable, ["Idle State", "Notre Dame"]);
+
+  const perSuccess = efficiencyPoints(roster, rows, 1, "offense", "yards_per_success");
+  assert.deepEqual(perSuccess.points.map((p) => p.team), ["Alabama", "Michigan"]);
+  assert.deepEqual(perSuccess.points.map((p) => [p.y, p.n]), [[160 / 14, 40], [30 / 4, 9]]);
+  assert.ok(perSuccess.unavailable.includes("Tulane"), "zero successful yardage plays is unavailable, never zero");
+  assert.deepEqual(perSuccess.average, { x: 20 / 50, y: (60 + 30 + 100 + 0) / (6 + 4 + 8 + 0) });
+  assert.deepEqual([perSuccess.invertX, perSuccess.invertY], [false, false]);
 });
 
-test("efficiency: explosiveness metrics (20+ yard rate and yards/success) pull correctly", () => {
-  const fbsRoster = [{ team: "Alabama", conference: "SEC" }, { team: "Georgia", conference: "SEC" }];
-  const erOffense = efficiencyPoints(fbsRoster, [], 6, "offense", "explosive_rate");
-  const alabamaEr = erOffense.points.find((p) => p.team === "Alabama")!;
-  assert.equal(alabamaEr.y, 0.10864);
-  assert.equal(alabamaEr.x, 0.49721);
-  assert.equal(alabamaEr.n, 359);
-  assert.equal(erOffense.invertY, false);
+test("efficiency: defense yardage is the opponent's offense, with inverted axes", () => {
+  const defense = efficiencyPoints(roster, yardageGames(), 1, "defense", "explosive_rate");
+  const tulane = defense.points.find((p) => p.team === "Tulane")!;
+  assert.deepEqual([tulane.y, tulane.n], [1 / 30, 30]);
+  assert.deepEqual([defense.invertX, defense.invertY], [true, true]);
+  assert.equal(efficiencyPoints(roster, yardageGames(), 1, "defense", "yards_per_success").points.find((p) => p.team === "Michigan")!.y, 10);
+});
 
-  const ysDefense = efficiencyPoints(fbsRoster, [], 6, "defense", "yards_per_success");
-  const alabamaYs = ysDefense.points.find((p) => p.team === "Alabama")!;
-  assert.ok(alabamaYs.y > 0);
-  assert.equal(ysDefense.invertY, true);
+test("efficiency: rows without yardage (a charts_v1 release) plot nothing for explosiveness", () => {
+  const rows = game(1, 0, ["Alabama", 30, 10, 6], ["Michigan", 10, 10, 4]);
+  for (const metric of ["explosive_rate", "yards_per_success"] as const) {
+    const data = efficiencyPoints(roster, rows, 1, "offense", metric);
+    assert.deepEqual([data.points, data.average], [[], null]);
+    assert.equal(data.unavailable.length, roster.length);
+  }
+  assert.equal(efficiencyPoints(roster, rows, 1, "offense", "ppa").points.length, 2);
+});
+
+test("yardage joins by game and team and rejects differing key sets", () => {
+  const rows = game(1, 0, ["Alabama", 30, 10, 6], ["Michigan", 10, 10, 4]);
+  const counts = [yardage(1, "Michigan", [9, 1, 4, 30], [10, 2, 6, 60]), yardage(1, "Alabama", [10, 2, 6, 60], [9, 1, 4, 30])];
+  const joined = withYardage(rows, counts);
+  assert.deepEqual(joined.map((r) => [r.team, r.offYardsN, r.defExplosiveN, r.offSuccessSum]), [["Alabama", 10, 1, 6], ["Michigan", 9, 2, 4]]);
+  assert.throws(() => withYardage(rows, counts.slice(1)), /keys differ/);
+  assert.throws(() => withYardage(rows, [...counts, yardage(2, "Tulane", [1, 0, 0, 0], [1, 0, 0, 0])]), /keys differ/);
+  assert.throws(() => withYardage(rows, [counts[0], { ...counts[1], gameId: 2 }]), /keys differ/);
+  assert.throws(() => withYardage(rows, [counts[0], counts[0]]), /keys differ/);
 });
 
 test("bar colors keep a visible mid-tone on both themes", () => {

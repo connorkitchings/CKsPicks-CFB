@@ -1,16 +1,20 @@
 # Team Charts Methodology
 
-> **Status:** Initial chart UI changes implemented locally under the approved [Revision 5 contract](../plans/2026-10-16/02-chart-purpose-and-explosiveness.md). Existing release data remains the serving source. Public explosiveness selection and subsequent serving/publication changes require a separate owner decision.
+> **Status:** Six-chart expansion under the approved [October 18 contract](../plans/2026-10-18/01-charts-review-and-expansion.md), with owner-selected 20+ yard rate and yards per successful play. Local implementation does not establish Preview acceptance or Production promotion; current serving state remains in [Current Status](../status.md).
 
-The **Charts** page shows three weekly team charts. They are descriptive analysis of completed games. They never feed ratings, forecasts, picks or grading, and they use no market data.
+The **Charts** page is available only with exact `CFB_CHARTS_ENABLED=1`. Every environment defaults off; disabled direct access returns HTTP 404. When enabled, it shows six team charts. They are descriptive analysis of completed games. They never feed ratings, forecasts, picks or grading, and they use no market data.
 
 | Chart | What it shows |
 | --- | --- |
 | **Did We Really Get Beat That Bad?** | One bar per game of a single week: the winner's offensive success rate minus the loser's. The winner's logo sits at the bar tip; the loser's sits just across the zero line, opposite the bar. The label is the winner's abbreviation and the final score. Available from Week 0. |
-| **Efficiency and PPA/play** | Cumulative success rate (x) against PPA/play (y) through Week N, offense or defense, with dashed FBS-average lines. Defense axes are inverted so up and right is better. Available from "Through Week 2". |
+| **Efficiency vs Explosiveness** | Cumulative success rate (x) against 20+ yard rate or yards per successful play (y) through Week N. Retained `charts_v1` releases show Success Rate vs PPA/play, with no explosiveness toggle. Offense or defense; defense axes invert so up and right is better. Available from Through Week 2. |
 | **Opponent-adjusted PPA/play** | Adjusted offense (x) against adjusted defense allowed (y, inverted), with dashed play-weighted averages, diagonal equal-net lines and corner labels. Available from "Through Week 2". |
 
-PPA/play is shown as an efficiency measure on the same axes as success rate. It is not presented as a standalone explosiveness measure. The [pinned Week 7 comparison](../research/chart-explosiveness-comparison-2026-10-16.md) documents the two candidate yardage measures for the pending owner decision.
+| **Schedule adjustment** | Venue-neutral to opponent-adjusted PPA/play per team and role, Through Week N. The default national view shows the 15 largest and 15 smallest schedule effects, plus an extra highlighted row when needed; Show all displays every qualifying row. |
+| **Team trajectory** | Adjusted net, offense or defense allowed across every stored Through Week window. Gray national context, conference-colored trajectories, and a bold highlighted team. |
+| **Team game log** | One team's completed FBS games over the whole release: offense and defense-allowed success rate, PPA/play or (with `charts_v2`) 20+ yard rate, final scores, weekly national references, and season-to-date values and ranks. |
+
+PPA/play is an efficiency measure, not a standalone explosiveness measure. The owner selected both yardage measures after the [pinned Week 7 comparison](../research/chart-explosiveness-comparison-2026-10-16.md). Their public source is now the active release's companion yardage projection; no static research values are substituted for missing release capability.
 
 ## Definitions
 
@@ -18,7 +22,9 @@ PPA/play is shown as an efficiency measure on the same axes as success rate. It 
 - **Games.** FBS-vs-FBS, regular season, completed. This is the same population as `build_team_season_stats` (`src/cks_picks_cfb/data/team_stats.py`).
 - **Success rate** is the mean of the play-level `success` flag over eligible plays that have one.
 - **PPA/play** is CFBD Predicted Points Added averaged over eligible plays with valid PPA; `ppa` is masked where `ppa_missing`. Internal `epa_*` field names and all calculations are retained. Yards per successful play is a yardage measure, not IsoPPP (points per successful play).
-- **Independent denominators.** Success and PPA each drop their own missing values, so `success_n`, `epa_n` and the eligible `plays` count differ. A metric with no valid observation is null, never zero.
+- **20+ yard rate** is the count of eligible plays with finite `yards_gained >= 20` divided by the count with finite yardage (`yards_n`). It does not use the play-type-dependent `explosive` flag.
+- **Yards per successful play** is the sum of finite yardage on eligible plays with `success == 1`, divided by the count of those same plays (`success_yards_n`). It is not total yardage divided by successes. No sign constraint is imposed on the sum.
+- **Independent denominators.** Success, PPA, yardage and successful yardage each drop their own missing values. Cumulative rates pool numerators and denominators rather than averaging game rates. Zero exposure gives null, never zero.
 - **"Through Week N"** means games in weeks `<= N`, stored as `as_of_week = N + 1`.
 - **Roster and conference.** The published `team_season_roster` (pinned Silver `teams`, FBS classification) is the only list of teams and the only source of conference. Team logos, abbreviations and colors in `web/src/lib/team-logos.generated.ts` are display metadata only.
 
@@ -45,17 +51,28 @@ Each `team_adjusted_epa` row stores the decomposition `raw - venue_correction - 
 | `team_season_roster` | `season, team, conference` for every FBS team. |
 | `team_game_stats` | One row per team per completed game: opponent, site, points, and offense and defense `plays`, `success_n`, `success_sum`, `epa_n`, `epa_sum`. |
 | `team_adjusted_epa` | One row per `(as_of_week, team, role)` as described above. |
+| `team_game_yardage` | Companion row for every `(season, game_id, team)` in `team_game_stats`; independent offense/defense `yards_n`, `explosive_n`, `success_yards_n`, `success_yards_sum`. |
 
-They ship in the `charts_v1` projection set, written atomically with the release (migration `contracts/migrations/0026_team_chart_tables.sql`). Releases staged before charts keep the `core_v1` set and are read back by their recorded set; new candidates must be `charts_v1`.
+The first three tables form `charts_v1` (migration 0026). `charts_v2` adds only the companion yardage table (migration 0027); prior columns and payload hashes are preserved. New candidates require `charts_v2` and the migration before staging. Retained `core_v1` and `charts_v1` releases retain their recorded table and verification sets. Capability detection uses the recorded set and existing relations; a `charts_v1` request never references the yardage relation. Every chart query is pinned to the same release as its capability; chart queries never fall back to mutable live tables.
 
 The `team_chart_reconciliation` verification check proves, from the payload alone: the roster is unique and contains every team; every game has exactly two mirrored rows; every cumulative window reproduces `team_season_stats` success rate, PPA/play, counts and games; and every stored adjusted value, rank and cohort size equals a full recomputation through the same entry point that built it, with exactly the expected set of windows, teams and roles.
 
+Yardage reconciliation at staging checks the exact team-game key population, offense/defense mirrors, nonnegative integer counts and exposure bounds. The prepare-time `chart_yardage_recomputed` check independently rebuilds the candidate yardage from the pinned, checksum-verified byplay. Its passing evidence binds the source URI/hash, projected row count and projection hash to the sealed candidate. Staging verifies that binding without fetching plays. Structural agreement alone is insufficient: a matching error in both mirrored rows must fail play-level recomputation.
+
+## Schedule and trajectory interpretation
+
+Schedule adjustment isolates opponent effects: `neutral = raw - venueCorrection`. Its better-is-positive effect is `adjusted - neutral` on offense and `neutral - adjusted` on defense. Positive means the venue-neutral performance understated the team against tougher opponents; negative means it was inflated against weaker opponents. The graph does not attribute venue corrections to schedule strength. Rows sort by effect descending, then team name. Boundary ties resolve by name; small groups show each team once. Defense uses allowed values and an inverted horizontal axis.
+
+Trajectory uses Through Week (`as_of_week - 1`) from Week 2 onward, with no week selector. Net is adjusted offense minus adjusted defense allowed. Missing windows create gaps, never interpolated values; a lone observation is a dot. The dashed reference is the national play-weighted average for each stored window and metric, computed before conference filtering. Endpoint logos may be displaced for readability with connectors to their true values. Defense's vertical axis is inverted.
+
+Game logs cover completed FBS-vs-FBS regular-season games in the whole release, ordered by week and game ID. Offense and defense-allowed panels share the game order; defense is inverted. Each game's dashed reference pools all eligible national team-games in that week. Season headers use the release's latest charted week and national competition ranks, independent of conference filters. Missing metric exposure leaves the game and its result visible with an `n/a` value. The default team has the highest adjusted net in the latest stored window, ties by name; with no eligible adjusted profile, use the first qualifying team with games. The team picker can select any eligible roster team in the selected group.
+
 ## Reading the charts
 
-- The conference/group filter removes excluded teams from figures, keyboard navigation, tables and PNG exports. Net-success games qualify when either team belongs to the group; this chart has no team finder.
+- The conference/group filter limits qualifying bars, scatter points, schedule rows and game-log team choices. Net-success games qualify when either team belongs to the group; this chart has no team finder. Trajectory retains faint national context while coloring the selected conference. Tables and PNGs follow each view's displayed population.
 - Scatter domains and play-weighted FBS averages use the full eligible national population before filtering. They change with the week/side, never with filtering or highlighting.
 - Scatter tables report national competition ranks independently for each plotted metric (ties share the minimum rank, so 1, 1, 3). Offense ranks higher values first; defense allowed ranks lower values first. No combined scatter rank is defined.
 - Search narrows the highlight dropdown. Select one team or activate its logo by click/tap, Enter or Space to enlarge and label it; activate the same logo again or choose None to clear. Hover/focus tooltips are transient. Conference exclusion clears a selection; week navigation preserves it and reports when its observation is unavailable.
 - Net success is the winner's success-rate advantage or disadvantage in percentage points. A negative bar means the winning team had the lower offensive success rate.
 - "Show as table" lists exactly the plotted rows. Teams without eligible games or valid observations are listed under the chart.
-- Use the PNG export for sharing. Scatters export at 2000x1125 px; the net-success bars export at `max(2000, 140 + 30 x games)` px wide.
+- Use the PNG export for sharing. Scatter, trajectory and game-log cards export at 2000x1125 px; net-success bars export at `max(2000, 140 + 30 x games)` px wide. Schedule cards grow vertically with the displayed rows. Static exports omit interactive focus outlines and include window, group and selected metric.

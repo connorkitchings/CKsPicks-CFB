@@ -21,15 +21,17 @@ from cks_picks_cfb.season.projection_football import build_football
 from tests.isolation_digests import EXCLUDED_PROVENANCE, digests
 from tests.season_fixtures import build_season
 
-MIGRATION = (
-    Path(__file__).resolve().parents[1]
-    / "contracts/migrations/0026_team_chart_tables.sql"
-)
+MIGRATIONS = Path(__file__).resolve().parents[1] / "contracts/migrations"
+#: The migration that created each chart table's release copy.
+MIGRATION = {
+    **dict.fromkeys(pc.CHART_TABLES, MIGRATIONS / "0026_team_chart_tables.sql"),
+    "team_game_yardage": MIGRATIONS / "0027_team_game_yardage.sql",
+}
 GOLDEN = Path(__file__).with_name("isolation_golden.json")
 
 
 def migration_columns(table: str) -> set[str]:
-    text = MIGRATION.read_text()
+    text = MIGRATION[table].read_text()
     block = re.search(
         rf"CREATE TABLE IF NOT EXISTS season_release_{table} \((.*?)\n\);",
         text,
@@ -52,6 +54,7 @@ def charts(season):
 def test_returns_exactly_the_chart_tables(charts):
     assert tuple(charts) == CHART_KEYS
     assert charts["team_season_roster"] and charts["team_game_stats"]
+    assert charts["team_game_yardage"]
     # Active week 2 is before the first adjusted window (Through Week 2).
     assert charts["team_adjusted_epa"] == []
 
@@ -142,14 +145,24 @@ def test_models_and_core_projections_are_unchanged_by_the_chart_module(
 
     # The baseline inputs (teams without a conference column) must still prepare:
     # the chart builder is given conferences without touching the pinned revision.
+    # The chart_yardage_recomputed prepare check rebuilds yardage from the same
+    # inputs, so it is given the same conferences.
     real = projection_charts.build_charts
+    real_yardage = projection_charts.build_yardage_rows
+
+    def conferenced(inputs):
+        teams = inputs.teams.assign(conference="Fixture")
+        return dataclasses.replace(inputs, teams=teams)
 
     def with_conference(**arguments):
-        teams = arguments["inputs"].teams.assign(conference="Fixture")
-        inputs = dataclasses.replace(arguments["inputs"], teams=teams)
-        return real(**{**arguments, "inputs": inputs})
+        return real(**{**arguments, "inputs": conferenced(arguments["inputs"])})
 
     monkeypatch.setattr(projection_charts, "build_charts", with_conference)
+    monkeypatch.setattr(
+        projection_charts,
+        "build_yardage_rows",
+        lambda inputs, active_week: real_yardage(conferenced(inputs), active_week),
+    )
 
     def without_conference(tables):
         # The baseline fixture predates the conference column; removing it

@@ -187,6 +187,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Set up Node.js for web/database integration
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install locked web dependencies
+        run: npm ci --prefix web
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -346,3 +356,6 @@ jobs:
 
       - name: Test browser fixtures
         run: npm --prefix web run test:ui
+
+      - name: Test unpublished Charts boundary in a production build
+        run: npm --prefix web run test:charts-gate

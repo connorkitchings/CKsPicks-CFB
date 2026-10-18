@@ -19,11 +19,16 @@ counts. Report schema (see also :mod:`cks_picks_cfb.season.projection_common`)::
       "state": "passed",
       "identity": {...run identity...},
       "output_refs": {name: {"uri", "logical_uri", "sha256", "rows"}},
-      "checks": {name: check_entry},   # keys == REQUIRED_PROJECTION_CHECKS
-                                       #       | REQUIRED_PREPARE_CHECKS
+      "checks": {name: check_entry},   # keys == the payload set's required
+                                       # checks (REQUIRED_CHECK_SETS)
       "projection_checks": {table: {"rows": int, "sha256": str}},
       "row_counts": {table: int},
     }
+
+Required checks are versioned with the projection set (:data:`REQUIRED_CHECK_SETS`):
+``core_v1`` and ``charts_v1`` keep their original sets; ``charts_v2`` adds the
+prepare check ``chart_yardage_recomputed``, whose evidence staging binds to the
+candidate's ``team_game_yardage`` digest and the revision's pinned byplay.
 
 Derivation context
 ------------------
@@ -72,20 +77,23 @@ from cks_picks_cfb.season.inputs import score_reconciliation_problems
 from cks_picks_cfb.season.projection_common import (
     MARKET_POLICY_VERSION,
     PROJECTION_ORDER,
+    PROJECTION_SETS,
     SELECTION_POLICY_VERSION,
     SERVER_COLUMNS,
+    STAGING_PROJECTION_SET,
     benchmark_grading_version,
     canonical_bytes,
     measurement_identity,
     quantize4,
     rating_identity,
+    recognized_projection_set,
     sha256_hex,
     weekly_run_id,
 )
 
 SCHEMA_VERSION = "season_verification_v2"
 
-REQUIRED_PROJECTION_CHECKS: frozenset[str] = frozenset(
+_PROJECTION_CHECKS_V1: frozenset[str] = frozenset(
     {
         "tables_complete",
         "weeks_and_slate",
@@ -104,7 +112,7 @@ REQUIRED_PROJECTION_CHECKS: frozenset[str] = frozenset(
         "team_chart_reconciliation",
     }
 )
-REQUIRED_PREPARE_CHECKS: frozenset[str] = frozenset(
+_PREPARE_CHECKS_V1: frozenset[str] = frozenset(
     {
         "required_prior_week_data",
         "score_reconciliation",
@@ -116,8 +124,25 @@ REQUIRED_PREPARE_CHECKS: frozenset[str] = frozenset(
         "checksums_at_read",
     }
 )
+#: Required ``(projection, prepare)`` checks per projection set, frozen per set
+#: like :data:`projection_common.PROJECTION_SETS`.
+REQUIRED_CHECK_SETS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
+    "core_v1": (
+        _PROJECTION_CHECKS_V1 - {"team_chart_reconciliation"},
+        _PREPARE_CHECKS_V1,
+    ),
+    "charts_v1": (_PROJECTION_CHECKS_V1, _PREPARE_CHECKS_V1),
+    "charts_v2": (
+        _PROJECTION_CHECKS_V1,
+        _PREPARE_CHECKS_V1 | {"chart_yardage_recomputed"},
+    ),
+}
+assert set(REQUIRED_CHECK_SETS) == set(PROJECTION_SETS)
+#: The checks of the staging set: every new candidate satisfies exactly these.
+REQUIRED_PROJECTION_CHECKS, REQUIRED_PREPARE_CHECKS = REQUIRED_CHECK_SETS[
+    STAGING_PROJECTION_SET
+]
 REQUIRED_CHECKS = REQUIRED_PROJECTION_CHECKS | REQUIRED_PREPARE_CHECKS
-PAYLOAD_TABLES = frozenset({"prediction_runs", *PROJECTION_ORDER})
 
 #: The accepted B2 bridge bytes (``manifest.validate_model`` pins the same value).
 PINNED_BRIDGE_SHA256 = (
@@ -192,6 +217,22 @@ class VerificationError(ValueError):
 # ---------------------------------------------------------------------------
 # Context
 # ---------------------------------------------------------------------------
+
+
+def payload_set(projections: Mapping[str, Any]) -> str:
+    """The projection set of a full payload (``prediction_runs`` plus its tables)."""
+    try:
+        if "prediction_runs" not in projections:
+            raise ValueError("prediction_runs missing")
+        return recognized_projection_set(set(projections) - {"prediction_runs"})
+    except (TypeError, ValueError) as error:
+        raise VerificationError("projections must be the full payload") from error
+
+
+def required_checks(projection_set: str) -> frozenset[str]:
+    """Every check name a report of ``projection_set`` carries."""
+    projection, prepare = REQUIRED_CHECK_SETS[projection_set]
+    return projection | prepare
 
 
 def run_id_for(identity: Mapping[str, Any]) -> str:
@@ -311,6 +352,12 @@ class _Payload:
     def __init__(self, projections: Mapping[str, Any], context: Mapping[str, Any]):
         self.raw = projections
         self.ctx = context
+        try:
+            # A recognized retained set is checked as itself; anything else
+            # against the staging set, so missing/extra tables are reported.
+            self.tables = PROJECTION_SETS[payload_set(projections)]
+        except VerificationError:
+            self.tables = PROJECTION_ORDER
         self.release_id = context["release_id"]
         self.season = context["season"]
         self.through = context["through_week"]
@@ -385,7 +432,7 @@ def _tables_complete(p: _Payload) -> tuple[list[str], dict]:
     from cks_picks_cfb.season.release import PROJECTION_KEYS
 
     keys = {**PROJECTION_KEYS, "prediction_runs": ("run_id",)}
-    expected = PAYLOAD_TABLES
+    expected = frozenset({"prediction_runs", *p.tables})
     problems = [f"missing table {t}" for t in sorted(expected - set(p.raw))]
     problems += [f"unexpected table {t}" for t in sorted(set(p.raw) - expected)]
     counts: dict[str, int] = {}
@@ -1024,6 +1071,7 @@ def _venues_cover(p: _Payload) -> tuple[list[str], dict]:
 def _team_chart_reconciliation(p: _Payload) -> tuple[list[str], dict]:
     from cks_picks_cfb.charts.reconciliation import chart_problems
 
+    yardage = "team_game_yardage" in p.tables
     return chart_problems(
         roster=p.rows("team_season_roster"),
         game_rows=p.rows("team_game_stats"),
@@ -1031,6 +1079,7 @@ def _team_chart_reconciliation(p: _Payload) -> tuple[list[str], dict]:
         stats_rows=p.rows("team_season_stats"),
         games=p.rows("games"),
         results=p.rows("game_results"),
+        yardage_rows=p.rows("team_game_yardage") if yardage else None,
         season=p.season,
         active_week=p.active,
     )
@@ -1059,18 +1108,24 @@ assert set(_PROJECTION_CHECKS) == REQUIRED_PROJECTION_CHECKS
 def derive_checks(
     projections: Mapping[str, list[dict]], manifest: Mapping[str, Any]
 ) -> dict[str, dict]:
-    """Return ``{name: check_entry}`` for exactly ``REQUIRED_PROJECTION_CHECKS``.
+    """Return the projection checks frozen for the payload's recorded table set.
 
-    ``projections`` is the FULL payload (``prediction_runs`` plus the ``charts_v1`` tables);
+    ``projections`` is the FULL payload (``prediction_runs`` plus the tables of its
+    projection set; a ``charts_v1`` payload has no yardage table to check);
     ``manifest`` is the run manifest (or any mapping with its ``identity`` and
     ``output_refs``), see :func:`context_from_manifest`.
     """
     if not isinstance(projections, Mapping):
         raise VerificationError("projections must be an object")
     payload = _Payload(projections, context_from_manifest(manifest))
+    try:
+        names = REQUIRED_CHECK_SETS[payload_set(projections)][0]
+    except VerificationError:
+        # Malformed sets still derive all current checks to fail closed.
+        names = REQUIRED_PROJECTION_CHECKS
     return {
-        name: _run(check, "projection", payload)
-        for name, check in sorted(_PROJECTION_CHECKS.items())
+        name: _run(_PROJECTION_CHECKS[name], "projection", payload)
+        for name in sorted(names)
     }
 
 
@@ -1315,6 +1370,42 @@ def _checksums_at_read(output_refs, verified) -> tuple[list[str], dict]:
     return problems, {"outputs": sorted(names)}
 
 
+def yardage_evidence(rows: list[dict], byplay_ref: Mapping[str, Any]) -> dict:
+    """The ``chart_yardage_recomputed`` evidence staging binds to its candidate.
+
+    ``rows`` are the candidate's ``team_game_yardage`` rows; ``byplay_ref`` is the
+    revision manifest's pinned byplay input (``revision["inputs"]["byplay"]``).
+    """
+    from cks_picks_cfb.season.release import projection_check
+
+    digest = projection_check(rows)
+    return {
+        "byplay_uri": byplay_ref["uri"],
+        "byplay_sha256": byplay_ref["sha256"],
+        "projection_sha256": digest["sha256"],
+        "rows": digest["rows"],
+    }
+
+
+def _chart_yardage_recomputed(
+    inputs, revision, projections, active_week: int
+) -> tuple[list[str], dict]:
+    """Recompute ``team_game_yardage`` from the pinned byplay frame and compare.
+
+    ``inputs.byplay`` is the frame ``inputs.load_inputs`` read through a sha256
+    check of the revision's byplay ref (``checksums_at_read`` covers the rest).
+    Every key and count must be equal; ``success_yards_sum`` agrees within
+    ``FLOAT_TOLERANCE``.
+    """
+    from cks_picks_cfb.charts.reconciliation import yardage_differences
+    from cks_picks_cfb.season.projection_charts import build_yardage_rows
+
+    candidate = projections["team_game_yardage"]
+    observed = yardage_evidence(candidate, revision["inputs"]["byplay"])
+    expected = build_yardage_rows(inputs, active_week)
+    return yardage_differences(candidate, expected), observed
+
+
 def derive_prepare_checks(
     frames: Mapping[str, Any],
     *,
@@ -1323,13 +1414,16 @@ def derive_prepare_checks(
     identity: Mapping[str, Any],
     output_refs: Mapping[str, Mapping[str, Any]],
     verified_outputs: list[str] | set[str],
+    revision: Mapping[str, Any],
+    projections: Mapping[str, list[dict]],
 ) -> dict[str, dict]:
     """Return ``{name: check_entry}`` for exactly ``REQUIRED_PREPARE_CHECKS``.
 
     ``frames`` are the ``prepare.compute`` outputs, ``inputs`` the
     ``inputs.SeasonInputs``, ``model`` the parsed model manifest, ``identity`` the
-    run identity, and ``verified_outputs`` the names of ``output_refs`` whose
-    written bytes were re-read and matched their sha256.
+    run identity, ``verified_outputs`` the names of ``output_refs`` whose
+    written bytes were re-read and matched their sha256, ``revision`` the parsed
+    revision manifest and ``projections`` the candidate payload.
     """
     through = int(identity["through_week"])
     checks = {
@@ -1347,6 +1441,13 @@ def derive_prepare_checks(
         "ratings_equal_features": (_ratings_equal_features, frames),
         "paired_predictions": (_paired_predictions, frames, through),
         "checksums_at_read": (_checksums_at_read, output_refs, verified_outputs),
+        "chart_yardage_recomputed": (
+            _chart_yardage_recomputed,
+            inputs,
+            revision,
+            projections,
+            int(identity["active_week"]),
+        ),
     }
     assert set(checks) == REQUIRED_PREPARE_CHECKS
     return {
@@ -1361,10 +1462,11 @@ def derive_prepare_checks(
 
 
 def projection_digests(projections: Mapping[str, list[dict]]) -> dict[str, dict]:
-    """``release.projection_check`` of every table in ``PROJECTION_ORDER``."""
+    """``release.projection_check`` of every table of the payload's set."""
     from cks_picks_cfb.season.release import projection_check
 
-    return {table: projection_check(projections[table]) for table in PROJECTION_ORDER}
+    tables = PROJECTION_SETS[payload_set(projections)]
+    return {table: projection_check(projections[table]) for table in tables}
 
 
 def assemble_report(
@@ -1374,8 +1476,9 @@ def assemble_report(
 ) -> dict[str, Any]:
     """The ``season_verification_v2`` report; ``state`` is ``"failed"`` if any
     check failed (such a report never validates)."""
+    projection_set = payload_set(projections)
     checks = {**derive_checks(projections, manifest), **prepare_checks}
-    if set(checks) != REQUIRED_CHECKS:
+    if set(checks) != required_checks(projection_set):
         raise VerificationError("prepare checks are incomplete")
     passed = all(entry["passed"] is True for entry in checks.values())
     return {
@@ -1385,7 +1488,7 @@ def assemble_report(
         "output_refs": dict(manifest["output_refs"]),
         "checks": dict(sorted(checks.items())),
         "projection_checks": projection_digests(projections),
-        "row_counts": {t: len(projections[t]) for t in PROJECTION_ORDER},
+        "row_counts": {t: len(projections[t]) for t in PROJECTION_SETS[projection_set]},
     }
 
 
@@ -1406,6 +1509,7 @@ def validate_report(
     """Raise :class:`VerificationError` unless ``report`` is a passing
     ``season_verification_v2`` whose projection checks, ``projection_checks`` and
     ``row_counts`` are exactly what ``projections`` (the FULL payload) yields.
+    Required checks are those of the payload's projection set.
 
     The derivation context comes from the report's own ``identity``/``output_refs``;
     pass ``manifest`` (the run manifest) to also bind those to it. Callers that do
@@ -1413,8 +1517,10 @@ def validate_report(
     """
     if not isinstance(report, Mapping):
         raise VerificationError("verification report must be an object")
-    if not isinstance(projections, Mapping) or set(projections) != PAYLOAD_TABLES:
+    if not isinstance(projections, Mapping):
         raise VerificationError("projections must be the full payload")
+    projection_set = payload_set(projections)
+    projection_names = REQUIRED_CHECK_SETS[projection_set][0]
     if report.get("schema_version") != SCHEMA_VERSION:
         raise VerificationError("unknown verification schema")
     if report.get("state") != "passed":
@@ -1424,10 +1530,12 @@ def validate_report(
             if report.get(key) != manifest.get(key):
                 raise VerificationError(f"verification {key} differs from manifest")
     checks = report.get("checks")
-    if not isinstance(checks, Mapping) or set(checks) != REQUIRED_CHECKS:
+    if not isinstance(checks, Mapping) or set(checks) != required_checks(
+        projection_set
+    ):
         raise VerificationError("verification checks are missing or unknown")
     for name, entry in checks.items():
-        source = "projection" if name in REQUIRED_PROJECTION_CHECKS else "prepare"
+        source = "projection" if name in projection_names else "prepare"
         if (
             not isinstance(entry, Mapping)
             or entry.get("passed") is not True
@@ -1436,10 +1544,11 @@ def validate_report(
         ):
             raise VerificationError(f"verification check failed or malformed: {name}")
     derived = derive_checks(projections, report)
-    for name in sorted(REQUIRED_PROJECTION_CHECKS):
+    for name in sorted(projection_names):
         if checks[name] != derived[name]:
             raise VerificationError(f"projection check is not reproducible: {name}")
     if report.get("projection_checks") != projection_digests(projections):
         raise VerificationError("projection checksums differ from payload")
-    if report.get("row_counts") != {t: len(projections[t]) for t in PROJECTION_ORDER}:
+    tables = PROJECTION_SETS[projection_set]
+    if report.get("row_counts") != {t: len(projections[t]) for t in tables}:
         raise VerificationError("row counts differ from payload")

@@ -56,6 +56,9 @@ export function NetSuccessChart({
   const logo = Math.max(10, Math.min(LOGO, horizontal ? band * 0.9 : band * 0.95));
   const ticks = niceTicks(-half, half, 8);
   const zero = along(0);
+  // Dense slates (about 50+ games) read best as upright columns sized to the band.
+  const verticalLabels = band < 20;
+  const labelSize = verticalLabels ? Math.max(8, Math.min(11, band * 0.72)) : Math.min(12, band * 0.5);
 
   function center(index: number): number {
     return (horizontal ? plot.top : plot.left) + band * (index + 0.5);
@@ -76,6 +79,24 @@ export function NetSuccessChart({
     <div className="relative" data-testid="net-success-chart" data-orientation={orientation}>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
         <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-card)" stroke="var(--line)" />
+        {/* Below zero the winner had the lower success rate. */}
+        <g data-testid="outplayed-band" pointerEvents="none">
+          {horizontal ? (
+            <rect x={plot.left} y={plot.top} width={zero - plot.left} height={plot.bottom - plot.top} fill="var(--surface-inset)" />
+          ) : (
+            <rect x={plot.left} y={zero} width={plot.right - plot.left} height={plot.bottom - zero} fill="var(--surface-inset)" />
+          )}
+          <text
+            x={horizontal ? plot.left + 6 : plot.right - 8}
+            y={plot.bottom - 8}
+            textAnchor={horizontal ? "start" : "end"}
+            fontSize={11}
+            fontWeight={500}
+            fill="var(--ink-faint)"
+          >
+            Winner outplayed
+          </text>
+        </g>
         {ticks.map((tick) => (
           <g key={tick}>
             {horizontal ? (
@@ -177,9 +198,10 @@ export function NetSuccessChart({
                 </text>
               ) : (
                 <text
-                  transform={`translate(${c} ${plot.bottom + 10}) rotate(-55)`}
+                  transform={`translate(${c} ${plot.bottom + 8}) rotate(${verticalLabels ? -90 : -45})`}
                   textAnchor="end"
-                  fontSize={Math.max(8, Math.min(12, band * 0.72))}
+                  dominantBaseline={verticalLabels ? "central" : undefined}
+                  fontSize={labelSize}
                   fill="var(--ink)"
                 >
                   {bar.label}

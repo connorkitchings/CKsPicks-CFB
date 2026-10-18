@@ -16,7 +16,7 @@ CFBD / Odds API → immutable Bronze captures + catalog registry
 → verified serving projections → stage + atomic activate → Neon → Vercel
 ```
 
-`build_season_revision.py` reuses controller ingestion/Silver steps and creates cumulative registered market inputs. `run_season.py prepare` reconstructs completed weeks and forecasts the next slate at its pre-week cutoff; `season_verification_v2` enforces 23 verification checks. `run_season.py release` stages immutable projections and atomically activates the release after verification/readback, expected-prior-release checks and, for Production, independent Preview rehearsal proof. Active-release context makes Picks, Results, Ratings, Performance and health resolve the same release. Legacy web reads remain only as a fallback when there is no active season release.
+`build_season_revision.py` reuses controller ingestion/Silver steps and creates cumulative registered market inputs. `run_season.py prepare` reconstructs completed weeks and forecasts the next slate at its pre-week cutoff; `season_verification_v2` uses frozen checks per recorded projection set (24 for new `charts_v2` candidates). `run_season.py release` stages immutable projections and atomically activates the release after verification/readback, expected-prior-release checks and, for Production, independent Preview rehearsal proof. Active-release context makes Picks, Results, Ratings, Performance and health resolve the same release. Legacy web reads remain only as a fallback when there is no active season release.
 
 Neon `season_releases`, `season_release_policies` and `season_release_*` projection tables are defined by migration `0025`. Earlier `prediction_runs`, `current_week`, `games`, grades and optional matchup tables remain for compatibility. Schema upgrades are append-only under `contracts/migrations/`; `contracts/schema.sql` and `schema.ts` are canonical. Web copies must pass `make contracts-check`.
 
@@ -61,3 +61,8 @@ Python remains at the root; web owns its npm toolchain in `web/`. Make targets a
 Use [quickstart](../.codex/QUICKSTART.md) and `make help` for commands. Validate changed components, contracts and quality registry, Python/Ruff, web lint/typecheck/tests/build, strict MkDocs and `git diff --check`. CI combines Python-suite coverage with a 60% threshold. Database suites use disposable local clusters, never serving databases.
 
 Substantial work follows a durable Sol-to-Terra contract in `docs/plans/`; review recent logs before editing, preserve unrelated changes, and leave staging/commits to the owner. Update status only when current release/week state changes. Historical contracts and dated logs are evidence, not operating authority.
+
+
+## Charts publication
+
+`CFB_CHARTS_ENABLED=1` is the only opt-in to Charts navigation and `/charts`; unset/invalid values disable it in every environment, including fixtures. The root server layout passes visibility to navigation and the route rejects before data loading. Keep Production off pending owner manual approval and rebuild/redeploy when changing the flag. This allows code integration through normal `dev` → `main` flow while public Charts is withheld; it does not bypass backend chart migrations, fixed projection sets or release gates.

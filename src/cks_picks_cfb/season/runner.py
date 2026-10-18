@@ -350,6 +350,8 @@ def prepare(
                     identity=identity,
                     output_refs=refs,
                     verified_outputs=_reread(refs),
+                    revision=revision,
+                    projections=payload,
                 ),
             )
             failed_report = directory / "verification-failed.json"

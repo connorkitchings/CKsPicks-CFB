@@ -70,7 +70,8 @@ test.describe("team charts", () => {
     await expect(page).toHaveURL(/week=2/);
     await expect(page.getByTestId("chart-subtitle")).toContainText("Through Week 2");
     await expect(page.getByText("Success Rate").first()).toBeVisible();
-    await expect(page.getByText("PPA/play").first()).toBeVisible();
+    // A `charts_v2` release defaults the y axis to the 20+ yard play rate.
+    await expect(page.getByText("20+ Yard Play Rate", { exact: true })).toBeVisible();
     await expect(page.getByTestId("average-lines")).toBeVisible();
   });
 
@@ -217,7 +218,7 @@ test.describe("team charts", () => {
     await expect(tooltip).toContainText(focused ?? "");
     await expect(page.locator("g[data-team]:focus .focus-ring")).toHaveCSS("opacity", "1");
     await expect(first).toHaveAttribute("role", "button");
-    await expect(first).toHaveAttribute("aria-label", /success rate .*PPA\/play .* plays/);
+    await expect(first).toHaveAttribute("aria-label", /success rate .*20\+ yard rate .* plays/);
     await page.keyboard.press("Escape");
     await expect(tooltip).toHaveCount(0);
   });
@@ -241,11 +242,11 @@ test.describe("team charts", () => {
     await page.getByTestId("table-toggle").click();
     const table = page.getByTestId("chart-table");
     await expect(table.locator("tbody tr")).toHaveCount(PLOTTED);
-    await table.getByRole("button", { name: /^PPA\/play(?:\s*[↑↓])?$/ }).click();
+    await table.getByRole("button", { name: /^20\+ Yard Play Rate(?:\s*[↑↓])?$/ }).click();
     const headers = await table.locator("thead th").allTextContents();
-    const ppaColumn = headers.findIndex((header) => /^PPA\/play/.test(header));
-    const first = await table.locator("tbody tr").first().locator("td").nth(ppaColumn).innerText();
-    const last = await table.locator("tbody tr").last().locator("td").nth(ppaColumn).innerText();
+    const rateColumn = headers.findIndex((header) => /^20\+ Yard Play Rate/.test(header));
+    const first = await table.locator("tbody tr").first().locator("td").nth(rateColumn).innerText();
+    const last = await table.locator("tbody tr").last().locator("td").nth(rateColumn).innerText();
     expect(parseFloat(first)).toBeLessThanOrEqual(parseFloat(last));
     await page.getByTestId("table-toggle").click();
     await expect(page.getByTestId("scatter-chart")).toBeVisible();
@@ -270,6 +271,17 @@ test.describe("team charts", () => {
     // A failing adjusted window shows the same card instead of the route error page.
     await page.goto("/charts?chart=adjusted&week=3&fixture=adjusted-error");
     await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
+  });
+
+  test("explosiveness toggle appears only for a release that serves yardage", async ({ page }) => {
+    await page.goto("/charts?chart=efficiency&week=3");
+    await expect(page.getByTestId("efficiency-metric-switcher")).toBeVisible();
+    await expect(page.getByText("20+ Yard Play Rate", { exact: true })).toBeVisible();
+    await page.goto("/charts?chart=efficiency&week=3&fixture=v1");
+    await expect(page.getByTestId("scatter-chart")).toBeVisible();
+    await expect(page.getByTestId("efficiency-metric-switcher")).toHaveCount(0);
+    await expect(page.getByText("PPA/play", { exact: true }).first()).toBeVisible();
+    await expect(page.locator("g[data-team]")).toHaveCount(PLOTTED);
   });
 
   test("charts on every tab load logos without a broken image", async ({ page }) => {
@@ -321,7 +333,7 @@ test.describe("team charts", () => {
     expect(capture.teams.sort()).toEqual(teams);
     expect(capture.text).toContain("Through Week 3");
     expect(capture.text).toContain("SEC");
-    expect(capture.text).toContain("PPA/play");
+    expect(capture.text).toContain("20+ Yard Rate");
     expect(capture.text).toContain("Highlight: Alabama");
     const labelBox = await page.getByTestId("highlight-label").boundingBox();
     const axisBox = await page.getByTestId("scatter-chart").locator("svg > text").first().boundingBox();
@@ -410,4 +422,106 @@ test.describe("team charts", () => {
     }, fs.readFileSync(file).toString("base64"));
     expect(colors).toBeGreaterThan(300);
   });
+
+  test("the team param seeds the highlight and persists across charts, weeks and sides", async ({ page }) => {
+    await page.goto("/charts?chart=efficiency&week=3&team=michigan");
+    const michigan = page.locator("g[data-team='Michigan']");
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("link", { name: "Adjusted PPA/play" }).click();
+    await expect(page).toHaveURL(/chart=adjusted.*team=michigan/);
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+    // Net success has no finder, but keeps the team for the next chart.
+    await page.getByRole("link", { name: "Net success rate" }).click();
+    await expect(page).toHaveURL(/chart=net-success.*team=michigan/);
+    await expect(page.getByTestId("team-search")).toHaveCount(0);
+    await page.getByRole("link", { name: "Efficiency", exact: true }).click();
+    await expect(page).toHaveURL(/chart=efficiency.*team=michigan/);
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("link", { name: "defense", exact: true }).click();
+    await expect(page).toHaveURL(/side=defense.*team=michigan/);
+    await expect(michigan).toHaveAttribute("aria-pressed", "true");
+
+    // Choosing a team rewrites the URL in place, without a navigation.
+    await page.evaluate(() => { (window as typeof window & { chartMarker?: boolean }).chartMarker = true; });
+    await page.getByTestId("team-highlight").selectOption("Alabama");
+    await expect(page).toHaveURL(/team=Alabama/);
+    await expect(page.locator("g[data-team='Alabama']")).toHaveAttribute("aria-pressed", "true");
+    await page.locator("#week-select").selectOption("2");
+    await expect(page).toHaveURL(/week=2.*team=Alabama|team=Alabama.*week=2/);
+    await expect(page.locator("g[data-team='Alabama']")).toHaveAttribute("aria-pressed", "true");
+    await page.getByTestId("team-highlight").selectOption("Alabama");
+    await expect(page).not.toHaveURL(/team=/);
+    expect(await page.evaluate(() => (window as typeof window & { chartMarker?: boolean }).chartMarker)).toBe(true);
+
+    // An unknown team is ignored.
+    await page.goto("/charts?chart=efficiency&week=3&team=Nowhere%20State");
+    await expect(page.locator("g[data-team]")).toHaveCount(PLOTTED);
+    await expect(page.getByTestId("highlight-status")).toHaveCount(0);
+    await expect(page.locator("g[data-team][aria-pressed='true']")).toHaveCount(0);
+  });
+
+  test("net-success summary, outplayed band and sort toggle between success gap and final margin", async ({ page }) => {
+    await page.goto("/charts?chart=net-success&week=3");
+    await expect(page.getByTestId("net-success-summary")).toHaveText(/^\d+ of 8 winners had the lower success rate\.$/);
+    await expect(page.getByTestId("outplayed-band")).toContainText("Winner outplayed");
+    const bars = page.locator("g[data-game]");
+    const read = () => bars.evaluateAll((nodes) => nodes.map((node) => {
+      const label = node.getAttribute("aria-label")!;
+      const [, winner, loser] = label.match(/ (\d+)-(\d+):/)!;
+      const gap = Number(label.match(/(-?[\d.]+) percentage points/)![1]) * (label.includes("disadvantage") ? -1 : 1);
+      return { game: Number(node.getAttribute("data-game")), margin: Number(winner) - Number(loser), gap };
+    }));
+    const gapToggle = page.getByTestId("sort-success-gap");
+    const marginToggle = page.getByTestId("sort-final-margin");
+    await expect(gapToggle).toHaveAttribute("aria-pressed", "true");
+    const byGap = await read();
+    for (let i = 1; i < byGap.length; i++) expect(byGap[i].gap).toBeGreaterThanOrEqual(byGap[i - 1].gap);
+    await marginToggle.click();
+    await expect(marginToggle).toHaveAttribute("aria-pressed", "true");
+    const byMargin = await read();
+    expect(byMargin.map((b) => b.game).sort()).toEqual(byGap.map((b) => b.game).sort());
+    for (let i = 1; i < byMargin.length; i++) {
+      const [prev, next] = [byMargin[i - 1], byMargin[i]];
+      expect(next.margin > prev.margin || (next.margin === prev.margin && next.game > prev.game)).toBe(true);
+    }
+    // The export draws the same order.
+    const { capture } = await exportPng(page);
+    expect(capture.games.map(Number)).toEqual(byMargin.map((b) => b.game));
+    await gapToggle.click();
+    expect((await read()).map((b) => b.game)).toEqual(byGap.map((b) => b.game));
+  });
+
+  test("adjusted diagonals carry net labels and the tooltip shows the stored decomposition", async ({ page }) => {
+    await page.goto("/charts?chart=adjusted&week=3");
+    const diagonals = await page.locator("[data-iso-net]").count();
+    expect(diagonals).toBeGreaterThan(0);
+    await expect(page.getByTestId("iso-net-label")).toHaveCount(diagonals);
+    for (const text of await page.getByTestId("iso-net-label").allTextContents()) expect(text).toMatch(/^([+-]\d\.\d{2}|0\.00) net$/);
+    const ticks = await page.getByTestId("scatter-chart").locator("svg g text").allTextContents();
+    expect(ticks.some((tick) => /^[+-]?\d\.\d{2}$/.test(tick))).toBe(true);
+    expect(ticks.some((tick) => /^[+-]?\d\.\d{3}$/.test(tick))).toBe(false);
+    const alabama = page.locator("g[data-team='Alabama']");
+    // Focus handlers attach on hydration; retry until the tooltip responds.
+    await expect(async () => {
+      await alabama.blur();
+      await alabama.focus();
+      await expect(page.getByTestId("chart-tooltip")).toBeVisible({ timeout: 500 });
+    }).toPass();
+    await expect(page.getByTestId("chart-tooltip")).toContainText(/Alabama .*raw .*venue correction .*opponent adjustment .*rank \d+ of \d+/);
+  });
+});
+
+
+test("net success table follows the selected sort while the table remains open", async ({ page }) => {
+  await page.goto("/charts?chart=net-success&week=3");
+  await page.getByTestId("table-toggle").click();
+  const table = page.getByTestId("chart-table");
+  await expect(table.getByRole("columnheader", { name: /Difference \(percentage points\)/ })).toHaveAttribute("aria-sort", "ascending");
+  await page.getByTestId("sort-final-margin").click();
+  await expect(table.getByRole("columnheader", { name: /^Score/ })).toHaveAttribute("aria-sort", "ascending");
+  const margins = await table.locator("tbody tr td:nth-child(3)").allTextContents();
+  const values = margins.map((score) => { const [winner, loser] = score.split("-").map(Number); return winner - loser; });
+  expect(values).toEqual([...values].sort((a, b) => a - b));
+  await page.getByTestId("sort-success-gap").click();
+  await expect(table.getByRole("columnheader", { name: /Difference \(percentage points\)/ })).toHaveAttribute("aria-sort", "ascending");
 });
