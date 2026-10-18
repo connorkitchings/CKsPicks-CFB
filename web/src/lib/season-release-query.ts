@@ -11,27 +11,41 @@ export const CORE_RELEASE_TABLES = [
   "teamRatingComponents", "siteWeekSelections",
 ] as const;
 
-/** Weekly team-chart projections (projection set `charts_v1`); absent from older releases. */
-export const CHART_RELEASE_TABLES = ["teamSeasonRoster", "teamGameStats", "teamAdjustedEpa"] as const;
+const CHARTS_V1_TABLES = ["teamSeasonRoster", "teamGameStats", "teamAdjustedEpa"] as const;
+/**
+ * Team-chart projection sets, frozen per version: a release serves exactly the set it
+ * recorded at staging, so a `charts_v1` release never references a later table.
+ */
+export const CHART_TABLE_SETS = {
+  charts_v1: CHARTS_V1_TABLES,
+  charts_v2: [...CHARTS_V1_TABLES, "teamGameYardage"],
+} as const;
+export type ChartSet = keyof typeof CHART_TABLE_SETS;
+export const CHART_SETS = Object.keys(CHART_TABLE_SETS) as ChartSet[];
 
-type ReleaseTableKey = (typeof CORE_RELEASE_TABLES)[number] | (typeof CHART_RELEASE_TABLES)[number];
+type ReleaseTableKey = (typeof CORE_RELEASE_TABLES)[number] | (typeof CHART_TABLE_SETS)[ChartSet][number];
 const releaseName = (key: ReleaseTableKey) => getTableName(schema[key]);
+const projectionName = (key: ReleaseTableKey) => `season_release_${releaseName(key)}`;
+const perSet = <T>(build: (set: ChartSet) => T) =>
+  Object.fromEntries(CHART_SETS.map((set) => [set, build(set)])) as Record<ChartSet, T>;
 
 /** Core relations every active release must expose (existing behavior, unchanged). */
-export const RELEASE_PROJECTIONS = CORE_RELEASE_TABLES.map((key) => `season_release_${releaseName(key)}`);
-export const CHART_PROJECTIONS = CHART_RELEASE_TABLES.map((key) => `season_release_${releaseName(key)}`);
-/** The table names a `charts_v1` release records in `projection_checks`. */
-export const CHARTS_V1_KEYS = [...CORE_RELEASE_TABLES, ...CHART_RELEASE_TABLES].map(releaseName).sort();
+export const RELEASE_PROJECTIONS = CORE_RELEASE_TABLES.map(projectionName);
+/** The sorted table names a release of each chart set records in `projection_checks`. */
+export const CHART_SET_KEYS = perSet((set) => [...CORE_RELEASE_TABLES, ...CHART_TABLE_SETS[set]].map(releaseName).sort());
+/** The chart relations each chart set reads. */
+export const CHART_SET_PROJECTIONS = perSet((set) => CHART_TABLE_SETS[set].map(projectionName));
+export const CHARTS_V1_KEYS = CHART_SET_KEYS.charts_v1;
 
-/** Chart CTEs are added only when `charts` is true; never fall back to live tables. */
+/** Chart CTEs are added only for `chartSet`'s tables; never fall back to live tables. */
 export function seasonReleaseDb(
   db: NeonHttpDatabase<typeof schema>,
   releaseId: string | null,
-  options: { charts?: boolean } = {},
+  options: { chartSet?: ChartSet | null } = {},
 ) {
   if (!releaseId) return db.with();
-  const keys: readonly ReleaseTableKey[] = options.charts
-    ? [...CORE_RELEASE_TABLES, ...CHART_RELEASE_TABLES]
+  const keys: readonly ReleaseTableKey[] = options.chartSet
+    ? [...CORE_RELEASE_TABLES, ...CHART_TABLE_SETS[options.chartSet]]
     : CORE_RELEASE_TABLES;
   const relations = keys.map((key) => {
     const table = schema[key];

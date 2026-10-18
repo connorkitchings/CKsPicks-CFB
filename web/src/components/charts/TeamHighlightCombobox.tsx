@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useId, useMemo } from "react";
 import clsx from "clsx";
 import { matchesSearch } from "@/lib/charts";
 
@@ -21,6 +21,7 @@ export function TeamHighlightCombobox({
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listId = useId();
 
   // Close when clicking outside
   useEffect(() => {
@@ -56,6 +57,8 @@ export function TeamHighlightCombobox({
           type="text"
           role="combobox"
           aria-expanded={isOpen}
+          aria-controls={listId}
+          aria-label="Highlight a team"
           aria-autocomplete="list"
           aria-haspopup="listbox"
           value={displayValue}
@@ -106,16 +109,18 @@ export function TeamHighlightCombobox({
         )}
       </div>
 
-      {/* Hidden select for backwards compatibility with tests and form accessibility */}
+      {/* Hidden toggle select (kept for scripted access): it rests on the placeholder so
+          choosing the highlighted team again fires a change and unhighlights it. */}
       <select
         id="team-highlight"
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"
-        value={highlight ?? ""}
+        value="choose"
         onChange={(e) => onSelect(e.target.value ? e.target.value : null)}
         data-testid="team-highlight"
       >
+        <option value="choose" disabled>Choose a team to toggle</option>
         <option value="">None</option>
         {teams.map((t) => (
           <option key={t.team} value={t.team}>
@@ -127,6 +132,7 @@ export function TeamHighlightCombobox({
       {/* Floating Dropdown List */}
       {isOpen && (
         <ul
+          id={listId}
           role="listbox"
           className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-line bg-surface-card p-1 shadow-lg focus:outline-none"
         >

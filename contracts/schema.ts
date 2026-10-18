@@ -1213,3 +1213,32 @@ export const seasonReleaseTeamAdjustedEpa = pgTable("season_release_team_adjuste
     cohortSize: integer("cohort_size").notNull(),
     adjustmentMethod: text("adjustment_method").notNull(),
 }, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.asOfWeek, table.team, table.role] })]);
+
+export const teamGameYardage = pgTable("team_game_yardage", {
+    season: integer("season").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    team: text("team").notNull(),
+    offYardsN: integer("off_yards_n").notNull(),
+    offExplosiveN: integer("off_explosive_n").notNull(),
+    offSuccessYardsN: integer("off_success_yards_n").notNull(),
+    offSuccessYardsSum: doublePrecision("off_success_yards_sum").notNull(),
+    defYardsN: integer("def_yards_n").notNull(),
+    defExplosiveN: integer("def_explosive_n").notNull(),
+    defSuccessYardsN: integer("def_success_yards_n").notNull(),
+    defSuccessYardsSum: doublePrecision("def_success_yards_sum").notNull(),
+}, (table) => [primaryKey({ columns: [table.season, table.gameId, table.team] })]);
+
+export const seasonReleaseTeamGameYardage = pgTable("season_release_team_game_yardage", {
+  releaseId: text("release_id").notNull().references(() => seasonReleases.releaseId),
+    season: integer("season").notNull(),
+    gameId: bigint("game_id", { mode: "number" }).notNull(),
+    team: text("team").notNull(),
+    offYardsN: integer("off_yards_n").notNull(),
+    offExplosiveN: integer("off_explosive_n").notNull(),
+    offSuccessYardsN: integer("off_success_yards_n").notNull(),
+    offSuccessYardsSum: doublePrecision("off_success_yards_sum").notNull(),
+    defYardsN: integer("def_yards_n").notNull(),
+    defExplosiveN: integer("def_explosive_n").notNull(),
+    defSuccessYardsN: integer("def_success_yards_n").notNull(),
+    defSuccessYardsSum: doublePrecision("def_success_yards_sum").notNull(),
+}, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.gameId, table.team] })]);

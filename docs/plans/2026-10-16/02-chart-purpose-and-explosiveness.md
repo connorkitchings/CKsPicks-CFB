@@ -1,6 +1,6 @@
 # Chart purpose, organization, and weekly data — Revision 5
 
-- **Status:** Implemented — authorized initial UI/report delivery only; owner metric-selection and serving/publication phase remain deferred.
+- **Status:** Implemented — initial UI/report delivery. Owner selected both yardage metrics; the serving/publication follow-through is governed by the [October 18 expansion contract](../2026-10-18/01-charts-review-and-expansion.md).
 - **Created:** 2026-10-16
 - **Planner:** Sol
 - **Approval source:** Owner's explicit “PLEASE IMPLEMENT THIS PLAN” request reproducing Revision 5 in the planning chat on 2026-10-16.
@@ -89,3 +89,8 @@ Chart controls, actual group filtering, stable national reference values and per
 Validation passed: 50 scoped Python tests; 186 web publication tests with one existing skip; 75 browser tests (24 focused chart/navigation); scoped Ruff; web lint (one preexisting warning), typecheck, fixture-mode production build; strict documentation build; visual inspection of national/small-group desktop/mobile charts and PNGs; `git diff --check`. Five focused review lenses found no blocking issue; one report range-rounding error was corrected against the generated CSV. Full evidence and the exact user-controlled commit allowlist are in the implementation log.
 
 The public chart remains Efficiency and PPA/play. Owner selection and an amended contract are required before any `charts_v2` schema/serving work; Preview rehearsal and Production promotion retain their separate gates. No git staging, commits, integration, release activation or Production access occurred in this implementation.
+
+
+### Owner selection and serving handoff — 2026-10-18
+
+The owner selected **20+ yard rate** and **yards per successful play**, with a toggle, as recorded in `session_logs/2026-10-16/11-explosiveness-switcher.md`. The [expansion contract](../2026-10-18/01-charts-review-and-expansion.md) now authorizes the deferred companion `charts_v2` serving implementation and removes the intervening static research export. Its recovery completion plan was explicitly authorized by the owner on October 18. Initial-delivery history above remains unchanged. Local implementation does not complete the required Preview rehearsal, and neither contract authorizes Production promotion implicitly.

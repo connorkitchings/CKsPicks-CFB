@@ -1,10 +1,11 @@
-import type { AdjustedRow, RosterRow, TeamGameRow } from "@/lib/charts";
+import type { AdjustedRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "@/lib/charts";
 import { LOGO_IDS } from "@/lib/team-logos.generated";
 
 /**
  * Deterministic chart data for UI tests: a 17-team FBS roster (one team with no games),
- * four completed weeks of mirrored team-game rows (weeks 0-3) and adjusted windows for
- * as_of_week 3 and 4. Values are plausible, not real.
+ * four completed weeks of mirrored team-game rows (weeks 0-3), their mirrored yardage
+ * rows and adjusted windows for as_of_week 3 and 4. Values are plausible, not real. A
+ * `charts_v1` release serves the game rows alone; `charts_v2` adds the yardage.
  */
 export const chartsRosterFixture: RosterRow[] = [
   ["Alabama", "SEC"], ["Georgia", "SEC"], ["Texas", "SEC"], ["LSU", "SEC"],
@@ -70,6 +71,37 @@ function buildGameRows(): TeamGameRow[] {
 
 export const chartsGameRowsFixture: TeamGameRow[] = buildGameRows();
 
+/**
+ * One mirrored `team_game_yardage` row per team-game, within the release bounds
+ * (`explosive_n <= yards_n <= plays`, `success_yards_n <= success_n`). It draws from its
+ * own generator so the game rows stay unchanged.
+ */
+function buildYardage(rows: readonly TeamGameRow[], seed: number): TeamGameYardageRow[] {
+  const random = lcg(seed);
+  const offense = new Map<string, Pick<TeamGameYardageRow, "offYardsN" | "offExplosiveN" | "offSuccessYardsN" | "offSuccessYardsSum">>();
+  for (const row of rows) {
+    const yards = row.offPlays - (random() < 0.2 ? 1 : 0);
+    const successYards = Math.min(Math.round(row.offSuccessSum), yards);
+    offense.set(`${row.gameId}:${row.team}`, {
+      offYardsN: yards,
+      offExplosiveN: Math.floor(yards * (0.03 + random() * 0.08)),
+      offSuccessYardsN: successYards,
+      offSuccessYardsSum: Math.round(successYards * (9 + random() * 5) * 10) / 10,
+    });
+  }
+  return rows.map((row) => {
+    const own = offense.get(`${row.gameId}:${row.team}`)!;
+    const other = offense.get(`${row.gameId}:${row.opponent}`)!;
+    return {
+      gameId: row.gameId, team: row.team, ...own,
+      defYardsN: other.offYardsN, defExplosiveN: other.offExplosiveN,
+      defSuccessYardsN: other.offSuccessYardsN, defSuccessYardsSum: other.offSuccessYardsSum,
+    };
+  });
+}
+
+export const chartsYardageFixture: TeamGameYardageRow[] = buildYardage(chartsGameRowsFixture, 20);
+
 /** Adjusted windows for as_of_week 3 and 4; Notre Dame has no defense row in window 4. */
 export function chartsAdjustedFixture(asOfWeek: number): AdjustedRow[] {
   const rows: AdjustedRow[] = [];
@@ -99,7 +131,7 @@ export const chartsAdjustedWeeksFixture = [3, 4];
  * A full Week 0 slate (69 games between every logo-bearing school) for export-width tests:
  * 140 + 30 * 69 = 2210 px wide.
  */
-export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[] } {
+export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[]; yardage: TeamGameYardageRow[] } {
   const names = Object.keys(LOGO_IDS);
   const random = lcg(7);
   const rows: TeamGameRow[] = [];
@@ -129,5 +161,33 @@ export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[]
     later[i + 1].defEpaSum = later[i].offEpaSum;
   }
   rows.push(...later);
-  return { roster: names.map((team) => ({ team, conference: "Fixture" })), rows };
+  return { roster: names.map((team) => ({ team, conference: "Fixture" })), rows, yardage: buildYardage(rows, 70) };
+}
+
+/** Forty logo-bearing teams with distinct schedule effects, including a tie at each cut.
+ * This fixture exercises the real top/bottom-15 browser layout without changing the
+ * smaller fixtures used by the scatter and trajectory tests.
+ */
+export function chartsScheduleFixture() {
+  const slate = chartsSlateFixture();
+  const roster = [...slate.roster].sort((a, b) => a.team.localeCompare(b.team)).slice(0, 40);
+  const teams = new Set(roster.map((row) => row.team));
+  const rows = slate.rows.filter((row) => teams.has(row.team));
+  const adjustedWeeks = [3, 4];
+  const adjustedFor = (asOfWeek: number): AdjustedRow[] => roster.flatMap(({ team }, index) =>
+    (["offense", "defense"] as const).map((role) => {
+      // Adjacent teams at positions 15/16 and 25/26 tie: team name breaks each tie.
+      const position = index === 15 ? 14 : index === 25 ? 24 : index;
+      const effect = (19.5 - position) / 200;
+      const opponentAdjustment = role === "offense" ? -effect : effect;
+      const rawEpaPerPlay = (role === "offense" ? 0.12 : 0.08) + index / 2000;
+      const venueCorrection = index % 2 === 0 ? 0.004 : -0.004;
+      return {
+        asOfWeek, team, role, rawEpaPerPlay, venueCorrection, opponentAdjustment,
+        adjustedEpaPerPlay: rawEpaPerPlay - venueCorrection - opponentAdjustment,
+        epaN: 140, games: 2, adjustedRank: index + 1, cohortSize: roster.length,
+      };
+    }),
+  );
+  return { roster, rows, yardage: slate.yardage.filter((row) => teams.has(row.team)), adjustedWeeks, adjustedFor };
 }

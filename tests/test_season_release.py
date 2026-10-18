@@ -12,6 +12,7 @@ import pytest
 
 from cks_picks_cfb.season import release as r
 from cks_picks_cfb.season.manifest import canonical, sha
+from cks_picks_cfb.season.projection_common import CHART_TABLES as CHART_V1_TABLES
 from cks_picks_cfb.season.projection_common import (
     PROJECTION_SETS,
     recognized_projection_set,
@@ -23,6 +24,7 @@ from tests.season_candidates import (
     payload_for,
     seal,
 )
+from tests.test_season_verification import REVISION_RAW
 
 
 class Database:
@@ -467,7 +469,7 @@ def _candidate_args(label="candidate"):
 def test_validate_candidate_passes_with_real_rederived_report():
     manifest, report, payload = _candidate_args()
 
-    r.validate_candidate(manifest, report, payload)
+    r.validate_candidate(manifest, report, payload, revision_raw=REVISION_RAW)
 
 
 def _stale_report_for_changed_payload(manifest, report, payload):
@@ -497,7 +499,7 @@ def test_validate_candidate_refuses_forged_checks(forgery):
         report["checks"]["market_links"]["observed"]["quotes"] = 99
 
     with pytest.raises(r.SeasonReleaseError, match="check"):
-        r.validate_candidate(manifest, report, payload)
+        r.validate_candidate(manifest, report, payload, revision_raw=REVISION_RAW)
 
 
 @pytest.mark.parametrize("field", ["projection_checks", "row_counts"])
@@ -506,7 +508,7 @@ def test_validate_candidate_refuses_report_for_other_payload(field):
     report[field]["games"] = {"rows": 9, "sha256": "0" * 64} if field[0] == "p" else 9
 
     with pytest.raises(r.SeasonReleaseError, match="differ from payload"):
-        r.validate_candidate(manifest, report, payload)
+        r.validate_candidate(manifest, report, payload, revision_raw=REVISION_RAW)
 
 
 def test_validate_candidate_binds_report_to_the_run_manifest():
@@ -515,7 +517,10 @@ def test_validate_candidate_binds_report_to_the_run_manifest():
 
     with pytest.raises(r.SeasonReleaseError, match="identity differs from manifest"):
         r.validate_candidate(
-            {**other, "output_refs": manifest["output_refs"]}, report, payload
+            {**other, "output_refs": manifest["output_refs"]},
+            report,
+            payload,
+            revision_raw=REVISION_RAW,
         )
 
 
@@ -526,7 +531,9 @@ def test_validate_candidate_wraps_verification_rejection():
         raise ValueError("row counts differ")
 
     with pytest.raises(r.SeasonReleaseError, match="row counts differ"):
-        r.validate_candidate(manifest, report, payload, validate=reject)
+        r.validate_candidate(
+            manifest, report, payload, revision_raw=REVISION_RAW, validate=reject
+        )
 
 
 def test_timestamp_normalization_and_server_columns_are_excluded():
@@ -694,21 +701,64 @@ def test_release_refuses_unpinned_or_changed_prepared_outputs(tmp_path, fault):
 # ---------------------------------------------------------------- projection sets
 
 
-def retained_core_release(db, label="core"):
-    """Turn a staged charts_v1 release into a retained core_v1 one (18 tables)."""
+def retained_release(db, label, projection_set):
+    """Turn a staged charts_v2 release into a retained one of an older set."""
     release_id = stage(db, label)
-    chart_tables = set(PROJECTION_SETS["charts_v1"]) - set(PROJECTION_SETS["core_v1"])
-    for table in chart_tables:
+    dropped = set(PROJECTION_SETS["charts_v2"]) - set(PROJECTION_SETS[projection_set])
+    for table in dropped:
         db.projections.pop((release_id, table), None)
         del db.rows[release_id]["projection_checks"][table]
     return release_id
 
 
-def test_staging_requires_charts_v1_and_records_its_checks():
+def retained_core_release(db, label="core"):
+    """A retained core_v1 release (18 tables)."""
+    return retained_release(db, label, "core_v1")
+
+
+def test_staging_requires_charts_v2_and_records_its_checks():
     db = Database()
     release_id = stage(db)
-    assert set(db.rows[release_id]["projection_checks"]) == set(
-        PROJECTION_SETS["charts_v1"]
+    checks = db.rows[release_id]["projection_checks"]
+    assert set(checks) == set(PROJECTION_SETS["charts_v2"])
+    assert recognized_projection_set(checks) == "charts_v2"
+    assert db.projections[(release_id, "team_game_yardage")]
+    with db.cursor() as cur:
+        assert r._readback(cur, release_id, checks, "preview") == checks
+    assert activate(db, release_id)["release_id"] == release_id
+
+
+def test_charts_v1_set_is_frozen_and_charts_v2_only_adds_yardage():
+    v1, v2 = PROJECTION_SETS["charts_v1"], PROJECTION_SETS["charts_v2"]
+    assert v1 == (*PROJECTION_SETS["core_v1"], *CHART_V1_TABLES)
+    assert v2 == (*v1, "team_game_yardage")
+
+
+def test_retained_charts_v1_release_reads_back_activates_and_rolls_back():
+    db = Database()
+    old = retained_release(db, "old-charts", "charts_v1")
+    checks = db.rows[old]["projection_checks"]
+    assert recognized_projection_set(checks) == "charts_v1"
+    with db.cursor() as cur:
+        assert r._readback(cur, old, checks, "preview") == checks
+    activate(db, old)
+    new = stage(db, "new")
+    activate(db, new, old)
+    db.owner = True
+    db.role = "cks_preview_migrator"
+    receipt = r.rollback_release(
+        db,
+        environment="preview",
+        season=2026,
+        release_id=old,
+        expected_previous_release_id=new,
+        owner_authorized=True,
+        decision_ref="owner rollback",
+    )
+    assert receipt["action"] == "rollback"
+    assert db.rows[old]["status"] == "active"
+    assert not any(
+        base == "team_game_yardage" for rid, base in db.projections if rid == old
     )
 
 
@@ -765,16 +815,15 @@ def test_partial_and_unknown_recorded_sets_fail_readback(drop):
         r._readback(cur, release_id, checks, "preview")
 
 
-CHART_ONLY = set(PROJECTION_SETS["charts_v1"]) - set(PROJECTION_SETS["core_v1"])
-
-
-def test_core_v1_candidates_are_refused_at_staging():
+@pytest.mark.parametrize("projection_set", ["core_v1", "charts_v1"])
+def test_older_set_candidates_are_refused_at_staging(projection_set):
     db = Database()
-    full = payload_for("core-candidate")
-    core = {k: v for k, v in full.items() if k not in CHART_ONLY}
-    sealed = seal("core-candidate", core, reported_payload=full)
+    full = payload_for("old-candidate")
+    kept = {"prediction_runs", *PROJECTION_SETS[projection_set]}
+    older = {k: v for k, v in full.items() if k in kept}
+    sealed = seal("old-candidate", older, reported_payload=full)
     schema_for(db, full)
-    with pytest.raises(r.SeasonReleaseError, match="core_v1 candidates"):
+    with pytest.raises(r.SeasonReleaseError, match=f"{projection_set} candidates"):
         r.stage_release(
             db,
             run_manifest_uri=manifest_uri(sealed),

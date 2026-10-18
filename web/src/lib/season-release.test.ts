@@ -4,8 +4,14 @@ import { eq, getTableName, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import { PgDialect } from "drizzle-orm/pg-core";
 import * as schema from "./schema.ts";
-import { seasonReleaseDb, CHARTS_V1_KEYS, CHART_RELEASE_TABLES, CORE_RELEASE_TABLES, RELEASE_PROJECTIONS } from "./season-release-query.ts";
-import { createReleaseContextResolver, loadReleaseContext, releaseEnvironment } from "./season-release-context.ts";
+import {
+  seasonReleaseDb, CHARTS_V1_KEYS, CHART_SETS, CHART_SET_KEYS, CHART_SET_PROJECTIONS, CHART_TABLE_SETS,
+  CORE_RELEASE_TABLES, RELEASE_PROJECTIONS, type ChartSet,
+} from "./season-release-query.ts";
+import {
+  chartsAvailable, createReleaseContextResolver, explosivenessAvailable, loadReleaseContext, releaseEnvironment,
+  type SeasonReleaseContext,
+} from "./season-release-context.ts";
 
 const db = drizzle.mock({ schema });
 const release = { release_id: "release-a", environment: "preview", season: 2026, active_week: 7, activated_at: "2026-10-14T00:00:00Z" };
@@ -89,46 +95,119 @@ test("missing-projection probe binds the projection names as one text[] paramete
   assert.deepEqual(rendered.params, [RELEASE_PROJECTIONS]);
 });
 
-test("chart CTEs are added only with charts enabled and bind the same release id", () => {
+const YARDAGE = "season_release_team_game_yardage";
+const chartSql = (releaseId: string, chartSet: ChartSet | null) =>
+  seasonReleaseDb(db, releaseId, { chartSet }).select().from(schema.teamSeasonRoster).toSQL();
+
+test("chart sets are frozen per version and charts_v1 keeps its recorded keys", () => {
+  assert.deepEqual(CHARTS_V1_KEYS, [
+    "game_results", "game_venues", "games", "market_quotes", "market_snapshot_quotes", "market_snapshots",
+    "matchup_data_publications", "prediction_grades", "prediction_market_selections", "predictions",
+    "site_week_selections", "system_stats", "team_adjusted_epa", "team_game_measurements", "team_game_stats",
+    "team_possession_adjusted", "team_possession_stats", "team_rating_components", "team_season_roster",
+    "team_season_stats", "v5_rating_snapshots",
+  ]);
+  assert.deepEqual(CHART_SET_KEYS.charts_v2, [...CHARTS_V1_KEYS, "team_game_yardage"].sort());
+  assert.deepEqual(CHART_SET_PROJECTIONS.charts_v1, ["season_release_team_season_roster", "season_release_team_game_stats", "season_release_team_adjusted_epa"]);
+  assert.deepEqual(CHART_SET_PROJECTIONS.charts_v2, [...CHART_SET_PROJECTIONS.charts_v1, YARDAGE]);
+  assert.deepEqual(CHART_TABLE_SETS.charts_v2.slice(0, -1), CHART_TABLE_SETS.charts_v1);
+});
+
+test("chart CTEs cover exactly the chart set's tables and bind the same release id", () => {
   const without = seasonReleaseDb(db, "release-a").select().from(schema.games).toSQL();
-  const withCharts = seasonReleaseDb(db, "release-a", { charts: true }).select().from(schema.teamSeasonRoster).toSQL();
-  for (const key of CHART_RELEASE_TABLES) {
-    const name = getTableName(schema[key]);
-    assert.equal(without.sql.includes(`"season_release_${name}"`), false, name);
-    assert.ok(withCharts.sql.includes(`"${name}" as (`), name);
-    assert.ok(withCharts.sql.includes(`"season_release_${name}"`), name);
+  for (const chartSet of CHART_SETS) {
+    const query = chartSql("release-a", chartSet);
+    for (const key of CHART_TABLE_SETS[chartSet]) {
+      const name = getTableName(schema[key]);
+      assert.equal(without.sql.includes(`"season_release_${name}"`), false, name);
+      assert.ok(query.sql.includes(`"${name}" as (`), name);
+      assert.ok(query.sql.includes(`"season_release_${name}"`), name);
+    }
+    assert.equal(query.sql.includes(YARDAGE), chartSet === "charts_v2", chartSet);
+    assert.equal(query.params.length, CORE_RELEASE_TABLES.length + CHART_TABLE_SETS[chartSet].length + 1);
+    assert.ok(query.params.every((value) => value === "release-a"));
   }
-  assert.equal(withCharts.params.filter((value) => value === "release-a").length, CORE_RELEASE_TABLES.length + CHART_RELEASE_TABLES.length + 1);
-  assert.ok(withCharts.params.every((value) => value === "release-a"));
-  assert.equal(seasonReleaseDb(db, "release-a", { charts: false }).select().from(schema.games).toSQL().sql, without.sql);
+  assert.equal(seasonReleaseDb(db, "release-a", { chartSet: null }).select().from(schema.games).toSQL().sql, without.sql);
 });
 
 test("a chart query shadows the live chart table with the release rows, never the live table", () => {
-  const query = seasonReleaseDb(db, "release-a", { charts: true })
-    .select({ team: schema.teamAdjustedEpa.team }).from(schema.teamAdjustedEpa).toSQL();
-  assert.match(query.sql, /with[\s\S]*"team_adjusted_epa" as \(select[\s\S]* from "season_release_team_adjusted_epa" AS "team_adjusted_epa" WHERE release_id = \$/i);
+  const query = seasonReleaseDb(db, "release-a", { chartSet: "charts_v2" })
+    .select({ team: schema.teamGameYardage.team }).from(schema.teamGameYardage).toSQL();
+  assert.match(query.sql, /with[\s\S]*"team_game_yardage" as \(select[\s\S]* from "season_release_team_game_yardage" AS "team_game_yardage" WHERE release_id = \$/i);
 });
 
-const chartsRelease = { ...release, projection_keys: [...CHARTS_V1_KEYS].reverse(), chart_relations: true };
+const v1Release = { ...release, projection_keys: [...CHARTS_V1_KEYS].reverse(), charts_v1_relations: true, charts_v2_relations: null };
+const v2Release = { ...release, projection_keys: [...CHART_SET_KEYS.charts_v2].reverse(), charts_v1_relations: true, charts_v2_relations: true };
 const resolve = (row: Record<string, unknown>) => loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [row] }, { rows: [] }]), 2026, "preview");
+const capabilities = (context: SeasonReleaseContext | null) =>
+  [context?.chartSet, chartsAvailable(context!.chartSet), explosivenessAvailable(context!.chartSet)];
 
-test("chartsAvailable requires the charts_v1 set and every chart relation", async () => {
-  assert.equal((await resolve(chartsRelease))?.chartsAvailable, true);
-  const chartNames: string[] = CHART_RELEASE_TABLES.map((k) => getTableName(schema[k]));
-  const core = CHARTS_V1_KEYS.filter((key) => !chartNames.includes(key));
-  assert.equal(core.length, CORE_RELEASE_TABLES.length);
-  assert.equal((await resolve({ ...chartsRelease, projection_keys: core }))?.chartsAvailable, false);
-  assert.equal((await resolve({ ...chartsRelease, projection_keys: CHARTS_V1_KEYS.slice(1) }))?.chartsAvailable, false);
-  assert.equal((await resolve({ ...chartsRelease, projection_keys: [...CHARTS_V1_KEYS, "extra"] }))?.chartsAvailable, false);
-  assert.equal((await resolve({ ...chartsRelease, chart_relations: false }))?.chartsAvailable, false);
-  assert.equal((await resolve({ ...chartsRelease, chart_relations: null }))?.chartsAvailable, false);
-  assert.equal((await resolve(release))?.chartsAvailable, false);
+test("a retained charts_v1 release without 0027 serves charts without explosiveness", async () => {
+  const context = await resolve(v1Release);
+  assert.deepEqual(capabilities(context), ["charts_v1", true, false]);
+  assert.equal(chartSql(context!.releaseId, context!.chartSet).sql.includes(YARDAGE), false);
+});
+
+test("a retained charts_v1 release after 0027 behaves the same: the recorded set governs", async () => {
+  const context = await resolve({ ...v1Release, charts_v2_relations: true });
+  assert.deepEqual(capabilities(context), ["charts_v1", true, false]);
+  assert.equal(chartSql(context!.releaseId, context!.chartSet).sql.includes(YARDAGE), false);
+});
+
+test("a charts_v2 release serves explosiveness with the yardage CTE bound to its release id", async () => {
+  const context = await resolve(v2Release);
+  assert.deepEqual(capabilities(context), ["charts_v2", true, true]);
+  const query = chartSql(context!.releaseId, context!.chartSet);
+  assert.match(query.sql, /"team_game_yardage" as \(select[\s\S]* from "season_release_team_game_yardage" AS "team_game_yardage" WHERE release_id = \$/i);
+  assert.ok(query.params.every((value) => value === "release-a"));
+});
+
+test("a charts_v2 release whose yardage relation is missing has no chart set", async () => {
+  assert.deepEqual(capabilities(await resolve({ ...v2Release, charts_v2_relations: false })), [null, false, false]);
+  assert.deepEqual(capabilities(await resolve({ ...v2Release, charts_v2_relations: null })), [null, false, false]);
+});
+
+test("unknown or partial recorded keys, or missing charts_v1 relations, have no chart set", async () => {
+  const yardageOnly = [...CHARTS_V1_KEYS.slice(1), "team_game_yardage"];
+  for (const projection_keys of [[], CHARTS_V1_KEYS.slice(1), [...CHARTS_V1_KEYS, "extra"], yardageOnly, CHART_SET_KEYS.charts_v2.slice(1)]) {
+    assert.equal((await resolve({ ...v2Release, projection_keys }))?.chartSet, null, projection_keys.join(","));
+  }
+  assert.equal((await resolve({ ...v1Release, charts_v1_relations: false }))?.chartSet, null);
+  assert.equal((await resolve({ ...v1Release, charts_v1_relations: null }))?.chartSet, null);
+  assert.equal((await resolve(release))?.chartSet, null);
+});
+
+test("the resolver probes each chart set's relations as one bound text[] parameter", async () => {
+  const queries: SQL[] = [];
+  const responses = [{ rows: [{ exists: true }] }, { rows: [v2Release] }, { rows: [] }];
+  await loadReleaseContext(async (query) => { queries.push(query); return responses.shift(); }, 2026, "preview");
+  const rendered = new PgDialect().sqlToQuery(queries[1]);
+  for (const set of CHART_SETS) assert.match(rendered.sql, new RegExp(`AS "${set}_relations"`));
+  assert.deepEqual(rendered.params.slice(0, CHART_SETS.length), CHART_SETS.map((set) => CHART_SET_PROJECTIONS[set]));
+});
+
+test("one request keeps the release id and chart set even when another release activates", async () => {
+  let active: Record<string, unknown> = v1Release;
+  const load = async (season: number, environment: "preview" | "production") =>
+    loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [{ ...active, season, environment }] }, { rows: [] }]), season, environment);
+  const request = createReleaseContextResolver(load);
+  const first = await request(2026, "preview");
+  active = { ...v2Release, release_id: "release-b" };
+  const second = await request(2026, "preview");
+  for (const context of [first, second]) {
+    assert.deepEqual([context?.releaseId, context?.chartSet], ["release-a", "charts_v1"]);
+    const query = chartSql(context!.releaseId, context!.chartSet);
+    assert.equal(query.sql.includes(YARDAGE), false);
+    assert.ok(query.params.every((value) => value === "release-a"));
+  }
+  const next = await createReleaseContextResolver(load)(2026, "preview");
+  assert.deepEqual([next?.releaseId, next?.chartSet], ["release-b", "charts_v2"]);
 });
 
 test("a core_v1 release still resolves and serves core pages without chart relations", async () => {
-  const context = await resolve({ ...release, projection_keys: CORE_RELEASE_TABLES.map((key) => getTableName(schema[key])).sort(), chart_relations: false });
+  const context = await resolve({ ...release, projection_keys: CORE_RELEASE_TABLES.map((key) => getTableName(schema[key])).sort(), charts_v1_relations: false, charts_v2_relations: false });
   assert.equal(context?.releaseId, "release-a");
-  assert.equal(context?.chartsAvailable, false);
+  assert.equal(context?.chartSet, null);
   const query = seasonReleaseDb(db, context!.releaseId).select().from(schema.games).toSQL();
   assert.equal(RELEASE_PROJECTIONS.some((name) => !query.sql.includes(`"${name}"`)), false);
 });

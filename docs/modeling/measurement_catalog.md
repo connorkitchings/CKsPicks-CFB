@@ -65,9 +65,13 @@ These feed only the Charts page (see [Team Charts Methodology](team_charts_metho
 | --- | --- | --- | --- |
 | Success rate (`success_sum / success_n`) | Offense, defense | Eligible plays with a success flag | Reconstructed from release data; equals `team_season_stats.success_rate` |
 | EPA/play (`epa_sum / epa_n`) | Offense, defense | Eligible plays with a valid `ppa` | Reconstructed; equals `team_season_stats.ppa_per_play` |
+| 20+ yard rate (`explosive_n / yards_n`) | Offense, defense | Eligible plays with finite yardage | `charts_v2` companion projection; selected by owner, Preview rehearsal pending |
+| Yards per successful play (`success_yards_sum / success_yards_n`) | Offense, defense | Successful eligible plays with finite yardage | `charts_v2`; independent denominator, null at zero exposure |
 | Net success rate (winner offense minus loser offense) | Game | One game | Reconstructed per week |
 | Venue coefficient `h` | League window | Weighted team-game offenses | Weighted least squares; zero when not identified |
 | Adjusted EPA/play (`iterative_4pass_venue_v1`) | Offense, defense | Plays with a valid `ppa`, FBS vs FBS | Reconstructed; unchanged V5 adjuster on a venue-neutral baseline |
+| Schedule effect | Offense, defense | Stored venue-neutral and adjusted PPA/play | Offense `adjusted - neutral`; defense `neutral - adjusted`; excludes venue effects |
+| Adjusted trajectory | Net, offense, defense | Every stored Through Week window | Net = offense minus defense allowed; missing windows remain gaps |
 
 ## Responsibility boundary
 

@@ -1,8 +1,11 @@
-"""Reconciliation of the three chart tables against each other and team stats.
+"""Reconciliation of the chart tables against each other and team stats.
 
 Used by the ``team_chart_reconciliation`` release verification check. The
 adjusted table is verified by full recomputation through the same entry point
-that built it, so the check cannot drift from the builder.
+that built it, so the check cannot drift from the builder. The ``charts_v2``
+yardage table holds play-level counts the payload cannot reproduce, so here it
+gets structural checks only (key set, mirrors, bounds); its recomputation from
+the pinned plays is the ``chart_yardage_recomputed`` prepare check.
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ from cks_picks_cfb.charts.adjusted_epa import (
     build_team_adjusted_epa,
 )
 from cks_picks_cfb.charts.team_game_stats import STAT_FIELDS
+from cks_picks_cfb.charts.team_game_yardage import YARDAGE_COLUMNS, YARDAGE_FIELDS
 
 TOLERANCE = 1e-9
 #: Float columns compare within tolerance; every other column compares exactly.
@@ -38,6 +42,117 @@ def _close(a: Any, b: Any) -> bool:
     return math.isfinite(float(a)) and abs(float(a) - float(b)) <= TOLERANCE
 
 
+def _is_count(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _is_finite(value: Any) -> bool:
+    number = isinstance(value, (int, float)) and not isinstance(value, bool)
+    return number and math.isfinite(value)
+
+
+def yardage_problems(
+    yardage_rows: Sequence[Mapping[str, Any]],
+    game_rows: Sequence[Mapping[str, Any]],
+) -> list[str]:
+    """Structural checks of ``team_game_yardage`` against ``team_game_stats``.
+
+    The key set equals the team-game key set, offense and defense values mirror
+    field for field, and per role ``explosive_n <= yards_n <= plays`` and
+    ``success_yards_n <= success_n``. ``success_yards_sum`` is only required to
+    be finite: a successful play can lose yards.
+    """
+    problems: list[str] = []
+
+    def key(row: Mapping[str, Any]) -> tuple:
+        return (row["season"], row["game_id"], row["team"])
+
+    stats = {key(row): row for row in game_rows}
+    keyed = {key(row): row for row in yardage_rows}
+    if len(keyed) != len(yardage_rows):
+        problems.append("yardage rows repeat a natural key")
+    problems += [f"yardage row missing: {k}" for k in sorted(set(stats) - set(keyed))]
+    problems += [
+        f"yardage row unexpected: {k}" for k in sorted(set(keyed) - set(stats))
+    ]
+    for k, row in sorted(keyed.items()):
+        if set(row) != set(YARDAGE_COLUMNS):
+            problems.append(f"yardage {k}: columns differ")
+            continue
+        sums = [row[f"{role}_success_yards_sum"] for role in ("off", "def")]
+        if not all(_is_finite(value) for value in sums):
+            problems.append(f"yardage {k}: success_yards_sum is not finite")
+        counts = {
+            f"{role}_{field}": row[f"{role}_{field}"]
+            for role in ("off", "def")
+            for field in YARDAGE_FIELDS[:3]
+        }
+        if not all(_is_count(value) for value in counts.values()):
+            problems.append(f"yardage {k}: counts are not non-negative integers")
+            continue
+        game = stats.get(k)
+        for role in ("off", "def") if game is not None else ():
+            yards, explosive = counts[f"{role}_yards_n"], counts[f"{role}_explosive_n"]
+            if not explosive <= yards <= game[f"{role}_plays"]:
+                problems.append(
+                    f"yardage {k}: {role} explosive <= yards <= plays fails"
+                )
+            if counts[f"{role}_success_yards_n"] > game[f"{role}_success_n"]:
+                problems.append(f"yardage {k}: {role} success_yards_n > success_n")
+    by_game: dict[Any, list[Mapping[str, Any]]] = defaultdict(list)
+    for row in keyed.values():
+        by_game[(row["season"], row["game_id"])].append(row)
+    for (_, game_id), pair in sorted(by_game.items()):
+        if len(pair) != 2 or any(set(row) != set(YARDAGE_COLUMNS) for row in pair):
+            continue  # reported above as a missing/unexpected key or columns
+        a, b = pair
+        for field in YARDAGE_FIELDS:
+            if not (
+                _close(a[f"off_{field}"], b[f"def_{field}"])
+                and _close(b[f"off_{field}"], a[f"def_{field}"])
+            ):
+                problems.append(f"yardage game {game_id}: off/def {field} not mirrored")
+    return problems
+
+
+def yardage_differences(
+    candidate: Sequence[Mapping[str, Any]], expected: Sequence[Mapping[str, Any]]
+) -> list[str]:
+    """Differences of candidate yardage rows from a recomputation.
+
+    Keys, columns and counts must be equal; ``success_yards_sum`` within
+    :data:`TOLERANCE`.
+    """
+
+    def keyed(rows: Sequence[Mapping[str, Any]]) -> dict[tuple, Mapping[str, Any]]:
+        return {(r["season"], r["game_id"], r["team"]): r for r in rows}
+
+    stored, fresh = keyed(candidate), keyed(expected)
+    problems = []
+    if len(stored) != len(candidate):
+        problems.append("yardage rows repeat a natural key")
+    problems += [f"yardage row missing: {k}" for k in sorted(set(fresh) - set(stored))]
+    problems += [
+        f"yardage row unexpected: {k}" for k in sorted(set(stored) - set(fresh))
+    ]
+    for k in sorted(set(stored) & set(fresh)):
+        row, want = stored[k], fresh[k]
+        if set(row) != set(YARDAGE_COLUMNS):
+            problems.append(f"yardage {k}: columns differ")
+            continue
+        for column in YARDAGE_COLUMNS:
+            same = (
+                _close(row[column], want[column])
+                if column.endswith("_sum")
+                else row[column] == want[column]
+            )
+            if not same:
+                problems.append(
+                    f"yardage {k} {column}: {row[column]} != {want[column]}"
+                )
+    return problems
+
+
 def chart_problems(
     *,
     roster: Sequence[Mapping[str, Any]],
@@ -46,9 +161,15 @@ def chart_problems(
     stats_rows: Sequence[Mapping[str, Any]],
     games: Sequence[Mapping[str, Any]] | None = None,
     results: Sequence[Mapping[str, Any]] | None = None,
+    yardage_rows: Sequence[Mapping[str, Any]] | None = None,
     season: int,
     active_week: int,
 ) -> tuple[list[str], dict[str, Any]]:
+    """Problems of the chart tables plus observed counts.
+
+    ``yardage_rows`` is ``None`` for a ``charts_v1`` payload (no yardage table),
+    so its observed summary is unchanged.
+    """
     problems: list[str] = []
     teams = [row["team"] for row in roster]
     team_set = set(teams)
@@ -201,10 +322,14 @@ def chart_problems(
                 problems.append(
                     f"adjusted {key} {column}: {stored[column]} != {fresh[column]}"
                 )
-    return problems, {
+    observed = {
         "roster": len(team_set),
         "team_game_rows": len(game_rows),
         "games": len(by_game),
         "adjusted_rows": len(adjusted_rows),
         "adjusted_windows": len({k[0] for k in wanted}),
     }
+    if yardage_rows is not None:
+        problems += yardage_problems(yardage_rows, game_rows)
+        observed["yardage_rows"] = len(yardage_rows)
+    return problems, observed

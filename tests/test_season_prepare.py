@@ -59,6 +59,13 @@ def builder_calls(monkeypatch):
         "build_charts",
         _fake_builder(projection_charts.CHART_KEYS),
     )
+    # The chart_yardage_recomputed prepare check recomputes what the (fake)
+    # chart builder produced.
+    monkeypatch.setattr(
+        projection_charts,
+        "build_yardage_rows",
+        lambda inputs, active_week: synthetic_payload()["team_game_yardage"],
+    )
     return calls
 
 
@@ -740,6 +747,10 @@ def prepared(fixture, tmp_path):
         "identity": manifest["identity"],
         "output_refs": manifest["output_refs"],
         "verified_outputs": sorted(manifest["output_refs"]),
+        "revision": revision,
+        "projections": json.loads(
+            Path(manifest["output_refs"]["serving_projections"]["uri"]).read_bytes()
+        ),
     }
 
 
@@ -779,6 +790,14 @@ def _unverify(arguments):
     arguments["verified_outputs"] = arguments["verified_outputs"][1:]
 
 
+def _miscount_explosive(arguments):
+    """Both mirrored rows of game 1 carry the same wrong count, within bounds."""
+    for row in arguments["projections"]["team_game_yardage"]:
+        if row["game_id"] == 1:
+            role = "off" if row["team"] == "A" else "def"
+            row[f"{role}_explosive_n"] += 1
+
+
 PREPARE_NEGATIVES = {
     "required_prior_week_data": _tail("measurements"),
     "score_reconciliation": _assign("scoring_events", score_increment=2.0),
@@ -790,6 +809,7 @@ PREPARE_NEGATIVES = {
     ),
     "paired_predictions": _tail("predictions"),
     "checksums_at_read": _unverify,
+    "chart_yardage_recomputed": _miscount_explosive,
 }
 
 

@@ -1,8 +1,8 @@
 """Sealed season release candidates that pass the REAL verification.
 
-A candidate is the byte triple ``runner.prepare`` hands to staging (run manifest,
-``season_verification_v2`` report, serving-projection payload), chained by
-checksums exactly as the runner writes them. The payload is
+A candidate is the bytes ``runner.prepare`` hands to staging (run manifest,
+``season_verification_v2`` report, serving-projection payload, and the pinned
+revision manifest), chained by checksums exactly as the runner writes them. The payload is
 ``test_season_verification.synthetic_payload`` for the candidate's own run id, so
 ``verification.derive_checks`` / ``validate_report`` pass on it unmodified.
 """
@@ -18,7 +18,8 @@ from cks_picks_cfb.season.manifest import canonical, sha
 from tests.test_season_verification import (
     IDENTITY,
     OUTPUT_REFS,
-    PASSING_PREPARE,
+    REVISION_RAW,
+    passing_prepare,
     synthetic_payload,
 )
 
@@ -59,11 +60,12 @@ def seal(
     reported_payload: dict | None = None,
     edit_report: Callable[[dict], None] | None = None,
 ) -> dict[str, bytes]:
-    """Manifest/report/payload bytes for ``payload`` under ``label``'s identity.
+    """Manifest/report/payload/revision bytes for ``payload`` under ``label``'s identity.
 
     The report is computed by ``verification.assemble_report`` from
-    ``reported_payload`` (default: ``payload`` itself), then ``edit_report`` may
-    forge it; the manifest binds the exact payload bytes and report bytes.
+    ``reported_payload`` (default: ``payload`` itself) with prepare checks whose
+    yardage evidence is bound to it, then ``edit_report`` may forge it; the
+    manifest binds the exact payload bytes and report bytes.
     """
     identity = identity_for(label)
     release_id = v.run_id_for(identity)
@@ -78,11 +80,8 @@ def seal(
         },
     }
     context = {"identity": identity, "output_refs": refs}
-    report = v.assemble_report(
-        copy.deepcopy(reported_payload or payload),
-        context,
-        copy.deepcopy(PASSING_PREPARE),
-    )
+    reported = copy.deepcopy(reported_payload or payload)
+    report = v.assemble_report(reported, context, passing_prepare(reported))
     if edit_report:
         edit_report(report)
     verification_raw = canonical(report)
@@ -103,6 +102,7 @@ def seal(
         "manifest_raw": canonical(manifest),
         "verification_raw": verification_raw,
         "projection_raw": projection_raw,
+        "revision_raw": REVISION_RAW,
     }
 
 

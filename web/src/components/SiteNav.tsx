@@ -109,8 +109,9 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
   }
 }
 
-export function SiteNav() {
+export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) {
   const pathname = usePathname();
+  const visibleItems = chartsEnabled ? items : items.filter(([, href]) => href !== "/charts");
 
   // Align navigation container with page content widths on desktop.
   const isSlate = pathname === "/" || pathname.startsWith("/results") || pathname.startsWith("/charts");
@@ -124,11 +125,12 @@ export function SiteNav() {
     >
       <div
         className={clsx(
-          "mx-auto grid grid-cols-5 h-14 items-stretch px-2 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
+          "mx-auto grid h-14 items-stretch px-2 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
+          chartsEnabled ? "grid-cols-5" : "grid-cols-4",
           containerClass,
         )}
       >
-        {items.map(([label, href]) => {
+        {visibleItems.map(([label, href]) => {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <Link

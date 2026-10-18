@@ -2,7 +2,7 @@ import { cache } from "react";
 import { db } from "./db";
 import { publicationScope } from "./publication.ts";
 import { releaseEnvironment, createReleaseContextResolver, loadReleaseContext, type SeasonReleaseContext, type ReleaseEnvironment } from "./season-release-context.ts";
-import { seasonReleaseDb } from "./season-release-query.ts";
+import { seasonReleaseDb, type ChartSet } from "./season-release-query.ts";
 
 const requestResolver = cache(() => createReleaseContextResolver((season, environment) =>
   loadReleaseContext((query) => db.execute(query), season, environment),
@@ -27,18 +27,19 @@ export async function getSeasonDb(season = publicationScope.season) {
   return dbForRelease(context?.releaseId ?? null, season, environment);
 }
 
-const chartsDbForRelease = cache((releaseId: string, season: number, environment: ReleaseEnvironment) => {
+const chartsDbForRelease = cache((releaseId: string, chartSet: ChartSet, season: number, environment: ReleaseEnvironment) => {
   void season; void environment;
-  return seasonReleaseDb(db, releaseId, { charts: true });
+  return seasonReleaseDb(db, releaseId, { chartSet });
 });
 /**
- * Release-scoped database that includes the chart relations, or `null` when there is no
- * active release or it was not staged with the chart projections. Chart queries never
- * fall back to live tables.
+ * Release-scoped database with exactly the release's chart relations, plus the chart set
+ * that governs which of them exist, both from the request's single memoized context.
+ * `null` when there is no active release or it has no recognized chart set. Chart queries
+ * never fall back to live tables.
  */
 export async function getChartsDb(season = publicationScope.season) {
   const environment = releaseEnvironment(process.env);
   const context = await getSeasonReleaseContext(season, environment);
-  if (!context?.chartsAvailable) return null;
-  return chartsDbForRelease(context.releaseId, season, environment);
+  if (!context?.chartSet) return null;
+  return { db: chartsDbForRelease(context.releaseId, context.chartSet, season, environment), chartSet: context.chartSet };
 }

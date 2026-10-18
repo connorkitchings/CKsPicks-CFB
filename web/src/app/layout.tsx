@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
 import { MatchupLinksProvider } from "@/components/MatchupLinks";
+import { isChartsEnabled } from "@/lib/charts-gate";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 
 const siteUrl = "https://ckspicks-cfb.vercel.app";
@@ -60,7 +61,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col pb-16 sm:pb-0">
         <MatchupLinksProvider enabled={isMatchupEnabled()}>
-          <SiteNav />
+          <SiteNav chartsEnabled={isChartsEnabled()} />
           {children}
         </MatchupLinksProvider>
       </body>
