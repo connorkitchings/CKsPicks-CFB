@@ -92,7 +92,18 @@ def compute(
             ],
             ignore_index=True,
         )
-        allowed_events = inputs.events[inputs.events.game_id.isin(earlier.game_id)]
+        allowed_events = inputs.events[
+            inputs.events.game_id.isin(earlier.game_id)
+        ].copy()
+        if "admission" in inputs.historical_events.columns:
+            if "admission" not in allowed_events.columns:
+                allowed_events["admission"] = "baseline_unchanged"
+            else:
+                allowed_events["admission"] = allowed_events["admission"].fillna(
+                    "baseline_unchanged"
+                )
+        elif "admission" in allowed_events.columns:
+            allowed_events = allowed_events.drop(columns=["admission"])
         offsets = build_offsets(
             population,
             pd.concat([inputs.historical_events, allowed_events], ignore_index=True),
