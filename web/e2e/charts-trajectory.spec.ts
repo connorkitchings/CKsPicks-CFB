@@ -14,11 +14,12 @@ function pngSize(path: string): { width: number; height: number } {
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
-test.describe("team trajectory chart", () => {
+// Skipped: `trajectory` is hidden from /charts (`ready: false` in src/lib/chart-config.ts).
+test.describe.skip("team trajectory chart", () => {
   test("renders every team across the stored windows with the FBS average and no week selector", async ({ page }) => {
     await page.goto("/charts?chart=trajectory");
     await expect(page.getByRole("heading", { name: "Team trajectory" })).toBeVisible();
-    await expect(page.getByTestId("chart-subtitle")).toHaveText("Net | 2026 | FBS vs FBS | Through Weeks 2–3");
+    await expect(page.getByTestId("chart-subtitle")).toHaveText("Net · 2026 · FBS vs FBS · Through Weeks 2–3");
     const chart = page.getByTestId("trajectory-chart");
     await expect(chart.locator("g[data-team]")).toHaveCount(PLOTTED);
     await expect(chart.locator("g[data-team='Wyoming']")).toHaveCount(0);
@@ -133,7 +134,8 @@ test.describe("team trajectory chart", () => {
 });
 
 
-test("trajectory remains horizontally scrollable with a readable table at 390px", async ({ page }) => {
+// Skipped: `trajectory` is hidden from /charts (`ready: false` in src/lib/chart-config.ts).
+test.skip("trajectory remains horizontally scrollable with a readable table at 390px", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/charts?chart=trajectory&team=Alabama");
   const scroll = page.getByTestId("trajectory-scroll");

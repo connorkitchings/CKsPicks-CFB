@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
+import { SEGMENTED_GROUP } from "./charts/segmented-styles";
 
 /**
  * Prev / next / dropdown navigator over the available weeks for the active
@@ -52,23 +53,23 @@ export function WeekNav({
     if (Number.isFinite(w)) router.push(hrefFor(w));
   }
 
-  const arrow =
-    "inline-flex items-center justify-center rounded-md border border-line bg-surface-card text-base text-ink-muted transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
+  const arrow = clsx(
+    "inline-flex items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+    // Compact: borderless arrows inside one bordered group, sized like the chart settings' toggles.
+    compact ? "h-7.5 w-7.5 shrink-0 text-sm hover:text-ink" : "h-9 w-9 border border-line bg-surface-card text-base",
+  );
 
   return (
     <nav
       aria-label="Week navigation"
-      className={clsx(
-        "flex items-center justify-between gap-2",
-        compact ? "w-full sm:w-auto" : "rounded-xl border border-line bg-surface-card p-2 shadow-sm",
-      )}
+      className={compact ? SEGMENTED_GROUP : "flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm"}
     >
       <Link
         href={prev !== null ? hrefFor(prev) : "#"}
         aria-disabled={prev === null}
         tabIndex={prev === null ? -1 : undefined}
         aria-label={`Previous ${noun.toLowerCase()}`}
-        className={clsx(arrow, compact ? "h-10 w-10 shrink-0" : "h-9 w-9", prev === null && "pointer-events-none opacity-40")}
+        className={clsx(arrow, prev === null && "pointer-events-none opacity-40")}
       >
         {/* left arrow */}
         <span aria-hidden>&larr;</span>
@@ -83,8 +84,10 @@ export function WeekNav({
           value={week}
           onChange={onSelect}
           className={clsx(
-            "rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent",
-            compact && "min-h-10",
+            "rounded-md font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent",
+            compact
+              ? "min-h-7.5 bg-transparent px-1.5 text-xs font-semibold hover:bg-surface-inset"
+              : "border border-line bg-surface-card px-2 py-1 text-sm",
           )}
         >
           {weeks.map((w) => (
@@ -100,7 +103,7 @@ export function WeekNav({
         aria-disabled={next === null}
         tabIndex={next === null ? -1 : undefined}
         aria-label={`Next ${noun.toLowerCase()}`}
-        className={clsx(arrow, compact ? "h-10 w-10 shrink-0" : "h-9 w-9", next === null && "pointer-events-none opacity-40")}
+        className={clsx(arrow, next === null && "pointer-events-none opacity-40")}
       >
         <span aria-hidden>&rarr;</span>
       </Link>

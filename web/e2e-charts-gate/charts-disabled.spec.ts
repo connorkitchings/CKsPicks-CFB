@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 const pages = ["/", "/results", "/ratings", "/performance"];
 const names = ["Picks", "Results", "Ratings", "Performance"];
 
-for (const query of ["", "?chart=trajectory&team=Alabama", "?chart=game-log&metric=explosive_rate", "?fixture=error", "?fixture=unsupported", "?fixture=schedule&chart=schedule", "?fixture=slate&chart=efficiency"]) {
+for (const query of ["", "?chart=trajectory&team=Alabama", "?chart=rating-trajectory&metric=defense", "?chart=possession&week=2&metric=epa_per_possession", "?chart=game-log&metric=explosive_rate", "?fixture=error", "?fixture=unsupported", "?fixture=schedule&chart=schedule", "?fixture=slate&chart=efficiency"]) {
   test(`disabled /charts${query} responds with HTTP 404 before loading chart data`, async ({ page }) => {
     const response = await page.goto(`/charts${query}`);
     expect(response?.status()).toBe(404);

@@ -2,13 +2,22 @@ import { teamAbbr } from "./team-logos.ts";
 
 /**
  * Pure transforms for the weekly team charts. Inputs are the rows of the release's
- * `team_season_roster`, `team_game_stats`, `team_adjusted_epa` and (for `charts_v2`)
- * `team_game_yardage` projections; nothing
+ * `team_season_roster`, `team_game_stats`, `team_adjusted_epa`, (for `charts_v2`)
+ * `team_game_yardage`, and the core `v5_rating_snapshots` and `team_possession_adjusted`
+ * projections; nothing
  * here reads a database. Everything is a descriptive reconstruction from the release's
  * data, windowed by week only.
  */
 
-export type ChartKind = "net-success" | "efficiency" | "adjusted" | "schedule" | "trajectory" | "game-log";
+export type ChartKind =
+  | "net-success"
+  | "efficiency"
+  | "adjusted"
+  | "schedule"
+  | "trajectory"
+  | "rating-trajectory"
+  | "possession"
+  | "game-log";
 export type Side = "offense" | "defense";
 export type EfficiencyMetric = "ppa" | "explosive_rate" | "yards_per_success";
 
@@ -313,9 +322,8 @@ function sideTerms(row: TeamGameRow, side: Side, metric: EfficiencyMetric): Wind
   return { successN, successSum, yNum: yNum ?? 0, yDen: yDen ?? 0, n: yardsN };
 }
 
+/** Points carry offense on x and defense allowed on y. */
 export type AdjustedScatter = ScatterData & {
-  /** Points carry offense on x and defense allowed on y; net = x - y. */
-  netLevels: number[];
   /** The stored decomposition behind each plotted team, by role. */
   roles: Record<string, { offense: AdjustedRow; defense: AdjustedRow }>;
 };
@@ -326,12 +334,26 @@ export type AdjustedScatter = ScatterData & {
  * are play-weighted over plotted teams.
  */
 export function adjustedPoints(roster: readonly RosterRow[], rows: readonly AdjustedRow[]): AdjustedScatter {
-  const offense = new Map<string, AdjustedRow>();
-  const defense = new Map<string, AdjustedRow>();
+  return roleScatter(roster, rows, (row) => row.adjustedEpaPerPlay, (row) => row.epaN);
+}
+
+/**
+ * Offense (x) against defense allowed (y, inverted) for roster teams with both roles.
+ * `n` is the two roles' summed weight; averages are weighted per role over plotted teams
+ * and null when either role has no weight.
+ */
+function roleScatter<R extends { team: string; role: Side }>(
+  roster: readonly RosterRow[],
+  rows: readonly R[],
+  value: (row: R) => number,
+  weight: (row: R) => number,
+): ScatterData & { roles: Record<string, { offense: R; defense: R }> } {
+  const offense = new Map<string, R>();
+  const defense = new Map<string, R>();
   for (const row of rows) (row.role === "offense" ? offense : defense).set(row.team, row);
   const points: ScatterPoint[] = [];
   const unavailable: string[] = [];
-  const roles: AdjustedScatter["roles"] = {};
+  const roles: Record<string, { offense: R; defense: R }> = {};
   let ox = 0;
   let oy = 0;
   let on = 0;
@@ -343,12 +365,12 @@ export function adjustedPoints(roster: readonly RosterRow[], rows: readonly Adju
       unavailable.push(team);
       continue;
     }
-    points.push({ team, conference, x: o.adjustedEpaPerPlay, y: d.adjustedEpaPerPlay, n: o.epaN + d.epaN });
+    points.push({ team, conference, x: value(o), y: value(d), n: weight(o) + weight(d) });
     roles[team] = { offense: o, defense: d };
-    ox += o.adjustedEpaPerPlay * o.epaN;
-    on += o.epaN;
-    oy += d.adjustedEpaPerPlay * d.epaN;
-    dn += d.epaN;
+    ox += value(o) * weight(o);
+    on += weight(o);
+    oy += value(d) * weight(d);
+    dn += weight(d);
   }
   points.sort(byTeam);
   unavailable.sort();
@@ -359,42 +381,63 @@ export function adjustedPoints(roster: readonly RosterRow[], rows: readonly Adju
     unavailable,
     invertX: false,
     invertY: true,
-    netLevels: netLevelsFor(points),
     roles,
   };
 }
 
-/** Evenly spaced equal-net levels (x - y) that cover the plotted points. */
-export function netLevelsFor(points: readonly ScatterPoint[]): number[] {
-  if (!points.length) return [];
-  const nets = points.map((p) => p.x - p.y);
-  const lo = Math.min(...nets);
-  const hi = Math.max(...nets);
-  const ticks = niceTicks(lo, hi, 7);
-  return ticks.filter((tick) => tick > lo && tick < hi);
+// ---------------------------------------------------------------------------
+// Possession efficiency
+// ---------------------------------------------------------------------------
+
+/** Points per possession, or PPA per possession (stored under the measurement id `epa_per_possession`). */
+export type PossessionMetric = "ppp" | "epa_per_possession";
+
+/** One `team_possession_adjusted` row (one window, team, role and measurement). */
+export type PossessionRow = {
+  asOfWeek: number;
+  team: string;
+  role: Side;
+  measurementId: PossessionMetric;
+  rawValue: number | null;
+  /** Opponent-adjusted value; for defense, the value allowed. Null means no adjusted value. */
+  adjustedValue: number | null;
+  opponentAdjustment: number | null;
+  adjustedRank: number | null;
+  cohortSize: number | null;
+  /** Possessions behind the value; the pooled-average weight. */
+  primaryExposure: number | null;
+  games: number;
+};
+
+/** Points carry adjusted offense on x and adjusted defense allowed on y. */
+export type PossessionScatter = ScatterData & {
+  /** The stored rows behind each plotted team, by role. */
+  roles: Record<string, { offense: PossessionRow; defense: PossessionRow }>;
+  /**
+   * Competition ranks among the plotted teams (offense higher first, defense allowed
+   * lower first; ties share a rank, 1, 1, 3). They equal the stored `adjusted_rank`
+   * whenever every ranked team is plotted, and are recomputed for the plotted population
+   * when some team lacks a role.
+   */
+  ranks: Record<string, { offense: number; defense: number }>;
+};
+
+/**
+ * Opponent-adjusted offense (x) against adjusted defense allowed (y, inverted so up and
+ * right is better) of `metric` for one `as_of_week` window. A roster team needs both roles
+ * with an adjusted value; the rest are `unavailable`. Pooled averages are weighted by
+ * `primary_exposure` (possessions) per role over the plotted teams; a missing exposure
+ * weighs zero, and `n` is the team's summed possessions.
+ */
+export function possessionPoints(roster: readonly RosterRow[], rows: readonly PossessionRow[], metric: PossessionMetric): PossessionScatter {
+  const usable = rows.filter((row) => row.measurementId === metric && row.adjustedValue !== null);
+  const scatter = roleScatter(roster, usable, (row) => row.adjustedValue!, (row) => row.primaryExposure ?? 0);
+  const ranks: PossessionScatter["ranks"] = {};
+  for (const [team, rank] of scatterRanks(scatter)) ranks[team] = { offense: rank.x, defense: rank.y };
+  return { ...scatter, ranks };
 }
 
 export type Domain = [number, number];
-export type Segment = { net: number; from: [number, number]; to: [number, number] };
-
-/** Diagonal equal-net lines (y = x - net) clipped to the plot rectangle. */
-export function isoNetSegments(x: Domain, y: Domain, levels: readonly number[]): Segment[] {
-  const segments: Segment[] = [];
-  for (const net of levels) {
-    // y = x - net, with x in [x0, x1] and y in [y0, y1].
-    const lo = Math.max(x[0], y[0] + net);
-    const hi = Math.min(x[1], y[1] + net);
-    if (lo < hi) segments.push({ net, from: [lo, lo - net], to: [hi, hi - net] });
-  }
-  return segments;
-}
-
-/** Edge label of one equal-net diagonal, e.g. `+0.20 net`. */
-export function netLabel(net: number): string {
-  const text = Math.abs(net).toFixed(2);
-  if (Number(text) === 0) return "0.00 net";
-  return `${net > 0 ? "+" : "-"}${text} net`;
-}
 
 // ---------------------------------------------------------------------------
 // Team trajectory
@@ -413,11 +456,14 @@ export type TrajectorySeries = {
   segments: TrajectoryPoint[][];
 };
 export type TrajectoryData = {
-  /** "Through Week N" of every stored window from Week 2 on, ascending. */
+  /** "Through Week N" of every charted window, ascending (adjusted PPA from Week 2, V5 ratings from Week 0). */
   weeks: number[];
   /** Roster teams with a value in at least one window, by name. */
   series: TrajectorySeries[];
-  /** Play-weighted FBS average of each window (as in `adjustedPoints`), null when none. */
+  /**
+   * Dashed reference of each window, null when none: the play-weighted FBS average for
+   * adjusted PPA (as in `adjustedPoints`), the unweighted roster mean for V5 ratings.
+   */
   average: (number | null)[];
   /** Roster teams with no value in any window. */
   unavailable: string[];
@@ -479,6 +525,102 @@ export function trajectorySeries(roster: readonly RosterRow[], rows: readonly Ad
 }
 
 // ---------------------------------------------------------------------------
+// V5 rating trajectory
+// ---------------------------------------------------------------------------
+
+/** V5 model rating component; every one is higher-is-better (defense included). */
+export type RatingMetric = "overall" | "offense" | "defense";
+
+/** One `current`-class `v5_rating_snapshots` row: the rating after week `week`'s games. */
+export type RatingSnapshotRow = {
+  week: number;
+  team: string;
+  offenseRating: number;
+  offenseVariance: number;
+  defenseRating: number;
+  defenseVariance: number;
+  overallRating: number;
+  overallVariance: number;
+};
+
+export type RatingTrajectorySeries = TrajectorySeries & {
+  /** Standard deviation (`sqrt(variance)`) per week; null where the team has no snapshot. */
+  sd: (number | null)[];
+  /** Competition rank among roster teams with a snapshot that week (ties share a rank). */
+  ranks: (number | null)[];
+};
+
+/** Assignable to `TrajectoryData`, so the trajectory chart draws it unchanged. */
+export type RatingTrajectoryData = Omit<TrajectoryData, "series"> & {
+  series: RatingTrajectorySeries[];
+  /** Roster teams ranked in each week (the rank denominator). */
+  ranked: number[];
+};
+
+const RATING_FIELDS = {
+  overall: ["overallRating", "overallVariance"],
+  offense: ["offenseRating", "offenseVariance"],
+  defense: ["defenseRating", "defenseVariance"],
+} as const satisfies Record<RatingMetric, readonly [keyof RatingSnapshotRow, keyof RatingSnapshotRow]>;
+
+/**
+ * `metric` of every roster team for each stored snapshot week (x = Through Week `week`),
+ * ascending. A missing team-week is a gap, never interpolated. `average` is the weekly
+ * unweighted mean over all roster teams with a snapshot (the ratings are not centered at
+ * zero); like the ranks it ignores any group filter, which the view applies afterwards.
+ * Every metric is higher-is-better, so `invertY` is false. Throws on a duplicate
+ * team-week, which the release forbids.
+ */
+export function ratingTrajectorySeries(roster: readonly RosterRow[], rows: readonly RatingSnapshotRow[], metric: RatingMetric): RatingTrajectoryData {
+  const [ratingKey, varianceKey] = RATING_FIELDS[metric];
+  const rosterNames = new Set(roster.map((r) => r.team));
+  const byKey = new Map<string, RatingSnapshotRow>();
+  for (const row of rows) {
+    if (!rosterNames.has(row.team)) continue;
+    const key = `${row.week}:${row.team}`;
+    if (byKey.has(key)) throw new Error(`v5_rating_snapshots has more than one current row for ${row.team} in week ${row.week}`);
+    byKey.set(key, row);
+  }
+  const weeks = [...new Set([...byKey.values()].map((row) => row.week))].sort((a, b) => a - b);
+  const columns = weeks.map((week) => {
+    const present = roster.flatMap(({ team }) => {
+      const row = byKey.get(`${week}:${team}`);
+      return row ? [{ team, value: row[ratingKey] }] : [];
+    });
+    const average = present.length ? present.reduce((sum, entry) => sum + entry.value, 0) / present.length : null;
+    return { average, ranks: competitionRanks(present, false), ranked: present.length };
+  });
+  const series: RatingTrajectorySeries[] = [];
+  const unavailable: string[] = [];
+  for (const { team, conference } of roster) {
+    const snapshots = weeks.map((week) => byKey.get(`${week}:${team}`) ?? null);
+    if (snapshots.every((row) => row === null)) {
+      unavailable.push(team);
+      continue;
+    }
+    const values = snapshots.map((row) => (row ? row[ratingKey] : null));
+    series.push({
+      team,
+      conference,
+      values,
+      segments: trajectorySegments(weeks, values),
+      sd: snapshots.map((row) => (row ? Math.sqrt(row[varianceKey]) : null)),
+      ranks: columns.map((column) => column.ranks.get(team) ?? null),
+    });
+  }
+  series.sort(byTeam);
+  unavailable.sort();
+  return {
+    weeks,
+    series,
+    average: columns.map((column) => column.average),
+    ranked: columns.map((column) => column.ranked),
+    unavailable,
+    invertY: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Filters
 // ---------------------------------------------------------------------------
 
@@ -512,19 +654,21 @@ export function matchesSearch(query: string, team: string): boolean {
 
 /** National per-axis competition ranks, computed from the full plotted population. */
 export function scatterRanks(data: ScatterData): Map<string, { x: number; y: number }> {
-  const rankAxis = (axis: "x" | "y", lowerBetter: boolean) => {
-    const sorted = [...data.points].sort((a, b) => lowerBetter ? a[axis] - b[axis] : b[axis] - a[axis]);
-    const ranks = new Map<string, number>();
-    let rank = 1;
-    sorted.forEach((point, index) => {
-      if (index === 0 || point[axis] !== sorted[index - 1][axis]) rank = index + 1;
-      ranks.set(point.team, rank);
-    });
-    return ranks;
-  };
-  const x = rankAxis("x", data.invertX);
-  const y = rankAxis("y", data.invertY);
+  const x = competitionRanks(data.points.map((p) => ({ team: p.team, value: p.x })), data.invertX);
+  const y = competitionRanks(data.points.map((p) => ({ team: p.team, value: p.y })), data.invertY);
   return new Map(data.points.map((point) => [point.team, { x: x.get(point.team)!, y: y.get(point.team)! }]));
+}
+
+/** Competition ranks, best first; ties share the minimum rank (1, 1, 3). */
+function competitionRanks(entries: readonly { team: string; value: number }[], lowerBetter: boolean): Map<string, number> {
+  const sorted = [...entries].sort((a, b) => (lowerBetter ? a.value - b.value : b.value - a.value));
+  const ranks = new Map<string, number>();
+  let rank = 1;
+  sorted.forEach((entry, index) => {
+    if (index === 0 || entry.value !== sorted[index - 1].value) rank = index + 1;
+    ranks.set(entry.team, rank);
+  });
+  return ranks;
 }
 
 /** Filter actual rows; a game qualifies when either participant belongs to the group. */

@@ -45,7 +45,7 @@ export function NetSuccessChart({
   const tipBar = interactive && selected ? bars.find((b) => String(b.gameId) === selected) : undefined;
   const horizontal = orientation === "horizontal";
 
-  const margin = horizontal ? { top: 28, right: 34, bottom: 22, left: 76 } : { top: 30, right: 12, bottom: 78, left: 56 };
+  const margin = horizontal ? { top: 22, right: 34, bottom: 22, left: 76 } : { top: 10, right: 12, bottom: 78, left: 56 };
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   const span = horizontal ? plot.right - plot.left : plot.bottom - plot.top;
   const along = (value: number) =>
@@ -86,16 +86,6 @@ export function NetSuccessChart({
           ) : (
             <rect x={plot.left} y={zero} width={plot.right - plot.left} height={plot.bottom - zero} fill="var(--surface-inset)" />
           )}
-          <text
-            x={horizontal ? plot.left + 6 : plot.right - 8}
-            y={plot.bottom - 8}
-            textAnchor={horizontal ? "start" : "end"}
-            fontSize={11}
-            fontWeight={500}
-            fill="var(--ink-faint)"
-          >
-            Winner outplayed
-          </text>
         </g>
         {ticks.map((tick) => (
           <g key={tick}>
@@ -123,12 +113,12 @@ export function NetSuccessChart({
         )}
         {!horizontal && (
           <text transform={`translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ink)">
-            Winner minus loser success rate (pts)
+            Net success rate (pct)
           </text>
         )}
         {horizontal && (
           <text x={(plot.left + plot.right) / 2} y={height - 4} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--ink)">
-            Winner minus loser success rate (pts)
+            Net success rate (pct)
           </text>
         )}
         {bars.map((bar, index) => {

@@ -4,12 +4,13 @@ import { schema } from "./db";
 import { guardRows, type RowSpec } from "./row-guard.ts";
 import { getChartsDb } from "./season-release";
 import { explosivenessAvailable } from "./season-release-context.ts";
-import type { AdjustedRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "./charts.ts";
+import type { AdjustedRow, PossessionRow, RatingSnapshotRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "./charts.ts";
 
 
 // ---------------------------------------------------------------------------
 // Team charts (release projections `team_season_roster`, `team_game_stats`,
-// `team_adjusted_epa` and, for `charts_v2`, `team_game_yardage`). Every query runs on
+// `team_adjusted_epa` and, for `charts_v2`, `team_game_yardage`; plus the core
+// `v5_rating_snapshots` and `team_possession_adjusted` every release carries). Every query runs on
 // the request-pinned, release-scoped database with the release's chart relations; with
 // no active release, or one staged without them, the result is `null` and the live
 // tables are never read. Errors propagate so the page can show an unavailable state.
@@ -144,4 +145,79 @@ export const getTeamAdjustedEpaAll = cache(async (season: number): Promise<Adjus
   }).from(t).where(eq(t.season, season)).orderBy(asc(t.asOfWeek), asc(t.team), asc(t.role));
   guardRows("team_adjusted_epa", rows, ADJUSTED_SPEC);
   return rows as AdjustedRow[];
+});
+
+const RATING_SNAPSHOT_SPEC: RowSpec = {
+  week: { kind: "int" },
+  team: { kind: "string" },
+  offenseRating: { kind: "number" },
+  offenseVariance: { kind: "number" },
+  defenseRating: { kind: "number" },
+  defenseVariance: { kind: "number" },
+  overallRating: { kind: "number" },
+  overallVariance: { kind: "number" },
+};
+const nonNegativeVariances = (row: Record<string, unknown>) =>
+  ["offenseVariance", "defenseVariance", "overallVariance"].some((key) => (row[key] as number) < 0) ? "negative variance" : null;
+
+/**
+ * `current`-class V5 rating snapshots of every roster team for every stored week (the
+ * rating after that week's games; about 1.1k rows by Week 7), by week then team.
+ */
+export const getV5RatingSnapshots = cache(async (season: number): Promise<RatingSnapshotRow[] | null> => {
+  const charts = await getChartsDb(season);
+  if (!charts) return null;
+  const t = schema.v5RatingSnapshots;
+  const r = schema.teamSeasonRoster;
+  const rows = await charts.db.select({
+    week: t.week, team: t.team,
+    offenseRating: t.offenseRating, offenseVariance: t.offenseVariance,
+    defenseRating: t.defenseRating, defenseVariance: t.defenseVariance,
+    overallRating: t.overallRating, overallVariance: t.overallVariance,
+  }).from(t)
+    .innerJoin(r, and(eq(r.season, t.season), eq(r.team, t.team)))
+    .where(and(eq(t.season, season), eq(t.snapshotClass, "current")))
+    .orderBy(asc(t.week), asc(t.team));
+  return guardRows("v5_rating_snapshots", rows, RATING_SNAPSHOT_SPEC, [nonNegativeVariances]);
+});
+
+const OPTIONAL_NUMBER = { kind: "number", nullable: true } as const;
+const OPTIONAL_INT = { kind: "int", nullable: true } as const;
+const POSSESSION_SPEC: RowSpec = {
+  asOfWeek: { kind: "int" },
+  team: { kind: "string" },
+  role: { kind: { enum: ["offense", "defense"] } },
+  measurementId: { kind: { enum: ["ppp", "epa_per_possession"] } },
+  rawValue: OPTIONAL_NUMBER,
+  adjustedValue: OPTIONAL_NUMBER,
+  opponentAdjustment: OPTIONAL_NUMBER,
+  adjustedRank: OPTIONAL_INT,
+  cohortSize: OPTIONAL_INT,
+  primaryExposure: OPTIONAL_NUMBER,
+  games: { kind: "int" },
+};
+
+/** `as_of_week` windows of `team_possession_adjusted` stored in the release, ascending. */
+export const getTeamPossessionWeeks = cache(async (season: number): Promise<number[] | null> => {
+  const charts = await getChartsDb(season);
+  if (!charts) return null;
+  const t = schema.teamPossessionAdjusted;
+  const rows = await charts.db.selectDistinct({ asOfWeek: t.asOfWeek }).from(t)
+    .where(eq(t.season, season)).orderBy(asc(t.asOfWeek));
+  return rows.map((row) => row.asOfWeek);
+});
+
+/** Opponent-adjusted possession rows (both roles and measurements) of one stored window. */
+export const getTeamPossessionAdjusted = cache(async (season: number, asOfWeek: number): Promise<PossessionRow[] | null> => {
+  const charts = await getChartsDb(season);
+  if (!charts) return null;
+  const t = schema.teamPossessionAdjusted;
+  const rows = await charts.db.select({
+    asOfWeek: t.asOfWeek, team: t.team, role: t.role, measurementId: t.measurementId,
+    rawValue: t.rawValue, adjustedValue: t.adjustedValue, opponentAdjustment: t.opponentAdjustment,
+    adjustedRank: t.adjustedRank, cohortSize: t.cohortSize, primaryExposure: t.primaryExposure, games: t.games,
+  }).from(t).where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek)))
+    .orderBy(asc(t.team), asc(t.role), asc(t.measurementId));
+  guardRows("team_possession_adjusted", rows, POSSESSION_SPEC);
+  return rows as PossessionRow[];
 });

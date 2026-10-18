@@ -5,7 +5,7 @@ import type { AdjustedScatter } from "@/lib/charts";
 import type { SharedChartProps } from "./ChartFrame";
 import { ScatterView } from "./ScatterView";
 
-/** Opponent-adjusted offense against defense allowed, with labeled equal-net diagonals. */
+/** Opponent-adjusted offense against defense allowed, with averages and corner labels. */
 export function AdjustedView({ shared, scatter }: { shared: SharedChartProps; scatter: AdjustedScatter }) {
   return (
     <ScatterView
@@ -15,7 +15,6 @@ export function AdjustedView({ shared, scatter }: { shared: SharedChartProps; sc
       data={scatter}
       config={ADJUSTED_CONFIG}
       describe={(point) => describeAdjustedPoint(point, scatter.roles)}
-      netLevels={scatter.netLevels}
     />
   );
 }

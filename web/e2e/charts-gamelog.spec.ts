@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
-import { openTable } from "./helpers";
 
 test.describe("team game log", () => {
-  test("shows the whole release, weekly references, national ranks and ordered table", async ({ page }) => {
+  test("shows the whole release, weekly references, and national ranks", async ({ page }) => {
     await page.goto("/charts?chart=game-log&team=alabama&week=0");
-    await expect(page.getByRole("heading", { name: "Team game log" })).toBeVisible();
-    await expect(page.getByTestId("chart-subtitle")).toHaveText("Alabama | 2026 | FBS opponents only | Through Week 3");
+    await expect(page.getByRole("heading", { name: "Alabama game log" })).toBeVisible();
+    await expect(page.getByTestId("chart-subtitle")).toHaveText("Alabama · 2026 · FBS opponents only · Through Week 3");
     for (const side of ["offense", "defense"]) await expect(page.getByTestId(`game-log-rank-${side}`)).toHaveText(/\d+(st|nd|rd|th) of 16 nationally/);
     const games = page.getByTestId("game-log-chart").locator("g[data-game]");
     await expect(games).toHaveCount(4);
@@ -14,13 +13,6 @@ test.describe("team game log", () => {
     await expect(page.getByTestId("game-log-panel-defense")).toContainText("axis inverted: up is better");
     await expect(page.getByTestId("game-log-chart").locator("[data-average]")).toHaveCount(8);
     await expect(page.getByTestId("game-log-chart").getByText(/^[WLT] \d+-\d+$/)).toHaveCount(4);
-    await openTable(page);
-    const table = page.getByTestId("chart-table");
-    await expect(table.locator("tbody tr")).toHaveCount(4);
-    expect(await table.locator("tbody tr td:first-child").allTextContents()).toEqual(["0", "1", "2", "3"]);
-    for (const name of ["Opponent", "Result", "FBS week average (offense)", "FBS week average (defense)"]) await expect(table.getByRole("columnheader", { name, exact: true })).toBeVisible();
-    await page.getByTestId("table-toggle").click();
-    await expect(page.getByTestId("game-log-chart")).toBeVisible();
   });
 
   test("capability controls metrics and a team without games stays selectable", async ({ page }) => {
@@ -84,7 +76,7 @@ test.describe("team game log", () => {
     await expect(page).toHaveURL(/team=texas/i);
     await expect(page.getByTestId("team-search")).toHaveValue("Texas");
     await page.getByRole("link", { name: "Game log", exact: true }).click();
-    await expect(page.getByTestId("chart-subtitle")).toContainText("Texas |");
+    await expect(page.getByTestId("chart-subtitle")).toContainText("Texas ·");
     await expect(page).toHaveURL(/chart=game-log.*team=texas/i);
     await page.reload();
     await expect(page.getByTestId("team-search")).toHaveValue("Texas");
@@ -94,6 +86,6 @@ test.describe("team game log", () => {
     await page.goForward();
     await expect(page).toHaveURL(/chart=game-log.*team=texas/i);
     await expect(page.getByTestId("chart-subtitle")).toHaveCount(1);
-    await expect(page.getByTestId("chart-subtitle")).toContainText("Texas |");
+    await expect(page.getByTestId("chart-subtitle")).toContainText("Texas ·");
   });
 });

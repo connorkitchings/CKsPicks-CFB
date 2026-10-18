@@ -1,6 +1,6 @@
 # Charts 7 and 8: V5 rating trajectory and Possession efficiency
 
-**Status:** Draft. Awaiting owner approval. Nothing here is implemented. Owner controls commits, merges, migrations, Preview rehearsal and Production.
+**Status:** Approved by the owner on 2026-10-18. Data layer, views (`RatingTrajectoryView`, `PossessionView`, on a shared `TrajectoryPanel`), page wiring, unit tests and e2e implemented locally; `possession` is `ready: true` behind `CFB_CHARTS_ENABLED`; `rating-trajectory` is implemented but `ready: false` (not shown on /charts) by owner decision on 2026-10-18, reserved for a later move to the Ratings tab. Real-data look on Preview and CI on `dev` remain. Owner controls commits, merges, migrations, Preview rehearsal and Production.
 
 - **Created:** 2026-10-18
 - **Decision source:** Owner chose these two charts on 2026-10-18, after the 6-chart expansion ([01-charts-review-and-expansion.md](01-charts-review-and-expansion.md)) became code-complete.
@@ -23,7 +23,7 @@
 ## Chart 7: V5 rating trajectory (`rating-trajectory`)
 
 - Group: Teams. Controls: metric `overall | offense | defense`, conference/group filter, `team=` highlight. No week selector (all stored windows are shown).
-- Series: one point per team per `current` snapshot `week` 0..7, plotted at Through Week N. Orientation of `defense_rating` (higher = better defense, or higher = more points allowed) is **not yet verified**. Before implementation, check the V5 rating code and a few known teams, then fix the axis direction here. Offense and overall are higher-is-better.
+- Series: one point per team per `current` snapshot `week` 0..7, plotted at Through Week N. **`defense_rating` is higher = better defense** (verified 2026-10-18). In `src/cks_picks_cfb/ratings/possession_rating_materializer.py` the defense observation is `-(allowed - center) / scale` ("defense sign reversal") and `overall_rating = (offense_rating + defense_rating) / 2`. On the Preview active release, current Week 7 `defense_rating` correlates -0.81 with Through Week 7 (`as_of_week = 8`) adjusted `epa_per_possession` allowed across 129 teams (offense rating vs offense PPA/possession: +0.85); the top defense ratings (Texas, LSU, TCU) allow the least. Offense, defense and overall are all higher-is-better, so no axis is inverted.
 - Reuse `TrajectoryChart.tsx` by generalizing its series input (gaps, lone-point dots, conference coloring, highlighted team, endpoint logo displacement already exist). The dashed reference is the weekly unweighted roster mean for the selected metric.
 - Tooltip: team, Through Week, rating, ± standard deviation, rank among displayed roster teams for that week (competition ranking; ties share a rank).
 - Table view: team, week, rating, standard deviation. PNG export at 2000x1125 like the other trajectory cards.
@@ -31,11 +31,11 @@
 
 ## Chart 8: Possession efficiency (`possession`)
 
-- Group: Teams. Controls: Through Week N (2 through the active week), metric `ppp | epa_per_possession`, conference/group filter, `team=` highlight.
+- Group: Teams. Controls: Through Week N (2 through the active week), metric `ppp | epa_per_possession` (shown as PPA/possession; `ppa_per_possession` is accepted as an alias), conference/group filter, `team=` highlight.
 - Marks: scatter of adjusted offense (x) against adjusted defense allowed (y, inverted so up and right is better), one point per team with both roles present for that window and measurement. Teams missing either role are omitted and counted in the footnote.
-- Reuse `ScatterView`/`ScatterChart` the way `AdjustedView.tsx` does: dashed pooled-average lines, diagonal equal-net lines with labels, competition ranks from `adjusted_rank` (recomputed in the transform if the displayed population changes), table view, PNG export. The pooled average is weighted by `primary_exposure` (possessions) per role.
+- Reuse `ScatterView`/`ScatterChart` the way `AdjustedView.tsx` does: dashed pooled-average lines with corner labels relative to them, competition ranks from `adjusted_rank` (recomputed in the transform if the displayed population changes), PNG export. By owner decision (2026-10-18) the visible scatters have no equal-net diagonals, no in-chart note and no table view. The pooled average is weighted by `primary_exposure` (possessions) per role.
 - Tooltip: raw value, adjusted value, opponent adjustment, games, offense and defense rank.
-- Caption states the measurement (points per possession or EPA per possession), that values are opponent-adjusted, and the Through Week window.
+- Caption states the measurement (points per possession or PPA per possession), that values are opponent-adjusted, and the Through Week window.
 
 ## Implementation plan
 
@@ -49,10 +49,10 @@
 ## Acceptance
 
 - Unit tests (`test:publication`): gaps, metric switching, rank ties, missing windows or roles, mean reference computed before group filtering, exposure-weighted averages, sign and inversion.
-- e2e (`test:ui`): both kinds render, table opens (using the shared `openTable` helper), keyboard tooltip, PNG export, `team` persists across chart switches.
+- e2e (`test:ui`): both kinds render, the possession table view is absent (the skipped rating-trajectory spec keeps its `openTable` checks), keyboard tooltip, PNG export, `team` persists across chart switches.
 - `test:charts-gate`, `lint`, `typecheck`, `build` pass; fixture screenshots (`CFB_CHART_VISUALS=1`) inspected at desktop and 390px in both themes; real-data look on Preview with `CFB_CHARTS_ENABLED=1 make web-local ENV=preview`; CI on `dev` green.
 
-## Open questions for the owner
+## Owner decisions
 
-1. Plot Through Week 0 (pre-conference-play ratings after the opening week) on the rating trajectory, or start at Through Week 1? Default proposed: include it, since all 138 teams have a row.
-2. Possession chart minimum window: Through Week 2 (matches the other adjusted charts). Default proposed: yes.
+1. The rating trajectory includes Through Week 0 (current snapshots for weeks 0 through 7 are plotted at Through Week N).
+2. The possession chart starts at Through Week 2 (`as_of_week >= 3`), like the other adjusted charts.

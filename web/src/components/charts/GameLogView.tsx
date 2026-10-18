@@ -23,7 +23,6 @@ import {
   type TeamGameRow,
 } from "@/lib/charts";
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, SegmentedControl, type SharedChartProps } from "./ChartFrame";
-import { ChartTable, type TableColumn } from "./ChartTable";
 import { GameLogChart } from "./GameLogChart";
 
 const GAME_LOG_VIEW = { width: 1000, height: 560 };
@@ -64,7 +63,8 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
   const { season, roster, filter, highlight } = shared;
   const team = highlight ?? defaultGameLogTeam(roster, rows, adjusted, filter);
   const log = useMemo(() => (team ? teamGameLog(roster, rows, team, metric) : null), [roster, rows, team, metric]);
-  const { title, footnote } = CHART_REGISTRY["game-log"];
+  const { title: baseTitle, description, footnote } = CHART_REGISTRY["game-log"];
+  const title = team ? `${team} ${baseTitle.toLowerCase()}` : baseTitle;
   const metricText = GAME_LOG_METRICS[metric];
   const through = log?.throughWeek;
   const subtitle = [team ?? "No team", `${season}`, SCOPE_NOTE, ...(through === null || through === undefined ? [] : [`Through Week ${through}`])].join(" | ");
@@ -73,20 +73,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
   const games = log?.games ?? [];
   const domain = log ? gameLogDomain(log) : ([0, 1] as Domain);
   const describe = (game: GameLogGame) => describeGameLogGame(log!.team, game, metric);
-  const value = (v: number | null) => (v === null ? "n/a" : metricText.value(v));
   const slug = (team ?? "team").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-  const gameOrder = new Map(games.map((game, index) => [game.gameId, index]));
-  const columns: TableColumn<GameLogGame>[] = [
-    { key: "order", label: "Week", value: (g) => gameOrder.get(g.gameId) ?? 0, format: (g) => String(g.week), numeric: true },
-    { key: "opponent", label: "Opponent", value: (g) => g.opponent },
-    { key: "site", label: "Site", value: (g) => g.site },
-    { key: "result", label: "Result", value: (g) => g.pointsFor - g.pointsAgainst, format: (g) => g.result, numeric: true },
-    { key: "offense", label: `Offense ${metricText.label}`, value: (g) => g.offense, format: (g) => value(g.offense), numeric: true },
-    { key: "offenseAverage", label: "FBS week average (offense)", value: (g) => g.average.offense, format: (g) => value(g.average.offense), numeric: true },
-    { key: "defense", label: `Defense allowed ${metricText.label}`, value: (g) => g.defense, format: (g) => value(g.defense), numeric: true },
-    { key: "defenseAverage", label: "FBS week average (defense)", value: (g) => g.average.defense, format: (g) => value(g.average.defense), numeric: true },
-  ];
 
   const chart = (view: { width: number; height: number }, interactive: boolean) =>
     log && <GameLogChart log={log} domain={domain} formatTick={metricText.tick} describe={describe} width={view.width} height={view.height} interactive={interactive} label={label} />;
@@ -97,7 +84,8 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       shared={{ ...shared, highlight: team }}
       title={title}
       subtitle={subtitle}
-      headerControls={
+      description={description}
+      controls={
         <SegmentedControl
           label="Game log metric"
           options={gameLogMetrics(explosiveness).map((option) => ({ value: option, label: GAME_LOG_METRICS[option].label, testId: `game-log-metric-${option.replaceAll("_", "-")}` }))}
@@ -112,16 +100,14 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
         width: EXPORT_SIZE.width,
         height: EXPORT_SIZE.height,
         card: (
-          <ExportCard title={`${title}: ${team ?? ""}`} subtitle={viewSubtitle} footnote={footnote}>
+          <ExportCard title={title} subtitle={viewSubtitle} footnote={footnote}>
             {chart({ width: EXPORT_SIZE.width - 24, height: EXPORT_CHART_HEIGHT }, false)}
           </ExportCard>
         ),
       }}
       status={log && log.games.length > 0 && (
         <div className="flex flex-wrap items-end gap-x-8 gap-y-2" data-testid="game-log-header">
-          <p className="w-full text-xs text-ink-muted sm:w-auto">
-            <span className="font-semibold text-ink">{log.team}</span> season to date{through === null ? "" : `, Through Week ${through}`}: {metricText.label}
-          </p>
+          <p className="w-full text-xs text-ink-muted sm:w-auto">Season to date{through === null ? "" : `, Through Week ${through}`}: {metricText.label}</p>
           <SeasonStat side="offense" log={log} />
           <SeasonStat side="defense" log={log} />
         </div>
@@ -136,7 +122,6 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
           <p className="mt-1 text-center text-[11px] text-ink-faint">{SCOPE_NOTE}. Defense axis is inverted: up is better defense.</p>
         </>
       }
-      table={<ChartTable rows={games} columns={columns} rowKey={(g) => String(g.gameId)} caption={`${title}, ${viewSubtitle}`} initialSort={{ key: "order" }} />}
       footnote={footnote}
     />
   );

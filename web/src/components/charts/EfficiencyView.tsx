@@ -28,8 +28,9 @@ export function EfficiencyView({ shared, side, rows, initialMetric, explosivenes
       side={side}
       data={data}
       config={efficiencyConfig(side, metric)}
+      description={metric === "ppa" ? "Each team's success rate against its PPA/play." : undefined}
       describe={(point) => describeEfficiencyPoint(point, metric)}
-      headerControls={explosiveness && (
+      controls={explosiveness && (
         <SegmentedControl
           label="Explosiveness metric"
           options={EXPLOSIVENESS_METRICS.map((value) => ({ value, label: EFFICIENCY_METRICS[value].label, testId: `metric-toggle-${value.replaceAll("_", "-")}` }))}

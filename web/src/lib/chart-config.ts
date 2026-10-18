@@ -6,6 +6,12 @@ import {
   type ChartKind,
   type ConferenceFilter,
   type EfficiencyMetric,
+  type PossessionMetric,
+  type PossessionRow,
+  type PossessionScatter,
+  type RatingMetric,
+  type RatingTrajectoryData,
+  type RatingTrajectorySeries,
   type RosterRow,
   type ScatterPoint,
   type Side,
@@ -28,7 +34,7 @@ export type { ChartKind };
 
 export type ChartGroup = "games" | "teams" | "one-team";
 
-/** Picker groups, in display order. */
+/** Picker groups, in display order; `label` is the heading shown above each group's tabs. */
 export const CHART_GROUPS: readonly { id: ChartGroup; label: string }[] = [
   { id: "games", label: "Games" },
   { id: "teams", label: "Teams" },
@@ -41,6 +47,12 @@ export type ChartDefinition = {
   tabLabel: string;
   /** Section heading and export title. */
   title: string;
+  /** One plain sentence under the title on the page; the PNG export carries the full metadata line instead. */
+  description: string;
+  /** Attribution shown under the header subtitle and in the PNG export. */
+  credit?: string;
+  /** Who and which games the chart covers, shown in the subtitle and the page eyebrow. */
+  population: string;
   controls: {
     /** Reads `side=offense|defense`. */
     side: boolean;
@@ -52,28 +64,35 @@ export type ChartDefinition = {
   /** Default footnote (a scatter metric may override it via its `ScatterConfig`). */
   footnote: string;
   /**
-   * False until the chart's view ships: the kind is hidden from the picker and a URL
-   * naming it falls back to the default chart.
+   * False while the chart is not shown (view not shipped, or hidden by decision): the kind
+   * is hidden from the picker and a URL naming it falls back to the default chart.
    */
   ready: boolean;
 };
 
 const RELEASE_NOTE = "Reconstructed from this release's data.";
+/** Charts built from FBS-vs-FBS games only. */
+const FBS_GAMES = "FBS vs FBS";
 
 /** Picker order within each group follows key order. */
 export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   "net-success": {
     group: "games",
     tabLabel: "Net success rate",
-    title: "Did We Really Get Beat That Bad?",
+    title: "Net success rate",
+    description: "Each game's winner minus loser success rate, in percentage points.",
+    credit: "Concept by Parker Fleming: “Did We Really Get Beat That Bad?”",
+    population: FBS_GAMES,
     controls: { side: false, week: "week", team: false },
     footnote: `Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded). Label = winner and final score. ${RELEASE_NOTE}`,
     ready: true,
   },
   efficiency: {
     group: "teams",
-    tabLabel: "Efficiency",
-    title: "Efficiency vs Explosiveness",
+    tabLabel: "Efficiency vs explosiveness",
+    title: "Efficiency vs explosiveness",
+    description: "Each team's success rate against its explosiveness.",
+    population: FBS_GAMES,
     controls: { side: true, week: "through-week", team: true },
     footnote: efficiencyFootnote("PPA/play"),
     ready: true,
@@ -81,31 +100,62 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   adjusted: {
     group: "teams",
     tabLabel: "Adjusted PPA/play",
-    title: "Opponent-adjusted PPA/play",
+    title: "Adjusted PPA/play",
+    description: "Offense against defense allowed, each adjusted for opponent strength.",
+    population: FBS_GAMES,
     controls: { side: false, week: "through-week", team: true },
-    footnote: `PPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. Dashed lines are play-weighted FBS averages; diagonals mark equal net (offense minus defense allowed). ${RELEASE_NOTE}`,
+    footnote: `PPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. Dashed lines are play-weighted FBS averages; corner labels are relative to them. ${RELEASE_NOTE}`,
     ready: true,
   },
   schedule: {
     group: "teams",
     tabLabel: "Schedule adjustment",
     title: "Schedule adjustment",
+    description: "Venue-neutral to opponent-adjusted PPA/play for each team.",
+    population: FBS_GAMES,
     controls: { side: true, week: "through-week", team: true },
     footnote: `Each row runs from venue-neutral PPA/play (raw minus the home-field venue correction; hollow dot) to opponent-adjusted PPA/play from the V5 iterative adjuster (filled dot), FBS vs FBS games. Schedule effect is in better-is-positive units: positive means raw understated: tougher opponents than average; negative means raw inflated: weaker opponents. On defense, values are PPA/play allowed and the axis is inverted so better is right. ${RELEASE_NOTE}`,
-    ready: true,
+    // Hidden from /charts by owner decision on 2026-10-18 (not readable/understandable enough); view code retained.
+    ready: false,
   },
   trajectory: {
     group: "teams",
     tabLabel: "Trajectory",
     title: "Team trajectory",
+    description: "Adjusted PPA/play across every stored week.",
+    population: FBS_GAMES,
     controls: { side: false, week: null, team: true },
     footnote: `Opponent- and venue-adjusted PPA/play (V5 iterative adjuster, FBS vs FBS games) for every stored Through Week window; net is offense minus defense allowed. The dashed line is each window's play-weighted FBS average. A gap means the team has no adjusted value in that window (for net, either role); a lone window is a dot. ${RELEASE_NOTE}`,
+    // Hidden from /charts by owner decision on 2026-10-18 (not readable/understandable enough); view code retained.
+    ready: false,
+  },
+  "rating-trajectory": {
+    group: "teams",
+    tabLabel: "V5 ratings",
+    title: "V5 rating trajectory",
+    description: "V5 model ratings after each week's games.",
+    population: "FBS teams",
+    controls: { side: false, week: null, team: true },
+    footnote: `V5 model ratings after each week's games (Through Week 0 onward), on the rating scale, not PPA/play. Higher is better for every component, defense included; overall is the mean of offense and defense. Ratings are not centered at zero: the dashed line is each week's unweighted mean over FBS roster teams. A gap means the team has no snapshot that week; a lone week is a dot. From this release's V5 rating snapshots.`,
+    // Hidden from /charts by owner decision on 2026-10-18 (reserved for the Ratings tab); view code retained.
+    ready: false,
+  },
+  possession: {
+    group: "teams",
+    tabLabel: "Possession efficiency",
+    title: "Possession efficiency",
+    description: "Offense against defense allowed, adjusted for opponent strength, per possession.",
+    population: "FBS teams, all games",
+    controls: { side: false, week: "through-week", team: true },
+    footnote: possessionFootnote("points per possession"),
     ready: true,
   },
   "game-log": {
     group: "one-team",
     tabLabel: "Game log",
-    title: "Team game log",
+    title: "Game log",
+    description: "Every game this season against that week's FBS average.",
+    population: FBS_GAMES,
     controls: { side: false, week: null, team: true },
     footnote: `Bars = the team's value in each game on eligible plays (regulation only; garbage time and special teams excluded), FBS opponents only. Dashed marks = that week's FBS average, pooled over every FBS team-game. Defense shows values allowed, axis inverted so up is better; n/a = no eligible plays for the metric. Season values and national ranks match Efficiency for the latest week. ${RELEASE_NOTE}`,
     ready: true,
@@ -153,6 +203,23 @@ export const TRAJECTORY_METRICS: Record<TrajectoryMetric, { label: string; yLabe
   defense: { label: "Defense", yLabel: "Adjusted defense PPA/play allowed" },
 };
 
+/** V5 rating trajectory `metric=overall|offense|defense`; overall by default. */
+export function parseRatingMetric(raw: RawParam): RatingMetric {
+  return raw === "offense" || raw === "defense" ? raw : "overall";
+}
+
+/** V5 rating metric switcher text and y-axis label, in toggle order. Every axis is higher-is-better. */
+export const RATING_METRICS: Record<RatingMetric, { label: string; yLabel: string }> = {
+  overall: { label: "Overall", yLabel: "V5 overall rating" },
+  offense: { label: "Offense", yLabel: "V5 offense rating" },
+  defense: { label: "Defense", yLabel: "V5 defense rating" },
+};
+
+/** Possession `metric=ppp|epa_per_possession` (also `epa-per-possession`, `ppa_per_possession`, `ppa-per-possession`); points per possession by default. */
+export function parsePossessionMetric(raw: RawParam): PossessionMetric {
+  return typeof raw === "string" && /^(epa|ppa)[_-]per[_-]possession$/.test(raw) ? "epa_per_possession" : "ppp";
+}
+
 /**
  * The roster team named by `team=`, or null when the param is missing, repeated or not a
  * roster team. Matching ignores case and surrounding space; the roster spelling is returned.
@@ -193,7 +260,7 @@ export function withTeamParam(href: string, team: string | null): string {
 
 /** `as_of_week = N + 1` is shown as "Through Week N". */
 export function chartSubtitle(kind: ChartKind, season: number, week: number, side: Side): string {
-  const base = `${season} | FBS vs FBS`;
+  const base = `${season} | ${CHART_REGISTRY[kind].population}`;
   const { controls } = CHART_REGISTRY[kind];
   if (controls.week === "week") return `Week ${week} | ${base}`;
   const sideText = controls.side ? `${side === "offense" ? "Offense" : "Defense"} | ` : "";
@@ -204,11 +271,13 @@ export function groupLabel(filter: ConferenceFilter): string {
   return filter === "all" ? "All FBS" : filter === "p4" ? "Power Four + Notre Dame" : filter;
 }
 
-export function exportFilename(kind: ChartKind, season: number, week: number, side: Side): string {
+/** PNG name; `metric` (a slug) follows the kind when the chart has a metric switcher. */
+export function exportFilename(kind: ChartKind, season: number, week: number, side: Side, metric?: string): string {
   const { controls } = CHART_REGISTRY[kind];
+  const metricText = metric ? `-${metric}` : "";
   const sideText = controls.side ? `-${side}` : "";
   const weekText = controls.week === "week" ? `-week-${week}` : controls.week === "through-week" ? `-through-week-${week}` : "";
-  return `ckspicks-${kind}${sideText}-${season}${weekText}.png`;
+  return `ckspicks-${kind}${metricText}${sideText}-${season}${weekText}.png`;
 }
 
 export function conferenceLabel(conference: string | null): string {
@@ -224,7 +293,6 @@ export type CornerCaptions = {
   topRight: string;
   bottomLeft: string;
   bottomRight: string;
-  note: string;
 };
 
 export type ScatterConfig = {
@@ -233,16 +301,12 @@ export type ScatterConfig = {
   /** Axis tick text. */
   tickX: (value: number) => string;
   tickY: (value: number) => string;
-  /** Table and tooltip value text. */
-  valueX: (value: number) => string;
-  valueY: (value: number) => string;
   /** Short metric name shown in the export subtitle; empty when the chart has one metric. */
   metricLabel: string;
   captions: CornerCaptions;
   footnote: string;
 };
 
-const AVERAGES_NOTE = "Relative to play-weighted FBS averages";
 /** Percent tick: whole when the tick is a whole percent, else one decimal (`7.5%`), so ticks never repeat. */
 export function percentTick(value: number): string {
   const tenths = Math.round(value * 1000);
@@ -250,7 +314,7 @@ export function percentTick(value: number): string {
 }
 
 function efficiencyFootnote(metric: string): string {
-  return `Cumulative success rate and ${metric} on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are FBS averages. On defense, axes are inverted so up and right is better. ${RELEASE_NOTE}`;
+  return `Cumulative success rate and ${metric} on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are play-weighted FBS averages; corner labels are relative to them. On defense, axes are inverted so up and right is better. ${RELEASE_NOTE}`;
 }
 
 type EfficiencyMetricText = {
@@ -314,22 +378,18 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
         topRight: `Lower allowed success / Lower allowed ${m}`,
         bottomLeft: `Higher allowed success / Higher allowed ${m}`,
         bottomRight: `Lower allowed success / Higher allowed ${m}`,
-        note: AVERAGES_NOTE,
       }
     : {
         topLeft: `Lower success / Higher ${m}`,
         topRight: `Higher success / Higher ${m}`,
         bottomLeft: `Lower success / Lower ${m}`,
         bottomRight: `Higher success / Lower ${m}`,
-        note: AVERAGES_NOTE,
       };
   return {
     xLabel: "Success Rate",
     yLabel: text.yLabel[side],
     tickX: percentTick,
     tickY: text.tick,
-    valueX: formatPercent,
-    valueY: text.value,
     metricLabel: text.label,
     captions,
     footnote: efficiencyFootnote(text.footnote),
@@ -352,15 +412,12 @@ export const ADJUSTED_CONFIG: ScatterConfig = {
   yLabel: "Adjusted defense PPA/play allowed",
   tickX: formatEpaTick,
   tickY: formatEpaTick,
-  valueX: formatEpa,
-  valueY: formatEpa,
   metricLabel: "",
   captions: {
     topLeft: "Lower offense / Better defense",
     topRight: "Better offense / Better defense",
     bottomLeft: "Lower offense / Higher defense allowed",
     bottomRight: "Better offense / Higher defense allowed",
-    note: `${AVERAGES_NOTE}; diagonals: equal net PPA (offense − defense allowed)`,
   },
   footnote: CHART_REGISTRY.adjusted.footnote,
 };
@@ -375,6 +432,81 @@ export function describeAdjustedPoint(point: ScatterPoint, roles: AdjustedScatte
   const role = roles[point.team];
   if (!role) return `${head}: adjusted offense ${formatEpa(point.x)}, adjusted defense allowed ${formatEpa(point.y)} PPA/play`;
   return `${head}: ${describeRole("offense", role.offense)}; ${describeRole("defense allowed", role.defense)} PPA/play`;
+}
+
+// ---------------------------------------------------------------------------
+// Possession efficiency
+// ---------------------------------------------------------------------------
+
+function possessionFootnote(measurement: string): string {
+  return `Adjusted ${measurement}: opponent-adjusted V5 possession measurements of FBS teams for each Through Week window, every game counted (FCS opponents included, as in the V5 ratings). Defense is the value allowed, axis inverted so up and right is better. Dashed lines are possession-weighted averages over the plotted teams; corner labels are relative to them. Teams missing either role are not plotted. From this release's V5 possession measurements.`;
+}
+
+export const POSSESSION_METRICS: Record<PossessionMetric, {
+  /** Toggle button and export subtitle. */
+  label: string;
+  /** Axis and tooltip unit. */
+  unit: string;
+  /** PNG filename term. */
+  slug: string;
+  tick: (value: number) => string;
+  value: (value: number) => string;
+}> = {
+  ppp: { label: "Points", unit: "points per possession", slug: "ppp", tick: (value) => value.toFixed(2), value: (value) => value.toFixed(2) },
+  // The site says PPA, as everywhere else; `epa_per_possession` stays the stored measurement id.
+  epa_per_possession: { label: "PPA", unit: "PPA per possession", slug: "ppa-per-possession", tick: formatEpaTick, value: formatEpaTick },
+};
+
+/** Scatter axis text of the possession chart for `metric`. */
+export function possessionConfig(metric: PossessionMetric): ScatterConfig {
+  const text = POSSESSION_METRICS[metric];
+  return {
+    xLabel: `Adjusted offense ${text.unit}`,
+    yLabel: `Adjusted defense ${text.unit} allowed`,
+    tickX: text.tick,
+    tickY: text.tick,
+    metricLabel: text.unit.charAt(0).toUpperCase() + text.unit.slice(1),
+    captions: {
+      topLeft: "Lower offense / Better defense",
+      topRight: "Better offense / Better defense",
+      bottomLeft: "Lower offense / Higher defense allowed",
+      bottomRight: "Better offense / Higher defense allowed",
+    },
+    footnote: possessionFootnote(text.unit),
+  };
+}
+
+/** Tooltip text of one possession point: raw, adjusted, opponent adjustment, games and both ranks. */
+export function describePossessionPoint(point: ScatterPoint, scatter: Pick<PossessionScatter, "roles" | "ranks" | "points">, metric: PossessionMetric): string {
+  const { unit, value } = POSSESSION_METRICS[metric];
+  const text = (v: number | null) => (v === null ? "n/a" : value(v));
+  const head = `${point.team} (${conferenceLabel(point.conference)})`;
+  const role = scatter.roles[point.team];
+  const rank = scatter.ranks[point.team];
+  if (!role || !rank) return `${head}: adjusted offense ${value(point.x)}, adjusted defense allowed ${value(point.y)} ${unit}`;
+  const describe = (name: string, row: PossessionRow, r: number) =>
+    `${name} adjusted ${text(row.adjustedValue)} (raw ${text(row.rawValue)}, opponent adjustment ${text(row.opponentAdjustment)}, ${row.games} games), ${rankText(r, scatter.points.length)}`;
+  return `${head}, ${unit}: ${describe("offense", role.offense, rank.offense)}; ${describe("defense allowed", role.defense, rank.defense)}`;
+}
+
+// ---------------------------------------------------------------------------
+// V5 rating trajectory
+// ---------------------------------------------------------------------------
+
+/** Two-decimal rating (`1.23`, `-0.40`); ratings are not centered at zero, so no `+`. */
+export function formatRating(value: number): string {
+  return value.toFixed(2);
+}
+
+/** Tooltip text of one team-week: rating ± one standard deviation and the weekly rank. */
+export function describeRatingPoint(data: RatingTrajectoryData, series: RatingTrajectorySeries, index: number, metric: RatingMetric): string {
+  const head = `${series.team} (${conferenceLabel(series.conference)}), Through Week ${data.weeks[index]}`;
+  const value = series.values[index];
+  if (value === null) return `${head}: no ${RATING_METRICS[metric].yLabel}`;
+  const sd = series.sd[index];
+  const spread = sd === null ? "" : ` ± ${formatRating(sd)}`;
+  const rank = series.ranks[index];
+  return `${head}: ${RATING_METRICS[metric].yLabel} ${formatRating(value)}${spread}${rank === null ? "" : `, ${rankText(rank, data.ranked[index])}`}`;
 }
 
 // ---------------------------------------------------------------------------

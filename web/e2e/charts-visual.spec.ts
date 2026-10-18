@@ -9,8 +9,12 @@ const charts = [
   { kind: "adjusted", query: "chart=adjusted&week=3&team=Alabama", testId: "scatter-chart" },
   { kind: "schedule", query: "chart=schedule&fixture=schedule&week=3", testId: "schedule-chart" },
   { kind: "trajectory", query: "chart=trajectory&team=Alabama", testId: "trajectory-chart" },
+  { kind: "rating-trajectory", query: "chart=rating-trajectory&team=Alabama", testId: "trajectory-chart" },
+  { kind: "possession", query: "chart=possession&week=3&team=Alabama", testId: "scatter-chart" },
   { kind: "game-log", query: "chart=game-log&team=Alabama", testId: "game-log-chart" },
 ] as const;
+// Skipped: hidden from /charts (`ready: false` in src/lib/chart-config.ts); their capture branches are kept.
+const HIDDEN_KINDS: readonly string[] = ["schedule", "trajectory", "rating-trajectory"];
 
 test("capture all chart fixtures and desktop PNG exports in both themes", async ({ page }, testInfo) => {
   test.skip(!enabled, "Set CFB_CHART_VISUALS=1 to create the optional visual review artifacts.");
@@ -19,7 +23,7 @@ test("capture all chart fixtures and desktop PNG exports in both themes", async 
     await page.emulateMedia({ colorScheme: theme });
     for (const viewport of [{ width: 1280, height: 1000 }, { width: 390, height: 900 }]) {
       await page.setViewportSize(viewport);
-      for (const chart of charts) {
+      for (const chart of charts.filter((entry) => !HIDDEN_KINDS.includes(entry.kind))) {
         const name = `${chart.kind}-${theme}-${viewport.width}`;
         await page.goto(`/charts?${chart.query}`);
         await expect(page.getByTestId(chart.testId)).toBeVisible();

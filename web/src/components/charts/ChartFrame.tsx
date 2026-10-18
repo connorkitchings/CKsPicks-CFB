@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
+import { SEGMENTED_GROUP, segmentedItem } from "./segmented-styles";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
 
 /**
@@ -20,6 +21,8 @@ export type SharedChartProps = {
   highlight: string | null;
   /** A team toggles its highlight; null clears it. */
   onHighlight: (team: string | null) => void;
+  /** URL-backed settings rendered by the page (side links, week stepper), placed before `controls`. */
+  settings?: ReactNode;
 };
 
 // Exports are captured at 2x: 1000 x 562.5 CSS px is a 2000 x 1125 px PNG.
@@ -27,13 +30,31 @@ export const EXPORT_SIZE = { width: 1000, height: 562.5, header: 70, footer: 50 
 /** Height left for the chart inside an export card. */
 export const EXPORT_CHART_HEIGHT = EXPORT_SIZE.height - EXPORT_SIZE.header - EXPORT_SIZE.footer;
 
-/** The static card a PNG export captures: title, subtitle, chart and footnote. */
-export function ExportCard({ title, subtitle, footnote, children }: { title: string; subtitle: string; footnote: string; children: ReactNode }) {
+/**
+ * A " | "-joined subtitle as quiet meta text with "·" separators. Only the display changes:
+ * callers keep the " | " string for aria labels, table captions and filenames.
+ */
+export function SubtitleText({ subtitle }: { subtitle: string }) {
+  return subtitle.split(" | ").map((part, index) => (
+    <span key={index}>
+      {index > 0 && <span className="text-ink-faint"> · </span>}
+      {part}
+    </span>
+  ));
+}
+
+/** The static card a PNG export captures: title (with an optional credit), subtitle, chart and footnote. */
+export function ExportCard({ title, subtitle, credit, footnote, children }: { title: string; subtitle: string; credit?: string; footnote: string; children: ReactNode }) {
   return (
     <div className="flex h-full flex-col" data-testid="export-card">
       <div className="px-5 pt-3" style={{ height: EXPORT_SIZE.header }}>
-        <div className="text-2xl font-bold tracking-tight text-ink">{title}</div>
-        <div className="text-sm text-ink-muted">{subtitle}</div>
+        <div className="flex items-baseline justify-between gap-6">
+          <div className="text-2xl font-bold tracking-tight text-ink">{title}</div>
+          {credit && <div className="shrink-0 text-xs text-ink-muted">{credit}</div>}
+        </div>
+        <div className="text-sm text-ink-muted">
+          <SubtitleText subtitle={subtitle} />
+        </div>
       </div>
       <div className="min-h-0 flex-1 px-3">{children}</div>
       <div className="px-5 text-[11px] leading-snug text-ink-muted" style={{ height: EXPORT_SIZE.footer }}>
@@ -60,36 +81,28 @@ export function SegmentedControl<Value extends string>({
   value,
   onChange,
   testId,
-  showLabel = false,
 }: {
-  /** Group name for assistive tech; also shown as lead-in text when `showLabel`. */
+  /** Group name for assistive tech. */
   label: string;
-  showLabel?: boolean;
   options: readonly { value: Value; label: string; testId: string }[];
   value: Value;
   onChange: (value: Value) => void;
   testId: string;
 }) {
   return (
-    <div className="flex items-center gap-2" role="group" aria-label={label} data-testid={testId}>
-      {showLabel && <span className="text-xs font-semibold text-ink-muted" aria-hidden>{label}</span>}
-      <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-card p-1 shadow-2xs">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={value === option.value}
-            className={clsx(
-              "inline-flex min-h-8 items-center rounded-md px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-              value === option.value ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:bg-surface-inset hover:text-ink",
-            )}
-            data-testid={option.testId}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+    <div className={SEGMENTED_GROUP} role="group" aria-label={label} data-testid={testId}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          aria-pressed={value === option.value}
+          className={segmentedItem(value === option.value)}
+          data-testid={option.testId}
+        >
+          {option.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -97,23 +110,28 @@ export function SegmentedControl<Value extends string>({
 export type ChartFrameProps = {
   shared: SharedChartProps;
   title: string;
+  /** Metadata line ("Week 7 | 2026 | FBS vs FBS"): read by assistive tech and printed in the PNG export. */
   subtitle: string;
-  /** Right side of the header (e.g. the efficiency metric switcher). */
+  /** The one plain sentence shown under the title; falls back to the visible subtitle without one. */
+  description?: string;
+  /** Quiet attribution line under the subtitle (the registry's `credit`). */
+  credit?: string;
+  /** Right end of the title row (a key figure); wraps under the subtitle on narrow screens. */
   headerControls?: ReactNode;
   /** Teams offered by the highlight picker; omitted for charts without a highlight. */
   highlightTeams?: readonly RosterRow[];
-  /** Extra controls after the filter and highlight picker (e.g. a sort toggle). */
+  /** The chart's own settings (metric or sort toggle), after the page's side and week settings. */
   controls?: ReactNode;
   /** PNG export of `card`, offered while the chart has data. */
   exportSpec: { filename: string; width: number; height: number; card: ReactNode };
-  /** Lines between the controls and the figure (highlight status, summaries). */
+  /** A compact line between the header hairline and the figure (highlight status, summaries). */
   status?: ReactNode;
   hasData: boolean;
   emptyText?: string;
   /** The interactive chart, inside the `chart-figure` card. */
   figure: ReactNode;
-  /** The same rows as a sortable `ChartTable`, shown by the table toggle. */
-  table: ReactNode;
+  /** The same rows as a sortable `ChartTable` behind a "Show as table" toggle; the visible charts pass none. */
+  table?: ReactNode;
   notCharted?: readonly NotCharted[];
   /** Roster teams the chart could not plot. */
   unavailable?: readonly string[];
@@ -125,6 +143,8 @@ export function ChartFrame({
   shared,
   title,
   subtitle,
+  description,
+  credit,
   headerControls,
   highlightTeams,
   controls,
@@ -139,50 +159,47 @@ export function ChartFrame({
   footnote,
 }: ChartFrameProps) {
   const [asTable, setAsTable] = useState(false);
-  const { roster, filter, onFilterChange, highlight, onHighlight } = shared;
+  const { roster, filter, onFilterChange, highlight, onHighlight, settings } = shared;
 
   return (
     <section className="space-y-3" aria-label={title}>
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight text-ink sm:text-xl">{title}</h2>
-          <p className="text-xs text-ink-muted sm:text-sm" data-testid="chart-subtitle">
-            {subtitle}
-          </p>
-        </div>
-        {headerControls}
-      </header>
-
-      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-inset p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3" data-testid="chart-controls">
-        <div className="flex flex-wrap items-center gap-2.5" role="group" aria-label="Chart controls">
-          <select
-            className="min-h-9 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
-            value={filter}
-            onChange={(event) => onFilterChange(event.target.value)}
-            data-testid="conference-filter"
-            aria-label="Filter by conference"
-          >
-            <option value="all">All FBS</option>
-            <option value="p4">Power Four + Notre Dame</option>
-            {conferenceOptions(roster).map((conference) => (
-              <option key={conference} value={conference}>
-                {conference}
-              </option>
-            ))}
-          </select>
-          {highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />}
+      {/* One row of every setting: filter, highlight, side, week, metric/sort; display and export at the right end. */}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-testid="chart-controls">
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
+          {/* On phones the filter and highlight share the first line half and half. */}
+          <div className={clsx("gap-2.5", highlightTeams ? "grid w-full grid-cols-2 sm:flex sm:w-auto" : "flex")}>
+            <select
+              className="min-h-9 min-w-0 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+              value={filter}
+              onChange={(event) => onFilterChange(event.target.value)}
+              data-testid="conference-filter"
+              aria-label="Filter by conference"
+            >
+              <option value="all">All FBS</option>
+              <option value="p4">Power Four + Notre Dame</option>
+              {conferenceOptions(roster).map((conference) => (
+                <option key={conference} value={conference}>
+                  {conference}
+                </option>
+              ))}
+            </select>
+            {highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />}
+          </div>
+          {settings}
           {controls}
         </div>
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Chart display and export">
-          <button
-            type="button"
-            aria-pressed={asTable}
-            onClick={() => setAsTable((current) => !current)}
-            className="min-h-9 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
-            data-testid="table-toggle"
-          >
-            {asTable ? "Show chart" : "Show as table"}
-          </button>
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto" role="group" aria-label="Chart display and export">
+          {table && (
+            <button
+              type="button"
+              aria-pressed={asTable}
+              onClick={() => setAsTable((current) => !current)}
+              className="min-h-9 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
+              data-testid="table-toggle"
+            >
+              {asTable ? "Show chart" : "Show as table"}
+            </button>
+          )}
           {hasData && (
             <ChartExportButton filename={exportSpec.filename} width={exportSpec.width} height={exportSpec.height}>
               {exportSpec.card}
@@ -191,18 +208,39 @@ export function ChartFrame({
         </div>
       </div>
 
-      {status}
-      {!hasData ? (
-        <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted" data-testid="chart-empty">
-          {emptyText}
-        </p>
-      ) : asTable ? (
-        table
-      ) : (
-        <div className="rounded-xl border border-line bg-surface-card p-2 sm:p-3" data-testid="chart-figure">
-          {figure}
+      {/* One card: header (title, meta, credit, header controls), hairline, status, then the chart or table. */}
+      <div className="rounded-xl border border-line bg-surface-card shadow-2xs">
+        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 sm:px-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{title}</h2>
+            {description && <p className="mt-1 text-xs text-ink-muted sm:text-[13px]" data-testid="chart-description">{description}</p>}
+            <p className={description ? "sr-only" : "mt-1 text-xs text-ink-muted sm:text-[13px]"} data-testid="chart-subtitle">
+              <SubtitleText subtitle={subtitle} />
+            </p>
+            {credit && (
+              <p className="mt-0.5 text-[10.5px] text-ink-muted/80" data-testid="chart-credit">
+                {credit}
+              </p>
+            )}
+          </div>
+          {headerControls}
+        </header>
+        <div className="border-t border-line">
+          {/* HighlightStatus renders nothing without a highlight; :empty drops this padding with it. */}
+          <div className="px-3 pt-2 empty:hidden sm:px-4">{status}</div>
+          {!hasData ? (
+            <p role="status" className="p-5 text-ink-muted" data-testid="chart-empty">
+              {emptyText}
+            </p>
+          ) : asTable && table ? (
+            <div className="p-2 sm:p-3">{table}</div>
+          ) : (
+            <div className="px-2 pt-1 pb-2 sm:px-3 sm:pb-3" data-testid="chart-figure">
+              {figure}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {notCharted.length > 0 && (
         <p className="text-xs text-ink-muted" data-testid="not-charted">

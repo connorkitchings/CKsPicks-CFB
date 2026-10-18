@@ -13,6 +13,7 @@ import {
   parseEfficiencyMetric,
   parseTeamParam,
   pickerGroups,
+  readyKinds,
   withTeamParam,
 } from "./chart-config.ts";
 import type { AdjustedRow, ChartKind } from "./charts.ts";
@@ -44,6 +45,8 @@ test("chart hrefs write only the params a chart reads, and always carry the team
   assert.equal(chartHref("adjusted", { side: "defense", week: null }), "/charts?chart=adjusted");
   assert.equal(chartHref("net-success", { week: 0, team: "Alabama" }), "/charts?chart=net-success&week=0&team=Alabama");
   assert.equal(chartHref("trajectory", { week: 4, team: "Alabama" }), "/charts?chart=trajectory&team=Alabama", "no week selector, no week param");
+  assert.equal(chartHref("rating-trajectory", { side: "defense", week: 4, team: "Alabama" }), "/charts?chart=rating-trajectory&team=Alabama");
+  assert.equal(chartHref("possession", { side: "defense", week: 2, team: "Alabama" }), "/charts?chart=possession&week=2&team=Alabama", "Through Week N, no side");
 });
 
 test("team param editing keeps every other param", () => {
@@ -55,10 +58,20 @@ test("team param editing keeps every other param", () => {
 });
 
 test("registry: every kind is registered; only ready kinds parse and appear in the picker", () => {
-  const kinds: ChartKind[] = ["net-success", "efficiency", "adjusted", "schedule", "trajectory", "game-log"];
+  const kinds: ChartKind[] = ["net-success", "efficiency", "adjusted", "schedule", "trajectory", "rating-trajectory", "possession", "game-log"];
   assert.deepEqual(Object.keys(CHART_REGISTRY).sort(), [...kinds].sort());
-  assert.deepEqual(kinds.map((kind) => CHART_REGISTRY[kind].group), ["games", "teams", "teams", "teams", "teams", "one-team"]);
+  assert.deepEqual(kinds.map((kind) => CHART_REGISTRY[kind].group), ["games", "teams", "teams", "teams", "teams", "teams", "teams", "one-team"]);
   assert.equal(parseChartKind("adjusted"), "adjusted");
+  assert.equal(parseChartKind("possession"), "possession");
+  assert.equal(parseChartKind("game-log"), "game-log");
+  // Hidden from the page by owner decision on 2026-10-18; their views are retained.
+  for (const hidden of ["schedule", "trajectory", "rating-trajectory"] as const) {
+    assert.equal(CHART_REGISTRY[hidden].ready, false, hidden);
+    assert.equal(parseChartKind(hidden), "net-success", hidden);
+  }
+  assert.deepEqual(pickerGroups().flatMap((group) => group.kinds.map((kind) => CHART_REGISTRY[kind].tabLabel)), [
+    "Net success rate", "Efficiency vs explosiveness", "Adjusted PPA/play", "Possession efficiency", "Game log",
+  ]);
   assert.equal(parseChartKind("bogus"), "net-success");
   assert.equal(parseChartKind(undefined), "net-success");
   assert.equal(parseChartKind(["efficiency"]), "net-success");
@@ -70,8 +83,14 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
 });
 
 test("titles, subtitles and export names follow the registry", () => {
-  assert.equal(CHART_REGISTRY["net-success"].title, "Did We Really Get Beat That Bad?");
-  assert.equal(CHART_REGISTRY.efficiency.title, "Efficiency vs Explosiveness");
+  assert.equal(CHART_REGISTRY["net-success"].title, "Net success rate");
+  assert.equal(CHART_REGISTRY["net-success"].credit, "Concept by Parker Fleming: “Did We Really Get Beat That Bad?”");
+  assert.equal(CHART_REGISTRY.efficiency.title, "Efficiency vs explosiveness");
+  // Titles match their picker tabs, in sentence case, and each visible chart has a one-sentence description.
+  for (const kind of readyKinds()) {
+    assert.equal(CHART_REGISTRY[kind].title, CHART_REGISTRY[kind].tabLabel);
+    assert.match(CHART_REGISTRY[kind].description, /^[A-Z].*\.$/);
+  }
   assert.equal(chartSubtitle("efficiency", 2026, 7, "offense"), "Offense | 2026 | FBS vs FBS | Through Week 7");
   assert.equal(chartSubtitle("adjusted", 2026, 3, "defense"), "2026 | FBS vs FBS | Through Week 3");
   assert.equal(chartSubtitle("net-success", 2026, 0, "offense"), "Week 0 | 2026 | FBS vs FBS");
@@ -79,6 +98,12 @@ test("titles, subtitles and export names follow the registry", () => {
   assert.equal(exportFilename("efficiency", 2026, 3, "defense"), "ckspicks-efficiency-defense-2026-through-week-3.png");
   assert.equal(exportFilename("net-success", 2026, 0, "offense"), "ckspicks-net-success-2026-week-0.png");
   assert.equal(exportFilename("adjusted", 2026, 3, "offense"), "ckspicks-adjusted-2026-through-week-3.png");
+  // V5 ratings and possession measurements are FBS teams' values from every game, not an FBS-vs-FBS game filter.
+  assert.equal(chartSubtitle("possession", 2026, 2, "defense"), "2026 | FBS teams, all games | Through Week 2");
+  assert.equal(chartSubtitle("rating-trajectory", 2026, 7, "defense"), "2026 | FBS teams");
+  assert.equal(exportFilename("possession", 2026, 2, "defense", "ppp"), "ckspicks-possession-ppp-2026-through-week-2.png");
+  assert.equal(exportFilename("rating-trajectory", 2026, 7, "offense", "overall"), "ckspicks-rating-trajectory-overall-2026.png");
+  assert.equal(exportFilename("trajectory", 2026, 7, "offense", "net"), "ckspicks-trajectory-net-2026.png");
 });
 
 test("efficiency axes follow side and metric; explosiveness defaults to 20+ rate only when served", () => {

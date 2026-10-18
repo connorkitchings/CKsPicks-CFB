@@ -50,7 +50,7 @@ export function TeamHighlightCombobox({
   const displayValue = isOpen ? query : (highlight ?? "");
 
   return (
-    <div ref={containerRef} className={clsx("relative min-w-44 lg:w-56", className)} data-testid="team-highlight-combobox">
+    <div ref={containerRef} className={clsx("relative min-w-0 sm:w-48", className)} data-testid="team-highlight-combobox">
       <div className="relative flex items-center">
         <input
           ref={inputRef}

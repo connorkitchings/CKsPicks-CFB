@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CHART_REGISTRY, parseTeamParam, withTeamParam } from "@/lib/chart-config";
 import {
@@ -12,6 +12,10 @@ import {
   type GameLogMetric,
   type NetSuccessBar,
   type NotCharted,
+  type PossessionMetric,
+  type PossessionRow,
+  type RatingMetric,
+  type RatingSnapshotRow,
   type RosterRow,
   type ScheduleData,
   type Side,
@@ -23,6 +27,8 @@ import type { SharedChartProps } from "./ChartFrame";
 import { EfficiencyView } from "./EfficiencyView";
 import { GameLogView } from "./GameLogView";
 import { NetSuccessView } from "./NetSuccessView";
+import { PossessionView } from "./PossessionView";
+import { RatingTrajectoryView } from "./RatingTrajectoryView";
 import { ScheduleAdjustmentView } from "./ScheduleAdjustmentView";
 import { TrajectoryView } from "./TrajectoryView";
 
@@ -33,6 +39,8 @@ export type ChartPayload =
   | { kind: "adjusted"; scatter: AdjustedScatter }
   | { kind: "schedule"; schedule: ScheduleData }
   | { kind: "trajectory"; rows: AdjustedRow[]; initialMetric: TrajectoryMetric }
+  | { kind: "rating-trajectory"; rows: RatingSnapshotRow[]; initialMetric: RatingMetric }
+  | { kind: "possession"; rows: PossessionRow[]; initialMetric: PossessionMetric }
   | { kind: "game-log"; rows: TeamGameRow[]; adjusted: AdjustedRow[]; initialMetric: GameLogMetric; explosiveness: boolean };
 
 export type ChartsViewProps = {
@@ -41,6 +49,8 @@ export type ChartsViewProps = {
   week: number;
   roster: RosterRow[];
   chart: ChartPayload;
+  /** The page's URL-backed settings (side links, week stepper) for the controls row. */
+  settings?: ReactNode;
 };
 
 /**
@@ -49,7 +59,7 @@ export type ChartsViewProps = {
  * the filter persists; the highlight lives in the `team=` URL param, updated in place
  * with the History API (no navigation), which Next keeps in sync with `useSearchParams`.
  */
-export function ChartsView({ season, week, roster, chart }: ChartsViewProps) {
+export function ChartsView({ season, week, roster, chart, settings }: ChartsViewProps) {
   const [filter, setFilter] = useState<ConferenceFilter>("all");
   const pathname = usePathname();
   const params = useSearchParams();
@@ -70,6 +80,7 @@ export function ChartsView({ season, week, roster, chart }: ChartsViewProps) {
     },
     highlight: CHART_REGISTRY[chart.kind].controls.team ? highlight : null,
     onHighlight: (team) => setHighlight(team === null || team === highlight ? null : team),
+    settings,
   };
 
   return renderView(chart, shared);
@@ -87,6 +98,10 @@ function renderView(chart: ChartPayload, shared: SharedChartProps) {
       return <ScheduleAdjustmentView shared={shared} data={chart.schedule} />;
     case "trajectory":
       return <TrajectoryView shared={shared} rows={chart.rows} initialMetric={chart.initialMetric} />;
+    case "rating-trajectory":
+      return <RatingTrajectoryView shared={shared} rows={chart.rows} initialMetric={chart.initialMetric} />;
+    case "possession":
+      return <PossessionView shared={shared} rows={chart.rows} initialMetric={chart.initialMetric} />;
     case "game-log":
       return <GameLogView key={chart.explosiveness ? "charts_v2" : "charts_v1"} shared={shared} rows={chart.rows} adjusted={chart.adjusted} initialMetric={chart.initialMetric} explosiveness={chart.explosiveness} />;
   }

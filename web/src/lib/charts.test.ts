@@ -13,10 +13,8 @@ import {
   scatterRanks,
   formatEpa,
   formatPercent,
-  isoNetSegments,
   matchesConference,
   matchesSearch,
-  netLabel,
   netSuccessBars,
   netSuccessWeeks,
   niceTicks,
@@ -186,7 +184,6 @@ test("adjusted points need both roles; a one-role team is listed as unavailable"
   assert.ok(data.average && Math.abs(data.average.x - (0.2 * 100 + 0 * 300) / 400) < 1e-12);
   assert.ok(data.average && Math.abs(data.average.y - (-0.1 * 100 + 0.1 * 300) / 400) < 1e-12);
   assert.deepEqual([data.invertX, data.invertY], [false, true]);
-  assert.ok(data.netLevels.every((level) => Number.isFinite(level)));
   assert.deepEqual(Object.keys(data.roles), ["Alabama", "Michigan"], "the decomposition covers plotted teams only");
   assert.equal(data.roles.Alabama.defense, rows[1]);
 });
@@ -213,27 +210,6 @@ test("net success: margin sort orders by final margin with ties by game id; gap 
   assert.deepEqual(sortNetSuccessBars([...bars].reverse(), "margin").map((b) => b.gameId), [7, 2, 5, 4], "the margin-3 tie falls back to game id, whatever the input order");
   assert.deepEqual(sortNetSuccessBars([...bars].reverse(), "gap").map((b) => b.gameId), [2, 5, 7, 4]);
   assert.deepEqual(bars.map((b) => b.gameId), [2, 5, 7, 4], "sorting copies; the input order is untouched");
-});
-
-test("diagonal labels name each equal-net level with two signed decimals", () => {
-  assert.equal(netLabel(0.2), "+0.20 net");
-  assert.equal(netLabel(-0.1), "-0.10 net");
-  assert.equal(netLabel(0), "0.00 net");
-  assert.equal(netLabel(-0.001), "0.00 net", "a rounded zero carries no sign");
-  assert.equal(netLabel(0.1 + 0.2), "+0.30 net", "floating noise is rounded away");
-  const segments = isoNetSegments([-0.3, 0.3], [-0.3, 0.3], [-0.2, 0, 0.2]);
-  assert.deepEqual(segments.map((s) => netLabel(s.net)), ["-0.20 net", "0.00 net", "+0.20 net"]);
-});
-
-test("iso-net lines are clipped to the plot rectangle", () => {
-  const segments = isoNetSegments([-0.2, 0.2], [-0.2, 0.2], [0, 0.1, -0.1, 0.5]);
-  assert.deepEqual(segments.map((s) => s.net), [0, 0.1, -0.1]);
-  for (const s of segments) {
-    for (const [x, y] of [s.from, s.to]) {
-      assert.ok(x >= -0.2 - 1e-12 && x <= 0.2 + 1e-12 && y >= -0.2 - 1e-12 && y <= 0.2 + 1e-12);
-      assert.ok(Math.abs(x - y - s.net) < 1e-12);
-    }
-  }
 });
 
 test("conference filters come from the roster; Power Four adds Notre Dame", () => {

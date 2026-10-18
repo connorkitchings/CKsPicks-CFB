@@ -1,4 +1,4 @@
-import type { AdjustedRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "@/lib/charts";
+import type { AdjustedRow, PossessionRow, RatingSnapshotRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "@/lib/charts";
 import { LOGO_IDS } from "@/lib/team-logos.generated";
 
 /**
@@ -126,6 +126,76 @@ export function chartsAdjustedFixture(asOfWeek: number): AdjustedRow[] {
 }
 
 export const chartsAdjustedWeeksFixture = [3, 4];
+
+/**
+ * `current` V5 rating snapshots for weeks 0-3 of the 16 playing teams (Wyoming has none).
+ * Tulane has no week 2 snapshot (a gap), and Georgia and Texas tie on every metric in
+ * week 1. Ratings drift around 0.4, not zero, like the real scale.
+ */
+export function chartsRatingSnapshotsFixture(): RatingSnapshotRow[] {
+  const random = lcg(31);
+  const rows: RatingSnapshotRow[] = [];
+  for (let week = 0; week <= 3; week++) {
+    for (const team of PLAYING) {
+      const offense = Number((0.4 + (random() - 0.5) * 1.6).toFixed(3));
+      const defense = Number((0.4 + (random() - 0.5) * 1.6).toFixed(3));
+      const offenseVariance = Number((0.09 - week * 0.015).toFixed(4));
+      const defenseVariance = Number((0.08 - week * 0.012).toFixed(4));
+      if (team === "Tulane" && week === 2) continue;
+      rows.push({
+        week, team, offenseRating: offense, offenseVariance, defenseRating: defense, defenseVariance,
+        overallRating: (offense + defense) / 2, overallVariance: (offenseVariance + defenseVariance) / 4,
+      });
+    }
+  }
+  const georgia = rows.find((row) => row.week === 1 && row.team === "Georgia")!;
+  const texas = rows.find((row) => row.week === 1 && row.team === "Texas")!;
+  Object.assign(texas, { ...georgia, team: "Texas" });
+  return rows;
+}
+
+export const chartsPossessionWeeksFixture = [3, 4];
+
+/**
+ * Opponent-adjusted possession rows for as_of_week 3 and 4, both measurements, for the
+ * 16 playing teams. Missing roles: App State has no defense rows in window 3, and Boise
+ * State's window-4 defense `ppp` has a null adjusted value. Defense values are allowed.
+ */
+export function chartsPossessionFixture(asOfWeek: number): PossessionRow[] {
+  const random = lcg(40 + asOfWeek);
+  const rows: PossessionRow[] = [];
+  for (const team of PLAYING) {
+    for (const role of ["offense", "defense"] as const) {
+      if (asOfWeek === 3 && team === "App State" && role === "defense") continue;
+      const possessions = Math.round((asOfWeek - 1) * (11 + random() * 3));
+      for (const measurementId of ["ppp", "epa_per_possession"] as const) {
+        const raw = measurementId === "ppp" ? 1.4 + random() * 1.4 : (random() - 0.5) * 1.6;
+        const opponentAdjustment = Number(((random() - 0.5) * 0.2).toFixed(3));
+        const missing = asOfWeek === 4 && team === "Boise State" && role === "defense" && measurementId === "ppp";
+        rows.push({
+          asOfWeek, team, role, measurementId,
+          rawValue: Number(raw.toFixed(3)),
+          adjustedValue: missing ? null : Number((raw - opponentAdjustment).toFixed(3)),
+          opponentAdjustment: missing ? null : opponentAdjustment,
+          adjustedRank: null, cohortSize: null,
+          primaryExposure: possessions, games: asOfWeek - 1,
+        });
+      }
+    }
+  }
+  // Stored minimum ranks per role and measurement: offense descending, defense ascending.
+  for (const role of ["offense", "defense"] as const) {
+    for (const measurementId of ["ppp", "epa_per_possession"] as const) {
+      const cohort = rows.filter((row) => row.role === role && row.measurementId === measurementId && row.adjustedValue !== null);
+      const sign = role === "offense" ? -1 : 1;
+      for (const row of cohort) {
+        row.adjustedRank = 1 + cohort.filter((other) => sign * other.adjustedValue! < sign * row.adjustedValue!).length;
+        row.cohortSize = cohort.length;
+      }
+    }
+  }
+  return rows;
+}
 
 /**
  * A full Week 0 slate (69 games between every logo-bearing school) for export-width tests:

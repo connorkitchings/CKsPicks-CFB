@@ -9,12 +9,20 @@ import { useChartSelection } from "./useChartSelection";
 /** "context": faint gray; "group": in the conference filter (team color, end logo); "highlight": bold and labeled. */
 export type TrajectoryState = "context" | "group" | "highlight";
 
-export type TrajectoryChartProps = {
-  data: TrajectoryData;
+/** Any trajectory dataset; `S` lets a chart carry extra per-week fields (e.g. rating sd and ranks). */
+export type TrajectoryChartData<S extends TrajectorySeries = TrajectorySeries> = Omit<TrajectoryData, "series"> & { series: readonly S[] };
+
+export type TrajectoryChartProps<S extends TrajectorySeries = TrajectorySeries> = {
+  data: TrajectoryChartData<S>;
   yDomain: Domain;
-  stateOf: (series: TrajectorySeries) => TrajectoryState;
+  stateOf: (series: S) => TrajectoryState;
   onToggleHighlight: (team: string) => void;
-  describe: (series: TrajectorySeries) => string;
+  /** Accessible name of a team's line. */
+  describe: (series: S) => string;
+  /** Tooltip text at the line's last point; `describe` when omitted. */
+  tooltip?: (series: S) => string;
+  /** Label at the end of the dashed reference. */
+  averageLabel?: string;
   formatY: (value: number) => string;
   yLabel: string;
   /** ViewBox size; the SVG scales to its container. */
@@ -40,19 +48,21 @@ function lastPoint(series: TrajectorySeries): TrajectoryPoint {
   return segment[segment.length - 1];
 }
 
-export function TrajectoryChart({
+export function TrajectoryChart<S extends TrajectorySeries>({
   data,
   yDomain,
   stateOf,
   onToggleHighlight,
   describe,
+  tooltip = describe,
+  averageLabel = "FBS avg",
   formatY,
   yLabel,
   width,
   height,
   interactive = true,
   label,
-}: TrajectoryChartProps) {
+}: TrajectoryChartProps<S>) {
   const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom };
   const { weeks, series, average, invertY } = data;
   const first = weeks[0] ?? 0;
@@ -84,7 +94,8 @@ export function TrajectoryChart({
       averageRuns[averageRuns.length - 1].push({ week: weeks[index], value });
     }
   });
-  const averageEnd = [...averageRuns].reverse().find((run) => run.length)?.at(-1);
+  // Labeled at its start: the right edge belongs to the endpoint logos and the highlight label.
+  const averageStart = averageRuns.find((run) => run.length)?.[0];
 
   return (
     <div className="relative" data-testid="trajectory-chart" data-y-domain={yDomain.join(",")} data-invert-y={invertY}>
@@ -207,9 +218,9 @@ export function TrajectoryChart({
               <path key={run[0].week} d={path(run)} fill="none" stroke="var(--ink-muted)" strokeDasharray="6 5" strokeWidth={1.5} />
             ),
           )}
-          {averageEnd && (
-            <text x={sx(averageEnd.week) - 8} y={sy(averageEnd.value) + 14} textAnchor="end" fontSize={11} fill="var(--ink-muted)" stroke="var(--surface-card)" strokeWidth={3} paintOrder="stroke">
-              FBS avg
+          {averageStart && (
+            <text x={sx(averageStart.week) + 6} y={sy(averageStart.value) - 8} textAnchor="start" fontSize={11} fill="var(--ink-muted)" stroke="var(--surface-card)" strokeWidth={3} paintOrder="stroke">
+              {averageLabel}
             </text>
           )}
         </g>
@@ -225,7 +236,7 @@ export function TrajectoryChart({
             transform: `translate(${sx(tipEnd.week) > width * 0.6 ? "-105%" : "12px"}, ${sy(tipEnd.value) > height * 0.65 ? "-105%" : "8px"})`,
           }}
         >
-          {describe(tip)}
+          {tooltip(tip)}
         </div>
       )}
     </div>

@@ -12,11 +12,12 @@ function pngSize(path: string): { width: number; height: number } {
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
-test.describe("schedule adjustment chart", () => {
+// Skipped: `schedule` is hidden from /charts (`ready: false` in src/lib/chart-config.ts).
+test.describe.skip("schedule adjustment chart", () => {
   test("renders one dumbbell per team, Through Week N, with both readings explained", async ({ page }) => {
     await page.goto("/charts?chart=schedule&side=offense&week=3");
     await expect(page.getByRole("heading", { name: "Schedule adjustment" })).toBeVisible();
-    await expect(page.getByTestId("chart-subtitle")).toHaveText("Offense | 2026 | FBS vs FBS | Through Week 3");
+    await expect(page.getByTestId("chart-subtitle")).toHaveText("Offense · 2026 · FBS vs FBS · Through Week 3");
     const chart = page.getByTestId("schedule-chart");
     await expect(chart.locator("g[data-team]")).toHaveCount(PLOTTED);
     await expect(chart).toHaveAttribute("data-inverted", "false");
@@ -97,13 +98,14 @@ test.describe("schedule adjustment chart", () => {
     await page.getByRole("link", { name: "defense", exact: true }).click();
     await expect(page).toHaveURL(/chart=schedule.*side=defense.*team=michigan/);
     await expect(michigan).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("link", { name: "Efficiency", exact: true }).click();
+    await page.getByRole("link", { name: "Efficiency vs explosiveness", exact: true }).click();
     await expect(page).toHaveURL(/chart=efficiency.*team=michigan/);
     await expect(page.locator("g[data-team='Michigan']")).toHaveAttribute("aria-pressed", "true");
   });
 });
 
-test("schedule national subset cuts ties at 15 and retains an omitted highlighted team", async ({ page }) => {
+// Skipped: `schedule` is hidden from /charts (`ready: false` in src/lib/chart-config.ts).
+test.skip("schedule national subset cuts ties at 15 and retains an omitted highlighted team", async ({ page }) => {
   await page.goto("/charts?chart=schedule&fixture=schedule&week=3");
   const chart = page.getByTestId("schedule-chart");
   const rows = chart.locator("g[data-team]");

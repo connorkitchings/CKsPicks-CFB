@@ -1,7 +1,7 @@
 "use client";
 
 import type { CornerCaptions } from "@/lib/chart-config";
-import { isoNetSegments, netLabel, niceTicks, type Domain, type ScatterPoint } from "@/lib/charts";
+import { niceTicks, type Domain, type ScatterPoint } from "@/lib/charts";
 import { TeamMark } from "./TeamMark";
 import { useChartSelection } from "./useChartSelection";
 
@@ -20,8 +20,6 @@ export type ScatterChartProps = {
   /** ViewBox size; the SVG scales to its container. */
   width: number;
   height: number;
-  /** Equal-net levels (x - y) for labeled diagonal lines, adjusted chart only. */
-  netLevels?: readonly number[];
   /** Quadrant captions, drawn with the average lines; none when omitted. */
   cornerCaptions?: CornerCaptions;
   stateOf: (point: ScatterPoint) => MarkerState;
@@ -54,7 +52,6 @@ export function ScatterChart({
   yLabel,
   width,
   height,
-  netLevels = [],
   cornerCaptions,
   stateOf,
   describe,
@@ -72,7 +69,6 @@ export function ScatterChart({
 
   const ordered = points.filter((p) => stateOf(p) !== "dim").map((p) => p.team);
   const { selected, register, handlers } = useChartSelection(ordered);
-  const segments = isoNetSegments(xd, yd, netLevels);
   // Dimmed first, then active, then the searched team on top.
   const drawOrder = [...points].sort((a, b) => rank(stateOf(a)) - rank(stateOf(b)));
   const tip = interactive && selected ? points.find((p) => p.team === selected) : undefined;
@@ -97,42 +93,6 @@ export function ScatterChart({
             </text>
           </g>
         ))}
-        {segments.map((segment) => {
-          const ends = [segment.from, segment.to].map(([x, y]) => ({ x: sx(x), y: sy(y) }));
-          // Label at a side edge, where parallel diagonals stack without colliding: the right
-          // edge when the line reaches it, else the left. Rows clear the corner captions.
-          const right = ends.find((end) => Math.abs(end.x - plot.right) < 1);
-          const left = ends.find((end) => Math.abs(end.x - plot.left) < 1);
-          const anchor = right ?? left ?? ends[1];
-          const labelY = Math.max(plot.top + 50, Math.min(anchor.y - 4, plot.bottom - 24));
-          return (
-            <g key={`net${segment.net}`}>
-              <line
-                x1={ends[0].x}
-                y1={ends[0].y}
-                x2={ends[1].x}
-                y2={ends[1].y}
-                stroke="var(--line-strong)"
-                strokeWidth={0.8}
-                data-iso-net={segment.net}
-              />
-              <text
-                x={right || !left ? anchor.x - 4 : anchor.x + 4}
-                y={labelY}
-                textAnchor={right || !left ? "end" : "start"}
-                fontSize={10}
-                fill="var(--ink-faint)"
-                stroke="var(--surface-card)"
-                strokeWidth={3}
-                paintOrder="stroke"
-                pointerEvents="none"
-                data-testid="iso-net-label"
-              >
-                {netLabel(segment.net)}
-              </text>
-            </g>
-          );
-        })}
         {average && (
           <g stroke="var(--ink-faint)" strokeDasharray="6 5" strokeWidth={1.1} data-testid="average-lines" data-average-x={average.x} data-average-y={average.y}>
             <line x1={sx(average.x)} x2={sx(average.x)} y1={plot.top} y2={plot.bottom} />
@@ -145,7 +105,6 @@ export function ScatterChart({
             <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">{cornerCaptions.topRight}</text>
             <text x={plot.left + 10} y={plot.bottom - 10}>{cornerCaptions.bottomLeft}</text>
             <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">{cornerCaptions.bottomRight}</text>
-            <text x={plot.left + 10} y={plot.top + 37} fontSize={10}>{cornerCaptions.note}</text>
           </g>
         )}
         <text x={(plot.left + plot.right) / 2} y={height - 10} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--ink)">

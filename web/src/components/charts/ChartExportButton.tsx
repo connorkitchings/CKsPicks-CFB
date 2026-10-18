@@ -81,7 +81,44 @@ const serverFalse = () => false;
 const canCopyImages = () => typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write);
 
 const buttonClass =
-  "inline-flex min-h-10 items-center rounded-lg border border-line bg-surface-card px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60";
+  "inline-flex size-9 items-center justify-center rounded-lg border border-line bg-surface-card text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60";
+
+type Outcome = "done" | "failed";
+
+const ICON_PATHS: Record<Action | Outcome, string> = {
+  download: "M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14",
+  copy: "M9 9h10v10H9zM5 15V5h10",
+  done: "M5 12.5l4.5 4.5L19 7",
+  failed: "M12 7v6m0 4h.01M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z",
+};
+
+const LABELS: Record<Action, string> = { download: "Download PNG", copy: "Copy image" };
+/** How long a finished export keeps its outcome icon and tooltip text. */
+const FEEDBACK_MS = 2500;
+
+/**
+ * Icon-only export button named by `aria-label`, with a visible tooltip on hover and keyboard
+ * focus. Right after its export finishes, the icon shows the outcome and the tooltip the status
+ * text, which the parent's live region also announces.
+ */
+function ExportIconButton({ action, outcome, tip, disabled, onClick }: { action: Action; outcome: Outcome | null; tip: string; disabled: boolean; onClick: () => void }) {
+  return (
+    <span className="group relative inline-flex">
+      <button type="button" aria-label={LABELS[action]} className={buttonClass} data-testid={`chart-${action}`} disabled={disabled} onClick={onClick}>
+        <svg aria-hidden viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <path d={ICON_PATHS[outcome ?? action]} />
+        </svg>
+      </button>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute top-full right-0 z-20 mt-1.5 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-surface-card opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100"
+        data-testid={`chart-${action}-tooltip`}
+      >
+        {tip}
+      </span>
+    </span>
+  );
+}
 
 /**
  * Exports the chart as one fixed-size image. The export card (`children`, laid out at
@@ -102,6 +139,8 @@ export function ChartExportButton({
   const [job, setJob] = useState<Action | null>(null);
   const [status, setStatus] = useState("");
   const [report, setReport] = useState<ExportReport | null>(null);
+  /** The finished export whose outcome its button shows for `FEEDBACK_MS`. */
+  const [feedback, setFeedback] = useState<{ action: Action; outcome: Outcome } | null>(null);
   const canCopy = useSyncExternalStore(subscribeNever, canCopyImages, serverFalse);
   const cardRef = useRef<HTMLDivElement>(null);
   const pending = useRef<Deferred<Blob> | null>(null);
@@ -119,23 +158,33 @@ export function ChartExportButton({
       .catch((error) => done.reject(error));
   }, [job, width, height]);
 
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), FEEDBACK_MS);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
   async function run(action: Action) {
     if (job) return;
     const render = deferred<Blob>();
     pending.current = render;
     setStatus("Creating image…");
+    setFeedback(null);
     setJob(action);
     try {
       if (action === "copy") {
         // Created inside the click so Safari keeps the user gesture; the image resolves later.
         await navigator.clipboard.write([new ClipboardItem({ "image/png": render.promise })]);
         setStatus("Image copied");
+        setFeedback({ action, outcome: "done" });
       } else {
         saveBlob(await render.promise, filename);
         setStatus("Image saved");
+        setFeedback({ action, outcome: "done" });
       }
     } catch {
       setStatus("Could not create the image");
+      setFeedback({ action, outcome: "failed" });
     } finally {
       setJob(null);
       pending.current = null;
@@ -144,15 +193,13 @@ export function ChartExportButton({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5" data-testid="chart-export" data-last-export={report ? JSON.stringify(report) : undefined}>
-      <button type="button" className={buttonClass} data-testid="chart-download" disabled={job !== null} onClick={() => void run("download")}>
-        Download PNG
-      </button>
-      {canCopy && (
-        <button type="button" className={buttonClass} data-testid="chart-copy" disabled={job !== null} onClick={() => void run("copy")}>
-          Copy image
-        </button>
-      )}
-      <span role="status" aria-live="polite" className="text-[11px] text-ink-faint">
+      {(["download", "copy"] as const).map((action) => {
+        if (action === "copy" && !canCopy) return null;
+        const outcome = feedback?.action === action ? feedback.outcome : null;
+        return <ExportIconButton key={action} action={action} outcome={outcome} tip={outcome ? status : LABELS[action]} disabled={job !== null} onClick={() => void run(action)} />;
+      })}
+      {/* Announced only: the buttons show the outcome, and visible text here would reflow the controls row. */}
+      <span role="status" aria-live="polite" className="sr-only">
         {status}
       </span>
       {job && (

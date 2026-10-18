@@ -12,6 +12,8 @@ import {
   withYardage,
   type AdjustedRow,
   type ChartKind,
+  type PossessionRow,
+  type RatingSnapshotRow,
   type RosterRow,
   type Side,
   type TeamGameRow,
@@ -22,6 +24,8 @@ import {
   parseChartKind,
   parseEfficiencyMetric,
   parseGameLogMetric,
+  parsePossessionMetric,
+  parseRatingMetric,
   parseSide,
   parseTrajectoryMetric,
   pickerGroups,
@@ -33,19 +37,26 @@ import {
   getTeamAdjustedWeeks,
   getTeamGameStats,
   getTeamGameYardage,
+  getTeamPossessionAdjusted,
+  getTeamPossessionWeeks,
   getTeamSeasonRoster,
+  getV5RatingSnapshots,
 } from "@/lib/chart-queries";
 import {
   chartsAdjustedFixture,
   chartsAdjustedWeeksFixture,
   chartsGameRowsFixture,
+  chartsPossessionFixture,
+  chartsPossessionWeeksFixture,
+  chartsRatingSnapshotsFixture,
   chartsRosterFixture,
   chartsScheduleFixture,
   chartsSlateFixture,
   chartsYardageFixture,
 } from "@/test/fixtures/charts";
 import { ChartLink } from "@/components/charts/ChartLink";
-import { ChartsView } from "@/components/charts/ChartsView";
+import { ChartsView, type ChartPayload } from "@/components/charts/ChartsView";
+import { SEGMENTED_GROUP, segmentedItem } from "@/components/charts/segmented-styles";
 import { WeekNav } from "@/components/WeekNav";
 
 export const revalidate = 300;
@@ -65,7 +76,15 @@ type Loaded =
       adjustedFor: (asOfWeek: number) => Promise<AdjustedRow[]>;
       /** Every stored window (the trajectory chart). */
       adjustedAll: () => Promise<AdjustedRow[]>;
+      /** Stored `team_possession_adjusted` windows (`as_of_week`). */
+      possessionWeeks: number[];
+      possessionFor: (asOfWeek: number) => Promise<PossessionRow[]>;
+      /** `current` V5 rating snapshots of every stored week. */
+      ratingSnapshots: () => Promise<RatingSnapshotRow[]>;
     };
+
+/** Fixture releases without possession windows or rating snapshots. */
+const NO_V5_ROWS = { possessionWeeks: [], possessionFor: async () => [], ratingSnapshots: async () => [] };
 
 async function load(season: number, fixture: string | undefined): Promise<Loaded> {
   if (process.env.CFB_UI_TEST_MODE === "1") {
@@ -77,11 +96,12 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
         state: "ready", roster, rows: withYardage(rows, yardage), explosiveness: true,
         adjustedWeeks, adjustedFor: async (asOfWeek) => adjustedFor(asOfWeek),
         adjustedAll: async () => adjustedWeeks.flatMap(adjustedFor),
+        ...NO_V5_ROWS,
       };
     }
     if (fixture === "slate") {
       const { roster, rows, yardage } = chartsSlateFixture();
-      return { state: "ready", roster, rows: withYardage(rows, yardage), explosiveness: true, adjustedWeeks: [], adjustedFor: async () => [], adjustedAll: async () => [] };
+      return { state: "ready", roster, rows: withYardage(rows, yardage), explosiveness: true, adjustedWeeks: [], adjustedFor: async () => [], adjustedAll: async () => [], ...NO_V5_ROWS };
     }
     // `v1`: a retained `charts_v1` release (no yardage); otherwise `charts_v2`.
     const explosiveness = fixture !== "v1";
@@ -99,17 +119,27 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
         if (fixture === "adjusted-error") throw new Error("adjusted windows failed");
         return chartsAdjustedWeeksFixture.flatMap((asOfWeek) => chartsAdjustedFixture(asOfWeek));
       },
+      possessionWeeks: chartsPossessionWeeksFixture,
+      possessionFor: async (asOfWeek) => {
+        if (fixture === "adjusted-error") throw new Error("possession window failed");
+        return chartsPossessionFixture(asOfWeek);
+      },
+      ratingSnapshots: async () => {
+        if (fixture === "adjusted-error") throw new Error("rating snapshots failed");
+        return chartsRatingSnapshotsFixture();
+      },
     };
   }
   try {
-    const [roster, rows, yardage, adjustedWeeks] = await Promise.all([
+    const [roster, rows, yardage, adjustedWeeks, possessionWeeks] = await Promise.all([
       getTeamSeasonRoster(season),
       getTeamGameStats(season),
       getTeamGameYardage(season),
       getTeamAdjustedWeeks(season),
+      getTeamPossessionWeeks(season),
     ]);
     // Null: no active release, or one staged before the chart projections existed.
-    if (!roster || !rows || !adjustedWeeks) return { state: "unsupported" };
+    if (!roster || !rows || !adjustedWeeks || !possessionWeeks) return { state: "unsupported" };
     // Yardage is null unless the release's chart set is `charts_v2`.
     return {
       state: "ready",
@@ -119,6 +149,9 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
       adjustedWeeks,
       adjustedFor: async (asOfWeek) => (await getTeamAdjustedEpa(season, asOfWeek)) ?? [],
       adjustedAll: async () => (await getTeamAdjustedEpaAll(season)) ?? [],
+      possessionWeeks,
+      possessionFor: async (asOfWeek) => (await getTeamPossessionAdjusted(season, asOfWeek)) ?? [],
+      ratingSnapshots: async () => (await getV5RatingSnapshots(season)) ?? [],
     };
   } catch (error) {
     console.error("Team charts query failed", error);
@@ -143,6 +176,7 @@ export default function ChartsPage(props: { searchParams: SearchParams }) {
 async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const season = publicationScope.season;
+  // Only `ready` kinds parse, so a hidden chart's branch below (and its lazy query) never runs.
   const kind = parseChartKind(params.chart);
   const side: Side = parseSide(params.side);
   const requested = params.week !== undefined && /^\d{1,2}$/.test(params.week) ? Number(params.week) : null;
@@ -151,14 +185,12 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
 
   let body: React.ReactNode;
   let tabs: React.ReactNode = null;
-  let weekNav: React.ReactNode = null;
-  let sideNav: React.ReactNode = null;
   if (loaded.state === "unsupported") {
     body = notice("Charts arrive with the next weekly release.");
   } else if (loaded.state === "unavailable") {
     body = notice("Charts are temporarily unavailable.");
   } else {
-    const { roster, rows, explosiveness, adjustedWeeks } = loaded;
+    const { roster, rows, explosiveness, adjustedWeeks, possessionWeeks } = loaded;
     const weeksFor = (target: ChartKind): number[] => {
       switch (target) {
         case "net-success":
@@ -168,6 +200,8 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
         case "adjusted":
         case "schedule":
           return adjustedThroughWeeks(adjustedWeeks);
+        case "possession":
+          return adjustedThroughWeeks(possessionWeeks);
         default:
           return [];
       }
@@ -176,7 +210,8 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
     const week = coerceWeek(requested, available);
 
     tabs = (
-      <nav className="-mx-1 flex w-full min-w-0 max-w-full sm:w-auto items-end gap-3 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0" aria-label="Chart type" data-testid="chart-picker">
+      // Phones scroll the tab row edge to edge; wider screens wrap whole groups.
+      <nav className="-mx-4 flex items-end gap-x-5 gap-y-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0" aria-label="Chart type" data-testid="chart-picker">
         {pickerGroups().map((group) => (
           <div key={group.id} className="flex shrink-0 flex-col gap-1" role="group" aria-label={group.label}>
             <span className="px-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>
@@ -207,28 +242,24 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
       </nav>
     );
 
-    if (CHART_REGISTRY[kind].controls.side) {
-      sideNav = (
-        <div className="flex items-center gap-2" role="group" aria-label="Side of the ball">
-          <span className="text-xs font-semibold text-ink-muted">Side</span>
-          <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-card p-1">
-            {(["offense", "defense"] as const).map((target) => (
-              <ChartLink
-                key={target}
-                href={chartHref(kind, { side: target, week })}
-                aria-current={side === target ? "true" : undefined}
-                className={clsx(
-                  "inline-flex min-h-8 items-center rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                  side === target ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:bg-surface-inset hover:text-ink",
-                )}
-              >
-                {target}
-              </ChartLink>
-            ))}
-          </div>
-        </div>
-      );
-    }
+    // Side links and the week stepper join the chart's controls row through `settings`.
+    const sideNav = CHART_REGISTRY[kind].controls.side && (
+      <div className={SEGMENTED_GROUP} role="group" aria-label="Side of the ball">
+        {(["offense", "defense"] as const).map((target) => (
+          <ChartLink
+            key={target}
+            href={chartHref(kind, { side: target, week })}
+            aria-current={side === target ? "true" : undefined}
+            className={clsx(segmentedItem(side === target), "capitalize")}
+          >
+            {target}
+          </ChartLink>
+        ))}
+      </div>
+    );
+    const view = (viewWeek: number, chart: ChartPayload, weekNav: React.ReactNode = null) => (
+      <ChartsView season={season} week={viewWeek} roster={roster} chart={chart} settings={<>{sideNav}{weekNav}</>} />
+    );
 
     if (kind === "trajectory") {
       // Every stored window at once, so there is no week selector.
@@ -244,8 +275,21 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
       body = !throughWeeks.length
         ? notice("This chart starts after Week 2 is complete.")
         : trajectoryRows
-          ? <ChartsView season={season} week={throughWeeks[throughWeeks.length - 1]} roster={roster} chart={{ kind, rows: trajectoryRows, initialMetric: parseTrajectoryMetric(params.metric) }} />
+          ? view(throughWeeks[throughWeeks.length - 1], { kind, rows: trajectoryRows, initialMetric: parseTrajectoryMetric(params.metric) })
           : notice("Charts are temporarily unavailable.");
+    } else if (kind === "rating-trajectory") {
+      // Every stored snapshot week (Through Week 0 on) at once, so there is no week selector.
+      let snapshots: RatingSnapshotRow[] | null = null;
+      try {
+        snapshots = await loaded.ratingSnapshots();
+      } catch (error) {
+        console.error("Team charts rating snapshot query failed", error);
+      }
+      body = !snapshots
+        ? notice("Charts are temporarily unavailable.")
+        : !snapshots.length
+          ? notice("No V5 rating snapshots are published yet.")
+          : view(Math.max(...snapshots.map((row) => row.week)), { kind, rows: snapshots, initialMetric: parseRatingMetric(params.metric) });
     } else if (kind === "game-log") {
       // The whole release with no week selector; the latest adjusted window picks the default team.
       const charted = netSuccessWeeks(rows);
@@ -260,7 +304,7 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
       }
       body = !charted.length
         ? notice("No completed games are published yet.")
-        : <ChartsView season={season} week={charted[charted.length - 1]} roster={roster} chart={{ kind, rows, adjusted, initialMetric: parseGameLogMetric(params.metric, explosiveness), explosiveness }} />;
+        : view(charted[charted.length - 1], { kind, rows, adjusted, initialMetric: parseGameLogMetric(params.metric, explosiveness), explosiveness });
     } else if (week === null) {
       body = notice(
         kind === "net-success"
@@ -268,7 +312,7 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
           : "This chart starts after Week 2 is complete.",
       );
     } else {
-      weekNav = (
+      const weekNav = (
         <WeekNav
           season={season}
           week={week}
@@ -280,11 +324,22 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
       );
       if (kind === "net-success") {
         const { bars, notCharted } = netSuccessBars(rows, week);
-        body = <ChartsView season={season} week={week} roster={roster} chart={{ kind, bars, notCharted }} />;
+        body = view(week, { kind, bars, notCharted }, weekNav);
       } else if (kind === "efficiency") {
         // Without yardage the chart is success rate vs PPA/play, with no metric toggle.
         const initialMetric = parseEfficiencyMetric(params.metric, explosiveness);
-        body = <ChartsView season={season} week={week} roster={roster} chart={{ kind, side, rows, initialMetric, explosiveness }} />;
+        body = view(week, { kind, side, rows, initialMetric, explosiveness }, weekNav);
+      } else if (kind === "possession") {
+        // "Through Week N" is the window with as_of_week N + 1.
+        let possessionRows: PossessionRow[] | null = null;
+        try {
+          possessionRows = await loaded.possessionFor(week + 1);
+        } catch (error) {
+          console.error("Team charts possession query failed", error);
+        }
+        body = possessionRows
+          ? view(week, { kind, rows: possessionRows, initialMetric: parsePossessionMetric(params.metric) }, weekNav)
+          : notice("Charts are temporarily unavailable.");
       } else if (kind === "adjusted" || kind === "schedule") {
         // "Through Week N" is the window with as_of_week N + 1.
         let adjustedRows: AdjustedRow[] | null = null;
@@ -294,12 +349,11 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
           console.error("Team charts adjusted query failed", error);
         }
         if (adjustedRows) {
-          const chart = kind === "adjusted"
+          const chart: ChartPayload = kind === "adjusted"
             ? { kind, scatter: adjustedPoints(roster, adjustedRows) }
             : { kind, schedule: scheduleRows(roster, adjustedRows, side) };
-          body = <ChartsView season={season} week={week} roster={roster} chart={chart} />;
+          body = view(week, chart, weekNav);
         } else {
-          weekNav = null;
           body = notice("Charts are temporarily unavailable.");
         }
       } else {
@@ -310,27 +364,16 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-3 sm:py-6">
-      <div>
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent-ink">
-          <span>{season}</span>
-          <span className="text-ink-faint">·</span>
-          <span>FBS vs FBS</span>
-        </div>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">Team charts</h1>
-        <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-          Compare weekly game performance and season-long team efficiency.
+    <main className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:py-4">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">Team charts</h1>
+        <p className="text-xs font-medium text-ink-muted sm:text-sm">
+          {season}
+          <span className="text-ink-faint"> · </span>
+          {CHART_REGISTRY[kind].population}
         </p>
       </div>
-      {tabs && (
-        <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-inset p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-            {tabs}
-            {sideNav}
-          </div>
-          {weekNav && <div className="flex items-center">{weekNav}</div>}
-        </div>
-      )}
+      {tabs}
       {body}
     </main>
   );
