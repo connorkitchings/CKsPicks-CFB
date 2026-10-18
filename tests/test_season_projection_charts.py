@@ -28,6 +28,11 @@ MIGRATION = {
     "team_game_yardage": MIGRATIONS / "0027_team_game_yardage.sql",
 }
 GOLDEN = Path(__file__).with_name("isolation_golden.json")
+# matchup_data_publications embeds np.polyfit floating-point residual which has a 1-bit
+# platform difference between macOS ARM64 and Linux x86_64.
+MACOS_ARM64_MATCHUP_DIGEST = (
+    "db328e2241e270b7558aea808fb41d82efc3ff5c746ef9d7f02e40de3fda4638"
+)
 
 
 def migration_columns(table: str) -> set[str]:
@@ -172,12 +177,12 @@ def test_models_and_core_projections_are_unchanged_by_the_chart_module(
     season = build_season(tmp_path, edit=without_conference)
     computed = digests(season)
     golden = json.loads(GOLDEN.read_text())
-    # matchup_data_publications embeds np.polyfit floating-point residual which has a 1-bit
-    # platform difference between macOS ARM64 and Linux x86_64.
     if computed.get("core_v1:matchup_data_publications") in (
-        "db328e2241e270b7558aea808fb41d82efc3ff5c746ef9d7f02e40de3fda4638",
+        MACOS_ARM64_MATCHUP_DIGEST,
         golden.get("core_v1:matchup_data_publications"),
     ):
-        computed["core_v1:matchup_data_publications"] = golden["core_v1:matchup_data_publications"]
+        computed["core_v1:matchup_data_publications"] = golden[
+            "core_v1:matchup_data_publications"
+        ]
     assert computed == golden
     assert {"run_id", "candidate_id"} <= EXCLUDED_PROVENANCE

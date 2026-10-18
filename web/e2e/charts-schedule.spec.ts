@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
+import { openTable } from "./helpers";
 
 // Fixture: adjusted windows Through Week 2-3 for 16 of 17 roster teams (Wyoming has no
 // games; Notre Dame has no defense row Through Week 3). See src/test/fixtures/charts.ts.
@@ -36,7 +37,7 @@ test.describe("schedule adjustment chart", () => {
 
   test("the table toggle lists the drawn rows with the decomposition", async ({ page }) => {
     await page.goto("/charts?chart=schedule&week=3");
-    await page.getByTestId("table-toggle").click();
+    await openTable(page);
     const table = page.getByTestId("chart-table");
     await expect(table.locator("tbody tr")).toHaveCount(PLOTTED);
     for (const header of ["Position", "Raw PPA/play", "Venue correction", "Venue-neutral", "Adjusted", "Schedule effect", "Reading"]) {
@@ -121,7 +122,7 @@ test("schedule national subset cuts ties at 15 and retains an omitted highlighte
   expect(await rows.last().getAttribute("data-team")).toBe(teams[19]);
   await expect(chart).toContainText("20 of 40");
   await expect(rows.last()).toHaveAttribute("aria-pressed", "true");
-  await page.getByTestId("table-toggle").click();
+  await openTable(page);
   const table = page.getByTestId("chart-table");
   await expect(table.locator("tbody tr")).toHaveCount(31);
   await expect(table.getByRole("cell", { name: teams[19], exact: true })).toBeVisible();

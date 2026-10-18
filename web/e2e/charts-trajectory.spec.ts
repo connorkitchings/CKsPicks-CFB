@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
+import { openTable } from "./helpers";
 
 // Fixture: 17-team roster (Wyoming has no games), adjusted windows as_of_week 3 and 4
 // (Through Weeks 2-3); Notre Dame has no defense row in the second window, so its net
@@ -62,7 +63,7 @@ test.describe("team trajectory chart", () => {
       expect(endpoints[i].y - endpoints[i].size / 2).toBeGreaterThanOrEqual(endpoints[i - 1].y + endpoints[i - 1].size / 2 + 3.99);
     }
 
-    await page.getByTestId("table-toggle").click();
+    await openTable(page);
     const table = page.getByTestId("chart-table");
     await expect(table.locator("tbody tr")).toHaveCount(SEC_TEAMS);
     await expect(table.getByRole("columnheader", { name: "Through Week 3" })).toBeVisible();
@@ -141,7 +142,7 @@ test("trajectory remains horizontally scrollable with a readable table at 390px"
   await scroll.focus();
   await page.keyboard.press("ArrowRight");
   await expect.poll(() => scroll.evaluate((node) => node.scrollLeft)).toBeGreaterThan(0);
-  await page.getByTestId("table-toggle").click();
+  await openTable(page);
   await expect(page.getByTestId("chart-table")).toBeVisible();
   await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(PLOTTED);
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

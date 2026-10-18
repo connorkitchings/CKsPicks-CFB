@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
+import { openTable } from "./helpers";
 
 test.describe("team game log", () => {
   test("shows the whole release, weekly references, national ranks and ordered table", async ({ page }) => {
@@ -13,7 +14,7 @@ test.describe("team game log", () => {
     await expect(page.getByTestId("game-log-panel-defense")).toContainText("axis inverted: up is better");
     await expect(page.getByTestId("game-log-chart").locator("[data-average]")).toHaveCount(8);
     await expect(page.getByTestId("game-log-chart").getByText(/^[WLT] \d+-\d+$/)).toHaveCount(4);
-    await page.getByTestId("table-toggle").click();
+    await openTable(page);
     const table = page.getByTestId("chart-table");
     await expect(table.locator("tbody tr")).toHaveCount(4);
     expect(await table.locator("tbody tr td:first-child").allTextContents()).toEqual(["0", "1", "2", "3"]);

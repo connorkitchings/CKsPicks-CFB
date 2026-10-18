@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { openTable } from "./helpers";
 
 // Fixture: 17-team roster (Wyoming has no games), net-success weeks 0-3, efficiency and
 // adjusted "Through Week" 2-3. See src/test/fixtures/charts.ts.
@@ -112,7 +113,7 @@ test.describe("team charts", () => {
     expect(await alabama.evaluate((node) => [node.getAttribute("x"), node.getAttribute("y")])).toEqual(position);
     expect(await page.getByTestId("average-lines").innerHTML()).toEqual(averages);
     expect(await page.getByTestId("scatter-chart").evaluate((node) => [node.getAttribute("data-x-domain"), node.getAttribute("data-y-domain")])).toEqual(domains);
-    await page.getByTestId("table-toggle").click();
+    await openTable(page);
     await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(SEC_TEAMS);
     await page.getByTestId("conference-filter").selectOption("p4");
     await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(13);
@@ -126,7 +127,7 @@ test.describe("team charts", () => {
     await page.getByTestId("conference-filter").selectOption("SEC");
     // Week 3 has one SEC matchup and two cross-conference games.
     await expect(page.locator("g[data-game]")).toHaveCount(3);
-    await page.getByTestId("table-toggle").click();
+    await openTable(page);
     const rows = page.getByTestId("chart-table").locator("tbody tr");
     await expect(rows).toHaveCount(3);
     for (const row of await rows.all()) {
@@ -188,7 +189,7 @@ test.describe("team charts", () => {
   test("per-axis national ranks remain unchanged when a conference is selected", async ({ page }) => {
     for (const chart of ["efficiency&side=offense", "efficiency&side=defense", "adjusted"]) {
       await page.goto(`/charts?chart=${chart}&week=3`);
-      await page.getByTestId("table-toggle").click();
+      await openTable(page);
       const table = page.getByTestId("chart-table");
       await expect(table.getByRole("button", { name: /national rank/ })).toHaveCount(2);
       const national = await table.locator("tbody tr").filter({ has: page.getByRole("cell", { name: "Alabama", exact: true }) }).innerText();
@@ -239,7 +240,7 @@ test.describe("team charts", () => {
 
   test("the table view lists the same rows and sorts", async ({ page }) => {
     await page.goto("/charts?chart=efficiency&week=3");
-    await page.getByTestId("table-toggle").click();
+    await openTable(page);
     const table = page.getByTestId("chart-table");
     await expect(table.locator("tbody tr")).toHaveCount(PLOTTED);
     await table.getByRole("button", { name: /^20\+ Yard Play Rate(?:\s*[↑↓])?$/ }).click();
@@ -350,7 +351,7 @@ test.describe("team charts", () => {
     await page.goto("/charts?chart=net-success&week=3");
     await page.getByTestId("conference-filter").selectOption("SEC");
     const games = await page.locator("g[data-game]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-game")!).sort());
-    await page.getByTestId("table-toggle").click();
+    await openTable(page);
     await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(games.length);
     const { capture } = await exportPng(page);
     expect(capture.games.sort()).toEqual(games);
@@ -514,7 +515,7 @@ test.describe("team charts", () => {
 
 test("net success table follows the selected sort while the table remains open", async ({ page }) => {
   await page.goto("/charts?chart=net-success&week=3");
-  await page.getByTestId("table-toggle").click();
+  await openTable(page);
   const table = page.getByTestId("chart-table");
   await expect(table.getByRole("columnheader", { name: /Difference \(percentage points\)/ })).toHaveAttribute("aria-sort", "ascending");
   await page.getByTestId("sort-final-margin").click();
