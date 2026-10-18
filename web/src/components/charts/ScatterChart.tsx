@@ -6,6 +6,14 @@ import { useChartSelection } from "./useChartSelection";
 
 export type MarkerState = "active" | "dim" | "searched";
 
+export type CornerCaptions = {
+  topLeft: string;
+  topRight: string;
+  bottomLeft: string;
+  bottomRight: string;
+  note?: string;
+};
+
 export type ScatterChartProps = {
   points: readonly ScatterPoint[];
   xDomain: Domain;
@@ -23,6 +31,8 @@ export type ScatterChartProps = {
   netLevels?: readonly number[];
   /** "Good/Bad Offense/Defense" corner labels, adjusted chart only. */
   cornerLabels?: boolean;
+  /** Custom quadrant captions tailored to metric and side. */
+  cornerCaptions?: CornerCaptions;
   stateOf: (point: ScatterPoint) => MarkerState;
   /** Accessible and tooltip text of one point. */
   describe: (point: ScatterPoint) => string;
@@ -55,6 +65,7 @@ export function ScatterChart({
   height,
   netLevels = [],
   cornerLabels = false,
+  cornerCaptions,
   stateOf,
   describe,
   formatX,
@@ -62,6 +73,31 @@ export function ScatterChart({
   interactive = true,
   label,
 }: ScatterChartProps) {
+  const captions: CornerCaptions = cornerCaptions ?? (
+    cornerLabels
+      ? {
+          topLeft: "Lower offense / Better defense",
+          topRight: "Better offense / Better defense",
+          bottomLeft: "Lower offense / Higher defense allowed",
+          bottomRight: "Better offense / Higher defense allowed",
+          note: "Relative to play-weighted FBS averages; diagonals: equal net PPA (offense − defense allowed)",
+        }
+      : invertX
+      ? {
+          topLeft: "Higher allowed success / Lower allowed PPA",
+          topRight: "Lower allowed success / Lower allowed PPA",
+          bottomLeft: "Higher allowed success / Higher allowed PPA",
+          bottomRight: "Lower allowed success / Higher allowed PPA",
+          note: "Relative to play-weighted FBS averages",
+        }
+      : {
+          topLeft: "Lower success / Higher PPA",
+          topRight: "Higher success / Higher PPA",
+          bottomLeft: "Lower success / Lower PPA",
+          bottomRight: "Higher success / Lower PPA",
+          note: "Relative to play-weighted FBS averages",
+        }
+  );
   const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom };
   const xd = xDomain;
   const yd = yDomain;
@@ -116,11 +152,11 @@ export function ScatterChart({
         )}
         {average && (
           <g fontSize={12} fontWeight={500} fill="var(--ink-faint)" data-testid="corner-labels" pointerEvents="none">
-            <text x={plot.left + 10} y={plot.top + 20}>{cornerLabels ? "Lower offense / Better defense" : invertX ? "Higher allowed success / Lower allowed PPA" : "Lower success / Higher PPA"}</text>
-            <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">{cornerLabels ? "Better offense / Better defense" : invertX ? "Lower allowed success / Lower allowed PPA" : "Higher success / Higher PPA"}</text>
-            <text x={plot.left + 10} y={plot.bottom - 10}>{cornerLabels ? "Lower offense / Higher defense allowed" : invertX ? "Higher allowed success / Higher allowed PPA" : "Lower success / Lower PPA"}</text>
-            <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">{cornerLabels ? "Better offense / Higher defense allowed" : invertX ? "Lower allowed success / Higher allowed PPA" : "Higher success / Lower PPA"}</text>
-            <text x={plot.left + 10} y={plot.top + 37} fontSize={10}>Relative to play-weighted FBS averages{cornerLabels ? "; diagonals: equal net PPA (offense − defense allowed)" : ""}</text>
+            <text x={plot.left + 10} y={plot.top + 20}>{captions.topLeft}</text>
+            <text x={plot.right - 10} y={plot.top + 20} textAnchor="end">{captions.topRight}</text>
+            <text x={plot.left + 10} y={plot.bottom - 10}>{captions.bottomLeft}</text>
+            <text x={plot.right - 10} y={plot.bottom - 10} textAnchor="end">{captions.bottomRight}</text>
+            <text x={plot.left + 10} y={plot.top + 37} fontSize={10}>{captions.note ?? "Relative to play-weighted FBS averages"}</text>
           </g>
         )}
         <text x={(plot.left + plot.right) / 2} y={height - 10} textAnchor="middle" fontSize={14} fontWeight={600} fill="var(--ink)">

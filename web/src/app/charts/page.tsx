@@ -156,17 +156,17 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
 
     if (kind === "efficiency") {
       sideNav = (
-        <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Side of the ball">
-          <span className="text-xs font-semibold text-ink-muted">Side of the ball</span>
-          <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-inset p-1">
+        <div className="flex items-center gap-2" role="group" aria-label="Side of the ball">
+          <span className="text-xs font-semibold text-ink-muted">Side</span>
+          <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-card p-1">
             {(["offense", "defense"] as const).map((target) => (
               <Link
                 key={target}
                 href={query("efficiency", target, week)}
                 aria-current={side === target ? "true" : undefined}
                 className={clsx(
-                  "inline-flex min-h-10 items-center rounded-md px-3 py-2 text-xs font-semibold capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                  side === target ? "bg-ink text-surface-card" : "text-ink-muted hover:bg-surface-card hover:text-ink",
+                  "inline-flex min-h-8 items-center rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                  side === target ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:bg-surface-inset hover:text-ink",
                 )}
               >
                 {target}
@@ -198,7 +198,10 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         const { bars, notCharted } = netSuccessBars(rows, week);
         body = <ChartsView kind={kind} side={side} season={season} week={week} roster={roster} bars={bars} notCharted={notCharted} />;
       } else if (kind === "efficiency") {
-        const initialMetric: EfficiencyMetric = params.metric === "yards_per_success" ? "yards_per_success" : "explosive_rate";
+        const initialMetric: EfficiencyMetric =
+          params.metric === "yards_per_success" || params.metric === "yards-per-success"
+            ? "yards_per_success"
+            : "explosive_rate";
         body = (
           <ChartsView
             kind={kind}
@@ -243,12 +246,12 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         </p>
       </div>
       {tabs && (
-        <div className="space-y-3 rounded-xl border border-line bg-surface-inset p-3">
-          <div className="flex flex-col items-start gap-3">
+        <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-inset p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
             {tabs}
-            {weekNav}
+            {sideNav}
           </div>
-          {sideNav && <div className="border-t border-line pt-3">{sideNav}</div>}
+          {weekNav && <div className="flex items-center">{weekNav}</div>}
         </div>
       )}
       {body}

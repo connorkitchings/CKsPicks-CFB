@@ -27,9 +27,9 @@ import {
   type TeamGameRow,
 } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
-import { ChartTable, type TableColumn } from "./ChartTable";
 import { NetSuccessChart } from "./NetSuccessChart";
-import { ScatterChart, type MarkerState } from "./ScatterChart";
+import { ScatterChart, type CornerCaptions, type MarkerState } from "./ScatterChart";
+import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
 
 export type ChartsViewProps = {
   kind: ChartKind;
@@ -69,9 +69,7 @@ function conferenceLabel(conference: string | null): string {
 
 export function ChartsView({ kind, side, season, week, roster, scatter, bars, notCharted = [], rows, initialMetric }: ChartsViewProps) {
   const [filter, setFilter] = useState<ConferenceFilter>("all");
-  const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState<string | null>(null);
-  const [asTable, setAsTable] = useState(false);
   const [efficiencyMetric, setEfficiencyMetric] = useState<EfficiencyMetric>(initialMetric ?? "explosive_rate");
   const narrow = useSyncExternalStore(subscribeNarrow, isNarrow, serverWide);
 
@@ -103,13 +101,17 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
     : efficiencyMetric === "yards_per_success"
     ? (side === "defense" ? "Yards / Success Allowed" : "Yards / Successful Play")
     : "PPA/play";
-  const formatX = adjusted ? formatEpa : (v: number) => formatPercent(v);
+  const formatX = adjusted
+    ? formatEpa
+    : kind === "efficiency"
+    ? (v: number) => `${Math.round(v * 100)}%`
+    : (v: number) => formatPercent(v);
   const formatY = adjusted
     ? formatEpa
     : efficiencyMetric === "explosive_rate"
-    ? (v: number) => formatPercent(v)
+    ? (v: number) => `${Math.round(v * 100)}%`
     : efficiencyMetric === "yards_per_success"
-    ? (v: number) => `${v.toFixed(1)} yds`
+    ? (v: number) => `${Math.round(v)} yds`
     : formatEpa;
 
   function describePoint(p: ScatterPoint): string {
@@ -132,6 +134,71 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
   const hasData = kind === "net-success" ? Boolean(filteredBars.length) : Boolean(filteredPoints.length);
   const unavailable = kind === "net-success" ? [] : (activeScatter?.unavailable ?? []).filter((team) => eligibleRoster.some((r) => r.team === team));
 
+  const cornerCaptions: CornerCaptions = useMemo(() => {
+    if (adjusted) {
+      return {
+        topLeft: "Lower offense / Better defense",
+        topRight: "Better offense / Better defense",
+        bottomLeft: "Lower offense / Higher defense allowed",
+        bottomRight: "Better offense / Higher defense allowed",
+        note: "Relative to play-weighted FBS averages; diagonals: equal net PPA (offense − defense allowed)",
+      };
+    }
+    const isDefense = side === "defense";
+    if (efficiencyMetric === "explosive_rate") {
+      if (isDefense) {
+        return {
+          topLeft: "Higher allowed success / Lower allowed 20+ rate",
+          topRight: "Lower allowed success / Lower allowed 20+ rate",
+          bottomLeft: "Higher allowed success / Higher allowed 20+ rate",
+          bottomRight: "Lower allowed success / Higher allowed 20+ rate",
+          note: "Relative to play-weighted FBS averages",
+        };
+      }
+      return {
+        topLeft: "Lower success / Higher 20+ rate",
+        topRight: "Higher success / Higher 20+ rate",
+        bottomLeft: "Lower success / Lower 20+ rate",
+        bottomRight: "Higher success / Lower 20+ rate",
+        note: "Relative to play-weighted FBS averages",
+      };
+    }
+    if (efficiencyMetric === "yards_per_success") {
+      if (isDefense) {
+        return {
+          topLeft: "Higher allowed success / Lower allowed yards/success",
+          topRight: "Lower allowed success / Lower allowed yards/success",
+          bottomLeft: "Higher allowed success / Higher allowed yards/success",
+          bottomRight: "Lower allowed success / Higher allowed yards/success",
+          note: "Relative to play-weighted FBS averages",
+        };
+      }
+      return {
+        topLeft: "Lower success / Higher yards/success",
+        topRight: "Higher success / Higher yards/success",
+        bottomLeft: "Lower success / Lower yards/success",
+        bottomRight: "Higher success / Lower yards/success",
+        note: "Relative to play-weighted FBS averages",
+      };
+    }
+    if (isDefense) {
+      return {
+        topLeft: "Higher allowed success / Lower allowed PPA",
+        topRight: "Lower allowed success / Lower allowed PPA",
+        bottomLeft: "Higher allowed success / Higher allowed PPA",
+        bottomRight: "Lower allowed success / Higher allowed PPA",
+        note: "Relative to play-weighted FBS averages",
+      };
+    }
+    return {
+      topLeft: "Lower success / Higher PPA",
+      topRight: "Higher success / Higher PPA",
+      bottomLeft: "Lower success / Lower PPA",
+      bottomRight: "Higher success / Lower PPA",
+      note: "Relative to play-weighted FBS averages",
+    };
+  }, [adjusted, side, efficiencyMetric]);
+
   const scatterChart = (view: { width: number; height: number }, interactive: boolean) =>
     activeScatter ? (
       <ScatterChart
@@ -148,6 +215,7 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
         height={view.height}
         netLevels={adjusted ? activeScatter.netLevels : undefined}
         cornerLabels={adjusted}
+        cornerCaptions={cornerCaptions}
         stateOf={pointState}
         describe={describePoint}
         formatX={formatX}
@@ -201,113 +269,76 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
     </div>
   );
 
-  const pointColumns: TableColumn<ScatterPoint>[] = [
-    { key: "team", label: "Team", value: (r) => r.team },
-    { key: "conference", label: "Conference", value: (r) => r.conference, format: (r) => conferenceLabel(r.conference) },
-    { key: "x", label: xLabel, value: (r) => r.x, format: (r) => formatX(r.x), numeric: true },
-    { key: "xRank", label: `${xLabel} national rank`, value: (r) => ranks.get(r.team)?.x ?? null, numeric: true },
-    { key: "y", label: yLabel, value: (r) => r.y, format: (r) => formatY(r.y), numeric: true },
-    { key: "yRank", label: `${yLabel} national rank`, value: (r) => ranks.get(r.team)?.y ?? null, numeric: true },
-    { key: "n", label: "Plays", value: (r) => r.n, numeric: true },
-  ];
-  const barColumns: TableColumn<NetSuccessBar>[] = [
-    { key: "winner", label: "Winner", value: (r) => r.winner },
-    { key: "loser", label: "Loser", value: (r) => r.loser },
-    { key: "score", label: "Score", value: (r) => r.winnerPoints - r.loserPoints, format: (r) => `${r.winnerPoints}-${r.loserPoints}`, numeric: true },
-    { key: "winnerRate", label: "Winner success", value: (r) => r.winnerSuccessRate, format: (r) => formatPercent(r.winnerSuccessRate), numeric: true },
-    { key: "loserRate", label: "Loser success", value: (r) => r.loserSuccessRate, format: (r) => formatPercent(r.loserSuccessRate), numeric: true },
-    { key: "value", label: "Difference (percentage points)", value: (r) => r.value, format: (r) => (r.value * 100).toFixed(1), numeric: true },
-  ];
-
-  const field =
-    "min-h-10 w-full rounded-lg border border-line bg-surface-card px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent";
-
   return (
     <section className="space-y-3" aria-label={title}>
-      <header>
-        <h2 className="text-lg font-bold tracking-tight text-ink sm:text-xl">{title}</h2>
-        <p className="text-xs text-ink-muted sm:text-sm" data-testid="chart-subtitle">
-          {subtitle}
-        </p>
-      </header>
-      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-inset p-3 lg:flex-row lg:items-end lg:justify-between" data-testid="chart-controls">
-        <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:flex" role="group" aria-label="Find teams">
-          {kind === "efficiency" && (
-            <div className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted" data-testid="efficiency-metric-switcher">
-              <span>Explosiveness metric</span>
-              <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-card p-1">
-                <button
-                  type="button"
-                  onClick={() => setEfficiencyMetric("explosive_rate")}
-                  aria-pressed={efficiencyMetric === "explosive_rate"}
-                  className={clsx(
-                    "inline-flex min-h-8 items-center rounded-md px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                    efficiencyMetric === "explosive_rate" ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:text-ink hover:bg-surface-inset",
-                  )}
-                  data-testid="metric-toggle-explosive-rate"
-                >
-                  20+ Yard Rate
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEfficiencyMetric("yards_per_success")}
-                  aria-pressed={efficiencyMetric === "yards_per_success"}
-                  className={clsx(
-                    "inline-flex min-h-8 items-center rounded-md px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                    efficiencyMetric === "yards_per_success" ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:text-ink hover:bg-surface-inset",
-                  )}
-                  data-testid="metric-toggle-yards-per-success"
-                >
-                  Yards / Success
-                </button>
-              </div>
-            </div>
-          )}
-          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted">
-            Conference
-            <select
-              className={field}
-              value={filter}
-              onChange={(event) => {
-                const next = event.target.value;
-                setFilter(next);
-                const selected = roster.find((r) => r.team === highlight);
-                if (selected && !matchesConference(next, selected.team, selected.conference)) setHighlight(null);
-              }}
-              data-testid="conference-filter"
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-ink sm:text-xl">{title}</h2>
+          <p className="text-xs text-ink-muted sm:text-sm" data-testid="chart-subtitle">
+            {subtitle}
+          </p>
+        </div>
+        {kind === "efficiency" && (
+          <div className="inline-flex gap-1 rounded-lg border border-line bg-surface-card p-1 shadow-2xs" data-testid="efficiency-metric-switcher">
+            <button
+              type="button"
+              onClick={() => setEfficiencyMetric("explosive_rate")}
+              aria-pressed={efficiencyMetric === "explosive_rate"}
+              className={clsx(
+                "inline-flex min-h-8 items-center rounded-md px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                efficiencyMetric === "explosive_rate" ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:text-ink hover:bg-surface-inset",
+              )}
+              data-testid="metric-toggle-explosive-rate"
             >
-              <option value="all">All FBS</option>
-              <option value="p4">Power Four + Notre Dame</option>
-              {conferenceOptions(roster).map((conference) => (
-                <option key={conference} value={conference}>
-                  {conference}
-                </option>
-              ))}
-            </select>
-          </label>
+              20+ Yard Rate
+            </button>
+            <button
+              type="button"
+              onClick={() => setEfficiencyMetric("yards_per_success")}
+              aria-pressed={efficiencyMetric === "yards_per_success"}
+              className={clsx(
+                "inline-flex min-h-8 items-center rounded-md px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                efficiencyMetric === "yards_per_success" ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:text-ink hover:bg-surface-inset",
+              )}
+              data-testid="metric-toggle-yards-per-success"
+            >
+              Yards / Success
+            </button>
+          </div>
+        )}
+      </header>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface-inset p-2.5 sm:p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="chart-controls">
+        <div className="flex flex-wrap items-center gap-2.5" role="group" aria-label="Chart controls">
+          <select
+            className="min-h-9 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+            value={filter}
+            onChange={(event) => {
+              const next = event.target.value;
+              setFilter(next);
+              const selected = roster.find((r) => r.team === highlight);
+              if (selected && !matchesConference(next, selected.team, selected.conference)) setHighlight(null);
+            }}
+            data-testid="conference-filter"
+            aria-label="Filter by conference"
+          >
+            <option value="all">All FBS</option>
+            <option value="p4">Power Four + Notre Dame</option>
+            {conferenceOptions(roster).map((conference) => (
+              <option key={conference} value={conference}>
+                {conference}
+              </option>
+            ))}
+          </select>
           {kind !== "net-success" && (
-            <div className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted">
-              <label htmlFor="team-search">Find a team</label>
-              <input id="team-search" type="search" className={clsx(field, "lg:w-48")} value={query} maxLength={40} placeholder="Team or abbreviation" onChange={(event) => setQuery(event.target.value)} data-testid="team-search" />
-              <label htmlFor="team-highlight">Highlight one team</label>
-              <select id="team-highlight" className={field} value="choose" onChange={(event) => event.target.value ? toggleHighlight(event.target.value) : setHighlight(null)} data-testid="team-highlight">
-                <option value="choose" disabled>Choose a team to toggle</option>
-                <option value="">None</option>
-                {eligibleRoster.filter((r) => !query.trim() || matchesSearch(query, r.team) || r.team === highlight).map((r) => <option key={r.team} value={r.team}>{r.team}</option>)}
-              </select>
-            </div>
+            <TeamHighlightCombobox
+              teams={eligibleRoster}
+              highlight={highlight}
+              onSelect={setHighlight}
+            />
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Chart display and export">
-          <button
-            type="button"
-            aria-pressed={asTable}
-            onClick={() => setAsTable((current) => !current)}
-            className="min-h-10 rounded-lg border border-line bg-surface-card px-3 py-2 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
-            data-testid="table-toggle"
-          >
-            {asTable ? "Show chart" : "Show as table"}
-          </button>
+        <div className="flex items-center gap-2" role="group" aria-label="Chart export">
           {hasData && (
             <ChartExportButton
               filename={`ckspicks-${kind}${kind === "efficiency" ? `-${side}` : ""}-${season}-${kind === "net-success" ? "week" : "through-week"}-${week}.png`}
@@ -322,19 +353,13 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
 
       {kind !== "net-success" && highlight && (
         <p role="status" className="text-xs text-ink-muted" data-testid="highlight-status">
-          Highlight: {highlight}{highlightAvailable ? ". Select again or choose None to clear." : ` — no available observation Through Week ${week}.`}
+          Highlight: {highlight}{highlightAvailable ? ". Click again or clear to unhighlight." : ` — no available observation Through Week ${week}.`}
         </p>
       )}
       {!hasData ? (
         <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted" data-testid="chart-empty">
           No teams can be charted for this week yet.
         </p>
-      ) : asTable ? (
-        kind === "net-success" ? (
-          <ChartTable rows={filteredBars} columns={barColumns} rowKey={(r) => String(r.gameId)} caption={`${title}, ${viewSubtitle}`} initialSort={{ key: "value" }} />
-        ) : (
-          <ChartTable rows={filteredPoints} columns={pointColumns} rowKey={(r) => r.team} caption={`${title}, ${viewSubtitle}`} initialSort={{ key: "team" }} />
-        )
       ) : (
         <div className="rounded-xl border border-line bg-surface-card p-2 sm:p-3" data-testid="chart-figure">
           {kind === "net-success" ? (
@@ -349,7 +374,7 @@ export function ChartsView({ kind, side, season, week, roster, scatter, bars, no
             />
           ) : (
             <>
-              <p className="mb-2 text-xs text-ink-muted lg:hidden">Scroll chart horizontally to see every team, or use the table.</p>
+              <p className="mb-2 text-xs text-ink-muted lg:hidden">Scroll chart horizontally to see every team.</p>
               <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team scatter chart, horizontally scrollable" tabIndex={0} data-testid="scatter-scroll">
                 <div className="min-w-[760px] lg:min-w-0">{scatterChart(SCATTER_VIEW, true)}</div>
               </div>
