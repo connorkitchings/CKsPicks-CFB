@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import clsx from "clsx";
+import { isChartsEnabled } from "@/lib/charts-gate";
 import {
   CHART_TAB_LABELS,
   adjustedPoints,
@@ -97,7 +99,12 @@ function notice(text: string) {
   );
 }
 
-export default async function ChartsPage({ searchParams }: { searchParams: SearchParams }) {
+export default function ChartsPage(props: { searchParams: SearchParams }) {
+  if (!isChartsEnabled()) notFound();
+  return <EnabledChartsPage {...props} />;
+}
+
+async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const season = publicationScope.season;
   const kind: ChartKind = KINDS.includes(params.chart as ChartKind) ? (params.chart as ChartKind) : "net-success";
