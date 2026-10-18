@@ -181,7 +181,10 @@ export function ScatterChart({
               data-state={state}
               className="outline-none [&:focus-visible>circle.focus-ring]:opacity-100"
               {...(focusable ? handlers(p.team) : {})}
-              onClick={focusable ? () => { handlers(p.team).onFocus(); onToggleHighlight(p.team); } : undefined}
+              onClick={focusable ? () => {
+                handlers(p.team).onClick();
+                onToggleHighlight(p.team);
+              } : undefined}
               onKeyDown={focusable ? (event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();

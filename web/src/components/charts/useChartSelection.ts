@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 /**
  * Tooltip selection and arrow-key movement shared by the chart marks. `keys` are the
@@ -9,6 +9,8 @@ import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 export function useChartSelection(keys: readonly string[]) {
   const [selected, setSelected] = useState<string | null>(null);
   const refs = useRef(new Map<string, SVGGElement>());
+  const isTouchRef = useRef(false);
+  const wasSelectedRef = useRef(false);
 
   const register = useCallback(
     (key: string) => (node: SVGGElement | null) => {
@@ -19,11 +21,31 @@ export function useChartSelection(keys: readonly string[]) {
   );
 
   const handlers = (key: string) => ({
-    onMouseEnter: () => setSelected(key),
-    onMouseLeave: () => setSelected((current) => (current === key ? null : current)),
+    onPointerDown: (event: PointerEvent<SVGGElement>) => {
+      isTouchRef.current = event.pointerType === "touch";
+      wasSelectedRef.current = selected === key;
+    },
+    onMouseEnter: () => {
+      if (!isTouchRef.current) setSelected(key);
+    },
+    onMouseLeave: () => {
+      if (!isTouchRef.current) {
+        setSelected((current) => (current === key ? null : current));
+      }
+    },
     onFocus: () => setSelected(key),
-    onBlur: () => setSelected((current) => (current === key ? null : current)),
-    onClick: () => setSelected((current) => (current === key ? null : key)),
+    onBlur: () => {
+      // A touch tap highlights the mark, reordering it in the DOM and firing a spurious blur;
+      // keep the touch selection until the next tap toggles it.
+      if (isTouchRef.current) return;
+      setSelected((current) => (current === key ? null : current));
+    },
+    onClick: () => {
+      // Focus (on pointerdown) has already selected the mark, so a touch tap toggles from
+      // the selection held before the tap.
+      if (isTouchRef.current) setSelected(wasSelectedRef.current ? null : key);
+      else setSelected(key);
+    },
     onKeyDown: (event: KeyboardEvent<SVGGElement>) => {
       const index = keys.indexOf(key);
       const go = (step: number) => {

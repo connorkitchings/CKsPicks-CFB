@@ -132,7 +132,7 @@ export function TrajectoryChart({
               data-state={state}
               className="outline-none [&:focus-visible>circle.focus-ring]:opacity-100"
               {...(interactive ? handlers(s.team) : {})}
-              onClick={interactive ? () => { handlers(s.team).onFocus(); onToggleHighlight(s.team); } : undefined}
+              onClick={interactive ? () => { handlers(s.team).onClick(); onToggleHighlight(s.team); } : undefined}
               onKeyDown={interactive ? (event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();

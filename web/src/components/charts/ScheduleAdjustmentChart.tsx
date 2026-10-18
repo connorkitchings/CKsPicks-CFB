@@ -143,7 +143,7 @@ export function ScheduleAdjustmentChart({
               data-state={searched ? "searched" : "active"}
               className="outline-none [&:focus-visible>rect.focus-ring]:opacity-100"
               {...(interactive ? handlers(row.team) : {})}
-              onClick={interactive ? () => { handlers(row.team).onFocus(); onToggleHighlight(row.team); } : undefined}
+              onClick={interactive ? () => { handlers(row.team).onClick(); onToggleHighlight(row.team); } : undefined}
               onKeyDown={interactive ? (event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
