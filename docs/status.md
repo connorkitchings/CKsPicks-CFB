@@ -4,13 +4,8 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-16 (Preview-only chart release activated after all 23 verification checks and numerical parity against the prior release; chart data and live views verified for Weeks 0–6. Chart organization, PNG focus-outline repairs and accepted logo spacing are committed and pushed to `dev` at `b2335ae5`. Production remains unchanged and was not accessed.) · **Verified from:**
-> `session_logs/2026-10-16/03-preview-chart-rehearsal.md`,
-> `session_logs/2026-10-16/04-chart-navigation-and-export-polish.md`,
-> `session_logs/2026-10-14/08-stage4-production-migration-and-cutover.md`,
-> `session_logs/2026-10-14/07-web-ui-cleanup-and-early-games-reconstruction.md` (see its October 15 correction),
-> `session_logs/2026-10-14/06-stages-1-to-3-preview-cutover.md`,
-> `docs/plans/2026-10-14/01-season-operations-and-week7-bridge.md`.
+> **Last updated:** 2026-10-18 (Week 8 active release `preview-season-2026-b1e0ac13c88baf86b97ab213` activated on Preview with full 56-game Week 8 picks slate; Week 7 games scored and graded: spread 26-32-1, total 32-27-0; cumulative 2026 YTD record: spread 190-188-7 [50.3%], total 192-191-1 [50.1%]). Production remains on `production-season-2026-d0272a48d3a0252fd4196db3` pending cutover. · **Verified from:**
+> `session_logs/2026-10-18/02-week8-advance-and-week7-close.md`.
 
 ## Product and model
 
@@ -26,8 +21,8 @@
 
 | Week | State | Selected run |
 |---|---|---|
-| 0–6 | **Scored; reconstructed 2026 V5 record** (all 329 FBS games including mid-week games; 657 graded bets: spread 166-157-6, total 163-164-1). Preview additionally serves Migration 0026 chart projections; Production retains its existing release. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-99c518e3bb66e7cc2adcc169`) |
-| 7 | **Active Picks slate.** Complete 59-game FBS schedule. Preview reconstructed at the existing pinned pre-week cutoff; forecasts, ratings and grades match the prior release. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-99c518e3bb66e7cc2adcc169`). Production rollback: `run_season.py rollback` (owner login). |
+| 0–7 | **Scored; 2026 V5 record** (all 388 completed FBS games through Week 7; 770 decided bets: spread 190-188-7, total 192-191-1; Week 7 alone: spread 26-32-1, total 32-27-0). Preview serves active Week 8 release with Migration 0026 chart projections; Production retains its existing release pending cutover. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-b1e0ac13c88baf86b97ab213`) |
+| 8 | **Active Picks slate.** Complete 56-game FBS schedule. Preview active on atomic release `preview-season-2026-b1e0ac13c88baf86b97ab213`. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-b1e0ac13c88baf86b97ab213`). Production rollback: `run_season.py rollback` (owner login). |
 
 ## Scoreboard
 
@@ -38,7 +33,7 @@ calibration and the pre-registered promotion gates remain diagnostics.
 
 | Record | Spread | Total | Notes |
 |---|---|---|---|
-| **2026 V5, cumulative (Weeks 0–6 full reconstruction)** | 166-157-6 (51.4%) | 163-164-1 (49.8%) | All 329 FBS games across Weeks 0–6: 329 decided spreads (166-157-6), 328 decided totals (163-164-1; 1 unlined total). Served atomically via Migration 0025 release projections |
+| **2026 V5, cumulative (Weeks 0–7)** | 190-188-7 (50.3%) | 192-191-1 (50.1%) | All 388 completed FBS games across Weeks 0–7: 385 decided spreads (190-188-7), 384 decided totals (192-191-1). Week 7 alone: spread 26-32-1 (44.8%), total 32-27-0 (54.2%). Served atomically via Migration 0025/0026 release projections on Preview. |
 
 Neither target clears 52.4% YTD. In the 2025 holdout the market had
 lower error than V5 on both targets, and the docs do not claim V5 beats V4.
