@@ -144,4 +144,14 @@ Model research, changes to the V5 bridge or its calibration, neutral-site adjust
 
 ## Contract amendments
 
-Deviations found during implementation are recorded here as dated amendments; none yet.
+Deviations found during implementation are recorded here as dated amendments.
+
+**2026-10-19 — stage 1 (`projection_resume.py`) resolutions.** Recorded by the implementer and pending owner confirmation:
+
+1. **The average reference includes the team being evaluated.** The self-exclusion rule applies to the elite reference only. The "never measured against a reference that contains itself" sentence is read as covering the elite reference; "mean of all rated FBS teams" is taken literally for the average reference (this matches the draft's expected values for SOS and WAA).
+2. **The margin is ratings-only.** The bridge's per-game `offset_margin` is not applied: it translates non-offense scoring for an actual game and has no meaning for a hypothetical reference team. The margin head has no venue coefficient, so neutral games use their recorded home/away labels.
+3. **SOR rank ties** are broken by `overall_rank` ascending.
+4. **`completed_games` and `scheduled_games` count FBS-opponent games only.** SOS Remaining covers games with `kickoff_utc` after the cutoff. A game that kicked off at or before the cutoff but has no final score counts in SOS Full only.
+5. **Bridge coefficients are derived from the pinned artifact:** slope = coef / scale, intercept = intercept − Σ slope · center, sigma = sqrt(calibration_variance). Restated values (intercept 6.5442094507, home offense 8.5067766511, home defense 9.8433322793, away offense −10.2416516547, away defense −10.9680927057, sigma 17.8226309998) match the unpublished draft's constants.
+
+Added row fields beyond this contract: `overall_rank`, `elite_reference_size`, `elite_reference_kind`, `average_reference_size`, `scheduled_games`, `sor_p`, `sor_rank`.
