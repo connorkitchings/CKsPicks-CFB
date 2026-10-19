@@ -583,9 +583,14 @@ def test_additive_schema_projects_all_legacy_columns_and_has_one_active_pointer(
     from contracts.validation import extract_sql_table_columns
 
     root = Path(__file__).resolve().parents[1]
+    from cks_picks_cfb.season.projection_resume import RESUME_COLUMNS
+
     tables = extract_sql_table_columns(root / "contracts/schema.sql")
     for base in r.PROJECTION_KEYS:
-        expected = tables[base] | {"release_id"}
+        if base == "team_resume":  # release-only projection: no live copy
+            expected = set(RESUME_COLUMNS) | {"release_id"}
+        else:
+            expected = tables[base] | {"release_id"}
         if base == "game_results":
             expected.add("source_dataset_version_id")
         assert tables["season_release_" + base] == expected
@@ -702,9 +707,9 @@ def test_release_refuses_unpinned_or_changed_prepared_outputs(tmp_path, fault):
 
 
 def retained_release(db, label, projection_set):
-    """Turn a staged charts_v2 release into a retained one of an older set."""
+    """Turn a staged resume_v1 release into a retained one of an older set."""
     release_id = stage(db, label)
-    dropped = set(PROJECTION_SETS["charts_v2"]) - set(PROJECTION_SETS[projection_set])
+    dropped = set(PROJECTION_SETS["resume_v1"]) - set(PROJECTION_SETS[projection_set])
     for table in dropped:
         db.projections.pop((release_id, table), None)
         del db.rows[release_id]["projection_checks"][table]
@@ -716,13 +721,14 @@ def retained_core_release(db, label="core"):
     return retained_release(db, label, "core_v1")
 
 
-def test_staging_requires_charts_v2_and_records_its_checks():
+def test_staging_requires_resume_v1_and_records_its_checks():
     db = Database()
     release_id = stage(db)
     checks = db.rows[release_id]["projection_checks"]
-    assert set(checks) == set(PROJECTION_SETS["charts_v2"])
-    assert recognized_projection_set(checks) == "charts_v2"
+    assert set(checks) == set(PROJECTION_SETS["resume_v1"])
+    assert recognized_projection_set(checks) == "resume_v1"
     assert db.projections[(release_id, "team_game_yardage")]
+    assert db.projections[(release_id, "team_resume")]
     with db.cursor() as cur:
         assert r._readback(cur, release_id, checks, "preview") == checks
     assert activate(db, release_id)["release_id"] == release_id
@@ -815,7 +821,7 @@ def test_partial_and_unknown_recorded_sets_fail_readback(drop):
         r._readback(cur, release_id, checks, "preview")
 
 
-@pytest.mark.parametrize("projection_set", ["core_v1", "charts_v1"])
+@pytest.mark.parametrize("projection_set", ["core_v1", "charts_v1", "charts_v2"])
 def test_older_set_candidates_are_refused_at_staging(projection_set):
     db = Database()
     full = payload_for("old-candidate")

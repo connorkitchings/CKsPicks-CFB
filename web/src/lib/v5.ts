@@ -1,8 +1,19 @@
 import { V5_RECORD_EVIDENCE } from "./run-selection";
 import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
-import { schema } from "./db";
-import { getSeasonDb } from "./season-release";
+import { db as legacyDb, schema } from "./db";
+import { getSeasonDb, getSeasonReleaseContext } from "./season-release";
+import { TEAM_RESUME_PROJECTION } from "./season-release-query.ts";
+import { existsFrom, rowsOf } from "./db-result.ts";
+import {
+  joinTeamResume,
+  mapResumePeriodRow,
+  mapTeamResumeRow,
+  resumeFactsByPeriod,
+  RESUME_PERIOD_COLUMNS,
+  TEAM_RESUME_COLUMNS,
+  type TeamResumeRow,
+} from "./team-resume.ts";
 import { withGameNameAliases } from "./rating-names.ts";
 import { PERFORMANCE_DETAIL_SPEC, RATING_SPEC, guardRows } from "./row-guard.ts";
 import {
@@ -11,12 +22,13 @@ import {
   ownerSourceForCutoff,
   parseSourceQualifiedPeriodId,
   periodBeforeKickoff,
+  periodLabelFields,
   PRESEASON_META,
   sourceQualifiedPeriodId,
-  WEEK_GENERATIONS,
   type PeriodMeta,
   type Rating,
   type RatingPeriod,
+  type ResumePeriodFacts,
 } from "./rating-periods.ts";
 
 export type { PeriodMeta, Rating, RatingPeriod };
@@ -25,7 +37,6 @@ export {
   formatCutoffLabel,
   ownerSourceForCutoff,
   PRESEASON_META,
-  WEEK_GENERATIONS,
 };
 
 const getSelectedRatingSource = cache(async (season: number): Promise<string | null> => {
@@ -120,23 +131,14 @@ export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta
       eq(schema.v5RatingSnapshots.sourceManifestSha256, sourceSha),
     ))
     .orderBy(desc(schema.v5RatingSnapshots.cutoffUtc));
+  const facts = await readResumePeriodFacts(season);
   const periods = rows.map(({ cutoffUtc }, index) => {
-    const iso = cutoffUtc.toISOString();
-    const known = WEEK_GENERATIONS[iso];
-    const { label: dateLabel, shortLabel: dateShort } = formatCutoffLabel(cutoffUtc);
-    const active = index === 0;
+    const id = sourceQualifiedPeriodId(sourceSha, cutoffUtc);
     return {
-      id: sourceQualifiedPeriodId(sourceSha, cutoffUtc),
-      label: known ? `Post-Week ${known.postWeek}` : dateLabel,
-      shortLabel: known ? `Week ${known.postWeek}` : dateShort,
-      description: known
-        ? `Frozen ratings after Week ${known.postWeek} games finalized (${known.games} games, weeks ${known.weeks})${active ? " (active model state)." : "."}`
-        : active
-          ? "Frozen team ratings from all evidence available at cutoff (active model state)."
-          : "Frozen team ratings from all evidence available at cutoff.",
+      id,
       cutoffUtc,
       sourceManifestSha256: sourceSha,
-      ...(known ? { postWeek: known.postWeek } : {}),
+      ...periodLabelFields(cutoffUtc, facts.get(id), index === 0),
     } satisfies PeriodMeta;
   });
   return [...periods, PRESEASON_META];
@@ -173,6 +175,52 @@ async function getPreseasonPriors(season: number, sourceSha?: string | null): Pr
     .orderBy(desc(schema.v5RatingSnapshots.overallRating));
 }
 
+/**
+ * Raw `season_release_team_resume` rows of the active release, optionally for one period.
+ * Null when there is no active release or the projection is absent (migration 0028 not
+ * applied), so callers degrade to null résumé fields and date labels instead of failing.
+ */
+async function selectResumeRows(
+  season: number,
+  columns: readonly string[],
+  periodId: string | null,
+): Promise<Array<Record<string, unknown>> | null> {
+  const context = await getSeasonReleaseContext(season);
+  if (!context) return null;
+  const present = await legacyDb.execute(
+    sql`SELECT to_regclass(${`public.${TEAM_RESUME_PROJECTION}`}) IS NOT NULL AS exists`,
+  );
+  if (!existsFrom(present)) return null;
+  const result = await legacyDb.execute(sql`
+    SELECT ${sql.join(columns.map((column) => sql.identifier(column)), sql`, `)}
+    FROM ${sql.identifier(TEAM_RESUME_PROJECTION)}
+    WHERE release_id = ${context.releaseId}
+    ${periodId === null ? sql`` : sql`AND period_id = ${periodId}`}
+  `);
+  return rowsOf(result);
+}
+
+/** Résumé rows for one period of the active release; null when there are none to read. */
+const readTeamResume = cache(async (season: number, periodId: string): Promise<TeamResumeRow[] | null> => {
+  const rows = await selectResumeRows(season, TEAM_RESUME_COLUMNS, periodId);
+  return rows?.map(mapTeamResumeRow) ?? null;
+});
+
+/**
+ * Period labels' résumé facts for every generation of the active release. Cached per
+ * request, so the period list and the selected period share one read. Empty when there is
+ * no release or no projection, which makes every label a date label.
+ */
+const readResumePeriodFacts = cache(async (season: number): Promise<ReadonlyMap<string, ResumePeriodFacts>> => {
+  const rows = await selectResumeRows(season, RESUME_PERIOD_COLUMNS, null);
+  return resumeFactsByPeriod((rows ?? []).map(mapResumePeriodRow));
+});
+
+async function withTeamResume(season: number, periodId: string, ratings: Rating[]): Promise<Rating[]> {
+  if (ratings.length === 0) return ratings;
+  return joinTeamResume(ratings, periodId, await readTeamResume(season, periodId));
+}
+
 export const getWeeklyRatings = cache(async (
   season: number,
   targetPeriod?: string | null
@@ -182,7 +230,7 @@ export const getWeeklyRatings = cache(async (
   const generations = periods.filter((p) => p.cutoffUtc !== undefined);
 
   if (targetPeriod === "preseason" || targetPeriod === "pre") {
-    const ratings = await getPreseasonPriors(season);
+    const ratings = await withTeamResume(season, PRESEASON_META.id, await getPreseasonPriors(season));
     return { ratings, period: "preseason", periodMeta: PRESEASON_META };
   }
 
@@ -231,19 +279,15 @@ export const getWeeklyRatings = cache(async (
         byTeam.set(prior.team, prior);
       }
     }
-    const ratings = [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
+    const sorted = [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
+    const id = sourceQualifiedPeriodId(ownerSource, cutoff);
     const periodMeta = frozen?.sourceManifestSha256 === ownerSource ? frozen : {
-      id: sourceQualifiedPeriodId(ownerSource, cutoff),
-      label: WEEK_GENERATIONS[cutoff.toISOString()]
-        ? `Post-Week ${WEEK_GENERATIONS[cutoff.toISOString()].postWeek}`
-        : formatCutoffLabel(cutoff).label,
-      shortLabel: WEEK_GENERATIONS[cutoff.toISOString()]
-        ? `Week ${WEEK_GENERATIONS[cutoff.toISOString()].postWeek}`
-        : formatCutoffLabel(cutoff).shortLabel,
-      description: "Frozen team ratings from this source and exact evidence cutoff.",
+      id,
       cutoffUtc: cutoff,
       sourceManifestSha256: ownerSource,
+      ...periodLabelFields(cutoff, (await readResumePeriodFacts(season)).get(id), false),
     } satisfies PeriodMeta;
+    const ratings = await withTeamResume(season, periodMeta.id, sorted);
     return { ratings, period: periodMeta.id, periodMeta };
   }
 
@@ -264,8 +308,8 @@ export const getWeeklyRatings = cache(async (
   // construction in every projection-before-selection and rollback state.
   // No newest-generation label may be paired with selected-source rows here.
   const ratings = await getCurrentRatings(season);
-  const periodMeta = defaultPeriodForRows(ratings);
-  return { ratings, period: periodMeta.id, periodMeta };
+  const periodMeta = defaultPeriodForRows(ratings, await readResumePeriodFacts(season));
+  return { ratings: await withTeamResume(season, periodMeta.id, ratings), period: periodMeta.id, periodMeta };
 });
 
 export const getTeamHistory = cache(async (season: number, team: string): Promise<Rating[]> => {

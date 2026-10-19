@@ -39,6 +39,12 @@ test("ratings page includes rank column, methodology explainer, and disambiguate
   assert.match(source, /requestedSeason\s*=\s*params\.season\s*\?\s*Number\(params\.season\)\s*:\s*2026/);
 });
 
+test("ratings page accepts résumé sort keys and falls back to overall for others", () => {
+  const pageSource = readFileSync(new URL("../app/ratings/page.tsx", import.meta.url), "utf8");
+  assert.match(pageSource, /const sorts: readonly Sort\[\] = \["overall", "offense", "defense", "sor", "waa", "sos"\];/);
+  assert.match(pageSource, /sorts\.find\(\(value\) => value === params\.sort\) \?\? "overall"/);
+});
+
 test("TeamPair shows team names as plain text, not links (team pages are not ready)", () => {
   const source = readFileSync(new URL("../components/slate/TeamPair.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\/teams\//);
@@ -59,22 +65,17 @@ test("slate cards link to the matchup breakdown through the gated button instead
   }
 });
 
-test("ratings timeline labels certified post-week generations and backfills early tabs from priors", () => {
-  // Certified week map lives in the dependency-free rating-periods module so
-  // behavioral tests can import it without the drizzle/Neon client chain.
+test("ratings timeline labels generations from résumé rows and backfills early tabs from priors", () => {
+  // Labels come from the projection, not a hand-maintained cutoff map.
   const periodsSource = readFileSync(new URL("./rating-periods.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(periodsSource, /WEEK_GENERATIONS/);
+  assert.match(periodsSource, /Post-Week \$\{postWeek\}/);
 
-  // Certified week map keyed by exact generation cutoff
-  assert.match(periodsSource, /WEEK_GENERATIONS/);
-  assert.match(periodsSource, /2026-09-03T04:00:00\.000Z/);
-  assert.match(periodsSource, /2026-09-08T15:35:00\.000Z/);
-  assert.match(periodsSource, /2026-09-13T18:18:22\.000Z/);
-  assert.match(periodsSource, /2026-09-22T14:58:00\.000Z/);
-  assert.match(periodsSource, /2026-09-27T14:15:00\.000Z/);
-  assert.match(periodsSource, /Post-Week \$\{known\.postWeek\}/);
-
-  // Serving layer binds frozen tabs and backfill to explicit sources
   const source = readFileSync(new URL("./v5.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /WEEK_GENERATIONS/);
+  // The résumé facts are read once per request and shared by the period list and selection
+  assert.equal([...source.matchAll(/const readResumePeriodFacts = cache\(/g)].length, 1);
+  assert.match(source, /periodLabelFields\(cutoffUtc, facts\.get\(id\), index === 0\)/);
 
   // Frozen tabs backfill teams missing from early generations via priors
   assert.match(source, /getPreseasonPriors/);

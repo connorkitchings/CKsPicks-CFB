@@ -242,7 +242,7 @@ def test_negative_success_yards_sum_is_accepted():
 
 def test_charts_v1_payload_has_no_yardage_branch():
     payload = synthetic_payload()
-    del payload["team_game_yardage"]
+    del payload["team_game_yardage"], payload["team_resume"]
     checks = v.derive_checks(payload, MANIFEST)
     assert all(entry["passed"] for entry in checks.values())
     assert "yardage_rows" not in checks["team_chart_reconciliation"]["observed"]

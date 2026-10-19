@@ -1,6 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { rowsOf, existsFrom } from "./db-result.ts";
-import { CHART_SETS, CHART_SET_KEYS, CHART_SET_PROJECTIONS, RELEASE_PROJECTIONS, type ChartSet } from "./season-release-query.ts";
+import { CHART_SETS, CHART_SET_PROJECTIONS, RECORDED_PROJECTION_SETS, RELEASE_PROJECTIONS, type ChartSet } from "./season-release-query.ts";
 
 /** Release identity is pinned for the whole request, including fallback before cutover. */
 export type ReleaseEnvironment = "preview" | "production";
@@ -43,12 +43,15 @@ export function createReleaseContextResolver(
 
 const relationsColumn = (set: ChartSet) => `${set}_relations`;
 
-/** The set whose keys exactly equal the recorded keys and whose relations all exist. */
+/**
+ * The chart set a release serves: the recorded set whose keys exactly equal the recorded
+ * keys, provided that set's chart relations all exist. Unknown or partial keys serve none.
+ */
 function chartSetOf(row: Record<string, unknown>): ChartSet | null {
   const recorded = Array.isArray(row.projection_keys) ? row.projection_keys.map(String).sort() : [];
-  return CHART_SETS.find((set) => row[relationsColumn(set)] === true
-    && recorded.length === CHART_SET_KEYS[set].length
-    && recorded.every((key, index) => key === CHART_SET_KEYS[set][index])) ?? null;
+  const match = Object.values(RECORDED_PROJECTION_SETS).find(({ keys }) => recorded.length === keys.length
+    && recorded.every((key, index) => key === keys[index]));
+  return match && row[relationsColumn(match.chartSet)] === true ? match.chartSet : null;
 }
 
 export async function loadReleaseContext(

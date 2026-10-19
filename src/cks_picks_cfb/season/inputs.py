@@ -57,6 +57,8 @@ class SeasonInputs:
     teams: pd.DataFrame | None = None
     #: Declared non-reconciling team-games: ``{(game_id, team): reason}``.
     score_exceptions: dict = field(default_factory=dict)
+    #: sha256 of the bridge bytes ``bridge`` was parsed from (checked by ``read_ref``).
+    bridge_sha256: str | None = None
 
 
 OPTIONAL_REVISION_INPUTS = ("venue_games", "venues", "teams")
@@ -380,12 +382,13 @@ def load_inputs(
         historical_population = build_population(
             historical_population, scope="historical"
         )
+    bridge_raw = read_ref(reader, m["bridge"])
     return SeasonInputs(
         schedule,
         finals,
         observations,
         events,
-        json.loads(read_ref(reader, m["bridge"])),
+        json.loads(bridge_raw),
         frame(reader, m["priors"]),
         terminal,
         historical_population,
@@ -401,4 +404,5 @@ def load_inputs(
             for name in OPTIONAL_REVISION_INPUTS
         ),
         score_exceptions=exceptions,
+        bridge_sha256=sha(bridge_raw),
     )

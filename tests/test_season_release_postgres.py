@@ -84,6 +84,7 @@ ACTIVE_SQL = (
 MIGRATION_0025 = MIGRATIONS / "0025_season_releases.sql"
 MIGRATION_0026 = MIGRATIONS / "0026_team_chart_tables.sql"
 MIGRATION_0027 = MIGRATIONS / "0027_team_game_yardage.sql"
+MIGRATION_0028 = MIGRATIONS / "0028_team_resume.sql"
 SNAPSHOT_MARKER = "-- Additive season releases."
 
 OWNER = "cks_owner"
@@ -160,7 +161,10 @@ def _bootstrap(cluster: PgCluster) -> None:
     _create_db(cluster, "tpl_migrated", "tpl_0026")
     with cluster.connect("tpl_migrated", OWNER, autocommit=True) as conn:
         conn.execute(MIGRATION_0027.read_text())
-    _create_db(cluster, "tpl_operable", "tpl_migrated")
+    _create_db(cluster, "tpl_resume", "tpl_migrated")
+    with cluster.connect("tpl_resume", OWNER, autocommit=True) as conn:
+        conn.execute(MIGRATION_0028.read_text())
+    _create_db(cluster, "tpl_operable", "tpl_resume")
     for template in ("tpl_0025_operable", "tpl_0026_operable", "tpl_operable"):
         with cluster.connect(template, OWNER, autocommit=True) as conn:
             for environment in PIPELINE:
@@ -416,13 +420,14 @@ def owner_insert_release(
 # --------------------------------------------------------------------------
 
 
-def test_snapshot_tail_is_migrations_0025_to_0027_verbatim_matches():
+def test_snapshot_tail_is_migrations_0025_to_0028_verbatim_matches():
     schema = (ROOT / "contracts" / "schema.sql").read_text()
 
     tail = schema[schema.index(SNAPSHOT_MARKER) :]
 
     assert tail == "".join(
-        path.read_text() for path in (MIGRATION_0025, MIGRATION_0026, MIGRATION_0027)
+        path.read_text()
+        for path in (MIGRATION_0025, MIGRATION_0026, MIGRATION_0027, MIGRATION_0028)
     )
 
 
@@ -575,8 +580,8 @@ def test_web_role_cannot_write_or_read_policies(cluster, migrated_db, statement)
             conn.execute(statement)
 
 
-def test_web_role_reads_releases_and_every_projection(cluster, migrated_db):
-    with as_role(cluster, migrated_db, "cks_web") as conn:
+def test_web_role_reads_releases_and_every_projection(cluster, db):
+    with as_role(cluster, db, "cks_web") as conn:
         for base in ("releases", *(f"release_{b}" for b in release.PROJECTION_KEYS)):
             conn.execute(
                 sql.SQL("SELECT * FROM {}").format(sql.Identifier(f"season_{base}"))
@@ -596,10 +601,8 @@ def test_web_role_reads_releases_and_every_projection(cluster, migrated_db):
         "TRUNCATE season_release_games",
     ],
 )
-def test_pipeline_role_cannot_delete_truncate_or_write_policy(
-    cluster, migrated_db, statement
-):
-    with as_role(cluster, migrated_db, "cks_pipeline") as conn:
+def test_pipeline_role_cannot_delete_truncate_or_write_policy(cluster, db, statement):
+    with as_role(cluster, db, "cks_pipeline") as conn:
         with pytest.raises(errors.InsufficientPrivilege):
             conn.execute(statement)
 
@@ -787,12 +790,12 @@ def test_projection_rows_and_history_immutable_even_for_owner(cluster, db):
 # --------------------------------------------------------------------------
 
 
-def test_shipped_grants_allow_pipeline_activation(cluster, migrated_db):
-    with cluster.connect(migrated_db, OWNER, autocommit=True) as conn:
+def test_shipped_grants_allow_pipeline_activation(cluster, db):
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
         install_policy(conn, "preview")
-    release_id = stage(cluster, migrated_db, "r1")
+    release_id = stage(cluster, db, "r1")
 
-    receipt = activate(cluster, migrated_db, release_id, None)
+    receipt = activate(cluster, db, release_id, None)
 
     assert receipt["release_id"] == release_id
 
@@ -1629,10 +1632,12 @@ def _web_script(script: str, spec: dict) -> dict:
 
 _WEB_PROJECTIONS = """
 import {
-  CHART_SET_KEYS, CHART_SET_PROJECTIONS, RELEASE_PROJECTIONS,
+  CHART_SET_KEYS, CHART_SET_PROJECTIONS, RECORDED_PROJECTION_SETS, RELEASE_PROJECTIONS,
+  TEAM_RESUME_PROJECTION,
 } from "./src/lib/season-release-query.ts";
 console.log(JSON.stringify({
   core: RELEASE_PROJECTIONS, charts: CHART_SET_PROJECTIONS, keys: CHART_SET_KEYS,
+  optional: [TEAM_RESUME_PROJECTION], recorded: RECORDED_PROJECTION_SETS,
 }));
 """
 
@@ -1726,12 +1731,19 @@ def test_release_projection_list_matches_migration_and_release_module():
     assert set(web["charts"]["charts_v2"]) == _created(MIGRATION_0026) | _created(
         MIGRATION_0027
     )
-    assert set(core) | set(web["charts"]["charts_v2"]) == {
+    # The résumé table is the one optional relation: read on its own, absent from the
+    # core and chart lists so releases staged without it still load.
+    assert web["optional"] == ["season_release_team_resume"]
+    assert not set(web["optional"]) & (set(core) | set(web["charts"]["charts_v2"]))
+    assert set(core) | set(web["charts"]["charts_v2"]) | set(web["optional"]) == {
         f"season_release_{b}" for b in release.PROJECTION_KEYS
     }
     # The web recognizes a set exactly by the keys staging records for it.
     for name in ("charts_v1", "charts_v2"):
         assert web["keys"][name] == sorted(PROJECTION_SETS[name])
+    for name, recorded in web["recorded"].items():
+        assert recorded["keys"] == sorted(PROJECTION_SETS[name]), name
+    assert web["recorded"]["resume_v1"]["chartSet"] == "charts_v2"
 
 
 def test_web_existence_probe_false_before_0025(cluster, pre0025_db):
@@ -1804,7 +1816,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
     6. Second candidate staged and activated, superseding the first.
     7. Owner rolls back Production to the first candidate; all projection rows preserved.
     """
-    db_name = make_db("tpl_migrated")
+    db_name = make_db("tpl_resume")
 
     # 1. Real preparation
     s1_dir = tmp_path / "s1"
@@ -2118,6 +2130,7 @@ def patch_retained_staging(monkeypatch, projection_set):
     )
     monkeypatch.setattr(release, "_require_staging_set", lambda tables: None)
     monkeypatch.setattr(release, "_check_chart_scope", lambda *args: None)
+    monkeypatch.setattr(release, "_check_resume_scope", lambda *args: None)
     monkeypatch.setattr(release, "_bind_yardage_evidence", lambda *args: None)
     monkeypatch.setattr(verifier, "REQUIRED_PROJECTION_CHECKS", projection_names)
     monkeypatch.setattr(verifier, "REQUIRED_PREPARE_CHECKS", prepare_names)
@@ -2332,7 +2345,7 @@ def test_charts_v1_rollback_over_charts_v2_and_back(cluster, db, monkeypatch):
     assert recorded_set(cluster, db, old) == "charts_v1"
     activate(cluster, db, old, None)
     new = stage(cluster, db, "new", payload=candidate("new", edit_payload=rename_venue))
-    assert recorded_set(cluster, db, new) == "charts_v2"
+    assert recorded_set(cluster, db, new) == "resume_v1"
     activate(cluster, db, new, old)
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
         assert chart_set(conn) == "charts_v2"

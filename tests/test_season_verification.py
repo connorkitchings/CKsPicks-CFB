@@ -166,6 +166,73 @@ def chart_yardage() -> list[dict]:
     return rows
 
 
+#: Served periods (ISO cutoff or None for the preseason) with their cutoff, post week
+#: and ``team: (completed, wins, scheduled)``. Hand-computed from GAMES: a game counts
+#: as completed once it has kicked off by the cutoff and has a final.
+RESUME_PERIODS = (
+    (
+        None,
+        _t(5, 10),
+        None,
+        {"A": (0, 0, 3), "B": (0, 0, 2), "C": (0, 0, 2), "D": (0, 0, 3)},
+    ),
+    (
+        "2026-09-12T10:00:00.000Z",
+        _t(12, 10),
+        0,
+        {"A": (1, 1, 3), "B": (1, 0, 2), "C": (0, 0, 2), "D": (0, 0, 3)},
+    ),
+    (
+        "2026-09-19T10:00:00.000Z",
+        _t(19, 10),
+        1,
+        {"A": (2, 1, 3), "B": (1, 0, 2), "C": (2, 2, 2), "D": (1, 0, 3)},
+    ),
+)
+
+
+RESUME_POST_ONE = f"{LINEAGE['rating']}@2026-09-19T10:00:00.000Z"
+
+
+def resume_rows(rating: str) -> list[dict]:
+    """Hand-computed ``team_resume`` rows for the four teams (a short table, under 26).
+
+    Every SOS is the fixture value 50.0 where games exist. SOR and WAA are null: no
+    team has three completed games. ``rating`` is the served generations' source sha.
+    """
+    rows = []
+    for iso, cutoff, post_week, teams in RESUME_PERIODS:
+        period = "preseason" if iso is None else f"{rating}@{iso}"
+        for rank, (team, (completed, wins, scheduled)) in enumerate(teams.items(), 1):
+            rows.append(
+                {
+                    "period_id": period,
+                    "cutoff_utc": cutoff,
+                    "post_week": post_week,
+                    "team": team,
+                    "overall_rank": rank,
+                    "completed_games": completed,
+                    "scheduled_games": scheduled,
+                    "wins": wins,
+                    "losses": completed - wins,
+                    "elite_reference_size": len(teams) - 1,
+                    "elite_reference_kind": "top25_excluding_self",
+                    "average_reference_size": len(teams),
+                    "sos_played_elite": 50.0 if completed else None,
+                    "sos_remaining_elite": 50.0 if scheduled > completed else None,
+                    "sos_full_elite": 50.0,
+                    "sos_played_average": 50.0 if completed else None,
+                    "sos_remaining_average": 50.0 if scheduled > completed else None,
+                    "sos_full_average": 50.0,
+                    "sor_p": None,
+                    "sor": None,
+                    "sor_rank": None,
+                    "waa": None,
+                }
+            )
+    return sorted(rows, key=lambda row: (row["period_id"], row["team"]))
+
+
 def synthetic_payload(
     release_id: str = RELEASE_ID,
     rating: str = LINEAGE["rating"],
@@ -643,6 +710,7 @@ def synthetic_payload(
         "team_game_stats": team_games,
         "team_adjusted_epa": [],  # active_week 2 < 3: no adjusted window yet
         "team_game_yardage": chart_yardage(),
+        "team_resume": resume_rows(rating),
     }
     return {name: _sorted(name, rows) for name, rows in tables.items()}
 
@@ -701,19 +769,16 @@ def test_synthetic_payload_passes_every_projection_check(payload):
     v.validate_report(json.loads(canonical(report)), projections=payload)
 
 
-@pytest.mark.parametrize("projection_set", ["core_v1", "charts_v1", "charts_v2"])
+@pytest.mark.parametrize(
+    "projection_set", ["core_v1", "charts_v1", "charts_v2", "resume_v1"]
+)
 def test_retained_reports_validate_with_their_frozen_checks(payload, projection_set):
     """Legacy reports neither require nor acquire checks introduced by later sets."""
     from cks_picks_cfb.season.projection_common import PROJECTION_SETS
 
     tables = PROJECTION_SETS[projection_set]
     retained = {name: payload[name] for name in ("prediction_runs", *tables)}
-    projection_names = v.REQUIRED_PROJECTION_CHECKS
-    prepare_names = v.REQUIRED_PREPARE_CHECKS
-    if projection_set == "core_v1":
-        projection_names = projection_names - {"team_chart_reconciliation"}
-    if projection_set != "charts_v2":
-        prepare_names = prepare_names - {"chart_yardage_recomputed"}
+    projection_names, prepare_names = v.REQUIRED_CHECK_SETS[projection_set]
     prepare = {
         name: entry
         for name, entry in passing_prepare(payload).items()
@@ -1045,6 +1110,65 @@ NEGATIVES = {
     "venue_for_unknown_game": (
         _append("game_venues", lambda p: {**p["game_venues"][-1], "game_id": 99}),
         {"venues_cover"},
+    ),
+    # resume_periods, resume_values, resume_reference, resume_no_tied_finals
+    "resume_unserved_period": (
+        lambda p: p.__setitem__(
+            "team_resume",
+            _sorted(
+                "team_resume",
+                [
+                    *p["team_resume"],
+                    {
+                        **_row(p, "team_resume", team="A", post_week=1),
+                        "period_id": f"{LINEAGE['rating']}@2026-09-18T10:00:00.000Z",
+                    },
+                ],
+            ),
+        ),
+        {"resume_periods", "resume_reference"},
+    ),
+    "resume_row_missing": (
+        _drop("team_resume", team="C", period_id=RESUME_POST_ONE),
+        {"resume_reference"},
+    ),
+    "resume_served_period_absent": (
+        lambda p: p.__setitem__(
+            "team_resume",
+            [row for row in p["team_resume"] if row["period_id"] != RESUME_POST_ONE],
+        ),
+        {"resume_periods"},
+    ),
+    "resume_short_table_includes_self": (
+        _set(
+            "team_resume",
+            {"team": "A", "period_id": "preseason"},
+            elite_reference_size=4,
+        ),
+        {"resume_reference"},
+    ),
+    "resume_elite_kind_wrong": (
+        _set(
+            "team_resume",
+            {"team": "B", "period_id": "preseason"},
+            elite_reference_kind="top25",
+        ),
+        {"resume_reference"},
+    ),
+    "resume_sos_out_of_range": (
+        _set(
+            "team_resume", {"team": "B", "period_id": "preseason"}, sos_full_elite=120.0
+        ),
+        {"resume_values"},
+    ),
+    "resume_record_inconsistent": (
+        _set("team_resume", {"team": "A", "period_id": "preseason"}, losses=2),
+        {"resume_values"},
+    ),
+    "resume_tied_final": (
+        _set("game_results", {"game_id": 3}, home_points=31, away_points=31),
+        # The chart reconciliation also compares game scores with team statistics.
+        {"resume_no_tied_finals", "team_chart_reconciliation"},
     ),
 }
 

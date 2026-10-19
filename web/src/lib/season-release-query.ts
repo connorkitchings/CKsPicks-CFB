@@ -31,11 +31,30 @@ const perSet = <T>(build: (set: ChartSet) => T) =>
 
 /** Core relations every active release must expose (existing behavior, unchanged). */
 export const RELEASE_PROJECTIONS = CORE_RELEASE_TABLES.map(projectionName);
+/**
+ * Optional release-scoped relation (migration 0028). It is deliberately not in
+ * `CORE_RELEASE_TABLES`: it is absent before 0028 and empty for releases staged without it,
+ * so its absence must never fail `loadReleaseContext`. It is read directly with a
+ * `release_id` filter, not as a CTE, because a CTE over a missing relation fails the query.
+ */
+export const TEAM_RESUME_PROJECTION = getTableName(schema.seasonReleaseTeamResume);
+/** The `projection_checks` key a release records for the optional résumé table (bare table name). */
+const TEAM_RESUME_KEY = "team_resume";
 /** The sorted table names a release of each chart set records in `projection_checks`. */
 export const CHART_SET_KEYS = perSet((set) => [...CORE_RELEASE_TABLES, ...CHART_TABLE_SETS[set]].map(releaseName).sort());
 /** The chart relations each chart set reads. */
 export const CHART_SET_PROJECTIONS = perSet((set) => CHART_TABLE_SETS[set].map(projectionName));
 export const CHARTS_V1_KEYS = CHART_SET_KEYS.charts_v1;
+/**
+ * Every projection set a release can record, mirroring `PROJECTION_SETS` in
+ * `projection_common.py`, each with the chart set it serves. `resume_v1` is `charts_v2`
+ * plus the résumé table, which is read on its own, so it serves `charts_v2`.
+ */
+export const RECORDED_PROJECTION_SETS: Record<string, { chartSet: ChartSet; keys: readonly string[] }> = {
+  charts_v1: { chartSet: "charts_v1", keys: CHART_SET_KEYS.charts_v1 },
+  charts_v2: { chartSet: "charts_v2", keys: CHART_SET_KEYS.charts_v2 },
+  resume_v1: { chartSet: "charts_v2", keys: [...CHART_SET_KEYS.charts_v2, TEAM_RESUME_KEY].sort() },
+};
 
 /** Chart CTEs are added only for `chartSet`'s tables; never fall back to live tables. */
 export function seasonReleaseDb(

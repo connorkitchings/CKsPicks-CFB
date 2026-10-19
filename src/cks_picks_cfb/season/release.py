@@ -60,6 +60,7 @@ PROJECTION_KEYS = {
     "team_game_stats": ("season", "game_id", "team"),
     "team_adjusted_epa": ("season", "as_of_week", "team", "role"),
     "team_game_yardage": ("season", "game_id", "team"),
+    "team_resume": ("period_id", "team"),
 }
 IDENTITY_FIELDS = (
     "season",
@@ -487,6 +488,12 @@ def _check_projection_scope(
         raise SeasonReleaseError("ratings and performance projections are required")
 
 
+def _check_resume_scope(projections: Mapping) -> None:
+    """The résumé projection of a ``resume_v1`` candidate has rows for every period."""
+    if not projections["team_resume"]:
+        raise SeasonReleaseError("team resume projections are required")
+
+
 def _check_chart_scope(projections: Mapping, active_week: int) -> None:
     """The chart tables of a ``charts_v2`` candidate: the roster always, game
     statistics and yardage once a week has completed, adjusted EPA from Week 3."""
@@ -611,6 +618,7 @@ def stage_release(
         raise SeasonReleaseError("release identity missing") from error
     _check_projection_scope(projections, season, active_week)
     _check_chart_scope(projections, active_week)
+    _check_resume_scope(projections)
     validate_candidate(manifest, verification, payload, revision_raw=revision_raw)
     checks = {base: projection_check(rows) for base, rows in projections.items()}
     release_id = f"{environment}-{manifest['release_id']}"

@@ -81,3 +81,103 @@ test("desktop timeline carries live filters and selected column semantics", asyn
   await expect(page.getByRole("table").locator("tbody tr")).toHaveCount(1);
   await expect(page.getByRole("navigation", { name: "Ratings timeline" }).getByRole("link", { name: "Post-Week 3" })).toHaveAttribute("aria-current", "page");
 });
+
+test.describe("résumé columns", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  // Table cells in order: rank, Overall, Offense, Defense, W-L, SOR, WAA, SOS, uncertainty.
+  const rowCells = (page: import("@playwright/test").Page, team: string) =>
+    page.getByRole("table").locator("tbody tr", { hasText: team }).getByRole("cell");
+  const RESUME_SORT = "Résumé sort";
+
+  test("W-L, SOR, WAA and SOS render fixture values and the Elite reference links to methodology", async ({ page }) => {
+    await page.goto("/ratings");
+    await expect(page.getByRole("columnheader", { name: "W-L (vs FBS)", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Elite", exact: true })).toHaveAttribute("href", "/methodology#elite-reference");
+
+    const texas = rowCells(page, "Texas");
+    await expect(texas.nth(4)).toHaveText("4–0");
+    await expect(texas.nth(5)).toHaveText("81.2 #2");
+    await expect(texas.nth(6)).toHaveText("+1.6");
+    await expect(texas.nth(7)).toHaveText("41.3 / 47.9 / 45.7");
+
+    const ohioState = rowCells(page, "Ohio State");
+    await expect(ohioState.nth(4)).toHaveText("3–1");
+    await expect(ohioState.nth(5)).toHaveText("93.7 #1");
+    await expect(ohioState.nth(6)).toHaveText("+2.1");
+
+    // Fewer than 3 completed FBS games: SOR and WAA are null and render as dashes.
+    const southernMiss = rowCells(page, "Southern Mississippi");
+    await expect(southernMiss.nth(4)).toHaveText("1–1");
+    await expect(southernMiss.nth(5)).toHaveText("—");
+    await expect(southernMiss.nth(6)).toHaveText("—");
+  });
+
+  test("the SOS reference switch changes the SOS values", async ({ page }) => {
+    await page.goto("/ratings");
+    const texas = rowCells(page, "Texas");
+    await expect(texas.nth(7)).toHaveText("41.3 / 47.9 / 45.7");
+
+    const reference = page.getByRole("group", { name: "SOS reference" });
+    await reference.getByRole("button", { name: "Average", exact: true }).click();
+    await expect(reference.getByRole("button", { name: "Average", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(texas.nth(7)).toHaveText("52.6 / 58.4 / 56.5");
+  });
+
+  test("the résumé sort orders rows by SOR with null SOR last", async ({ page }) => {
+    await page.goto("/ratings");
+    const rows = page.getByRole("table").locator("tbody tr");
+    await expect(rows.nth(0)).toContainText("Texas");
+
+    await page.getByRole("group", { name: RESUME_SORT }).getByRole("button", { name: "SOR", exact: true }).click();
+    await expect(page.getByRole("columnheader", { name: "SOR", exact: true })).toHaveAttribute("aria-sort", "descending");
+    await expect(rows.nth(0)).toContainText("Ohio State");
+    await expect(rows.nth(1)).toContainText("Texas");
+    await expect(rows.nth(2)).toContainText("Appalachian State");
+    await expect(rows.nth(3)).toContainText("Southern Mississippi");
+  });
+
+  // Pending: `?sort=sor` is accepted only once the page widens its accepted sort values (in progress
+  // on another task). Until that merges this test fails because the page falls back to Overall.
+  test("?sort=sor selects the SOR sort on load and after reload", async ({ page }) => {
+    await page.goto("/ratings?sort=sor");
+    const rows = page.getByRole("table").locator("tbody tr");
+    const sorButton = page.getByRole("group", { name: RESUME_SORT }).getByRole("button", { name: "SOR", exact: true });
+    await expect(sorButton).toHaveAttribute("aria-pressed", "true");
+    await expect(rows.nth(0)).toContainText("Ohio State");
+
+    await page.reload();
+    await expect(sorButton).toHaveAttribute("aria-pressed", "true");
+    await expect(rows.nth(0)).toContainText("Ohio State");
+  });
+});
+
+test.describe("release without résumé rows", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("renders dashes for résumé columns, hides the résumé controls, and logs no errors", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("pageerror", (error) => problems.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") problems.push(message.text());
+    });
+
+    // `no-resume` is the fixture period that serves ratings without résumé rows.
+    await page.goto("/ratings?period=no-resume");
+    await expect(page.getByRole("heading", { name: "Team ratings" })).toBeVisible();
+    await expect(page.getByRole("table").locator("tbody tr")).toHaveCount(4);
+    await expect(page.getByRole("columnheader", { name: "W-L (vs FBS)", exact: true })).toBeVisible();
+
+    const texas = page.getByRole("table").locator("tbody tr", { hasText: "Texas" }).getByRole("cell");
+    await expect(texas.nth(1)).toHaveText("+5.50");
+    await expect(texas.nth(4)).toHaveText("—");
+    await expect(texas.nth(5)).toHaveText("—");
+    await expect(texas.nth(6)).toHaveText("—");
+    await expect(texas.nth(7)).toHaveText("—");
+
+    await expect(page.getByRole("group", { name: "Résumé sort" })).toBeHidden();
+    await expect(page.getByRole("group", { name: "SOS reference" })).toBeHidden();
+    await expect(page.getByRole("link", { name: "Elite", exact: true })).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+});

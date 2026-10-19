@@ -124,6 +124,25 @@ _PREPARE_CHECKS_V1: frozenset[str] = frozenset(
         "checksums_at_read",
     }
 )
+#: Checks of the résumé projection (``team_resume``): payload-only, re-derived at staging.
+_RESUME_PROJECTION_CHECKS: frozenset[str] = frozenset(
+    {
+        "resume_periods",
+        "resume_values",
+        "resume_reference",
+        "resume_no_tied_finals",
+    }
+)
+#: Résumé checks that need the prepared frames, schedule and pinned inputs. They
+#: are bound to the run by the verification sha, not re-derived at staging.
+_RESUME_PREPARE_CHECKS: frozenset[str] = frozenset(
+    {
+        "resume_bridge_pinned",
+        "resume_rated_teams",
+        "resume_completed_parity",
+        "resume_record_recount",
+    }
+)
 #: Required ``(projection, prepare)`` checks per projection set, frozen per set
 #: like :data:`projection_common.PROJECTION_SETS`.
 REQUIRED_CHECK_SETS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
@@ -135,6 +154,10 @@ REQUIRED_CHECK_SETS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
     "charts_v2": (
         _PROJECTION_CHECKS_V1,
         _PREPARE_CHECKS_V1 | {"chart_yardage_recomputed"},
+    ),
+    "resume_v1": (
+        _PROJECTION_CHECKS_V1 | _RESUME_PROJECTION_CHECKS,
+        _PREPARE_CHECKS_V1 | {"chart_yardage_recomputed"} | _RESUME_PREPARE_CHECKS,
     ),
 }
 assert set(REQUIRED_CHECK_SETS) == set(PROJECTION_SETS)
@@ -1085,6 +1108,198 @@ def _team_chart_reconciliation(p: _Payload) -> tuple[list[str], dict]:
     )
 
 
+_SOS_FIELDS = (
+    "sos_played_elite",
+    "sos_remaining_elite",
+    "sos_full_elite",
+    "sos_played_average",
+    "sos_remaining_average",
+    "sos_full_average",
+)
+
+
+def _served_rating_periods(p: _Payload) -> dict[str, dict]:
+    """Served rating period id -> cutoff, post week and rated teams, from the snapshots.
+
+    The ids are the ones the web reads: ``preseason`` for the week-0 pregame states
+    and ``<source sha256>@<cutoff>`` for each current (post-week) generation.
+    """
+    from cks_picks_cfb.season.projection_resume import (
+        PRESEASON_PERIOD,
+        source_qualified_period_id,
+    )
+
+    served: dict[str, dict] = {}
+    for snap in p.rows("v5_rating_snapshots"):
+        cutoff = _ts(snap["cutoff_utc"])
+        if snap["snapshot_class"] == "pregame" and snap["snapshot_id"].endswith(
+            ":preseason"
+        ):
+            period, post_week = PRESEASON_PERIOD, None
+        elif snap["snapshot_class"] == "current":
+            period = source_qualified_period_id(snap["source_manifest_sha256"], cutoff)
+            post_week = snap["week"]
+        else:
+            continue
+        entry = served.setdefault(
+            period, {"cutoff": cutoff, "post_week": post_week, "teams": set()}
+        )
+        if entry["cutoff"] != cutoff or entry["post_week"] != post_week:
+            raise ValueError(f"served period {period} mixes cutoffs or post weeks")
+        entry["teams"].add(snap["team"])
+    return served
+
+
+def _in_range(value: Any, low: float, high: float) -> bool:
+    """``None`` passes; otherwise a finite number within ``[low, high]``."""
+    if value is None:
+        return True
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and low <= value <= high
+    )
+
+
+def _resume_periods(p: _Payload) -> tuple[list[str], dict]:
+    """Each résumé row sits in a served period whose cutoff, post week and teams match."""
+    served = _served_rating_periods(p)
+    rows = p.rows("team_resume")
+    problems: list[str] = []
+    seen: dict[str, set[str]] = defaultdict(set)
+    for row in rows:
+        period = served.get(row["period_id"])
+        if period is None:
+            problems.append(
+                f"team_resume period {row['period_id']} is not a served rating period"
+            )
+            continue
+        if (
+            _ts(row["cutoff_utc"]) != period["cutoff"]
+            or row["post_week"] != period["post_week"]
+        ):
+            problems.append(
+                f"team_resume {row['period_id']}: cutoff or post week differs from its snapshots"
+            )
+        if row["team"] not in period["teams"]:
+            problems.append(
+                f"team_resume {row['team']} is not rated in {row['period_id']}"
+            )
+        seen[row["period_id"]].add(row["team"])
+    problems += [
+        f"served period {period} has no team_resume rows"
+        for period in sorted(served)
+        if not seen.get(period)
+    ]
+    return problems, {"periods": len(served), "rows": len(rows)}
+
+
+def _resume_values(p: _Payload) -> tuple[list[str], dict]:
+    """Counts, probabilities, SOS, SOR and its rank are internally consistent."""
+    from cks_picks_cfb.season.projection_resume import MIN_RESUME_GAMES
+
+    rows = p.rows("team_resume")
+    problems: list[str] = []
+    for row in rows:
+        where = f"{row['period_id']} {row['team']}"
+        counts = ("completed_games", "scheduled_games", "wins", "losses")
+        if not all(_is_count(row[name]) for name in counts):
+            problems.append(f"{where}: game counts must be non-negative integers")
+            continue
+        if row["wins"] + row["losses"] != row["completed_games"]:
+            problems.append(f"{where}: wins plus losses differ from completed games")
+        if row["completed_games"] > row["scheduled_games"]:
+            problems.append(f"{where}: more completed than scheduled games")
+        for name in _SOS_FIELDS:
+            if not _in_range(row[name], 0.0, 100.0):
+                problems.append(f"{where}: {name} outside [0, 100]")
+        if not _in_range(row["sor_p"], 0.0, 1.0):
+            problems.append(f"{where}: sor_p outside [0, 1]")
+        if not _in_range(row["sor"], 0.0, 100.0):
+            problems.append(f"{where}: sor outside [0, 100]")
+        if (row["sor_p"] is None) != (row["sor"] is None):
+            problems.append(f"{where}: sor and sor_p are not both null or both set")
+        elif row["sor"] is not None and not _close(
+            row["sor"], 100.0 * (1.0 - row["sor_p"])
+        ):
+            problems.append(f"{where}: sor differs from 100 * (1 - sor_p)")
+        if row["sor"] is not None and row["completed_games"] < MIN_RESUME_GAMES:
+            problems.append(
+                f"{where}: sor shown with fewer than {MIN_RESUME_GAMES} games"
+            )
+        if row["waa"] is not None and (
+            row["sor"] is None or not math.isfinite(row["waa"])
+        ):
+            problems.append(f"{where}: waa must be finite and accompany a sor")
+    for period in sorted({row["period_id"] for row in rows}):
+        in_period = [row for row in rows if row["period_id"] == period]
+        ranked = sorted(
+            (row for row in in_period if row["sor"] is not None),
+            key=lambda row: (-row["sor"], row["overall_rank"]),
+        )
+        expected = {row["team"]: position for position, row in enumerate(ranked, 1)}
+        for row in in_period:
+            if row["sor_rank"] != expected.get(row["team"]):
+                problems.append(
+                    f"{period} {row['team']}: sor_rank {row['sor_rank']} != {expected.get(row['team'])}"
+                )
+    return problems, {"rows": len(rows)}
+
+
+def _resume_reference(p: _Payload) -> tuple[list[str], dict]:
+    """Overall ranks are 1..n; elite references have 25 members once there are 26 teams.
+
+    A period with fewer than 26 rated teams is a short table: the reference is the
+    other teams (non-empty, self excluded) rather than a 25-team mean.
+    """
+    from cks_picks_cfb.season.projection_resume import ELITE_SIZE
+
+    by_period: dict[str, list[dict]] = defaultdict(list)
+    for row in p.rows("team_resume"):
+        by_period[row["period_id"]].append(row)
+    problems: list[str] = []
+    for period, rows in sorted(by_period.items()):
+        size = len(rows)
+        if sorted(row["overall_rank"] for row in rows) != list(range(1, size + 1)):
+            problems.append(f"{period}: overall ranks are not 1..{size}")
+        for row in rows:
+            where = f"{period} {row['team']}"
+            if row["average_reference_size"] != size:
+                problems.append(f"{where}: average reference is not every rated team")
+            if size >= ELITE_SIZE + 1:
+                kind = (
+                    "top25_excluding_self"
+                    if row["overall_rank"] <= ELITE_SIZE
+                    else "top25"
+                )
+                if row["elite_reference_size"] != ELITE_SIZE or (
+                    row["elite_reference_kind"] != kind
+                ):
+                    problems.append(
+                        f"{where}: elite reference is not {ELITE_SIZE} {kind} teams"
+                    )
+            elif (
+                row["elite_reference_kind"] != "top25_excluding_self"
+                or row["elite_reference_size"] != size - 1
+                or size < 2
+            ):
+                problems.append(
+                    f"{where}: short-table elite reference is not the other teams"
+                )
+    return problems, {"periods": len(by_period)}
+
+
+def _resume_no_tied_finals(p: _Payload) -> tuple[list[str], dict]:
+    """FBS games cannot end tied, so no final in ``game_results`` has equal scores."""
+    tied = sorted(
+        row["game_id"]
+        for row in p.rows("game_results")
+        if row["home_points"] is not None and row["home_points"] == row["away_points"]
+    )
+    return [f"game {game_id} ends in a tie" for game_id in tied], {}
+
+
 _PROJECTION_CHECKS: dict[str, Callable[[_Payload], tuple[list[str], dict]]] = {
     "tables_complete": _tables_complete,
     "weeks_and_slate": _weeks_and_slate,
@@ -1101,6 +1316,10 @@ _PROJECTION_CHECKS: dict[str, Callable[[_Payload], tuple[list[str], dict]]] = {
     "matchup_publication": _matchup_publication,
     "venues_cover": _venues_cover,
     "team_chart_reconciliation": _team_chart_reconciliation,
+    "resume_periods": _resume_periods,
+    "resume_values": _resume_values,
+    "resume_reference": _resume_reference,
+    "resume_no_tied_finals": _resume_no_tied_finals,
 }
 assert set(_PROJECTION_CHECKS) == REQUIRED_PROJECTION_CHECKS
 
@@ -1406,6 +1625,164 @@ def _chart_yardage_recomputed(
     return yardage_differences(candidate, expected), observed
 
 
+def _finals_by_game(finals) -> dict[int, tuple[int, int]]:
+    """``game_id -> (home points, away points)`` for every final in the frame."""
+    decided = finals.dropna(subset=["home_points", "away_points"])
+    return {
+        int(row.game_id): (int(row.home_points), int(row.away_points))
+        for row in decided.itertuples(index=False)
+    }
+
+
+def _resume_bridge_pinned(inputs) -> tuple[list[str], dict]:
+    """The bridge bytes the résumé projection read are the pinned B2 bundle."""
+    problems = (
+        []
+        if inputs.bridge_sha256 == PINNED_BRIDGE_SHA256
+        else ["bridge bytes differ from the pinned B2 bundle"]
+    )
+    return problems, {"bridge_sha256": inputs.bridge_sha256}
+
+
+def _resume_rated_teams(
+    frames, inputs, ratings_id: str, projections
+) -> tuple[list[str], dict]:
+    """One résumé row per rated FBS team per served period, and no other rows."""
+    from cks_picks_cfb.season.projection_resume import (
+        canonical_fbs_teams,
+        period_ratings,
+    )
+
+    ratings = period_ratings(frames, ratings_id)
+    fbs = canonical_fbs_teams(inputs)
+    expected = {
+        (str(period), str(team))
+        for period, team in zip(ratings["period_id"], ratings["team"], strict=True)
+        if team in fbs
+    }
+    observed = {(row["period_id"], row["team"]) for row in projections["team_resume"]}
+    problems = [
+        f"rated FBS team {team} has no team_resume row in {period}"
+        for period, team in sorted(expected - observed)
+    ]
+    problems += [
+        f"team_resume row {team} in {period} is not a rated FBS team"
+        for period, team in sorted(observed - expected)
+    ]
+    return problems, {
+        "rated_teams": len(expected),
+        "periods": len(set(ratings["period_id"])),
+    }
+
+
+def _resume_completed_parity(
+    frames, inputs, ratings_id: str, projections
+) -> tuple[list[str], dict]:
+    """Per served period, the completed set equals ``game_results`` before its cutoff.
+
+    The expected set is the shared completion rule (kicked off by the cutoff and
+    final); the observed set is the release's ``game_results`` filtered by kickoff.
+    Scores must match the finals frame exactly.
+    """
+    import pandas as pd
+
+    from cks_picks_cfb.season.projection_resume import (
+        completed_game_ids,
+        period_ratings,
+    )
+
+    schedule, finals = inputs.schedule, frames["finals"]
+    kickoff = {
+        int(game): pd.Timestamp(stamp)
+        for game, stamp in zip(
+            schedule["game_id"], schedule["kickoff_utc"], strict=True
+        )
+    }
+    results = {int(row["game_id"]): row for row in projections["game_results"]}
+    decided = _finals_by_game(finals)
+    problems = [
+        f"game_results game {game} is not in the schedule"
+        for game in sorted(set(results) - set(kickoff))
+    ]
+    ratings = period_ratings(frames, ratings_id)
+    cutoffs = {
+        str(period): pd.Timestamp(cutoff)
+        for period, cutoff in zip(
+            ratings["period_id"], ratings["cutoff_utc"], strict=True
+        )
+    }
+    for period, cutoff in sorted(cutoffs.items()):
+        expected = completed_game_ids(schedule, finals, cutoff.isoformat())
+        observed = {
+            game for game in results if game in kickoff and kickoff[game] <= cutoff
+        }
+        if observed != expected:
+            problems.append(
+                f"{period}: completed games differ from game_results: "
+                f"missing {sorted(expected - observed)[:5]}, "
+                f"extra {sorted(observed - expected)[:5]}"
+            )
+        for game in sorted(observed & expected):
+            row = results[game]
+            if (int(row["home_points"]), int(row["away_points"])) != decided.get(game):
+                problems.append(f"{period}: game {game} score differs from finals")
+    return problems, {"periods": len(cutoffs)}
+
+
+def _resume_record_recount(frames, inputs, projections) -> tuple[list[str], dict]:
+    """Each row's games, completed games and wins match a recount of the schedule.
+
+    Opponents are the rated FBS teams of the same period, so FCS games are excluded.
+    The recount takes canonical names from the schedule and the finals from the
+    prepared frame, not from the payload being checked.
+    """
+    import pandas as pd
+
+    schedule = inputs.schedule
+    decided = _finals_by_game(frames["finals"])
+    games = [
+        (int(game), pd.Timestamp(stamp), str(home), str(away))
+        for game, stamp, home, away in zip(
+            schedule["game_id"],
+            schedule["kickoff_utc"],
+            schedule["home_team"],
+            schedule["away_team"],
+            strict=True,
+        )
+    ]
+    rows = projections["team_resume"]
+    rated: dict[str, set[str]] = defaultdict(set)
+    for row in rows:
+        rated[row["period_id"]].add(row["team"])
+    problems: list[str] = []
+    for row in rows:
+        team, period = row["team"], row["period_id"]
+        cutoff = pd.Timestamp(row["cutoff_utc"])
+        scheduled = completed = wins = 0
+        for game, kickoff, home, away in games:
+            if team not in (home, away):
+                continue
+            if (away if team == home else home) not in rated[period]:
+                continue
+            scheduled += 1
+            if kickoff <= cutoff and game in decided:
+                own, other = decided[game] if team == home else decided[game][::-1]
+                completed += 1
+                wins += own > other
+        observed = (
+            row["scheduled_games"],
+            row["completed_games"],
+            row["wins"],
+            row["losses"],
+        )
+        expected = (scheduled, completed, wins, completed - wins)
+        if observed != expected:
+            problems.append(
+                f"{period} {team}: record {observed} differs from recount {expected}"
+            )
+    return problems, {"rows": len(rows)}
+
+
 def derive_prepare_checks(
     frames: Mapping[str, Any],
     *,
@@ -1426,6 +1803,7 @@ def derive_prepare_checks(
     revision manifest and ``projections`` the candidate payload.
     """
     through = int(identity["through_week"])
+    ratings_id = lineage_identities(identity, output_refs)["rating"]
     checks = {
         "required_prior_week_data": (_required_prior_week_data, frames, through),
         "score_reconciliation": (_score_reconciliation, frames, inputs, through),
@@ -1448,6 +1826,22 @@ def derive_prepare_checks(
             projections,
             int(identity["active_week"]),
         ),
+        "resume_bridge_pinned": (_resume_bridge_pinned, inputs),
+        "resume_rated_teams": (
+            _resume_rated_teams,
+            frames,
+            inputs,
+            ratings_id,
+            projections,
+        ),
+        "resume_completed_parity": (
+            _resume_completed_parity,
+            frames,
+            inputs,
+            ratings_id,
+            projections,
+        ),
+        "resume_record_recount": (_resume_record_recount, frames, inputs, projections),
     }
     assert set(checks) == REQUIRED_PREPARE_CHECKS
     return {

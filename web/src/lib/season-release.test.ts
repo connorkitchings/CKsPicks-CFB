@@ -162,6 +162,23 @@ test("a charts_v2 release serves explosiveness with the yardage CTE bound to its
   assert.ok(query.params.every((value) => value === "release-a"));
 });
 
+test("a resume_v1 release serves charts_v2 and its résumé table is not a chart relation", async () => {
+  const resumeV2 = { ...v2Release, projection_keys: [...CHART_SET_KEYS.charts_v2, "team_resume"].sort().reverse() };
+  const context = await resolve(resumeV2);
+  assert.deepEqual(capabilities(context), ["charts_v2", true, true]);
+  const query = chartSql(context!.releaseId, context!.chartSet);
+  assert.equal(query.sql.includes("team_resume"), false);
+  assert.equal(query.sql.includes(YARDAGE), true);
+});
+
+test("a resume_v1 release with missing yardage or unknown extra keys has no chart set", async () => {
+  const resumeKeys = [...CHART_SET_KEYS.charts_v2, "team_resume"].sort();
+  assert.deepEqual(capabilities(await resolve({ ...v2Release, projection_keys: resumeKeys, charts_v2_relations: false })), [null, false, false]);
+  for (const projection_keys of [[...resumeKeys, "extra"], resumeKeys.filter((key) => key !== "team_game_yardage")]) {
+    assert.equal((await resolve({ ...v2Release, projection_keys }))?.chartSet, null, projection_keys.join(","));
+  }
+});
+
 test("a charts_v2 release whose yardage relation is missing has no chart set", async () => {
   assert.deepEqual(capabilities(await resolve({ ...v2Release, charts_v2_relations: false })), [null, false, false]);
   assert.deepEqual(capabilities(await resolve({ ...v2Release, charts_v2_relations: null })), [null, false, false]);

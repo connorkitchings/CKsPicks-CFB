@@ -19,6 +19,24 @@ export type Rating = {
   overallRating: number;
   overallVariance: number;
   fallbackReason: string | null;
+  /**
+   * Résumé fields from `season_release_team_resume`, joined by exact period and team.
+   * Absent or null when the release has no row for the team and period (for example,
+   * the current release before the projection is staged, or a table not yet migrated).
+   */
+  wins?: number | null;
+  losses?: number | null;
+  completedGames?: number | null;
+  scheduledGames?: number | null;
+  sosPlayedElite?: number | null;
+  sosRemainingElite?: number | null;
+  sosFullElite?: number | null;
+  sosPlayedAverage?: number | null;
+  sosRemainingAverage?: number | null;
+  sosFullAverage?: number | null;
+  sor?: number | null;
+  sorRank?: number | null;
+  waa?: number | null;
 };
 
 /** A ratings period id: "preseason" or a source-qualified generation cutoff. */
@@ -62,21 +80,45 @@ export function parseSourceQualifiedPeriodId(id: string): { sourceSha: string; c
 }
 
 /**
- * Certified post-week assessments, keyed by exact generation cutoff ISO.
- * A generation earns a week label only after its full replay→verify→project
- * chain completes; unknown future cutoffs keep their "As of" date label
- * until then. Week coverage below is the verified completed-game count.
+ * Résumé facts for one generation, derived from its `season_release_team_resume` rows by
+ * `resumeFactsByPeriod` in `./team-resume.ts`. `postWeek` is the certified post-week the
+ * generation was assessed after; `games` is its completed-game count.
  */
-export const WEEK_GENERATIONS: Record<string, { postWeek: number; games: number; weeks: string }> = {
-  "2026-09-03T04:00:00.000Z": { postWeek: 0, games: 8, weeks: "0" },
-  "2026-09-08T15:35:00.000Z": { postWeek: 1, games: 51, weeks: "0–1" },
-  "2026-09-13T18:18:22.000Z": { postWeek: 2, games: 100, weeks: "0–2" },
-  "2026-09-22T14:58:00.000Z": { postWeek: 3, games: 157, weeks: "0–3" },
-  "2026-09-27T14:15:00.000Z": { postWeek: 4, games: 215, weeks: "0–4" },
-  "2026-10-05T00:00:00.000Z": { postWeek: 5, games: 271, weeks: "0–5" },
-  "2026-10-11T15:00:00.000Z": { postWeek: 6, games: 329, weeks: "0–6" },
-  "2026-10-18T14:00:00.000Z": { postWeek: 7, games: 388, weeks: "0–7" },
-};
+export type ResumePeriodFacts = { postWeek: number; games: number };
+
+/** Label fields for a generation with résumé facts. `active` marks the active model state. */
+export function resumePeriodFields(
+  facts: ResumePeriodFacts,
+  active: boolean,
+): Pick<PeriodMeta, "label" | "shortLabel" | "description" | "postWeek"> {
+  const { postWeek, games } = facts;
+  const weeks = postWeek === 0 ? "week 0" : `weeks 0–${postWeek}`;
+  return {
+    label: `Post-Week ${postWeek}`,
+    shortLabel: `Week ${postWeek}`,
+    description: `Frozen ratings after Week ${postWeek} games finalized (${games} FBS games, ${weeks})${active ? " (active model state)." : "."}`,
+    postWeek,
+  };
+}
+
+/**
+ * Label fields for a generation. Résumé facts give the certified post-week label. Without
+ * them (no table, no rows for the release, or a rollback target) the label is the cutoff
+ * date, so the page never fails for lack of the projection.
+ */
+export function periodLabelFields(
+  cutoff: Date,
+  facts: ResumePeriodFacts | undefined,
+  active: boolean,
+): Pick<PeriodMeta, "label" | "shortLabel" | "description" | "postWeek"> {
+  if (facts) return resumePeriodFields(facts, active);
+  return {
+    ...formatCutoffLabel(cutoff),
+    description: active
+      ? "Frozen team ratings from all evidence available at cutoff (active model state)."
+      : "Frozen team ratings from all evidence available at cutoff.",
+  };
+}
 
 /**
  * Default-view period derived from the served rows, not from the newest
@@ -84,26 +126,21 @@ export const WEEK_GENERATIONS: Record<string, { postWeek: number; games: number;
  * rows it was derived from, so label and data agree by construction in every
  * projection-before-selection and rollback state. Callers must pass
  * single-cutoff rows (`getCurrentRatings` guarantees its source's max
- * cutoff); empty input yields the preseason meta.
+ * cutoff); empty input yields the preseason meta. `resumeFacts` is keyed by
+ * period id and may be empty.
  */
-export function defaultPeriodForRows(ratings: Rating[]): PeriodMeta {
+export function defaultPeriodForRows(
+  ratings: Rating[],
+  resumeFacts: ReadonlyMap<string, ResumePeriodFacts>,
+): PeriodMeta {
   if (ratings.length === 0) return PRESEASON_META;
-  const cutoffUtc = ratings[0].cutoffUtc;
-  const iso = cutoffUtc.toISOString();
-  const known = WEEK_GENERATIONS[iso];
-  const { label: dateLabel, shortLabel: dateShort } = formatCutoffLabel(cutoffUtc);
+  const { sourceManifestSha256, cutoffUtc } = ratings[0];
+  const id = sourceManifestSha256 ? sourceQualifiedPeriodId(sourceManifestSha256, cutoffUtc) : cutoffUtc.toISOString();
   return {
-    id: ratings[0].sourceManifestSha256
-      ? sourceQualifiedPeriodId(ratings[0].sourceManifestSha256, cutoffUtc)
-      : iso,
-    label: known ? `Post-Week ${known.postWeek}` : dateLabel,
-    shortLabel: known ? `Week ${known.postWeek}` : dateShort,
-    description: known
-      ? `Frozen ratings after Week ${known.postWeek} games finalized (${known.games} games, weeks ${known.weeks}) (active model state).`
-      : "Frozen team ratings from all evidence available at cutoff (active model state).",
+    id,
     cutoffUtc,
-    ...(ratings[0].sourceManifestSha256 ? { sourceManifestSha256: ratings[0].sourceManifestSha256 } : {}),
-    ...(known ? { postWeek: known.postWeek } : {}),
+    ...(sourceManifestSha256 ? { sourceManifestSha256 } : {}),
+    ...periodLabelFields(cutoffUtc, resumeFacts.get(id), true),
   } satisfies PeriodMeta;
 }
 

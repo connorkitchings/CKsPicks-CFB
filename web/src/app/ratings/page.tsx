@@ -6,13 +6,14 @@ import { RatingsView } from "@/components/ratings/RatingsView";
 
 export const revalidate = 300;
 
-type Sort = "overall" | "offense" | "defense";
+type Sort = "overall" | "offense" | "defense" | "sor" | "waa" | "sos";
+const sorts: readonly Sort[] = ["overall", "offense", "defense", "sor", "waa", "sos"];
 
 export default async function RatingsPage({ searchParams }: {
   searchParams: Promise<{ q?: string; sort?: string; season?: string; week?: string; period?: string }>;
 }) {
   const params = await searchParams;
-  const sort: Sort = params.sort === "offense" || params.sort === "defense" ? params.sort : "overall";
+  const sort: Sort = sorts.find((value) => value === params.sort) ?? "overall";
   const query = (params.q ?? "").trim().slice(0, 80);
   const requestedSeason = params.season ? Number(params.season) : 2026;
   const season = Number.isInteger(requestedSeason) && requestedSeason > 0 ? requestedSeason : 2026;

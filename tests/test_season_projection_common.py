@@ -22,7 +22,10 @@ def test_projection_order_matches_release_keys():
 def test_builder_keys_partition_projection_tables():
     serving = set(SERVING_KEYS) - {"prediction_runs"}
     assert serving.isdisjoint(FOOTBALL_KEYS)
-    assert serving | set(FOOTBALL_KEYS) | set(CHART_KEYS) == set(pc.PROJECTION_ORDER)
+    resume = {"team_resume"}
+    assert serving | set(FOOTBALL_KEYS) | set(CHART_KEYS) | resume == set(
+        pc.PROJECTION_ORDER
+    )
 
 
 def test_server_columns_are_release_and_environment():

@@ -264,6 +264,57 @@ T−1h hard freeze, and >=24h final-outcome stabilization. Week 0 and retrospect
 replays do not count. Changed designs reset the protected window. Market
 comparison follows football evaluation; promotion needs a separate contract.
 
+## Schedule strength and strength of record
+
+These measures describe each team's schedule and résumé. They are computed once
+per season release from the period's ratings and are not forecast inputs. Every
+game, played or not, is scored with the period's own ratings, so the strength of
+schedule (SOS) of an already-played game changes each week as the ratings learn.
+
+Each game is scored with `p_ref,g`, the chance that the reference team wins game
+`g` at its recorded site, from the pinned V5 margin bridge. The margin uses
+ratings only. The bridge's per-game non-offense offset is not applied, because it
+describes an actual game and has no meaning for a hypothetical reference team.
+Neutral sites are not adjusted, since the margin model has no neutral-site term;
+games use their recorded home or away labels, so home field is included.
+
+- **Average reference:** the mean offense and defense rating of all rated FBS
+  teams in the period ("an average FBS team"). A team's own rating is included.
+- **Elite reference:** the mean offense and defense rating of the period's top 25
+  teams by `overall_rating`, with ties at rank 25 broken by `team` ascending. This
+  is a descriptive device for reading résumé results, not a model input. A team
+  ranked 1 to 25 is never measured against itself: its reference is the other 24
+  top-25 teams plus the 26th-ranked team. Every other team, including the
+  26th-ranked team, uses the plain top-25 mean. Each period therefore has up to 26
+  elite reference vectors.
+
+```text
+SOS = mean over games of (1 - p_ref,g) x 100
+SOR = (1 - P) x 100
+WAA = wins - sum over completed games of p_avg,g
+```
+
+- **SOS:** higher means a harder schedule. Played, Remaining and Full cover
+  completed games, games after the cutoff, and all games. Elite and average
+  values differ in level because an elite team wins more often, so elite values
+  run lower than average values for the same schedule. Compare values only within
+  one reference.
+- **SOR:** `P` is the exact probability that an elite reference team, playing this
+  team's completed FBS schedule, finishes with at least this team's wins. It is
+  computed as a Poisson-binomial distribution over the completed games' `p_elite,g`.
+  Higher SOR is a stronger résumé. Rank 1 is best, and SOR ties are broken by
+  `overall_rank` ascending; only exactly equal values tie. `P` is stored alongside
+  SOR.
+- **WAA:** wins above the expected wins of an average FBS team on the same schedule.
+
+SOR and WAA are shown as "—" in the preseason and for any team with fewer than 3
+completed FBS games. SOS is shown from the preseason onward.
+
+W-L is reported "vs FBS". Only games against FBS opponents are counted in W-L, SOS
+and SOR, so FCS games are excluded everywhere. A game counts as completed when its
+kickoff is at or before the period cutoff and it has a final score. A game that
+kicked off before the cutoff without a final score counts toward SOS Full only.
+
 ## Fixed first-generation settings
 
 | Setting | PPP | EPA/possession | Policy |

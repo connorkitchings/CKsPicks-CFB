@@ -14,13 +14,14 @@ from cks_picks_cfb.season import inputs as season_inputs
 from cks_picks_cfb.season import (
     projection_charts,
     projection_football,
+    projection_resume,
     projection_serving,
 )
 from cks_picks_cfb.season import verification as v
 from cks_picks_cfb.season.inputs import load_inputs
 from cks_picks_cfb.season.manifest import canonical, sha
 from cks_picks_cfb.season.runner import prepare, status
-from tests.test_season_verification import synthetic_payload
+from tests.test_season_verification import resume_rows, synthetic_payload
 
 
 def _fake_builder(keys, calls=None):
@@ -59,6 +60,21 @@ def builder_calls(monkeypatch):
         "build_charts",
         _fake_builder(projection_charts.CHART_KEYS),
     )
+    monkeypatch.setattr(
+        projection_resume,
+        "build_resume",
+        lambda *, frames, inputs, ratings_id: {"team_resume": resume_rows(ratings_id)},
+    )
+    # The résumé prepare checks read the real teams input and frames; these tests
+    # use fake builders, so the checks are stubbed here and exercised on real
+    # frames in tests/test_season_resume_projection.py.
+    for name in (
+        "_resume_bridge_pinned",
+        "_resume_rated_teams",
+        "_resume_completed_parity",
+        "_resume_record_recount",
+    ):
+        monkeypatch.setattr(v, name, lambda *args, **kwargs: ([], {}))
     # The chart_yardage_recomputed prepare check recomputes what the (fake)
     # chart builder produced.
     monkeypatch.setattr(

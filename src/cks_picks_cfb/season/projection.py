@@ -13,6 +13,7 @@ from typing import Any
 from cks_picks_cfb.season import (
     projection_charts,
     projection_football,
+    projection_resume,
     projection_serving,
 )
 from cks_picks_cfb.season.projection_common import PROJECTION_ORDER
@@ -63,4 +64,13 @@ def build_projections(
         if set(built) != set(keys):
             raise ValueError(f"{build.__name__} returned tables {sorted(built)}")
         tables.update(built)
+    resume = projection_resume.build_resume(
+        frames=frames, inputs=inputs, ratings_id=lineage["rating"]
+    )
+    if set(resume) != {"team_resume"}:
+        raise ValueError(f"build_resume returned tables {sorted(resume)}")
+    tables.update(resume)
+    unregistered = sorted(set(tables) - set(PROJECTION_ORDER) - {"prediction_runs"})
+    if unregistered:
+        raise ValueError(f"built tables missing from PROJECTION_ORDER: {unregistered}")
     return {name: tables[name] for name in ("prediction_runs", *PROJECTION_ORDER)}

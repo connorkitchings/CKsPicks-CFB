@@ -23,8 +23,8 @@ Row columns
 -----------
 Every row dict has exactly the columns of ``season_release_<table>`` in
 ``contracts/migrations/0025_season_releases.sql`` (core tables), ``0026_team_chart_tables.sql``
-(``charts_v1`` chart tables) or ``0027_team_game_yardage.sql`` (``team_game_yardage``)
-minus :data:`SERVER_COLUMNS`.
+(``charts_v1`` chart tables), ``0027_team_game_yardage.sql`` (``team_game_yardage``) or
+``0028_team_resume.sql`` (``team_resume``) minus :data:`SERVER_COLUMNS`.
 ``release_id`` and ``environment`` are filled in by staging; they NEVER appear in
 payload rows or in any checksum (payload sha, per-table ``projection_checks``,
 readback comparison; note ``release.projection_check`` currently strips only
@@ -172,13 +172,19 @@ CHART_TABLES: tuple[str, ...] = (
 #: Versioned table sets, frozen once released. A release records the set it was
 #: staged with (its ``projection_checks`` keys); retained releases are read back,
 #: activated and rolled back against that set.
+_CHARTS_V2_ORDER: tuple[str, ...] = (
+    *_CORE_V1_ORDER,
+    *CHART_TABLES,
+    "team_game_yardage",
+)
 PROJECTION_SETS: dict[str, tuple[str, ...]] = {
     "core_v1": _CORE_V1_ORDER,
     "charts_v1": (*_CORE_V1_ORDER, *CHART_TABLES),
-    "charts_v2": (*_CORE_V1_ORDER, *CHART_TABLES, "team_game_yardage"),
+    "charts_v2": _CHARTS_V2_ORDER,
+    "resume_v1": (*_CHARTS_V2_ORDER, "team_resume"),
 }
 #: The only set new candidates may be staged with.
-STAGING_PROJECTION_SET = "charts_v2"
+STAGING_PROJECTION_SET = "resume_v1"
 PROJECTION_ORDER: tuple[str, ...] = PROJECTION_SETS[STAGING_PROJECTION_SET]
 SERVER_COLUMNS = frozenset({"release_id", "environment"})
 
