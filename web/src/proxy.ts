@@ -3,7 +3,7 @@ import { isChartsEnabled } from "@/lib/charts-gate";
 
 /** Reject before ancestor loading can stream an HTTP 200 shell. */
 export function proxy(request: NextRequest) {
-  if (!isChartsEnabled()) return NextResponse.rewrite(new URL("/_not-found", request.url));
+  if (!isChartsEnabled()) return NextResponse.rewrite(new URL("/_not-found", request.url), { status: 404 });
   return NextResponse.next();
 }
 
