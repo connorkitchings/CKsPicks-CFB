@@ -258,14 +258,11 @@ Both IDs may be bare (`season-2026-...`) or `production-`-prefixed. The rollback
 
 `scripts/ops/with_production_owner_env.sh` reads the Production owner/migrator URL from the macOS Keychain, exports `DATABASE_URL` and `CFB_ARTIFACT_ENV=production`, and never prints the URL. It exits non-zero if the item is missing or if the URL's login role ends in `_pipeline` or `_web`. The default item is service `ckspicks-cfb/production/owner-url`, account `cks_prod_owner`; override with `CFB_OWNER_KEYCHAIN_SERVICE` and `CFB_OWNER_KEYCHAIN_ACCOUNT`.
 
-**Owner action (one time).** Create the item; `-w` as the last option makes `security` prompt for the URL without echoing it or writing it to shell history:
+**Owner action (one time).** In macOS Keychain Access, create a password item with name `ckspicks-cfb/production/owner-url`, account `cks_prod_owner`, and the complete Production owner/migrator PostgreSQL URL as its password. The account is a Keychain label, not a required database role name. Copy the direct connection URL from the intended Production branch and existing owner/migrator role; do not reset shared credentials unless rotation is needed.
 
-```bash
-security add-generic-password -U \
-  -s 'ckspicks-cfb/production/owner-url' -a cks_prod_owner -w
-```
+Avoid the interactive `security add-generic-password ... -w` prompt for database URLs: during the October 19 release it silently saved only 128 characters and truncated the final connection option. Do not put the URL directly in a shell command or chat. Use Keychain Access to preserve the complete value without shell-history or process-argument exposure.
 
-Check that it resolves (prints nothing secret):
+Check that the item resolves (prints nothing secret; this checks availability and role shape, not database authentication):
 
 ```bash
 zsh scripts/ops/with_production_owner_env.sh /usr/bin/true && echo "owner credential OK"
