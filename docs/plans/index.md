@@ -6,6 +6,8 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [Mobile and Week 8 Production release](2026-10-19/01-mobile-week8-production-release.md) | Deploy mobile and advance Production serving | In Progress; Preview migration 0027 applied and verified October 19. Production 0026/0027 applied and verified; mobile/Week 8 release underway. Charts remains hidden. |
+| [Mobile web experience](2026-10-18/04-mobile-web-experience.md) | Core mobile journeys, shared controls and responsive presentation | Implemented October 19; mobile journeys and validation complete, awaiting owner-controlled commits. Charts and unlinked team-history redesign excluded. |
 | [Weeks 6–7 review fixes and V5 streamline](2026-10-15/01-review-fixes-and-v5-streamline.md) | Week 8 safeguards, documentation truth and optional cleanup | In Progress; Phase 1 committed as `2807e087`; Phase 2 documentation validated, awaiting owner commit. Phase 3 is deferred. Week 8 Preview execution awaits Week 7 finals/controller inputs. |
 | [Season operations and Week 7 bridge](2026-10-14/01-season-operations-and-week7-bridge.md) | Governing atomic season workflow and first recurring update | In Progress; cutover complete; awaiting first controller weekly update. Section 4 documentation is delivered locally by Phase 2 of the review contract, awaiting its owner commit; local checks do not close the weekly-update acceptance gate. |
 | [Weekly-ingestion-repair integration](2026-10-15/03-weekly-ingestion-repair-integration.md) | Salvage the log-13 correction and fixture tests from `codex/weekly-ingestion-repair` (`bb2f1fe8`) | Implemented locally, awaiting owner commit; afterwards the two codex worktrees/branches are deleted. |
