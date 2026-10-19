@@ -1,6 +1,6 @@
 # Mobile and Week 8 Production release
 
-- **Status:** In Progress — Production migrations and release authorized
+- **Status:** In Progress — deployed and verified; general Python CI still running at session close
 - **Created:** 2026-10-19
 - **Authorization:** Owner requested pushing all completed changes to Production, including Week 8. This authorizes integration/deployment and Week 8 activation, superseding the earlier owner-only Git execution preference for this release. Earlier withholding of chart schema promotion remains a material conflict requiring the explicit amendment below.
 - **Implementation log:** `session_logs/2026-10-19/01-production-release-preflight.md`
@@ -69,12 +69,12 @@ Owner provisioned the sanctioned Keychain item. Its hidden-input prompt stored o
 Execution checklist:
 - [x] Owner authorization for Production 0026/0027 and full mobile/Week 8 release.
 - [x] Production identity/checksum/backup preflight and schema apply/readback.
-- [ ] Commit reviewed mobile and release documents in the isolated worktree.
-- [ ] Fresh Week 8 schedule/market coverage and pinned revision inputs.
-- [ ] Clean candidate preparation and all checks.
-- [ ] Real Preview activation/rehearsal and exact Production activation/readback.
-- [ ] dev/main integration, deployment and live verification.
-- [ ] Final status/session documentation and validation.
+- [x] Commit reviewed mobile and release documents in the isolated worktree.
+- [x] Fresh Week 8 schedule/market coverage and pinned revision inputs.
+- [x] Clean candidate preparation and all checks.
+- [x] Real Preview activation/rehearsal and exact Production activation/readback.
+- [x] dev/main integration, deployment and live verification.
+- [x] Final status/session documentation and validation.
 
 
 ## Production migration completion — 2026-10-19
@@ -87,3 +87,15 @@ The sanctioned owner credential now authenticates to the same endpoint/database 
 The full weekly revision builder was unnecessarily started for an already-prepared Week 8 promotion. It re-requested CFBD schedule/plays/game statistics through part of Week 3 before the owner objected to the resource waste. The exact builder and its child were terminated (exit 143); process verification found zero matching refresh workers. No revision from that partial refresh was completed or activated. Immutable capture/catalog receipts are retained as evidence; they are not selected football inputs for this release.
 
 Use the certified v1 football inputs unchanged. Construct the promotion v2 revision using the existing cumulative-market builder over already registered captures, including today's fresh Week 8 quotes. Assert byte-for-byte equality of every nonmarket input reference, historical pre/post-week cutoff and exact score-exception reference against v1. Change only the market reference, Week 8 live cutoff, capture timestamp and revision identity. This preserves the certified football lineage and narrows the operation to the requested promotion; no additional provider requests are permitted. All candidate verification, Preview rehearsal and Production readback remain required. Future weekly source advancement still follows the full runbook; a schema/code promotion does not itself require refetching historical sources.
+
+
+## Deployment closeout — 2026-10-19
+
+Both schema migrations, same-commit preparation and Preview/Production activations completed. All 24 candidate checks and independent 22-table serving readbacks passed; all 56 Week 8 games are predicted/lined for both targets. Numerical forecasts, variances, ratings and completed-week grades match certified inputs; fresh upcoming lines/leans are the intentional difference. Live identities/checksums are recorded only in `docs/status.md`.
+
+Mobile code was fast-forwarded through dev/main and pushed. Vercel built the exact source commit and reached Ready. A live-only rewrite behavior returned not-found content with HTTP 200; a reviewed one-line explicit 404 status corrected it, passed the 12 production gate tests, lint and typecheck, and is deployed Ready. No data reprepare or provider fetch was needed for this response-only fix. The initial rapid full-document WebKit harness reported aborted RSC prefetch errors; normal client-side navigation did not reproduce them. Its first geometry probe needed to wait for the streamed heading rather than measuring a skeleton.
+
+Owner requested end-session because usage is exhausted. No new operations or broad tests are to start. Record the final CI/navigation snapshot, validate closeout docs and hand off the documentation commit. The separately requested weekly-process review is documented in `docs/planning/weekly-operations-process-review.md`; it is not implemented by this release.
+
+
+Final closeout snapshot: all 16 normal live core-navigation checks passed in Chromium/WebKit at mobile/desktop widths, including complete first-card clearance for Picks/Results. Charts returns HTTP 404. Main CI run `39270408643` passed Web, Python lint/contracts, rating publication and database integration; general Python tests were still running without a reported failure. Leave this contract In Progress until that existing job completes; inspect it once next session, do not rerun it automatically. Documentation build and whitespace passed. Closeout documentation is saved under the owner's existing push authorization with a docs-only `[skip ci]` commit, avoiding another broad CI run. No additional provider requests or data changes.

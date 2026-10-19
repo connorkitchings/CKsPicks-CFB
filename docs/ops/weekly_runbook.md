@@ -43,6 +43,14 @@
 
 ---
 
+## Promotion and source-ingestion boundary
+
+**Owner rule, 2026-10-19:** Moving an accepted release from Preview to Production must never query CFBD or another upstream provider. Promotion verifies the retained candidate, pinned inputs, independent Preview proof and Production readback. It does not capture new lines, refresh schedules, or re-ingest historical plays/game statistics. If code or schema compatibility requires a new candidate, rebuild it from the certified immutable inputs; do not equate recomputation with source re-ingestion. A source/market refresh is a separate weekly operation or explicitly scoped repair, not an implicit promotion prerequisite.
+
+**Weekly-process defect under review:** the current `build_season_revision.py` controller re-ingests Weeks 0 through the completed week. Repeatedly querying already-certified historical weeks during a normal rollover is not the intended process. Do not run this full-history path for routine weekly advancement until the incremental process is reviewed and approved. The intended boundary is to ingest the newly completed week's required observations and authorized upcoming-week market inputs, reuse certified historical parents, and request historical data only for an explicitly identified repair or missing input. No incremental replacement has been implemented or certified yet. See [the process-review brief](../planning/weekly-operations-process-review.md).
+
+The October 19 promotion mistakenly started the full-history path. It was stopped during Week 3; no partial refresh output was selected or activated. The successful release reused the certified football input hashes. Preserve the receipts as evidence; do not rerun the cancelled controller or silently broaden future provider requests.
+
 ## Weekly Cadence (Step-by-Step)
 
 Placeholders: `<COMPLETED_WEEK>` is the week whose finals are in; `<NEXT_WEEK>` is `<COMPLETED_WEEK> + 1`, the week being forecast. Each `make season-*` target wraps the command shown next to it; `WEEK` in those targets is always `<NEXT_WEEK>`.
@@ -82,7 +90,9 @@ The Odds API script must run under the wrapper. Without it, storage falls back t
 
 Do not run `ingest_season.py --entities games`, `build_expected_request_inventory.py` or `ingest_week.py --entities plays` by hand. The builder's controller run does all three for Weeks 0 to `<COMPLETED_WEEK>`; see 1c.
 
-**1c. Build the revision manifest.** `build_season_revision.py` does the following:
+**1c. Legacy full-history revision builder — execution paused for normal rollovers.** The following describes the current implementation, not an approved incremental weekly procedure. Do not run it for a Preview-to-Production promotion or routine weekly advancement; first resolve the process-review gate above. An explicitly authorized historical repair must identify its source-request scope before execution.
+
+`build_season_revision.py` currently does the following:
 
 1. Runs the ops controller's `prepare-week` steps under `RUN_ID`, up to `build_team_game_stats`. That means: re-ingest the raw schedule, build a request inventory for each completed week, ingest `plays` and `game_stats` with `--request-inventory`, and build Silver `games`, `game_outcomes`, `plays` and `team_game_stats`.
 2. Derives `byplay`, `drives` and `source_reconciliation` from that Silver.

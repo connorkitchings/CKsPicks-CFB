@@ -4,8 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-18 (Week 8 active release `preview-season-2026-b1e0ac13c88baf86b97ab213` activated on Preview with full 56-game Week 8 picks slate; Week 7 games scored and graded: spread 26-32-1, total 32-27-0; cumulative 2026 YTD record: spread 190-188-7 [50.3%], total 192-191-1 [50.1%]). Production remains on `production-season-2026-d0272a48d3a0252fd4196db3` pending cutover. · **Verified from:**
-> `session_logs/2026-10-18/02-week8-advance-and-week7-close.md`.
+> **Last updated:** 2026-10-19. Production and Preview serve the verified Week 8 candidate: `production-season-2026-b7bc98eb26fa667f6c0941d6` / `preview-season-2026-b7bc98eb26fa667f6c0941d6`. All 56 Week 8 games have spread and total forecasts and lines. Week 7 is scored; cumulative spread 190-188-7 (50.3%), total 192-191-1 (50.1%). Mobile changes are deployed and Charts remains hidden. Evidence: `session_logs/2026-10-19/01-production-release-preflight.md`.
 
 ## Product and model
 
@@ -21,8 +20,8 @@
 
 | Week | State | Selected run |
 |---|---|---|
-| 0–7 | **Scored; 2026 V5 record** (all 388 completed FBS games through Week 7; 770 decided bets: spread 190-188-7, total 192-191-1; Week 7 alone: spread 26-32-1, total 32-27-0). Preview serves active Week 8 release with Migration 0026 chart projections; Production retains its existing release pending cutover. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-b1e0ac13c88baf86b97ab213`) |
-| 8 | **Active Picks slate.** Complete 56-game FBS schedule. Preview active on atomic release `preview-season-2026-b1e0ac13c88baf86b97ab213`. | Active in release `production-season-2026-d0272a48d3a0252fd4196db3` (Preview: `preview-season-2026-b1e0ac13c88baf86b97ab213`). Production rollback: `run_season.py rollback` (owner login). |
+| 0–7 | **Scored; 2026 V5 record.** 388 completed FBS games; 769 graded leans including 8 pushes (761 decided). Week 7 spread 26-32-1; total 32-27-0. | Production `production-season-2026-b7bc98eb26fa667f6c0941d6`; Preview `preview-season-2026-b7bc98eb26fa667f6c0941d6`. |
+| 8 | **Active Picks slate.** All 56 FBS games predicted and lined for both targets; serving as-of 2026-10-19T14:10:00Z. | Same active releases above. Prior Production rollback target: `production-season-2026-d0272a48d3a0252fd4196db3`; owner-authorized rollback only. |
 
 ## Scoreboard
 
@@ -33,7 +32,7 @@ calibration and the pre-registered promotion gates remain diagnostics.
 
 | Record | Spread | Total | Notes |
 |---|---|---|---|
-| **2026 V5, cumulative (Weeks 0–7)** | 190-188-7 (50.3%) | 192-191-1 (50.1%) | All 388 completed FBS games across Weeks 0–7: 385 decided spreads (190-188-7), 384 decided totals (192-191-1). Week 7 alone: spread 26-32-1 (44.8%), total 32-27-0 (54.2%). Served atomically via Migration 0025/0026 release projections on Preview. |
+| **2026 V5, cumulative (Weeks 0–7)** | 190-188-7 (50.3%) | 192-191-1 (50.1%) | All 388 completed FBS games across Weeks 0–7: 385 graded spreads (190-188-7), 384 graded totals (192-191-1). Week 7 alone: spread 26-32-1 (44.8%), total 32-27-0 (54.2%). Served atomically on Production and Preview. |
 
 Neither target clears 52.4% YTD. In the 2025 holdout the market had
 lower error than V5 on both targets, and the docs do not claim V5 beats V4.
@@ -44,23 +43,17 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Release state
 
-**Local UI follow-up (2026-10-16):** the initial PNG focus-outline defect found during rehearsal is corrected and committed. Chart selectors/week navigation and team filters/display actions are grouped responsively. All 67 browser tests pass; a 138-team real-data efficiency export was saved and visually inspected without focus rings. The owner fast-forwarded the primary `dev` checkout and pushed `dev` at `b2335ae5`. Charts now exists in the main development checkout. The worktree port 3200 server was stopped at session close; the existing main development server was left alone. The accepted losing-logo placement leaves six SVG units of clearance from the zero line. These UI changes do not alter the active release or Production. Real-data browser export latency remains a follow-up observation, not a completed performance fix.
+Production migrations 0026/0027 and Preview migration 0027 are applied and read back. Charts publication remains disabled; the live route returns HTTP 404 and Charts navigation is absent. Mobile layouts are deployed on Vercel from `main`; the final response-status correction is commit `3d054c94`, deployment `dpl_FmUf3Wsq9cfaqfzL2bHzS4Cu2sNc` (Ready). The release data candidate was prepared and activated from clean commit `91463923`; no commit occurred between prepare and the last activation.
 
-**Preview charts (2026-10-16):** prepared and released from clean commit `749ee12c`. Payload SHA-256 `5442a64c89fccd5df54228bc95f5b3e0a66054468fe05c7d4d72b068d3bdbd9b`; activation readback SHA-256 `77dfcc05eaff3e54beeb7593ae62d025084968b8f2722d287d0eddaa934bfcc7`. All 21 `charts_v1` projection tables verified, with 138 roster teams, 658 team-game rows for Weeks 0–6 and 1,378 adjusted rows for Through Weeks 2–6. Existing numerical serving data matches the prior release within `1e-9`, after explicit identity/provenance exclusions and timestamp normalization. Live charts, filters, search, tables, keyboard tooltips and core pages work. The initial bar and adjusted PNG exports exposed blue focus outlines; the committed follow-up omits static focus shapes, passes the export regression tests, and produces a visually clean real-data efficiency PNG. Preview preparation, activation and inspection are complete; Production promotion remains pending a separate owner decision. Production migration, deployment and activation are not authorized by this rehearsal. Rehearsal evidence is in `session_logs/2026-10-16/03-preview-chart-rehearsal.md`; see the [chart contract](plans/2026-10-16/01-charts-module.md).
+The prepared `charts_v2` candidate passed all 24 checks. Projection payload SHA-256: `e8b8ef589c33e94abf51d53a8b3c8daf07174dcc6e52d5525ef448922f05a359`. Preview and Production activation readback SHA-256 match: `d8d02ae36baf6eef4b2e770cb5fc71bb43b92a2036aad096808efe90d1e1527f`. Independent read-only verification matched all 22 projection-table counts and the cumulative record. The 888 forecast means/variances, 1,242 rating rows and 776 completed-week grading rows match the prior certified Week 8 snapshot within 1e-9. Only upcoming-market lines/leans changed.
 
-The atomic season release in the week table is the serving authority across Picks, Results, Ratings, Performance and matchup views. Migration 0025 cutover was recorded on October 14 in `session_logs/2026-10-14/08-stage4-production-migration-and-cutover.md`; this documentation session performed no new database or deployment readback. V5 Blitzkrieg is the only operational model. Rollback reactivates a retained atomic season release; V4 is historical methodology, not an operational rollback path.
-
-Phase 1 review fixes are committed as `2807e087`: the weekly revision builder, exact reconciliation with manifest-pinned exceptions, release-ID normalization, owner rollback wrapper and active-release health reporting are delivered. Phase 2 documentation consolidation is complete locally and awaiting the owner commit under the [review contract](plans/2026-10-15/01-review-fixes-and-v5-streamline.md); Phase 3 cleanup is deferred.
-
-**Accepted quote rebuild, pending activation:** the owner confirmed registration of the three Week 2–4 CFBD captures in Preview and accepted rebuilt-quote results: spread 164-156-6, total 160-164-1. Week 6 games 401871090, 401871051 and 401871066 become ungraded for both targets because their retained quotes were captured after kickoff. These are candidate results; the active release and published scoreboard above are unchanged. Other unregistered market files still require owner review. Provenance and the retained Week 7 parity evidence are in the review contract and `session_logs/2026-10-15/02-review-fixes-implementation.md`.
+The final release retains all certified football input hashes and historical cutoffs. An unnecessarily started historical CFBD refresh was cancelled during Week 3 and its partial football inputs were not selected. Promotion must never query providers; the [weekly process review](planning/weekly-operations-process-review.md) records the separate defect in the current full-history weekly builder. See the [weekly runbook](ops/weekly_runbook.md) for the new explicit boundary. Historical rehearsal and repair details remain in their session logs and [status history](status_history.md).
 
 ## Next weekly update
 
-Week 7 finals/grading remain pending in the recorded serving state. After the complete Week 7 finals and required controller inputs exist, use the [weekly runbook](ops/weekly_runbook.md) to build the Week 8 revision, prepare, rehearse Preview and verify readback. Refresh the score-reconciliation exceptions first. The stale untracked Week 8 manifest still carries Week 7 hashes: remove it before regeneration; the builder refuses to overwrite it. Neither that file nor the unrelated October 14 session log 13 is part of the review-fixes commits.
+No provider refresh is required for this completed promotion. The next authorized Week 8 market refresh should occur before 2026-10-20T18:00:00Z, ahead of the first kickoff at 23:00 UTC. October 19 captures at 14:09:11 UTC (CFBD) and 14:09:12 UTC (Odds API) covered all 56 games for spreads and totals; missing IDs: none for either target. This is a recorded follow-up, not a scheduled automation.
 
-The Week 8 revision dry run is blocked on those Week 7 inputs and has not passed. The owner must create the Production owner Keychain item before owner rollback; Preview rollback is unsupported. Prepare requires a clean tree and no commit may land between prepare and release.
-
-The [season operations and Week 7 bridge contract](plans/2026-10-14/01-season-operations-and-week7-bridge.md) stays **In Progress**: cutover is complete, but acceptance still requires a subsequent weekly update through the same controller. Documentation delivery does not establish that operational proof. Production activation remains an owner decision under the installed release policy.
+Before the next normal week close/open, review and approve an incremental source-ingestion process. Do not repeat the current full-history builder for routine rollover. Use retained certified history and scope any source fetches to new-week observations or an explicitly approved repair. Candidate preparation still requires pinned inputs, a clean commit, exact reconciliation, all verification checks, independent Preview rehearsal and Production readback.
 
 ## Deferred backlog
 

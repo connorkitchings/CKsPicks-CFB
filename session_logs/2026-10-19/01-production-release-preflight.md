@@ -2,11 +2,11 @@
 
 ## TL;DR
 - **Worked On:** Owner-requested mobile deployment and Week 8 Production advance.
-- **Outcome:** Preview migration 0027 applied and verified; Production migration amendment still needed.
+- **Outcome:** Production migrations, Week 8 activation and mobile deployment complete; closeout docs saved; general Python CI still running at close.
 - **Plan Contract:** [Production release](../../docs/plans/2026-10-19/01-mobile-week8-production-release.md)
-- **Approval / Status:** Owner authorized Production push/Week 8; Draft amendment isolates the previously withheld chart schema promotion.
-- **Blockers:** Current release runner requires charts_v2; Preview now has 0027, Production still lacks 0026/0027.
-- **Next:** Owner approves Production 0026/0027, then continue the ordered release contract.
+- **Approval / Status:** Owner authorized Production push/Week 8 and separately approved Preview and Production migrations; deployed, with final general Python CI still running.
+- **Blockers:** No operational blocker; weekly ingestion process review is deferred at owner-requested close.
+- **Next:** Inspect the existing final CI job, then review incremental weekly ingestion in a fresh session without provider requests.
 
 ## Context and Decisions
 - Mobile changes remain in the isolated managed worktree; primary checkout clean on dev. Fetched remote state without changing branches or files.
@@ -91,3 +91,33 @@ No commits, pushes, migration writes, release activations or deployments occurre
 The full revision-builder choice was a mistake for this promotion. It re-ingested CFBD history through part of Week 3. The owner challenged this waste; stopped the exact builder and its child, verified no matching worker remains, and recorded exit 143. No partially refreshed football input was activated. Retain the immutable receipts without claiming a completed revision or deleting evidence.
 
 The promotion now retains every certified v1 football input hash and completed-week cutoff, and uses the existing market-quote builder only over already captured/registered quotes. No further CFBD or Odds API calls. The exact equality assertions are in the operational promotion script; only the cumulative quote ref, Week 8 cutoff, capture time and revision identity may change. This corrects the earlier log statement about a full controller rebuild and its post-week cutoff; the actual promotion retains v1's certified post-week cutoffs.
+
+
+## End-session closeout
+
+Owner requested documenting the CFBD mistake and reviewing normal week close/open, then explicitly requested end-session due to usage exhaustion. The durable provider boundary is now in the weekly runbook; the follow-up investigation brief is `docs/planning/weekly-operations-process-review.md`. Promotion must make zero provider requests. The existing full-history weekly builder is paused for normal rollover pending incremental-process review. This is a documented defect/next task, not a claim that a replacement exists.
+
+Completed:
+- Production and Preview migrations/readbacks; all 24 candidate checks; independent read-only checks of all 22 projection-table counts, complete 56-game spread/total coverage and unchanged cumulative records.
+- Exact certified football input refs reused. Numerical parity passed for 888 forecasts/variances, 1,242 ratings and 776 completed-week grade rows. The initial grade comparator included upcoming-week line points/sides; all differences were correctly confined to Week 8. Completed historical grades remained unchanged.
+- Cancelled unnecessary CFBD history refresh during Week 3; verified zero remaining workers and closed its expired operations receipt as failed/cancelled via the existing state store. No partial football refs selected. Do not guess the request/credit total.
+- Fast-forwarded dev/main and pushed the mobile release. Vercel Ready on exact source; post-release one-line disabled-route status fix also deployed Ready. Live Charts HTTP 404 verified.
+- 179 focused backend tests, contracts check, original full mobile suites, 48 initial real Preview checks and 24 final Preview checks passed. Status fix: 12 gate tests, build, lint, typecheck and whitespace passed. Normal live WebKit navigation had no page/request errors; full final navigation and CI snapshots recorded below.
+- Corrected owner-credential setup documentation after the 128-character Terminal prompt truncation. Saved credentials remained private; sanctioned owner authentication and target verified.
+
+Artifacts: `/private/tmp/ckspicks-week8-{parity,preview-active,production-active,production-health,live-navigation}.json`; migration backups/readbacks under `/private/tmp/ckspicks-production-0026-0027/`; browser evidence and all focused logs retained there or under the corresponding `/private/tmp/ckspicks-week8-*.log` names. Live release IDs/checksums and deployed source are in `docs/status.md` only.
+
+Handoff:
+- Review the process brief in a fresh planning session without provider requests. Trace current controller requests, define incremental weekly close/open and enforce zero-fetch promotion with meaningful request-scope tests before implementation.
+- Closeout documentation is intentional and saved under the owner's existing push authorization, with `[skip ci]` for the docs-only commit; no unrelated worktree changes are included.
+- Real Preview server remains on port 3200 with Charts off. Primary checkout is dev and contains the pushed mobile code. Production is live; no rollback is required.
+- Do not resume the cancelled controller, recapture lines for this promotion, or repeat completed tests merely to consume a fresh session.
+
+
+### Final validation snapshot and files
+
+- All 16 normal live navigation checks passed in Chromium/WebKit at 390/1280 px: no page errors or overflow, correct first-card clearance on Picks and Results. Live Charts HTTP 404 and health Week 8 coverage 56/56 verified.
+- Main CI [run 39270408643](https://github.com/connorkitchings/CKsPicks-CFB/actions/runs/39270408643): Web, Python lint/contracts, Python rating publication and Python database integration passed; general Python tests still in progress at close. No failure reported. Do not claim full CI success until this existing job completes.
+- `uv run --no-sync mkdocs build --quiet` with external output directory and `git diff --check` passed. Final worktree review includes only intended closeout docs.
+- Closeout files: `docs/status.md`; `docs/ops/weekly_runbook.md`; `docs/planning/weekly-operations-process-review.md`; release contract/index; this session log. The shipped response-only code correction is `web/src/proxy.ts`; reviewed inline as a small change, with no actionable findings.
+- **Precise resume:** Inspect the existing general Python CI job, close the release contract if it passed, and start the requested read-only weekly-process review. Do not prepare another release, query providers, or rerun completed checks merely because the session is new.
