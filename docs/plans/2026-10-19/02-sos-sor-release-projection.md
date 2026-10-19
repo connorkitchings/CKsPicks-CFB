@@ -167,3 +167,5 @@ Added row fields beyond this contract: `overall_rank`, `elite_reference_size`, `
 5. **The W-L column is labeled "FBS W-L"** (FCS games excluded).
 
 **2026-10-19 — release sequencing.** The Preview release `season-2026-ac3d6668440e1f3494ba92da` (prepared from commit `7f49dfd3`) was activated and independently read back: every value column of `predictions`, `prediction_grades` and `v5_rating_snapshots` equals the previous release's, and only release-ID-bearing identity columns differ. Because the display decisions above change web code, a candidate pinned to a later commit is prepared before Production, and that candidate is re-released on Preview first.
+
+**2026-10-19 — after the Production release.** SOS is displayed as a rank (1 is hardest). The rank is computed in the web page from the released SOS values, ranking all FBS teams of the period before any search filter, competition ranking for ties. This is a presentation rank over certified numbers, not a new model quantity; it avoids a schema change. The ratings table sorts by clicking column headers; phones keep one Sort by menu. A stored SOS rank would require a new migration and a new candidate.

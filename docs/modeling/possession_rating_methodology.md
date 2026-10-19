@@ -298,12 +298,14 @@ WAA = wins - sum over completed games of p_avg,g
   completed games, games after the cutoff, and all games. Elite and average
   values differ in level because an elite team wins more often, so elite values
   run lower than average values for the same schedule. The ratings table shows
-  only the average-team SOS; the elite-reference SOS is stored with each release
-  but not shown.
+  only the average-team SOS, as a rank among FBS teams where 1 is the hardest
+  schedule, with the underlying number available on hover. The elite-reference
+  SOS is stored with each release but not shown.
 - **SOR:** `P` is the exact probability that an elite reference team, playing this
   team's completed FBS schedule, finishes with at least this team's wins. It is
   computed as a Poisson-binomial distribution over the completed games' `p_elite,g`.
-  Higher SOR is a stronger résumé. Rank 1 is best, and SOR ties are broken by
+  Higher SOR is a stronger résumé. The ratings table shows SOR as a rank (1 is the
+  strongest résumé), with the score available on hover. SOR ties are broken by
   `overall_rank` ascending; only exactly equal values tie. `P` is stored alongside
   SOR.
 - **WAA:** wins above the expected wins of an average FBS team on the same schedule.

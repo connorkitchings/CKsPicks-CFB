@@ -42,14 +42,18 @@ export default function MethodologyPage() {
           played or not, is scored with the current period’s ratings, so the SOS
           of a played game changes each week as the ratings learn. SOS is the
           average chance that the reference team loses the schedule’s games, times
-          100; higher is harder. The ratings table shows the average-team SOS. The
-          elite-reference SOS is stored with the release but not shown.
+          100; higher is harder. The ratings table shows each team’s SOS as a rank
+          among FBS teams against an average FBS team, where 1 is the hardest
+          schedule; the underlying number appears on hover. The elite-reference SOS
+          is stored with the release but not shown.
         </p>
         <p className="mt-2">
           SOR is 100 minus the chance that an elite team, playing the same completed
           FBS schedule, finishes with at least this team’s record, so higher is a
-          stronger résumé. WAA (wins above an average FBS team on the same schedule)
-          is stored with the release but not shown in the ratings table. SOR shows {"—"} until a
+          stronger résumé. The ratings table shows SOR as a rank, where 1 is the
+          strongest résumé; the underlying number appears on hover. WAA (wins above
+          an average FBS team on the same schedule) is stored with the release but
+          not shown in the ratings table. SOR shows {"—"} until a
           team has 3 completed FBS games. W-L is “vs FBS”, and FCS games are
           excluded. Neutral sites are not adjusted because the model has no
           neutral-site term; home field is included.

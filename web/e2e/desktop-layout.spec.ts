@@ -80,12 +80,32 @@ test.describe("desktop layout at 1280px", () => {
     await expectMaxHeight(target);
   });
 
-  test("ratings category control is compact and one line per option", async ({ page }) => {
+  test("ratings sort headers are compact and one line at desktop width", async ({ page }) => {
     await page.goto("/ratings");
-    const category = page.getByRole("group", { name: "Rating category" }).filter({ visible: true });
-    await expect(category).toBeVisible();
-    await expectCompactSegments(category);
-    await expectMaxHeight(category);
+    const labels = [
+      "Sort by Overall",
+      "Sort by Offense",
+      "Sort by Defense",
+      "Sort by SOR",
+      "Sort by SOS Played",
+      "Sort by SOS Remaining",
+      "Sort by SOS Full",
+    ];
+    for (const label of labels) {
+      const header = page.getByRole("button", { name: label, exact: true }).filter({ visible: true });
+      await expect(header, label).toHaveCount(1);
+      await expectMaxHeight(header, 40);
+      const measured = await header.evaluate((element) => {
+        const style = getComputedStyle(element);
+        const fontSize = parseFloat(style.fontSize);
+        const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.2;
+        const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+        const minHeight = parseFloat(style.minHeight) || 0;
+        return { oneLine: lineHeight + padding, minHeight, height: element.getBoundingClientRect().height };
+      });
+      // A wrapped label grows past one line; min-height may exceed one line when the control is taller.
+      expect(measured.height, `${label} height`).toBeLessThanOrEqual(Math.max(measured.oneLine, measured.minHeight) + 0.5);
+    }
   });
 
   test("matchup hero places the forecast panel between the two teams", async ({ page }) => {

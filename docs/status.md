@@ -4,7 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-19. Production and Preview serve the verified Week 8 candidate: `production-season-2026-b7bc98eb26fa667f6c0941d6` / `preview-season-2026-b7bc98eb26fa667f6c0941d6`. All 56 Week 8 games have spread and total forecasts and lines. Week 7 is scored; cumulative spread 190-188-7 (50.3%), total 192-191-1 (50.1%). Mobile changes are deployed and Charts remains hidden. Evidence: `session_logs/2026-10-19/01-production-release-preflight.md`.
+> **Last updated:** 2026-10-19. Production and Preview serve the Week 8 SOS/SOR release: `production-season-2026-2cdf8916d915e21b3f25fa71` / `preview-season-2026-2cdf8916d915e21b3f25fa71`. All 56 Week 8 games have spread and total forecasts and lines. Week 7 is scored; cumulative spread 190-188-7 (50.3%), total 192-191-1 (50.1%). Mobile changes are deployed and Charts remains hidden. Evidence: `session_logs/2026-10-19/04-sos-sor-production-release.md`, `session_logs/2026-10-19/01-production-release-preflight.md`.
 
 ## Product and model
 
@@ -20,8 +20,8 @@
 
 | Week | State | Selected run |
 |---|---|---|
-| 0–7 | **Scored; 2026 V5 record.** 388 completed FBS games; 769 graded leans including 8 pushes (761 decided). Week 7 spread 26-32-1; total 32-27-0. | Production `production-season-2026-b7bc98eb26fa667f6c0941d6`; Preview `preview-season-2026-b7bc98eb26fa667f6c0941d6`. |
-| 8 | **Active Picks slate.** All 56 FBS games predicted and lined for both targets; serving as-of 2026-10-19T14:10:00Z. | Same active releases above. Prior Production rollback target: `production-season-2026-d0272a48d3a0252fd4196db3`; owner-authorized rollback only. |
+| 0–7 | **Scored; 2026 V5 record.** 388 completed FBS games; 769 graded leans including 8 pushes (761 decided). Week 7 spread 26-32-1; total 32-27-0. | Production `production-season-2026-2cdf8916d915e21b3f25fa71`; Preview `preview-season-2026-2cdf8916d915e21b3f25fa71`. |
+| 8 | **Active Picks slate.** All 56 FBS games predicted and lined for both targets; serving as-of 2026-10-19T14:10:00Z. | Same active releases above. Production rollback target: `production-season-2026-b7bc98eb26fa667f6c0941d6`; owner-authorized rollback only. Earlier rollback target: `production-season-2026-d0272a48d3a0252fd4196db3`. Preview rollback is not supported by the tooling. |
 
 ## Scoreboard
 
@@ -43,9 +43,13 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Release state
 
-Production migrations 0026/0027 and Preview migration 0027 are applied and read back. Charts publication remains disabled; the live route returns HTTP 404 and Charts navigation is absent. Mobile layouts are deployed on Vercel from `main`; the final response-status correction is commit `3d054c94`, deployment `dpl_FmUf3Wsq9cfaqfzL2bHzS4Cu2sNc` (Ready). The release data candidate was prepared and activated from clean commit `91463923`; no commit occurred between prepare and the last activation.
+Production migrations 0026/0027/0028 and Preview migrations 0027/0028 are applied and read back. Charts publication remains disabled; the live route returns HTTP 404 and Charts navigation is absent. Mobile layouts are deployed on Vercel from `main`; the final response-status correction is commit `3d054c94`, deployment `dpl_FmUf3Wsq9cfaqfzL2bHzS4Cu2sNc` (Ready). The prior Week 8 release candidate was prepared and activated from clean commit `91463923`; no commit occurred between prepare and the last activation.
 
-The prepared `charts_v2` candidate passed all 24 checks. Projection payload SHA-256: `e8b8ef589c33e94abf51d53a8b3c8daf07174dcc6e52d5525ef448922f05a359`. Preview and Production activation readback SHA-256 match: `d8d02ae36baf6eef4b2e770cb5fc71bb43b92a2036aad096808efe90d1e1527f`. Independent read-only verification matched all 22 projection-table counts and the cumulative record. The 888 forecast means/variances, 1,242 rating rows and 776 completed-week grading rows match the prior certified Week 8 snapshot within 1e-9. Only upcoming-market lines/leans changed.
+The SOS/SOR release (2026-10-19) was prepared from clean commit `5060aa60` with `run_season.py prepare --revision-manifest conf/season/2026/revision_manifest_w8_v2.json --through-week 7 --next-week 8 --as-of 2026-10-19T14:10:00Z`, passed all 32 checks (including eight `resume_*` checks), and was activated on Preview, then Production. Its `team_resume` table has 1,242 rows (138 teams x 9 periods, including preseason). Serving payload SHA-256: `b04544766245f8c40b48323ca9bab2f9a5a44a73c920df77127c47d428838e20`. Activation readback SHA-256 on both databases: `6b52cdf0a1c464c9873968fc58088eb431afcc82e65f3c47b1ed8eacdbe10429`. Preview's independent read-only check against the prior Week 8 release matched all game, market and system tables, and every value column of predictions, grades and rating snapshots; only release-ID identity columns differ. Live Production checks passed for `/`, `/results`, `/ratings`, `/performance` and `/api/health` (200), and `/charts` (404).
+
+Ratings résumé columns (commit `5060aa60`, `feat(web): simplify ratings résumé columns`): `/ratings` shows "Post-Week 0..7" period labels, FBS W-L, SOR rank, and SOS Played/Remaining/Full. SOR is shown as rank only; WAA and overall uncertainty are not displayed; SOS uses one measure (average FBS team). Elite SOS is stored but not shown. Source contract: `docs/plans/2026-10-19/02-sos-sor-release-projection.md`.
+
+The prior Week 8 `charts_v2` candidate passed all 24 checks. Projection payload SHA-256: `e8b8ef589c33e94abf51d53a8b3c8daf07174dcc6e52d5525ef448922f05a359`. Preview and Production activation readback SHA-256 match: `d8d02ae36baf6eef4b2e770cb5fc71bb43b92a2036aad096808efe90d1e1527f`. Independent read-only verification matched all 22 projection-table counts and the cumulative record. The 888 forecast means/variances, 1,242 rating rows and 776 completed-week grading rows match the prior certified Week 8 snapshot within 1e-9. Only upcoming-market lines/leans changed.
 
 The final release retains all certified football input hashes and historical cutoffs. An unnecessarily started historical CFBD refresh was cancelled during Week 3 and its partial football inputs were not selected. Promotion must never query providers; the [weekly process review](planning/weekly-operations-process-review.md) records the separate defect in the current full-history weekly builder. See the [weekly runbook](ops/weekly_runbook.md) for the new explicit boundary. Historical rehearsal and repair details remain in their session logs and [status history](status_history.md).
 

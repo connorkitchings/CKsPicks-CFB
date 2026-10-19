@@ -1,19 +1,17 @@
 import { getRatingPeriods, getWeeklyRatings, type PeriodMeta, type Rating, type RatingPeriod } from "@/lib/v5";
 import { ratingsFixture } from "@/test/fixtures/ratings";
+import { parseRatingsSort } from "@/lib/sos-rank";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { RatingsView } from "@/components/ratings/RatingsView";
 
 export const revalidate = 300;
 
-type Sort = "overall" | "offense" | "defense" | "sor" | "waa" | "sos";
-const sorts: readonly Sort[] = ["overall", "offense", "defense", "sor", "waa", "sos"];
-
 export default async function RatingsPage({ searchParams }: {
-  searchParams: Promise<{ q?: string; sort?: string; season?: string; week?: string; period?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; dir?: string; season?: string; week?: string; period?: string }>;
 }) {
   const params = await searchParams;
-  const sort: Sort = sorts.find((value) => value === params.sort) ?? "overall";
+  const { sort, dir } = parseRatingsSort(params.sort, params.dir);
   const query = (params.q ?? "").trim().slice(0, 80);
   const requestedSeason = params.season ? Number(params.season) : 2026;
   const season = Number.isInteger(requestedSeason) && requestedSeason > 0 ? requestedSeason : 2026;
@@ -75,6 +73,7 @@ export default async function RatingsPage({ searchParams }: {
           periodMeta={periodMeta}
           season={season}
           initialSort={sort}
+          initialDirection={dir}
           initialQuery={query}
         />
       )}

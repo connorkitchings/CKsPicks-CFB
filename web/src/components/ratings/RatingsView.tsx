@@ -2,95 +2,114 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { PeriodMeta, Rating } from "@/lib/rating-periods";
+import {
+  bestFirstDirection,
+  isRatingsSort,
+  rankSosByTeam,
+  RATINGS_SORTS,
+  type RatingsSort,
+  type SortDirection,
+  type SosRanks,
+} from "@/lib/sos-rank";
 import TeamLogo from "@/components/TeamLogo";
 import { SearchField } from "@/components/ui/SearchField";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 
-type Sort = "overall" | "offense" | "defense" | "sor" | "sos";
-
-const sorts: readonly Sort[] = ["overall", "offense", "defense", "sor", "sos"];
-/** Unknown or removed `?sort=` values (such as the retired `waa`) fall back to overall. */
-const isSort = (value: string): value is Sort => (sorts as readonly string[]).includes(value);
-
-const categories = [
-  { value: "overall", label: "Overall" },
-  { value: "offense", label: "Offense" },
-  { value: "defense", label: "Defense" },
-] as const;
-const resumeSorts = [
-  { value: "sor", label: "SOR" },
-  { value: "sos", label: "SOS" },
-] as const;
-const fields = {
-  overall: "overallRating",
-  offense: "offenseRating",
-  defense: "defenseRating",
-} as const;
-const sortLabels: Record<Sort, string> = {
+type ScoreSort = "overall" | "offense" | "defense";
+const scoreSorts: readonly ScoreSort[] = ["overall", "offense", "defense"];
+const scoreFields = { overall: "overallRating", offense: "offenseRating", defense: "defenseRating" } as const;
+const sosRankField = { sos_played: "played", sos_remaining: "remaining", sos_full: "full" } as const;
+const sortLabels: Record<RatingsSort, string> = {
   overall: "Overall",
   offense: "Offense",
   defense: "Defense",
   sor: "SOR",
-  sos: "SOS full",
+  sos_played: "SOS Played",
+  sos_remaining: "SOS Remaining",
+  sos_full: "SOS Full",
 };
 const tooltips = {
   record: "Record against FBS opponents the period rates; FCS games are excluded.",
-  sor: "Strength of record rank: 1 is the strongest résumé. How unlikely an elite team would be to match this record against this schedule.",
-  sos: "How often an average FBS team would lose these games, scaled to 100. Higher is a harder schedule.",
+  sor: "Strength of record rank: 1 is the strongest résumé.",
+  sos: "Schedule difficulty rank among FBS teams (1 is hardest), measured against an average FBS team.",
 };
-// Phones need 44px targets; the sm segment size is 30px, so raise its buttons below `sm:` to 36px.
-const resumeControlClass = "[&_button]:min-h-11 sm:[&_button]:min-h-9";
-const groupLabelClass = "text-xs font-semibold uppercase tracking-wider text-ink-muted";
 
 const DASH = "—";
-const ratingText = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
-const sortedClass = (active: boolean) => (active ? "bg-accent-soft font-bold text-ink" : "text-ink-muted");
-const sortedHeaderClass = (active: boolean) => clsx("px-2 py-3 text-right whitespace-nowrap", active && "bg-accent-soft text-accent-ink");
-
 const isNumber = (value: number | null | undefined): value is number => typeof value === "number" && Number.isFinite(value);
+const isScoreSort = (sort: RatingsSort): sort is ScoreSort => sort === "overall" || sort === "offense" || sort === "defense";
+
+const ratingText = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
 const oneDecimal = (value: number | null | undefined) => (isNumber(value) ? value.toFixed(1) : DASH);
-const rankText = (rating: Rating) => (isNumber(rating.sorRank) ? `#${rating.sorRank}` : DASH);
-/** The SOR score is not displayed; it stays available on hover of the rank cell. */
-const sorTitle = (rating: Rating) => (isNumber(rating.sor) ? `SOR ${oneDecimal(rating.sor)}` : undefined);
+const rankText = (rank: number | null | undefined) => (isNumber(rank) ? `#${rank}` : DASH);
+/** Hover text for a rank cell: the raw value behind the rank. Null values get no title. */
+const valueTitle = (label: string, value: number | null | undefined) => (isNumber(value) ? `${label} ${oneDecimal(value)}` : undefined);
 const recordText = ({ wins, losses }: Rating) => (isNumber(wins) && isNumber(losses) ? `${wins}–${losses}` : DASH);
+const sortedClass = (active: boolean) => (active ? "bg-accent-soft font-bold text-ink" : "text-ink-muted");
 
 /** SOS is shown for the average FBS team only; the elite-reference SOS is stored but not displayed. */
 function sosValues(rating: Rating) {
   return { played: rating.sosPlayedAverage, remaining: rating.sosRemainingAverage, full: rating.sosFullAverage };
 }
-const sosText = (rating: Rating) => {
-  const { played, remaining, full } = sosValues(rating);
-  return [played, remaining, full].map(oneDecimal).join(" / ");
-};
 
-/**
- * Key a row is ordered by, higher first; null when the row has no value for the sort.
- * SOR ranks 1 first, so its key is the negated rank (ascending rank in a descending order).
- * SOS orders by the average-reference Full value, higher (harder) first.
- */
-function sortValue(rating: Rating, sort: Sort): number | null {
-  switch (sort) {
-    case "sor": return isNumber(rating.sorRank) ? -rating.sorRank : null;
-    case "sos": return isNumber(rating.sosFullAverage) ? rating.sosFullAverage : null;
-    default: return rating[fields[sort]];
-  }
+/** The SOR or SOS rank a team holds; null for the rating sorts and for a null value. */
+function rankFor(rating: Rating, sort: RatingsSort, sosRanks: Map<string, SosRanks>): number | null {
+  if (sort === "sor") return isNumber(rating.sorRank) ? rating.sorRank : null;
+  if (isScoreSort(sort)) return null;
+  return sosRanks.get(rating.team)?.[sosRankField[sort]] ?? null;
 }
 
-/** Descending, with nulls after every value. */
-function compareDescendingNullsLast(a: number | null, b: number | null) {
-  if (a === null || b === null) return (a === null ? 1 : 0) - (b === null ? 1 : 0);
-  return b - a;
+/** The value a row is ordered by. Rank sorts order by rank, so rank 1 comes first in the ascending direction. */
+function sortKey(rating: Rating, sort: RatingsSort, sosRanks: Map<string, SosRanks>): number | null {
+  return isScoreSort(sort) ? rating[scoreFields[sort]] : rankFor(rating, sort, sosRanks);
 }
 
-function primaryText(rating: Rating, sort: Sort) {
-  switch (sort) {
-    case "sor": return rankText(rating);
-    case "sos": return oneDecimal(sosValues(rating).full);
-    default: return ratingText(rating[fields[sort]]);
-  }
+/** Orders by key in the given direction; rows with no key sort last whichever way the direction runs. */
+function compareRows(a: number | null, b: number | null, direction: SortDirection): number {
+  if (a === null || b === null) return Number(a === null) - Number(b === null);
+  return direction === "desc" ? b - a : a - b;
+}
+
+function primaryText(rating: Rating, sort: RatingsSort, sosRanks: Map<string, SosRanks>) {
+  return isScoreSort(sort) ? ratingText(rating[scoreFields[sort]]) : rankText(rankFor(rating, sort, sosRanks));
+}
+
+/** "#12 / #40 / #25" for Played / Remaining / Full, with dashes for null values. */
+function sosRankLine(teamRanks: SosRanks | undefined) {
+  return [teamRanks?.played, teamRanks?.remaining, teamRanks?.full].map(rankText).join(" / ");
+}
+
+interface SortHeaderProps {
+  column: RatingsSort;
+  active: boolean;
+  direction: SortDirection;
+  onSort: (sort: RatingsSort) => void;
+  title?: string;
+}
+
+/** A sortable column header. The button is the keyboard target; `aria-sort` reports the order of the rows. */
+function SortHeader({ column, active, direction, onSort, title }: SortHeaderProps) {
+  const label = sortLabels[column];
+  const indicator = direction === "desc" ? "↓" : "↑";
+  return (
+    <th
+      scope="col"
+      title={title}
+      aria-sort={active ? (direction === "desc" ? "descending" : "ascending") : "none"}
+      className={clsx("px-2 py-3 text-right whitespace-nowrap", active && "bg-accent-soft text-accent-ink")}
+    >
+      <button
+        type="button"
+        aria-label={`Sort by ${label}`}
+        onClick={() => onSort(column)}
+        className="inline-flex min-h-9 items-center justify-end gap-1 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {label}
+        <span aria-hidden="true" className="w-3 text-center text-xs">{active ? indicator : ""}</span>
+      </button>
+    </th>
+  );
 }
 
 interface RatingsViewProps {
@@ -99,7 +118,8 @@ interface RatingsViewProps {
   period: string;
   timeline: PeriodMeta[];
   season: number;
-  initialSort?: string;
+  initialSort: RatingsSort;
+  initialDirection: SortDirection;
   initialQuery?: string;
 }
 
@@ -109,28 +129,47 @@ export function RatingsView({
   period,
   timeline,
   season,
-  initialSort = "overall",
+  initialSort,
+  initialDirection,
   initialQuery = "",
 }: RatingsViewProps) {
   const router = useRouter();
-  const [sort, setSort] = useState<Sort>(isSort(initialSort) ? initialSort : "overall");
+  const [sort, setSort] = useState<RatingsSort>(initialSort);
+  const [direction, setDirection] = useState<SortDirection>(initialDirection);
   const [query, setQuery] = useState(initialQuery);
   const hasResume = ratings.some((rating) => (
     isNumber(rating.wins) || isNumber(rating.sor) || isNumber(rating.sorRank) || isNumber(rating.sosFullAverage)
   ));
 
+  // SOS ranks come from every team of the period, so searching never changes a team's rank.
+  const sosRanks = useMemo(() => rankSosByTeam(ratings), [ratings]);
   // Rank before filtering so searching keeps a team's national rank for the sort.
-  const ranked = useMemo(() => [...ratings]
-    .map((rating) => ({ rating, value: sortValue(rating, sort) }))
-    .sort((a, b) => compareDescendingNullsLast(a.value, b.value))
-    .map(({ rating }, i) => ({ rating, rank: i + 1 })), [ratings, sort]);
+  const ranked = useMemo(() => ratings
+    .map((rating) => ({ rating, key: sortKey(rating, sort, sosRanks) }))
+    .sort((a, b) => compareRows(a.key, b.key, direction))
+    .map(({ rating }, i) => ({ rating, position: i + 1 })), [ratings, sort, direction, sosRanks]);
   const visible = useMemo(() => {
     const search = query.trim().toLowerCase();
     return search ? ranked.filter(({ rating }) => rating.team.toLowerCase().includes(search)) : ranked;
   }, [ranked, query]);
 
+  /** Picking a new column opens it best-first; picking the active column flips its direction. */
+  function chooseSort(next: RatingsSort) {
+    if (next === sort) {
+      setDirection(direction === "desc" ? "asc" : "desc");
+      return;
+    }
+    setSort(next);
+    setDirection(bestFirstDirection(next));
+  }
+
+  function onSortSelect(value: string) {
+    if (isRatingsSort(value)) chooseSort(value);
+  }
+
   function periodHref(nextPeriod: string) {
     const params = new URLSearchParams({ period: nextPeriod, sort, season: String(season) });
+    if (direction !== bestFirstDirection(sort)) params.set("dir", direction);
     if (query.trim()) params.set("q", query.trim().slice(0, 80));
     return `/ratings?${params.toString()}`;
   }
@@ -175,34 +214,23 @@ export function RatingsView({
           clearLabel="Clear search"
           className="w-full sm:max-w-md"
         />
-        <SegmentedControl
-          label="Rating category"
-          value={sort}
-          onChange={setSort}
-          options={categories}
-          fill
-          className="sm:shrink-0"
-        />
+        <div className="sm:hidden">
+          <label htmlFor="rating-sort" className="mb-1 block text-sm font-semibold text-ink">Sort by</label>
+          <select
+            id="rating-sort"
+            value={sort}
+            onChange={(event) => onSortSelect(event.target.value)}
+            className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {RATINGS_SORTS.map((value) => <option key={value} value={value}>{sortLabels[value]}</option>)}
+          </select>
+        </div>
       </div>
 
       {hasResume && (
-        <div className="space-y-2">
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-            <span className={groupLabelClass}>Sort by résumé</span>
-            <SegmentedControl
-              size="sm"
-              label="Résumé sort"
-              value={sort}
-              onChange={setSort}
-              options={resumeSorts}
-              fill
-              className={resumeControlClass}
-            />
-          </div>
-          <p className="text-xs text-ink-muted">
-            SOS is the schedule’s difficulty for an average FBS team. SOR ranks each team’s record against what an <Link href="/methodology#elite-reference" className="font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">elite</Link> team (the average of the top 25 teams) would be expected to do on the same schedule; see the methodology.
-          </p>
-        </div>
+        <p className="text-xs text-ink-muted">
+          SOS ranks schedule difficulty for an average FBS team (1 is hardest). SOR ranks each team’s record against what an <Link href="/methodology#elite-reference" className="font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">elite</Link> team (the average of the top 25 teams) would be expected to do on the same schedule; see the methodology.
+        </p>
       )}
 
       {ratings.length === 0 ? (
@@ -215,33 +243,36 @@ export function RatingsView({
       ) : (
         <>
           <ul className="space-y-2 sm:hidden" aria-label="Team ratings list">
-            {visible.map(({ rating, rank }) => (
-              <li key={rating.team} className="rounded-xl border border-line bg-surface-card p-3 shadow-2xs">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-2">
-                    <span aria-label={`National rank ${rank}`} className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded bg-accent-soft px-1 font-mono text-xs font-bold text-accent-ink">{rank}</span>
-                    <TeamLogo name={rating.team} px={24} />
-                    <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <div data-testid="primary-rating">
-                      <p className="text-xs font-medium text-ink-muted">{sortLabels[sort]}</p>
-                      <p className="font-mono text-lg font-bold tabular-nums text-ink">{primaryText(rating, sort)}</p>
+            {visible.map(({ rating, position }) => {
+              const teamRanks = sosRanks.get(rating.team);
+              return (
+                <li key={rating.team} className="rounded-xl border border-line bg-surface-card p-3 shadow-2xs">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-2">
+                      <span aria-label={`National rank ${position}`} className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded bg-accent-soft px-1 font-mono text-xs font-bold text-accent-ink">{position}</span>
+                      <TeamLogo name={rating.team} px={24} />
+                      <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div data-testid="primary-rating">
+                        <p className="text-xs font-medium text-ink-muted">{sortLabels[sort]}</p>
+                        <p className="font-mono text-lg font-bold tabular-nums text-ink">{primaryText(rating, sort, sosRanks)}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-2 text-xs text-ink-muted">
-                  {categories.filter((category) => category.value !== sort).map((category) => (
-                    <span key={category.value}>
-                      {category.label} <span className="font-mono">{ratingText(rating[fields[category.value]])}</span>
-                    </span>
-                  ))}
-                  <span>FBS W-L <span className="font-mono">{recordText(rating)}</span></span>
-                  {sort !== "sor" && <span>SOR <span className="font-mono">{rankText(rating)}</span></span>}
-                  {sort !== "sos" && <span>SOS <span className="font-mono">{sosText(rating)}</span> (Played / Remaining / Full)</span>}
-                </div>
-              </li>
-            ))}
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-2 text-xs text-ink-muted">
+                    {scoreSorts.filter((column) => column !== sort).map((column) => (
+                      <span key={column}>
+                        {sortLabels[column]} <span className="font-mono">{ratingText(rating[scoreFields[column]])}</span>
+                      </span>
+                    ))}
+                    <span>FBS W-L <span className="font-mono">{recordText(rating)}</span></span>
+                    <span>SOR <span className="font-mono">{rankText(rankFor(rating, "sor", sosRanks))}</span></span>
+                    <span>SOS <span className="font-mono">{sosRankLine(teamRanks)}</span> (Played / Remaining / Full)</span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
 
           <div className="hidden overflow-x-auto rounded-xl border border-line bg-surface-card sm:block">
@@ -251,37 +282,34 @@ export function RatingsView({
                 <tr>
                   <th scope="col" className="px-2 py-3 text-center">#</th>
                   <th scope="col" className="px-2 py-3 text-left">Team</th>
-                  {categories.map((category) => (
-                    <Fragment key={category.value}>
-                      <th scope="col" aria-sort={sort === category.value ? "descending" : undefined} className={sortedHeaderClass(sort === category.value)}>{category.label}</th>
-                    </Fragment>
+                  {scoreSorts.map((column) => (
+                    <SortHeader key={column} column={column} active={sort === column} direction={direction} onSort={chooseSort} />
                   ))}
                   <th scope="col" title={tooltips.record} className="px-2 py-3 text-right whitespace-nowrap">FBS W-L</th>
-                  <th scope="col" title={tooltips.sor} aria-sort={sort === "sor" ? "descending" : undefined} className={sortedHeaderClass(sort === "sor")}>SOR</th>
-                  <th scope="col" title={tooltips.sos} className="px-2 py-3 text-right whitespace-nowrap">SOS Played</th>
-                  <th scope="col" title={tooltips.sos} className="px-2 py-3 text-right whitespace-nowrap">SOS Remaining</th>
-                  <th scope="col" title={tooltips.sos} aria-sort={sort === "sos" ? "descending" : undefined} className={sortedHeaderClass(sort === "sos")}>SOS Full</th>
+                  <SortHeader column="sor" active={sort === "sor"} direction={direction} onSort={chooseSort} title={tooltips.sor} />
+                  <SortHeader column="sos_played" active={sort === "sos_played"} direction={direction} onSort={chooseSort} title={tooltips.sos} />
+                  <SortHeader column="sos_remaining" active={sort === "sos_remaining"} direction={direction} onSort={chooseSort} title={tooltips.sos} />
+                  <SortHeader column="sos_full" active={sort === "sos_full"} direction={direction} onSort={chooseSort} title={tooltips.sos} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {visible.map(({ rating, rank }) => {
+                {visible.map(({ rating, position }) => {
                   const sos = sosValues(rating);
+                  const teamRanks = sosRanks.get(rating.team);
                   return (
                     <tr key={rating.team}>
-                      <td className="px-2 py-3 text-center font-mono text-xs text-ink-muted">{rank}</td>
+                      <td className="px-2 py-3 text-center font-mono text-xs text-ink-muted">{position}</td>
                       <th scope="row" className="px-2 py-3 text-left font-semibold text-ink">
                         <div className="flex items-center gap-2"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></div>
                       </th>
-                      {categories.map((category) => (
-                        <Fragment key={category.value}>
-                          <td className={clsx("px-2 py-3 text-right font-mono", sortedClass(sort === category.value))}>{ratingText(rating[fields[category.value]])}</td>
-                        </Fragment>
+                      {scoreSorts.map((column) => (
+                        <td key={column} className={clsx("px-2 py-3 text-right font-mono", sortedClass(sort === column))}>{ratingText(rating[scoreFields[column]])}</td>
                       ))}
                       <td className="whitespace-nowrap px-2 py-3 text-right font-mono text-ink-muted">{recordText(rating)}</td>
-                      <td title={sorTitle(rating)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sor"))}>{rankText(rating)}</td>
-                      <td className="whitespace-nowrap px-2 py-3 text-right font-mono text-ink-muted">{oneDecimal(sos.played)}</td>
-                      <td className="whitespace-nowrap px-2 py-3 text-right font-mono text-ink-muted">{oneDecimal(sos.remaining)}</td>
-                      <td className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos"))}>{oneDecimal(sos.full)}</td>
+                      <td title={valueTitle("SOR", rating.sor)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sor"))}>{rankText(rankFor(rating, "sor", sosRanks))}</td>
+                      <td title={valueTitle("SOS Played", sos.played)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_played"))}>{rankText(teamRanks?.played)}</td>
+                      <td title={valueTitle("SOS Remaining", sos.remaining)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_remaining"))}>{rankText(teamRanks?.remaining)}</td>
+                      <td title={valueTitle("SOS Full", sos.full)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_full"))}>{rankText(teamRanks?.full)}</td>
                     </tr>
                   );
                 })}
