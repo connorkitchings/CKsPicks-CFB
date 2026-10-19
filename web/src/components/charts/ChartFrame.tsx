@@ -4,7 +4,6 @@ import { useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
-import { SEGMENTED_GROUP, segmentedItem } from "./segmented-styles";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
 
 /**
@@ -71,39 +70,6 @@ export function HighlightStatus({ team, available, week }: { team: string | null
     <p role="status" className="text-xs text-ink-muted" data-testid="highlight-status">
       Highlight: {team}{available ? ". Click again or clear to unhighlight." : ` — no available observation Through Week ${week}.`}
     </p>
-  );
-}
-
-/** Segmented button group (metric switchers, sort toggles). */
-export function SegmentedControl<Value extends string>({
-  label,
-  options,
-  value,
-  onChange,
-  testId,
-}: {
-  /** Group name for assistive tech. */
-  label: string;
-  options: readonly { value: Value; label: string; testId: string }[];
-  value: Value;
-  onChange: (value: Value) => void;
-  testId: string;
-}) {
-  return (
-    <div className={SEGMENTED_GROUP} role="group" aria-label={label} data-testid={testId}>
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          aria-pressed={value === option.value}
-          className={segmentedItem(value === option.value)}
-          data-testid={option.testId}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
   );
 }
 

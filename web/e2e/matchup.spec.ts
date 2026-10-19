@@ -182,16 +182,17 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page).toHaveTitle(/ at .* · Matchup/);
   });
 
-  test("loaded matchups fit phones and the 640px breakpoint with teams above forecasts", async ({ page }) => {
-    for (const width of [320, 360, 390, 430, 639, 640, 768]) {
+  test("loaded matchups fit phones and tablets with teams above forecasts, and between them from lg", async ({ page }) => {
+    for (const width of [320, 360, 390, 430, 639, 640, 768, 1024, 1280]) {
       await page.setViewportSize({ width, height: 844 });
       await page.goto("/matchup/1");
-      await expect(page.getByRole("table")).toHaveCount(1);
+      // Unit tables sit side by side from md; the first one is always present.
+      await expect(page.getByRole("table").first()).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       const { away, home, forecast } = await page.evaluate(() => {
         const box = (selector: string) => {
           const rect = document.querySelector(selector)!.getBoundingClientRect();
-          return { y: rect.y, height: rect.height };
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
         };
         return {
           away: box("[data-side=away]"),
@@ -200,10 +201,19 @@ test.describe("matchup page (fixture mode)", () => {
         };
       });
       expect(Math.abs(away!.y - home!.y)).toBeLessThan(2);
-      expect(forecast!.y).toBeGreaterThan(Math.max(away!.y + away!.height, home!.y + home!.height));
+      if (width < 1024) {
+        expect(forecast!.y).toBeGreaterThan(Math.max(away!.y + away!.height, home!.y + home!.height));
+      } else {
+        // From lg the forecast sits in the centre column, level with the teams.
+        expect(forecast!.x).toBeGreaterThan(away!.x + away!.width);
+        expect(forecast!.x + forecast!.width).toBeLessThan(home!.x);
+        expect(forecast!.y).toBeLessThan(Math.max(away!.y + away!.height, home!.y + home!.height));
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      for (const action of await page.getByTestId("share-controls").getByRole("button").all()) {
-        expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      if (width < 640) {
+        for (const action of await page.getByTestId("share-controls").getByRole("button").all()) {
+          expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        }
       }
     }
   });

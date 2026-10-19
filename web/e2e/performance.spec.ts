@@ -3,13 +3,16 @@ import { expect, test, type Page } from "@playwright/test";
 const audit = (page: Page) => page.getByRole("region", { name: "Graded picks audit", exact: true });
 const target = (page: Page) => page.getByRole("group", { name: "Pick target" });
 
+/** Matches the `sm` breakpoint, below which ResponsiveDisclosure collapses. */
+const isPhone = (page: Page) => (page.viewportSize()?.width ?? 1280) < 640;
+
 async function openAudit(page: Page) {
   await audit(page).locator(":scope > details > summary").click();
   await expect(page.getByLabel("Audit week")).toBeVisible();
 }
 
 test.describe("performance page is accuracy-only", () => {
-  test("leads with separate records and keeps diagnostics and audit collapsed", async ({ page }) => {
+  test("leads with separate records, keeps the audit collapsed and diagnostics collapsed on phones", async ({ page }) => {
     await page.goto("/performance");
     await expect(page.getByRole("heading", { name: "Season record & performance" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "2026 V5 cumulative record" })).toBeVisible();
@@ -22,8 +25,9 @@ test.describe("performance page is accuracy-only", () => {
     await expect(page.locator("details[open]")).toHaveCount(0);
     await expect(page.getByLabel("Audit week")).toBeHidden();
 
-    await page.getByText("Season-wide forecast diagnostics", { exact: true }).click();
-    const accuracy = page.getByRole("region", { name: "Forecast accuracy", exact: true });
+    // Phones collapse diagnostics behind the summary; wider screens show them inline.
+    if (isPhone(page)) await page.getByText("Season-wide forecast diagnostics", { exact: true }).filter({ visible: true }).click();
+    const accuracy = page.getByRole("region", { name: "Forecast accuracy", exact: true }).filter({ visible: true });
     await expect(accuracy.getByText("Spread MAE", { exact: true })).toBeVisible();
     await expect(accuracy.getByText("Total 95% interval", { exact: true })).toBeVisible();
     await expect(accuracy.getByText("4.5 pts", { exact: true })).toBeVisible();
@@ -110,7 +114,9 @@ test.describe("performance page is accuracy-only", () => {
       const link = weekly.getByRole("link", { name: "Week 0", exact: true }).filter({ visible: true });
       await expect(link).toHaveAttribute("href", "/results?week=0");
       const box = await link.boundingBox();
-      expect(box!.height).toBeGreaterThanOrEqual(44);
+      // Phone rows are 44px touch targets; the desktop table link stays compact.
+      if (isPhone(page)) expect(box!.height).toBeGreaterThanOrEqual(44);
+      else expect(box!.height).toBeLessThanOrEqual(40);
       await openAudit(page);
       await audit(page).getByTestId("audit-game").locator("summary").click();
       await expect(audit(page).getByText(/Freeze evidence SHA-256:/)).toBeVisible();

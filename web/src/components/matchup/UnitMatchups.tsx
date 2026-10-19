@@ -18,9 +18,10 @@ export function UnitMatchups({ away, home }: { away: Unit; home: Unit }) {
         value={selected}
         onChange={setSelected}
         options={[
-          { value: "away", label: `${away.offenseTeam} offense` },
-          { value: "home", label: `${home.offenseTeam} offense` },
+          { value: "away", label: away.offenseTeam },
+          { value: "home", label: home.offenseTeam },
         ]}
+        fill
         className="lg:hidden"
       />
       <div className="grid gap-4 lg:grid-cols-2">

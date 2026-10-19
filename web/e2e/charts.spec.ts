@@ -65,7 +65,7 @@ test.describe("team charts", () => {
   });
 
   test("hidden charts are absent from the picker and their URLs fall back to net success", async ({ page }) => {
-    // Hidden by `ready: false` in src/lib/chart-config.ts.
+    // Hidden by `ready: false` in src/lib/chart-config.ts, or removed from the registry.
     for (const hidden of ["schedule", "trajectory", "rating-trajectory"]) {
       await page.goto(`/charts?chart=${hidden}&team=Alabama`);
       await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();

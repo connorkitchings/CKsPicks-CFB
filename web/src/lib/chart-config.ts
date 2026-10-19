@@ -15,9 +15,7 @@ import {
   type RosterRow,
   type ScatterPoint,
   type Side,
-  type TrajectoryMetric,
 } from "./charts.ts";
-import { scheduleReading, type ScheduleRow } from "./charts.ts";
 import type { GameLogGame, GameLogMetric } from "./charts.ts";
 
 /**
@@ -107,28 +105,6 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     footnote: `PPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. Dashed lines are play-weighted FBS averages; corner labels are relative to them. ${RELEASE_NOTE}`,
     ready: true,
   },
-  schedule: {
-    group: "teams",
-    tabLabel: "Schedule adjustment",
-    title: "Schedule adjustment",
-    description: "Venue-neutral to opponent-adjusted PPA/play for each team.",
-    population: FBS_GAMES,
-    controls: { side: true, week: "through-week", team: true },
-    footnote: `Each row runs from venue-neutral PPA/play (raw minus the home-field venue correction; hollow dot) to opponent-adjusted PPA/play from the V5 iterative adjuster (filled dot), FBS vs FBS games. Schedule effect is in better-is-positive units: positive means raw understated: tougher opponents than average; negative means raw inflated: weaker opponents. On defense, values are PPA/play allowed and the axis is inverted so better is right. ${RELEASE_NOTE}`,
-    // Hidden from /charts by owner decision on 2026-10-18 (not readable/understandable enough); view code retained.
-    ready: false,
-  },
-  trajectory: {
-    group: "teams",
-    tabLabel: "Trajectory",
-    title: "Team trajectory",
-    description: "Adjusted PPA/play across every stored week.",
-    population: FBS_GAMES,
-    controls: { side: false, week: null, team: true },
-    footnote: `Opponent- and venue-adjusted PPA/play (V5 iterative adjuster, FBS vs FBS games) for every stored Through Week window; net is offense minus defense allowed. The dashed line is each window's play-weighted FBS average. A gap means the team has no adjusted value in that window (for net, either role); a lone window is a dot. ${RELEASE_NOTE}`,
-    // Hidden from /charts by owner decision on 2026-10-18 (not readable/understandable enough); view code retained.
-    ready: false,
-  },
   "rating-trajectory": {
     group: "teams",
     tabLabel: "V5 ratings",
@@ -190,18 +166,6 @@ export function parseChartKind(raw: RawParam): ChartKind {
 export function parseSide(raw: RawParam): Side {
   return raw === "defense" ? "defense" : "offense";
 }
-
-/** Trajectory `metric=net|offense|defense`; net by default. */
-export function parseTrajectoryMetric(raw: RawParam): TrajectoryMetric {
-  return raw === "offense" || raw === "defense" ? raw : "net";
-}
-
-/** Trajectory metric switcher text and y-axis label, in toggle order. */
-export const TRAJECTORY_METRICS: Record<TrajectoryMetric, { label: string; yLabel: string }> = {
-  net: { label: "Net", yLabel: "Adjusted net PPA/play (offense − defense allowed)" },
-  offense: { label: "Offense", yLabel: "Adjusted offense PPA/play" },
-  defense: { label: "Defense", yLabel: "Adjusted defense PPA/play allowed" },
-};
 
 /** V5 rating trajectory `metric=overall|offense|defense`; overall by default. */
 export function parseRatingMetric(raw: RawParam): RatingMetric {
@@ -507,23 +471,6 @@ export function describeRatingPoint(data: RatingTrajectoryData, series: RatingTr
   const spread = sd === null ? "" : ` ± ${formatRating(sd)}`;
   const rank = series.ranks[index];
   return `${head}: ${RATING_METRICS[metric].yLabel} ${formatRating(value)}${spread}${rank === null ? "" : `, ${rankText(rank, data.ranked[index])}`}`;
-}
-
-// ---------------------------------------------------------------------------
-// Schedule adjustment
-// ---------------------------------------------------------------------------
-
-export function scheduleAxisLabel(side: Side): string {
-  return side === "defense"
-    ? "Defense PPA/play allowed (axis inverted: better is right)"
-    : "Offense PPA/play";
-}
-
-/** Tooltip and accessible text of one schedule row, with the full decomposition. */
-export function describeScheduleRow(row: ScheduleRow, side: Side): string {
-  const unit = side === "defense" ? "PPA/play allowed" : "PPA/play";
-  const reading = scheduleReading(row.effect);
-  return `${row.team} (${conferenceLabel(row.conference)}): raw ${formatEpa(row.raw)}, venue correction ${formatEpa(row.venueCorrection)}, venue-neutral ${formatEpa(row.neutral)}, adjusted ${formatEpa(row.adjusted)} ${unit}; schedule effect ${formatEpa(row.effect)}${reading ? ` (${reading})` : ""}, ${row.epaN} plays`;
 }
 
 // ---------------------------------------------------------------------------

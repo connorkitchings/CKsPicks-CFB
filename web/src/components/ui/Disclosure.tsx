@@ -17,7 +17,7 @@ export function Disclosure({
 }) {
   return (
     <details open={open} className={clsx("group rounded-xl border border-line bg-surface-card", className)}>
-      <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+      <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 sm:min-h-9 sm:py-2 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
         {title}
       </summary>
       <div className="px-3 pb-3 text-sm text-ink-muted">{children}</div>

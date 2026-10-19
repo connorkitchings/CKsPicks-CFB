@@ -13,8 +13,6 @@ export type ChartKind =
   | "net-success"
   | "efficiency"
   | "adjusted"
-  | "schedule"
-  | "trajectory"
   | "rating-trajectory"
   | "possession"
   | "game-log";
@@ -440,11 +438,8 @@ export function possessionPoints(roster: readonly RosterRow[], rows: readonly Po
 export type Domain = [number, number];
 
 // ---------------------------------------------------------------------------
-// Team trajectory
+// Trajectory series (shared by the V5 rating trajectory)
 // ---------------------------------------------------------------------------
-
-/** Net = adjusted offense minus adjusted defense allowed. */
-export type TrajectoryMetric = "net" | "offense" | "defense";
 
 export type TrajectoryPoint = { week: number; value: number };
 export type TrajectorySeries = {
@@ -456,14 +451,11 @@ export type TrajectorySeries = {
   segments: TrajectoryPoint[][];
 };
 export type TrajectoryData = {
-  /** "Through Week N" of every charted window, ascending (adjusted PPA from Week 2, V5 ratings from Week 0). */
+  /** "Through Week N" of every charted window, ascending. */
   weeks: number[];
   /** Roster teams with a value in at least one window, by name. */
   series: TrajectorySeries[];
-  /**
-   * Dashed reference of each window, null when none: the play-weighted FBS average for
-   * adjusted PPA (as in `adjustedPoints`), the unweighted roster mean for V5 ratings.
-   */
+  /** Dashed reference of each window, null when none: the unweighted roster mean for V5 ratings. */
   average: (number | null)[];
   /** Roster teams with no value in any window. */
   unavailable: string[];
@@ -483,45 +475,6 @@ function trajectorySegments(weeks: readonly number[], values: readonly (number |
   });
   if (run.length) segments.push(run);
   return segments;
-}
-
-/**
- * Adjusted PPA/play of every roster team across all stored `as_of_week` windows
- * (x = Through Week `as_of_week - 1`). A team without the window's row (for net, either
- * role) has a gap there.
- */
-export function trajectorySeries(roster: readonly RosterRow[], rows: readonly AdjustedRow[], metric: TrajectoryMetric): TrajectoryData {
-  const byWindow = new Map<number, AdjustedRow[]>();
-  for (const row of rows) {
-    const through = row.asOfWeek - 1;
-    if (through < FIRST_SCATTER_THROUGH_WEEK) continue;
-    byWindow.set(through, [...(byWindow.get(through) ?? []), row]);
-  }
-  const weeks = [...byWindow.keys()].sort((a, b) => a - b);
-  const valueOf = (o: AdjustedRow | undefined, d: AdjustedRow | undefined): number | null => {
-    if (metric === "offense") return o ? o.adjustedEpaPerPlay : null;
-    if (metric === "defense") return d ? d.adjustedEpaPerPlay : null;
-    return o && d ? o.adjustedEpaPerPlay - d.adjustedEpaPerPlay : null;
-  };
-  const columns = weeks.map((week) => {
-    const windowRows = byWindow.get(week)!;
-    const offense = new Map<string, AdjustedRow>();
-    const defense = new Map<string, AdjustedRow>();
-    for (const row of windowRows) (row.role === "offense" ? offense : defense).set(row.team, row);
-    const pooled = adjustedPoints(roster, windowRows).average;
-    const average = pooled === null ? null : metric === "offense" ? pooled.x : metric === "defense" ? pooled.y : pooled.x - pooled.y;
-    return { offense, defense, average };
-  });
-  const series: TrajectorySeries[] = [];
-  const unavailable: string[] = [];
-  for (const { team, conference } of roster) {
-    const values = columns.map((column) => valueOf(column.offense.get(team), column.defense.get(team)));
-    if (values.every((value) => value === null)) unavailable.push(team);
-    else series.push({ team, conference, values, segments: trajectorySegments(weeks, values) });
-  }
-  series.sort(byTeam);
-  unavailable.sort();
-  return { weeks, series, average: columns.map((column) => column.average), unavailable, invertY: metric === "defense" };
 }
 
 // ---------------------------------------------------------------------------
@@ -858,106 +811,4 @@ export function formatPercent(value: number): string {
 export function formatEpa(value: number): string {
   const text = value.toFixed(3);
   return value > 0 ? `+${text}` : text;
-}
-
-// ---------------------------------------------------------------------------
-// Schedule adjustment
-// ---------------------------------------------------------------------------
-
-/** One team's role in one `as_of_week` window, from venue-neutral to opponent-adjusted PPA/play. */
-export type ScheduleRow = {
-  team: string;
-  conference: string | null;
-  raw: number;
-  venueCorrection: number;
-  /** Venue-neutral PPA/play: `raw − venueCorrection`. */
-  neutral: number;
-  adjusted: number;
-  /** Opponent effect in better-is-positive units: offense `adjusted − neutral`, defense `neutral − adjusted`. */
-  effect: number;
-  epaN: number;
-};
-
-export type ScheduleData = {
-  side: Side;
-  /** Sorted by effect descending, then team name. */
-  rows: ScheduleRow[];
-  /** Roster teams with no adjusted row for the role in the window. */
-  unavailable: string[];
-  /** Defense plots allowed values with the axis inverted, so better is right. */
-  invert: boolean;
-};
-
-/** Teams shown at each end of a long group. */
-export const SCHEDULE_EDGE = 15;
-
-/**
- * Isolate the opponent effect: `raw − adjusted = venueCorrection + opponentAdjustment`,
- * so the step from venue-neutral to adjusted is the opponent adjustment alone.
- */
-export function scheduleRows(roster: readonly RosterRow[], rows: readonly AdjustedRow[], side: Side): ScheduleData {
-  const byTeamRow = new Map(rows.filter((row) => row.role === side).map((row) => [row.team, row]));
-  const out: ScheduleRow[] = [];
-  const unavailable: string[] = [];
-  for (const { team, conference } of roster) {
-    const row = byTeamRow.get(team);
-    if (!row) {
-      unavailable.push(team);
-      continue;
-    }
-    const neutral = row.rawEpaPerPlay - row.venueCorrection;
-    const adjusted = row.adjustedEpaPerPlay;
-    out.push({
-      team,
-      conference,
-      raw: row.rawEpaPerPlay,
-      venueCorrection: row.venueCorrection,
-      neutral,
-      adjusted,
-      effect: side === "offense" ? adjusted - neutral : neutral - adjusted,
-      epaN: row.epaN,
-    });
-  }
-  out.sort((a, b) => b.effect - a.effect || byTeam(a, b));
-  unavailable.sort();
-  return { side, rows: out, unavailable, invert: side === "defense" };
-}
-
-/** The only two readings of a schedule effect; none when it is exactly zero. */
-export function scheduleReading(effect: number): string | null {
-  if (effect > 0) return "raw understated: tougher opponents than average";
-  if (effect < 0) return "raw inflated: weaker opponents";
-  return null;
-}
-
-export type ScheduleSubset = {
-  top: ScheduleRow[];
-  /** Empty when the whole group is shown. */
-  bottom: ScheduleRow[];
-  /** Teams between `top` and `bottom` that are not drawn. */
-  omitted: number;
-  /** The highlighted team when it falls outside the shown rows, with its 1-based position. */
-  extra: { row: ScheduleRow; position: number; total: number } | null;
-};
-
-/**
- * The rows to draw from a sorted group: the first and last `edge` (cut strictly by the
- * sort order, so boundary ties resolve by name), or every row when `showAll`, when the
- * group has `2 * edge` or fewer rows, or when the two ends would overlap.
- */
-export function scheduleSubset(
-  rows: readonly ScheduleRow[],
-  { showAll, highlight, edge = SCHEDULE_EDGE }: { showAll: boolean; highlight: string | null; edge?: number },
-): ScheduleSubset {
-  if (showAll || rows.length <= 2 * edge) return { top: [...rows], bottom: [], omitted: 0, extra: null };
-  const top = rows.slice(0, edge);
-  const bottom = rows.slice(rows.length - edge);
-  const index = highlight ? rows.findIndex((row) => row.team === highlight) : -1;
-  const hidden = index >= edge && index < rows.length - edge;
-  return {
-    top,
-    bottom,
-    omitted: rows.length - 2 * edge,
-    extra: hidden ? { row: rows[index], position: index + 1, total: rows.length } : null,
-  };
 }

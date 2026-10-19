@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTeamGames, getTeamHistory, type Rating } from "@/lib/v5";
 import { v5RatingFixture } from "@/test/fixtures/publication";
+import { PageHeading } from "@/components/ui/PageHeading";
 
 export const revalidate = 300;
 
@@ -27,7 +28,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
   }
   return (
     <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 space-y-7 px-4 py-8">
-      <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline">← All ratings</Link><h1 className="mt-3 text-3xl font-bold tracking-tight text-ink">{team}</h1><p className="mt-2 text-sm text-ink-muted">V5 team state and selected 2026 forecasts.</p></div>
+      <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div></div>
       {unavailable ? <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">Team data is temporarily unavailable.</p> : <>
         <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
           {history.length === 0 ? <p className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">No certified rating history is available for this team.</p> :

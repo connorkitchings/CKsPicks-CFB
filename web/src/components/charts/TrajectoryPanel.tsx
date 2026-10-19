@@ -16,7 +16,7 @@ function windowText(weeks: readonly number[]): string {
 
 export type TrajectoryPanelProps<S extends TrajectorySeries> = {
   shared: SharedChartProps;
-  kind: "trajectory" | "rating-trajectory";
+  kind: "rating-trajectory";
   data: TrajectoryChartData<S>;
   /** Selected metric: switcher text (subtitle lead) and export-name slug. */
   metric: { label: string; slug: string; yLabel: string };

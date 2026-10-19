@@ -40,14 +40,14 @@ export function SearchField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="min-h-11 w-full rounded-lg border border-line bg-surface-card px-3 pr-12 text-base text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-sm [&::-webkit-search-cancel-button]:hidden"
+        className="min-h-11 w-full rounded-lg border border-line bg-surface-card px-3 pr-12 text-base sm:min-h-9 sm:pr-10 text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-sm [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button
           type="button"
           aria-label={clearLabel}
           onClick={() => onChange("")}
-          className="absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-lg text-xl text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          className="absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-lg text-xl sm:min-h-9 sm:w-9 sm:text-base text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
         >
           <span aria-hidden>×</span>
         </button>

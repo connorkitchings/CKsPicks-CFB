@@ -99,7 +99,7 @@ export function UnitMatchupTable({
     <div className="min-w-0 rounded-2xl border border-line bg-surface-card p-3 shadow-sm sm:p-4">
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 border-b border-line/60 pb-3">
         <div className="flex min-w-0 flex-col items-center gap-1 text-center">
-          <TeamLogo name={offenseTeam} px={44} decorative={false} />
+          <div className="hidden lg:block"><TeamLogo name={offenseTeam} px={44} decorative={false} /></div>
           <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{offenseTeam}</h3>
           <span className="text-xs font-semibold uppercase tracking-wider text-accent-ink">Offense</span>
           <RankLine label="Model Offense Rank" rank={offenseRank} testId="unit-offense-rank" />
@@ -108,7 +108,7 @@ export function UnitMatchupTable({
           vs
         </span>
         <div className="flex min-w-0 flex-col items-center gap-1 text-center">
-          <TeamLogo name={defenseTeam} px={44} decorative={false} />
+          <div className="hidden lg:block"><TeamLogo name={defenseTeam} px={44} decorative={false} /></div>
           <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{defenseTeam}</h3>
           <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Defense</span>
           <RankLine label="Model Defense Rank" rank={defenseRank} testId="unit-defense-rank" />

@@ -17,10 +17,8 @@ import {
   type RatingMetric,
   type RatingSnapshotRow,
   type RosterRow,
-  type ScheduleData,
   type Side,
   type TeamGameRow,
-  type TrajectoryMetric,
 } from "@/lib/charts";
 import { AdjustedView } from "./AdjustedView";
 import type { SharedChartProps } from "./ChartFrame";
@@ -29,16 +27,12 @@ import { GameLogView } from "./GameLogView";
 import { NetSuccessView } from "./NetSuccessView";
 import { PossessionView } from "./PossessionView";
 import { RatingTrajectoryView } from "./RatingTrajectoryView";
-import { ScheduleAdjustmentView } from "./ScheduleAdjustmentView";
-import { TrajectoryView } from "./TrajectoryView";
 
 /** The data of one chart view; a new chart adds its variant here and its case below. */
 export type ChartPayload =
   | { kind: "net-success"; bars: NetSuccessBar[]; notCharted: NotCharted[] }
   | { kind: "efficiency"; side: Side; rows: TeamGameRow[]; initialMetric: EfficiencyMetric; explosiveness: boolean }
   | { kind: "adjusted"; scatter: AdjustedScatter }
-  | { kind: "schedule"; schedule: ScheduleData }
-  | { kind: "trajectory"; rows: AdjustedRow[]; initialMetric: TrajectoryMetric }
   | { kind: "rating-trajectory"; rows: RatingSnapshotRow[]; initialMetric: RatingMetric }
   | { kind: "possession"; rows: PossessionRow[]; initialMetric: PossessionMetric }
   | { kind: "game-log"; rows: TeamGameRow[]; adjusted: AdjustedRow[]; initialMetric: GameLogMetric; explosiveness: boolean };
@@ -94,10 +88,6 @@ function renderView(chart: ChartPayload, shared: SharedChartProps) {
       return <EfficiencyView key={chart.explosiveness ? "charts_v2" : "charts_v1"} shared={shared} side={chart.side} rows={chart.rows} initialMetric={chart.initialMetric} explosiveness={chart.explosiveness} />;
     case "adjusted":
       return <AdjustedView shared={shared} scatter={chart.scatter} />;
-    case "schedule":
-      return <ScheduleAdjustmentView shared={shared} data={chart.schedule} />;
-    case "trajectory":
-      return <TrajectoryView shared={shared} rows={chart.rows} initialMetric={chart.initialMetric} />;
     case "rating-trajectory":
       return <RatingTrajectoryView shared={shared} rows={chart.rows} initialMetric={chart.initialMetric} />;
     case "possession":

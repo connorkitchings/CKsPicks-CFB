@@ -7,14 +7,12 @@ const charts = [
   { kind: "net-success", query: "chart=net-success&week=3", testId: "net-success-chart" },
   { kind: "efficiency", query: "chart=efficiency&fixture=slate&week=3&team=Alabama", testId: "scatter-chart" },
   { kind: "adjusted", query: "chart=adjusted&week=3&team=Alabama", testId: "scatter-chart" },
-  { kind: "schedule", query: "chart=schedule&fixture=schedule&week=3", testId: "schedule-chart" },
-  { kind: "trajectory", query: "chart=trajectory&team=Alabama", testId: "trajectory-chart" },
   { kind: "rating-trajectory", query: "chart=rating-trajectory&team=Alabama", testId: "trajectory-chart" },
   { kind: "possession", query: "chart=possession&week=3&team=Alabama", testId: "scatter-chart" },
   { kind: "game-log", query: "chart=game-log&team=Alabama", testId: "game-log-chart" },
 ] as const;
-// Skipped: hidden from /charts (`ready: false` in src/lib/chart-config.ts); their capture branches are kept.
-const HIDDEN_KINDS: readonly string[] = ["schedule", "trajectory", "rating-trajectory"];
+// Skipped: hidden from /charts (`ready: false` in src/lib/chart-config.ts); their capture branch is kept.
+const HIDDEN_KINDS: readonly string[] = ["rating-trajectory"];
 
 test("capture all chart fixtures and desktop PNG exports in both themes", async ({ page }, testInfo) => {
   test.skip(!enabled, "Set CFB_CHART_VISUALS=1 to create the optional visual review artifacts.");
@@ -29,12 +27,6 @@ test("capture all chart fixtures and desktop PNG exports in both themes", async 
         await expect(page.getByTestId(chart.testId)).toBeVisible();
         await page.waitForLoadState("networkidle");
         await expect(page.locator("html")).toHaveClass(theme === "dark" ? /dark/ : /^(?!.*dark)/);
-        if (chart.kind === "schedule") {
-          // The large fixture includes both 15-team ends and an extra middle highlight.
-          const teams = (await page.getByTestId("team-highlight").locator("option").allTextContents()).slice(2);
-          await page.getByTestId("team-highlight").selectOption(teams[19]);
-          await expect(page.getByTestId("schedule-chart").locator("g[data-team]")).toHaveCount(31);
-        }
         await page.screenshot({ path: testInfo.outputPath(`${name}.png`), fullPage: true });
         if (viewport.width === 1280) {
           const downloadEvent = page.waitForEvent("download");
@@ -46,18 +38,6 @@ test("capture all chart fixtures and desktop PNG exports in both themes", async 
           expect(report.width).toBe(2000);
           expect(report.decoded).toBe(report.logos);
           expect(report.logos).toBeGreaterThan(0);
-        }
-        if (chart.kind === "trajectory") {
-          // Keep the national capture above and also inspect a conference's endpoint logos.
-          await page.getByTestId("conference-filter").selectOption("SEC");
-          await expect(page.getByTestId("trajectory-endpoint").first()).toBeVisible();
-          await page.screenshot({ path: testInfo.outputPath(`${name}-conference.png`), fullPage: true });
-          // Stress the endpoint rail separately with the 40-team synthetic group.
-          await page.goto("/charts?chart=trajectory&fixture=schedule");
-          await expect(page.getByTestId("trajectory-chart")).toBeVisible();
-          await page.getByTestId("conference-filter").selectOption("Fixture");
-          await expect(page.getByTestId("trajectory-endpoint")).toHaveCount(40);
-          await page.screenshot({ path: testInfo.outputPath(`${name}-dense-conference.png`), fullPage: true });
         }
       }
     }

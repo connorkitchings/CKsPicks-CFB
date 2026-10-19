@@ -22,7 +22,8 @@ import {
   type TeamGameLog,
   type TeamGameRow,
 } from "@/lib/charts";
-import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, SegmentedControl, type SharedChartProps } from "./ChartFrame";
+import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { GameLogChart } from "./GameLogChart";
 
 const GAME_LOG_VIEW = { width: 1000, height: 560 };
@@ -87,6 +88,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       description={description}
       controls={
         <SegmentedControl
+          size="sm"
           label="Game log metric"
           options={gameLogMetrics(explosiveness).map((option) => ({ value: option, label: GAME_LOG_METRICS[option].label, testId: `game-log-metric-${option.replaceAll("_", "-")}` }))}
           value={metric}

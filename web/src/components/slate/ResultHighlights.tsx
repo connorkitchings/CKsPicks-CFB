@@ -1,4 +1,4 @@
-import { Disclosure } from "@/components/ui/Disclosure";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import type { Game } from "@/lib/queries";
 import { topResults, type GradedLean } from "@/lib/slate";
 import { LeanMarker } from "./LeanMarker";
@@ -41,12 +41,12 @@ function Column({ title, rows, empty }: { title: string; rows: GradedLean[]; emp
 export function ResultHighlights({ games }: { games: Game[] }) {
   return (
     <section aria-label="Highlights">
-      <Disclosure title="Highlights">
+      <ResponsiveDisclosure className="rounded-xl border border-line bg-surface-card" title="Highlights" heading="Highlights">
         <div className="grid gap-4 md:grid-cols-2">
           <Column title="Best calls (largest edge that won)" rows={topResults(games, "win", 3)} empty="No wins graded." />
           <Column title="Biggest misses (largest edge that lost)" rows={topResults(games, "loss", 3)} empty="No losses graded." />
         </div>
-      </Disclosure>
+      </ResponsiveDisclosure>
     </section>
   );
 }

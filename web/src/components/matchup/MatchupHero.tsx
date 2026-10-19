@@ -85,8 +85,8 @@ function Cell({
           className={clsx(
             "break-words leading-snug text-center",
             accent
-              ? "font-sans text-sm font-semibold text-accent-ink"
-              : "font-mono text-sm font-medium text-ink",
+              ? "font-sans text-xs font-semibold text-accent-ink sm:text-sm"
+              : "font-mono text-xs font-medium text-ink sm:text-sm",
             muted && "!font-normal !text-ink-muted",
           )}
         >
@@ -133,7 +133,8 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
       </div>
 
       <div className="rounded-2xl border border-line bg-surface-card p-4 shadow-sm sm:p-6">
-        <div className="grid grid-cols-2 items-start gap-4">
+        {/* Phones: teams side by side with the forecast beneath. lg+: forecast between the teams. */}
+        <div className="grid grid-cols-2 items-start gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
           <TeamBlock
             name={matchup.awayTeam}
             side="Away"
@@ -153,9 +154,8 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             isFinal={isFinal}
             showRating={matchup.lineageStatus === "ready"}
           />
-        </div>
-        {/* Market and model beneath the team comparison. */}
-        <div className="mt-5 flex w-full min-w-0 flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-3 py-4 text-center sm:px-5">
+        {/* Market and model: beneath the teams on phones, between them from lg. */}
+        <div className="col-span-2 mt-2 flex min-w-0 flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-3 py-4 text-center sm:px-5 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:w-[475px]">
           <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Forecast & Lines</span>
 
           <div
@@ -215,6 +215,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
               Final: {matchup.awayFinalPoints}–{matchup.homeFinalPoints}
             </span>
           )}
+        </div>
         </div>
       </div>
     </section>

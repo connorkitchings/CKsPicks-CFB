@@ -233,31 +233,3 @@ export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[]
   rows.push(...later);
   return { roster: names.map((team) => ({ team, conference: "Fixture" })), rows, yardage: buildYardage(rows, 70) };
 }
-
-/** Forty logo-bearing teams with distinct schedule effects, including a tie at each cut.
- * This fixture exercises the real top/bottom-15 browser layout without changing the
- * smaller fixtures used by the scatter and trajectory tests.
- */
-export function chartsScheduleFixture() {
-  const slate = chartsSlateFixture();
-  const roster = [...slate.roster].sort((a, b) => a.team.localeCompare(b.team)).slice(0, 40);
-  const teams = new Set(roster.map((row) => row.team));
-  const rows = slate.rows.filter((row) => teams.has(row.team));
-  const adjustedWeeks = [3, 4];
-  const adjustedFor = (asOfWeek: number): AdjustedRow[] => roster.flatMap(({ team }, index) =>
-    (["offense", "defense"] as const).map((role) => {
-      // Adjacent teams at positions 15/16 and 25/26 tie: team name breaks each tie.
-      const position = index === 15 ? 14 : index === 25 ? 24 : index;
-      const effect = (19.5 - position) / 200;
-      const opponentAdjustment = role === "offense" ? -effect : effect;
-      const rawEpaPerPlay = (role === "offense" ? 0.12 : 0.08) + index / 2000;
-      const venueCorrection = index % 2 === 0 ? 0.004 : -0.004;
-      return {
-        asOfWeek, team, role, rawEpaPerPlay, venueCorrection, opponentAdjustment,
-        adjustedEpaPerPlay: rawEpaPerPlay - venueCorrection - opponentAdjustment,
-        epaN: 140, games: 2, adjustedRank: index + 1, cohortSize: roster.length,
-      };
-    }),
-  );
-  return { roster, rows, yardage: slate.yardage.filter((row) => teams.has(row.team)), adjustedWeeks, adjustedFor };
-}

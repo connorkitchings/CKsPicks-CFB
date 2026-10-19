@@ -6,6 +6,7 @@ import clsx from "clsx";
 import type { PerformanceDetail, GradedGamePick } from "@/lib/v5";
 import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy";
 import { Disclosure } from "@/components/ui/Disclosure";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { MatchupButton } from "@/components/MatchupLinks";
 
@@ -121,7 +122,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
         })}
       </section>
 
-      <Disclosure title="Season-wide forecast diagnostics">
+      <ResponsiveDisclosure className="rounded-xl border border-line bg-surface-card" title="Season-wide forecast diagnostics" heading="Season-wide forecast diagnostics">
         <section aria-labelledby="calibration-heading" className="space-y-3">
           <h2 id="calibration-heading" className="sr-only">Forecast accuracy</h2>
           <p className="text-sm">Season-wide forecasts compared with certified final scores; these diagnostics do not change with the target filter.</p>
@@ -136,7 +137,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
             ))}
           </dl>
         </section>
-      </Disclosure>
+      </ResponsiveDisclosure>
 
       <section aria-labelledby="filter-heading" className="space-y-2">
         <h2 id="filter-heading" className="text-sm font-semibold text-ink">Weekly records</h2>
@@ -145,6 +146,8 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
           value={targetFilter}
           onChange={setTargetFilter}
           options={[{ value: "all", label: "All Picks" }, { value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]}
+          fill
+          className="sm:w-fit"
         />
         <p className="text-xs text-ink-muted">{overall.label}: {recordText(overall.focused)} · {rateText(overall.focused)} · {graded(overall.focused)} graded. Pushes excluded from rate.</p>
       </section>
@@ -188,7 +191,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
               {weeklyData.map((row) => (
                 <tr key={row.week}>
                   <th scope="row" className="px-3 text-ink">
-                    <Link href={`/results?week=${row.week}`} className="inline-flex min-h-11 items-center rounded font-semibold hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
+                    <Link href={`/results?week=${row.week}`} className="inline-flex min-h-11 items-center rounded font-semibold sm:min-h-9 hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
                   </th>
                   {targetFilter !== "total" && <><td className="px-2 py-3 text-right">{recordText(row.spread)}</td><td className="px-2 py-3 text-right">{rateText(row.spread)}</td></>}
                   {targetFilter !== "spread" && <><td className="px-2 py-3 text-right">{recordText(row.total)}</td><td className="px-3 py-3 text-right">{rateText(row.total)}</td></>}

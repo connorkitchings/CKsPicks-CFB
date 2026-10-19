@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { RATING_METRICS, describeRatingPoint, formatRating } from "@/lib/chart-config";
 import { ratingTrajectorySeries, type RatingMetric, type RatingSnapshotRow, type RatingTrajectorySeries } from "@/lib/charts";
-import { SegmentedControl, type SharedChartProps } from "./ChartFrame";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import type { SharedChartProps } from "./ChartFrame";
 import { TrajectoryPanel } from "./TrajectoryPanel";
 
 const METRIC_OPTIONS = (Object.keys(RATING_METRICS) as RatingMetric[]).map((value) => ({
@@ -27,7 +28,7 @@ export function RatingTrajectoryView({ shared, rows, initialMetric }: { shared: 
       kind="rating-trajectory"
       data={data}
       metric={{ ...RATING_METRICS[metric], slug: metric }}
-      metricControl={<SegmentedControl label="Rating component" options={METRIC_OPTIONS} value={metric} onChange={setMetric} testId="rating-metric-switcher" />}
+      metricControl={<SegmentedControl size="sm" label="Rating component" options={METRIC_OPTIONS} value={metric} onChange={setMetric} testId="rating-metric-switcher" />}
       formatTick={formatRating}
       formatCell={(s, i) => `${formatRating(s.values[i]!)}${s.sd[i] === null ? "" : ` ± ${formatRating(s.sd[i]!)}`}`}
       tooltip={(s) => describeRatingPoint(data, s, lastIndex(s), metric)}

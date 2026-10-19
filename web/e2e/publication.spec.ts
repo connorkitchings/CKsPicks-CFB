@@ -1,7 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
-const fits = (page: import("@playwright/test").Page) =>
+const fits = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+
+/** Kept for locators that may match a phone-only and an inline copy of the same text. */
+const shown = (locator: Locator) => locator.filter({ visible: true });
 
 for (const width of [375, 420]) {
   test(`market publication stays bounded and usable at ${width}px`, async ({ page }) => {
@@ -55,7 +58,7 @@ test.describe("picks slate (/)", () => {
     await expect(page.getByRole("region", { name: "Best bets" })).toBeVisible();
     await expect(page.getByPlaceholder("Filter by team…")).toBeVisible();
     // Season track record over each scored week's top-5 spread/total leans.
-    await expect(page.getByText(/2026: 7–3–0 \(\d+\.\d%\)/)).toBeVisible();
+    await expect(shown(page.getByText(/2026: 7–3–0 \(\d+\.\d%\)/))).toBeVisible();
     // Single-week fixture: no week selector on the slate.
     await expect(page.locator("#week-select")).toHaveCount(0);
     // Only one main navigation on the page.
@@ -80,19 +83,21 @@ test.describe("picks slate (/)", () => {
     // Each bet cell: the pick with its sportsbook, then one line with the model's number and the edge.
     const appState = page.locator("#game-1");
     await expect(appState).toContainText("Appalachian State -2.5");
-    await expect(appState).toContainText("(DraftKings)");
-    await expect(appState).toContainText("Model: Appalachian State by 7.6");
+    await expect(appState).toContainText("DraftKings");
+    await expect(appState).toContainText(/Model: [+-]?\d/);
     await expect(appState).toContainText("Under 57.5");
-    await expect(appState).toContainText("(Bovada)");
+    await expect(appState).toContainText("Bovada");
     await expect(appState).toContainText("Model: 54.1");
-    // Provider keys are shown as sportsbook names.
-    await page.locator("#game-3").getByText("Game details", { exact: true }).click();
-    await expect(page.locator("#game-3").getByText(/\(FanDuel\)/)).toBeVisible();
+    // Provider keys are shown as sportsbook names, inside the bet box.
+    await expect(shown(page.locator("#game-3").getByText(/FanDuel/))).toBeVisible();
     // A game with no recorded source shows the model's number but no invented book.
     const oklahoma = page.locator("#game-9");
     await expect(oklahoma).toContainText("Oklahoma +4.0");
-    await expect(oklahoma).toContainText("Model: Oklahoma by 2.0");
-    await expect(oklahoma.getByText(/\((DraftKings|FanDuel|Bovada|BetMGM|ESPN Bet|Caesars)\)/)).toHaveCount(0);
+    await expect(oklahoma).toContainText(/Model: [+-]?\d/);
+    await expect(oklahoma.getByText(/DraftKings|FanDuel|Bovada|BetMGM|ESPN Bet|Caesars/)).toHaveCount(0);
+    // The per-card edge footnote and the Game details block are gone.
+    await expect(page.getByText("The number in parentheses after the model is its edge")).toHaveCount(0);
+    await expect(page.getByText("Game details", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/wins by more than|loses by under|total above|total below|best line:/)).toHaveCount(0);
     // The old Market / Model grid is gone from the cards.
     await expect(page.getByText("Market", { exact: true })).toHaveCount(0);
@@ -127,9 +132,9 @@ test.describe("picks slate (/)", () => {
     await page.getByPlaceholder("Filter by team…").fill("");
     await expect(games).toHaveCount(10);
 
-    await page.getByRole("button", { name: "list", exact: true }).click();
-    await expect(page.getByRole("button", { name: "list", exact: true })).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByRole("button", { name: "grid", exact: true })).toHaveAttribute("aria-pressed", "false");
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    await expect(page.getByRole("button", { name: "List", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Grid", exact: true })).toHaveAttribute("aria-pressed", "false");
     await expect(games).toHaveCount(10);
     expect(await fits(page)).toBe(true);
   });
@@ -148,7 +153,7 @@ for (const path of ["/", "/results"]) {
     // The "home" tag is gone; the bottom team is the home team.
     await expect(page.getByText("home", { exact: true })).toHaveCount(0);
 
-    for (const view of ["grid", "list"]) {
+    for (const view of ["Grid", "List"]) {
       await page.getByRole("button", { name: view, exact: true }).click();
       const pairs = await page.locator("li[id^='game-']").evaluateAll((cards) =>
         cards.map((card) => {
@@ -174,30 +179,28 @@ test.describe("game location next to the time", () => {
   test("picks cards show city and state, a neutral-site note, and nothing when unknown", async ({ page }) => {
     await page.goto("/");
 
-    for (const id of [3, 5, 8]) await page.locator(`#game-${id}`).getByText("Game details", { exact: true }).click();
-    await expect(page.locator("#game-3").getByText("· Los Angeles, CA")).toBeVisible();
-    await expect(page.locator("#game-5").getByText("· State College, PA")).toBeVisible();
+    await expect(shown(page.locator("#game-3").getByText("· Los Angeles, CA"))).toBeVisible();
+    await expect(shown(page.locator("#game-5").getByText("· State College, PA"))).toBeVisible();
     // Neutral-site game: location plus a note (the "home" team is arbitrary there).
-    await expect(page.locator("#game-8").getByText("· Orlando, FL")).toBeVisible();
-    await expect(page.locator("#game-8").getByText("Neutral site")).toBeVisible();
-    await expect(page.locator("#game-3").getByText("Neutral site")).toHaveCount(0);
+    await expect(shown(page.locator("#game-8").getByText("· Orlando, FL"))).toBeVisible();
+    await expect(shown(page.locator("#game-8").getByText("Neutral site"))).toBeVisible();
+    await expect(shown(page.locator("#game-3").getByText("Neutral site"))).toHaveCount(0);
     // No recorded location: no placeholder text.
     await expect(page.locator("#game-2")).not.toContainText(/, [A-Z]{2}\b/);
     await expect(page.locator("#game-2").getByText("·")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "list", exact: true }).click();
-    await expect(page.locator("#game-3").getByText("Los Angeles, CA")).toBeVisible();
-    await expect(page.locator("#game-8").getByText("· Neutral")).toBeVisible();
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    await expect(shown(page.locator("#game-3").getByText("Los Angeles, CA"))).toBeVisible();
+    await expect(shown(page.locator("#game-8").getByText("· Neutral"))).toBeVisible();
   });
 
   test("results cards show the venue beside the date", async ({ page }) => {
     await page.goto("/results");
 
-    for (const id of [101, 107]) await page.locator(`#game-${id}`).getByText("Game details", { exact: true }).click();
-    await expect(page.locator("#game-101").getByText("· Ann Arbor, MI")).toBeVisible();
-    await expect(page.locator("#game-107").getByText("· Tallahassee, FL")).toBeVisible();
-    await page.getByRole("button", { name: "list", exact: true }).click();
-    await expect(page.locator("#game-101").getByText("Ann Arbor, MI")).toBeVisible();
+    await expect(shown(page.locator("#game-101").getByText("· Ann Arbor, MI"))).toBeVisible();
+    await expect(shown(page.locator("#game-107").getByText("· Tallahassee, FL"))).toBeVisible();
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    await expect(shown(page.locator("#game-101").getByText("Ann Arbor, MI"))).toBeVisible();
   });
 
   test("a long location truncates instead of overflowing a phone", async ({ page }) => {
@@ -262,14 +265,15 @@ test.describe("results slate (/results)", () => {
     await page.goto("/results");
 
     const record = page.getByRole("region", { name: "Record" });
-    await record.getByText("Season context", { exact: true }).click();
-    await expect(record.getByText(/small sample/)).toBeVisible();
-    await expect(record.getByText("4–3–1")).toBeVisible();
+    // Below md the season block sits behind "Season context"; from md it shows beside the week.
+    if ((page.viewportSize()?.width ?? 1280) < 768) await shown(record.getByText("Season context", { exact: true })).click();
+    await expect(shown(record.getByText("this slate · small sample"))).toBeVisible();
+    await expect(shown(record.getByText("4–3–1"))).toBeVisible();
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
     await expect(record.getByText(/Live/)).toHaveCount(0);
     const ohioState = page.locator("li[id^='game-']").filter({ hasText: "Ohio State" }).first();
     await expect(ohioState).toContainText("Ohio State -6.0");
-    await expect(ohioState).toContainText("Model: Ohio State by 8.6");
+    await expect(ohioState).toContainText(/Model: [+-]?\d/);
     await expect(ohioState.getByText("Win", { exact: true }).first()).toBeVisible();
   });
 
@@ -292,11 +296,11 @@ test.describe("results slate (/results)", () => {
   test("sort by biggest miss, list view and phone width all fit", async ({ page }) => {
     await page.goto("/results");
     await page.locator("#slate-sort").selectOption("worstResult");
-    await page.getByRole("button", { name: "list", exact: true }).click();
+    await page.getByRole("button", { name: "List", exact: true }).click();
     expect(await fits(page)).toBe(true);
 
     await page.setViewportSize({ width: 390, height: 800 });
-    await expect(page.getByRole("button", { name: "grid", exact: true })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeHidden();
     await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "grid");
     expect(await fits(page)).toBe(true);
   });

@@ -41,7 +41,7 @@ export function SlateToolbar<T extends string>({
             id="slate-sort"
             value={sort}
             onChange={(event) => onSortChange(event.target.value as T)}
-            className="min-h-11 w-full rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:text-sm focus-visible:outline-2 focus-visible:outline-accent"
+            className="min-h-11 w-full rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:text-sm focus-visible:outline-2 focus-visible:outline-accent"
           >
             {(Object.keys(sortLabels) as T[]).map((key) => (
               <option key={key} value={key}>{sortLabels[key]}</option>
@@ -49,13 +49,14 @@ export function SlateToolbar<T extends string>({
           </select>
         </div>
       )}
-      <SegmentedControl
-        label="Layout"
-        value={view}
-        onChange={onViewChange}
-        options={[{ value: "grid", label: "grid" }, { value: "list", label: "list" }]}
-        className="hidden shrink-0 sm:flex"
-      />
+      <div className="hidden shrink-0 sm:block">
+        <SegmentedControl
+          label="Layout"
+          value={view}
+          onChange={onViewChange}
+          options={[{ value: "grid", label: "Grid" }, { value: "list", label: "List" }]}
+        />
+      </div>
     </div>
   );
 }

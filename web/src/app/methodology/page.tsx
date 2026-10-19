@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeading } from "@/components/ui/PageHeading";
 
 export default function MethodologyPage() {
   return (
@@ -7,9 +8,9 @@ export default function MethodologyPage() {
         <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
           V5 model
         </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
-          How the forecasts work
-        </h1>
+        <div className="mt-1">
+          <PageHeading title="How the forecasts work" />
+        </div>
       </div>
 
       <section className="rounded-xl border border-line bg-surface-card p-5">

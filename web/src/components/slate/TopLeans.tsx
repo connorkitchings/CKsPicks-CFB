@@ -1,6 +1,6 @@
 "use client";
 
-import { Disclosure } from "@/components/ui/Disclosure";
+import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useState } from "react";
 import clsx from "clsx";
@@ -78,10 +78,27 @@ export function TopLeans({
   const decided = (record?.win ?? 0) + (record?.loss ?? 0);
   const rate = decided > 0 && record ? winRatePct(record.win, record.loss) : null;
 
+  const bestBetsTitle = (
+    <span>
+      Best Bets
+      {record && (decided + record.push) > 0 && (
+        <span className="ml-2 text-xs font-normal text-ink-muted">
+          {season}: {record.win}–{record.loss}–{record.push}{rate !== null ? ` (${rate.toFixed(1)}%)` : ""}
+        </span>
+      )}
+    </span>
+  );
+
   return (
     <section aria-label="Best bets">
-      <Disclosure title={<span>Best Bets{record && (decided + record.push) > 0 && <span className="ml-2 text-xs font-normal text-ink-muted">{season}: {record.win}–{record.loss}–{record.push}{rate !== null ? ` (${rate.toFixed(1)}%)` : ""}</span>}</span>}>
-        <SegmentedControl label="Best bets category" value={tab} onChange={setTab} options={[{ value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]} className="mb-3 sm:hidden" />
+      <ResponsiveDisclosure
+        className="rounded-xl border border-line bg-surface-card"
+        title={bestBetsTitle}
+        heading={bestBetsTitle}
+      >
+        <div className="mb-3 sm:hidden">
+          <SegmentedControl label="Best bets category" value={tab} onChange={setTab} options={[{ value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]} fill />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Column
             games={games}
@@ -96,7 +113,7 @@ export function TopLeans({
             className={tab !== "total" ? "hidden sm:block" : undefined}
           />
         </div>
-      </Disclosure>
+      </ResponsiveDisclosure>
     </section>
   );
 }

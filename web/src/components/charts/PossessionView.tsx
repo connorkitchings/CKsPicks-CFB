@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { POSSESSION_METRICS, describePossessionPoint, possessionConfig } from "@/lib/chart-config";
 import { possessionPoints, type PossessionMetric, type PossessionRow } from "@/lib/charts";
-import { SegmentedControl, type SharedChartProps } from "./ChartFrame";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import type { SharedChartProps } from "./ChartFrame";
 import { ScatterView } from "./ScatterView";
 
 const METRIC_OPTIONS = (Object.keys(POSSESSION_METRICS) as PossessionMetric[]).map((value) => ({
@@ -25,7 +26,7 @@ export function PossessionView({ shared, rows, initialMetric }: { shared: Shared
       config={possessionConfig(metric)}
       describe={(point) => describePossessionPoint(point, scatter, metric)}
       exportMetric={POSSESSION_METRICS[metric].slug}
-      controls={<SegmentedControl label="Possession measurement" options={METRIC_OPTIONS} value={metric} onChange={setMetric} testId="possession-metric-switcher" />}
+      controls={<SegmentedControl size="sm" label="Possession measurement" options={METRIC_OPTIONS} value={metric} onChange={setMetric} testId="possession-metric-switcher" />}
       figureNote="Defense axis inverted: up is better defense (less allowed)."
     />
   );

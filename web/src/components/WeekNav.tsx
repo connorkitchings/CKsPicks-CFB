@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
-import { SEGMENTED_GROUP } from "./charts/segmented-styles";
+import { segmentedGroupClass } from "./ui/SegmentedControl";
 
 /**
  * Prev / next / dropdown navigator over the available weeks for the active
@@ -56,15 +56,21 @@ export function WeekNav({
 
   const arrow = clsx(
     "inline-flex items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-    // Compact: borderless arrows inside one bordered group, sized like the chart settings' toggles.
-    chartCompact ? "h-7.5 w-7.5 shrink-0 text-sm hover:text-ink" : "h-11 w-11 shrink-0 border border-line bg-surface-card text-base",
+    // Chart settings: borderless arrows inside one bordered group, sized like the chart toggles.
+    // Other compact toolbars: borderless 44px phone targets that shrink to 36px from `sm:`.
+    chartCompact && "h-7.5 w-7.5 shrink-0 text-sm hover:text-ink",
+    compact && !chartCompact && "h-11 w-11 shrink-0 text-base sm:h-9 sm:w-9",
+    !compact && "h-11 w-11 shrink-0 border border-line bg-surface-card text-base",
   );
 
+  const navClass = chartCompact
+    ? segmentedGroupClass("sm")
+    : compact
+      ? "flex items-center gap-1"
+      : "flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm";
+
   return (
-    <nav
-      aria-label="Week navigation"
-      className={compact ? SEGMENTED_GROUP : "flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm"}
-    >
+    <nav aria-label="Week navigation" className={navClass}>
       <Link
         href={prev !== null ? hrefFor(prev) : "#"}
         aria-disabled={prev === null}
@@ -88,7 +94,7 @@ export function WeekNav({
             "rounded-md font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent",
             chartCompact
               ? "min-h-7.5 bg-transparent px-1.5 text-xs font-semibold hover:bg-surface-inset"
-              : "min-h-11 border border-line bg-surface-card px-2 py-1 text-base sm:text-sm",
+              : "min-h-11 border border-line bg-surface-card px-2 py-1 text-base sm:min-h-9 sm:text-sm",
           )}
         >
           {weeks.map((w) => (

@@ -84,7 +84,7 @@ export function RatingsView({
               scroll={false}
               aria-current={entry.id === period ? "page" : undefined}
               className={clsx(
-                "inline-flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                "inline-flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm sm:min-h-9 sm:py-1.5 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                 entry.id === period ? "border-accent bg-accent-soft text-accent-ink" : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
               )}
             >{entry.label}</Link>)}
@@ -107,7 +107,8 @@ export function RatingsView({
           value={sort}
           onChange={setSort}
           options={categories}
-          className="sm:min-w-72 sm:shrink-0"
+          fill
+          className="sm:shrink-0"
         />
       </div>
 

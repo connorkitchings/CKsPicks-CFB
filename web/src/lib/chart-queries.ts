@@ -132,21 +132,6 @@ export const getTeamAdjustedEpa = cache(async (season: number, asOfWeek: number)
   return rows as AdjustedRow[];
 });
 
-/** Adjusted EPA/play rows of every stored window (about 2k rows by Week 8). */
-export const getTeamAdjustedEpaAll = cache(async (season: number): Promise<AdjustedRow[] | null> => {
-  const charts = await getChartsDb(season);
-  if (!charts) return null;
-  const t = schema.teamAdjustedEpa;
-  const rows = await charts.db.select({
-    asOfWeek: t.asOfWeek, team: t.team, role: t.role,
-    rawEpaPerPlay: t.rawEpaPerPlay, venueCorrection: t.venueCorrection,
-    opponentAdjustment: t.opponentAdjustment, adjustedEpaPerPlay: t.adjustedEpaPerPlay,
-    epaN: t.epaN, games: t.games, adjustedRank: t.adjustedRank, cohortSize: t.cohortSize,
-  }).from(t).where(eq(t.season, season)).orderBy(asc(t.asOfWeek), asc(t.team), asc(t.role));
-  guardRows("team_adjusted_epa", rows, ADJUSTED_SPEC);
-  return rows as AdjustedRow[];
-});
-
 const RATING_SNAPSHOT_SPEC: RowSpec = {
   week: { kind: "int" },
   team: { kind: "string" },

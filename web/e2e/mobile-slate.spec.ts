@@ -40,7 +40,7 @@ for (const path of ["/", "/results"]) {
   test(`${path}: desktop list selection becomes cards on phones and survives resize`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(path);
-    await page.getByRole("button", { name: "list", exact: true }).click();
+    await page.getByRole("button", { name: "List", exact: true }).click();
     await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "list");
     const originalCount = await page.locator("li[id^='game-']").count();
     await page.setViewportSize({ width: 390, height: 844 });
@@ -53,20 +53,16 @@ for (const path of ["/", "/results"]) {
   });
 }
 
-test("phone details preserve source, full forecast and venue through a filter rerender", async ({ page }) => {
+test("phone cards keep venue beside the time and the line source through a filter rerender", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   const card = page.locator("#game-3");
-  await card.getByText("Game details", { exact: true }).click();
+  await expect(card.getByText("Game details", { exact: true })).toHaveCount(0);
   await expect(card.getByText(/Los Angeles, CA/)).toBeVisible();
   await expect(card.getByText(/FanDuel/)).toBeVisible();
   await page.getByPlaceholder("Filter by team…").fill("Oregon");
+  await expect(card.getByText(/Los Angeles, CA/)).toBeVisible();
   await expect(card.getByText(/FanDuel/)).toBeVisible();
-  await card.getByText("Game details", { exact: true }).click();
-  await expect(card.locator("details")).not.toHaveAttribute("open", "");
-  await card.getByText("Game details", { exact: true }).focus();
-  await page.keyboard.press("Enter");
-  await expect(card.locator("details")).toHaveAttribute("open", "");
 });
 
 test("collapsed best bets preserve every game anchor and selected category", async ({ page }) => {
@@ -74,17 +70,35 @@ test("collapsed best bets preserve every game anchor and selected category", asy
   await page.goto("/");
   const bestBets = page.getByRole("region", { name: "Best bets" });
   await bestBets.locator("summary").click();
-  const anchors = await bestBets.locator("a[href^='#game-']").evaluateAll((links) => links.map((link) => link.getAttribute("href")));
-  // Five spread leans and four eligible total leans in the unchanged slate fixture.
-  expect(anchors).toEqual(["#game-3", "#game-9", "#game-1", "#game-8", "#game-5", "#game-3", "#game-6", "#game-5", "#game-1"]);
+  // The collapsed and inline copies both render the links; only the shown copy counts.
+  // Both categories render their links; only the selected category's column is shown.
+  const shownAnchors = () =>
+    bestBets.locator("a[href^='#game-']").filter({ visible: true }).evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+  // Five spread leans in the unchanged slate fixture.
+  expect(await shownAnchors()).toEqual(["#game-3", "#game-9", "#game-1", "#game-8", "#game-5"]);
   await bestBets.getByRole("button", { name: "Totals", exact: true }).click();
   await expect(bestBets.getByRole("button", { name: "Totals", exact: true })).toHaveAttribute("aria-pressed", "true");
-  const firstAnchor = bestBets.locator("a[href^='#game-']:visible").first();
+  // Four eligible total leans after switching category.
+  expect(await shownAnchors()).toEqual(["#game-3", "#game-6", "#game-5", "#game-1"]);
+  const firstAnchor = bestBets.locator("a[href^='#game-']").filter({ visible: true }).first();
   const target = await firstAnchor.getAttribute("href");
   await firstAnchor.click();
   expect(new URL(page.url()).hash).toBe(target);
 });
 
+
+test("best bets and highlights are open inline on desktop without a click", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  const bestBets = page.getByRole("region", { name: "Best bets" });
+  await expect(bestBets.getByRole("heading", { name: "Best Bets" })).toBeVisible();
+  await expect(bestBets.getByRole("button", { name: "Totals", exact: true })).toBeHidden();
+  await expect(bestBets.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(9);
+  await page.goto("/results");
+  await expect(page.getByRole("region", { name: "Highlights" }).getByRole("heading", { name: "Highlights" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Highlights" }).locator("details")).toHaveCount(1);
+  await expect(page.getByRole("region", { name: "Highlights" }).locator("details").filter({ visible: true })).toHaveCount(0);
+});
 
 test("search waits for hydration before accepting the first filter", async ({ page }) => {
   let releaseScripts!: () => void;
@@ -121,4 +135,19 @@ test("market timestamps hydrate without replacing the slate", async ({ page }) =
   await expect(page.getByRole("table", { name: "Market and results" })).toBeVisible();
   await expect(page.getByText("Sat, Aug 29, 3:30 PM EDT", { exact: true })).toBeVisible();
   expect(hydrationErrors).toEqual([]);
+});
+
+test("results record: the week tiles are labeled only while Season context is open on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/results");
+  const record = page.getByRole("region", { name: "Record" });
+  const weekLabel = record.getByRole("heading", { name: /^Week \d+$/ });
+  await expect(weekLabel).toBeHidden();
+  await record.getByText("Season context", { exact: true }).click();
+  await expect(weekLabel).toBeVisible();
+  const seasonBox = await record.getByRole("heading", { name: "Season", exact: true }).boundingBox();
+  const weekBox = await weekLabel.boundingBox();
+  expect(seasonBox!.y).toBeLessThan(weekBox!.y);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(weekLabel).toBeHidden();
 });

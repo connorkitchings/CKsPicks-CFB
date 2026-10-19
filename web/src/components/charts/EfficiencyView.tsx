@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { EFFICIENCY_METRICS, EXPLOSIVENESS_METRICS, describeEfficiencyPoint, efficiencyConfig } from "@/lib/chart-config";
 import { efficiencyPoints, type EfficiencyMetric, type Side, type TeamGameRow } from "@/lib/charts";
-import { SegmentedControl, type SharedChartProps } from "./ChartFrame";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import type { SharedChartProps } from "./ChartFrame";
 import { ScatterView } from "./ScatterView";
 
 export type EfficiencyViewProps = {
@@ -32,6 +33,7 @@ export function EfficiencyView({ shared, side, rows, initialMetric, explosivenes
       describe={(point) => describeEfficiencyPoint(point, metric)}
       controls={explosiveness && (
         <SegmentedControl
+          size="sm"
           label="Explosiveness metric"
           options={EXPLOSIVENESS_METRICS.map((value) => ({ value, label: EFFICIENCY_METRICS[value].label, testId: `metric-toggle-${value.replaceAll("_", "-")}` }))}
           value={metric}
