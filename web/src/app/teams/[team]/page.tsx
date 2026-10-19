@@ -26,7 +26,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
     }
   }
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 space-y-7 px-4 py-8">
+    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 space-y-7 px-4 py-8">
       <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline">← All ratings</Link><h1 className="mt-3 text-3xl font-bold tracking-tight text-ink">{team}</h1><p className="mt-2 text-sm text-ink-muted">V5 team state and selected 2026 forecasts.</p></div>
       {unavailable ? <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">Team data is temporarily unavailable.</p> : <>
         <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>

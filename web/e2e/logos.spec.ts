@@ -114,14 +114,13 @@ test.describe("team logos", () => {
   });
 
   test("the matchup hero logo follows its responsive size classes", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 800 });
     await page.goto("/matchup/1");
-    const widths = await page.evaluate(() =>
-      [...document.querySelectorAll<HTMLImageElement>("img[data-logo]")]
-        .filter((img) => img.offsetWidth > 0 && img.className.includes("h-16"))
-        .map((img) => img.clientWidth),
-    );
-    expect(widths.length).toBeGreaterThan(0);
-    expect(widths.every((w) => w === 64)).toBe(true);
+    for (const [viewportWidth, logoWidth] of [[390, 48], [1280, 64]] as const) {
+      await page.setViewportSize({ width: viewportWidth, height: 800 });
+      const widths = await page.locator("[data-side] img[data-logo]:visible")
+        .evaluateAll((images) => images.map((img) => img.clientWidth));
+      expect(widths).toHaveLength(2);
+      expect(widths.every((width) => width === logoWidth)).toBe(true);
+    }
   });
 });

@@ -6,7 +6,7 @@ import { MatchupHero } from "@/components/matchup/MatchupHero";
 import { getMatchupData } from "@/lib/matchup";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { publicationScope } from "@/lib/publication";
-import { UnitMatchupTable } from "@/components/matchup/UnitMatchupTable";
+import { UnitMatchups } from "@/components/matchup/UnitMatchups";
 
 // Revalidate every 5 minutes (ISR)
 export const revalidate = 300;
@@ -53,7 +53,7 @@ export default async function MatchupPage({
         wide
       />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
         {/* Hero Section */}
         <MatchupHero matchup={matchup} />
 
@@ -65,23 +65,23 @@ export default async function MatchupPage({
           </section>
         ) : matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
-            <div className="grid gap-4 lg:grid-cols-2">
-              <UnitMatchupTable
-                offenseTeam={matchup.awayTeam}
-                defenseTeam={matchup.homeTeam}
-                rows={matchup.stats.awayOffVsHomeDef}
-                offenseRank={matchup.awayRating.offenseRank}
-                defenseRank={matchup.homeRating.defenseRank}
-              />
-              <UnitMatchupTable
-                offenseTeam={matchup.homeTeam}
-                defenseTeam={matchup.awayTeam}
-                rows={matchup.stats.homeOffVsAwayDef}
-                offenseRank={matchup.homeRating.offenseRank}
-                defenseRank={matchup.awayRating.defenseRank}
-              />
-            </div>
-            <section aria-label="Notes" data-testid="matchup-notes" className="space-y-1.5 pt-1 text-[11px] leading-relaxed text-ink-faint">
+            <UnitMatchups
+              away={{
+                offenseTeam: matchup.awayTeam,
+                defenseTeam: matchup.homeTeam,
+                rows: matchup.stats.awayOffVsHomeDef,
+                offenseRank: matchup.awayRating.offenseRank,
+                defenseRank: matchup.homeRating.defenseRank,
+              }}
+              home={{
+                offenseTeam: matchup.homeTeam,
+                defenseTeam: matchup.awayTeam,
+                rows: matchup.stats.homeOffVsAwayDef,
+                offenseRank: matchup.homeRating.offenseRank,
+                defenseRank: matchup.awayRating.defenseRank,
+              }}
+            />
+            <section aria-label="Notes" data-testid="matchup-notes" className="space-y-1.5 pt-1 text-xs leading-relaxed text-ink-muted">
               <p>
                 Stats through Week {matchup.stats.asOfWeek - 1}. FBS opponents only, regulation play, garbage time
                 excluded; raw, not opponent-adjusted. Defense columns show what that defense allowed.
@@ -105,7 +105,7 @@ export default async function MatchupPage({
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href={`/matchup?week=${matchup.week}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
+            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent-ink"
           >
             All Week {matchup.week} matchups
           </Link>

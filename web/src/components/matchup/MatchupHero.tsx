@@ -24,11 +24,11 @@ function TeamBlock({
   showRating: boolean;
 }) {
   return (
-    <div className="flex items-center gap-4 sm:flex-col sm:text-center" data-side={side.toLowerCase()}>
-      <TeamLogo name={name} px={80} decorative={false} className="h-16 w-16 sm:h-20 sm:w-20" />
-      <div className="min-w-0 flex-1 sm:w-full">
-        <span className="block truncate text-xl font-bold tracking-tight text-ink">{name}</span>
-        <p className="text-xs text-ink-faint">
+    <div className="flex min-w-0 flex-col items-center gap-2 text-center" data-side={side.toLowerCase()}>
+      <TeamLogo name={name} px={80} decorative={false} className="h-12 w-12 sm:h-16 sm:w-16" />
+      <div className="w-full min-w-0">
+        <span className="block break-words text-base font-bold tracking-tight text-ink sm:text-xl">{name}</span>
+        <p className="text-xs text-ink-muted">
           {side}
           {record && (
             <>
@@ -41,12 +41,12 @@ function TeamBlock({
         </p>
 
         {isFinal ? (
-          <div className="mt-3 flex flex-col items-center">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Final Score</span>
+          <div className="mt-2 flex flex-col items-center">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Final Score</span>
             <span className="font-mono text-3xl font-bold text-ink">{finalPoints}</span>
           </div>
         ) : showRating ? (
-          <div className="mt-3 flex flex-col items-center gap-1 text-xs">
+          <div className="mt-2 flex flex-col items-center gap-1 text-xs">
             <span
               data-testid="model-rating"
               className="inline-flex flex-wrap items-baseline justify-center gap-x-1.5 rounded bg-surface-inset px-2 py-0.5 text-xs font-semibold text-ink"
@@ -56,7 +56,7 @@ function TeamBlock({
               <span className="font-mono">#{rating.rank ?? "—"}</span>
             </span>
           </div>
-        ) : <p className="mt-3 text-xs text-ink-faint">Model ratings unavailable</p>}
+        ) : <p className="mt-2 text-xs text-ink-muted">Model ratings unavailable</p>}
       </div>
     </div>
   );
@@ -80,21 +80,21 @@ function Cell({
 }) {
   return (
     <div className="flex min-w-0 flex-col items-center justify-center text-center" data-testid={testId}>
-      <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-1 sm:flex-nowrap sm:gap-1.5">
+      <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-1 sm:gap-1.5">
         <span
           className={clsx(
-            "leading-tight text-center whitespace-nowrap",
+            "break-words leading-snug text-center",
             accent
-              ? "font-sans text-xs font-semibold text-accent-ink sm:text-[13px]"
-              : "font-mono text-xs font-medium text-ink sm:text-sm",
-            muted && "!font-normal !text-ink-faint",
+              ? "font-sans text-sm font-semibold text-accent-ink"
+              : "font-mono text-sm font-medium text-ink",
+            muted && "!font-normal !text-ink-muted",
           )}
         >
           {value}
         </span>
         {badge}
       </div>
-      {book && <span className="block font-sans text-[11px] leading-tight text-ink-faint">{book}</span>}
+      {book && <span className="block font-sans text-xs leading-tight text-ink-muted">{book}</span>}
     </div>
   );
 }
@@ -105,19 +105,19 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
 
   return (
     <section aria-labelledby="matchup-header" className="space-y-4">
-      <h2 id="matchup-header" className="sr-only">
+      <h1 id="matchup-header" className="sr-only">
         {matchup.awayTeam} at {matchup.homeTeam}
-      </h2>
+      </h1>
 
       {/* Breadcrumb and game facts */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3 text-xs text-ink-muted">
         <Link
           href={isFinal ? `/results?week=${matchup.week}` : `/?week=${matchup.week}`}
-          className="inline-flex items-center gap-1 font-medium text-accent-ink hover:underline"
+          className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent-ink hover:underline"
         >
           ← Back to {isFinal ? "Results" : "Picks"} (Week {matchup.week})
         </Link>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-faint" data-testid="game-facts">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-muted" data-testid="game-facts">
           <span>{formatKickoff(matchup.startDate)}</span>
           {venue && (
             <>
@@ -125,15 +125,15 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
               <span>{venue}</span>
             </>
           )}
-          <span className="rounded bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+          <span className="rounded bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
             Game Breakdown
           </span>
           <ShareButton matchup={matchup} disabled={matchup.lineageStatus !== "ready"} />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-card p-5 shadow-sm sm:p-6">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+      <div className="rounded-2xl border border-line bg-surface-card p-4 shadow-sm sm:p-6">
+        <div className="grid grid-cols-2 items-start gap-4">
           <TeamBlock
             name={matchup.awayTeam}
             side="Away"
@@ -144,69 +144,6 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             showRating={matchup.lineageStatus === "ready"}
           />
 
-          {/* Center: market and model */}
-          <div className="flex w-full flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-4 py-4 text-center sm:w-[475px] sm:px-5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Forecast & Lines</span>
-
-            <div
-              data-testid="forecast-grid"
-              className="mt-3 grid w-full grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-4 gap-y-3 text-sm"
-            >
-              <span aria-hidden />
-              <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Spread</span>
-              <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Total</span>
-
-              <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
-              <Cell value={matchup.marketSpread} />
-              <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} />
-
-              {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
-                <>
-                  <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
-                  <Cell value={matchup.modelSpread} />
-                  <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
-
-                  <div className="col-span-3 border-t border-line/60" aria-hidden />
-                  <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model Bet</span>
-                  <Cell
-                    accent
-                    testId="model-bet-spread"
-                    value={
-                      matchup.spreadLean
-                        ? matchup.spreadLean === "home"
-                          ? matchup.homeTeam
-                          : matchup.awayTeam
-                        : "No Spread"
-                    }
-                    muted={!matchup.spreadLean}
-                    badge={
-                      isFinal && matchup.spreadLean && matchup.spreadResult ? (
-                        <ResultBadge grade={matchup.spreadResult} />
-                      ) : null
-                    }
-                  />
-                  <Cell
-                    accent
-                    testId="model-bet-total"
-                    value={matchup.totalLean ? (matchup.totalLean === "over" ? "Over" : "Under") : "—"}
-                    muted={!matchup.totalLean}
-                    badge={
-                      isFinal && matchup.totalLean && matchup.totalResult ? (
-                        <ResultBadge grade={matchup.totalResult} />
-                      ) : null
-                    }
-                  />
-                </>
-              )}
-            </div>
-
-            {isFinal && (
-              <span className="mt-2.5 rounded-full border border-line bg-surface-card px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
-                Final: {matchup.awayFinalPoints}–{matchup.homeFinalPoints}
-              </span>
-            )}
-          </div>
-
           <TeamBlock
             name={matchup.homeTeam}
             side="Home"
@@ -216,6 +153,68 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             isFinal={isFinal}
             showRating={matchup.lineageStatus === "ready"}
           />
+        </div>
+        {/* Market and model beneath the team comparison. */}
+        <div className="mt-5 flex w-full min-w-0 flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-3 py-4 text-center sm:px-5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Forecast & Lines</span>
+
+          <div
+            data-testid="forecast-grid"
+            className="mt-3 grid w-full grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 gap-y-3 text-sm sm:gap-x-4"
+          >
+            <span aria-hidden />
+            <span className="text-center text-xs font-semibold uppercase tracking-wider text-ink-muted">Spread</span>
+            <span className="text-center text-xs font-semibold uppercase tracking-wider text-ink-muted">Total</span>
+
+            <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
+            <Cell value={matchup.marketSpread} />
+            <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} />
+
+            {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
+              <>
+                <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
+                <Cell value={matchup.modelSpread} />
+                <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
+
+                <div className="col-span-3 border-t border-line/60" aria-hidden />
+                <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model Bet</span>
+                <Cell
+                  accent
+                  testId="model-bet-spread"
+                  value={
+                    matchup.spreadLean
+                      ? matchup.spreadLean === "home"
+                        ? matchup.homeTeam
+                        : matchup.awayTeam
+                      : "No Spread"
+                  }
+                  muted={!matchup.spreadLean}
+                  badge={
+                    isFinal && matchup.spreadLean && matchup.spreadResult ? (
+                      <ResultBadge grade={matchup.spreadResult} />
+                    ) : null
+                  }
+                />
+                <Cell
+                  accent
+                  testId="model-bet-total"
+                  value={matchup.totalLean ? (matchup.totalLean === "over" ? "Over" : "Under") : "—"}
+                  muted={!matchup.totalLean}
+                  badge={
+                    isFinal && matchup.totalLean && matchup.totalResult ? (
+                      <ResultBadge grade={matchup.totalResult} />
+                    ) : null
+                  }
+                />
+              </>
+            )}
+          </div>
+
+          {isFinal && (
+            <span className="mt-2.5 rounded-full border border-line bg-surface-card px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              Final: {matchup.awayFinalPoints}–{matchup.homeFinalPoints}
+            </span>
+          )}
         </div>
       </div>
     </section>

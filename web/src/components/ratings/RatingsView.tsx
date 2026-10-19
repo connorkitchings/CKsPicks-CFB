@@ -1,21 +1,33 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import type { PeriodMeta, Rating } from "@/lib/v5";
+import type { PeriodMeta, Rating } from "@/lib/rating-periods";
 import TeamLogo from "@/components/TeamLogo";
+import { SearchField } from "@/components/ui/SearchField";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 
 type Sort = "overall" | "offense" | "defense";
-
-const fields: Record<Sort, keyof Rating> = {
+const categories = [
+  { value: "overall", label: "Overall" },
+  { value: "offense", label: "Offense" },
+  { value: "defense", label: "Defense" },
+] as const;
+const fields = {
   overall: "overallRating",
   offense: "offenseRating",
   defense: "defenseRating",
-};
+} as const;
+const ratingText = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
+const uncertainty = (rating: Rating) => `±${Math.sqrt(Math.max(0, rating.overallVariance)).toFixed(2)}`;
 
 interface RatingsViewProps {
   ratings: Rating[];
   periodMeta: PeriodMeta;
+  period: string;
+  timeline: PeriodMeta[];
   season: number;
   initialSort?: Sort;
   initialQuery?: string;
@@ -24,209 +36,132 @@ interface RatingsViewProps {
 export function RatingsView({
   ratings,
   periodMeta,
+  period,
+  timeline,
   season,
   initialSort = "overall",
   initialQuery = "",
 }: RatingsViewProps) {
+  const router = useRouter();
   const [sort, setSort] = useState<Sort>(initialSort);
   const [query, setQuery] = useState(initialQuery);
+  const selectedCategory = categories.find((category) => category.value === sort)!;
 
-  // rank computed pre-filter so search doesn't renumber
-  const ranked = useMemo(() => {
-    return [...ratings]
-      .sort((a, b) => Number(b[fields[sort]]) - Number(a[fields[sort]]))
-      .map((rating, i) => ({ rating, rank: i + 1 }));
-  }, [ratings, sort]);
-
+  // Rank before filtering so searching keeps a team's national category rank.
+  const ranked = useMemo(() => [...ratings]
+    .sort((a, b) => b[fields[sort]] - a[fields[sort]])
+    .map((rating, i) => ({ rating, rank: i + 1 })), [ratings, sort]);
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return ranked;
-    return ranked.filter(({ rating }) =>
-      rating.team.toLowerCase().includes(q),
-    );
+    const search = query.trim().toLowerCase();
+    return search ? ranked.filter(({ rating }) => rating.team.toLowerCase().includes(search)) : ranked;
   }, [ranked, query]);
+
+  function periodHref(nextPeriod: string) {
+    const params = new URLSearchParams({ period: nextPeriod, sort, season: String(season) });
+    if (query.trim()) params.set("q", query.trim().slice(0, 80));
+    return `/ratings?${params.toString()}`;
+  }
 
   return (
     <div className="space-y-4">
-      {/* Search and Sort Toolbar */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        {/* Search input with 1-tap clear button */}
-        <div className="relative min-w-0 flex-1 max-w-md">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-faint">
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+      {timeline.length > 0 && (
+        <>
+          <div className="sm:hidden">
+            <label htmlFor="rating-period" className="mb-1 block text-sm font-semibold text-ink">Rating period</label>
+            <select
+              id="rating-period"
+              value={period}
+              onChange={(event) => router.push(periodHref(event.target.value), { scroll: false })}
+              className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+              {timeline.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
+            </select>
           </div>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search teams..."
-            aria-label="Search teams"
-            className="w-full rounded-lg border border-line bg-surface-card py-2 pr-8 pl-9 text-base text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none sm:text-sm [&::-webkit-search-cancel-button]:hidden"
-          />
-          {query.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-              className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-ink-faint hover:text-ink"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          )}
-        </div>
+          <nav aria-label="Ratings timeline" className="hidden flex-wrap gap-2 sm:flex">
+            {timeline.map((entry) => <Link
+              key={entry.id}
+              href={periodHref(entry.id)}
+              scroll={false}
+              aria-current={entry.id === period ? "page" : undefined}
+              className={clsx(
+                "inline-flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                entry.id === period ? "border-accent bg-accent-soft text-accent-ink" : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+              )}
+            >{entry.label}</Link>)}
+          </nav>
+        </>
+      )}
 
-        {/* Sort Pill Controls */}
-        <div className="flex items-center gap-1.5 self-start sm:self-auto">
-          <span className="text-xs font-medium text-ink-faint sm:hidden">Sort:</span>
-          <div className="grid grid-cols-3 rounded-lg border border-line bg-surface-inset p-0.5 text-xs">
-            {(["overall", "offense", "defense"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSort(s)}
-                className={clsx(
-                  "rounded-md px-3 py-1.5 font-medium capitalize transition-all",
-                  sort === s
-                    ? "bg-surface-card font-semibold text-ink shadow-2xs"
-                    : "text-ink-muted hover:text-ink",
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <SearchField
+          id="rating-search"
+          label="Search teams"
+          value={query}
+          onChange={setQuery}
+          placeholder="Search teams…"
+          clearLabel="Clear search"
+          className="w-full sm:max-w-md"
+        />
+        <SegmentedControl
+          label="Rating category"
+          value={sort}
+          onChange={setSort}
+          options={categories}
+          className="sm:min-w-72 sm:shrink-0"
+        />
       </div>
 
-      {/* Empty State */}
       {ratings.length === 0 ? (
-        <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">
-          No certified ratings published for the {season} season yet.
-        </p>
+        <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-sm text-ink-muted">No certified ratings published for the {season} season yet.</p>
       ) : visible.length === 0 ? (
-        <div role="status" className="rounded-xl border border-line bg-surface-card p-6 text-center text-ink-muted">
+        <div role="status" className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
           <p>No teams match &ldquo;{query}&rdquo;.</p>
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            className="mt-2 text-xs font-semibold text-accent-ink hover:underline"
-          >
-            Clear search
-          </button>
+          <button type="button" onClick={() => setQuery("")} className="mt-2 min-h-11 rounded-lg px-3 text-sm font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent">Clear search</button>
         </div>
       ) : (
         <>
-          {/* Mobile Card List (< sm) - No horizontal scroll! */}
           <ul className="space-y-2 sm:hidden" aria-label="Team ratings list">
             {visible.map(({ rating, rank }) => (
-              <li
-                key={rating.team}
-                className="rounded-xl border border-line bg-surface-card p-3 shadow-2xs transition-colors hover:border-line-strong"
-              >
-                {/* Top Row: Rank + Logo + Team Name on Left, Overall on Right */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className={clsx(
-                        "flex h-5 w-6 shrink-0 items-center justify-center rounded font-mono text-[11px] font-bold",
-                        rank <= 10
-                          ? "bg-accent-soft text-accent-ink"
-                          : "bg-surface-inset text-ink-muted",
-                      )}
-                    >
-                      {rank}
-                    </span>
-                    <TeamLogo name={rating.team} px={20} />
-                    <span className="truncate text-sm font-semibold text-ink">
-                      {rating.team}
-                    </span>
+              <li key={rating.team} className="rounded-xl border border-line bg-surface-card p-3 shadow-2xs">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <span aria-label={`National rank ${rank}`} className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded bg-accent-soft px-1 font-mono text-xs font-bold text-accent-ink">{rank}</span>
+                    <TeamLogo name={rating.team} px={24} />
+                    <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <span className="font-mono text-base font-bold tabular-nums text-ink">
-                      {rating.overallRating >= 0 ? `+${rating.overallRating.toFixed(2)}` : rating.overallRating.toFixed(2)}
-                    </span>
+                  <div className="shrink-0 text-right" data-testid="primary-rating">
+                    <p className="text-xs font-medium text-ink-muted">{selectedCategory.label}</p>
+                    <p className="font-mono text-lg font-bold tabular-nums text-ink">{ratingText(rating[fields[sort]])}</p>
                   </div>
                 </div>
-
-                {/* Bottom Row: Uncertainty on Left, Offense & Defense Chips on Right */}
-                <div className="mt-2 flex items-center justify-between border-t border-line/40 pt-2 text-xs">
-                  <span className="font-mono text-[11px] text-ink-faint">
-                    ±{Math.sqrt(Math.max(0, rating.overallVariance)).toFixed(2)}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="rounded bg-surface-inset px-2 py-0.5 font-mono text-[11px] text-ink-muted">
-                      <span className="text-ink-faint">Off</span>{" "}
-                      {rating.offenseRating >= 0 ? `+${rating.offenseRating.toFixed(2)}` : rating.offenseRating.toFixed(2)}
-                    </span>
-                    <span className="rounded bg-surface-inset px-2 py-0.5 font-mono text-[11px] text-ink-muted">
-                      <span className="text-ink-faint">Def</span>{" "}
-                      {rating.defenseRating >= 0 ? `+${rating.defenseRating.toFixed(2)}` : rating.defenseRating.toFixed(2)}
-                    </span>
-                  </div>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-2 text-xs text-ink-muted">
+                  {categories.filter((category) => category.value !== sort).map((category) => <span key={category.value}>{category.label} <span className="font-mono">{ratingText(rating[fields[category.value]])}</span></span>)}
+                  <span className="w-full">Overall uncertainty <span className="font-mono">{uncertainty(rating)}</span></span>
                 </div>
               </li>
             ))}
           </ul>
 
-          {/* Desktop Table (sm:) */}
-          <div className="hidden sm:block overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+          <div className="hidden overflow-hidden rounded-xl border border-line bg-surface-card sm:block">
             <table className="w-full text-sm tabular-nums">
-              <caption className="sr-only">
-                {season} {periodMeta.label} V5 team ratings
-              </caption>
-              <thead className="border-b border-line bg-surface-inset text-xs uppercase tracking-wide text-ink-faint">
+              <caption className="sr-only">{season} {periodMeta.label} V5 team ratings, ranked by {selectedCategory.label.toLowerCase()}</caption>
+              <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
                 <tr>
-                  <th scope="col" className="w-12 px-3 py-3 text-center">#</th>
-                  <th scope="col" className="px-4 py-3 text-left">Team</th>
-                  <th scope="col" className="px-3 py-3 text-right">Overall</th>
-                  <th scope="col" className="px-3 py-3 text-right">Offense</th>
-                  <th scope="col" className="px-3 py-3 text-right">Defense</th>
-                  <th scope="col" className="px-4 py-3 text-right">Uncertainty</th>
+                  <th scope="col" className="px-2 py-3 text-center">#</th>
+                  <th scope="col" className="px-2 py-3 text-left">Team</th>
+                  {categories.map((category) => <th key={category.value} scope="col" aria-sort={sort === category.value ? "descending" : undefined} className={clsx("px-2 py-3 text-right", sort === category.value && "bg-accent-soft text-accent-ink")}>{category.label}</th>)}
+                  <th scope="col" className="px-2 py-3 text-right">Overall uncertainty</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line/60">
+              <tbody className="divide-y divide-line">
                 {visible.map(({ rating, rank }) => (
-                  <tr key={rating.team} className="transition-colors hover:bg-surface-inset/50">
-                    <td className="px-3 py-3 text-center font-mono text-xs text-ink-faint">
-                      {rank}
-                    </td>
-                    <th scope="row" className="px-4 py-3 text-left font-semibold text-ink">
-                      <div className="flex items-center gap-2.5">
-                        <TeamLogo name={rating.team} px={20} />
-                        <span>{rating.team}</span>
-                      </div>
+                  <tr key={rating.team}>
+                    <td className="px-2 py-3 text-center font-mono text-xs text-ink-muted">{rank}</td>
+                    <th scope="row" className="px-2 py-3 text-left font-semibold text-ink">
+                      <div className="flex items-center gap-2"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></div>
                     </th>
-                    <td className="px-3 py-3 text-right font-mono font-bold text-ink">
-                      {rating.overallRating >= 0 ? `+${rating.overallRating.toFixed(2)}` : rating.overallRating.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-right font-mono text-ink-muted">
-                      {rating.offenseRating >= 0 ? `+${rating.offenseRating.toFixed(2)}` : rating.offenseRating.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-3 text-right font-mono text-ink-muted">
-                      {rating.defenseRating >= 0 ? `+${rating.defenseRating.toFixed(2)}` : rating.defenseRating.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono text-ink-faint">
-                      ±{Math.sqrt(Math.max(0, rating.overallVariance)).toFixed(2)}
-                    </td>
+                    {categories.map((category) => <td key={category.value} className={clsx("px-2 py-3 text-right font-mono", sort === category.value ? "bg-accent-soft font-bold text-ink" : "text-ink-muted")}>{ratingText(rating[fields[category.value]])}</td>)}
+                    <td className="px-2 py-3 text-right font-mono text-ink-muted">{uncertainty(rating)}</td>
                   </tr>
                 ))}
               </tbody>

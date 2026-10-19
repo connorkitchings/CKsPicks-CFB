@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PublicationMode } from "@/lib/publication";
 import { displaySystemName } from "@/lib/publication";
 import { ThemeToggle } from "./ThemeToggle";
@@ -28,12 +29,12 @@ export function Header({
     <header className="border-b border-line bg-surface-card/80 backdrop-blur">
       <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-2.5 sm:py-3.5`}>
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-lg font-bold tracking-tight text-ink sm:text-xl">
+          <Link href="/" className="inline-flex min-h-11 items-center rounded text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent sm:text-xl">
             CK&rsquo;s Picks
-            <span className="ml-1.5 text-xs font-normal text-ink-faint sm:text-sm">
+            <span className="ml-1.5 text-xs font-normal text-ink-muted sm:text-sm">
               CFB
             </span>
-          </h1>
+          </Link>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
               <SeasonSelector season={season} allowedSeasons={allowedSeasons} />
@@ -48,9 +49,9 @@ export function Header({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
           {publicationMode === "predictions" && systemName && (
-            <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+            <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
               {displaySystemName(systemName)}
             </span>
           )}
@@ -84,7 +85,7 @@ export function Footer({
   const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
   return (
     <footer
-      className={`mx-auto mt-12 ${maxW} px-4 pb-8 text-center text-[11px] leading-relaxed text-ink-faint`}
+      className={`mx-auto mt-12 ${maxW} px-4 pb-8 text-center text-xs leading-relaxed text-ink-muted`}
     >
       <p className="mb-1">
         Display only &mdash; not betting advice. CK&rsquo;s Picks is a research

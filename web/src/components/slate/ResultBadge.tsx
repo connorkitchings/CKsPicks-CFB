@@ -8,7 +8,7 @@ export function ResultBadge({ grade }: { grade: Grade }) {
   return (
     <span
       className={clsx(
-        "inline-block rounded px-1.5 py-0.5 text-[11px] font-semibold",
+        "inline-block rounded px-1.5 py-0.5 text-xs font-semibold",
         grade === "win" && "bg-win-soft text-win",
         grade === "loss" && "bg-loss-soft text-loss",
         grade === "push" && "bg-surface-inset text-ink-muted",

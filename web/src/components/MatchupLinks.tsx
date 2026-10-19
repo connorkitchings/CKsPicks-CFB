@@ -29,10 +29,7 @@ export function MatchupButton({ gameId, className }: { gameId: number; className
     <Link
       href={`/matchup/${gameId}`}
       data-testid="matchup-link"
-      className={
-        className ??
-        "inline-flex items-center gap-1 rounded-md border border-line bg-surface-elevated px-2 py-0.5 text-[11px] font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent"
-      }
+      className={`inline-flex min-h-11 items-center justify-center gap-1 rounded-md px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent ${className ?? "border border-line bg-surface-card text-ink hover:border-accent hover:text-accent-ink"}`}
     >
       Matchup <span aria-hidden>→</span>
     </Link>

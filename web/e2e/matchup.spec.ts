@@ -59,7 +59,7 @@ test.describe("matchup page (fixture mode)", () => {
       .getByRole("table")
       .first()
       .locator("tr", { hasText: "Explosive plays" });
-    await expect(row.locator("td").last()).toHaveText("0.0%");
+    await expect(row.locator("[data-value=defense]")).toHaveText("0.0%");
     await expect(row.getByTitle("Not ranked")).toHaveCount(2);
   });
 
@@ -91,7 +91,7 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(block).toContainText("Offense");
   });
 
-  test("tables sit side by side on desktop with aligned rows, and stack on a phone", async ({ page }) => {
+  test("tables sit side by side on desktop with aligned rows, and phones select one unit", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/matchup/1");
     const tables = page.getByRole("table");
@@ -100,7 +100,7 @@ test.describe("matchup page (fixture mode)", () => {
     expect(a && b).toBeTruthy();
     expect(Math.abs(a!.y - b!.y)).toBeLessThan(2); // same top: side by side
     expect(b!.x).toBeGreaterThan(a!.x + a!.width - 2);
-    expect(a!.width).toBeGreaterThan(430); // roomy enough for five columns
+    expect(a!.width).toBeGreaterThan(430); // room for values, ranks and metric labels
     // Rows line up across the two tables (fixed row heights).
     const ra = await tables.nth(0).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     const rb = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
@@ -108,10 +108,29 @@ test.describe("matchup page (fixture mode)", () => {
 
     await page.setViewportSize({ width: 390, height: 900 });
     await page.goto("/matchup/1");
-    const pa = await page.getByRole("table").nth(0).boundingBox();
-    const pb = await page.getByRole("table").nth(1).boundingBox();
-    expect(pb!.y).toBeGreaterThan(pa!.y + pa!.height - 2); // stacked
+    await expect(page.getByRole("table")).toHaveCount(1);
+    const selectors = page.getByRole("group", { name: "Offense comparison" });
+    const away = selectors.getByRole("button").first();
+    const home = selectors.getByRole("button").last();
+    await expect(away).toHaveAttribute("aria-pressed", "true");
+    await expect(home).toHaveAttribute("aria-pressed", "false");
+    const firstName = await page.getByRole("table").getAttribute("aria-label");
+    await home.click();
+    await expect(home).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("table")).not.toHaveAttribute("aria-label", firstName!);
+    await expect(page.getByRole("table").locator("thead th")).toHaveCount(3);
+    await expect(page.getByRole("table").locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    // The selected unit survives desktop resizing; both tables appear at 1024.
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await expect(page.getByRole("table")).toHaveCount(2);
+    await expect(selectors).toBeHidden();
+    await page.setViewportSize({ width: 1023, height: 900 });
+    await expect(page.getByRole("table")).toHaveCount(1);
+    await expect(home).toHaveAttribute("aria-pressed", "true");
+    await away.click();
+    await expect(page.getByRole("table")).toHaveAttribute("aria-label", firstName!);
   });
 
   test("top of the page: records, venue, rating labels, a real Updated time, no duplicate system name", async ({ page }) => {
@@ -163,11 +182,56 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page).toHaveTitle(/ at .* · Matchup/);
   });
 
-  test("does not overflow at phone width", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 800 });
+  test("loaded matchups fit phones and the 640px breakpoint with teams above forecasts", async ({ page }) => {
+    for (const width of [320, 360, 390, 430, 639, 640, 768]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/matchup/1");
+      await expect(page.getByRole("table")).toHaveCount(1);
+      await page.evaluate(() => document.fonts.ready);
+      const { away, home, forecast } = await page.evaluate(() => {
+        const box = (selector: string) => {
+          const rect = document.querySelector(selector)!.getBoundingClientRect();
+          return { y: rect.y, height: rect.height };
+        };
+        return {
+          away: box("[data-side=away]"),
+          home: box("[data-side=home]"),
+          forecast: box('[data-testid="forecast-grid"]'),
+        };
+      });
+      expect(Math.abs(away!.y - home!.y)).toBeLessThan(2);
+      expect(forecast!.y).toBeGreaterThan(Math.max(away!.y + away!.height, home!.y + home!.height));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      for (const action of await page.getByTestId("share-controls").getByRole("button").all()) {
+        expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
+
+  test("phone unit controls support keyboard selection without changing forecast values", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/matchup/1");
-    const fits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
-    expect(fits).toBe(true);
+    const forecast = await page.getByTestId("forecast-grid").innerText();
+    const controls = page.getByRole("group", { name: "Offense comparison" });
+    const home = controls.getByRole("button").last();
+    await home.focus();
+    await page.keyboard.press("Enter");
+    await expect(home).toHaveAttribute("aria-pressed", "true");
+    expect(await page.getByTestId("forecast-grid").innerText()).toBe(forecast);
+    await expect(page.locator("main#main-content")).toHaveAttribute("tabindex", "-1");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/ at /);
+  });
+
+  test("completed and missing-line games preserve scores and explicit line absence on phones", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.goto("/matchup/101");
+    await expect(page.locator("[data-side=away]")).toContainText("Final Score");
+    await expect(page.locator("[data-side=home]")).toContainText("Final Score");
+    await expect(page.getByTestId("forecast-grid")).toContainText("Model Bet");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.goto("/matchup/7");
+    await expect(page.getByTestId("forecast-grid")).toContainText("—");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
   test("is noindex and unknown games show the not-found page", async ({ page }) => {
@@ -184,7 +248,7 @@ test.describe("matchup page (fixture mode)", () => {
   test("the /matchup index lists the week's games and links to each breakdown", async ({ page }) => {
     await page.goto("/matchup");
     await expect(page.getByRole("heading", { name: "Matchups" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Week 5" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("combobox", { name: "Week", exact: true })).toHaveValue("5");
     const links = page.locator("a[href^='/matchup/']");
     expect(await links.count()).toBeGreaterThan(3);
     await links.first().click();

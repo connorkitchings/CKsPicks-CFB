@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
@@ -59,8 +60,9 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full flex flex-col pb-16 sm:pb-0">
+      <body className="min-h-full flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] sm:pb-0">
         <MatchupLinksProvider enabled={isMatchupEnabled()}>
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface-card focus:px-3 focus:py-3 focus:text-sm focus:font-medium focus:text-ink focus:shadow-lg">Skip to main content</a>
           <SiteNav chartsEnabled={isChartsEnabled()} />
           {children}
         </MatchupLinksProvider>

@@ -11,12 +11,12 @@ import {
 
 function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
   if (result === null) {
-    return <span className="text-ink-faint">—</span>;
+    return <span className="text-ink-muted">—</span>;
   }
   return (
     <span
       className={clsx(
-        "inline-block rounded px-1.5 py-0.5 text-[11px] font-medium",
+        "inline-block rounded px-1.5 py-0.5 text-xs font-medium",
         result === "win" && "bg-win-soft text-win",
         result === "loss" && "bg-loss-soft text-loss",
         result === "push" && "bg-surface-inset text-ink-muted",
@@ -48,11 +48,11 @@ export function MarketGameCard({
   );
 
   return (
-    <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center gap-2 text-xs text-ink-faint">
+    <li id={`game-${game.gameId}`} className="scroll-mt-12 rounded-xl border border-line bg-surface-card p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
         <span>{formatKickoff(game.startDate)}</span>
         {hasResults && (
-          <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+          <span className="rounded-full bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Final
           </span>
         )}
@@ -77,7 +77,7 @@ export function MarketGameCard({
       </div>
       <BetTable
         ariaLabel="Market and results"
-        tableClassName="mt-3 w-full tabular-nums text-[11px] sm:text-xs"
+        tableClassName="mt-3 w-full tabular-nums text-sm"
         headerCellClassName="pl-2 text-right"
         bodyCellClassName={[
           "py-1.5 pl-2 text-right font-mono tabular-nums text-ink",
@@ -115,14 +115,19 @@ export function MarketGameCard({
 }
 
 function formatKickoff(startDate: Date): string {
-  return startDate.toLocaleString("en-US", {
+  // Node and Safari use different date/time joining words; assemble named parts
+  // so hydration preserves one Eastern-time timestamp on every browser.
+  const parts = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "America/New_York",
     timeZoneName: "short",
-  });
+  }).formatToParts(startDate);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((entry) => entry.type === type)?.value ?? "";
+  return `${part("weekday")}, ${part("month")} ${part("day")}, ${part("hour")}:${part("minute")} ${part("dayPeriod")} ${part("timeZoneName")}`;
 }
 
 function TeamLine({
@@ -142,14 +147,14 @@ function TeamLine({
   return (
     <div className="flex items-center gap-2.5">
       <TeamLogo name={name} px={28} decorative={false} />
-      <span className={clsx("min-w-0 truncate text-sm text-ink", highlighted && "font-semibold")}>
+      <span className={clsx("min-w-0 break-words text-sm text-ink", highlighted && "font-semibold")}>
         {name}
       </span>
       {record && (
-        <span className="text-xs tabular-nums text-ink-faint">({record})</span>
+        <span className="text-xs tabular-nums text-ink-muted">({record})</span>
       )}
       {home && (
-        <span className="text-[10px] uppercase tracking-wide text-ink-faint">
+        <span className="text-xs uppercase tracking-wide text-ink-muted">
           home
         </span>
       )}

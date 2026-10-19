@@ -138,7 +138,7 @@ export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) 
               href={href}
               aria-current={isActive ? "page" : undefined}
               className={clsx(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                "flex flex-col items-center justify-center gap-0.5 min-h-11 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                 "sm:flex-row sm:gap-1.5 sm:rounded-md sm:px-3 sm:py-1 sm:text-sm sm:whitespace-nowrap",
                 isActive
                   ? "text-accent font-semibold sm:bg-surface-inset sm:font-semibold sm:text-ink sm:shadow-2xs"

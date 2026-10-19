@@ -29,7 +29,7 @@ export function SlateGameRow({
       <div>
         <div className="whitespace-nowrap text-xs tabular-nums text-ink-muted">
           {kickoffTime(game.startDate)}
-          {isFinal(game) && <span className="ml-1.5 text-[10px] uppercase text-ink-faint">Final</span>}
+          {isFinal(game) && <span className="ml-1.5 text-xs uppercase text-ink-muted">Final</span>}
           {game.highConfidence && <span className="ml-1.5 text-accent" title="High confidence lean">★</span>}
         </div>
         <WhereLine game={game} />
@@ -38,8 +38,8 @@ export function SlateGameRow({
         </div>
       </div>
       <TeamPair game={game} size={20} />
-      <div>{spread ? <LeanPill lean={spread} compact /> : <p className="text-xs text-ink-faint">No spread lean</p>}</div>
-      <div>{total ? <LeanPill lean={total} compact /> : <p className="text-xs text-ink-faint">No total lean</p>}</div>
+      <div>{spread ? <LeanPill lean={spread} compact /> : <p className="text-xs text-ink-muted">No spread lean</p>}</div>
+      <div>{total ? <LeanPill lean={total} compact /> : <p className="text-xs text-ink-muted">No total lean</p>}</div>
     </li>
   );
 }

@@ -15,27 +15,29 @@ export function RecordCell({ label, rec }: { label: string; rec: Rec }) {
   const isAboveBreakEven = rate !== null && rate >= 52.4;
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-line/60 bg-surface-inset/80 p-2.5 text-center transition-colors hover:border-line sm:p-3">
-      <span className="inline-flex items-center rounded border border-line/60 bg-surface-card/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+    <div className="flex flex-col items-stretch justify-center gap-1 rounded-lg border border-line bg-surface-inset p-2 text-center">
+      <span className="text-left text-xs font-semibold uppercase tracking-wide text-ink-muted">
         {label}
       </span>
-      <div className="mt-1 font-mono text-lg font-bold tracking-tight tabular-nums text-ink sm:text-xl">
-        {rec.win}–{rec.loss}–{rec.push}
-      </div>
-      {rate !== null && (
-        <div className="mt-0.5">
-          <span
-            className={clsx(
-              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none",
-              isAboveBreakEven
-                ? "border border-win-line/60 bg-win-soft text-win"
-                : "text-ink-muted",
-            )}
-          >
-            {rate.toFixed(1)}%
-          </span>
+      <div className="flex items-center justify-between gap-1 max-[360px]:flex-col max-[360px]:items-start">
+        <div className="font-mono text-base font-bold tracking-tight tabular-nums text-ink sm:text-lg">
+          {rec.win}–{rec.loss}–{rec.push}
         </div>
-      )}
+        {rate !== null && (
+          <div>
+            <span
+              className={clsx(
+                "inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-semibold tabular-nums leading-none",
+                isAboveBreakEven
+                  ? "border border-win-line/60 bg-win-soft text-win"
+                  : "text-ink-muted",
+              )}
+            >
+              {rate.toFixed(1)}%
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -59,7 +61,7 @@ export function RecordBlock({
       {showHeader && (
         <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
           <h3 className="text-xs font-semibold text-ink">{title}</h3>
-          <span className="text-[11px] text-ink-faint">{note}</span>
+          <span className="text-xs text-ink-muted">{note}</span>
         </div>
       )}
       <div className="grid grid-cols-2 gap-2">
@@ -81,31 +83,37 @@ export function ModelRecord({
 }) {
   const season = performance.find((p) => p.classification === "all");
   return (
-    <section aria-label="Record" className="rounded-xl border border-line bg-surface-card p-3.5 shadow-2xs">
-      <div className="mb-2 flex items-baseline justify-between gap-2">
-        <div className="flex flex-wrap items-baseline gap-x-2.5">
-          <h2 className="text-xs font-semibold text-ink sm:text-sm">How the model is doing</h2>
-          <span className="text-[11px] text-ink-faint">
-            Season {season ? `(${season.games} games)` : ""}
-          </span>
-        </div>
-      </div>
-      <div className={clsx("grid gap-3", week && "md:grid-cols-2")}>
-        {week && (
-          <RecordBlock
-            title={`Week ${week.number}`}
-            note="this slate · small sample"
-            spread={week.spread}
-            total={week.total}
-            showHeader={true}
-          />
-        )}
+    <section
+      aria-label="Record"
+      className={clsx("rounded-xl border border-line bg-surface-card p-2.5 shadow-2xs", week && "grid grid-cols-2")}
+    >
+      <h2 className={clsx("text-sm font-semibold text-ink", week ? "col-start-1 row-start-1 self-start py-3" : "mb-2")}>
+        {week ? `Week ${week.number} record` : "Season record"}
+      </h2>
+      {week && (
+        <details className="col-span-2 col-start-1 row-start-1">
+          <summary className="ml-auto min-h-11 w-fit cursor-pointer rounded-lg px-2 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+            Season context
+          </summary>
+          <div className="pb-3 text-ink-muted">
+            <p className="mb-2 text-xs">This slate is a small sample. Season ({season?.games ?? 0} games)</p>
+            <RecordBlock
+              title="Season"
+              note={season ? `${season.games} games` : "no games yet"}
+              spread={season?.spread ?? null}
+              total={season?.total ?? null}
+              showHeader={false}
+            />
+          </div>
+        </details>
+      )}
+      <div className={week ? "col-span-2 row-start-2" : undefined}>
         <RecordBlock
-          title="Season"
-          note={season ? `${season.games} games` : "no games yet"}
-          spread={season?.spread ?? null}
-          total={season?.total ?? null}
-          showHeader={Boolean(week)}
+          title={week ? `Week ${week.number}` : "Season"}
+          note={week ? "this slate · small sample" : season ? `${season.games} games` : "no games yet"}
+          spread={week?.spread ?? season?.spread ?? null}
+          total={week?.total ?? season?.total ?? null}
+          showHeader={false}
         />
       </div>
     </section>

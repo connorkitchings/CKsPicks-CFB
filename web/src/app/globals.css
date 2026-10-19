@@ -138,3 +138,10 @@ html.dark .rounded-xl.bg-surface-card {
 .edge-high {
   color: var(--edge-high);
 }
+
+/* Keep keyboard position visible without changing the chart color system. */
+:focus-visible { outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

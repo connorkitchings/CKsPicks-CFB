@@ -21,10 +21,10 @@ function TeamLine({
   return (
     <div className="flex items-center gap-2.5" data-side={side}>
       <TeamLogo name={name} px={size} />
-      <span className={clsx("min-w-0 truncate text-sm", highlight ? "font-semibold text-accent-ink" : "text-ink")}>
+      <span className={clsx("min-w-0 break-words text-sm", highlight ? "font-semibold text-accent-ink" : "text-ink")}>
         {name}
       </span>
-      {record && <span className="text-xs tabular-nums text-ink-faint">({record})</span>}
+      {record && <span className="text-xs tabular-nums text-ink-muted">({record})</span>}
       {score !== null && (
         <span className="ml-auto font-mono text-base font-semibold tabular-nums text-ink">
           {score}

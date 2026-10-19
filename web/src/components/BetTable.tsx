@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 const colHeaderBase =
-  "py-1 text-[10px] font-medium uppercase tracking-wide text-ink-faint";
+  "py-1 text-xs font-medium uppercase tracking-wide text-ink-muted";
 const rowHeaderBase = "py-1.5 pr-2 text-left font-medium text-ink-muted";
 
 export type BetTableColumn = {

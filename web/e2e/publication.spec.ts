@@ -86,7 +86,8 @@ test.describe("picks slate (/)", () => {
     await expect(appState).toContainText("(Bovada)");
     await expect(appState).toContainText("Model: 54.1");
     // Provider keys are shown as sportsbook names.
-    await expect(page.getByText("(FanDuel)").first()).toBeVisible();
+    await page.locator("#game-3").getByText("Game details", { exact: true }).click();
+    await expect(page.locator("#game-3").getByText(/\(FanDuel\)/)).toBeVisible();
     // A game with no recorded source shows the model's number but no invented book.
     const oklahoma = page.locator("#game-9");
     await expect(oklahoma).toContainText("Oklahoma +4.0");
@@ -102,8 +103,7 @@ test.describe("picks slate (/)", () => {
     await page.goto("/");
 
     const record = page.getByRole("region", { name: "Record" });
-    await expect(record.getByRole("heading", { name: "How the model is doing" })).toBeVisible();
-    await expect(record.getByText(/Season \(\d+ games\)/)).toBeVisible();
+    await expect(record.getByRole("heading", { name: "Season record" })).toBeVisible();
     await expect(record.getByText("93–103–3")).toBeVisible();
     await expect(record.getByText("47.4%")).toBeVisible();
 
@@ -174,6 +174,7 @@ test.describe("game location next to the time", () => {
   test("picks cards show city and state, a neutral-site note, and nothing when unknown", async ({ page }) => {
     await page.goto("/");
 
+    for (const id of [3, 5, 8]) await page.locator(`#game-${id}`).getByText("Game details", { exact: true }).click();
     await expect(page.locator("#game-3").getByText("· Los Angeles, CA")).toBeVisible();
     await expect(page.locator("#game-5").getByText("· State College, PA")).toBeVisible();
     // Neutral-site game: location plus a note (the "home" team is arbitrary there).
@@ -192,6 +193,7 @@ test.describe("game location next to the time", () => {
   test("results cards show the venue beside the date", async ({ page }) => {
     await page.goto("/results");
 
+    for (const id of [101, 107]) await page.locator(`#game-${id}`).getByText("Game details", { exact: true }).click();
     await expect(page.locator("#game-101").getByText("· Ann Arbor, MI")).toBeVisible();
     await expect(page.locator("#game-107").getByText("· Tallahassee, FL")).toBeVisible();
     await page.getByRole("button", { name: "list", exact: true }).click();
@@ -243,9 +245,9 @@ test.describe("results slate (/results)", () => {
     await page.goto("/results");
 
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Week 4" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Week 4 record" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Highlights" })).toBeVisible();
-    await expect(page.getByText("Showing 9 of 9 games")).toBeVisible();
+    await expect(page.getByRole("status")).toHaveText("Showing 9 of 9 games");
     await expect(page.getByRole("link", { name: "Results" })).toHaveAttribute("aria-current", "page");
   });
 
@@ -260,6 +262,7 @@ test.describe("results slate (/results)", () => {
     await page.goto("/results");
 
     const record = page.getByRole("region", { name: "Record" });
+    await record.getByText("Season context", { exact: true }).click();
     await expect(record.getByText(/small sample/)).toBeVisible();
     await expect(record.getByText("4–3–1")).toBeVisible();
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
@@ -293,7 +296,8 @@ test.describe("results slate (/results)", () => {
     expect(await fits(page)).toBe(true);
 
     await page.setViewportSize({ width: 390, height: 800 });
-    await page.getByRole("button", { name: "grid", exact: true }).click();
+    await expect(page.getByRole("button", { name: "grid", exact: true })).toBeHidden();
+    await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "grid");
     expect(await fits(page)).toBe(true);
   });
 });

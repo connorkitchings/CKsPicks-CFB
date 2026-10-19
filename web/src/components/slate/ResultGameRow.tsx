@@ -10,14 +10,14 @@ import { TeamPair } from "./TeamPair";
 
 function Cell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
   const lean = leanFor(game, kind);
-  if (!lean) return <p className="text-xs text-ink-faint">No {kind} lean</p>;
+  if (!lean) return <p className="text-xs text-ink-muted">No {kind} lean</p>;
   const grade = resultFor(game, kind);
   const text = coverText(coverMargin(game, kind));
   return (
     <div className="space-y-0.5 text-xs">
       <div className="flex items-center gap-2">
         <LeanMarker lean={lean} />
-        <span className="min-w-0 truncate font-semibold text-ink">{lean.pick}</span>
+        <span className="min-w-0 break-words text-sm font-semibold text-ink">{lean.pick}</span>
         <span className={`shrink-0 tabular-nums ${edgeTone(lean.edge, lean.kind)}`}>({lean.edge.toFixed(1)})</span>
         {grade && <ResultBadge grade={grade} />}
       </div>

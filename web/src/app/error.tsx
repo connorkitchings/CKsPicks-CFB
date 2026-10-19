@@ -12,17 +12,16 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
-      <div className="rounded-xl border border-loss-line bg-loss-soft p-5 text-sm text-loss">
-        <h2 className="mb-1 text-base font-semibold">Couldn&rsquo;t load this week.</h2>
+    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+      <div role="alert" className="rounded-xl border border-loss-line bg-loss-soft p-5 text-sm text-loss">
+        <h1 className="mb-1 text-lg font-semibold">Couldn&rsquo;t load this page.</h1>
         <p className="mb-3">
-          The database query failed. This is usually transient (Neon cold start
-          or a blip). Try again in a moment.
+          This page is temporarily unavailable. Try again in a moment.
         </p>
         <button
           type="button"
           onClick={reset}
-          className="rounded-md bg-loss px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+          className="min-h-11 rounded-md border border-loss bg-surface-card px-4 py-2 text-sm font-semibold text-loss transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-accent"
         >
           Try again
         </button>

@@ -33,7 +33,7 @@ export function SeasonSelector({
         id="season-select"
         value={season}
         onChange={onSelect}
-        className="rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+        className="min-h-11 rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
       >
         {allowedSeasons.map((s) => (
           <option key={s} value={s}>

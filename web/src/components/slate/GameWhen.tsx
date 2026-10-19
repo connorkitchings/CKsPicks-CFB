@@ -17,7 +17,7 @@ export function GameWhen({ when, game }: { when: string; game: PredictionGame })
         </span>
       )}
       {game.neutralSite && (
-        <span className="shrink-0 rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+        <span className="shrink-0 rounded-full bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
           Neutral site
         </span>
       )}
@@ -30,7 +30,7 @@ export function WhereLine({ game }: { game: PredictionGame }) {
   const where = venueLabel(game.venueCity, game.venueState);
   if (!where && !game.neutralSite) return null;
   return (
-    <div className="mt-0.5 max-w-[6.5rem] truncate text-[11px] text-ink-faint" title={where}>
+    <div className="mt-0.5 max-w-[6.5rem] truncate text-xs text-ink-muted" title={where}>
       {where}
       {game.neutralSite && <span className="ml-1 uppercase">· Neutral</span>}
     </div>

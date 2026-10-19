@@ -19,7 +19,7 @@ test("ratings page includes rank column, methodology explainer, and disambiguate
   // Rank column in table header and body (computed pre-filter)
   assert.match(source, /<th scope="col"[^>]*>#<\/th>/);
   assert.match(source, /\{rank\}/);
-  assert.match(source, /rank computed pre-filter/);
+  assert.match(source, /Rank before filtering/);
   assert.match(source, /aria-label="Ratings timeline"/);
   assert.match(source, /aria-current=/);
 
@@ -28,27 +28,27 @@ test("ratings page includes rank column, methodology explainer, and disambiguate
   assert.match(source, /average FBS opponent under standard conditions/);
   assert.match(source, /Both offense and defense are oriented so higher is better/);
   assert.match(source, /through-2025 Ridge regression bridge with earlier-only non-offense offsets/);
-  assert.match(source, /Uncertainty \(±\) is one rating standard deviation/);
+  assert.match(source, /Overall uncertainty \(±\) is one overall rating standard deviation/);
 
   // Disambiguated empty states
   assert.match(source, /No certified ratings published for the \{season\} season yet\./);
   assert.match(source, /No teams match &ldquo;\{query\}&rdquo;\./);
 
   // Season parameterization and ISR
-  assert.match(source, /revalidate = 300/);
-  assert.match(source, /requestedSeason = params\.season \? Number\(params\.season\) : 2026/);
+  assert.match(source, /revalidate\s*=\s*300/);
+  assert.match(source, /requestedSeason\s*=\s*params\.season\s*\?\s*Number\(params\.season\)\s*:\s*2026/);
 });
 
 test("TeamPair shows team names as plain text, not links (team pages are not ready)", () => {
   const source = readFileSync(new URL("../components/slate/TeamPair.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\/teams\//);
   assert.doesNotMatch(source, /import Link from "next\/link";/);
-  assert.match(source, /min-w-0 truncate text-sm/);
+  assert.match(source, /min-w-0 break-words text-sm/);
 });
 
 test("slate cards link to the matchup breakdown through the gated button instead", () => {
   for (const file of [
-    "SlateGameCard.tsx",
+    "PredictionGameCard.tsx",
     "SlateGameRow.tsx",
     "ResultGameRow.tsx",
     "MarketGameCard.tsx",

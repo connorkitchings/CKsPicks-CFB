@@ -1,20 +1,20 @@
 "use client";
 
-
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { PerformanceDetail, GradedGamePick } from "@/lib/v5";
 import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy";
+import { Disclosure } from "@/components/ui/Disclosure";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { MatchupButton } from "@/components/MatchupLinks";
 
 type TargetFilter = "all" | "spread" | "total";
 type Record3 = ReturnType<typeof accuracyRecord>;
-
-const recordText = (r: Record3) => `${r.win}–${r.loss}–${r.push}`;
-const rateText = (r: Record3) => (r.winRate === null ? "—" : `${r.winRate.toFixed(1)}%`);
-const decimal = (value: number | null, suffix = "") =>
-  value === null ? "—" : `${value.toFixed(1)}${suffix}`;
-const graded = (r: Record3) => r.win + r.loss + r.push;
+const recordText = (record: Record3) => `${record.win}–${record.loss}–${record.push}`;
+const rateText = (record: Record3) => record.winRate === null ? "—" : `${record.winRate.toFixed(1)}%`;
+const decimal = (value: number | null, suffix = "") => value === null ? "—" : `${value.toFixed(1)}${suffix}`;
+const graded = (record: Record3) => record.win + record.loss + record.push;
 
 function merge(a: Record3, b: Record3): Record3 {
   const win = a.win + b.win;
@@ -22,352 +22,213 @@ function merge(a: Record3, b: Record3): Record3 {
   return { win, loss, push: a.push + b.push, winRate: win + loss ? (100 * win) / (win + loss) : null };
 }
 
-function recordFor(games: GradedGamePick[], pick: (g: GradedGamePick) => AccuracyResult) {
+function recordFor(games: GradedGamePick[], pick: (game: GradedGamePick) => AccuracyResult) {
   return accuracyRecord(games.map(pick));
+}
+
+function AuditGame({ game, target }: { game: GradedGamePick; target: TargetFilter }) {
+  return (
+    <article data-testid="audit-game" data-game-id={game.gameId}>
+      <Disclosure title={<span className="break-words">{game.awayTeam} @ {game.homeTeam}</span>}>
+        <p className="mb-2 text-xs">Week {game.week} · V5 · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}</p>
+        <MatchupButton gameId={game.gameId} />
+        <p className="mt-2 break-words text-xs">Original run: <code className="break-all">{game.runId}</code></p>
+        {game.freezeReceiptSha256 && (
+          <p className="mt-1 text-xs">Freeze evidence SHA-256: <code className="break-all">{game.freezeReceiptSha256}</code></p>
+        )}
+        <dl className="mt-3 space-y-3 text-sm">
+          {target !== "total" && game.spreadResult !== null && (
+            <div>
+              <dt className="font-semibold text-ink">Spread · captured line {decimal(game.marketSpread)}</dt>
+              <dd>Forecast {decimal(game.predictedSpread)} · {game.spreadLean ?? "No stored lean"} · {game.spreadResult}</dd>
+              <dd className="mt-1 text-xs">Price: {game.spreadPriceProvenance ?? "unavailable"}</dd>
+            </div>
+          )}
+          {target !== "spread" && game.totalResult !== null && (
+            <div>
+              <dt className="font-semibold text-ink">Total · captured line {decimal(game.marketTotal)}</dt>
+              <dd>Forecast {decimal(game.predictedTotal)} · {game.totalLean ?? "No stored lean"} · {game.totalResult}</dd>
+              <dd className="mt-1 text-xs">Price: {game.totalPriceProvenance ?? "unavailable"}</dd>
+            </div>
+          )}
+        </dl>
+      </Disclosure>
+    </article>
+  );
 }
 
 export function PerformanceDashboard({ data, title }: { data: PerformanceDetail; title: string }) {
   const [targetFilter, setTargetFilter] = useState<TargetFilter>("all");
   const games = data.gradedGames;
+  const auditWeeks = useMemo(
+    () => [...new Set(games.filter((game) => game.spreadResult !== null || game.totalResult !== null).map((game) => game.week))].sort((a, b) => b - a),
+    [games],
+  );
+  // Target changes do not alter the chosen week, including a week empty for that target.
+  const [auditWeek, setAuditWeek] = useState(() => auditWeeks[0] ?? null);
 
   const overall = useMemo(() => {
-    const spread = recordFor(games, (g) => g.spreadResult);
-    const total = recordFor(games, (g) => g.totalResult);
-    const focused =
-      targetFilter === "spread" ? spread : targetFilter === "total" ? total : merge(spread, total);
-    const label =
-      targetFilter === "spread" ? "Spread Accuracy" : targetFilter === "total" ? "Totals Accuracy" : "Overall Accuracy";
+    const spread = recordFor(games, (game) => game.spreadResult);
+    const total = recordFor(games, (game) => game.totalResult);
+    const focused = targetFilter === "spread" ? spread : targetFilter === "total" ? total : merge(spread, total);
+    const label = targetFilter === "spread" ? "Spread Accuracy" : targetFilter === "total" ? "Totals Accuracy" : "Overall Accuracy";
     return { spread, total, focused, label };
   }, [games, targetFilter]);
 
   const weeklyData = useMemo(
-    () =>
-      data.weeks
-        .map((week) => {
-          const weekGames = games.filter((g) => g.week === week);
-          const spread = recordFor(weekGames, (g) => g.spreadResult);
-          const total = recordFor(weekGames, (g) => g.totalResult);
-          return { week, spread, total, combined: merge(spread, total) };
-        })
-        .filter((row) => graded(row.combined) > 0),
+    () => data.weeks.map((week) => {
+      const weekGames = games.filter((game) => game.week === week);
+      const spread = recordFor(weekGames, (game) => game.spreadResult);
+      const total = recordFor(weekGames, (game) => game.totalResult);
+      return { week, spread, total, combined: merge(spread, total) };
+    }).filter((row) => graded(row.combined) > 0),
     [data.weeks, games],
   );
 
   const auditGames = useMemo(
-    () =>
-      games.filter((g) =>
-        targetFilter === "spread"
-          ? g.spreadResult !== null
-          : targetFilter === "total"
-            ? g.totalResult !== null
-            : g.spreadResult !== null || g.totalResult !== null,
-      ),
-    [games, targetFilter],
+    () => games.filter((game) => game.week === auditWeek && (
+      targetFilter === "spread" ? game.spreadResult !== null : targetFilter === "total" ? game.totalResult !== null : game.spreadResult !== null || game.totalResult !== null
+    )),
+    [games, auditWeek, targetFilter],
   );
-
-  const cardClass = (active: boolean) =>
-    clsx(
-      "col-span-1 rounded-xl border p-3 sm:p-5 shadow-sm transition-all text-left cursor-pointer",
-      active ? "border-accent ring-1 ring-accent bg-surface-card" : "border-line bg-surface-card hover:border-ink-faint",
-    );
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <h2 className="text-lg font-semibold text-ink">{title}</h2>
-      {/* Accuracy KPI cards: mobile 2+1 grid, desktop 3-col */}
-      <section aria-labelledby="kpi-heading" className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3">
+      <section aria-labelledby="kpi-heading" className="grid grid-cols-2 gap-2.5 sm:gap-4">
         <h2 id="kpi-heading" className="sr-only">Forecast accuracy summary</h2>
-
         {(["spread", "total"] as const).map((target) => {
           const record = overall[target];
           return (
             <button
               key={target}
               type="button"
+              aria-pressed={targetFilter === target}
               onClick={() => setTargetFilter(targetFilter === target ? "all" : target)}
-              className={cardClass(targetFilter === target)}
+              className={clsx(
+                "min-h-11 min-w-0 rounded-xl border bg-surface-card p-3 text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:p-5",
+                targetFilter === target ? "border-accent ring-1 ring-accent" : "border-line hover:border-line-strong",
+              )}
             >
-              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-                  <span className="sm:hidden">{target === "spread" ? "Spread" : "Totals"}</span>
-                  <span className="hidden sm:inline">{target === "spread" ? "Spread Performance" : "Totals Performance"}</span>
-                </span>
-                {targetFilter === target && (
-                  <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent-ink">
-                    active
-                  </span>
-                )}
-              </div>
-              <div className="font-mono text-2xl sm:text-4xl font-bold tracking-tight text-ink">
-                {recordText(record)}
-              </div>
-              <div className="mt-2 sm:mt-3 space-y-1 text-xs">
-                <div className="flex items-center justify-between text-ink-muted">
-                  <span>Win Rate</span>
-                  <span className="font-mono font-medium text-ink">{rateText(record)}</span>
-                </div>
-                <div className="flex items-center justify-between text-ink-muted">
-                  <span>Graded</span>
-                  <span className="font-mono font-medium text-ink">{graded(record)} picks</span>
-                </div>
-              </div>
+              <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{target === "spread" ? "Spread" : "Totals"}</span>
+              <span className="mt-2 block font-mono text-xl font-bold tracking-tight text-ink sm:text-4xl">{recordText(record)}</span>
+              <span className="mt-2 flex flex-wrap justify-between gap-1 text-sm text-ink-muted">
+                <span>Win rate</span><strong className="font-mono text-ink">{rateText(record)}</strong>
+              </span>
+              <span className="mt-1 block text-xs text-ink-muted">{graded(record)} graded picks</span>
             </button>
           );
         })}
-
-        <div className="col-span-2 md:col-span-1 rounded-xl border border-line bg-surface-card p-3 sm:p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-              {overall.label}
-            </span>
-            <span className="text-[10px] text-ink-faint font-medium">{graded(overall.focused)} graded</span>
-          </div>
-          <div className="font-mono text-2xl sm:text-4xl font-bold tracking-tight text-ink">
-            {rateText(overall.focused)}
-          </div>
-          <div className="mt-2 sm:mt-3 space-y-1 text-xs">
-            <div className="flex items-center justify-between text-ink-muted">
-              <span>Record (W–L–P)</span>
-              <span className="font-mono font-medium text-ink">{recordText(overall.focused)}</span>
-            </div>
-            <div className="flex items-center justify-between text-ink-muted">
-              <span>Pushes</span>
-              <span className="font-mono font-medium text-ink">excluded from rate</span>
-            </div>
-          </div>
-        </div>
       </section>
 
-      {/* Forecast accuracy strip: season diagnostics, independent of the filters below */}
-      <section
-        aria-labelledby="calibration-heading"
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2.5 rounded-xl border border-line bg-surface-card px-3 sm:px-4 py-2 sm:py-2.5 shadow-sm text-xs text-ink-muted"
-      >
-        <h2 id="calibration-heading" className="sr-only">Forecast accuracy</h2>
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-            Forecast Accuracy
-          </span>
-          <span className="text-ink-faint">·</span>
-          <span>
-            Spread MAE <strong className="font-mono text-ink">{decimal(data.summary.marginMae, " pts")}</strong>
-          </span>
-          <span className="text-ink-faint">·</span>
-          <span>
-            Total MAE <strong className="font-mono text-ink">{decimal(data.summary.totalMae, " pts")}</strong>
-          </span>
-          <span className="text-ink-faint">·</span>
-          <span>
-            Spread 95% interval <strong className="font-mono text-ink">{decimal(data.summary.marginCoverage95, "%")}</strong>
-          </span>
-          <span className="text-ink-faint">·</span>
-          <span>
-            Total 95% interval <strong className="font-mono text-ink">{decimal(data.summary.totalCoverage95, "%")}</strong>
-          </span>
-        </div>
-        <div className="text-[11px] text-ink-faint">
-          Forecasts compared with certified final scores
-        </div>
+      <Disclosure title="Season-wide forecast diagnostics">
+        <section aria-labelledby="calibration-heading" className="space-y-3">
+          <h2 id="calibration-heading" className="sr-only">Forecast accuracy</h2>
+          <p className="text-sm">Season-wide forecasts compared with certified final scores; these diagnostics do not change with the target filter.</p>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            {([
+              ["Spread MAE", decimal(data.summary.marginMae, " pts")],
+              ["Total MAE", decimal(data.summary.totalMae, " pts")],
+              ["Spread 95% interval", decimal(data.summary.marginCoverage95, "%")],
+              ["Total 95% interval", decimal(data.summary.totalCoverage95, "%")],
+            ] as const).map(([label, value]) => (
+              <div key={label}><dt>{label}</dt><dd className="font-mono font-semibold text-ink">{value}</dd></div>
+            ))}
+          </dl>
+        </section>
+      </Disclosure>
+
+      <section aria-labelledby="filter-heading" className="space-y-2">
+        <h2 id="filter-heading" className="text-sm font-semibold text-ink">Weekly records</h2>
+        <SegmentedControl<TargetFilter>
+          label="Pick target"
+          value={targetFilter}
+          onChange={setTargetFilter}
+          options={[{ value: "all", label: "All Picks" }, { value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]}
+        />
+        <p className="text-xs text-ink-muted">{overall.label}: {recordText(overall.focused)} · {rateText(overall.focused)} · {graded(overall.focused)} graded. Pushes excluded from rate.</p>
       </section>
 
-      {/* Filter toolbar */}
-      <section aria-labelledby="filter-heading" className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 rounded-xl border border-line bg-surface-card p-3 sm:p-4 shadow-sm">
-        <h2 id="filter-heading" className="sr-only">Dashboard filters</h2>
-
-        <div className="inline-flex rounded-lg bg-surface-inset p-1" role="tablist" aria-label="Pick target">
-          {(["all", "spread", "total"] as const).map((t) => {
-            const label = t === "all" ? "All Picks" : t === "spread" ? "Spreads" : "Totals";
-            return (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={targetFilter === t}
-                onClick={() => setTargetFilter(t)}
-                className={clsx(
-                  "rounded-md px-3 sm:px-3.5 py-1 text-xs font-medium transition-colors",
-                  targetFilter === t ? "bg-surface-card text-ink shadow-sm" : "text-ink-muted hover:text-ink",
-                )}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-      </section>
-
-      {/* Weekly breakdown: mobile cards and desktop table */}
-      <section aria-labelledby="weekly-heading" className="rounded-xl border border-line bg-surface-card overflow-hidden shadow-sm">
+      <section aria-labelledby="weekly-heading" className="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
         <h2 id="weekly-heading" className="sr-only">Weekly accuracy breakdown</h2>
-
-        <div className="sm:hidden divide-y divide-line">
+        <div className="divide-y divide-line sm:hidden">
           {weeklyData.map((row) => (
-            <div key={row.week} className="p-3.5 space-y-2">
-              <div className="flex items-center justify-between">
-                <Link
-                  href={`/results?week=${row.week}`}
-                  className="inline-flex items-center gap-1 text-sm font-bold text-ink hover:text-accent-ink"
-                  title={`View Week ${row.week} results slate`}
-                >
-                  <span>Week {row.week}</span>
-                  <span className="text-ink-faint text-xs">→</span>
-                </Link>
-                <span className="font-mono text-xs text-ink-muted">
-                  {rateText(targetFilter === "spread" ? row.spread : targetFilter === "total" ? row.total : row.combined)}
-                </span>
+            <div key={row.week} className="space-y-2 p-3">
+              <Link href={`/results?week=${row.week}`} className="inline-flex min-h-11 items-center gap-2 rounded text-sm font-bold text-ink hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">
+                Week {row.week} <span aria-hidden>→</span>
+              </Link>
+              <div className={clsx("grid gap-2", targetFilter === "all" && "grid-cols-2")}>
+                {(["spread", "total"] as const).filter((target) => targetFilter === "all" || targetFilter === target).map((target) => (
+                  <div key={target} className="rounded-lg bg-surface-inset p-2">
+                    <p className="text-xs font-semibold text-ink-muted">{target === "spread" ? "Spread" : "Total"}</p>
+                    <p className="mt-1 flex flex-wrap justify-between gap-1 font-mono text-sm text-ink">
+                      <span>{recordText(row[target])}</span><span>{rateText(row[target])}</span>
+                    </p>
+                  </div>
+                ))}
               </div>
-              {targetFilter === "all" ? (
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {([["Spread", row.spread], ["Totals", row.total]] as const).map(([label, rec]) => (
-                    <div key={label} className="bg-surface-inset rounded-lg p-2 space-y-0.5">
-                      <div className="text-[10px] uppercase font-semibold text-ink-faint">{label}</div>
-                      <div className="flex items-center justify-between font-mono">
-                        <span className="text-ink font-medium">{recordText(rec)}</span>
-                        <span className="text-ink-muted">{rateText(rec)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-xs text-ink-muted bg-surface-inset rounded-lg px-2.5 py-1.5">
-                  <span>Record: <strong className="text-ink font-mono">{recordText(targetFilter === "spread" ? row.spread : row.total)}</strong></span>
-                  <span>Win Rate: <strong className="text-ink font-mono">{rateText(targetFilter === "spread" ? row.spread : row.total)}</strong></span>
-                </div>
-              )}
             </div>
           ))}
-          <div className="p-3.5 bg-surface-inset/80 space-y-2 border-t-2 border-line">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-ink">Season Total</span>
-              <span className="font-mono text-sm font-bold text-ink">{rateText(overall.focused)}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs text-ink-muted">
-              {targetFilter === "all" ? (
-                <>
-                  <span>Spread: <strong className="text-ink font-mono">{recordText(overall.spread)}</strong></span>
-                  <span>Total: <strong className="text-ink font-mono">{recordText(overall.total)}</strong></span>
-                </>
-              ) : (
-                <>
-                  <span>Record: <strong className="text-ink font-mono">{recordText(overall.focused)}</strong></span>
-                  <span>Win Rate: <strong className="text-ink font-mono">{rateText(overall.focused)}</strong></span>
-                </>
-              )}
-            </div>
+          <div className="space-y-1 border-t-2 border-line bg-surface-inset p-3 text-sm text-ink-muted">
+            <p className="font-semibold text-ink">Season Total</p>
+            <p>{targetFilter === "all" ? `Spread: ${recordText(overall.spread)} · Total: ${recordText(overall.total)}` : `Record: ${recordText(overall.focused)}`}</p>
+            <p>Win rate: {rateText(overall.focused)}</p>
           </div>
         </div>
-
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full min-w-[560px] text-xs tabular-nums text-left">
-            <thead className="border-b border-line bg-surface-inset text-[11px] uppercase tracking-wider text-ink-faint font-semibold">
+        <div className="hidden sm:block">
+          <table className="w-full text-left text-sm tabular-nums">
+            <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
               <tr>
-                <th scope="col" className="px-4 py-3">Week</th>
-                {targetFilter !== "total" && (
-                  <>
-                    <th scope="col" className="px-3 py-3 text-right">Spread (W-L-P)</th>
-                    <th scope="col" className="px-3 py-3 text-right">Spread Win Rate</th>
-                  </>
-                )}
-                {targetFilter !== "spread" && (
-                  <>
-                    <th scope="col" className="px-3 py-3 text-right">Total (W-L-P)</th>
-                    <th scope="col" className="px-4 py-3 text-right">Total Win Rate</th>
-                  </>
-                )}
+                <th scope="col" className="px-3 py-3">Week</th>
+                {targetFilter !== "total" && <><th scope="col" className="px-2 py-3 text-right">Spread (W-L-P)</th><th scope="col" className="px-2 py-3 text-right">Spread Win Rate</th></>}
+                {targetFilter !== "spread" && <><th scope="col" className="px-2 py-3 text-right">Total (W-L-P)</th><th scope="col" className="px-3 py-3 text-right">Total Win Rate</th></>}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {weeklyData.map((row) => (
-                <tr key={row.week} className="hover:bg-surface-inset/50 transition-colors">
-                  <td className="px-4 py-3 font-semibold text-ink">
-                    <Link
-                      href={`/results?week=${row.week}`}
-                      className="hover:text-accent-ink hover:underline"
-                      title={`View Week ${row.week} results slate`}
-                    >
-                      Week {row.week}
-                    </Link>
-                  </td>
-                  {targetFilter !== "total" && (
-                    <>
-                      <td className="px-3 py-3 text-right text-ink">{recordText(row.spread)}</td>
-                      <td className="px-3 py-3 text-right text-ink">{rateText(row.spread)}</td>
-                    </>
-                  )}
-                  {targetFilter !== "spread" && (
-                    <>
-                      <td className="px-3 py-3 text-right text-ink">{recordText(row.total)}</td>
-                      <td className="px-4 py-3 text-right text-ink">{rateText(row.total)}</td>
-                    </>
-                  )}
+                <tr key={row.week}>
+                  <th scope="row" className="px-3 text-ink">
+                    <Link href={`/results?week=${row.week}`} className="inline-flex min-h-11 items-center rounded font-semibold hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
+                  </th>
+                  {targetFilter !== "total" && <><td className="px-2 py-3 text-right">{recordText(row.spread)}</td><td className="px-2 py-3 text-right">{rateText(row.spread)}</td></>}
+                  {targetFilter !== "spread" && <><td className="px-2 py-3 text-right">{recordText(row.total)}</td><td className="px-3 py-3 text-right">{rateText(row.total)}</td></>}
                 </tr>
               ))}
             </tbody>
             <tfoot className="border-t-2 border-line bg-surface-inset font-semibold text-ink">
               <tr>
-                <td className="px-4 py-3">Season Total</td>
-                {targetFilter !== "total" && (
-                  <>
-                    <td className="px-3 py-3 text-right">{recordText(overall.spread)}</td>
-                    <td className="px-3 py-3 text-right font-mono">{rateText(overall.spread)}</td>
-                  </>
-                )}
-                {targetFilter !== "spread" && (
-                  <>
-                    <td className="px-3 py-3 text-right">{recordText(overall.total)}</td>
-                    <td className="px-4 py-3 text-right font-mono">{rateText(overall.total)}</td>
-                  </>
-                )}
+                <th scope="row" className="px-3 py-3">Season Total</th>
+                {targetFilter !== "total" && <><td className="px-2 py-3 text-right">{recordText(overall.spread)}</td><td className="px-2 py-3 text-right">{rateText(overall.spread)}</td></>}
+                {targetFilter !== "spread" && <><td className="px-2 py-3 text-right">{recordText(overall.total)}</td><td className="px-3 py-3 text-right">{rateText(overall.total)}</td></>}
               </tr>
             </tfoot>
           </table>
         </div>
       </section>
 
-      {/* Graded picks audit: captured line, stored lean, grade and price provenance */}
-      <section aria-labelledby="audit-heading" className="space-y-3">
-        <h2 id="audit-heading" className="text-sm font-semibold text-ink">Graded picks audit</h2>
-        <p className="text-xs text-ink-muted">
-          Grades use the captured selected line. Price source is an audit fact;
-          accuracy does not assume a payout.
-        </p>
-        {auditGames.length === 0 && <p role="status" className="text-xs text-ink-muted">No graded picks match these filters.</p>}
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          {auditGames.map((game) => (
-            <article key={game.gameId} className="rounded-xl border border-line bg-surface-card p-3 sm:p-4 shadow-sm">
-              <Link className="text-sm font-semibold text-ink hover:text-accent-ink" href={`/matchup/${game.gameId}`}>
-                {game.awayTeam} @ {game.homeTeam}
-              </Link>
-              <p className="mt-1 text-[11px] text-ink-faint">
-                Week {game.week} · V5 · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}
-              </p>
-              <p className="text-[11px] text-ink-faint">Original run: <code>{game.runId}</code></p>
-              {game.freezeReceiptSha256 && <p className="text-[11px] text-ink-faint">Freeze evidence SHA-256: <code>{game.freezeReceiptSha256}</code></p>}
-              <dl className="mt-2 space-y-2 text-xs">
-                {targetFilter !== "total" && game.spreadResult !== null && (
-                  <div>
-                    <dt className="text-ink-muted">Spread · captured line {decimal(game.marketSpread)}</dt>
-                    <dd className="text-ink">Forecast {decimal(game.predictedSpread)} · {game.spreadLean ?? "No stored lean"} · {game.spreadResult}</dd>
-                    <dd className="text-ink-faint">Price: {game.spreadPriceProvenance ?? "unavailable"}</dd>
-                  </div>
-                )}
-                {targetFilter !== "spread" && game.totalResult !== null && (
-                  <div>
-                    <dt className="text-ink-muted">Total · captured line {decimal(game.marketTotal)}</dt>
-                    <dd className="text-ink">Forecast {decimal(game.predictedTotal)} · {game.totalLean ?? "No stored lean"} · {game.totalResult}</dd>
-                    <dd className="text-ink-faint">Price: {game.totalPriceProvenance ?? "unavailable"}</dd>
-                  </div>
-                )}
-              </dl>
-            </article>
-          ))}
-        </div>
+      <section aria-label="Graded picks audit">
+        <Disclosure title="Graded picks audit">
+          <p className="mb-3 text-xs">Grades use the captured selected line. Price source is an audit fact; accuracy does not assume a payout.</p>
+          <label htmlFor="audit-week" className="mb-1 block text-sm font-medium text-ink">Audit week</label>
+          <select
+            id="audit-week"
+            name="audit-week"
+            value={auditWeek ?? ""}
+            onChange={(event) => setAuditWeek(Number(event.target.value))}
+            className="mb-3 min-h-11 w-full rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-accent sm:w-auto sm:text-sm"
+          >
+            {auditWeeks.map((week) => <option key={week} value={week}>Week {week}</option>)}
+          </select>
+          {auditGames.length === 0 ? (
+            <p role="status" className="text-sm">No graded {targetFilter === "all" ? "picks" : targetFilter === "spread" ? "spreads" : "totals"} in Week {auditWeek}.</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {auditGames.map((game) => <AuditGame key={game.gameId} game={game} target={targetFilter} />)}
+            </div>
+          )}
+        </Disclosure>
       </section>
-
-      <p className="text-xs text-ink-muted">
-        Click any week above to view the full game-by-game results and graded picks on the Results tab.
-      </p>
+      <p className="text-xs text-ink-muted">Select any week above to view its full game-by-game results and graded picks on the Results tab.</p>
     </div>
   );
 }

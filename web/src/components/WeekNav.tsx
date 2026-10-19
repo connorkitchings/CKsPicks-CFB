@@ -30,6 +30,7 @@ export function WeekNav({
   /** Fits the navigator into a page toolbar without changing its URL behavior. */
   compact?: boolean;
 }) {
+  const chartCompact = compact && basePath.startsWith("/charts");
   const noun = labelMode === "through-week" ? "Through Week" : "Week";
   const router = useRouter();
   const params = useSearchParams();
@@ -56,7 +57,7 @@ export function WeekNav({
   const arrow = clsx(
     "inline-flex items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
     // Compact: borderless arrows inside one bordered group, sized like the chart settings' toggles.
-    compact ? "h-7.5 w-7.5 shrink-0 text-sm hover:text-ink" : "h-9 w-9 border border-line bg-surface-card text-base",
+    chartCompact ? "h-7.5 w-7.5 shrink-0 text-sm hover:text-ink" : "h-11 w-11 shrink-0 border border-line bg-surface-card text-base",
   );
 
   return (
@@ -85,9 +86,9 @@ export function WeekNav({
           onChange={onSelect}
           className={clsx(
             "rounded-md font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent",
-            compact
+            chartCompact
               ? "min-h-7.5 bg-transparent px-1.5 text-xs font-semibold hover:bg-surface-inset"
-              : "border border-line bg-surface-card px-2 py-1 text-sm",
+              : "min-h-11 border border-line bg-surface-card px-2 py-1 text-base sm:text-sm",
           )}
         >
           {weeks.map((w) => (

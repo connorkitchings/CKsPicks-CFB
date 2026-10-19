@@ -81,7 +81,7 @@ const canShareFiles = () =>
 const canCopyImages = () => typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write);
 
 const buttonClass =
-  "inline-flex items-center rounded-lg border border-line bg-surface-elevated px-2.5 py-1 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink disabled:cursor-wait disabled:opacity-60";
+  "inline-flex min-h-11 items-center rounded-lg border border-line bg-surface-elevated px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent-ink disabled:cursor-wait disabled:opacity-60";
 
 /**
  * Exports the matchup as one fixed-size image (see ShareCard). The card is only
@@ -195,7 +195,7 @@ export function ShareButton({ matchup, disabled = false }: { matchup: MatchupDat
       >
         Download PNG
       </button>
-      <span role="status" aria-live="polite" className="text-[11px] text-ink-faint">
+      <span role="status" aria-live="polite" className="text-xs text-ink-muted">
         {status || (disabled ? "Sharing unavailable until matchup data lineage is verified" : "")}
       </span>
       {job && (

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function MethodologyPage() {
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8 text-sm leading-relaxed text-ink-muted">
+    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8 text-sm leading-relaxed text-ink-muted">
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
           V5 model

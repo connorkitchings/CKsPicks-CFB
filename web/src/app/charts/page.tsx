@@ -364,7 +364,7 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:py-4">
+    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:py-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
         <h1 className="text-2xl font-bold tracking-tight text-ink">Team charts</h1>
         <p className="text-xs font-medium text-ink-muted sm:text-sm">

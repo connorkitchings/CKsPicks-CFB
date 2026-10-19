@@ -1,3 +1,4 @@
+import { PageHeading } from "@/components/ui/PageHeading";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
 import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
@@ -56,7 +57,6 @@ export function SlateView({
   publicationMode,
   allowedSeasons,
   dbError = null,
-  retrospectiveRepair = false,
   displayOnlyNotice = null,
   initialSort = "kickoff",
   emptyMessage,
@@ -66,12 +66,6 @@ export function SlateView({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface-card focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-ink focus:shadow-lg"
-      >
-        Skip to main content
-      </a>
       <Header
         season={season > 0 ? season : null}
         systemName={systemName}
@@ -88,7 +82,7 @@ export function SlateView({
         }
       />
 
-      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:space-y-4 sm:py-6">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:space-y-4 sm:py-6">
         {dbError && (
           <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
             {dbError}
@@ -96,7 +90,7 @@ export function SlateView({
         )}
 
         {!dbError && season <= 0 && (
-          <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
+          <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
             {emptyMessage ??
               "No active week has been published yet. Complete the Week 0 publication workflow to load the approved schedule and market data."}
           </div>
@@ -104,6 +98,7 @@ export function SlateView({
 
         {!dbError && season > 0 && (
           <>
+            <PageHeading title={mode === "picks" ? `Week ${week} picks` : `Week ${week} results`} actions={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact /> : undefined} />
             {publicationMode === "predictions" && performance.length > 0 && (
               <ModelRecord
                 performance={performance}
@@ -125,15 +120,9 @@ export function SlateView({
             {mode === "picks" && predictionsVisible && <TopLeans games={games} record={topLeansRecord} season={season} />}
             {mode === "results" && predictionsVisible && <ResultHighlights games={games} />}
 
-            {weeks.length > 1 && (
-              <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} />
-            )}
 
-            {mode === "results" && (
-              <p className="px-1 text-xs text-ink-faint">
-                {`Final scores, model picks, and graded results for completed Week ${week} games.`}
-              </p>
-            )}
+
+
 
             {games.length === 0 ? (
               mode === "picks" ? (
@@ -165,7 +154,7 @@ export function SlateView({
                   </div>
                 </div>
               ) : (
-                <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
+                <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
                   {emptyMessage ?? `No games loaded for ${season} week ${week}.`}
                 </div>
               )

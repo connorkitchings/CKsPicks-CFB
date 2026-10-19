@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Header";
 import TeamLogo from "@/components/TeamLogo";
+import { WeekNav } from "@/components/WeekNav";
+import { PageHeading } from "@/components/ui/PageHeading";
 import {
   getAvailableWeeks,
   getCurrentWeek,
@@ -68,30 +70,12 @@ export default async function MatchupIndexPage({
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
       />
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-6">
-        <div className="space-y-1">
-          <h1 className="text-xl font-bold tracking-tight text-ink">Matchups</h1>
-          <p className="text-sm text-ink-muted">
-            Pre-game team stats for every game. Pick a game to open its breakdown.
-          </p>
-        </div>
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-6">
+        <PageHeading title="Matchups">
+          Pre-game team stats for every game. Pick a game to open its breakdown.
+        </PageHeading>
 
-        <nav aria-label="Week" className="flex flex-wrap gap-2">
-          {weeks.map((w) => (
-            <Link
-              key={w}
-              href={`/matchup?week=${w}`}
-              aria-current={w === week ? "page" : undefined}
-              className={
-                w === week
-                  ? "rounded-lg border border-accent bg-accent/15 px-3 py-1.5 text-xs font-bold text-accent-ink"
-                  : "rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent"
-              }
-            >
-              Week {w}
-            </Link>
-          ))}
-        </nav>
+        {week !== null && <WeekNav season={season} week={week} weeks={weeks} basePath="/matchup" />}
 
         {days.length === 0 ? (
           <p className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted">
@@ -100,7 +84,7 @@ export default async function MatchupIndexPage({
         ) : (
           days.map((day) => (
             <section key={day.label} aria-label={day.label} className="space-y-2">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
                 {day.label} · {day.games.length} {day.games.length === 1 ? "game" : "games"}
               </h2>
               <ul className="divide-y divide-line/60 rounded-2xl border border-line bg-surface-card shadow-sm">
@@ -108,16 +92,16 @@ export default async function MatchupIndexPage({
                   <li key={game.gameId}>
                     <Link
                       href={`/matchup/${game.gameId}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-surface-inset/50"
+                      className="flex min-h-11 items-center gap-3 px-3 py-3 hover:bg-surface-inset/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:px-4"
                     >
                       <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                         <span className="flex items-center gap-2 text-sm text-ink">
                           <TeamLogo name={game.awayTeam} px={20} />
-                          <span className="truncate">{game.awayTeam}</span>
+                          <span className="min-w-0 break-words">{game.awayTeam}</span>
                         </span>
                         <span className="flex items-center gap-2 text-sm font-semibold text-ink">
                           <TeamLogo name={game.homeTeam} px={20} />
-                          <span className="truncate">{game.homeTeam}</span>
+                          <span className="min-w-0 break-words">{game.homeTeam}</span>
                         </span>
                       </span>
                       <span className="shrink-0 text-right text-xs text-ink-muted">
