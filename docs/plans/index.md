@@ -6,6 +6,7 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [SOS/SOR as a season-release projection](2026-10-19/02-sos-sor-release-projection.md) | Strength of schedule, strength of record and wins above average computed per release in Python and served from `season_release_team_resume` | Approved October 19; implementation not started. Owner steps first: Neon cutoff read, `sos-sor-draft` branch and `dev` reset. Migration 0028 and Production readback are owner-gated. |
 | [Mobile and Week 8 Production release](2026-10-19/01-mobile-week8-production-release.md) | Deploy mobile and advance Production serving | In Progress; Preview migration 0027 applied and verified October 19. Production 0026/0027 and Week 8 activation complete; mobile deployed Ready, general Python CI still running at close; other CI jobs and live checks passed. Charts remains hidden. |
 | [Mobile web experience](2026-10-18/04-mobile-web-experience.md) | Core mobile journeys, shared controls and responsive presentation | Implemented and deployed October 19; mobile journeys and validation complete. Charts and unlinked team-history redesign excluded. |
 | [Weeks 6–7 review fixes and V5 streamline](2026-10-15/01-review-fixes-and-v5-streamline.md) | Week 8 safeguards, documentation truth and optional cleanup | In Progress; Phase 1 committed as `2807e087`; Phase 2 documentation validated, awaiting owner commit. Phase 3 is deferred. Week 8 Preview execution awaits Week 7 finals/controller inputs. |
