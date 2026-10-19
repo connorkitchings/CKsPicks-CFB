@@ -19,7 +19,6 @@ test.describe("mobile team ratings", () => {
       const first = list.getByRole("listitem").first();
       await expect(first).toContainText(entry.team);
       await expect(first.getByTestId("primary-rating")).toHaveText(`${entry.category}${entry.value}`);
-      await expect(first).toContainText("Overall uncertainty ±1.63");
     }
     await page.getByRole("button", { name: "Offense", exact: true }).click();
     await page.getByRole("searchbox", { name: "Search teams" }).fill("Appalachian State");
@@ -29,6 +28,17 @@ test.describe("mobile team ratings", () => {
     await expect(page.getByRole("status")).toContainText("No teams match");
     await page.getByRole("button", { name: "Clear search", exact: true }).last().click();
     await expect(list.getByRole("listitem")).toHaveCount(4);
+  });
+
+  test("phone cards show FBS W-L, rank-only SOR and labelled SOS without WAA", async ({ page }) => {
+    await page.goto("/ratings?period=current");
+    const texas = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
+    await expect(texas).toContainText("FBS W-L 4–0");
+    await expect(texas).toContainText("SOR #2");
+    await expect(texas).toContainText("SOS 52.6 / 58.4 / 56.5 (Played / Remaining / Full)");
+    await expect(texas).not.toContainText("WAA");
+    await expect(texas).not.toContainText("±");
+    await expect(texas).not.toContainText("81.2");
   });
 
   test("period changes preserve live search and sort and update frozen values", async ({ page }) => {
@@ -45,7 +55,7 @@ test.describe("mobile team ratings", () => {
     await expect(page.getByText(/Evidence cutoff: Sep 22, 2026/)).toBeVisible();
     await page.getByLabel("Rating period", { exact: true }).selectOption({ label: "Preseason" });
     await expect(page.getByTestId("primary-rating")).toHaveText("Offense+3.00");
-    await expect(page.getByText(/Preseason baseline priors before 2026 kickoff. Overall uncertainty/)).toBeVisible();
+    await expect(page.getByText("Preseason baseline priors before 2026 kickoff.", { exact: true })).toBeVisible();
   });
 
   for (const width of [320, 360, 390, 430, 639, 640, 768, 1024, 1280]) {
@@ -85,46 +95,53 @@ test("desktop timeline carries live filters and selected column semantics", asyn
 test.describe("résumé columns", () => {
   test.use({ viewport: { width: 1280, height: 900 } });
 
-  // Table cells in order: rank, Overall, Offense, Defense, W-L, SOR, WAA, SOS, uncertainty.
+  // Table cells in order (the team is a row header, not a cell): rank, Overall, Offense, Defense,
+  // FBS W-L, SOR, SOS Played, SOS Remaining, SOS Full.
   const rowCells = (page: import("@playwright/test").Page, team: string) =>
     page.getByRole("table").locator("tbody tr", { hasText: team }).getByRole("cell");
   const RESUME_SORT = "Résumé sort";
 
-  test("W-L, SOR, WAA and SOS render fixture values and the Elite reference links to methodology", async ({ page }) => {
+  test("table headers are ordered as specified with no uncertainty or WAA column", async ({ page }) => {
     await page.goto("/ratings");
-    await expect(page.getByRole("columnheader", { name: "W-L (vs FBS)", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Elite", exact: true })).toHaveAttribute("href", "/methodology#elite-reference");
+    const headers = page.getByRole("table").locator("thead th");
+    await expect(headers).toHaveText([
+      "#", "Team", "Overall", "Offense", "Defense", "FBS W-L", "SOR", "SOS Played", "SOS Remaining", "SOS Full",
+    ]);
+    await expect(page.getByRole("columnheader", { name: "WAA", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "Overall uncertainty" })).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "±", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "FBS W-L", exact: true })).toHaveAttribute("title", "Record against FBS opponents the period rates; FCS games are excluded.");
+    await expect(page.getByRole("columnheader", { name: "SOR", exact: true })).toHaveAttribute("title", /Strength of record rank: 1 is the strongest résumé/);
+    await expect(page.getByRole("columnheader", { name: "SOS Full", exact: true })).toHaveAttribute("title", "How often an average FBS team would lose these games, scaled to 100. Higher is a harder schedule.");
+    await expect(page.getByRole("link", { name: "elite", exact: true })).toHaveAttribute("href", "/methodology#elite-reference");
+    await expect(page.getByText("SOS is the schedule’s difficulty for an average FBS team.")).toBeVisible();
+    await expect(page.getByRole("group", { name: "SOS reference" })).toHaveCount(0);
+  });
 
+  test("FBS W-L, SOR rank and SOS render fixture values", async ({ page }) => {
+    await page.goto("/ratings");
     const texas = rowCells(page, "Texas");
+    await expect(texas.nth(1)).toHaveText("+5.50");
     await expect(texas.nth(4)).toHaveText("4–0");
-    await expect(texas.nth(5)).toHaveText("81.2 #2");
-    await expect(texas.nth(6)).toHaveText("+1.6");
-    await expect(texas.nth(7)).toHaveText("41.3 / 47.9 / 45.7");
+    await expect(texas.nth(5)).toHaveText("#2");
+    await expect(texas.nth(5)).toHaveAttribute("title", "SOR 81.2");
+    await expect(texas.nth(6)).toHaveText("52.6");
+    await expect(texas.nth(7)).toHaveText("58.4");
+    await expect(texas.nth(8)).toHaveText("56.5");
 
     const ohioState = rowCells(page, "Ohio State");
     await expect(ohioState.nth(4)).toHaveText("3–1");
-    await expect(ohioState.nth(5)).toHaveText("93.7 #1");
-    await expect(ohioState.nth(6)).toHaveText("+2.1");
+    await expect(ohioState.nth(5)).toHaveText("#1");
+    await expect(ohioState.nth(5)).toHaveAttribute("title", "SOR 93.7");
 
-    // Fewer than 3 completed FBS games: SOR and WAA are null and render as dashes.
+    // Fewer than 3 completed FBS games: SOR is null and renders as a dash with no score title.
     const southernMiss = rowCells(page, "Southern Mississippi");
     await expect(southernMiss.nth(4)).toHaveText("1–1");
     await expect(southernMiss.nth(5)).toHaveText("—");
-    await expect(southernMiss.nth(6)).toHaveText("—");
+    await expect(southernMiss.nth(5)).not.toHaveAttribute("title", /SOR/);
   });
 
-  test("the SOS reference switch changes the SOS values", async ({ page }) => {
-    await page.goto("/ratings");
-    const texas = rowCells(page, "Texas");
-    await expect(texas.nth(7)).toHaveText("41.3 / 47.9 / 45.7");
-
-    const reference = page.getByRole("group", { name: "SOS reference" });
-    await reference.getByRole("button", { name: "Average", exact: true }).click();
-    await expect(reference.getByRole("button", { name: "Average", exact: true })).toHaveAttribute("aria-pressed", "true");
-    await expect(texas.nth(7)).toHaveText("52.6 / 58.4 / 56.5");
-  });
-
-  test("the résumé sort orders rows by SOR with null SOR last", async ({ page }) => {
+  test("the résumé sort orders rows by SOR rank with null SOR last", async ({ page }) => {
     await page.goto("/ratings");
     const rows = page.getByRole("table").locator("tbody tr");
     await expect(rows.nth(0)).toContainText("Texas");
@@ -137,8 +154,18 @@ test.describe("résumé columns", () => {
     await expect(rows.nth(3)).toContainText("Southern Mississippi");
   });
 
-  // Pending: `?sort=sor` is accepted only once the page widens its accepted sort values (in progress
-  // on another task). Until that merges this test fails because the page falls back to Overall.
+  test("the résumé sort orders rows by SOS Full for the selected reference", async ({ page }) => {
+    await page.goto("/ratings");
+    const rows = page.getByRole("table").locator("tbody tr");
+    await page.getByRole("group", { name: RESUME_SORT }).getByRole("button", { name: "SOS", exact: true }).click();
+    await expect(page.getByRole("columnheader", { name: "SOS Full", exact: true })).toHaveAttribute("aria-sort", "descending");
+    // Average Full values (current period): Southern Mississippi 65.5, Appalachian State 63.8, Texas 56.5, Ohio State 53.5.
+    await expect(rows.nth(0)).toContainText("Southern Mississippi");
+    await expect(rows.nth(1)).toContainText("Appalachian State");
+    await expect(rows.nth(2)).toContainText("Texas");
+    await expect(rows.nth(3)).toContainText("Ohio State");
+  });
+
   test("?sort=sor selects the SOR sort on load and after reload", async ({ page }) => {
     await page.goto("/ratings?sort=sor");
     const rows = page.getByRole("table").locator("tbody tr");
@@ -149,6 +176,13 @@ test.describe("résumé columns", () => {
     await page.reload();
     await expect(sorButton).toHaveAttribute("aria-pressed", "true");
     await expect(rows.nth(0)).toContainText("Ohio State");
+  });
+
+  test("the removed ?sort=waa value falls back to Overall", async ({ page }) => {
+    await page.goto("/ratings?sort=waa");
+    await expect(page.getByRole("button", { name: "Overall", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("group", { name: RESUME_SORT }).getByRole("button", { name: "SOR", exact: true })).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByRole("table").locator("tbody tr").nth(0)).toContainText("Texas");
   });
 });
 
@@ -166,7 +200,7 @@ test.describe("release without résumé rows", () => {
     await page.goto("/ratings?period=no-resume");
     await expect(page.getByRole("heading", { name: "Team ratings" })).toBeVisible();
     await expect(page.getByRole("table").locator("tbody tr")).toHaveCount(4);
-    await expect(page.getByRole("columnheader", { name: "W-L (vs FBS)", exact: true })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "FBS W-L", exact: true })).toBeVisible();
 
     const texas = page.getByRole("table").locator("tbody tr", { hasText: "Texas" }).getByRole("cell");
     await expect(texas.nth(1)).toHaveText("+5.50");
@@ -174,10 +208,10 @@ test.describe("release without résumé rows", () => {
     await expect(texas.nth(5)).toHaveText("—");
     await expect(texas.nth(6)).toHaveText("—");
     await expect(texas.nth(7)).toHaveText("—");
+    await expect(texas.nth(8)).toHaveText("—");
 
     await expect(page.getByRole("group", { name: "Résumé sort" })).toBeHidden();
-    await expect(page.getByRole("group", { name: "SOS reference" })).toBeHidden();
-    await expect(page.getByRole("link", { name: "Elite", exact: true })).toBeHidden();
+    await expect(page.getByRole("link", { name: "elite", exact: true })).toBeHidden();
     expect(problems).toEqual([]);
   });
 });

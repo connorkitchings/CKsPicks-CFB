@@ -155,3 +155,15 @@ Deviations found during implementation are recorded here as dated amendments.
 5. **Bridge coefficients are derived from the pinned artifact:** slope = coef / scale, intercept = intercept − Σ slope · center, sigma = sqrt(calibration_variance). Restated values (intercept 6.5442094507, home offense 8.5067766511, home defense 9.8433322793, away offense −10.2416516547, away defense −10.9680927057, sigma 17.8226309998) match the unpublished draft's constants.
 
 Added row fields beyond this contract: `overall_rank`, `elite_reference_size`, `elite_reference_kind`, `average_reference_size`, `scheduled_games`, `sor_p`, `sor_rank`.
+
+**Clarification to amendment 2 (owner review, same day).** "Ratings only" still includes the pinned bridge's intercept and the four rating slopes, so home field is applied: for two equal teams the home side wins with probability 0.6433 and the away side 0.3567 (asserted by a real-bridge test). Only the per-game `offset_margin` feature, which is data specific to an actual matchup and not a parameter of the pinned bridge, is not applied.
+
+**2026-10-19 — display decisions (owner), after the Preview release was rehearsed.** The release data is unchanged; only what `/ratings` shows changed.
+
+1. **SOR is displayed as a rank only** (for example "#14"). The score stays in the release and in a hover title, and the SOR sort is by rank.
+2. **WAA is not displayed.** It stays in the release. The owner found it hard to understand and largely redundant with SOR and the record.
+3. **Overall uncertainty is not displayed**, in the table, on phone cards or in the footnotes. The data stays in the rating rows.
+4. **One SOS measure is shown, against the average FBS team,** in three columns: SOS Played, SOS Remaining and SOS Full. This supersedes "SOS is shown against both references, with elite primary" for the UI. The elite-reference SOS stays in the release but is not displayed. The elite reference is explained only as the yardstick for SOR. Elite SOS values run lower than average SOS values by construction (an elite team loses less often), which was the reason for the confusion.
+5. **The W-L column is labeled "FBS W-L"** (FCS games excluded).
+
+**2026-10-19 — release sequencing.** The Preview release `season-2026-ac3d6668440e1f3494ba92da` (prepared from commit `7f49dfd3`) was activated and independently read back: every value column of `predictions`, `prediction_grades` and `v5_rating_snapshots` equals the previous release's, and only release-ID-bearing identity columns differ. Because the display decisions above change web code, a candidate pinned to a later commit is prepared before Production, and that candidate is re-released on Preview first.

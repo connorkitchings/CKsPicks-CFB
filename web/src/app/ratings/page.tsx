@@ -59,7 +59,6 @@ export default async function RatingsPage({ searchParams }: {
         </p>
         <p className="mt-2 leading-relaxed">
           Game margin forecasts are derived from possession ratings through a through-2025 Ridge regression bridge with earlier-only non-offense offsets.
-          Overall uncertainty (±) is one overall rating standard deviation, narrowing smoothly as completed games provide evidence.
         </p>
       </Disclosure>
 
@@ -83,8 +82,8 @@ export default async function RatingsPage({ searchParams }: {
       {ratings[0] && (
         <p className="text-xs text-ink-muted">
           {period === "preseason"
-            ? "Preseason baseline priors before 2026 kickoff. Overall uncertainty is one overall rating standard deviation."
-            : `Evidence cutoff: ${ratings[0].cutoffUtc.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC. Overall uncertainty is one overall rating standard deviation.`}
+            ? "Preseason baseline priors before 2026 kickoff."
+            : `Evidence cutoff: ${ratings[0].cutoffUtc.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC.`}
         </p>
       )}
     </main>

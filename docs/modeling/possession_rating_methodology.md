@@ -297,8 +297,9 @@ WAA = wins - sum over completed games of p_avg,g
 - **SOS:** higher means a harder schedule. Played, Remaining and Full cover
   completed games, games after the cutoff, and all games. Elite and average
   values differ in level because an elite team wins more often, so elite values
-  run lower than average values for the same schedule. Compare values only within
-  one reference.
+  run lower than average values for the same schedule. The ratings table shows
+  only the average-team SOS; the elite-reference SOS is stored with each release
+  but not shown.
 - **SOR:** `P` is the exact probability that an elite reference team, playing this
   team's completed FBS schedule, finishes with at least this team's wins. It is
   computed as a Poisson-binomial distribution over the completed games' `p_elite,g`.
@@ -306,9 +307,11 @@ WAA = wins - sum over completed games of p_avg,g
   `overall_rank` ascending; only exactly equal values tie. `P` is stored alongside
   SOR.
 - **WAA:** wins above the expected wins of an average FBS team on the same schedule.
+  It is stored with each release but not shown in the ratings table.
 
-SOR and WAA are shown as "—" in the preseason and for any team with fewer than 3
-completed FBS games. SOS is shown from the preseason onward.
+SOR is shown as "—" in the preseason and for any team with fewer than 3 completed
+FBS games; WAA is stored as null under the same condition. SOS is shown from the
+preseason onward.
 
 W-L is reported "vs FBS". Only games against FBS opponents are counted in W-L, SOS
 and SOR, so FCS games are excluded everywhere. A game counts as completed when its
