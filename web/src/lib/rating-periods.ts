@@ -73,6 +73,9 @@ export const WEEK_GENERATIONS: Record<string, { postWeek: number; games: number;
   "2026-09-13T18:18:22.000Z": { postWeek: 2, games: 100, weeks: "0–2" },
   "2026-09-22T14:58:00.000Z": { postWeek: 3, games: 157, weeks: "0–3" },
   "2026-09-27T14:15:00.000Z": { postWeek: 4, games: 215, weeks: "0–4" },
+  "2026-10-05T00:00:00.000Z": { postWeek: 5, games: 271, weeks: "0–5" },
+  "2026-10-11T15:00:00.000Z": { postWeek: 6, games: 329, weeks: "0–6" },
+  "2026-10-18T14:00:00.000Z": { postWeek: 7, games: 388, weeks: "0–7" },
 };
 
 /**
