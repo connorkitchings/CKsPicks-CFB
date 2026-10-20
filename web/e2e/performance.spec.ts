@@ -22,6 +22,7 @@ test.describe("performance page is accuracy-only", () => {
     await expect(summary.getByRole("button", { name: /Spread/ })).toContainText("1–1–1");
     await expect(summary.getByRole("button", { name: /Totals/ })).toContainText("1–1–1");
     await expect(summary.getByText("50.0%", { exact: true })).toHaveCount(2);
+    await expect(summary.getByText("-2.4 pp vs 52.4% break-even", { exact: true })).toHaveCount(2);
     await expect(page.locator("details[open]")).toHaveCount(0);
     await expect(page.getByLabel("Audit week")).toBeHidden();
 

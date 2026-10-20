@@ -25,6 +25,9 @@ export function Header({
   status?: React.ReactNode;
 }) {
   const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
+  const hasSubrow = Boolean(
+    (publicationMode === "predictions" && systemName) || status || updatedAt,
+  );
   return (
     <header className="border-b border-line bg-surface-card/80 backdrop-blur">
       <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-2.5 sm:py-3.5`}>
@@ -49,25 +52,27 @@ export function Header({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
-          {publicationMode === "predictions" && systemName && (
-            <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-              {displaySystemName(systemName)}
-            </span>
-          )}
-          {status}
-          {updatedAt && (
-            <span>
-              Updated{" "}
-              {updatedAt.toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
-        </div>
+        {hasSubrow && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+            {publicationMode === "predictions" && systemName && (
+              <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                {displaySystemName(systemName)}
+              </span>
+            )}
+            {status}
+            {updatedAt && (
+              <span>
+                Updated{" "}
+                {updatedAt.toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

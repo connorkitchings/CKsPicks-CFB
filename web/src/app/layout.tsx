@@ -58,6 +58,7 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased scroll-smooth`}
     >
       <head>
+        <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] sm:pb-0">

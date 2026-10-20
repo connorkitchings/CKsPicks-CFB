@@ -3,6 +3,7 @@ import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
+import { bookName } from "@/lib/slate";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { ShareButton } from "./ShareButton";
 
@@ -167,8 +168,8 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             <span className="text-center text-xs font-semibold uppercase tracking-wider text-ink-muted">Total</span>
 
             <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
-            <Cell value={matchup.marketSpread} />
-            <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} />
+            <Cell value={matchup.marketSpread} book={bookName(matchup.spreadSource)} />
+            <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} book={bookName(matchup.totalSource)} />
 
             {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
               <>

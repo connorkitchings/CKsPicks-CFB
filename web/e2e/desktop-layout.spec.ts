@@ -150,4 +150,49 @@ test.describe("desktop layout at 1280px", () => {
     await expectCompactSegments(selector);
     await expectMaxHeight(selector);
   });
+
+  test("all routes render one header with theme toggle, one footer, and aligned SiteNav container widths", async ({ page }) => {
+    const routes = [
+      { path: "/", maxWidth: 1152 }, // max-w-6xl
+      { path: "/results", maxWidth: 1152 },
+      { path: "/ratings", maxWidth: 1024 }, // max-w-5xl
+      { path: "/performance", maxWidth: 1024 },
+      { path: "/matchup", maxWidth: 1024 },
+      { path: "/matchup/1", maxWidth: 1024 },
+      { path: "/charts", maxWidth: 1152 },
+      { path: "/methodology", maxWidth: 896 }, // max-w-4xl
+    ];
+
+    for (const route of routes) {
+      await page.goto(route.path);
+      if (route.path === "/") {
+        const ttfbMs = await page.evaluate(() => {
+          const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+          return nav ? nav.responseStart - nav.requestStart : 0;
+        });
+        expect(ttfbMs, "/ TTFB ms vs ~2.1s baseline").toBeLessThan(2100);
+      }
+      await expect(page.getByRole("banner"), `${route.path} header`).toHaveCount(1);
+      await expect(page.getByRole("contentinfo"), `${route.path} footer`).toHaveCount(1);
+      await expect(page.getByRole("navigation", { name: "Main navigation" }), `${route.path} nav`).toHaveCount(1);
+
+      const navInnerWidth = await page
+        .getByRole("navigation", { name: "Main navigation" })
+        .locator(":scope > div")
+        .evaluate((el) => parseFloat(getComputedStyle(el).maxWidth));
+      expect(navInnerWidth, `${route.path} SiteNav max-width`).toBe(route.maxWidth);
+    }
+
+    // Verify color-scheme and bg-surface-elevated token resolution in light and dark modes on /matchup/1.
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/matchup/1");
+    const allMatchupsLink = page.getByRole("link", { name: /^All Week \d+ matchups$/ });
+    await expect(allMatchupsLink).toBeVisible();
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
+    await expect(allMatchupsLink).toHaveCSS("background-color", "rgb(255, 255, 255)");
+
+    await page.evaluate(() => document.documentElement.classList.add("dark"));
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+    await expect(allMatchupsLink).toHaveCSS("background-color", "rgb(28, 25, 23)");
+  });
 });

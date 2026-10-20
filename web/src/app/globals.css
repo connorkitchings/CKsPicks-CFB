@@ -20,8 +20,10 @@
  *   edge-*      magnitude signal for model-versus-market comparisons
  */
 :root {
+  color-scheme: light;
   --surface-page: #fafafa; /* zinc-50 */
   --surface-card: #ffffff;
+  --surface-elevated: #ffffff;
   --surface-inset: #f4f4f5; /* zinc-100 — chips, hover fills */
   --line: #e4e4e7; /* zinc-200 */
   --line-strong: #d4d4d8; /* zinc-300 */
@@ -47,8 +49,10 @@
 }
 
 html.dark {
+  color-scheme: dark;
   --surface-page: #000000;
   --surface-card: #09090b; /* zinc-950 */
+  --surface-elevated: #1c1917; /* stone-900 — elevated controls */
   --surface-inset: #18181b; /* zinc-900 */
   --line: #27272a; /* zinc-800 */
   --line-strong: #3f3f46; /* zinc-700 */
@@ -76,6 +80,7 @@ html.dark {
 @theme inline {
   --color-surface-page: var(--surface-page);
   --color-surface-card: var(--surface-card);
+  --color-surface-elevated: var(--surface-elevated);
   --color-surface-inset: var(--surface-inset);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
@@ -103,6 +108,7 @@ html.dark {
 }
 
 html {
+  color-scheme: light;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -110,6 +116,16 @@ body {
   background: var(--surface-page);
   color: var(--ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 /* Eliminate 300ms touch delay on mobile interactions */

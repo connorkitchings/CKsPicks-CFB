@@ -165,6 +165,8 @@ test.describe("matchup page (fixture mode)", () => {
     const grid = page.getByTestId("forecast-grid");
     await expect(grid.getByText("Spread", { exact: true })).toBeVisible();
     await expect(grid.getByText("Total", { exact: true })).toBeVisible();
+    await expect(grid.getByText("DraftKings", { exact: true })).toBeVisible();
+    await expect(grid.getByText("Bovada", { exact: true })).toBeVisible();
     // Explanations and legends live below the tables, not above them.
     const lastTable = await page.getByRole("table").last().boundingBox();
     const notes = await page.getByTestId("matchup-notes").boundingBox();
@@ -304,14 +306,12 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("no page footer shows a GitHub source link", async ({ page }) => {
-    for (const url of ["/", "/results", "/ratings", "/performance", "/matchup", "/matchup/1"]) {
+    for (const url of ["/", "/results", "/ratings", "/performance", "/matchup", "/matchup/1", "/methodology"]) {
       await page.goto(url);
       await expect(page.locator("a[href*='github.com']")).toHaveCount(0);
-      // Ratings and Performance render no footer; the rest must not list a source.
-      if (await page.locator("footer").count()) {
-        await expect(page.locator("footer a")).toHaveCount(0);
-        await expect(page.locator("footer")).not.toContainText(/Source:|github\.com/);
-      }
+      await expect(page.locator("footer")).toHaveCount(1);
+      await expect(page.locator("footer a")).toHaveCount(0);
+      await expect(page.locator("footer")).not.toContainText(/Source:|github\.com/);
     }
   });
 

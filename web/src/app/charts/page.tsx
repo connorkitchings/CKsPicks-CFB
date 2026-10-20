@@ -52,6 +52,7 @@ import {
 } from "@/test/fixtures/charts";
 import { ChartLink } from "@/components/charts/ChartLink";
 import { ChartsView, type ChartPayload } from "@/components/charts/ChartsView";
+import { Header, Footer } from "@/components/Header";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { segmentedGroupClass, segmentedItemClass } from "@/components/ui/SegmentedControl";
 import { WeekNav } from "@/components/WeekNav";
@@ -325,14 +326,25 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
   }
 
   return (
-    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:py-4">
-      <PageHeading title="Team charts">
-        {season}
-        <span className="text-ink-faint"> · </span>
-        {CHART_REGISTRY[kind].population}
-      </PageHeading>
-      {tabs}
-      {body}
-    </main>
+    <div className="flex min-h-screen flex-col">
+      <Header
+        season={season}
+        systemName={null}
+        updatedAt={null}
+        publicationMode={publicationScope.mode}
+        allowedSeasons={publicationScope.allowedSeasons}
+        containerWidth="max-w-6xl"
+      />
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:py-4">
+        <PageHeading title="Team charts">
+          {season}
+          <span className="text-ink-faint"> · </span>
+          {CHART_REGISTRY[kind].population}
+        </PageHeading>
+        {tabs}
+        {body}
+      </main>
+      <Footer publicationMode={publicationScope.mode} containerWidth="max-w-6xl" />
+    </div>
   );
 }

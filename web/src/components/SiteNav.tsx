@@ -115,7 +115,7 @@ export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) 
 
   // Align navigation container with page content widths on desktop.
   const isSlate = pathname === "/" || pathname.startsWith("/results") || (chartsEnabled && pathname.startsWith("/charts"));
-  const wide = pathname.startsWith("/matchup");
+  const wide = pathname.startsWith("/matchup") || pathname.startsWith("/ratings") || pathname.startsWith("/performance");
   const containerClass = isSlate ? "sm:max-w-6xl" : wide ? "sm:max-w-5xl" : "sm:max-w-4xl";
 
   return (

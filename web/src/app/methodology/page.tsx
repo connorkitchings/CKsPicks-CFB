@@ -1,9 +1,19 @@
 import Link from "next/link";
+import { Header, Footer } from "@/components/Header";
 import { PageHeading } from "@/components/ui/PageHeading";
+import { publicationScope } from "@/lib/publication";
 
 export default function MethodologyPage() {
   return (
-    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8 text-sm leading-relaxed text-ink-muted">
+    <div className="flex min-h-screen flex-col">
+      <Header
+        season={publicationScope.season}
+        systemName={null}
+        updatedAt={null}
+        publicationMode={publicationScope.mode}
+        allowedSeasons={publicationScope.allowedSeasons}
+      />
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8 text-sm leading-relaxed text-ink-muted">
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
           V5 model
@@ -94,6 +104,8 @@ export default function MethodologyPage() {
         </Link>
         .
       </p>
-    </main>
+      </main>
+      <Footer publicationMode={publicationScope.mode} />
+    </div>
   );
 }

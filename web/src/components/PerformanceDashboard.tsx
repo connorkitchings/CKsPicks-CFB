@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { PerformanceDetail, GradedGamePick } from "@/lib/v5";
 import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy";
+import { BREAK_EVEN_PCT } from "@/lib/slate";
+import TeamLogo from "@/components/TeamLogo";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -17,6 +19,11 @@ const recordText = (record: Record3) => `${record.win}–${record.loss}–${reco
 const rateText = (record: Record3) => record.winRate === null ? "—" : `${record.winRate.toFixed(1)}%`;
 const decimal = (value: number | null, suffix = "") => value === null ? "—" : `${value.toFixed(1)}${suffix}`;
 const graded = (record: Record3) => record.win + record.loss + record.push;
+const breakEvenText = (record: Record3) => {
+  if (record.winRate === null) return `${BREAK_EVEN_PCT}% break-even`;
+  const delta = record.winRate - BREAK_EVEN_PCT;
+  return `${delta >= 0 ? "+" : ""}${delta.toFixed(1)} pp vs ${BREAK_EVEN_PCT}% break-even`;
+};
 
 function merge(a: Record3, b: Record3): Record3 {
   const win = a.win + b.win;
@@ -31,7 +38,17 @@ function recordFor(games: GradedGamePick[], pick: (game: GradedGamePick) => Accu
 function AuditGame({ game, target }: { game: GradedGamePick; target: TargetFilter }) {
   return (
     <article data-testid="audit-game" data-game-id={game.gameId}>
-      <Disclosure title={<span className="break-words">{game.awayTeam} @ {game.homeTeam}</span>}>
+      <Disclosure
+        title={
+          <span className="inline-flex flex-wrap items-center gap-1.5 break-words">
+            <TeamLogo name={game.awayTeam} px={16} />
+            <span>{game.awayTeam}</span>
+            <span className="text-ink-muted">@</span>
+            <TeamLogo name={game.homeTeam} px={16} />
+            <span>{game.homeTeam}</span>
+          </span>
+        }
+      >
         <p className="mb-2 text-xs">Week {game.week} · V5 · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}</p>
         <MatchupButton gameId={game.gameId} />
         <p className="mt-2 break-words text-xs">Original run: <code className="break-all">{game.runId}</code></p>
@@ -117,7 +134,10 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
               <span className="mt-2 flex flex-wrap justify-between gap-1 text-sm text-ink-muted">
                 <span>Win rate</span><strong className="font-mono text-ink">{rateText(record)}</strong>
               </span>
-              <span className="mt-1 block text-xs text-ink-muted">{graded(record)} graded picks</span>
+              <span className="mt-1 flex flex-wrap justify-between gap-1 text-xs text-ink-muted">
+                <span>{graded(record)} graded picks</span>
+                <span className="font-mono">{breakEvenText(record)}</span>
+              </span>
             </button>
           );
         })}
@@ -150,7 +170,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
           fill
           className="sm:w-fit"
         />
-        <p className="text-xs text-ink-muted">{overall.label}: {recordText(overall.focused)} · {rateText(overall.focused)} · {graded(overall.focused)} graded. Pushes excluded from rate.</p>
+        <p className="text-xs text-ink-muted">{overall.label}: {recordText(overall.focused)} · {rateText(overall.focused)} ({BREAK_EVEN_PCT}% break-even) · {graded(overall.focused)} graded. Pushes excluded from rate.</p>
       </section>
 
       <section aria-labelledby="weekly-heading" className="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">

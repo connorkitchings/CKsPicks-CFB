@@ -1,5 +1,7 @@
 import { getV5PerformanceDetail } from "@/lib/v5";
 import { mobilePerformanceFixture } from "@/test/fixtures/performance-mobile";
+import { publicationScope } from "@/lib/publication";
+import { Header, Footer } from "@/components/Header";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 import { loadPerformanceRecord } from "@/lib/performance-sections";
@@ -16,25 +18,36 @@ export default async function PerformancePage() {
     );
   const title = "2026 V5 cumulative record";
   return (
-    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">2026 · V5</p>
-        <PageHeading title="Season record & performance">
-          One continuous V5 record from Week 0 onward, with spreads and totals reported separately.
-        </PageHeading>
-      </div>
-      {record.status === "unavailable" ? (
-        <StatusCard title={title} message="Performance data is temporarily unavailable." />
-      ) : record.value.selectedGames === 0 ? (
-        <StatusCard title={title} message="No V5 weeks are selected." />
-      ) : record.value.gradedGames.length === 0 ? (
-        <StatusCard title={title} message="The selected runs have games, but no grades are available yet." />
-      ) : <PerformanceDashboard data={record.value} title={title} />}
-      <p className="text-xs leading-relaxed text-ink-muted">
-        Win rate excludes pushes. A game without an eligible market line does not count as a win or loss.
-        Grades use captured selected lines and forecasts use point-in-time inputs.
-      </p>
-    </main>
+    <div className="flex min-h-screen flex-col">
+      <Header
+        season={publicationScope.season}
+        systemName={null}
+        updatedAt={null}
+        publicationMode={publicationScope.mode}
+        allowedSeasons={publicationScope.allowedSeasons}
+        wide
+      />
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">2026 · V5</p>
+          <PageHeading title="Season record & performance">
+            One continuous V5 record from Week 0 onward, with spreads and totals reported separately.
+          </PageHeading>
+        </div>
+        {record.status === "unavailable" ? (
+          <StatusCard title={title} message="Performance data is temporarily unavailable." />
+        ) : record.value.selectedGames === 0 ? (
+          <StatusCard title={title} message="No V5 weeks are selected." />
+        ) : record.value.gradedGames.length === 0 ? (
+          <StatusCard title={title} message="The selected runs have games, but no grades are available yet." />
+        ) : <PerformanceDashboard data={record.value} title={title} />}
+        <p className="text-xs leading-relaxed text-ink-muted">
+          Win rate excludes pushes. A game without an eligible market line does not count as a win or loss.
+          Grades use captured selected lines and forecasts use point-in-time inputs.
+        </p>
+      </main>
+      <Footer publicationMode={publicationScope.mode} wide />
+    </div>
   );
 }
 

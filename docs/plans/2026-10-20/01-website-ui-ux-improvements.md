@@ -1,10 +1,10 @@
 # Website UI/UX Foundations, Unified App Shell, Matchup Hero & Performance Benchmark
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-10-20
 - **Planner:** Sol
-- **Approval source:** Owner plan judgment and explicit Terra implementation authorization in chat on 2026-10-20
-- **Implementation log:** `session_logs/2026-10-20/02-website-ui-ux-implementation.md` (pending)
+- **Approval source:** Owner plan judgment and explicit Terra implementation + amendment authorization in chat on 2026-10-20
+- **Implementation log:** `session_logs/2026-10-20/02-website-ui-ux-implementation.md`
 - **Commit policy:** Separate plan commit or commit with implementation **only after** the Week 8 market refresh release is completed (see Release coupling gate below)
 
 ## Goal and acceptance
@@ -172,4 +172,9 @@ Run all checks below before marking the contract `Implemented`:
 - **Approval and resume gate:** Approved with changes by the owner on 2026-10-20. Ready for a fresh Terra implementation session using `.agent/skills/implement-plan/` with this exact path (`docs/plans/2026-10-20/01-website-ui-ux-improvements.md`).
 - **Release coupling reminder:** Terra may implement and validate locally in an isolated branch/worktree or after confirming the Week 8 market refresh release status, but **no commit may land on `dev`/`main` between `run_season.py prepare` and `run_season.py release`**.
 - **User-controlled commit policy:** Propose the commit message at the end of the session; the owner executes git commit/push operations manually.
-- **Amendments:** None yet. Mechanical amendments may proceed only if architecture, interfaces, scope, and acceptance remain unchanged; any material conflict returns to Sol.
+- **Amendments:**
+  - **2026-10-20 (Owner-approved pre-implementation reconciliation):**
+    1. **Task 2 (WS1 — App shell):** `SlateView.tsx` and `matchup/[gameId]/page.tsx` pass per-request props to `<Header>` (`publicationMode` including `/?mode=market`, `systemName`, `status={<SlateStatusRow ... />}`, and `updatedAt={matchup.updatedAt}`), which `publication.spec.ts` and `matchup.spec.ts` assert and Next.js `RootLayout` cannot access directly. Keep `<Header>` and `<Footer>` in `SlateView.tsx`, `matchup/page.tsx`, and `matchup/[gameId]/page.tsx`, and add `<Header>` (with `ThemeToggle`) and `<Footer>` directly to the 4 routes that lack them (`ratings/page.tsx`, `performance/page.tsx`, `charts/page.tsx`, `methodology/page.tsx`), plus align `SiteNav.tsx` container widths (`sm:max-w-6xl` on `/`, `/results`, `/charts`; `sm:max-w-5xl` on `/ratings`, `/performance`, `/matchup*`; `sm:max-w-4xl` on `/methodology`).
+    2. **Task 3 (WS4 — Matchup):** Prior commits `2eda0767`, `16e3d9e7`, and `32efe355` (enforced by `web/e2e/matchup.spec.ts`) already place `offenseRank`/`defenseRank` in `UnitMatchupTable` headers, prohibit model-minus-market edge numbers in `MatchupHero`, and reserve `"Biggest mismatches"` for the exported `ShareCard` (`expect(page.getByText("Biggest mismatches")).toHaveCount(0)` on the live page). Scope Task 3 to wiring `book` (`spreadSource` / `totalSource` formatted via `formatBook`) on the Market Spread and Market Total `Cell`s in `MatchupHero.tsx`.
+    3. **Task 4 (WS5 — Performance):** `web/e2e/performance.spec.ts` explicitly bans the string `-110` on `/performance` and asserts exact text `Forecast 50.0 · over · push` inside `AuditGame`. Display `52.4% break-even` (and signed percentage-point delta vs. `52.4%`) on the Spread/Totals summary cards and weekly caption without the string `-110`, and add `TeamLogo` icons to the `AuditGame` disclosure summary while preserving the exact `<dd>` strings.
+    4. **Task 5 (WS6 — Charts combobox):** `TeamHighlightCombobox.tsx` was already rewritten in commit `5daebcf9` and has no `caretColor` or `caret-transparent` mismatch in `web/src/`; verify zero hydration warnings on `/charts` (`CFB_CHARTS_ENABLED=1`) during validation.
