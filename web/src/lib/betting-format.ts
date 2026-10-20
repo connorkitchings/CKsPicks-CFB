@@ -9,6 +9,22 @@ export function signedSpread(n: number): string {
   return n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1);
 }
 
+/**
+ * Home-team spread for a home-margin forecast (+home wins): -margin, so a model
+ * that sees the home team winning by 4.2 reads "-4.2", the same sign convention as
+ * the market line. Null stays null; margins that round to zero are a pick'em.
+ */
+export function homeSpreadFromMargin(margin: number | null): number | null {
+  if (margin === null) return null;
+  return Math.abs(margin) < 0.05 ? 0 : -margin;
+}
+
+/** "Jacksonville State -4.2" / "Jacksonville State PK" for a home-team spread; "—" when unknown. */
+export function homeSpreadText(homeTeam: string, homeSpread: number | null): string {
+  if (homeSpread === null) return "—";
+  return `${homeTeam} ${homeSpread === 0 ? "PK" : signedSpread(homeSpread)}`;
+}
+
 /** Favorite-relative spread view: the team the number favors plus its line. */
 export type SpreadView = { team: string; line: number } | "PK" | null;
 

@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  homeSpreadFromMargin,
+  homeSpreadText,
   signedSpread,
   marketSpreadView,
   modelSpreadView,
@@ -91,4 +93,20 @@ test("total bet labels direction and line", () => {
   assert.equal(totalBetLabel("under", 48), "↓ Under 48.0");
   assert.equal(totalBetLabel(null, 48), null);
   assert.equal(totalBetLabel("over", null), null);
+});
+
+test("a home margin reads as the home spread with the market's sign convention", () => {
+  assert.equal(homeSpreadFromMargin(4.2), -4.2);
+  assert.equal(homeSpreadFromMargin(-6), 6);
+  assert.equal(homeSpreadFromMargin(0.04), 0);
+  assert.equal(homeSpreadFromMargin(null), null);
+  // Same number the model view shows for the favorite.
+  assert.equal(homeSpreadFromMargin(10), (modelSpreadView(HOME, AWAY, 10) as { line: number }).line);
+});
+
+test("homeSpreadText names the home team and handles pick'em and missing values", () => {
+  assert.equal(homeSpreadText(HOME, -4.2), "Georgia -4.2");
+  assert.equal(homeSpreadText(HOME, 6), "Georgia +6.0");
+  assert.equal(homeSpreadText(HOME, 0), "Georgia PK");
+  assert.equal(homeSpreadText(HOME, null), "—");
 });

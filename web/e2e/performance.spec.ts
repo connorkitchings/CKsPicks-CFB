@@ -60,7 +60,9 @@ test.describe("performance page is accuracy-only", () => {
     await expect(game.getByText("Forecast 50.0 · over · push", { exact: true })).toBeVisible();
     await target(page).getByRole("button", { name: "Spreads", exact: true }).click();
     await expect(page.getByLabel("Audit week")).toHaveValue("1");
-    await expect(game.getByText("Spread · captured line -3.5", { exact: true })).toBeVisible();
+    await expect(game.getByText("Spread · captured line Alabama -3.5", { exact: true })).toBeVisible();
+    // The forecast is a +5.0 home margin; it reads as the home spread, signed like the line.
+    await expect(game.getByText("Forecast Alabama -5.0 · home · loss", { exact: true })).toBeVisible();
   });
 
   test("every graded game remains reachable by week and exposes preserved audit facts", async ({ page }) => {

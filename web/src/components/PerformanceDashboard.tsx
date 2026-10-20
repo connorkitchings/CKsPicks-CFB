@@ -9,6 +9,7 @@ import { Disclosure } from "@/components/ui/Disclosure";
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { homeSpreadFromMargin, homeSpreadText } from "@/lib/betting-format";
 
 type TargetFilter = "all" | "spread" | "total";
 type Record3 = ReturnType<typeof accuracyRecord>;
@@ -40,8 +41,8 @@ function AuditGame({ game, target }: { game: GradedGamePick; target: TargetFilte
         <dl className="mt-3 space-y-3 text-sm">
           {target !== "total" && game.spreadResult !== null && (
             <div>
-              <dt className="font-semibold text-ink">Spread · captured line {decimal(game.marketSpread)}</dt>
-              <dd>Forecast {decimal(game.predictedSpread)} · {game.spreadLean ?? "No stored lean"} · {game.spreadResult}</dd>
+              <dt className="font-semibold text-ink">Spread · captured line {homeSpreadText(game.homeTeam, game.marketSpread)}</dt>
+              <dd>Forecast {homeSpreadText(game.homeTeam, homeSpreadFromMargin(game.predictedSpread))} · {game.spreadLean ?? "No stored lean"} · {game.spreadResult}</dd>
               <dd className="mt-1 text-xs">Price: {game.spreadPriceProvenance ?? "unavailable"}</dd>
             </div>
           )}
