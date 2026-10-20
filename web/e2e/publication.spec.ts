@@ -269,12 +269,10 @@ test.describe("results slate (/results)", () => {
     await expect(page.getByText("Retrospective replay", { exact: true })).toBeVisible();
   });
 
-  test("weekly record sits beside the season record; result cards show the graded pick and the model's number", async ({ page }) => {
+  test("the week record stands alone; result cards show the graded pick and the model's number", async ({ page }) => {
     await page.goto("/results");
 
     const record = page.getByRole("region", { name: "Record" });
-    // Below md the season block sits behind "Season context"; from md it shows beside the week.
-    if ((page.viewportSize()?.width ?? 1280) < 768) await shown(record.getByText("Season context", { exact: true })).click();
     await expect(shown(record.getByText("this slate · small sample"))).toBeVisible();
     await expect(shown(record.getByText("4–3–1"))).toBeVisible();
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
