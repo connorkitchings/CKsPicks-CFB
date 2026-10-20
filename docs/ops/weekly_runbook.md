@@ -137,7 +137,7 @@ git status --porcelain   # must print nothing
 **1f. Prepare from the clean tree.** Use `PRE_WEEK_CUTOFF` as the run's `--as-of`. For the live upcoming week, the forecast cutoff is the run's `--as-of`. When that week is later reconstructed, its cutoff is the pinned `PRE_WEEK_CUTOFF`. Setting both to the same value makes the published forecast and the later reconstruction agree. `--as-of` cannot be in the future, so run prepare at or after `PRE_WEEK_CUTOFF` and before the first `<NEXT_WEEK>` kickoff:
 
 ```bash
-make season-prepare WEEK=<NEXT_WEEK> AS_OF="$PRE_WEEK_CUTOFF"
+make season-prepare WEEK=<NEXT_WEEK> AS_OF="$PRE_WEEK_CUTOFF"   # add MANIFEST=<path> for a later revision of the week
 # = CFB_STORAGE_BACKEND=r2 PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh \
 #     uv run python scripts/pipeline/run_season.py prepare \
 #       --model-manifest conf/season/2026/model_manifest_v1.json \
@@ -163,6 +163,37 @@ uv run python -c "import json, sys; m = json.load(open(sys.argv[1])); print(m['r
 ```
 
 > **Two forms of the release ID.** The local folder and run manifest use the bare ID (`season-2026-...`). The database stores it prefixed with the environment (`preview-season-2026-...`, `production-season-2026-...`). `run_season.py release`/`rollback` accept either form for `--release-id` and `--expected-previous-release-id`, prepend the environment to a bare ID, and reject an ID prefixed with the other environment. `make season-release RELEASE_ID=` also accepts either form.
+
+---
+
+### Mid-week line refresh
+
+Use this to refresh the upcoming week's spreads and totals before kickoff without touching football inputs. It is market-only: every certified football input, completed-week cutoff and score exception stays byte-identical, and only the cumulative `market_quotes` version, the upcoming week's pre-week cutoff and the revision identity change.
+
+1. **Capture the upcoming week only (paid; needs owner go-ahead).** Under `scripts/ops/with_preview_env.sh`:
+   ```bash
+   uv run python scripts/data/ingest_week.py --year 2026 --week <NEXT_WEEK> --entities betting_lines
+   uv run python scripts/data/fetch_odds_api_market_quotes.py --year 2026 --week <NEXT_WEEK> --confirm   # ~2 credits
+   ```
+   Pass `--entities betting_lines`: the default is `plays,betting_lines`. No schedule, plays or historical weeks are fetched. Note the time of the last capture.
+2. **Build the revision.** Set `CUTOFF` to the last capture plus about five minutes. The builder reads stored captures (it never queries a provider), refuses to overwrite its target and registers the new quotes version:
+   ```bash
+   make season-market-revision FROM=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N>.json \
+     TO=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N+1>.json \
+     REVISION_ID=season-2026-w<NEXT_WEEK>-preview-r<N+1> CUTOFF=<ISO-8601 UTC>
+   # = ... uv run python -m scripts.pipeline.build_market_revision --from-manifest ... --to-manifest ... \
+   #       --revision-id ... --cutoff ...
+   ```
+   Run it as a module; invoking the file directly fails with `No module named 'scripts'`. Check 100% spread and total coverage for the upcoming week in the new quotes.
+3. **Commit the manifest** with `git add` of that one path, so the tree is clean.
+4. **Wait until the clock passes `CUTOFF`**; prepare rejects a future `--as-of`. Then prepare with the new manifest:
+   ```bash
+   make season-prepare WEEK=<NEXT_WEEK> AS_OF=<CUTOFF> MANIFEST=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N+1>.json
+   ```
+   All verification checks must pass. Do not commit again until the Production release is done: the candidate pins the exact code commit.
+5. **Release to Preview, check parity, then Production** exactly as in sections 2 and 3, with `EXPECTED_PREVIOUS` set to the active release. Parity against the previous release should show identical predictions, variances, ratings and completed-week grades; only upcoming-week lines and leans may differ.
+
+If other work sits uncommitted in your checkout (`prepare` and `release` reject any dirty tree, untracked files included), run prepare and release from a clean `git worktree` pinned to the manifest commit.
 
 ---
 

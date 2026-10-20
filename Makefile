@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem season-revision season-prepare season-release season-rollback
+.PHONY: help format lint test health check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -43,7 +43,8 @@ help:
 	@echo ""
 	@echo "Weekly season release (docs/ops/weekly_runbook.md; WEEK = upcoming week):"
 	@echo "  make season-revision WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
-	@echo "  make season-prepare WEEK=8 AS_OF=... [RECONSTRUCT=1]  - Prepare the candidate from a clean committed tree"
+	@echo "  make season-market-revision FROM=... TO=... REVISION_ID=... CUTOFF=...  - Market-only mid-week line refresh manifest"
+	@echo "  make season-prepare WEEK=8 AS_OF=... [MANIFEST=...] [RECONSTRUCT=1]  - Prepare the candidate from a clean committed tree"
 	@echo "  make season-release ENV=preview|production RELEASE_ID=season-2026-... PROJECTION_SHA=... EXPECTED_PREVIOUS=...|INITIAL=1"
 	@echo "  make season-rollback RELEASE_ID=... EXPECTED_PREVIOUS=... DECISION_REF=... OWNER_AUTHORIZED=1  - Production, owner credential"
 	@echo "  make weekly / publish-week / freeze-week / close-week  - Removed (legacy path); they exit with an error"
@@ -231,11 +232,22 @@ season-revision:
 	fi
 	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/build_season_revision.py --season 2026 --week $(WEEK) --environment preview --as-of $(AS_OF) --pre-week-cutoff $(PRE_WEEK_CUTOFF) --pipeline-run-id $(RUN_ID) $(if $(DRY),--dry-run,)
 
+# Market-only line refresh: reuses every certified football input and changes only
+# the quotes, the target week's pre-week cutoff and the revision identity. Reads
+# stored captures; never calls a provider.
+season-market-revision:
+	@if [ -z "$(FROM)" ] || [ -z "$(TO)" ] || [ -z "$(REVISION_ID)" ] || [ -z "$(CUTOFF)" ]; then \
+		echo "Usage: make season-market-revision FROM=<certified revision manifest> TO=<new manifest path> REVISION_ID=<id> CUTOFF=<ISO-8601 UTC, last capture + ~5 min>" >&2; exit 1; \
+	fi
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python -m scripts.pipeline.build_market_revision --from-manifest $(FROM) --to-manifest $(TO) --revision-id $(REVISION_ID) --cutoff $(CUTOFF)
+
+# MANIFEST defaults to the week's first revision (revision_manifest_w<WEEK>_v1.json);
+# pass MANIFEST= for a later one, such as a market-only line refresh.
 season-prepare:
 	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ]; then \
-		echo "Usage: make season-prepare WEEK=<upcoming week> AS_OF=<PRE_WEEK_CUTOFF> [RECONSTRUCT=1] (clean committed tree required)" >&2; exit 1; \
+		echo "Usage: make season-prepare WEEK=<upcoming week> AS_OF=<PRE_WEEK_CUTOFF> [MANIFEST=<revision manifest>] [RECONSTRUCT=1] (clean committed tree required)" >&2; exit 1; \
 	fi
-	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/run_season.py prepare --model-manifest conf/season/2026/model_manifest_v1.json --revision-manifest conf/season/2026/revision_manifest_w$(WEEK)_v1.json --through-week $$(( $(WEEK) - 1 )) --next-week $(WEEK) $(if $(RECONSTRUCT),--reconstruct-next-week,) --as-of $(AS_OF) --output $(SEASON_OUTPUT) --environment preview
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/run_season.py prepare --model-manifest conf/season/2026/model_manifest_v1.json --revision-manifest $(or $(MANIFEST),conf/season/2026/revision_manifest_w$(WEEK)_v1.json) --through-week $$(( $(WEEK) - 1 )) --next-week $(WEEK) $(if $(RECONSTRUCT),--reconstruct-next-week,) --as-of $(AS_OF) --output $(SEASON_OUTPUT) --environment preview
 
 season-release:
 	@if [ "$(ENV)" != "preview" ] && [ "$(ENV)" != "production" ] || [ -z "$(RELEASE_ID)" ] || [ -z "$(PROJECTION_SHA)" ] || { [ -z "$(EXPECTED_PREVIOUS)" ] && [ -z "$(INITIAL)" ]; }; then \
