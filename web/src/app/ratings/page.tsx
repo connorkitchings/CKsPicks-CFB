@@ -1,5 +1,7 @@
+import { getTeamSeasonRoster } from "@/lib/chart-queries";
+import type { RosterRow } from "@/lib/charts";
 import { getRatingPeriods, getWeeklyRatings, type PeriodMeta, type Rating, type RatingPeriod } from "@/lib/v5";
-import { ratingsFixture } from "@/test/fixtures/ratings";
+import { ratingsFixture, ratingsRosterFixture } from "@/test/fixtures/ratings";
 import { parseRatingsSort } from "@/lib/sos-rank";
 import { publicationScope } from "@/lib/publication";
 import { Header, Footer } from "@/components/Header";
@@ -10,16 +12,18 @@ import { RatingsView } from "@/components/ratings/RatingsView";
 export const revalidate = 300;
 
 export default async function RatingsPage({ searchParams }: {
-  searchParams: Promise<{ q?: string; sort?: string; dir?: string; season?: string; week?: string; period?: string }>;
+  searchParams: Promise<{ q?: string; conf?: string; sort?: string; dir?: string; season?: string; week?: string; period?: string }>;
 }) {
   const params = await searchParams;
   const { sort, dir } = parseRatingsSort(params.sort, params.dir);
   const query = (params.q ?? "").trim().slice(0, 80);
+  const conference = (params.conf ?? "all").trim().slice(0, 40) || "all";
   const requestedSeason = params.season ? Number(params.season) : 2026;
   const season = Number.isInteger(requestedSeason) && requestedSeason > 0 ? requestedSeason : 2026;
   const requestedPeriod = params.period ?? params.week ?? "current";
 
   let ratings: Rating[] = [];
+  let roster: RosterRow[] = [];
   let period: RatingPeriod = "current";
   let periodMeta: PeriodMeta = {
     id: "current",
@@ -32,13 +36,19 @@ export default async function RatingsPage({ searchParams }: {
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
     ({ ratings, period, periodMeta, timeline } = ratingsFixture(requestedPeriod));
+    roster = ratingsRosterFixture;
   } else {
     try {
-      const result = await getWeeklyRatings(season, requestedPeriod);
+      const [result, loadedTimeline, loadedRoster] = await Promise.all([
+        getWeeklyRatings(season, requestedPeriod),
+        getRatingPeriods(season),
+        getTeamSeasonRoster(season).catch(() => null),
+      ]);
       ratings = result.ratings;
       period = result.period;
       periodMeta = result.periodMeta;
-      timeline = await getRatingPeriods(season);
+      timeline = loadedTimeline;
+      roster = loadedRoster ?? [];
     } catch (error) {
       console.error("V5 ratings query failed", error);
       unavailable = true;
@@ -81,11 +91,13 @@ export default async function RatingsPage({ searchParams }: {
             period={period}
             timeline={timeline}
             ratings={ratings}
+            roster={roster}
             periodMeta={periodMeta}
             season={season}
             initialSort={sort}
             initialDirection={dir}
             initialQuery={query}
+            initialConference={conference}
           />
         )}
 

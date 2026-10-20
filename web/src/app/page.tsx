@@ -168,6 +168,7 @@ export default async function Home({
       weeks={weeks}
       basePath="/"
       games={games}
+      roster={data.roster}
       performance={data.performance}
       topLeansRecord={biggestEdges}
       systemName={data.systemName}

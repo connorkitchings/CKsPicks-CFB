@@ -26,17 +26,17 @@ function BetCell({ game, kind, results }: {
   const missingLine = kind === "spread" ? game.homeTeamSpreadLine === null : game.totalLine === null;
   return (
     <div className="min-w-0 px-3 py-2.5">
-      <div className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-ink-muted">
-        <span>{kind === "spread" ? "Spread" : "Total"}</span>
-        {grade ? <ResultBadge grade={grade} /> : results && <span>Ungraded</span>}
+      <div className="mb-1 flex items-center justify-between gap-1.5 text-xs font-medium text-ink-muted">
+        <span className="uppercase tracking-wider">{kind === "spread" ? "Spread" : "Total"}</span>
+        {grade ? <ResultBadge grade={grade} /> : results ? <span>Ungraded</span> : lean?.source ? <span className="truncate text-ink-muted">{lean.source}</span> : null}
       </div>
       {lean ? <>
-        <p data-pick className={clsx("break-words text-sm font-semibold", results ? "text-ink" : "text-accent-ink")}>{lean.pick}</p>
-        <p className="mt-1 flex flex-wrap gap-x-1 text-sm tabular-nums text-ink-muted">
-          <span>Model: <span className="font-medium text-ink">{modelNumber(lean)}</span></span>
-          <span className={clsx("font-medium", edgeTone(lean.edge, kind))}>(+{lean.edge.toFixed(1)})</span>
+        <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}>{lean.pick}</p>
+        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums text-ink-muted">
+          <span>Model: <span className="font-mono font-medium text-ink">{modelNumber(lean)}</span></span>
+          <span className={clsx("font-mono font-semibold", edgeTone(lean.edge, kind))}>(+{lean.edge.toFixed(1)})</span>
         </p>
-        {(lean.source || cover) && (
+        {results && (lean.source || cover) && (
           <p className="mt-0.5 text-xs text-ink-muted">
             {[lean.source, cover].filter(Boolean).join(" · ")}
           </p>

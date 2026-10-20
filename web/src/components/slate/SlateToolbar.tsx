@@ -8,6 +8,9 @@ export type SlateLayout = "grid" | "list";
 export function SlateToolbar<T extends string>({
   query,
   onQueryChange,
+  conference = "all",
+  onConferenceChange,
+  conferences = [],
   sort,
   onSortChange,
   sortLabels,
@@ -17,6 +20,9 @@ export function SlateToolbar<T extends string>({
 }: {
   query: string;
   onQueryChange: (value: string) => void;
+  conference?: string;
+  onConferenceChange?: (value: string) => void;
+  conferences?: readonly string[];
   sort: T;
   onSortChange: (value: T) => void;
   sortLabels: Record<T, string>;
@@ -25,23 +31,42 @@ export function SlateToolbar<T extends string>({
   onViewChange: (value: SlateLayout) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm">
+    <div className="flex items-center gap-1.5 rounded-xl border border-line bg-surface-card p-2 shadow-sm sm:flex-wrap sm:gap-2">
       <SearchField
         id="slate-search"
         label="Filter by team"
         placeholder="Filter by team…"
         value={query}
         onChange={onQueryChange}
-        className="min-w-0 flex-[1_1_9rem]"
+        className="min-w-0 flex-[1.2_1_0%] sm:flex-[1_1_9rem]"
       />
+      {conferences.length > 0 && onConferenceChange && (
+        <div className="min-w-0 flex-1 sm:flex-none">
+          <label htmlFor="slate-conference" className="sr-only">Filter by conference</label>
+          <select
+            id="slate-conference"
+            data-testid="conference-filter"
+            aria-label="Filter by conference"
+            value={conference}
+            onChange={(event) => onConferenceChange(event.target.value)}
+            className="min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            <option value="all">All FBS</option>
+            <option value="p4">Power Four + Notre Dame</option>
+            {conferences.map((conf) => (
+              <option key={conf} value={conf}>{conf}</option>
+            ))}
+          </select>
+        </div>
+      )}
       {predictionsVisible && (
-        <div className="min-w-0 flex-[1_1_8rem] sm:flex-none">
+        <div className="min-w-0 flex-1 sm:flex-none">
           <label htmlFor="slate-sort" className="sr-only">Sort by</label>
           <select
             id="slate-sort"
             value={sort}
             onChange={(event) => onSortChange(event.target.value as T)}
-            className="min-h-11 w-full rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:text-sm focus-visible:outline-2 focus-visible:outline-accent"
+            className="min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent"
           >
             {(Object.keys(sortLabels) as T[]).map((key) => (
               <option key={key} value={key}>{sortLabels[key]}</option>

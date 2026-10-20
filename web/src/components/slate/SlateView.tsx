@@ -8,6 +8,7 @@ import { PicksSlate } from "@/components/slate/PicksSlate";
 import { ResultsSlate } from "@/components/slate/ResultsSlate";
 import { WeekNav } from "@/components/WeekNav";
 import { weekRecord, type Tally } from "@/lib/slate";
+import type { RosterRow } from "@/lib/charts";
 import type { Game } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
 
@@ -18,6 +19,7 @@ export interface SlateViewProps {
   weeks: number[];
   basePath?: string;
   games: Game[];
+  roster?: RosterRow[];
   performance?: Performance[];
   /** Season track record over each scored week's top leans (Picks only). */
   topLeansRecord?: Tally | null;
@@ -48,6 +50,7 @@ export function SlateView({
   weeks,
   basePath = "/",
   games,
+  roster = [],
   performance = [],
   topLeansRecord = null,
   systemName = null,
@@ -161,12 +164,14 @@ export function SlateView({
             ) : mode === "picks" ? (
               <PicksSlate
                 games={games}
+                roster={roster}
                 showBetResult={showBetResult}
                 initialSort={initialSort}
               />
             ) : (
               <ResultsSlate
                 games={games}
+                roster={roster}
                 showBetResult={showBetResult}
                 initialSort={
                   initialSort === "kickoff" ? "kickoff" : "bestEdge"

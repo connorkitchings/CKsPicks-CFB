@@ -6,6 +6,13 @@ import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { PeriodMeta, Rating } from "@/lib/rating-periods";
 import {
+  buildConferenceMap,
+  conferenceOptions,
+  matchesTeamConference,
+  type ConferenceFilter,
+  type RosterRow,
+} from "@/lib/charts";
+import {
   bestFirstDirection,
   isRatingsSort,
   rankSosByTeam,
@@ -14,6 +21,7 @@ import {
   type SortDirection,
   type SosRanks,
 } from "@/lib/sos-rank";
+import { getRankBadgeClass } from "@/lib/team-stats";
 import TeamLogo from "@/components/TeamLogo";
 import { SearchField } from "@/components/ui/SearchField";
 
@@ -80,6 +88,22 @@ function sosRankLine(teamRanks: SosRanks | undefined) {
   return [teamRanks?.played, teamRanks?.remaining, teamRanks?.full].map(rankText).join(" / ");
 }
 
+function RankPill({ rank, cohort }: { rank: number | null | undefined; cohort: number }) {
+  const valid = isNumber(rank) ? rank : null;
+  if (valid === null) return <>{DASH}</>;
+  return (
+    <span
+      data-rank-tier
+      className={clsx(
+        "inline-flex h-5 min-w-5 items-center justify-center rounded px-1 font-mono text-xs tabular-nums",
+        getRankBadgeClass(valid, cohort),
+      )}
+    >
+      {rankText(valid)}
+    </span>
+  );
+}
+
 interface SortHeaderProps {
   column: RatingsSort;
   active: boolean;
@@ -114,6 +138,7 @@ function SortHeader({ column, active, direction, onSort, title }: SortHeaderProp
 
 interface RatingsViewProps {
   ratings: Rating[];
+  roster?: RosterRow[];
   periodMeta: PeriodMeta;
   period: string;
   timeline: PeriodMeta[];
@@ -121,10 +146,12 @@ interface RatingsViewProps {
   initialSort: RatingsSort;
   initialDirection: SortDirection;
   initialQuery?: string;
+  initialConference?: ConferenceFilter;
 }
 
 export function RatingsView({
   ratings,
+  roster = [],
   periodMeta,
   period,
   timeline,
@@ -132,11 +159,15 @@ export function RatingsView({
   initialSort,
   initialDirection,
   initialQuery = "",
+  initialConference = "all",
 }: RatingsViewProps) {
   const router = useRouter();
   const [sort, setSort] = useState<RatingsSort>(initialSort);
   const [direction, setDirection] = useState<SortDirection>(initialDirection);
   const [query, setQuery] = useState(initialQuery);
+  const [conference, setConference] = useState<ConferenceFilter>(initialConference);
+  const conferenceMap = useMemo(() => buildConferenceMap(roster), [roster]);
+  const conferences = useMemo(() => conferenceOptions(roster), [roster]);
   const hasResume = ratings.some((rating) => (
     isNumber(rating.wins) || isNumber(rating.sor) || isNumber(rating.sorRank) || isNumber(rating.sosFullAverage)
   ));
@@ -150,8 +181,11 @@ export function RatingsView({
     .map(({ rating }, i) => ({ rating, position: i + 1 })), [ratings, sort, direction, sosRanks]);
   const visible = useMemo(() => {
     const search = query.trim().toLowerCase();
-    return search ? ranked.filter(({ rating }) => rating.team.toLowerCase().includes(search)) : ranked;
-  }, [ranked, query]);
+    return ranked.filter(({ rating }) => {
+      if (conference !== "all" && !matchesTeamConference(conference, rating.team, conferenceMap)) return false;
+      return search ? rating.team.toLowerCase().includes(search) : true;
+    });
+  }, [ranked, query, conference, conferenceMap]);
 
   /** Picking a new column opens it best-first; picking the active column flips its direction. */
   function chooseSort(next: RatingsSort) {
@@ -171,6 +205,7 @@ export function RatingsView({
     const params = new URLSearchParams({ period: nextPeriod, sort, season: String(season) });
     if (direction !== bestFirstDirection(sort)) params.set("dir", direction);
     if (query.trim()) params.set("q", query.trim().slice(0, 80));
+    if (conference !== "all") params.set("conf", conference);
     return `/ratings?${params.toString()}`;
   }
 
@@ -214,16 +249,37 @@ export function RatingsView({
           clearLabel="Clear search"
           className="w-full sm:max-w-md"
         />
-        <div className="sm:hidden">
-          <label htmlFor="rating-sort" className="mb-1 block text-sm font-semibold text-ink">Sort by</label>
-          <select
-            id="rating-sort"
-            value={sort}
-            onChange={(event) => onSortSelect(event.target.value)}
-            className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            {RATINGS_SORTS.map((value) => <option key={value} value={value}>{sortLabels[value]}</option>)}
-          </select>
+        <div className={clsx("grid gap-2 sm:flex sm:items-center", conferences.length > 0 ? "grid-cols-2" : "grid-cols-1")}>
+          {conferences.length > 0 && (
+            <div>
+              <label htmlFor="rating-conference" className="mb-1 block text-sm font-semibold text-ink sm:sr-only">Filter by conference</label>
+              <select
+                id="rating-conference"
+                data-testid="conference-filter"
+                aria-label="Filter by conference"
+                value={conference}
+                onChange={(event) => setConference(event.target.value)}
+                className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <option value="all">All FBS</option>
+                <option value="p4">Power Four + Notre Dame</option>
+                {conferences.map((conf) => (
+                  <option key={conf} value={conf}>{conf}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="sm:hidden">
+            <label htmlFor="rating-sort" className="mb-1 block text-sm font-semibold text-ink">Sort by</label>
+            <select
+              id="rating-sort"
+              value={sort}
+              onChange={(event) => onSortSelect(event.target.value)}
+              className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {RATINGS_SORTS.map((value) => <option key={value} value={value}>{sortLabels[value]}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -238,7 +294,7 @@ export function RatingsView({
       ) : visible.length === 0 ? (
         <div role="status" className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
           <p>No teams match &ldquo;{query}&rdquo;.</p>
-          <button type="button" onClick={() => setQuery("")} className="mt-2 min-h-11 rounded-lg px-3 text-sm font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent">Clear search</button>
+          <button type="button" onClick={() => { setQuery(""); setConference("all"); }} className="mt-2 min-h-11 rounded-lg px-3 text-sm font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent">Clear search</button>
         </div>
       ) : (
         <>
@@ -249,7 +305,7 @@ export function RatingsView({
                 <li key={rating.team} className="rounded-xl border border-line bg-surface-card p-3 shadow-2xs">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-2">
-                      <span aria-label={`National rank ${position}`} className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded bg-accent-soft px-1 font-mono text-xs font-bold text-accent-ink">{position}</span>
+                      <span aria-label={`National rank ${position}`} data-rank-tier className={clsx("flex h-6 min-w-6 shrink-0 items-center justify-center rounded px-1 font-mono text-xs", getRankBadgeClass(position, ratings.length))}>{position}</span>
                       <TeamLogo name={rating.team} px={24} />
                       <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
                     </div>
@@ -298,7 +354,9 @@ export function RatingsView({
                   const teamRanks = sosRanks.get(rating.team);
                   return (
                     <tr key={rating.team}>
-                      <td className="px-2 py-3 text-center font-mono text-xs text-ink-muted">{position}</td>
+                      <td className="px-2 py-3 text-center font-mono text-xs text-ink-muted">
+                        <span data-rank-tier className={clsx("inline-flex h-5 min-w-5 items-center justify-center rounded px-1 font-mono text-xs tabular-nums", getRankBadgeClass(position, ratings.length))}>{position}</span>
+                      </td>
                       <th scope="row" className="px-2 py-3 text-left font-semibold text-ink">
                         <div className="flex items-center gap-2"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></div>
                       </th>
@@ -306,10 +364,10 @@ export function RatingsView({
                         <td key={column} className={clsx("px-2 py-3 text-right font-mono", sortedClass(sort === column))}>{ratingText(rating[scoreFields[column]])}</td>
                       ))}
                       <td className="whitespace-nowrap px-2 py-3 text-right font-mono text-ink-muted">{recordText(rating)}</td>
-                      <td title={valueTitle("SOR", rating.sor)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sor"))}>{rankText(rankFor(rating, "sor", sosRanks))}</td>
-                      <td title={valueTitle("SOS Played", sos.played)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_played"))}>{rankText(teamRanks?.played)}</td>
-                      <td title={valueTitle("SOS Remaining", sos.remaining)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_remaining"))}>{rankText(teamRanks?.remaining)}</td>
-                      <td title={valueTitle("SOS Full", sos.full)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_full"))}>{rankText(teamRanks?.full)}</td>
+                      <td title={valueTitle("SOR", rating.sor)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sor"))}><RankPill rank={rankFor(rating, "sor", sosRanks)} cohort={ratings.length} /></td>
+                      <td title={valueTitle("SOS Played", sos.played)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_played"))}><RankPill rank={teamRanks?.played} cohort={ratings.length} /></td>
+                      <td title={valueTitle("SOS Remaining", sos.remaining)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_remaining"))}><RankPill rank={teamRanks?.remaining} cohort={ratings.length} /></td>
+                      <td title={valueTitle("SOS Full", sos.full)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_full"))}><RankPill rank={teamRanks?.full} cohort={ratings.length} /></td>
                     </tr>
                   );
                 })}

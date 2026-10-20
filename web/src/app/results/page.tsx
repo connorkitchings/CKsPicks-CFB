@@ -55,6 +55,7 @@ export default async function ResultsPage({
       weeks={weeks}
       basePath="/results"
       games={games}
+      roster={data.roster}
       performance={data.performance}
       systemName={data.systemName}
       runState={firstPrediction?.runState ?? null}

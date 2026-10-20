@@ -5,6 +5,8 @@ import {
   getRunForWeek,
   type Game,
 } from "@/lib/queries";
+import { getTeamSeasonRoster } from "@/lib/chart-queries";
+import type { RosterRow } from "@/lib/charts";
 import { getV5Performance, type Performance } from "@/lib/v5";
 import { selectsV5, V5_INTENDED_UPDATE_MODEL_ID } from "@/lib/run-selection";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
@@ -40,6 +42,8 @@ export function slateSeason(params: ResolvedParams): number {
 
 export type SlateData = {
   games: Game[];
+  /** FBS teams and conferences for the conference filter; empty when the release has none. */
+  roster: RosterRow[];
   performance: Performance[];
   systemName: string | null;
   retrospectiveRepair: boolean;
@@ -64,6 +68,7 @@ export async function loadSlateData(args: {
   const { view, season, week, publicationMode } = args;
   const out: SlateData = {
     games: [],
+    roster: [],
     performance: [],
     systemName: null,
     retrospectiveRepair: false,
@@ -76,6 +81,7 @@ export async function loadSlateData(args: {
       const fx = await import("@/test/fixtures/slate");
       const bundle = view === "picks" ? fx.slatePicks() : fx.slateResults();
       out.games = bundle.games;
+      out.roster = fx.slateRosterFixture;
       out.fixtureWeek = { week: bundle.week, weeks: bundle.weeks };
       if (bundle.games[0]?.publicationMode === "predictions") {
         out.systemName = bundle.games[0].systemName;
@@ -97,14 +103,18 @@ export async function loadSlateData(args: {
         ? displayOnlyNotice(week, run.createdAt)
         : null;
       const isV5 = selectsV5(run?.modelId) || (season === 2026 && run === null);
-      [out.games, out.performance] = await Promise.all([
+      let roster: RosterRow[] | null;
+      [out.games, out.performance, roster] = await Promise.all([
         getGamesForWeek(season, week),
         isV5
           ? view === "picks"
             ? getV5Performance(season, week)
             : getV5Performance(season, undefined, week)
           : Promise.resolve([]),
+        // Optional: a missing roster only removes the conference filter.
+        getTeamSeasonRoster(season).catch(() => null),
       ]);
+      out.roster = roster ?? [];
     } else {
       out.games = await getMarketGamesForWeek(season, week);
     }

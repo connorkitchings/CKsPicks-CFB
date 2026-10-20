@@ -1,6 +1,31 @@
+import type { RosterRow } from "@/lib/charts";
 import type { Game, PredictionGame } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
 import { coverMargin, gradeFromMargin } from "@/lib/slate";
+
+export const slateRosterFixture: RosterRow[] = [
+  { team: "Alabama", conference: "SEC" },
+  { team: "App State", conference: "Sun Belt" },
+  { team: "Clemson", conference: "ACC" },
+  { team: "Florida State", conference: "ACC" },
+  { team: "Georgia", conference: "SEC" },
+  { team: "LSU", conference: "SEC" },
+  { team: "Miami", conference: "ACC" },
+  { team: "Michigan", conference: "Big Ten" },
+  { team: "Notre Dame", conference: "FBS Independents" },
+  { team: "Ohio State", conference: "Big Ten" },
+  { team: "Oklahoma", conference: "SEC" },
+  { team: "Oregon", conference: "Big Ten" },
+  { team: "Penn State", conference: "Big Ten" },
+  { team: "Southern Miss", conference: "Sun Belt" },
+  { team: "Tennessee", conference: "SEC" },
+  { team: "Texas", conference: "SEC" },
+  { team: "USC", conference: "Big Ten" },
+  { team: "Utah", conference: "Big 12" },
+  { team: "Washington", conference: "Big Ten" },
+  { team: "Western Kentucky", conference: "Conference USA" },
+  { team: "Wisconsin", conference: "Big Ten" },
+];
 
 /**
  * Sample slate for the Picks page (only loaded when CFB_UI_TEST_MODE=1).

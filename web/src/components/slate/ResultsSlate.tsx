@@ -1,6 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  buildConferenceMap,
+  conferenceOptions,
+  matchesTeamConference,
+  type ConferenceFilter,
+  type RosterRow,
+} from "@/lib/charts";
 import type { Game } from "@/lib/queries";
 import { sortResults, type ResultSort } from "@/lib/slate";
 import { SlateToolbar } from "./SlateToolbar";
@@ -16,21 +23,26 @@ const SORT_LABEL: Record<ResultSort, string> = {
 
 type View = "grid" | "list";
 
-/** Search, sort and grid/list view over a scored slate. */
+/** Search, sort, conference filter and grid/list view over a scored slate. */
 export function ResultsSlate({
   games,
+  roster = [],
   showBetResult = true,
   initialSort = "kickoff",
 }: {
   games: Game[];
+  roster?: RosterRow[];
   /** Show graded results on market-mode cards. */
   showBetResult?: boolean;
   /** Deep-linked sort (the `?sort=` param maps edge sorts to biggest edge). */
   initialSort?: ResultSort;
 }) {
   const [query, setQuery] = useState("");
+  const [conference, setConference] = useState<ConferenceFilter>("all");
   const [sort, setSort] = useState<ResultSort>(initialSort);
   const [view, setView] = useState<View>("grid");
+  const conferenceMap = useMemo(() => buildConferenceMap(roster), [roster]);
+  const conferences = useMemo(() => conferenceOptions(roster), [roster]);
 
   const predictionsVisible = useMemo(
     () => games.some((g) => g.publicationMode === "predictions"),
@@ -41,13 +53,20 @@ export function ResultsSlate({
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     let rows = [...games];
+    if (conference !== "all") {
+      rows = rows.filter(
+        (g) =>
+          matchesTeamConference(conference, g.homeTeam, conferenceMap) ||
+          matchesTeamConference(conference, g.awayTeam, conferenceMap),
+      );
+    }
     if (q) {
       rows = rows.filter(
         (g) => g.homeTeam.toLowerCase().includes(q) || g.awayTeam.toLowerCase().includes(q),
       );
     }
     return sortResults(rows, effectiveSort);
-  }, [games, query, effectiveSort]);
+  }, [games, query, conference, conferenceMap, effectiveSort]);
 
   const groups = useMemo(() => {
     if (effectiveSort !== "kickoff") return null;
@@ -67,7 +86,7 @@ export function ResultsSlate({
 
   return (
     <div className="space-y-2 sm:space-y-4">
-      <SlateToolbar query={query} onQueryChange={setQuery} sort={sort} onSortChange={setSort} sortLabels={SORT_LABEL} predictionsVisible={predictionsVisible} view={view} onViewChange={setView} />
+      <SlateToolbar query={query} onQueryChange={setQuery} conference={conference} onConferenceChange={setConference} conferences={conferences} sort={sort} onSortChange={setSort} sortLabels={SORT_LABEL} predictionsVisible={predictionsVisible} view={view} onViewChange={setView} />
       <p role="status" className="sr-only">Showing {visible.length} of {games.length} games</p>
 
 

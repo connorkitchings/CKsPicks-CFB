@@ -1,4 +1,5 @@
 import { teamAbbr } from "./team-logos.ts";
+import { TEAM_LOGO_MAP } from "./teams.ts";
 
 /**
  * Pure transforms for the weekly team charts. Inputs are the rows of the release's
@@ -596,6 +597,32 @@ export function matchesConference(filter: ConferenceFilter, team: string, confer
 /** Conferences present in the published roster, ascending. */
 export function conferenceOptions(roster: readonly RosterRow[]): string[] {
   return [...new Set(roster.flatMap((r) => (r.conference ? [r.conference] : [])))].sort();
+}
+
+/**
+ * Map both CFBD and legacy rating/game team names to their published conference.
+ */
+export function buildConferenceMap(roster: readonly RosterRow[]): Map<string, string | null> {
+  const map = new Map<string, string | null>();
+  for (const { team, conference } of roster) {
+    map.set(team, conference);
+  }
+  for (const [gameName, stored] of Object.entries(TEAM_LOGO_MAP)) {
+    if (map.has(gameName) && !map.has(stored)) {
+      map.set(stored, map.get(gameName) ?? null);
+    } else if (map.has(stored) && !map.has(gameName)) {
+      map.set(gameName, map.get(stored) ?? null);
+    }
+  }
+  return map;
+}
+
+export function matchesTeamConference(
+  filter: ConferenceFilter,
+  team: string,
+  conferenceMap: ReadonlyMap<string, string | null>,
+): boolean {
+  return matchesConference(filter, team, conferenceMap.get(team) ?? null);
 }
 
 /** Case-insensitive match on the team name or its abbreviation. */

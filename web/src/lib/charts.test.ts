@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   adjustedPoints,
   adjustedThroughWeeks,
+  buildConferenceMap,
   chartColor,
   coerceWeek,
   conferenceOptions,
@@ -15,6 +16,7 @@ import {
   formatPercent,
   matchesConference,
   matchesSearch,
+  matchesTeamConference,
   netSuccessBars,
   netSuccessWeeks,
   niceTicks,
@@ -367,4 +369,22 @@ test("cumulative profile pools unequal independent exposures and excludes later 
   assert.equal(profile.points[0].x, 44 / 100);
   assert.equal(profile.points[0].y, 1 / 35);
   assert.deepEqual(profile.average, { x: 44 / 100, y: 1 / 35 });
+});
+
+test("buildConferenceMap and matchesTeamConference resolve CFBD and legacy rating/game names", () => {
+  const map = buildConferenceMap([
+    { team: "App State", conference: "Sun Belt" },
+    { team: "Southern Mississippi", conference: "Sun Belt" },
+    { team: "Notre Dame", conference: "FBS Independents" },
+    { team: "Texas", conference: "SEC" },
+  ]);
+  assert.equal(map.get("App State"), "Sun Belt");
+  assert.equal(map.get("Appalachian State"), "Sun Belt");
+  assert.equal(map.get("Southern Miss"), "Sun Belt");
+  assert.equal(map.get("Southern Mississippi"), "Sun Belt");
+  assert.equal(matchesTeamConference("Sun Belt", "Appalachian State", map), true);
+  assert.equal(matchesTeamConference("Sun Belt", "Southern Miss", map), true);
+  assert.equal(matchesTeamConference("p4", "Notre Dame", map), true);
+  assert.equal(matchesTeamConference("p4", "Texas", map), true);
+  assert.equal(matchesTeamConference("p4", "App State", map), false);
 });

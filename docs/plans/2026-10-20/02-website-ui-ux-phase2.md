@@ -1,9 +1,9 @@
 # Website UI/UX Phase 2: BetCell Hierarchy, Conference Filters, Ratings Rank Badges & Collapsible Matchup Sections
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-10-20
 - **Planner:** Sol
-- **Approval source:** Pending owner review (`Draft` requested in chat on 2026-10-20)
+- **Approval source:** Explicit owner Terra handoff in chat on 2026-10-20 (`Use the repository-local implement-plan skill and implement the approved contract at: docs/plans/2026-10-20/02-website-ui-ux-phase2.md`)
 - **Implementation log:** `session_logs/2026-10-20/04-website-ui-ux-phase2-implementation.md`
 - **Commit policy:** Commit with implementation (or separate plan commit if preferred); land web commits only when no `run_season.py prepare` candidate is awaiting `run_season.py release`
 

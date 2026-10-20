@@ -336,6 +336,27 @@ test.describe("résumé columns", () => {
     await expectSortState(sortHeader(page, "Overall"), "descending");
     await expect(rows(page).nth(0)).toContainText("Texas");
   });
+
+  test("conference filter narrows rows while preserving national rank and rank-tier badges", async ({ page }) => {
+    await page.goto("/ratings");
+    await expect(rows(page).first().locator("[data-rank-tier]").first()).toBeVisible();
+    const filter = page.getByTestId("conference-filter");
+    await expect(filter).toBeVisible();
+
+    await filter.selectOption("Sun Belt");
+    await expect(rows(page)).toHaveCount(2);
+    await expect(rows(page).nth(0)).toContainText("Appalachian State");
+    await expect(rows(page).nth(1)).toContainText("Southern Mississippi");
+
+    const appState = await rowCells(page, "Appalachian State");
+    // National overall position #3 and SOR #3 are preserved when filtered to Sun Belt.
+    await expect(appState("#")).toHaveText("3");
+    await expect(appState("SOR")).toHaveText("#3");
+    await expect(appState("SOS Full")).toHaveText("#2");
+
+    await filter.selectOption("all");
+    await expect(rows(page)).toHaveCount(4);
+  });
 });
 
 test.describe("release without résumé rows", () => {

@@ -106,6 +106,21 @@ test.describe("matchup page (fixture mode)", () => {
     const rb = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     expect(ra).toEqual(rb);
 
+    // Collapsing a secondary section synchronizes both desktop tables and keeps rows aligned.
+    const sitButton = tables.nth(0).getByRole("button", { name: /Situational \/ down and distance/ });
+    await expect(sitButton).toHaveAttribute("aria-expanded", "true");
+    await sitButton.click();
+    await expect(sitButton).toHaveAttribute("aria-expanded", "false");
+    await expect(tables.nth(1).getByRole("button", { name: /Situational \/ down and distance/ })).toHaveAttribute("aria-expanded", "false");
+    await expect(tables.nth(0).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    await expect(tables.nth(1).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    const raCollapsed = await tables.nth(0).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const rbCollapsed = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    expect(raCollapsed).toEqual(rbCollapsed);
+    await sitButton.click();
+    await expect(sitButton).toHaveAttribute("aria-expanded", "true");
+    await expect(tables.nth(0).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+
     await page.setViewportSize({ width: 390, height: 900 });
     await page.goto("/matchup/1");
     await expect(page.getByRole("table")).toHaveCount(1);

@@ -132,6 +132,14 @@ test.describe("picks slate (/)", () => {
     await page.getByPlaceholder("Filter by team…").fill("");
     await expect(games).toHaveCount(10);
 
+    const confFilter = page.getByTestId("conference-filter");
+    await expect(confFilter).toBeVisible();
+    await confFilter.selectOption("Sun Belt");
+    await expect(games).toHaveCount(1);
+    await expect(games.first()).toHaveAttribute("id", "game-1");
+    await confFilter.selectOption("all");
+    await expect(games).toHaveCount(10);
+
     await page.getByRole("button", { name: "List", exact: true }).click();
     await expect(page.getByRole("button", { name: "List", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("button", { name: "Grid", exact: true })).toHaveAttribute("aria-pressed", "false");

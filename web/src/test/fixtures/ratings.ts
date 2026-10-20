@@ -1,4 +1,12 @@
+import type { RosterRow } from "@/lib/charts";
 import type { PeriodMeta, Rating } from "@/lib/rating-periods";
+
+export const ratingsRosterFixture: RosterRow[] = [
+  { team: "Texas", conference: "SEC" },
+  { team: "Ohio State", conference: "Big Ten" },
+  { team: "Appalachian State", conference: "Sun Belt" },
+  { team: "Southern Mississippi", conference: "Sun Belt" },
+];
 
 const earlierCutoff = new Date("2026-09-22T14:58:00.000Z");
 const currentCutoff = new Date("2026-09-27T14:15:00.000Z");

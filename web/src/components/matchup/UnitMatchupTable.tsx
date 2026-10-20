@@ -6,6 +6,7 @@ import {
   groupUnitRows,
   rankLabel,
   rankTitle,
+  type MetricSection,
   type UnitMatchupRow,
 } from "@/lib/team-stats";
 
@@ -86,6 +87,8 @@ export function UnitMatchupTable({
   rows,
   offenseRank,
   defenseRank,
+  collapsedSections,
+  onToggleSection,
 }: {
   offenseTeam: string;
   defenseTeam: string;
@@ -94,6 +97,8 @@ export function UnitMatchupTable({
   offenseRank?: number | null;
   /** The defense team's model defense rank. */
   defenseRank?: number | null;
+  collapsedSections?: ReadonlySet<MetricSection>;
+  onToggleSection?: (section: MetricSection) => void;
 }) {
   return (
     <div className="min-w-0 rounded-2xl border border-line bg-surface-card p-3 shadow-sm sm:p-4">
@@ -141,38 +146,54 @@ export function UnitMatchupTable({
             </th>
           </tr>
         </thead>
-        {groupUnitRows(rows).map((group) => (
-          <tbody key={group.section} className="divide-y divide-line/60">
-            <tr className={SECTION_H}>
-              <th
-                scope="rowgroup"
-                colSpan={3}
-                className="pt-3 text-center align-bottom text-xs font-semibold uppercase tracking-wider text-ink-muted"
-              >
-                {group.label}
-              </th>
-            </tr>
-            {group.rows.map((row) => (
-              <tr key={row.key} className={clsx(ROW_H, "transition-colors hover:bg-surface-inset/50")}>
-                <td className="sm:pl-2">
-                  <div className="flex flex-col items-start justify-between gap-1 sm:flex-row sm:items-center">
-                    <span data-value="offense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.offenseValue}</span>
-                    <RankBadge rank={row.offenseRank} cohort={row.offenseCohort} tied={row.offenseTied} />
-                  </div>
-                </td>
-                <td className="break-words px-1 text-center text-sm font-medium leading-tight text-ink">
-                  <Label text={row.name} />
-                </td>
-                <td className="sm:pr-2">
-                  <div className="flex flex-col items-end justify-between gap-1 sm:flex-row-reverse sm:items-center">
-                    <span data-value="defense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.defenseValue}</span>
-                    <RankBadge rank={row.defenseRank} cohort={row.defenseCohort} tied={row.defenseTied} />
-                  </div>
-                </td>
+        {groupUnitRows(rows).map((group) => {
+          const collapsible = group.section !== "possession" && Boolean(onToggleSection);
+          const isCollapsed = collapsible && Boolean(collapsedSections?.has(group.section));
+          return (
+            <tbody key={group.section} className="divide-y divide-line/60">
+              <tr className={SECTION_H}>
+                <th
+                  scope="rowgroup"
+                  colSpan={3}
+                  className="pt-3 text-center align-bottom text-xs font-semibold uppercase tracking-wider text-ink-muted"
+                >
+                  {collapsible ? (
+                    <button
+                      type="button"
+                      aria-expanded={!isCollapsed}
+                      onClick={() => onToggleSection?.(group.section)}
+                      className="inline-flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted hover:bg-surface-inset hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <span>{group.label}</span>
+                      <span aria-hidden="true" className="text-[10px] leading-none">{isCollapsed ? "▸" : "▾"}</span>
+                    </button>
+                  ) : (
+                    group.label
+                  )}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        ))}
+              {!isCollapsed && group.rows.map((row) => (
+                <tr key={row.key} className={clsx(ROW_H, "transition-colors hover:bg-surface-inset/50")}>
+                  <td className="sm:pl-2">
+                    <div className="flex flex-col items-start justify-between gap-1 sm:flex-row sm:items-center">
+                      <span data-value="offense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.offenseValue}</span>
+                      <RankBadge rank={row.offenseRank} cohort={row.offenseCohort} tied={row.offenseTied} />
+                    </div>
+                  </td>
+                  <td className="break-words px-1 text-center text-sm font-medium leading-tight text-ink">
+                    <Label text={row.name} />
+                  </td>
+                  <td className="sm:pr-2">
+                    <div className="flex flex-col items-end justify-between gap-1 sm:flex-row-reverse sm:items-center">
+                      <span data-value="defense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.defenseValue}</span>
+                      <RankBadge rank={row.defenseRank} cohort={row.defenseCohort} tied={row.defenseTied} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          );
+        })}
       </table>
     </div>
   );
