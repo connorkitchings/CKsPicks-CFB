@@ -1,7 +1,7 @@
 # Weekly close/open and promotion process review
 
 - **Status:** Review requested by owner on 2026-10-19; investigation and implementation deferred at owner-requested session close.
-- **Incident:** [Production session log](../../session_logs/2026-10-19/01-production-release-preflight.md).
+- **Incident:** Production session log `session_logs/2026-10-19/01-production-release-preflight.md` (outside the docs tree, so not linked).
 - **Operational authority:** [Weekly runbook](../ops/weekly_runbook.md).
 
 ## Required boundaries
