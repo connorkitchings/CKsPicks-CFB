@@ -22,11 +22,10 @@ export type ScatterViewProps = {
   /** Replaces the registry sentence when it depends on the metric. */
   description?: string;
   /** Note under the figure, e.g. the defense inversion. */
-  figureNote?: string;
 };
 
 /** A team scatter in the shared frame: national geometry, conference filter, highlight and export. */
-export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, figureNote, description }: ScatterViewProps) {
+export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, description }: ScatterViewProps) {
   const { season, week, roster, filter, highlight, onHighlight } = shared;
   const title = CHART_REGISTRY[kind].title;
   const subtitle = chartSubtitle(kind, season, week, side);
@@ -53,6 +52,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       width={view.width}
       height={view.height}
       cornerCaptions={config.captions}
+      averageNames={config.averageNames}
       stateOf={(p) => (p.team === highlight ? "searched" : "active")}
       describe={describe}
       formatX={config.tickX}
@@ -95,7 +95,6 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
           <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team scatter chart, horizontally scrollable" tabIndex={0} data-testid="scatter-scroll">
             <div className="min-w-[760px] lg:min-w-0">{chart(SCATTER_VIEW, true)}</div>
           </div>
-          {figureNote && <p className="mt-1 text-center text-[11px] text-ink-faint">{figureNote}</p>}
         </>
       }
       unavailable={unavailable}

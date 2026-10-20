@@ -15,6 +15,63 @@ test.describe("team game log", () => {
     await expect(page.getByTestId("game-log-chart").getByText(/^[WLT] \d+-\d+$/)).toHaveCount(4);
   });
 
+  test("bars carry their values, results are colored, every game says vs or @, and the header gives FBS context", async ({ page }) => {
+    await page.goto("/charts?chart=game-log&team=alabama&week=0");
+    const chart = page.getByTestId("game-log-chart");
+    // One value label per bar, in both panels.
+    const bars = await chart.locator("[data-bar]").count();
+    await expect(chart.locator("[data-value-label]")).toHaveCount(bars);
+    await expect(chart.locator("[data-value-label]").first()).toHaveText(/^\d+(\.\d)?%$/);
+    // Wins and losses are told apart by letter and color; a loss also tints its column.
+    const results = chart.locator("[data-result]");
+    await expect(results).toHaveCount(4);
+    const losses = await chart.locator("[data-result='L']").count();
+    await expect(chart.locator("[data-loss-band]")).toHaveCount(losses);
+    await expect(chart.locator("[data-result='W']").first()).toHaveAttribute("fill", "var(--win)");
+    // Every game is marked vs (home or neutral) or @ (away), not only the away ones.
+    await expect(chart.locator("[data-site-marker]")).toHaveCount(4);
+    await expect(chart.locator("[data-site-marker]").filter({ hasText: /^(vs|@)$/ })).toHaveCount(4);
+    await expect(chart.getByText(/· away/)).toHaveCount(0);
+    // The scope and axis notes live in the subtitle and the panel title, not repeated under the figure.
+    await expect(page.getByText("Defense axis is inverted: up is better defense.")).toHaveCount(0);
+    await expect(page.getByTestId("game-log-panel-defense")).toContainText("axis inverted: up is better");
+    // The header names the metric and window, and gives the FBS average beside each side.
+    const header = page.getByTestId("game-log-header");
+    await expect(header).toContainText(/^Success rate, through Week 3/);
+    await expect(page.getByTestId("game-log-average-offense")).toHaveText(/^FBS avg \d/);
+    await expect(page.getByTestId("game-log-average-defense")).toHaveText(/^FBS avg \d/);
+    // Definitions live under the chart, once, for the selected metric; the scope note is not repeated there.
+    const footnote = page.getByTestId("chart-footnote");
+    await expect(footnote).toContainText("Success rate is the share of plays that gain 50%");
+    await expect(footnote).not.toContainText("FBS opponents only");
+    await page.getByTestId("game-log-metric-ppa").click();
+    await expect(footnote).toContainText("PPA/play is the average predicted points added per play.");
+    await expect(footnote).not.toContainText("Success rate is the share");
+  });
+
+  test("both panels draw at one pixels-per-unit scale, each fitted to its own values", async ({ page }) => {
+    for (const metric of ["success", "ppa"]) {
+      await page.goto(`/charts?chart=game-log&team=alabama&week=0&metric=${metric}`);
+      const scales: number[] = [];
+      const heights: number[] = [];
+      for (const side of ["offense", "defense"]) {
+        const panel = page.getByTestId(`game-log-panel-${side}`);
+        heights.push(Number(await panel.locator("rect").first().getAttribute("height")));
+        // Axis tick labels: value text and its y position.
+        const ticks = await panel.locator("text[text-anchor='end']").evaluateAll((nodes) =>
+          nodes.map((node) => ({ text: node.textContent ?? "", y: Number(node.getAttribute("y")) })));
+        const parsed = ticks.map(({ text, y }) => ({ value: parseFloat(text.replace("%", "")), y }));
+        expect(parsed.length).toBeGreaterThanOrEqual(2);
+        scales.push(Math.abs((parsed[1].y - parsed[0].y) / (parsed[1].value - parsed[0].value)));
+      }
+      // Same pixels per unit in both panels (to within rounding of the printed ticks).
+      expect(Math.abs(scales[0] - scales[1]) / scales[0]).toBeLessThan(0.02);
+      // Neither panel is padded out to the other's range: the heights follow the data.
+      expect(heights[0]).toBeGreaterThan(40);
+      expect(heights[1]).toBeGreaterThan(40);
+    }
+  });
+
   test("capability controls metrics and a team without games stays selectable", async ({ page }) => {
     await page.goto("/charts?chart=game-log&fixture=v1&team=alabama&metric=explosive_rate");
     await expect(page.getByTestId("game-log-metric-explosive-rate")).toHaveCount(0);

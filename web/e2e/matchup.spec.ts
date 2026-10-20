@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
+import { sharedFiles, stubWebShare } from "./helpers";
 
 test.describe("matchup page (fixture mode)", () => {
   test("mismatched publication lineage hides model sections and disables sharing", async ({ page }) => {
@@ -358,6 +359,35 @@ test.describe("matchup page (fixture mode)", () => {
     const meta = await sharp(await download.path()).metadata();
     expect([meta.format, meta.width, meta.height]).toEqual(["png", 2160, 2700]);
     await expect(page.getByRole("status")).toHaveText("Image saved");
+    await expect(page.getByTestId("share-card")).toHaveCount(0);
+  });
+
+  test("export actions match the charts: icon buttons with tooltips, 44px targets on phones, Web Share when supported", async ({ page }) => {
+    await stubWebShare(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/matchup/1");
+    const controls = page.getByTestId("share-controls");
+    const download = controls.getByRole("button", { name: "Download PNG", exact: true });
+    await expect(download).toHaveText("");
+    await expect(controls.getByRole("button", { name: "Share", exact: true })).toBeVisible();
+    for (const button of await controls.getByRole("button").all()) {
+      expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    // The same tooltip-on-focus behaviour as the chart export buttons.
+    const tooltip = page.getByTestId("share-download-tooltip");
+    await expect(tooltip).toHaveCSS("opacity", "0");
+    await download.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    await expect(tooltip).toHaveText("Download PNG");
+    await expect(tooltip).toHaveCSS("opacity", "1");
+    // Share hands the PNG to the browser's share sheet under the matchup's file name and title.
+    await page.getByTestId("share-button").click();
+    await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
+    const [file] = await sharedFiles(page);
+    expect(file.name).toMatch(/^ckspicks-.+-at-.+-2026-week-\d+\.png$/);
+    expect(file.type).toBe("image/png");
+    expect(file.title).toMatch(/ at /);
     await expect(page.getByTestId("share-card")).toHaveCount(0);
   });
 

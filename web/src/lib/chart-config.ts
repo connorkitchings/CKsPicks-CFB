@@ -39,6 +39,16 @@ export const CHART_GROUPS: readonly { id: ChartGroup; label: string }[] = [
   { id: "one-team", label: "One team" },
 ];
 
+/** How a play counts as successful, in the words the charts print under their titles. */
+export const SUCCESS_RATE_DEFINITION =
+  "Success rate is the share of plays that gain 50% of the yards to go on 1st down, 70% on 2nd, and all of it on 3rd or 4th.";
+
+const PPA_DEFINITION = "PPA/play is the average predicted points added per play.";
+const EXPLOSIVE_DEFINITION = "20+ yard rate is the share of plays that gain 20 or more yards.";
+
+/** The game log footnote without its metric definition (scope and axis notes live on the chart itself). */
+const GAME_LOG_NOTE = "Bars = the team's value in each game on eligible plays (regulation only; garbage time and special teams excluded). Dashed marks = that week's FBS average, pooled over every FBS team-game. n/a = no eligible plays for the metric. Season values and national ranks match Efficiency for the latest week.";
+
 export type ChartDefinition = {
   group: ChartGroup;
   /** Picker link text. */
@@ -68,7 +78,6 @@ export type ChartDefinition = {
   ready: boolean;
 };
 
-const RELEASE_NOTE = "Reconstructed from this release's data.";
 /** Charts built from FBS-vs-FBS games only. */
 const FBS_GAMES = "FBS vs FBS";
 
@@ -79,10 +88,10 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     tabLabel: "Net success rate",
     title: "Net success rate",
     description: "Each game's winner minus loser success rate, in percentage points.",
-    credit: "Concept by Parker Fleming: “Did We Really Get Beat That Bad?”",
+    credit: "Inspired by Parker Fleming: “Did We Really Get Beat That Bad?”",
     population: FBS_GAMES,
     controls: { side: false, week: "week", team: false },
-    footnote: `Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded). Label = winner and final score. ${RELEASE_NOTE}`,
+    footnote: `Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded). Label = winner and final score. ${SUCCESS_RATE_DEFINITION}`,
     ready: true,
   },
   efficiency: {
@@ -92,7 +101,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     description: "Each team's success rate against its explosiveness.",
     population: FBS_GAMES,
     controls: { side: true, week: "through-week", team: true },
-    footnote: efficiencyFootnote("PPA/play"),
+    footnote: efficiencyFootnote("PPA/play", PPA_DEFINITION),
     ready: true,
   },
   adjusted: {
@@ -102,7 +111,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     description: "Offense against defense allowed, each adjusted for opponent strength.",
     population: FBS_GAMES,
     controls: { side: false, week: "through-week", team: true },
-    footnote: `PPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. Dashed lines are play-weighted FBS averages; corner labels are relative to them. ${RELEASE_NOTE}`,
+    footnote: `PPA/play adjusted for opponent strength and home-field venue using the V5 iterative adjuster, FBS vs FBS games. ${PPA_DEFINITION} Dashed lines are play-weighted FBS averages; quadrant names are relative to them.`,
     ready: true,
   },
   "rating-trajectory": {
@@ -133,7 +142,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     description: "Every game this season against that week's FBS average.",
     population: FBS_GAMES,
     controls: { side: false, week: null, team: true },
-    footnote: `Bars = the team's value in each game on eligible plays (regulation only; garbage time and special teams excluded), FBS opponents only. Dashed marks = that week's FBS average, pooled over every FBS team-game. Defense shows values allowed, axis inverted so up is better; n/a = no eligible plays for the metric. Season values and national ranks match Efficiency for the latest week. ${RELEASE_NOTE}`,
+    footnote: `${GAME_LOG_NOTE} ${SUCCESS_RATE_DEFINITION}`,
     ready: true,
   },
 };
@@ -146,6 +155,11 @@ export function readyKinds(): ChartKind[] {
 }
 
 /** Picker groups with their ready kinds; a group without one is omitted. */
+/** A footnote as one entry per sentence, so each can sit on its own line. */
+export function footnoteLines(footnote: string): string[] {
+  return footnote.split(/(?<=[.!?])\s+(?=[A-Z0-9])/).filter(Boolean);
+}
+
 export function pickerGroups(): { id: ChartGroup; label: string; kinds: ChartKind[] }[] {
   const ready = readyKinds();
   return CHART_GROUPS.map((group) => ({ ...group, kinds: ready.filter((kind) => CHART_REGISTRY[kind].group === group.id) }))
@@ -252,11 +266,33 @@ export function conferenceLabel(conference: string | null): string {
 // Scatter axes, per kind / side / metric
 // ---------------------------------------------------------------------------
 
-export type CornerCaptions = {
+export type Corners = {
   topLeft: string;
   topRight: string;
   bottomLeft: string;
   bottomRight: string;
+};
+
+/** Each quadrant's precise meaning, plus a short name for the kind of team that lands there. */
+export type CornerCaptions = Corners & { names: Corners };
+
+const OFFENSE_QUADRANTS: Corners = {
+  topLeft: "Boom or bust",
+  topRight: "Efficient and explosive",
+  bottomLeft: "Struggling",
+  bottomRight: "Methodical",
+};
+const DEFENSE_QUADRANTS: Corners = {
+  topLeft: "Bend, don't break",
+  topRight: "Shutdown",
+  bottomLeft: "Struggling",
+  bottomRight: "Big-play risk",
+};
+const TEAM_QUADRANTS: Corners = {
+  topLeft: "Defense-led",
+  topRight: "Complete",
+  bottomLeft: "Struggling",
+  bottomRight: "Offense-led",
 };
 
 export type ScatterConfig = {
@@ -268,6 +304,8 @@ export type ScatterConfig = {
   /** Short metric name shown in the export subtitle; empty when the chart has one metric. */
   metricLabel: string;
   captions: CornerCaptions;
+  /** Names of the two dashed average lines ("Avg offense"), printed with their values. */
+  averageNames: { x: string; y: string };
   footnote: string;
 };
 
@@ -277,8 +315,8 @@ export function percentTick(value: number): string {
   return tenths % 10 === 0 ? `${tenths / 10}%` : `${(tenths / 10).toFixed(1)}%`;
 }
 
-function efficiencyFootnote(metric: string): string {
-  return `Cumulative success rate and ${metric} on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. Dashed lines are play-weighted FBS averages; corner labels are relative to them. On defense, axes are inverted so up and right is better. ${RELEASE_NOTE}`;
+function efficiencyFootnote(metric: string, definition: string): string {
+  return `Cumulative success rate and ${metric} on eligible plays (regulation only; garbage time and special teams excluded), FBS vs FBS games. ${SUCCESS_RATE_DEFINITION} ${definition} Dashed lines are play-weighted FBS averages; quadrant names are relative to them. On defense, axes are inverted so up and right is better.`;
 }
 
 type EfficiencyMetricText = {
@@ -291,6 +329,8 @@ type EfficiencyMetricText = {
   footnote: string;
   /** Tooltip term. */
   describe: string;
+  /** One sentence defining the y-axis metric, printed under the chart title. */
+  definition: string;
   tick: (value: number) => string;
   value: (value: number) => string;
 };
@@ -302,6 +342,7 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
     caption: "PPA",
     footnote: "PPA/play",
     describe: "PPA/play",
+    definition: PPA_DEFINITION,
     tick: formatEpa,
     value: formatEpa,
   },
@@ -311,6 +352,7 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
     caption: "20+ rate",
     footnote: "20+ yard play rate",
     describe: "20+ yard rate",
+    definition: EXPLOSIVE_DEFINITION,
     tick: percentTick,
     value: formatPercent,
   },
@@ -320,6 +362,7 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
     caption: "yards/success",
     footnote: "yards per successful play",
     describe: "yards/success",
+    definition: "Yards per successful play is the average yardage on plays that count as successful.",
     tick: (value) => `${Math.round(value)} yds`,
     value: (value) => `${value.toFixed(2)} yds`,
   },
@@ -342,12 +385,14 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
         topRight: `Lower allowed success / Lower allowed ${m}`,
         bottomLeft: `Higher allowed success / Higher allowed ${m}`,
         bottomRight: `Lower allowed success / Higher allowed ${m}`,
+        names: DEFENSE_QUADRANTS,
       }
     : {
         topLeft: `Lower success / Higher ${m}`,
         topRight: `Higher success / Higher ${m}`,
         bottomLeft: `Lower success / Lower ${m}`,
         bottomRight: `Higher success / Lower ${m}`,
+        names: OFFENSE_QUADRANTS,
       };
   return {
     xLabel: "Success Rate",
@@ -356,7 +401,11 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
     tickY: text.tick,
     metricLabel: text.label,
     captions,
-    footnote: efficiencyFootnote(text.footnote),
+    averageNames: {
+      x: side === "defense" ? "Avg success allowed" : "Avg success rate",
+      y: `Avg ${text.caption}${side === "defense" ? " allowed" : ""}`,
+    },
+    footnote: efficiencyFootnote(text.footnote, text.definition),
   };
 }
 
@@ -377,11 +426,13 @@ export const ADJUSTED_CONFIG: ScatterConfig = {
   tickX: formatEpaTick,
   tickY: formatEpaTick,
   metricLabel: "",
+  averageNames: { x: "Avg offense", y: "Avg defense allowed" },
   captions: {
     topLeft: "Lower offense / Better defense",
     topRight: "Better offense / Better defense",
     bottomLeft: "Lower offense / Higher defense allowed",
     bottomRight: "Better offense / Higher defense allowed",
+    names: TEAM_QUADRANTS,
   },
   footnote: CHART_REGISTRY.adjusted.footnote,
 };
@@ -403,7 +454,7 @@ export function describeAdjustedPoint(point: ScatterPoint, roles: AdjustedScatte
 // ---------------------------------------------------------------------------
 
 function possessionFootnote(measurement: string): string {
-  return `Adjusted ${measurement}: opponent-adjusted V5 possession measurements of FBS teams for each Through Week window, every game counted (FCS opponents included, as in the V5 ratings). Defense is the value allowed, axis inverted so up and right is better. Dashed lines are possession-weighted averages over the plotted teams; corner labels are relative to them. Teams missing either role are not plotted. From this release's V5 possession measurements.`;
+  return `Adjusted ${measurement}: opponent-adjusted V5 possession measurements of FBS teams for each Through Week window, every game counted (FCS opponents included, as in the V5 ratings). Defense is the value allowed, axis inverted so up and right is better. Dashed lines are possession-weighted averages over the plotted teams; quadrant names are relative to them. Teams missing either role are not plotted. From this release's V5 possession measurements.`;
 }
 
 export const POSSESSION_METRICS: Record<PossessionMetric, {
@@ -430,11 +481,13 @@ export function possessionConfig(metric: PossessionMetric): ScatterConfig {
     tickX: text.tick,
     tickY: text.tick,
     metricLabel: text.unit.charAt(0).toUpperCase() + text.unit.slice(1),
+    averageNames: { x: "Avg offense", y: "Avg defense allowed" },
     captions: {
       topLeft: "Lower offense / Better defense",
       topRight: "Better offense / Better defense",
       bottomLeft: "Lower offense / Higher defense allowed",
       bottomRight: "Better offense / Higher defense allowed",
+      names: TEAM_QUADRANTS,
     },
     footnote: possessionFootnote(text.unit),
   };
@@ -486,6 +539,12 @@ export const GAME_LOG_METRICS: Record<GameLogMetric, { label: string; tick: (val
 /** Game-log metrics in toggle order; the explosive rate needs served yardage (`charts_v2`). */
 export function gameLogMetrics(explosiveness: boolean): GameLogMetric[] {
   return explosiveness ? ["success", "ppa", "explosive_rate"] : ["success", "ppa"];
+}
+
+/** The game log footnote for `metric`: the shared note, then what that metric means. */
+export function gameLogFootnote(metric: GameLogMetric): string {
+  const definition = metric === "success" ? SUCCESS_RATE_DEFINITION : metric === "ppa" ? PPA_DEFINITION : EXPLOSIVE_DEFINITION;
+  return `${GAME_LOG_NOTE} ${definition}`;
 }
 
 /** An offered game-log metric, else success rate. */

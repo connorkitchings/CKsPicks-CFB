@@ -1,6 +1,6 @@
 "use client";
 
-import { chartColor, niceTicks, type NetSuccessBar } from "@/lib/charts";
+import { chartColor, netSuccessDomain, niceTicks, type NetSuccessBar } from "@/lib/charts";
 import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import type { MarkerState } from "./ScatterChart";
 import { TeamMark } from "./TeamMark";
@@ -24,11 +24,6 @@ function fillFor(bar: NetSuccessBar): string {
   return chartColor(teamColor(bar.winner), teamAltColor(bar.winner), FALLBACK_TEAM_COLOR);
 }
 
-/** Smallest symmetric half-range covering every bar, with room for the tip logos. */
-function halfRange(bars: readonly NetSuccessBar[]): number {
-  return Math.max(0.05, ...bars.map((b) => Math.abs(b.value))) * 1.18;
-}
-
 export function NetSuccessChart({
   bars,
   stateOf,
@@ -41,20 +36,28 @@ export function NetSuccessChart({
 }: NetSuccessChartProps) {
   const ordered = bars.filter((b) => stateOf(b) !== "dim").map((b) => String(b.gameId));
   const { selected, register, handlers } = useChartSelection(ordered);
-  const half = halfRange(bars);
   const tipBar = interactive && selected ? bars.find((b) => String(b.gameId) === selected) : undefined;
   const horizontal = orientation === "horizontal";
 
   const margin = horizontal ? { top: 22, right: 34, bottom: 22, left: 76 } : { top: 10, right: 12, bottom: 78, left: 56 };
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   const span = horizontal ? plot.right - plot.left : plot.bottom - plot.top;
-  const along = (value: number) =>
-    horizontal ? plot.left + ((value + half) / (2 * half)) * span : plot.bottom - ((value + half) / (2 * half)) * span;
   const count = Math.max(1, bars.length);
   const band = (horizontal ? plot.bottom - plot.top : plot.right - plot.left) / count;
   const thick = Math.max(2, Math.min(horizontal ? 18 : 34, band * 0.64));
   const logo = Math.max(10, Math.min(LOGO, horizontal ? band * 0.9 : band * 0.95));
-  const ticks = niceTicks(-half, half, 8);
+  // The winner's logo sits 0.6 logos past the bar tip; the loser's just across zero.
+  const [domainLow, domainHigh] = netSuccessDomain(
+    bars.map((b) => b.value),
+    span,
+    logo * 1.1 + 4,
+    logo + 10,
+  );
+  const along = (value: number) => {
+    const fraction = (value - domainLow) / (domainHigh - domainLow);
+    return horizontal ? plot.left + fraction * span : plot.bottom - fraction * span;
+  };
+  const ticks = niceTicks(domainLow, domainHigh, 8);
   const zero = along(0);
   // Dense slates (about 50+ games) read best as upright columns sized to the band.
   const verticalLabels = band < 20;

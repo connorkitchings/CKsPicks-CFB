@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import clsx from "clsx";
+import { footnoteLines } from "@/lib/chart-config";
 import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
@@ -25,7 +26,7 @@ export type SharedChartProps = {
 };
 
 // Exports are captured at 2x: 1000 x 562.5 CSS px is a 2000 x 1125 px PNG.
-export const EXPORT_SIZE = { width: 1000, height: 562.5, header: 70, footer: 50 };
+export const EXPORT_SIZE = { width: 1000, height: 562.5, header: 70, footer: 86 };
 /** Height left for the chart inside an export card. */
 export const EXPORT_CHART_HEIGHT = EXPORT_SIZE.height - EXPORT_SIZE.header - EXPORT_SIZE.footer;
 
@@ -167,14 +168,14 @@ export function ChartFrame({
             </button>
           )}
           {hasData && (
-            <ChartExportButton filename={exportSpec.filename} width={exportSpec.width} height={exportSpec.height}>
+            <ChartExportButton filename={exportSpec.filename} shareTitle={title} width={exportSpec.width} height={exportSpec.height}>
               {exportSpec.card}
             </ChartExportButton>
           )}
         </div>
       </div>
 
-      {/* One card: header (title, meta, credit, header controls), hairline, status, then the chart or table. */}
+      {/* One card: header (title, meta, header controls with the credit beneath), hairline, status, then the chart or table. */}
       <div className="rounded-xl border border-line bg-surface-card shadow-2xs">
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 sm:px-4">
           <div className="min-w-0">
@@ -183,13 +184,17 @@ export function ChartFrame({
             <p className={description ? "sr-only" : "mt-1 text-xs text-ink-muted sm:text-[13px]"} data-testid="chart-subtitle">
               <SubtitleText subtitle={subtitle} />
             </p>
-            {credit && (
-              <p className="mt-0.5 text-[10.5px] text-ink-muted/80" data-testid="chart-credit">
-                {credit}
-              </p>
-            )}
           </div>
-          {headerControls}
+          {(headerControls || credit) && (
+            <div className="flex flex-col items-start gap-0.5 sm:items-end">
+              {headerControls}
+              {credit && (
+                <p className="text-[10.5px] text-ink-muted/80" data-testid="chart-credit">
+                  {credit}
+                </p>
+              )}
+            </div>
+          )}
         </header>
         <div className="border-t border-line">
           {/* HighlightStatus renders nothing without a highlight; :empty drops this padding with it. */}
@@ -221,7 +226,9 @@ export function ChartFrame({
           </p>
         </details>
       )}
-      <p className="text-[11px] leading-relaxed text-ink-faint">{footnote}</p>
+      <div className="text-[11px] leading-relaxed text-ink-faint" data-testid="chart-footnote">
+        {footnoteLines(footnote).map((line) => <p key={line}>{line}</p>)}
+      </div>
     </section>
   );
 }

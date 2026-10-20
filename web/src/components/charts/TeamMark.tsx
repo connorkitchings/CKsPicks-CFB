@@ -31,7 +31,8 @@ export function TeamMark({ team, cx, cy, size }: { team: string; cx: number; cy:
   return (
     <g data-mark="logo">
       <image href={light} x={x} y={y} width={size} height={size} className="dark:hidden" />
-      <image href={dark} x={x} y={y} width={size} height={size} className="hidden dark:block" />
+      {/* One thin light glow on every dark-theme logo (following its outline) keeps near-black marks visible. */}
+      <image href={dark} x={x} y={y} width={size} height={size} className="hidden dark:block dark:[filter:drop-shadow(0_0_1.2px_rgb(255_255_255/0.55))]" />
     </g>
   );
 }

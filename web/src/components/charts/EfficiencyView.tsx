@@ -41,7 +41,6 @@ export function EfficiencyView({ shared, side, rows, initialMetric, explosivenes
           testId="efficiency-metric-switcher"
         />
       )}
-      figureNote={side === "defense" ? "Axes are inverted: up and right is better defense." : undefined}
     />
   );
 }

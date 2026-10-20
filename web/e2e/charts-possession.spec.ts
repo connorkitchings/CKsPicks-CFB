@@ -22,6 +22,9 @@ test.describe("possession efficiency chart", () => {
     await expect(page.getByTestId("unavailable-teams")).toContainText("Not plotted (2 teams)");
     await expect(page.getByTestId("unavailable-teams")).toContainText("Boise State, Wyoming");
     await expect(page.getByTestId("average-lines")).toBeVisible();
+    // One caption says which way is better on every scatter; the chart has no extra axis note of its own.
+    await expect(page.getByTestId("direction-caption")).toHaveText("Up and right is better ↗");
+    await expect(page.getByText("Defense axis inverted")).toHaveCount(0);
     await expect(page.locator("[data-iso-net]")).toHaveCount(0);
     await expect(page.getByText("Adjusted offense points per possession", { exact: true })).toBeVisible();
     await expect(page.getByText(/^Adjusted points per possession: opponent-adjusted/).first()).toBeVisible();

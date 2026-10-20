@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { sharedFiles, stubWebShare } from "./helpers";
 
 // Fixture: 17-team roster (Wyoming has no games), net-success weeks 0-3, efficiency and
 // adjusted "Through Week" 2-3. See src/test/fixtures/charts.ts.
@@ -35,7 +36,14 @@ async function exportPng(page: Page): Promise<{ file: string; report: { logos: n
     };
   });
   const download = page.waitForEvent("download");
-  await page.getByTestId("chart-download").click();
+  let started = false;
+  download.then(() => { started = true; }, () => undefined);
+  // A click that lands before the page hydrates does nothing (slow under load on a dense chart),
+  // so click again until the download starts.
+  await expect(async () => {
+    if (!started) await page.getByTestId("chart-download").click({ timeout: 2_000 });
+    await expect.poll(() => started, { timeout: 2_500 }).toBe(true);
+  }).toPass({ timeout: 25_000 });
   const file = await (await download).path();
   const capture = await page.evaluate(() => {
     const state = window as typeof window & { chartCaptureProbe?: () => { seen: boolean; rings: number; focusStops: number; teams: string[]; games: string[]; text: string } };
@@ -54,8 +62,10 @@ test.describe("team charts", () => {
     await expect(page.getByRole("heading", { name: "Team charts" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
     await expect(page.getByTestId("chart-description")).toHaveText("Each game's winner minus loser success rate, in percentage points.");
+    // The metric definition sits under the chart, not in the subtitle.
+    await expect(page.getByTestId("chart-footnote")).toContainText("50% of the yards to go on 1st down, 70% on 2nd, and all of it on 3rd or 4th");
     await expect(page.getByTestId("chart-subtitle")).toHaveClass(/sr-only/);
-    await expect(page.getByTestId("chart-credit")).toHaveText("Concept by Parker Fleming: “Did We Really Get Beat That Bad?”");
+    await expect(page.getByTestId("chart-credit")).toHaveText("Inspired by Parker Fleming: “Did We Really Get Beat That Bad?”");
     const chart = page.getByTestId("net-success-chart");
     await expect(chart).toBeVisible();
     // Latest week (3) has 8 games: 8 bars, each with a winner and a loser mark.
@@ -90,6 +100,44 @@ test.describe("team charts", () => {
     await expect(page.getByTestId("average-lines")).toBeVisible();
   });
 
+  test("efficiency quadrants are named, the average lines are labeled and the grid is faint", async ({ page }) => {
+    await page.goto("/charts?chart=efficiency&week=3");
+    const corners = page.getByTestId("corner-labels");
+    for (const name of ["Boom or bust", "Efficient and explosive", "Struggling", "Methodical"]) {
+      await expect(corners.getByText(name, { exact: true })).toBeVisible();
+    }
+    // The subtitle stays one sentence; the definitions sit under the chart, one sentence per line.
+    await expect(page.getByTestId("chart-description")).toHaveText("Each team's success rate against its explosiveness.");
+    const footnote = page.getByTestId("chart-footnote");
+    await expect(footnote).toContainText("Success rate is the share of plays that gain 50%");
+    await expect(footnote).toContainText("20+ yard rate is the share of plays that gain 20 or more yards.");
+    await page.getByTestId("metric-toggle-yards-per-success").click();
+    await expect(footnote).toContainText("Yards per successful play is the average yardage");
+    const averages = page.getByTestId("average-labels");
+    await expect(averages.getByText(/^Avg success rate \d/)).toHaveCount(1);
+    await expect(averages.getByText(/^Avg yards\/success \d/)).toHaveCount(1);
+    await expect(page.getByTestId("direction-caption")).toHaveText("Up and right is better ↗");
+    await expect(page.locator("[data-grid='x']").first()).toHaveAttribute("opacity", "0.55");
+    await page.goto("/charts?chart=efficiency&week=3&side=defense");
+    await expect(corners.getByText("Shutdown", { exact: true })).toBeVisible();
+    await expect(corners.getByText("Big-play risk", { exact: true })).toBeVisible();
+  });
+
+  test("hovering a team fades the others and draws a larger copy on top", async ({ page }) => {
+    await page.goto("/charts?chart=efficiency&week=3");
+    const marks = page.locator("g[data-team]");
+    const hovered = marks.first();
+    const name = await hovered.getAttribute("data-team");
+    await expect(page.getByTestId("hover-mark")).toHaveCount(0);
+    await hovered.hover();
+    await expect(page.getByTestId("hover-mark")).toHaveAttribute("data-hover-team", name!);
+    await expect(marks.nth(1)).toHaveAttribute("opacity", "0.22");
+    await expect(hovered).toHaveAttribute("opacity", "1");
+    await page.mouse.move(2, 2);
+    await expect(page.getByTestId("hover-mark")).toHaveCount(0);
+    await expect(marks.nth(1)).toHaveAttribute("opacity", "1");
+  });
+
   test("switching tabs from a net-success Week 0 or 1 URL coerces the week", async ({ page }) => {
     for (const requested of [0, 1]) {
       await page.goto(`/charts?chart=net-success&week=${requested}`);
@@ -107,12 +155,21 @@ test.describe("team charts", () => {
 
   test("adjusted chart has dashed averages and corner labels but no diagonals or in-chart note", async ({ page }) => {
     await page.goto("/charts?chart=adjusted&week=3");
-    await expect(page.getByText("Better offense / Better defense")).toBeVisible();
-    await expect(page.getByText("Lower offense / Higher defense allowed")).toBeVisible();
+    const corners = page.getByTestId("corner-labels");
+    await expect(corners.getByText("Complete", { exact: true })).toBeVisible();
+    await expect(corners.getByText("Offense-led", { exact: true })).toBeVisible();
+    // The two average lines say which is which, and the axes say which way is better.
+    const averages = page.getByTestId("average-labels");
+    await expect(averages.getByText(/^Avg offense [+-]?\d/)).toHaveCount(1);
+    await expect(averages.getByText(/^Avg defense allowed [+-]?\d/)).toHaveCount(1);
+    await expect(page.getByTestId("direction-caption")).toHaveText("Up and right is better ↗");
+    await expect(page.getByTestId("chart-footnote")).toContainText("PPA/play is the average predicted points added per play.");
+    // The precise meaning is each name's accessible title, not a second printed line.
+    await expect(corners.locator("[data-corner='topRight'] title")).toHaveText("Better offense / Better defense");
     await expect(page.getByTestId("average-lines")).toBeVisible();
     await expect(page.locator("[data-iso-net]")).toHaveCount(0);
     await expect(page.getByTestId("scatter-chart").getByText(/^Relative to/)).toHaveCount(0);
-    await expect(page.getByText(/corner labels are relative to them/)).toBeVisible();
+    await expect(page.getByText(/quadrant names are relative to them/)).toBeVisible();
   });
 
   test("conference filtering removes excluded points and preserves national geometry", async ({ page }) => {
@@ -378,6 +435,18 @@ test.describe("team charts", () => {
     expect(pngSize(file)).toEqual({ width: 2000, height: 1125 });
     expect(report.logos).toBeGreaterThan(0);
     expect(report.decoded).toBe(report.logos);
+  });
+
+  test("charts share through the same export actions as the matchup card when the browser can", async ({ page }) => {
+    await stubWebShare(page);
+    await page.goto("/charts?chart=efficiency&week=3");
+    await page.waitForLoadState("networkidle");
+    await page.getByTestId("chart-share").click();
+    await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
+    const [file] = await sharedFiles(page);
+    expect(file.name).toMatch(/^ckspicks-.+\.png$/);
+    expect(file.type).toBe("image/png");
+    expect(file.title).toBe("Efficiency vs explosiveness");
   });
 
   test("export icon buttons are named, show a tooltip on keyboard focus and announce the result", async ({ page }) => {

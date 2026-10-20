@@ -27,7 +27,6 @@ export function PossessionView({ shared, rows, initialMetric }: { shared: Shared
       describe={(point) => describePossessionPoint(point, scatter, metric)}
       exportMetric={POSSESSION_METRICS[metric].slug}
       controls={<SegmentedControl size="sm" label="Possession measurement" options={METRIC_OPTIONS} value={metric} onChange={setMetric} testId="possession-metric-switcher" />}
-      figureNote="Defense axis inverted: up is better defense (less allowed)."
     />
   );
 }

@@ -18,6 +18,10 @@ import {
   matchesSearch,
   matchesTeamConference,
   netSuccessBars,
+  gameLogDomains,
+  leastCrowdedSpot,
+  netSuccessDomain,
+  valueLabelY,
   netSuccessWeeks,
   niceTicks,
   outplayedWinners,
@@ -25,6 +29,7 @@ import {
   sortNetSuccessBars,
   withYardage,
   type AdjustedRow,
+  type TeamGameLog,
   type RosterRow,
   type TeamGameRow,
   type TeamGameYardageRow,
@@ -387,4 +392,117 @@ test("buildConferenceMap and matchesTeamConference resolve CFBD and legacy ratin
   assert.equal(matchesTeamConference("p4", "Notre Dame", map), true);
   assert.equal(matchesTeamConference("p4", "Texas", map), true);
   assert.equal(matchesTeamConference("p4", "App State", map), false);
+});
+
+test("netSuccessDomain follows the lowest and highest bar instead of mirroring zero", () => {
+  // The Week 8 slate: tallest bar +28 points, deepest bar -15.
+  const [low, high] = netSuccessDomain([0.28, 0.1, -0.15, 0.02], 400, 33, 36);
+  assert.ok(low < -0.15 && low > -0.22, `low ${low} sits just below the deepest bar`);
+  assert.ok(high > 0.28 && high < 0.34, `high ${high} sits just above the tallest bar`);
+  // A mirrored axis would have reached about -0.33.
+  assert.ok(low > -0.25);
+});
+
+test("netSuccessDomain leaves room for the logos at both ends and maps to the pixel span", () => {
+  const span = 400;
+  const [low, high] = netSuccessDomain([0.2, -0.1], span, 30, 40);
+  const px = (value: number) => ((value - low) / (high - low)) * span;
+  // The tallest tip keeps at least the winner-logo clearance below the top edge.
+  assert.ok(span - px(0.2) >= 30 - 1e-6);
+  // The deepest tip keeps it above the bottom edge.
+  assert.ok(px(-0.1) >= 30 - 1e-6);
+});
+
+test("netSuccessDomain with only positive bars reserves just the loser-logo room below zero", () => {
+  const span = 400;
+  const [low, high] = netSuccessDomain([0.05, 0.3], span, 30, 40);
+  const px = (value: number) => ((value - low) / (high - low)) * span;
+  assert.ok(Math.abs(px(0) - 40) < 1e-6, "zero sits one loser clearance above the bottom");
+  assert.ok(span - px(0.3) >= 30 - 1e-6);
+});
+
+test("netSuccessDomain handles only-negative, all-zero and empty input", () => {
+  const [lowNeg, highNeg] = netSuccessDomain([-0.2, -0.05], 400, 30, 40);
+  assert.ok(lowNeg < -0.2 && highNeg > 0);
+  const [lowZero, highZero] = netSuccessDomain([0, 0], 400, 30, 40);
+  assert.ok(lowZero < 0 && highZero > 0 && Number.isFinite(lowZero) && Number.isFinite(highZero));
+  assert.deepEqual(netSuccessDomain([], 400, 30, 40), [-0.05, 0.05]);
+});
+
+test("leastCrowdedSpot picks the candidate covering the fewest obstacles, first on ties", () => {
+  const bounds = { x: 0, y: 0, w: 100, h: 100 };
+  const crowded = { x: 10, y: 10, w: 20, h: 10 };
+  const clear = { x: 60, y: 60, w: 20, h: 10 };
+  const obstacles = [{ x: 8, y: 8, w: 30, h: 20 }, { x: 12, y: 12, w: 5, h: 5 }];
+  assert.equal(leastCrowdedSpot([crowded, clear], obstacles, bounds), 1);
+  assert.equal(leastCrowdedSpot([clear, { ...clear, x: 62 }], obstacles, bounds), 0, "ties go to the first");
+  assert.equal(leastCrowdedSpot([], obstacles, bounds), -1);
+});
+
+test("leastCrowdedSpot never prefers a candidate outside the bounds", () => {
+  const bounds = { x: 0, y: 0, w: 100, h: 100 };
+  const outside = { x: 95, y: 10, w: 20, h: 10 };
+  const insideButCrowded = { x: 10, y: 10, w: 20, h: 10 };
+  const obstacles = [{ x: 10, y: 10, w: 5, h: 5 }, { x: 20, y: 12, w: 5, h: 5 }];
+  assert.equal(leastCrowdedSpot([outside, insideButCrowded], obstacles, bounds), 1);
+});
+
+test("valueLabelY goes away from the zero line and moves inside when the average line would cross it", () => {
+  // y grows downward. Zero line at 200: a bar rising to 100 gets its label above the tip, one hanging to 300 below it.
+  assert.equal(valueLabelY(100, 200, null), 94);
+  assert.equal(valueLabelY(300, 200, null), 313);
+  assert.equal(valueLabelY(100, 200, 400), 94, "an average line far away is ignored");
+  // The dashed line at y=92 would strike the label above a rising bar: go inside the tip.
+  assert.equal(valueLabelY(100, 200, 92), 114);
+  // A hanging bar whose average line sits just below the tip: go inside, above the tip.
+  assert.equal(valueLabelY(300, 200, 310), 295);
+  // A bar too short to hold an inside label keeps the outside spot.
+  assert.equal(valueLabelY(190, 200, 182), 184);
+});
+
+function logOf(offense: [number | null, number | null][], defense: [number | null, number | null][]): TeamGameLog {
+  return {
+    team: "Alpha",
+    metric: "success",
+    throughWeek: offense.length,
+    season: { offense: { value: null, rank: null, ranked: 0, average: null }, defense: { value: null, rank: null, ranked: 0, average: null } },
+    games: offense.map(([own, avg], index) => ({
+      gameId: index,
+      week: index + 1,
+      opponent: "Bravo",
+      site: "home" as const,
+      pointsFor: 10,
+      pointsAgainst: 7,
+      result: "W 10-7",
+      offense: own,
+      defense: defense[index][0],
+      average: { offense: avg, defense: defense[index][1] },
+    })),
+  };
+}
+
+test("gameLogDomains fits each panel to its own values, starting rates at zero", () => {
+  const log = logOf([[0.69, 0.42], [0.46, 0.42]], [[0.48, 0.42], [0.1, 0.42]]);
+  const { offense, defense } = gameLogDomains(log);
+  assert.equal(offense[0], 0);
+  assert.equal(defense[0], 0);
+  assert.ok(Math.abs(offense[1] - 0.69 * 1.14) < 1e-9);
+  assert.ok(Math.abs(defense[1] - 0.48 * 1.14) < 1e-9, "the defense panel is shorter, not padded to the offense range");
+});
+
+test("gameLogDomains gives a signed metric headroom at both ends and includes the averages", () => {
+  // Offense stays positive; defense allowed is mostly negative (good) with a positive average.
+  const log = logOf([[0.69, 0.12], [0.2, 0.12]], [[-0.54, 0.12], [0.18, 0.12]]);
+  const { offense, defense } = gameLogDomains(log);
+  assert.equal(offense[0], 0);
+  assert.ok(defense[0] < -0.54 && defense[1] > 0.18, "both ends padded past the extremes");
+  // The window is the data span (0.72) plus 14% headroom each end, not the offense panel's range.
+  assert.ok(Math.abs(defense[1] - defense[0] - 0.72 * 1.28) < 1e-9);
+});
+
+test("gameLogDomains survives n/a games and an empty log", () => {
+  const { offense, defense } = gameLogDomains(logOf([[null, null]], [[0.3, null]]));
+  assert.deepEqual(offense, [0, 1]);
+  assert.ok(defense[1] > 0.3);
+  assert.deepEqual(gameLogDomains(logOf([], [])), { offense: [0, 1], defense: [0, 1] });
 });

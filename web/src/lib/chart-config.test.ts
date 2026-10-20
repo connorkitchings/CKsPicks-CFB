@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  EFFICIENCY_METRICS,
+  gameLogFootnote,
+  footnoteLines,
+  SUCCESS_RATE_DEFINITION,
   ADJUSTED_CONFIG,
   CHART_REGISTRY,
   chartHref,
@@ -83,7 +87,7 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
 
 test("titles, subtitles and export names follow the registry", () => {
   assert.equal(CHART_REGISTRY["net-success"].title, "Net success rate");
-  assert.equal(CHART_REGISTRY["net-success"].credit, "Concept by Parker Fleming: “Did We Really Get Beat That Bad?”");
+  assert.equal(CHART_REGISTRY["net-success"].credit, "Inspired by Parker Fleming: “Did We Really Get Beat That Bad?”");
   assert.equal(CHART_REGISTRY.efficiency.title, "Efficiency vs explosiveness");
   // Titles match their picker tabs, in sentence case, and each visible chart has a one-sentence description.
   for (const kind of readyKinds()) {
@@ -131,4 +135,40 @@ test("adjusted ticks use two decimals and the tooltip shows the stored decomposi
       "defense allowed adjusted -0.100 (raw -0.070, venue correction +0.010, opponent adjustment +0.020), rank 12 of 134 PPA/play",
   );
   assert.equal(describeAdjustedPoint(point, {}), "Alabama (SEC): adjusted offense +0.200, adjusted defense allowed -0.100 PPA/play");
+});
+
+test("footnotes split into one line per sentence and no longer carry the release note", () => {
+  for (const kind of Object.keys(CHART_REGISTRY) as (keyof typeof CHART_REGISTRY)[]) {
+    const { footnote } = CHART_REGISTRY[kind];
+    assert.ok(!footnote.includes("Reconstructed from"), `${kind} footnote`);
+    assert.ok(footnoteLines(footnote).every((line) => /[.!?]$/.test(line)), `${kind} lines end a sentence`);
+  }
+  assert.deepEqual(footnoteLines(CHART_REGISTRY["net-success"].footnote), [
+    "Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded).",
+    "Label = winner and final score.",
+    SUCCESS_RATE_DEFINITION,
+  ]);
+});
+
+test("footnotes carry the metric definitions and the subtitles stay one sentence", () => {
+  for (const metric of ["ppa", "explosive_rate", "yards_per_success"] as const) {
+    const lines = footnoteLines(efficiencyConfig("offense", metric).footnote);
+    assert.ok(lines.includes(SUCCESS_RATE_DEFINITION), `${metric} defines success rate`);
+    assert.ok(lines.includes(EFFICIENCY_METRICS[metric].definition), `${metric} defines its metric`);
+  }
+  assert.match(efficiencyConfig("offense", "explosive_rate").footnote, /20 or more yards/);
+  assert.ok(footnoteLines(CHART_REGISTRY["net-success"].footnote).includes(SUCCESS_RATE_DEFINITION));
+  assert.equal(footnoteLines(CHART_REGISTRY.efficiency.description).length, 1);
+  assert.equal(footnoteLines(CHART_REGISTRY["net-success"].description).length, 1);
+});
+
+test("the game log footnote defines the selected metric and leaves scope notes to the chart", () => {
+  assert.ok(footnoteLines(gameLogFootnote("success")).includes(SUCCESS_RATE_DEFINITION));
+  assert.ok(footnoteLines(gameLogFootnote("ppa")).includes(EFFICIENCY_METRICS.ppa.definition));
+  assert.ok(footnoteLines(gameLogFootnote("explosive_rate")).includes(EFFICIENCY_METRICS.explosive_rate.definition));
+  for (const metric of ["success", "ppa", "explosive_rate"] as const) {
+    assert.ok(!gameLogFootnote(metric).includes("FBS opponents only"), metric);
+    assert.ok(!gameLogFootnote(metric).includes("axis inverted"), metric);
+  }
+  assert.equal(CHART_REGISTRY["game-log"].footnote, gameLogFootnote("success"));
 });
