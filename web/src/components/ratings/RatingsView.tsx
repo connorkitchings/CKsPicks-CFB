@@ -110,10 +110,12 @@ interface SortHeaderProps {
   direction: SortDirection;
   onSort: (sort: RatingsSort) => void;
   title?: string;
+  /** Center the header and button (rank columns); numeric columns stay right-aligned. */
+  center?: boolean;
 }
 
 /** A sortable column header. The button is the keyboard target; `aria-sort` reports the order of the rows. */
-function SortHeader({ column, active, direction, onSort, title }: SortHeaderProps) {
+function SortHeader({ column, active, direction, onSort, title, center }: SortHeaderProps) {
   const label = sortLabels[column];
   const indicator = direction === "desc" ? "↓" : "↑";
   return (
@@ -121,13 +123,13 @@ function SortHeader({ column, active, direction, onSort, title }: SortHeaderProp
       scope="col"
       title={title}
       aria-sort={active ? (direction === "desc" ? "descending" : "ascending") : "none"}
-      className={clsx("px-2 py-3 text-right whitespace-nowrap", active && "bg-accent-soft text-accent-ink")}
+      className={clsx("px-2 py-3 whitespace-nowrap", center ? "text-center" : "text-right", active && "bg-accent-soft text-accent-ink")}
     >
       <button
         type="button"
         aria-label={`Sort by ${label}`}
         onClick={() => onSort(column)}
-        className="inline-flex min-h-9 items-center justify-end gap-1 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className={clsx("inline-flex min-h-9 items-center gap-1 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent", center ? "justify-center" : "justify-end")}
       >
         {label}
         <span aria-hidden="true" className="w-3 text-center text-xs">{active ? indicator : ""}</span>
@@ -339,13 +341,13 @@ export function RatingsView({
                   <th scope="col" className="px-2 py-3 text-center">#</th>
                   <th scope="col" className="px-2 py-3 text-left">Team</th>
                   {scoreSorts.map((column) => (
-                    <SortHeader key={column} column={column} active={sort === column} direction={direction} onSort={chooseSort} />
+                    <SortHeader key={column} column={column} active={sort === column} direction={direction} onSort={chooseSort} center />
                   ))}
-                  <th scope="col" title={tooltips.record} className="px-2 py-3 text-right whitespace-nowrap">FBS W-L</th>
-                  <SortHeader column="sor" active={sort === "sor"} direction={direction} onSort={chooseSort} title={tooltips.sor} />
-                  <SortHeader column="sos_played" active={sort === "sos_played"} direction={direction} onSort={chooseSort} title={tooltips.sos} />
-                  <SortHeader column="sos_remaining" active={sort === "sos_remaining"} direction={direction} onSort={chooseSort} title={tooltips.sos} />
-                  <SortHeader column="sos_full" active={sort === "sos_full"} direction={direction} onSort={chooseSort} title={tooltips.sos} />
+                  <th scope="col" title={tooltips.record} className="px-2 py-3 text-center whitespace-nowrap">FBS W-L</th>
+                  <SortHeader column="sor" active={sort === "sor"} direction={direction} onSort={chooseSort} title={tooltips.sor} center />
+                  <SortHeader column="sos_played" active={sort === "sos_played"} direction={direction} onSort={chooseSort} title={tooltips.sos} center />
+                  <SortHeader column="sos_remaining" active={sort === "sos_remaining"} direction={direction} onSort={chooseSort} title={tooltips.sos} center />
+                  <SortHeader column="sos_full" active={sort === "sos_full"} direction={direction} onSort={chooseSort} title={tooltips.sos} center />
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -361,13 +363,13 @@ export function RatingsView({
                         <div className="flex items-center gap-2"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></div>
                       </th>
                       {scoreSorts.map((column) => (
-                        <td key={column} className={clsx("px-2 py-3 text-right font-mono", sortedClass(sort === column))}>{ratingText(rating[scoreFields[column]])}</td>
+                        <td key={column} className={clsx("px-2 py-3 text-center font-mono", sortedClass(sort === column))}>{ratingText(rating[scoreFields[column]])}</td>
                       ))}
-                      <td className="whitespace-nowrap px-2 py-3 text-right font-mono text-ink-muted">{recordText(rating)}</td>
-                      <td title={valueTitle("SOR", rating.sor)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sor"))}><RankPill rank={rankFor(rating, "sor", sosRanks)} cohort={ratings.length} /></td>
-                      <td title={valueTitle("SOS Played", sos.played)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_played"))}><RankPill rank={teamRanks?.played} cohort={ratings.length} /></td>
-                      <td title={valueTitle("SOS Remaining", sos.remaining)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_remaining"))}><RankPill rank={teamRanks?.remaining} cohort={ratings.length} /></td>
-                      <td title={valueTitle("SOS Full", sos.full)} className={clsx("whitespace-nowrap px-2 py-3 text-right font-mono", sortedClass(sort === "sos_full"))}><RankPill rank={teamRanks?.full} cohort={ratings.length} /></td>
+                      <td className="whitespace-nowrap px-2 py-3 text-center font-mono text-ink-muted">{recordText(rating)}</td>
+                      <td title={valueTitle("SOR", rating.sor)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sor"))}><RankPill rank={rankFor(rating, "sor", sosRanks)} cohort={ratings.length} /></td>
+                      <td title={valueTitle("SOS Played", sos.played)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_played"))}><RankPill rank={teamRanks?.played} cohort={ratings.length} /></td>
+                      <td title={valueTitle("SOS Remaining", sos.remaining)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_remaining"))}><RankPill rank={teamRanks?.remaining} cohort={ratings.length} /></td>
+                      <td title={valueTitle("SOS Full", sos.full)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_full"))}><RankPill rank={teamRanks?.full} cohort={ratings.length} /></td>
                     </tr>
                   );
                 })}
