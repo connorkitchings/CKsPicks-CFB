@@ -107,27 +107,25 @@ export function ModelRecord({
 
   return (
     <section aria-label="Record" className="rounded-xl border border-line bg-surface-card p-2.5 shadow-2xs">
-      <h2 className="mb-2 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-ink">
-        Week {week.number} record
-        <span className="text-xs font-normal text-ink-muted">this slate · small sample</span>
-      </h2>
-      <RecordBlock title={`Week ${week.number}`} note="" spread={week.spread} total={week.total} showHeader={false} />
-      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs text-ink-muted">
-        {overall && overall.evaluated > 0 ? (
-          <p data-testid="week-accuracy">
-            Average miss: spread {points(overall.marginMae)} pts · total {points(overall.totalMae)} pts
-            {" · "}95% interval coverage: spread {pct(overall.marginCoverage95)} · total {pct(overall.totalCoverage95)}
-          </p>
-        ) : (
-          <span />
-        )}
+      <div className="mb-1 flex items-center justify-between gap-x-3">
+        <h2 className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-ink">
+          Week {week.number} record
+          <span className="text-xs font-normal text-ink-muted">this slate · small sample</span>
+        </h2>
         <a
           href="/performance"
-          className="inline-flex min-h-11 items-center font-semibold text-accent-ink underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold text-accent-ink underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Season record and audit
         </a>
       </div>
+      <RecordBlock title={`Week ${week.number}`} note="" spread={week.spread} total={week.total} showHeader={false} />
+      {overall && overall.evaluated > 0 && (
+        <p data-testid="week-accuracy" className="mt-1.5 hidden text-xs text-ink-muted sm:block">
+          Average miss: spread {points(overall.marginMae)} pts · total {points(overall.totalMae)} pts
+          {" · "}95% interval coverage: spread {pct(overall.marginCoverage95)} · total {pct(overall.totalCoverage95)}
+        </p>
+      )}
     </section>
   );
 }

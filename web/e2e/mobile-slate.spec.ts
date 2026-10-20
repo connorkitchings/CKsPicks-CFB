@@ -137,12 +137,16 @@ test("market timestamps hydrate without replacing the slate", async ({ page }) =
   expect(hydrationErrors).toEqual([]);
 });
 
-test("results record is the single week with accuracy and a link to the season audit", async ({ page }) => {
+test("results record is the single week, with accuracy on wider screens and a link to the season audit", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/results");
   const record = page.getByRole("region", { name: "Record" });
-  await expect(record.getByRole("heading", { name: /^Week \d+ record$/ })).toBeVisible();
+  await expect(record.getByRole("heading", { name: /^Week \d+ record/ })).toBeVisible();
   await expect(record.getByText("Season context", { exact: true })).toHaveCount(0);
   await expect(record.getByRole("heading", { name: "Season", exact: true })).toHaveCount(0);
   await expect(record.getByRole("link", { name: "Season record and audit" })).toHaveAttribute("href", "/performance");
+  // The accuracy line is dropped on phones so the first game card still clears the navigation.
+  await expect(record.getByTestId("week-accuracy")).toBeHidden();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(record.getByTestId("week-accuracy")).toContainText("95% interval coverage");
 });
