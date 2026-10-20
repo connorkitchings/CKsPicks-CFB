@@ -103,4 +103,5 @@ Each weekly Production release must keep staging with `resume_v1`, which require
 - **Approval and resume gate:** the owner approves this contract. Approval authorizes the review, tests and documentation above. It does not authorize setting any Vercel variable, activating a release or publishing Charts.
 - **Implementation log:** `session_logs/YYYY-MM-DD/NN-charts-pre-publication.md`, created by the implementing session.
 - **Precise next action:** run Task 2 (local real-data review) and record the findings.
+- **Progress (2026-10-20):** the owner walked all five ready charts on Preview data through `make web-local` and approved a round of polish (see `session_logs/2026-10-20/05-charts-review-and-polish.md`). That was an informal look, not the recorded review matrix in Task 2, and not Preview-deployment acceptance; the contract stays Draft until the owner approves it.
 - **Amendments:** a mechanical amendment may proceed only if architecture, interfaces, scope and acceptance remain unchanged; a material conflict returns to the planner. Record each amendment's reason, previous approach, revised approach and impact here.
