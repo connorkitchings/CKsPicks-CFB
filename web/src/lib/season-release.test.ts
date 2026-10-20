@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { PgDialect } from "drizzle-orm/pg-core";
 import * as schema from "./schema.ts";
 import {
-  seasonReleaseDb, CHARTS_V1_KEYS, CHART_SETS, CHART_SET_KEYS, CHART_SET_PROJECTIONS, CHART_TABLE_SETS,
+  seasonReleaseDb, RECORDED_PROJECTION_SETS, CHARTS_V1_KEYS, CHART_SETS, CHART_SET_KEYS, CHART_SET_PROJECTIONS, CHART_TABLE_SETS,
   CORE_RELEASE_TABLES, RELEASE_PROJECTIONS, type ChartSet,
 } from "./season-release-query.ts";
 import {
@@ -227,4 +227,15 @@ test("a core_v1 release still resolves and serves core pages without chart relat
   assert.equal(context?.chartSet, null);
   const query = seasonReleaseDb(db, context!.releaseId).select().from(schema.games).toSQL();
   assert.equal(RELEASE_PROJECTIONS.some((name) => !query.sql.includes(`"${name}"`)), false);
+});
+
+test("the registry's chart-serving sets agree with the web chart-set tables", () => {
+  assert.deepEqual(RECORDED_PROJECTION_SETS.charts_v1, { chartSet: "charts_v1", keys: CHART_SET_KEYS.charts_v1 });
+  assert.deepEqual(RECORDED_PROJECTION_SETS.charts_v2, { chartSet: "charts_v2", keys: CHART_SET_KEYS.charts_v2 });
+  assert.deepEqual(RECORDED_PROJECTION_SETS.resume_v1, {
+    chartSet: "charts_v2",
+    keys: [...CHART_SET_KEYS.charts_v2, "team_resume"].sort(),
+  });
+  // core_v1 serves no charts, so a release recorded with it never matches a chart set.
+  assert.equal(RECORDED_PROJECTION_SETS.core_v1, undefined);
 });

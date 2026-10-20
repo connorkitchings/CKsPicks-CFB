@@ -63,3 +63,35 @@ def test_publication_contracts_detect_missing_placeholder_provider(tmp_path):
     )
 
     assert any("missing" in error for error in errors)
+
+
+def test_projection_sets_registry_is_in_sync():
+    assert contracts_validation.check_projection_sets_sync() == []
+
+
+def test_projection_sets_detects_web_mirror_drift(tmp_path, monkeypatch):
+    contracts = tmp_path / "contracts"
+    mirror = tmp_path / "web" / "src" / "lib"
+    contracts.mkdir()
+    mirror.mkdir(parents=True)
+    registry = (
+        '{"staging_set": "a", "sets": {"a": {"tables": ["t"], "chart_set": null}}}\n'
+    )
+    (contracts / "projection_sets.json").write_text(registry)
+    (mirror / "projection-sets.json").write_text(registry)
+    monkeypatch.setattr(contracts_validation, "CONTRACTS_DIR", contracts)
+    monkeypatch.setattr(contracts_validation, "ROOT", tmp_path)
+    assert contracts_validation.check_projection_sets_sync() == []
+
+    (mirror / "projection-sets.json").write_text(registry.replace('"t"', '"u"'))
+    assert any(
+        "differs" in e for e in contracts_validation.check_projection_sets_sync()
+    )
+
+    (contracts / "projection_sets.json").write_text(
+        '{"staging_set": "missing", "sets": {"a": {"tables": ["t", "t"], "chart_set": "zzz"}}}\n'
+    )
+    errors = contracts_validation.check_projection_sets_sync()
+    assert any("staging_set" in e for e in errors)
+    assert any("twice" in e for e in errors)
+    assert any("unknown chart_set" in e for e in errors)

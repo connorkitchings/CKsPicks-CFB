@@ -1,0 +1,110 @@
+{
+  "_comment": "Single registry of versioned serving-projection table sets. Python loads this file; web/src/lib/projection-sets.json must be a byte-identical copy (contracts/validation.py enforces it). Released sets are frozen: add a new set, never edit one. chart_set is the chart relation set a release of this set serves (null = none).",
+  "staging_set": "resume_v1",
+  "sets": {
+    "core_v1": {
+      "tables": [
+        "games",
+        "game_venues",
+        "game_results",
+        "predictions",
+        "prediction_grades",
+        "market_quotes",
+        "market_snapshots",
+        "market_snapshot_quotes",
+        "prediction_market_selections",
+        "system_stats",
+        "v5_rating_snapshots",
+        "team_season_stats",
+        "matchup_data_publications",
+        "team_game_measurements",
+        "team_possession_stats",
+        "team_possession_adjusted",
+        "team_rating_components",
+        "site_week_selections"
+      ],
+      "chart_set": null
+    },
+    "charts_v1": {
+      "tables": [
+        "games",
+        "game_venues",
+        "game_results",
+        "predictions",
+        "prediction_grades",
+        "market_quotes",
+        "market_snapshots",
+        "market_snapshot_quotes",
+        "prediction_market_selections",
+        "system_stats",
+        "v5_rating_snapshots",
+        "team_season_stats",
+        "matchup_data_publications",
+        "team_game_measurements",
+        "team_possession_stats",
+        "team_possession_adjusted",
+        "team_rating_components",
+        "site_week_selections",
+        "team_season_roster",
+        "team_game_stats",
+        "team_adjusted_epa"
+      ],
+      "chart_set": "charts_v1"
+    },
+    "charts_v2": {
+      "tables": [
+        "games",
+        "game_venues",
+        "game_results",
+        "predictions",
+        "prediction_grades",
+        "market_quotes",
+        "market_snapshots",
+        "market_snapshot_quotes",
+        "prediction_market_selections",
+        "system_stats",
+        "v5_rating_snapshots",
+        "team_season_stats",
+        "matchup_data_publications",
+        "team_game_measurements",
+        "team_possession_stats",
+        "team_possession_adjusted",
+        "team_rating_components",
+        "site_week_selections",
+        "team_season_roster",
+        "team_game_stats",
+        "team_adjusted_epa",
+        "team_game_yardage"
+      ],
+      "chart_set": "charts_v2"
+    },
+    "resume_v1": {
+      "tables": [
+        "games",
+        "game_venues",
+        "game_results",
+        "predictions",
+        "prediction_grades",
+        "market_quotes",
+        "market_snapshots",
+        "market_snapshot_quotes",
+        "prediction_market_selections",
+        "system_stats",
+        "v5_rating_snapshots",
+        "team_season_stats",
+        "matchup_data_publications",
+        "team_game_measurements",
+        "team_possession_stats",
+        "team_possession_adjusted",
+        "team_rating_components",
+        "site_week_selections",
+        "team_season_roster",
+        "team_game_stats",
+        "team_adjusted_epa",
+        "team_game_yardage",
+        "team_resume"
+      ],
+      "chart_set": "charts_v2"
+    }
+  }
+}

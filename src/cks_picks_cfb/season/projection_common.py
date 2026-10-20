@@ -110,9 +110,11 @@ cover every table of that set (:data:`PROJECTION_ORDER` for new candidates).
 from __future__ import annotations
 
 import datetime as dt
+import json
 import math
 from collections.abc import Collection, Mapping, Sequence
 from decimal import ROUND_HALF_EVEN, Decimal
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -144,47 +146,26 @@ __all__ = [
     "weekly_run_id",
 ]
 
-_CORE_V1_ORDER: tuple[str, ...] = (
-    "games",
-    "game_venues",
-    "game_results",
-    "predictions",
-    "prediction_grades",
-    "market_quotes",
-    "market_snapshots",
-    "market_snapshot_quotes",
-    "prediction_market_selections",
-    "system_stats",
-    "v5_rating_snapshots",
-    "team_season_stats",
-    "matchup_data_publications",
-    "team_game_measurements",
-    "team_possession_stats",
-    "team_possession_adjusted",
-    "team_rating_components",
-    "site_week_selections",
+#: Versioned table sets, frozen once released, from the shared registry
+#: (``contracts/projection_sets.json``, mirrored for the web app and checked in sync by
+#: ``contracts/validation.py``). A release records the set it was staged with (its
+#: ``projection_checks`` keys); retained releases are read back, activated and rolled
+#: back against that set.
+_REGISTRY_PATH = (
+    Path(__file__).resolve().parents[3] / "contracts" / "projection_sets.json"
 )
-CHART_TABLES: tuple[str, ...] = (
-    "team_season_roster",
-    "team_game_stats",
-    "team_adjusted_epa",
-)
-#: Versioned table sets, frozen once released. A release records the set it was
-#: staged with (its ``projection_checks`` keys); retained releases are read back,
-#: activated and rolled back against that set.
-_CHARTS_V2_ORDER: tuple[str, ...] = (
-    *_CORE_V1_ORDER,
-    *CHART_TABLES,
-    "team_game_yardage",
-)
+_REGISTRY = json.loads(_REGISTRY_PATH.read_text())
 PROJECTION_SETS: dict[str, tuple[str, ...]] = {
-    "core_v1": _CORE_V1_ORDER,
-    "charts_v1": (*_CORE_V1_ORDER, *CHART_TABLES),
-    "charts_v2": _CHARTS_V2_ORDER,
-    "resume_v1": (*_CHARTS_V2_ORDER, "team_resume"),
+    name: tuple(entry["tables"]) for name, entry in _REGISTRY["sets"].items()
 }
+#: The tables only ``charts_v1`` and later serve.
+CHART_TABLES: tuple[str, ...] = tuple(
+    table
+    for table in PROJECTION_SETS["charts_v1"]
+    if table not in PROJECTION_SETS["core_v1"]
+)
 #: The only set new candidates may be staged with.
-STAGING_PROJECTION_SET = "resume_v1"
+STAGING_PROJECTION_SET: str = _REGISTRY["staging_set"]
 PROJECTION_ORDER: tuple[str, ...] = PROJECTION_SETS[STAGING_PROJECTION_SET]
 SERVER_COLUMNS = frozenset({"release_id", "environment"})
 

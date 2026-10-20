@@ -2,6 +2,7 @@
 """Validate that contracts/ files are in sync across Python and TypeScript."""
 
 import ast
+import json
 import re
 import sys
 from pathlib import Path
@@ -271,6 +272,33 @@ def check_schema_sync() -> list[str]:
     return errors
 
 
+def check_projection_sets_sync() -> list[str]:
+    """The projection-set registry must be valid and mirrored byte-for-byte for the web app."""
+    registry_path = CONTRACTS_DIR / "projection_sets.json"
+    errors = []
+    try:
+        registry = json.loads(registry_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"contracts/projection_sets.json is unreadable: {exc}"]
+    sets = registry.get("sets", {})
+    if registry.get("staging_set") not in sets:
+        errors.append("projection_sets.json staging_set is not one of its sets")
+    for name, entry in sets.items():
+        tables = entry.get("tables", [])
+        if len(tables) != len(set(tables)):
+            errors.append(f"projection set {name} lists a table twice")
+        if entry.get("chart_set") is not None and entry["chart_set"] not in sets:
+            errors.append(
+                f"projection set {name} serves unknown chart_set {entry['chart_set']}"
+            )
+    mirror = ROOT / "web" / "src" / "lib" / "projection-sets.json"
+    if not mirror.exists() or mirror.read_bytes() != registry_path.read_bytes():
+        errors.append(
+            "web/src/lib/projection-sets.json differs from contracts/projection_sets.json"
+        )
+    return errors
+
+
 def check_migration_history() -> list[str]:
     errors = []
     migration_dir = CONTRACTS_DIR / "migrations"
@@ -335,6 +363,7 @@ def main():
     all_errors.extend(check_logo_assets())
     all_errors.extend(check_teams_sync())
     all_errors.extend(check_schema_sync())
+    all_errors.extend(check_projection_sets_sync())
     all_errors.extend(check_migration_history())
     all_errors.extend(check_publication_contracts())
 

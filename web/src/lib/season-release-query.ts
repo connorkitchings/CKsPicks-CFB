@@ -1,6 +1,7 @@
 import { getTableColumns, getTableName, sql } from "drizzle-orm";
 import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
 import * as schema from "./schema.ts";
+import projectionSets from "./projection-sets.json" with { type: "json" };
 
 /** Fixed CTE names shadow legacy relations, including correlated SQL and tie lookups. */
 export const CORE_RELEASE_TABLES = [
@@ -38,23 +39,22 @@ export const RELEASE_PROJECTIONS = CORE_RELEASE_TABLES.map(projectionName);
  * `release_id` filter, not as a CTE, because a CTE over a missing relation fails the query.
  */
 export const TEAM_RESUME_PROJECTION = getTableName(schema.seasonReleaseTeamResume);
-/** The `projection_checks` key a release records for the optional résumé table (bare table name). */
-const TEAM_RESUME_KEY = "team_resume";
 /** The sorted table names a release of each chart set records in `projection_checks`. */
 export const CHART_SET_KEYS = perSet((set) => [...CORE_RELEASE_TABLES, ...CHART_TABLE_SETS[set]].map(releaseName).sort());
 /** The chart relations each chart set reads. */
 export const CHART_SET_PROJECTIONS = perSet((set) => CHART_TABLE_SETS[set].map(projectionName));
 export const CHARTS_V1_KEYS = CHART_SET_KEYS.charts_v1;
 /**
- * Every projection set a release can record, mirroring `PROJECTION_SETS` in
- * `projection_common.py`, each with the chart set it serves. `resume_v1` is `charts_v2`
+ * Every projection set a release can record that serves charts, from the shared registry
+ * (`contracts/projection_sets.json`, mirrored here and checked in sync by
+ * `contracts/validation.py`), each with the chart set it serves. `resume_v1` is `charts_v2`
  * plus the résumé table, which is read on its own, so it serves `charts_v2`.
  */
-export const RECORDED_PROJECTION_SETS: Record<string, { chartSet: ChartSet; keys: readonly string[] }> = {
-  charts_v1: { chartSet: "charts_v1", keys: CHART_SET_KEYS.charts_v1 },
-  charts_v2: { chartSet: "charts_v2", keys: CHART_SET_KEYS.charts_v2 },
-  resume_v1: { chartSet: "charts_v2", keys: [...CHART_SET_KEYS.charts_v2, TEAM_RESUME_KEY].sort() },
-};
+export const RECORDED_PROJECTION_SETS: Record<string, { chartSet: ChartSet; keys: readonly string[] }> =
+  Object.fromEntries(
+    Object.entries(projectionSets.sets).flatMap(([name, { tables, chart_set }]) =>
+      chart_set === null ? [] : [[name, { chartSet: chart_set as ChartSet, keys: [...tables].sort() }]]),
+  );
 
 /** Chart CTEs are added only for `chartSet`'s tables; never fall back to live tables. */
 export function seasonReleaseDb(
