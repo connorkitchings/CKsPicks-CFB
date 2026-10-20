@@ -1,6 +1,6 @@
 # Mobile and Week 8 Production release
 
-- **Status:** In Progress — deployed and verified; general Python CI still running at session close
+- **Status:** Complete — deployed and verified; general Python CI later finished green on `dev` and `main`
 - **Created:** 2026-10-19
 - **Authorization:** Owner requested pushing all completed changes to Production, including Week 8. This authorizes integration/deployment and Week 8 activation, superseding the earlier owner-only Git execution preference for this release. Earlier withholding of chart schema promotion remains a material conflict requiring the explicit amendment below.
 - **Implementation log:** `session_logs/2026-10-19/01-production-release-preflight.md`
