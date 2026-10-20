@@ -4,7 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-19. Production and Preview serve the Week 8 SOS/SOR release: `production-season-2026-2cdf8916d915e21b3f25fa71` / `preview-season-2026-2cdf8916d915e21b3f25fa71`. All 56 Week 8 games have spread and total forecasts and lines. Week 7 is scored; cumulative spread 190-188-7 (50.3%), total 192-191-1 (50.1%). Mobile changes are deployed and Charts remains hidden. Evidence: `session_logs/2026-10-19/04-sos-sor-production-release.md`, `session_logs/2026-10-19/01-production-release-preflight.md`.
+> **Last updated:** 2026-10-20. Production and Preview serve the Week 8 line-refresh release: `production-season-2026-125158328e025fb89c96ce0d` / `preview-season-2026-125158328e025fb89c96ce0d`. All 56 Week 8 games have spread and total forecasts and lines, refreshed 2026-10-20 (as of 14:39Z). Week 7 is scored; cumulative spread 190-188-7 (50.3%), total 192-191-1 (50.1%). Charts remains hidden. Evidence: `session_logs/2026-10-20/02-week8-line-refresh.md`, `session_logs/2026-10-19/04-sos-sor-production-release.md`.
 
 ## Product and model
 
@@ -20,8 +20,8 @@
 
 | Week | State | Selected run |
 |---|---|---|
-| 0–7 | **Scored; 2026 V5 record.** 388 completed FBS games; 769 graded leans including 8 pushes (761 decided). Week 7 spread 26-32-1; total 32-27-0. | Production `production-season-2026-2cdf8916d915e21b3f25fa71`; Preview `preview-season-2026-2cdf8916d915e21b3f25fa71`. |
-| 8 | **Active Picks slate.** All 56 FBS games predicted and lined for both targets; serving as-of 2026-10-19T14:10:00Z. | Same active releases above. Production rollback target: `production-season-2026-b7bc98eb26fa667f6c0941d6`; owner-authorized rollback only. Earlier rollback target: `production-season-2026-d0272a48d3a0252fd4196db3`. Preview rollback is not supported by the tooling. |
+| 0–7 | **Scored; 2026 V5 record.** 388 completed FBS games; 769 graded leans including 8 pushes (761 decided). Week 7 spread 26-32-1; total 32-27-0. | Production `production-season-2026-125158328e025fb89c96ce0d`; Preview `preview-season-2026-125158328e025fb89c96ce0d`. |
+| 8 | **Active Picks slate.** All 56 FBS games predicted and lined for both targets; serving as-of 2026-10-20T14:39:00Z. | Same active releases above. Production rollback target: `production-season-2026-2cdf8916d915e21b3f25fa71` (SOS/SOR release, Oct 19 lines); owner-authorized rollback only. Earlier rollback target: `production-season-2026-d0272a48d3a0252fd4196db3`. Preview rollback is not supported by the tooling. |
 
 ## Scoreboard
 
@@ -47,6 +47,8 @@ Production migrations 0026/0027/0028 and Preview migrations 0027/0028 are applie
 
 The SOS/SOR release (2026-10-19) was prepared from clean commit `5060aa60` with `run_season.py prepare --revision-manifest conf/season/2026/revision_manifest_w8_v2.json --through-week 7 --next-week 8 --as-of 2026-10-19T14:10:00Z`, passed all 32 checks (including eight `resume_*` checks), and was activated on Preview, then Production. Its `team_resume` table has 1,242 rows (138 teams x 9 periods, including preseason). Serving payload SHA-256: `b04544766245f8c40b48323ca9bab2f9a5a44a73c920df77127c47d428838e20`. Activation readback SHA-256 on both databases: `6b52cdf0a1c464c9873968fc58088eb431afcc82e65f3c47b1ed8eacdbe10429`. Preview's independent read-only check against the prior Week 8 release matched all game, market and system tables, and every value column of predictions, grades and rating snapshots; only release-ID identity columns differ. Live Production checks passed for `/`, `/results`, `/ratings`, `/performance` and `/api/health` (200), and `/charts` (404).
 
+Week 8 line refresh (2026-10-20): market-only. CFBD betting lines (112 records) and Odds API quotes (404, ~2 credits) were captured for Week 8 only, last capture 14:33:30Z. `scripts/pipeline/build_market_revision.py` (commit `97d5b979`) built `conf/season/2026/revision_manifest_w8_v3.json` (commit `e94cf35a`, `revision_id` `season-2026-w8-preview-r3`, Week 8 cutoff 2026-10-20T14:39:00Z); football inputs and completed-week cutoffs are identical to `w8_v2`. Coverage 56/56 spread and 56/56 total. `run_season.py prepare` ran from a clean worktree pinned to `e94cf35a` and passed all 32 checks; the release is `season-2026-125158328e025fb89c96ce0d`, projection payload SHA-256 `eae0069973b97dc523d9af728ee090c0654e0f49b8492973c10f39c4082c799d`. Preview, then Production, activated with readback SHA-256 `43349ac3cb1e477be4541e23bcdb1179dd11b4c9aa00bb5ad999df67df8bc348` on both. Parity against the prior release: predictions, variances, ratings and completed-week grades identical within 1e-9; only market rows changed. Live Production: `/`, `/results`, `/ratings`, `/performance`, `/api/health` 200; `/charts` 404; health reports Week 8, 56/56 predicted and lined, data as of 2026-10-20T14:39:00Z.
+
 Ratings résumé columns (commit `5060aa60`, `feat(web): simplify ratings résumé columns`): `/ratings` shows "Post-Week 0..7" period labels, FBS W-L, SOR rank, and SOS Played/Remaining/Full. SOR is shown as rank only; WAA and overall uncertainty are not displayed; SOS uses one measure (average FBS team). Elite SOS is stored but not shown. Source contract: `docs/plans/2026-10-19/02-sos-sor-release-projection.md`.
 
 The prior Week 8 `charts_v2` candidate passed all 24 checks. Projection payload SHA-256: `e8b8ef589c33e94abf51d53a8b3c8daf07174dcc6e52d5525ef448922f05a359`. Preview and Production activation readback SHA-256 match: `d8d02ae36baf6eef4b2e770cb5fc71bb43b92a2036aad096808efe90d1e1527f`. Independent read-only verification matched all 22 projection-table counts and the cumulative record. The 888 forecast means/variances, 1,242 rating rows and 776 completed-week grading rows match the prior certified Week 8 snapshot within 1e-9. Only upcoming-market lines/leans changed.
@@ -55,7 +57,7 @@ The final release retains all certified football input hashes and historical cut
 
 ## Next weekly update
 
-No provider refresh is required for this completed promotion. The next authorized Week 8 market refresh should occur before 2026-10-20T18:00:00Z, ahead of the first kickoff at 23:00 UTC. October 19 captures at 14:09:11 UTC (CFBD) and 14:09:12 UTC (Odds API) covered all 56 games for spreads and totals; missing IDs: none for either target. This is a recorded follow-up, not a scheduled automation.
+The Week 8 line refresh is complete (captured 2026-10-20 before the 18:00Z deadline and the 23:00Z first kickoff). Any further mid-week refresh uses the same market-only builder and needs an authorized, scoped capture. This is not a scheduled automation.
 
 Before the next normal week close/open, review and approve an incremental source-ingestion process. Do not repeat the current full-history builder for routine rollover. Use retained certified history and scope any source fetches to new-week observations or an explicitly approved repair. Candidate preparation still requires pinned inputs, a clean commit, exact reconciliation, all verification checks, independent Preview rehearsal and Production readback.
 
