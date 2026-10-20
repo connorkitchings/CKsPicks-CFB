@@ -10,7 +10,7 @@ authorize production use.
 Run the request plan first. It performs no provider calls or writes:
 
 ```bash
-PYTHONPATH=src:. uv run python scripts/research/capture_data_first_phase2.py \
+PYTHONPATH=src:. uv run python scripts/pipeline/capture_data_first_phase2.py \
   --kind pregame --mode dry-run --run-id rehearsal-plan --season 2026 \
   --max-requests 7
 ```
@@ -33,7 +33,7 @@ dry run removes exact requests already present in the Preview catalog and
 counts the remaining provider requests by season, season type, and week:
 
 ```bash
-PYTHONPATH=src:. uv run python scripts/research/capture_data_first_phase2.py \
+PYTHONPATH=src:. uv run python scripts/pipeline/capture_data_first_phase2.py \
   --kind historical --mode dry-run --run-id phase2-history-plan \
   --audit-prefix artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3 \
   --schedule-capture-id <registered-postseason-games-capture-id> \

@@ -80,7 +80,7 @@ required_paths:
     - scripts/pipeline/score_to_db.py
     - scripts/pipeline/freeze_week.py
     - scripts/pipeline/select_public_run.py
-    - scripts/research/capture_data_first_phase2.py
+    - scripts/pipeline/capture_data_first_phase2.py
     - src/cks_picks_cfb/inference/v5_serving.py
     - src/cks_picks_cfb/forecast/live.py
     - src/cks_picks_cfb/ratings/possession_live_replay.py

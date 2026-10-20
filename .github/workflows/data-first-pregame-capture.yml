@@ -41,7 +41,7 @@ jobs:
       - run: uv sync --frozen
       - name: Capture existing pregame sources
         run: >-
-          PYTHONPATH=src:. uv run python scripts/research/capture_data_first_phase2.py
+          PYTHONPATH=src:. uv run python scripts/pipeline/capture_data_first_phase2.py
           --kind pregame
           --mode apply
           --run-id github-${{ github.run_id }}-${{ github.run_attempt }}
