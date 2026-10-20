@@ -8,6 +8,8 @@
 # restricted pipeline role from the macOS Keychain (never the owner URL in
 # web/.env); the app only reads. Preview holds the same Week 5 data as
 # production. Port: PORT (default 3000).
+# Charts is on locally so the top links show it for review; CFB_CHARTS_ENABLED=0
+# shows the published navigation.
 set -euo pipefail
 
 target="${1:-preview}"
@@ -18,7 +20,8 @@ case "$target" in
   *) print -u2 "Usage: zsh scripts/ops/run_web_local.sh [preview|production]"; exit 64 ;;
 esac
 
-print "Web on http://127.0.0.1:${PORT:-3000}/matchup  (data: $target, read-only use of the pipeline login)"
+export CFB_CHARTS_ENABLED="${CFB_CHARTS_ENABLED:-1}"
+print "Web on http://127.0.0.1:${PORT:-3000}/matchup  (data: $target, read-only use of the pipeline login, Charts ${CFB_CHARTS_ENABLED})"
 exec zsh "$root/scripts/ops/$wrapper" zsh -c '
   export DATABASE_URL="${'"$url_var"'}"
   cd "'"$root"'/web"
