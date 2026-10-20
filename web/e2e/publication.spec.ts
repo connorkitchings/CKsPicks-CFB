@@ -55,7 +55,7 @@ test.describe("picks slate (/)", () => {
     await page.goto("/");
 
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Best bets" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Biggest edges" })).toBeVisible();
     await expect(page.getByPlaceholder("Filter by team…")).toBeVisible();
     // Season track record over each scored week's top-5 spread/total leans.
     await expect(shown(page.getByText(/2026: 7–3–0 \(\d+\.\d%\)/))).toBeVisible();
@@ -244,7 +244,7 @@ test("footer carries the team-logo trademark attribution", async ({ page }) => {
 });
 
 test.describe("results slate (/results)", () => {
-  test("shows week and season records, highlights and the full slate", async ({ page }) => {
+  test("shows the week record, highlights and the full slate", async ({ page }) => {
     await page.goto("/results");
 
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();

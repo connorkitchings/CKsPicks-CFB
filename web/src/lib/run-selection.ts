@@ -23,6 +23,9 @@ export function isSelectableRun(run: {
   return evidenceClass === "legacy";
 }
 
+/** Model id of the repaired "intended-update" release; its replay runs render as retrospective. */
+export const V5_INTENDED_UPDATE_MODEL_ID = "v5-intended-update-2026-v1";
+
 /** True when the viewed week's selected run is the V5 model. */
 export function selectsV5(modelId: string | null | undefined): boolean {
   return typeof modelId === "string" && modelId.startsWith("v5-");

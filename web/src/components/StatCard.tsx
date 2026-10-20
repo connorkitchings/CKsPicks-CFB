@@ -1,8 +1,7 @@
 /**
  * Shared stat box: rounded inset container → faint uppercase label → big mono
- * stat → muted subline. Used by RecordBanner,
- * HistoricalModelContext, and the /performance page so the record displays
- * stay visually identical without four copies of the same markup.
+ * stat → muted subline. Used by the /performance page so the record displays
+ * stay visually identical without copies of the same markup.
  */
 
 import clsx from "clsx";

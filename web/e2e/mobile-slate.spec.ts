@@ -65,35 +65,35 @@ test("phone cards keep venue beside the time and the line source through a filte
   await expect(card.getByText(/FanDuel/)).toBeVisible();
 });
 
-test("collapsed best bets preserve every game anchor and selected category", async ({ page }) => {
+test("collapsed biggest edges preserve every game anchor and selected category", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const bestBets = page.getByRole("region", { name: "Best bets" });
-  await bestBets.locator("summary").click();
+  const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
+  await biggestEdges.locator("summary").click();
   // The collapsed and inline copies both render the links; only the shown copy counts.
   // Both categories render their links; only the selected category's column is shown.
   const shownAnchors = () =>
-    bestBets.locator("a[href^='#game-']").filter({ visible: true }).evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    biggestEdges.locator("a[href^='#game-']").filter({ visible: true }).evaluateAll((links) => links.map((link) => link.getAttribute("href")));
   // Five spread leans in the unchanged slate fixture.
   expect(await shownAnchors()).toEqual(["#game-3", "#game-9", "#game-1", "#game-8", "#game-5"]);
-  await bestBets.getByRole("button", { name: "Totals", exact: true }).click();
-  await expect(bestBets.getByRole("button", { name: "Totals", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await biggestEdges.getByRole("button", { name: "Totals", exact: true }).click();
+  await expect(biggestEdges.getByRole("button", { name: "Totals", exact: true })).toHaveAttribute("aria-pressed", "true");
   // Four eligible total leans after switching category.
   expect(await shownAnchors()).toEqual(["#game-3", "#game-6", "#game-5", "#game-1"]);
-  const firstAnchor = bestBets.locator("a[href^='#game-']").filter({ visible: true }).first();
+  const firstAnchor = biggestEdges.locator("a[href^='#game-']").filter({ visible: true }).first();
   const target = await firstAnchor.getAttribute("href");
   await firstAnchor.click();
   expect(new URL(page.url()).hash).toBe(target);
 });
 
 
-test("best bets and highlights are open inline on desktop without a click", async ({ page }) => {
+test("biggest edges and highlights are open inline on desktop without a click", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
-  const bestBets = page.getByRole("region", { name: "Best bets" });
-  await expect(bestBets.getByRole("heading", { name: "Best Bets" })).toBeVisible();
-  await expect(bestBets.getByRole("button", { name: "Totals", exact: true })).toBeHidden();
-  await expect(bestBets.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(9);
+  const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
+  await expect(biggestEdges.getByRole("heading", { name: "Biggest edges" })).toBeVisible();
+  await expect(biggestEdges.getByRole("button", { name: "Totals", exact: true })).toBeHidden();
+  await expect(biggestEdges.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(9);
   await page.goto("/results");
   await expect(page.getByRole("region", { name: "Highlights" }).getByRole("heading", { name: "Highlights" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Highlights" }).locator("details")).toHaveCount(1);
@@ -137,17 +137,12 @@ test("market timestamps hydrate without replacing the slate", async ({ page }) =
   expect(hydrationErrors).toEqual([]);
 });
 
-test("results record: the week tiles are labeled only while Season context is open on a phone", async ({ page }) => {
+test("results record is the single week with accuracy and a link to the season audit", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/results");
   const record = page.getByRole("region", { name: "Record" });
-  const weekLabel = record.getByRole("heading", { name: /^Week \d+$/ });
-  await expect(weekLabel).toBeHidden();
-  await record.getByText("Season context", { exact: true }).click();
-  await expect(weekLabel).toBeVisible();
-  const seasonBox = await record.getByRole("heading", { name: "Season", exact: true }).boundingBox();
-  const weekBox = await weekLabel.boundingBox();
-  expect(seasonBox!.y).toBeLessThan(weekBox!.y);
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(weekLabel).toBeHidden();
+  await expect(record.getByRole("heading", { name: /^Week \d+ record$/ })).toBeVisible();
+  await expect(record.getByText("Season context", { exact: true })).toHaveCount(0);
+  await expect(record.getByRole("heading", { name: "Season", exact: true })).toHaveCount(0);
+  await expect(record.getByRole("link", { name: "Season record and audit" })).toHaveAttribute("href", "/performance");
 });

@@ -445,9 +445,11 @@ function summarize(rows: PerformanceRow[], classification: Performance["classifi
   };
 }
 
+/** Season-to-date before `beforeWeek`, exactly `week`, or (both omitted) the whole season. */
 export const getV5Performance = cache(async (
   season: number,
   beforeWeek?: number,
+  week?: number,
 ): Promise<Performance[]> => {
   const db = await getSeasonDb(season);
   const rows = await db.select({
@@ -475,6 +477,7 @@ export const getV5Performance = cache(async (
       eq(schema.siteWeekSelections.season, season),
       inArray(schema.predictionRuns.evidenceClass, [...V5_RECORD_EVIDENCE]),
       beforeWeek === undefined ? undefined : lt(schema.siteWeekSelections.week, beforeWeek),
+      week === undefined ? undefined : eq(schema.siteWeekSelections.week, week),
     ));
   const typed = rows as PerformanceRow[];
   return [

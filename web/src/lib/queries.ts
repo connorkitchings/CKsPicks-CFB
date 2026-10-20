@@ -19,6 +19,7 @@ import {
   guardRows,
 } from "./row-guard.ts";
 import type { TeamStatRow } from "./team-stats";
+import { biggestEdgesRecord, leanFor, type LeanGradeRow, type Tally } from "./slate.ts";
 
 type BaseGame = {
   gameId: number;
@@ -481,20 +482,25 @@ export const hasSelectionsTable = cache(async (season = publicationScope.season)
 });
 
 /**
- * Fetch target-level market selections for a run, if the table exists.
- * Returns an empty map if unmigrated or no selections exist.
+ * Fetch target-level market selections for several runs in one query, if the
+ * table exists. Returns empty maps if unmigrated or no selections exist.
  */
-export async function getMarketSelectionsForRun(
-  runId: string,
+export async function getMarketSelectionsForRuns(
+  runIds: string[],
   season = publicationScope.season,
-): Promise<Map<number, GameSelections>> {
+): Promise<Map<string, Map<number, GameSelections>>> {
+  const byRun = new Map<string, Map<number, GameSelections>>(
+    runIds.map((runId) => [runId, new Map()]),
+  );
+  if (runIds.length === 0) return byRun;
   const db = await getSeasonDb(season);
   const tableExists = await hasSelectionsTable(season);
-  if (!tableExists) return new Map();
+  if (!tableExists) return byRun;
 
   try {
     const selections = await db
       .select({
+        runId: schema.predictionMarketSelections.runId,
         gameId: schema.predictionMarketSelections.gameId,
         target: schema.predictionMarketSelections.target,
         side: schema.predictionMarketSelections.side,
@@ -508,35 +514,32 @@ export async function getMarketSelectionsForRun(
         schema.marketQuotes,
         eq(schema.predictionMarketSelections.quoteId, schema.marketQuotes.quoteId),
       )
-      .where(eq(schema.predictionMarketSelections.runId, runId));
+      .where(inArray(schema.predictionMarketSelections.runId, runIds));
 
-    const map = new Map<number, GameSelections>();
     for (const sel of selections) {
-      let entry = map.get(sel.gameId);
-      if (!entry) {
-        entry = {};
-        map.set(sel.gameId, entry);
-      }
-      if (sel.target === "spread") {
-        entry.spread = {
-          point: sel.point,
-          side: sel.side,
-          edge: sel.edge,
-          source: sel.source ?? null,
-        };
-      } else if (sel.target === "total") {
-        entry.total = {
-          point: sel.point,
-          side: sel.side,
-          edge: sel.edge,
-          source: sel.source ?? null,
-        };
-      }
+      const map = byRun.get(sel.runId);
+      if (!map || (sel.target !== "spread" && sel.target !== "total")) continue;
+      const entry = map.get(sel.gameId) ?? {};
+      map.set(sel.gameId, entry);
+      entry[sel.target] = {
+        point: sel.point,
+        side: sel.side,
+        edge: sel.edge,
+        source: sel.source ?? null,
+      };
     }
-    return map;
+    return byRun;
   } catch {
-    return new Map();
+    return new Map(runIds.map((runId) => [runId, new Map()]));
   }
+}
+
+/** Target-level market selections for one run; see `getMarketSelectionsForRuns`. */
+export async function getMarketSelectionsForRun(
+  runId: string,
+  season = publicationScope.season,
+): Promise<Map<number, GameSelections>> {
+  return (await getMarketSelectionsForRuns([runId], season)).get(runId) ?? new Map();
 }
 
 /**
@@ -1028,4 +1031,88 @@ export const getHistoricalModelContext = cache(async (
     totalComparedGames: row.totalComparedGames,
   });
   return { modelId: full[0].modelId, fullSeason: map(full[0]), matchingWeek: week[0] ? map(week[0]) : null };
+});
+
+/**
+ * Season record of each scored week's largest-edge leans ("Biggest edges"): one
+ * lightweight read of (week, game, target, edge, grade) over the selected runs,
+ * ranked by `biggestEdgesRecord`. Lines, sides and edges go through the same
+ * `overlaySelection` and `withFrozenLines` steps as the full slate, so the
+ * record equals the one computed from every week's full games.
+ */
+export const getBiggestEdgesRecord = cache(async (season: number): Promise<Tally> => {
+  const weeks = await getScoredWeeks(season);
+  if (weeks.length === 0) return { win: 0, loss: 0, push: 0 };
+  const db = await getSeasonDb(season);
+  const grade = (target: "spread" | "total") => sql<"win" | "loss" | "push" | null>`(
+    SELECT pg.result FROM prediction_grades pg
+    WHERE pg.run_id = ${schema.predictions.runId}
+      AND pg.game_id = ${schema.predictions.gameId}
+      AND pg.target = ${target}
+    LIMIT 1
+  )`;
+  const rows = await db
+    .select({
+      runId: schema.predictions.runId,
+      week: schema.games.week,
+      gameId: schema.games.gameId,
+      startDate: schema.games.startDate,
+      homeTeam: schema.games.homeTeam,
+      awayTeam: schema.games.awayTeam,
+      homeTeamSpreadLine: schema.predictions.homeTeamSpreadLine,
+      totalLine: schema.predictions.totalLine,
+      predictedSpread: schema.predictions.predictedSpread,
+      predictedTotal: schema.predictions.predictedTotal,
+      spreadLean: schema.predictions.spreadLean,
+      totalLean: schema.predictions.totalLean,
+      edgeSpread: schema.predictions.edgeSpread,
+      edgeTotal: schema.predictions.edgeTotal,
+      spreadResult: grade("spread"),
+      totalResult: grade("total"),
+      modelId: schema.predictionRuns.modelId,
+      state: schema.predictionRuns.state,
+      evidenceClass: schema.predictionRuns.evidenceClass,
+    })
+    .from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, and(
+      eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId),
+      eq(schema.predictionRuns.season, season),
+      eq(schema.predictionRuns.week, schema.siteWeekSelections.week),
+    ))
+    .innerJoin(schema.predictions, eq(schema.predictions.runId, schema.predictionRuns.runId))
+    .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
+    .where(and(
+      eq(schema.siteWeekSelections.season, season),
+      inArray(schema.siteWeekSelections.week, weeks),
+    ))
+    .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
+
+  const selectable = rows.filter(isSelectableRun);
+  const selections = await getMarketSelectionsForRuns(
+    [...new Set(selectable.map((row) => row.runId))],
+    season,
+  );
+  const lean: LeanGradeRow[] = [];
+  for (const week of weeks) {
+    const weekRows = selectable
+      .filter((row) => row.week === week)
+      .map((row) => overlaySelection(row, selections.get(row.runId)?.get(row.gameId)));
+    for (const row of await withFrozenLines(weekRows, season, week)) {
+      const source = { ...row, publicationMode: "predictions" as const };
+      for (const kind of ["spread", "total"] as const) {
+        const found = leanFor(source, kind);
+        if (found) {
+          lean.push({
+            week,
+            gameId: row.gameId,
+            startMs: row.startDate.getTime(),
+            kind,
+            edge: found.edge,
+            grade: kind === "spread" ? row.spreadResult : row.totalResult,
+          });
+        }
+      }
+    }
+  }
+  return biggestEdgesRecord(lean);
 });

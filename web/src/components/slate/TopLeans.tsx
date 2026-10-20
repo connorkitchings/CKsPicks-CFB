@@ -64,7 +64,7 @@ function Column({
   );
 }
 
-/** Highest-edge leans first; every game is still listed below. */
+/** Largest-edge leans first; every game is still listed below. */
 export function TopLeans({
   games,
   record,
@@ -78,9 +78,9 @@ export function TopLeans({
   const decided = (record?.win ?? 0) + (record?.loss ?? 0);
   const rate = decided > 0 && record ? winRatePct(record.win, record.loss) : null;
 
-  const bestBetsTitle = (
+  const title = (
     <span>
-      Best Bets
+      Biggest edges
       {record && (decided + record.push) > 0 && (
         <span className="ml-2 text-xs font-normal text-ink-muted">
           {season}: {record.win}–{record.loss}–{record.push}{rate !== null ? ` (${rate.toFixed(1)}%)` : ""}
@@ -90,14 +90,14 @@ export function TopLeans({
   );
 
   return (
-    <section aria-label="Best bets">
+    <section aria-label="Biggest edges">
       <ResponsiveDisclosure
         className="rounded-xl border border-line bg-surface-card"
-        title={bestBetsTitle}
-        heading={bestBetsTitle}
+        title={title}
+        heading={title}
       >
         <div className="mb-3 sm:hidden">
-          <SegmentedControl label="Best bets category" value={tab} onChange={setTab} options={[{ value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]} fill />
+          <SegmentedControl label="Biggest edges category" value={tab} onChange={setTab} options={[{ value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]} fill />
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Column

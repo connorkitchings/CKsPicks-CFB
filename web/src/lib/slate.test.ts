@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  biggestEdgesRecord,
   edgeTier,
   edgeTone,
   hasLean,
   leanFor,
+  leanGradeRows,
   sortGames,
   topLeans,
+  resultFor,
   topLeansRecord,
   winRatePct,
 } from "./slate.ts";
@@ -130,6 +133,37 @@ test("topLeansRecord tallies each week's top leans from recorded grades", () => 
   assert.deepEqual(topLeansRecord([week], 2), { win: 2, loss: 1, push: 0 });
   assert.deepEqual(topLeansRecord([week, week], 2), { win: 4, loss: 2, push: 0 });
   assert.deepEqual(topLeansRecord([]), { win: 0, loss: 0, push: 0 });
+});
+
+test("biggestEdgesRecord ranks leans exactly as the per-week topLeans does", () => {
+  const graded = (over: Record<string, unknown>) =>
+    game({ homePoints: 24, awayPoints: 17, ...over });
+  const results = ["win", "loss", "push"] as const;
+  const slates = [5, 6, 7].map((week) =>
+    Array.from({ length: 14 }, (_, i) => graded({
+      gameId: week * 100 + i,
+      week,
+      // Repeated edges and kickoffs force the tie-breaks to matter.
+      edgeSpread: (i % 5) + 1,
+      edgeTotal: ((i * 3) % 4) + 1,
+      spreadLean: i % 6 === 0 ? null : "home",
+      startDate: new Date(Date.UTC(2026, 9, week, 16 + (i % 3))),
+      spreadResult: i % 7 === 0 ? null : results[i % 3],
+      totalResult: results[(i + 1) % 3],
+    })),
+  );
+  const reference = { win: 0, loss: 0, push: 0 };
+  for (const slate of slates) {
+    for (const kind of ["spread", "total"] as const) {
+      for (const lean of topLeans(slate, kind, 5, true)) {
+        const grade = resultFor(lean.game, kind);
+        if (grade) reference[grade] += 1;
+      }
+    }
+  }
+  assert.ok(reference.win + reference.loss + reference.push > 0);
+  assert.deepEqual(topLeansRecord(slates), reference);
+  assert.deepEqual(biggestEdgesRecord(slates.flatMap(leanGradeRows)), reference);
 });
 
 test("sortGames puts the biggest edge first and no-lean games last", () => {

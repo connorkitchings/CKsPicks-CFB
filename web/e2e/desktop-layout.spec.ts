@@ -54,12 +54,12 @@ test.describe("desktop layout at 1280px", () => {
     await expectMaxHeight(search);
   });
 
-  test("slate shows Best Bets and the season record without a click", async ({ page }) => {
+  test("slate shows Biggest edges and the season record without a click", async ({ page }) => {
     await page.goto("/");
-    const bestBets = page.getByRole("region", { name: "Best bets" });
-    await expect(bestBets.getByText("Best Bets", { exact: false }).filter({ visible: true }).first()).toBeVisible();
-    await expect(bestBets.getByText("Spread", { exact: true }).filter({ visible: true }).first()).toBeVisible();
-    await expect(bestBets.locator("summary").filter({ visible: true })).toHaveCount(0);
+    const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
+    await expect(biggestEdges.getByText("Biggest edges", { exact: false }).filter({ visible: true }).first()).toBeVisible();
+    await expect(biggestEdges.getByText("Spread", { exact: true }).filter({ visible: true }).first()).toBeVisible();
+    await expect(biggestEdges.locator("summary").filter({ visible: true })).toHaveCount(0);
 
     const record = page.getByRole("region", { name: "Record", exact: true });
     await expect(visibleHeading(page, "Season record")).toBeVisible();

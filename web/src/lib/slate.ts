@@ -101,7 +101,25 @@ function modelMarginText(margin: number | null, team: string): string | null {
   return `${team} by ${margin.toFixed(1)}`;
 }
 
-export function leanFor(game: Game, kind: LeanKind): Lean | null {
+/** The prediction fields `leanFor` reads; lets a lightweight query row stand in for a full game. */
+export type LeanSource = Pick<
+  PredictionGame,
+  | "publicationMode"
+  | "homeTeam"
+  | "awayTeam"
+  | "spreadLean"
+  | "homeTeamSpreadLine"
+  | "edgeSpread"
+  | "predictedSpread"
+  | "spreadSource"
+  | "totalLean"
+  | "totalLine"
+  | "edgeTotal"
+  | "predictedTotal"
+  | "totalSource"
+>;
+
+export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
   if (game.publicationMode !== "predictions") return null;
   if (kind === "spread") {
     if (game.spreadLean === null || game.homeTeamSpreadLine === null) return null;
@@ -269,19 +287,65 @@ export function weekRecord(games: Game[]): { spread: Tally; total: Tally } {
   return out;
 }
 
+/** One graded lean, reduced to what ranking needs. */
+export type LeanGradeRow = {
+  week: number;
+  gameId: number;
+  startMs: number;
+  kind: LeanKind;
+  edge: number;
+  grade: Grade | null;
+};
+
+/** Every lean in a slate as a ranking row. */
+export function leanGradeRows(games: Game[]): LeanGradeRow[] {
+  const out: LeanGradeRow[] = [];
+  for (const game of games) {
+    if (game.publicationMode !== "predictions") continue;
+    for (const kind of ["spread", "total"] as const) {
+      const lean = leanFor(game, kind);
+      if (lean) {
+        out.push({
+          week: game.week,
+          gameId: game.gameId,
+          startMs: game.startDate.getTime(),
+          kind,
+          edge: lean.edge,
+          grade: resultFor(game, kind),
+        });
+      }
+    }
+  }
+  return out;
+}
+
 /**
- * Season track record over each week's top-N leans per bet type: what the
- * model's loudest calls actually earned. Ungraded leans don't count.
+ * Season track record over each week's top-N leans per bet type (largest edge,
+ * earlier kickoff on ties): what the model's loudest calls actually earned.
+ * Ungraded leans don't count.
  */
+export function biggestEdgesRecord(rows: LeanGradeRow[], n = 5): Tally {
+  const buckets = new Map<string, LeanGradeRow[]>();
+  for (const row of rows) {
+    const key = `${row.week}:${row.kind}`;
+    buckets.set(key, [...(buckets.get(key) ?? []), row]);
+  }
+  const out: Tally = { win: 0, loss: 0, push: 0 };
+  for (const bucket of buckets.values()) {
+    bucket.sort((a, b) => b.edge - a.edge || a.startMs - b.startMs || a.gameId - b.gameId);
+    for (const row of bucket.slice(0, n)) if (row.grade) out[row.grade] += 1;
+  }
+  return out;
+}
+
+/** The same record from full slates, one per week. */
 export function topLeansRecord(weeksGames: Game[][], n = 5): Tally {
   const out: Tally = { win: 0, loss: 0, push: 0 };
   for (const games of weeksGames) {
-    for (const kind of ["spread", "total"] as const) {
-      for (const lean of topLeans(games, kind, n, true)) {
-        const grade = resultFor(lean.game, kind);
-        if (grade) out[grade] += 1;
-      }
-    }
+    const week = biggestEdgesRecord(leanGradeRows(games), n);
+    out.win += week.win;
+    out.loss += week.loss;
+    out.push += week.push;
   }
   return out;
 }

@@ -1,39 +1,27 @@
-import { displayOnlyNotice, isDisplayOnlyNoticeEnabled } from "@/lib/display-only";
 import { redirect } from "next/navigation";
-import {
-  getGamesForWeek,
-  getMarketGamesForWeek,
-  getRunForWeek,
-  getScoredWeeks,
-  type Game,
-} from "@/lib/queries";
-import { getV5Performance, type Performance } from "@/lib/v5";
-import { selectsV5 } from "@/lib/run-selection";
+import { getScoredWeeks } from "@/lib/queries";
 import { SlateView } from "@/components/slate/SlateView";
-import { publicationScope, isAllowedSeason } from "@/lib/publication";
-import { uiFixture } from "@/test/fixtures/publication";
+import { publicationScope } from "@/lib/publication";
+import {
+  loadSlateData,
+  slatePublicationMode,
+  slateSeason,
+  slateSort,
+  slateUpdatedAt,
+  type SlateSearchParams,
+} from "@/lib/slate-page";
 
 // Revalidate every 5 minutes (ISR).
 export const revalidate = 300;
 
-type SearchParams = Promise<{ season?: string; week?: string; mode?: string; sort?: string }>;
-
 export default async function ResultsPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: SlateSearchParams;
 }) {
   const params = await searchParams;
-
-  const testModeParam = params.mode === "predictions" || params.mode === "market"
-    ? params.mode
-    : null;
-  const publicationMode = process.env.CFB_UI_TEST_MODE === "1" && testModeParam
-    ? testModeParam
-    : publicationScope.mode;
-
-  const requestedSeason = params.season ? Number(params.season) : publicationScope.season;
-  const season = isAllowedSeason(requestedSeason) ? requestedSeason : publicationScope.season;
+  const publicationMode = slatePublicationMode(params);
+  const season = slateSeason(params);
 
   let scoredWeeks: number[] = [];
   try {
@@ -50,73 +38,14 @@ export default async function ResultsPage({
     redirect(`/?week=${requestedWeek}`);
   }
 
-  let week = requestedWeek ?? (scoredWeeks.length > 0 ? scoredWeeks[scoredWeeks.length - 1] : 0);
-  let weeks = scoredWeeks;
-
-  let games: Game[] = [];
-  let performance: Performance[] = [];
-  let systemName: string | null = null;
-  let retrospectiveRepair = false;
-  let displayOnlyText: string | null = null;
-  let dbError: string | null = null;
-
-  if (process.env.CFB_UI_TEST_MODE === "1") {
-    if (publicationMode === "predictions") {
-      const fx = await import("@/test/fixtures/slate");
-      const bundle = fx.slateResults();
-      week = bundle.week;
-      weeks = bundle.weeks;
-      games = bundle.games;
-      if (games[0]?.publicationMode === "predictions") {
-        systemName = games[0].systemName;
-        performance = selectsV5(games[0].modelId) ? bundle.performance : [];
-      }
-    } else {
-      const fixture = uiFixture(publicationMode, week);
-      games = fixture.games;
-    }
-  } else {
-    try {
-      if (season > 0 && week >= 0) {
-        if (publicationMode === "predictions") {
-          const selectedRun = await getRunForWeek(season, week);
-          retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
-            && selectedRun.evidenceClass === "replay";
-          displayOnlyText = selectedRun?.displayOnly && isDisplayOnlyNoticeEnabled()
-            ? displayOnlyNotice(week, selectedRun.createdAt)
-            : null;
-          [games, performance] = await Promise.all([
-            getGamesForWeek(season, week),
-            selectsV5(selectedRun?.modelId)
-              ? getV5Performance(season, week)
-              : Promise.resolve([]),
-          ]);
-        } else {
-          games = await getMarketGamesForWeek(season, week);
-        }
-        if (games.length > 0 && games[0].publicationMode === "predictions") {
-          systemName = games[0].systemName;
-        }
-      }
-    } catch (err) {
-      console.error("Results weekly data query failed", err);
-      dbError = "Weekly results data is temporarily unavailable.";
-    }
-  }
-
-  const gamesUpdatedAt = games
-    .map((g) => g.updatedAt.getTime())
-    .reduce<number>((max, t) => (t > max ? t : max), 0);
-  const updatedAt = gamesUpdatedAt > 0 ? new Date(gamesUpdatedAt) : null;
+  const requested = requestedWeek ?? (scoredWeeks.length > 0 ? scoredWeeks[scoredWeeks.length - 1] : 0);
+  const data = await loadSlateData({ view: "results", season, week: requested, publicationMode });
+  const week = data.fixtureWeek?.week ?? requested;
+  const weeks = data.fixtureWeek?.weeks ?? scoredWeeks;
+  const { games } = data;
 
   const firstPrediction = games.find((g) => g.publicationMode === "predictions");
-  const runState = firstPrediction?.runState ?? null;
-  const retrospective = retrospectiveRepair || firstPrediction?.evidenceClass === "replay";
-
-  const initialSort =
-    params.sort === "spreadEdge" || params.sort === "totalEdge"
-      ? params.sort
-      : "kickoff";
+  const retrospective = data.retrospectiveRepair || firstPrediction?.evidenceClass === "replay";
 
   return (
     <SlateView
@@ -126,17 +55,17 @@ export default async function ResultsPage({
       weeks={weeks}
       basePath="/results"
       games={games}
-      performance={performance}
-      systemName={systemName}
-      runState={runState}
+      performance={data.performance}
+      systemName={data.systemName}
+      runState={firstPrediction?.runState ?? null}
       retrospective={retrospective}
-      updatedAt={updatedAt}
+      updatedAt={slateUpdatedAt(games, null)}
       publicationMode={publicationMode}
       allowedSeasons={publicationScope.allowedSeasons}
-      dbError={dbError}
-      retrospectiveRepair={retrospectiveRepair}
-      displayOnlyNotice={displayOnlyText}
-      initialSort={initialSort}
+      dbError={data.dbError}
+      retrospectiveRepair={data.retrospectiveRepair}
+      displayOnlyNotice={data.displayOnlyText}
+      initialSort={slateSort(params)}
       emptyMessage={
         scoredWeeks.length === 0
           ? `No completed or scored weeks have been recorded for the ${season} season yet.`
