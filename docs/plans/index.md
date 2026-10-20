@@ -6,6 +6,7 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [Incremental weekly ingestion](2026-10-20/02-incremental-weekly-ingestion.md) | Separate promotion (no provider calls), normal week close/open (new-week requests only) and budgeted history repair | Draft; awaiting owner approval. No provider calls or code changes in the plan. |
 | [SOS/SOR as a season-release projection](2026-10-19/02-sos-sor-release-projection.md) | Strength of schedule, strength of record and wins above average computed per release in Python and served from `season_release_team_resume` | Approved October 19; implemented locally on `connorkitchings/sos-sor-release-projection`, awaiting owner commit. Remaining owner gates: migration 0028 on Preview then Production, the Preview `to_regclass` check, prepare/Preview rehearsal, Production readback. Log: `session_logs/2026-10-19/03-sos-sor-release-projection.md`. |
 | [Mobile and Week 8 Production release](2026-10-19/01-mobile-week8-production-release.md) | Deploy mobile and advance Production serving | Complete; Production 0026/0027/0028 and Week 8 activation done, mobile deployed, CI green. Charts remains hidden. |
 | [Mobile web experience](2026-10-18/04-mobile-web-experience.md) | Core mobile journeys, shared controls and responsive presentation | Implemented and deployed October 19; mobile journeys and validation complete. Charts and unlinked team-history redesign excluded. |
