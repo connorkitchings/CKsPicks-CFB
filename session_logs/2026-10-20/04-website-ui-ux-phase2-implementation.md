@@ -6,7 +6,7 @@
 - **Plan Contract:** `docs/plans/2026-10-20/02-website-ui-ux-phase2.md`
 - **Approval / Status:** Explicit owner Terra handoff in chat on 2026-10-20 / `Implemented`
 - **Blockers:** `None`
-- **Next:** Owner commits the Phase 2 changes on `dev` when ready.
+- **Next:** Committed and pushed to `dev` (`43268db7`, integrated with the shared slate loader in `78c90e34`). Promotion to `main` is a separate owner decision.
 
 ## Context and Decisions
 - **Task 1 (`BetCell` Hierarchy Condensation):** Placed `Spread` / `Total` on the left of the header row and `lean.source` (`DraftKings`, `Bovada`, etc.) on the right (`justify-between`) when `results === false`, eliminating the 4th text line per `BetCell` on Picks cards while keeping `<ResultBadge>` in the header row and `[lean.source, cover]` below on Results cards (`results === true`).
@@ -54,14 +54,16 @@
 - [x] `PLAYWRIGHT_PORT=3105 npm --prefix web run test:ui -- e2e/mobile-slate.spec.ts e2e/desktop-layout.spec.ts e2e/matchup.spec.ts e2e/performance.spec.ts e2e/publication.spec.ts e2e/ratings.spec.ts` (105 passed)
 - [x] `PLAYWRIGHT_PORT=3106 npm --prefix web run test:charts-gate` (12 passed)
 - [x] `make contracts-check` (passed)
-- [x] `uv run mkdocs build --quiet` (passed)
+- [x] `uv run mkdocs build --quiet` (passed; the quickstart specifies `--strict`, which passes since `6e080512`)
+- Not run for this web-only change: `make test` and `ruff`. The integrating commit (`78c90e34`) re-ran lint, typecheck, build, `test:publication` (269), `test:ui` (154) and `test:charts-gate`, and CI passed.
+- Every UI test ran against fixtures (`CFB_UI_TEST_MODE=1`). Real-data checks of the conference filter are in `03-week8-stabilization.md`.
 - [x] `git diff --check` (clean)
 
 ## Amendments and Blockers
 - `None`
 
 ## Handoff Notes
-- **Resume at:** Commit the Phase 2 changes on `dev` using the proposed commit command.
+- **Resume at:** Nothing pending for Phase 2 code; see the real-data verification note in `03-week8-stabilization.md`.
 - **Watch out for:** Do not commit on `dev`/`main` if an uncommitted `run_season.py prepare` candidate is awaiting `run_season.py release`.
 
 **tags:** ["web", "ui", "ux", "slate", "ratings", "matchup", "playwright"]

@@ -47,6 +47,7 @@ export function SlateToolbar<T extends string>({
             id="slate-conference"
             data-testid="conference-filter"
             aria-label="Filter by conference"
+            title="Shows games where either team is in the conference"
             value={conference}
             onChange={(event) => onConferenceChange(event.target.value)}
             className="min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent"

@@ -111,8 +111,11 @@ export async function loadSlateData(args: {
             ? getV5Performance(season, week)
             : getV5Performance(season, undefined, week)
           : Promise.resolve([]),
-        // Optional: a missing roster only removes the conference filter.
-        getTeamSeasonRoster(season).catch(() => null),
+        // Optional: a missing roster only removes the conference filter, but say so.
+        getTeamSeasonRoster(season).catch((err) => {
+          console.error("Team roster query failed; the conference filter is hidden", err);
+          return null;
+        }),
       ]);
       out.roster = roster ?? [];
     } else {
