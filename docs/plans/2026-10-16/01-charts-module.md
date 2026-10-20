@@ -1,6 +1,6 @@
 # Charts module: weekly team charts
 
-- **Status:** Complete as released: Charts ships hidden behind `CFB_CHARTS_ENABLED` (live `/charts` returns 404). Deep visual verification is deferred until Charts is slated to be un-hidden; that, and any Production un-hide, is a separate owner-gated decision. Earlier record: Tasks 1–7 committed; Preview prepared, verified, activated and inspected. Follow-up chart organization, PNG focus-ring fixes and accepted baseline logo spacing are committed and pushed to `dev` at `b2335ae5`. Production remains separately owner-gated.
+- **Status:** In Progress — code complete and released hidden behind `CFB_CHARTS_ENABLED` (live `/charts` returns 404). Remaining before publication: real-data visual review, Preview acceptance and the owner's publication decision, tracked in [Charts pre-publication verification](../2026-10-20/03-charts-pre-publication.md). Earlier record: Tasks 1–7 committed; Preview prepared, verified, activated and inspected. Follow-up chart organization, PNG focus-ring fixes and accepted baseline logo spacing are committed and pushed to `dev` at `b2335ae5`. Production remains separately owner-gated.
 - **Created:** 2026-10-16
 - **Approval source:** Owner approved revision 3 of the plan in chat on 2026-10-16, after two owner code reviews.
 - **Implementation log:** `session_logs/2026-10-16/02-charts-module-implementation.md` (planning log: `session_logs/2026-10-16/01-charts-module-planning.md`)

@@ -39,7 +39,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Branches
 
-`main` is production (Vercel deploys from it); `dev` is the working branch. Work on `dev`, then merge `dev` into `main` to release. No other long-lived branches. Details: `AGENTS.md` (Branching).
+`main` is production (Vercel deploys from it); `dev` is the working branch. Work on `dev`, then merge `dev` into `main` to release. Current focus of `dev` (owner, 2026-10-20): testing and preparing Charts for publication; see [Charts pre-publication verification](plans/2026-10-20/03-charts-pre-publication.md). Charts stays unpublished until the owner decides. No other long-lived branches. Details: `AGENTS.md` (Branching).
 
 ## Release state
 
