@@ -9,6 +9,9 @@ import {
   leanFor,
   leanGradeRows,
   sortGames,
+  sortSlate,
+  slateSorts,
+  weekPhase,
   topLeans,
   resultFor,
   topLeansRecord,
@@ -329,3 +332,26 @@ test("venueLabel formats City, ST and degrades gracefully", () => {
   assert.equal(venueLabel(undefined, undefined), "");
 });
 
+
+test("weekPhase is upcoming with no finished game or no games, final when all are, else in-progress", () => {
+  const open = game({ gameId: 1 });
+  const done = game({ gameId: 2, homePoints: 31, awayPoints: 24 });
+  assert.equal(weekPhase([]), "upcoming");
+  assert.equal(weekPhase([open, open]), "upcoming");
+  assert.equal(weekPhase([done, open]), "in-progress");
+  assert.equal(weekPhase([done, done]), "final");
+});
+
+test("sortSlate offers result sorts only once a game has finished", () => {
+  assert.equal(slateSorts("upcoming").includes("worstResult"), false);
+  assert.equal(slateSorts("final").includes("worstResult"), true);
+  const early = game({ gameId: 1, startDate: new Date("2026-10-03T12:00:00Z"), edgeSpread: 1, edgeTotal: 1 });
+  const late = game({ gameId: 2, startDate: new Date("2026-10-03T20:00:00Z"), edgeSpread: 5, edgeTotal: 1 });
+  // An upcoming week ignores a result sort and keeps kickoff order.
+  assert.deepEqual(sortSlate([late, early], "worstResult", "upcoming").map((g) => g.gameId), [1, 2]);
+  assert.deepEqual(sortSlate([early, late], "bestEdge", "upcoming").map((g) => g.gameId), [2, 1]);
+  const win = game({ gameId: 3, homePoints: 40, awayPoints: 10, totalLean: null });
+  const loss = game({ gameId: 4, homePoints: 10, awayPoints: 40, totalLean: null });
+  assert.deepEqual(sortSlate([loss, win], "bestResult", "final").map((g) => g.gameId), [3, 4]);
+  assert.deepEqual(sortSlate([win, loss], "worstResult", "in-progress").map((g) => g.gameId), [4, 3]);
+});

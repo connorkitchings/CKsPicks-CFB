@@ -6,6 +6,8 @@
 >
 > **Last updated:** 2026-10-20. Production and Preview serve the Week 8 line-refresh release: `production-season-2026-125158328e025fb89c96ce0d` / `preview-season-2026-125158328e025fb89c96ce0d`. All 56 Week 8 games have spread and total forecasts and lines, refreshed 2026-10-20 (as of 14:39Z). Week 7 is scored; cumulative spread 190-188-7 (50.3%), total 192-191-1 (50.1%). Charts remains hidden. Evidence: `session_logs/2026-10-20/02-week8-line-refresh.md`, `session_logs/2026-10-19/04-sos-sor-production-release.md`.
 
+> **2026-10-21 site reorganization (not deployed or merged):** the site is being reorganized into four tabs: Games (`/`, Picks and Results merged into one week view with a phase chip; `/matchup/[gameId]` detail pages unchanged), Ratings (`/ratings`, with team pages at `/teams/[team]`), Stats (`/stats`, formerly `/charts`, returns 404 unless `CFB_CHARTS_ENABLED=1`) and Model (`/model`, formerly `/performance`, and `/model/method`, formerly `/methodology`). Old URLs redirect with 307 for now. Phases 1-3 are implemented on stacked branches pending owner review and merge; Phase 4 (Stats publication) is not started. Plan: `docs/plans/2026-10-21/01-site-reorganization-and-performance.md`.
+
 ## Product and model
 
 - **Product:** public Vercel site showing every FBS game's spread and total lean

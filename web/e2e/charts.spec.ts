@@ -58,7 +58,7 @@ async function exportPng(page: Page): Promise<{ file: string; report: { logos: n
 
 test.describe("team charts", () => {
   test("net success bars render one bar per game with logos and score labels", async ({ page }) => {
-    await page.goto("/charts");
+    await page.goto("/stats");
     await expect(page.getByRole("heading", { name: "Team charts" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
     await expect(page.getByTestId("chart-description")).toHaveText("Each game's winner minus loser success rate, in percentage points.");
@@ -77,7 +77,7 @@ test.describe("team charts", () => {
   test("hidden charts are absent from the picker and their URLs fall back to net success", async ({ page }) => {
     // Hidden by `ready: false` in src/lib/chart-config.ts, or removed from the registry.
     for (const hidden of ["schedule", "trajectory", "rating-trajectory"]) {
-      await page.goto(`/charts?chart=${hidden}&team=Alabama`);
+      await page.goto(`/stats?chart=${hidden}&team=Alabama`);
       await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
       await expect(page.getByTestId("net-success-chart")).toBeVisible();
       await expect(page.getByTestId("chart-picker").getByRole("link")).toHaveText([
@@ -87,7 +87,7 @@ test.describe("team charts", () => {
   });
 
   test("scatter shows 'Through Week N' and a week switch changes the window", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     await expect(page.getByText("Offense · 2026 · FBS vs FBS · Through Week 3").first()).toBeVisible();
     await expect(page.locator("#week-select")).toHaveValue("3");
     await expect(page.getByRole("option", { name: "Through Week 2" })).toHaveCount(1);
@@ -101,7 +101,7 @@ test.describe("team charts", () => {
   });
 
   test("efficiency quadrants are named, the average lines are labeled and the grid is faint", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     const corners = page.getByTestId("corner-labels");
     for (const name of ["Boom or bust", "Efficient and explosive", "Struggling", "Methodical"]) {
       await expect(corners.getByText(name, { exact: true })).toBeVisible();
@@ -118,13 +118,13 @@ test.describe("team charts", () => {
     await expect(averages.getByText(/^Avg yards\/success \d/)).toHaveCount(1);
     await expect(page.getByTestId("direction-caption")).toHaveText("Up and right is better ↗");
     await expect(page.locator("[data-grid='x']").first()).toHaveAttribute("opacity", "0.55");
-    await page.goto("/charts?chart=efficiency&week=3&side=defense");
+    await page.goto("/stats?chart=efficiency&week=3&side=defense");
     await expect(corners.getByText("Shutdown", { exact: true })).toBeVisible();
     await expect(corners.getByText("Big-play risk", { exact: true })).toBeVisible();
   });
 
   test("hovering a team fades the others and draws a larger copy on top", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     const marks = page.locator("g[data-team]");
     const hovered = marks.first();
     const name = await hovered.getAttribute("data-team");
@@ -140,7 +140,7 @@ test.describe("team charts", () => {
 
   test("switching tabs from a net-success Week 0 or 1 URL coerces the week", async ({ page }) => {
     for (const requested of [0, 1]) {
-      await page.goto(`/charts?chart=net-success&week=${requested}`);
+      await page.goto(`/stats?chart=net-success&week=${requested}`);
       await expect(page.getByText(`Week ${requested} · 2026 · FBS vs FBS`).first()).toBeVisible();
       await page.getByRole("link", { name: "Efficiency vs explosiveness", exact: true }).click();
       await expect(page).toHaveURL(/chart=efficiency/);
@@ -154,7 +154,7 @@ test.describe("team charts", () => {
   });
 
   test("adjusted chart has dashed averages and corner labels but no diagonals or in-chart note", async ({ page }) => {
-    await page.goto("/charts?chart=adjusted&week=3");
+    await page.goto("/stats?chart=adjusted&week=3");
     const corners = page.getByTestId("corner-labels");
     await expect(corners.getByText("Complete", { exact: true })).toBeVisible();
     await expect(corners.getByText("Offense-led", { exact: true })).toBeVisible();
@@ -173,7 +173,7 @@ test.describe("team charts", () => {
   });
 
   test("conference filtering removes excluded points and preserves national geometry", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     const marks = page.locator("g[data-team]");
     await expect(marks).toHaveCount(PLOTTED);
     const alabama = page.locator("g[data-team='Alabama'] image").first();
@@ -191,7 +191,7 @@ test.describe("team charts", () => {
   });
 
   test("net-success group filtering includes a game when either team qualifies", async ({ page }) => {
-    await page.goto("/charts?chart=net-success&week=3");
+    await page.goto("/stats?chart=net-success&week=3");
     await expect(page.getByTestId("team-search")).toHaveCount(0);
     await page.getByTestId("conference-filter").selectOption("SEC");
     // Week 3 has one SEC matchup and two cross-conference games.
@@ -203,7 +203,7 @@ test.describe("team charts", () => {
   });
 
   test("highlight persists independently of tooltips and toggles by dropdown, click, Enter and Space", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     const michigan = page.locator("g[data-team='Michigan']");
     const boise = page.locator("g[data-team='Boise State']");
     const select = page.getByTestId("team-highlight");
@@ -240,7 +240,7 @@ test.describe("team charts", () => {
   });
 
   test("highlight survives week navigation and reports an unavailable observation", async ({ page }) => {
-    await page.goto("/charts?chart=adjusted&week=2");
+    await page.goto("/stats?chart=adjusted&week=2");
     await page.getByTestId("team-highlight").selectOption("Notre Dame");
     await expect(page.locator("g[data-team='Notre Dame']")).toHaveAttribute("aria-pressed", "true");
     await page.locator("#week-select").selectOption("3");
@@ -254,7 +254,7 @@ test.describe("team charts", () => {
   });
 
   test("markers are keyboard reachable; arrows move focus and a tooltip appears", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     const first = page.locator("g[data-team]").first();
     const tooltip = page.getByTestId("chart-tooltip");
     // Focus handlers attach on hydration; retry until the tooltip responds.
@@ -278,7 +278,7 @@ test.describe("team charts", () => {
   });
 
   test("net-success bars retain a visible keyboard focus ring", async ({ page }) => {
-    await page.goto("/charts?chart=net-success&week=3");
+    await page.goto("/stats?chart=net-success&week=3");
     const first = page.locator("g[data-game]").first();
     await expect(async () => {
       await first.blur();
@@ -292,31 +292,31 @@ test.describe("team charts", () => {
   });
 
   test("teams without data are listed instead of plotted", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     await expect(page.getByTestId("unavailable-teams")).toContainText("Wyoming");
     await expect(page.locator("g[data-team='Wyoming']")).toHaveCount(0);
-    await page.goto("/charts?chart=adjusted&week=3");
+    await page.goto("/stats?chart=adjusted&week=3");
     // Window as_of_week 4 has no Notre Dame defense row: one role is not a point.
     await expect(page.getByTestId("unavailable-teams")).toContainText("Notre Dame");
     await expect(page.locator("g[data-team='Notre Dame']")).toHaveCount(0);
   });
 
   test("a release without chart tables shows the arrival notice, errors show unavailable", async ({ page }) => {
-    await page.goto("/charts?fixture=unsupported");
+    await page.goto("/stats?fixture=unsupported");
     await expect(page.getByTestId("charts-notice")).toHaveText("Charts arrive with the next weekly release.");
     await expect(page.getByTestId("net-success-chart")).toHaveCount(0);
-    await page.goto("/charts?fixture=error");
+    await page.goto("/stats?fixture=error");
     await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
     // A failing adjusted window shows the same card instead of the route error page.
-    await page.goto("/charts?chart=adjusted&week=3&fixture=adjusted-error");
+    await page.goto("/stats?chart=adjusted&week=3&fixture=adjusted-error");
     await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
   });
 
   test("explosiveness toggle appears only for a release that serves yardage", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     await expect(page.getByTestId("efficiency-metric-switcher")).toBeVisible();
     await expect(page.getByText("20+ Yard Play Rate", { exact: true })).toBeVisible();
-    await page.goto("/charts?chart=efficiency&week=3&fixture=v1");
+    await page.goto("/stats?chart=efficiency&week=3&fixture=v1");
     await expect(page.getByTestId("scatter-chart")).toBeVisible();
     await expect(page.getByTestId("efficiency-metric-switcher")).toHaveCount(0);
     await expect(page.getByText("PPA/play", { exact: true }).first()).toBeVisible();
@@ -328,7 +328,7 @@ test.describe("team charts", () => {
     page.on("response", (response) => {
       if (response.url().includes("/logos/") && !response.ok()) failed.push(`${response.status()} ${response.url()}`);
     });
-    for (const url of ["/charts?chart=net-success&week=2", "/charts?chart=efficiency&week=3", "/charts?chart=adjusted&week=3"]) {
+    for (const url of ["/stats?chart=net-success&week=2", "/stats?chart=efficiency&week=3", "/stats?chart=adjusted&week=3"]) {
       await page.goto(url);
       await page.waitForLoadState("networkidle");
       const broken = await page.evaluate(() => [...document.images].filter((i) => i.complete && i.naturalWidth === 0).length);
@@ -341,18 +341,18 @@ test.describe("team charts", () => {
 
   test("mobile layout: bars become horizontal rows and nothing scrolls the page sideways", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 800 });
-    await page.goto("/charts?chart=net-success&week=3");
+    await page.goto("/stats?chart=net-success&week=3");
     await expect(page.getByTestId("net-success-chart")).toHaveAttribute("data-orientation", "horizontal");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
-    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Charts" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Stats" })).toBeVisible();
   });
 
-  test("nav shows Charts and the nav width matches the chart page", async ({ page }) => {
+  test("nav shows Stats and the nav width matches the chart page", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/charts");
+    await page.goto("/stats");
     const nav = page.getByRole("navigation", { name: "Main navigation" });
-    await expect(nav.getByRole("link", { name: "Charts" })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("link", { name: "Stats" })).toHaveAttribute("aria-current", "page");
     // Styles may still be compiling on the first request; poll until the layout settles.
     await expect
       .poll(async () => {
@@ -364,7 +364,7 @@ test.describe("team charts", () => {
   });
 
   test("filtered export contains the chart population, group, metric and persistent highlight", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     await page.getByTestId("conference-filter").selectOption("SEC");
     await page.getByTestId("team-highlight").selectOption("Alabama");
     const teams = await page.locator("g[data-team]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-team")!).sort());
@@ -386,7 +386,7 @@ test.describe("team charts", () => {
   });
 
   test("net-success export includes exactly the selected group's games", async ({ page }) => {
-    await page.goto("/charts?chart=net-success&week=3");
+    await page.goto("/stats?chart=net-success&week=3");
     await page.getByTestId("conference-filter").selectOption("SEC");
     const games = await page.locator("g[data-game]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-game")!).sort());
     const { capture } = await exportPng(page);
@@ -397,7 +397,7 @@ test.describe("team charts", () => {
 
   test("dense national scatter stays responsive and exports readable labels", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto("/charts?chart=efficiency&week=2&fixture=slate");
+    await page.goto("/stats?chart=efficiency&week=2&fixture=slate");
     await expect(page.locator("g[data-team]")).toHaveCount(138);
     fs.mkdirSync("test-results/chart-visuals", { recursive: true });
     await page.screenshot({ path: "test-results/chart-visuals/dense-national-desktop.png", fullPage: true });
@@ -417,7 +417,7 @@ test.describe("team charts", () => {
   test("touch activation selects a team while controls remain within the mobile viewport", async ({ browser }) => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
     const page = await context.newPage();
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     const mark = page.locator("g[data-team='Boise State']");
     await mark.tap();
     await expect(mark).toHaveAttribute("aria-pressed", "true");
@@ -429,7 +429,7 @@ test.describe("team charts", () => {
   });
 
   test("PNG export of a scatter is 2000x1125 with every logo decoded", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     await page.waitForLoadState("networkidle");
     const { file, report } = await exportPng(page);
     expect(pngSize(file)).toEqual({ width: 2000, height: 1125 });
@@ -439,7 +439,7 @@ test.describe("team charts", () => {
 
   test("charts share through the same export actions as the matchup card when the browser can", async ({ page }) => {
     await stubWebShare(page);
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     await page.waitForLoadState("networkidle");
     await page.getByTestId("chart-share").click();
     await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
@@ -450,7 +450,7 @@ test.describe("team charts", () => {
   });
 
   test("export icon buttons are named, show a tooltip on keyboard focus and announce the result", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3");
+    await page.goto("/stats?chart=efficiency&week=3");
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("button", { name: /table/i })).toHaveCount(0);
     const download = page.getByRole("button", { name: "Download PNG", exact: true });
@@ -471,7 +471,7 @@ test.describe("team charts", () => {
   });
 
   test("PNG export of a full Week 0 slate is as wide as 140 + 30 per game and keeps its logos", async ({ page }) => {
-    await page.goto("/charts?chart=net-success&week=0&fixture=slate");
+    await page.goto("/stats?chart=net-success&week=0&fixture=slate");
     await page.waitForLoadState("networkidle");
     await expect(page.getByTestId("net-success-chart").locator("g[data-game]")).toHaveCount(69);
     const { file, report } = await exportPng(page);
@@ -494,7 +494,7 @@ test.describe("team charts", () => {
   });
 
   test("the team param seeds the highlight and persists across charts, weeks and sides", async ({ page }) => {
-    await page.goto("/charts?chart=efficiency&week=3&team=michigan");
+    await page.goto("/stats?chart=efficiency&week=3&team=michigan");
     const michigan = page.locator("g[data-team='Michigan']");
     await expect(michigan).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("link", { name: "Adjusted PPA/play" }).click();
@@ -524,14 +524,14 @@ test.describe("team charts", () => {
     expect(await page.evaluate(() => (window as typeof window & { chartMarker?: boolean }).chartMarker)).toBe(true);
 
     // An unknown team is ignored.
-    await page.goto("/charts?chart=efficiency&week=3&team=Nowhere%20State");
+    await page.goto("/stats?chart=efficiency&week=3&team=Nowhere%20State");
     await expect(page.locator("g[data-team]")).toHaveCount(PLOTTED);
     await expect(page.getByTestId("highlight-status")).toHaveCount(0);
     await expect(page.locator("g[data-team][aria-pressed='true']")).toHaveCount(0);
   });
 
   test("net-success summary, outplayed band and a fixed success-gap order shared by the export", async ({ page }) => {
-    await page.goto("/charts?chart=net-success&week=3");
+    await page.goto("/stats?chart=net-success&week=3");
     await expect(page.getByTestId("net-success-summary")).toHaveText(/^\d+ of 8 winners had the lower success rate\.$/);
     await expect(page.getByTestId("outplayed-band")).toHaveCount(1);
     await expect(page.getByTestId("net-success-sort")).toHaveCount(0);
@@ -549,7 +549,7 @@ test.describe("team charts", () => {
   });
 
   test("adjusted ticks use two decimals and the tooltip shows the stored decomposition", async ({ page }) => {
-    await page.goto("/charts?chart=adjusted&week=3");
+    await page.goto("/stats?chart=adjusted&week=3");
     const ticks = await page.getByTestId("scatter-chart").locator("svg g text").allTextContents();
     expect(ticks.some((tick) => /^[+-]?\d\.\d{2}$/.test(tick))).toBe(true);
     expect(ticks.some((tick) => /^[+-]?\d\.\d{3}$/.test(tick))).toBe(false);

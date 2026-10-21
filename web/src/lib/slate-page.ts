@@ -8,6 +8,7 @@ import {
 import { getTeamSeasonRoster } from "@/lib/chart-queries";
 import type { RosterRow } from "@/lib/conferences";
 import { getV5PerformanceSplit, type Performance } from "@/lib/v5";
+import type { SlateSort } from "@/lib/slate";
 import { selectsV5, V5_INTENDED_UPDATE_MODEL_ID } from "@/lib/run-selection";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
@@ -20,8 +21,6 @@ export type SlateSearchParams = Promise<{
 }>;
 type ResolvedParams = Awaited<SlateSearchParams>;
 
-export type SlateKind = "picks" | "results";
-export type SlateSort = "kickoff" | "spreadEdge" | "totalEdge";
 
 export const isUiTestMode = () => process.env.CFB_UI_TEST_MODE === "1";
 
@@ -32,7 +31,8 @@ export function slatePublicationMode(params: ResolvedParams): "predictions" | "m
 }
 
 export function slateSort(params: ResolvedParams): SlateSort {
-  return params.sort === "spreadEdge" || params.sort === "totalEdge" ? params.sort : "kickoff";
+  const sorts: readonly string[] = ["bestEdge", "spreadEdge", "totalEdge", "bestResult", "worstResult"];
+  return sorts.includes(params.sort ?? "") ? (params.sort as SlateSort) : "kickoff";
 }
 
 export function slateSeason(params: ResolvedParams): number {
@@ -44,7 +44,10 @@ export type SlateData = {
   games: Game[];
   /** FBS teams and conferences for the conference filter; empty when the release has none. */
   roster: RosterRow[];
+  /** Season record before the week. */
   performance: Performance[];
+  /** The week's own record and accuracy; empty until a game is graded. */
+  weekPerformance: Performance[];
   systemName: string | null;
   retrospectiveRepair: boolean;
   displayOnlyText: string | null;
@@ -53,23 +56,20 @@ export type SlateData = {
   fixtureWeek?: { week: number; weeks: number[] };
 };
 
-/**
- * Games and the model record for one slate. Picks gets the season record before the
- * week; Results gets that week's own record, so the two views never share a scope.
- */
+/** Games plus the model record before the week and the week's own record. */
 export async function loadSlateData(args: {
-  view: SlateKind;
   season: number;
   week: number;
   publicationMode: "predictions" | "market";
   /** Present when the caller already failed to resolve its target. */
   dbError?: string | null;
 }): Promise<SlateData> {
-  const { view, season, week, publicationMode } = args;
+  const { season, week, publicationMode } = args;
   const out: SlateData = {
     games: [],
     roster: [],
     performance: [],
+    weekPerformance: [],
     systemName: null,
     retrospectiveRepair: false,
     displayOnlyText: null,
@@ -79,13 +79,15 @@ export async function loadSlateData(args: {
   if (isUiTestMode()) {
     if (publicationMode === "predictions") {
       const fx = await import("@/test/fixtures/slate");
-      const bundle = view === "picks" ? fx.slatePicks() : fx.slateResults();
+      const bundle = week === 4 ? fx.slateResults() : week === 6 ? fx.slatePartial() : fx.slatePicks();
       out.games = bundle.games;
       out.roster = fx.slateRosterFixture;
       out.fixtureWeek = { week: bundle.week, weeks: bundle.weeks };
       if (bundle.games[0]?.publicationMode === "predictions") {
         out.systemName = bundle.games[0].systemName;
-        out.performance = selectsV5(bundle.games[0].modelId) ? bundle.performance : [];
+        const v5 = selectsV5(bundle.games[0].modelId);
+        out.performance = v5 ? bundle.performance : [];
+        out.weekPerformance = v5 ? bundle.performance : [];
       }
     } else {
       out.games = uiFixture(publicationMode, week).games;
@@ -104,27 +106,26 @@ export async function loadSlateData(args: {
         : null;
       const isV5 = selectsV5(run?.modelId) || (season === 2026 && run === null);
       let roster: RosterRow[] | null;
-      [out.games, out.performance, roster] = await Promise.all([
+      let split: { before: Performance[]; week: Performance[] } | null;
+      [out.games, split, roster] = await Promise.all([
         getGamesForWeek(season, week),
-        isV5
-          ? getV5PerformanceSplit(season, week).then((split) => (view === "picks" ? split.before : split.week))
-          : Promise.resolve([]),
+        isV5 ? getV5PerformanceSplit(season, week) : Promise.resolve(null),
         // Optional: a missing roster only removes the conference filter, but say so.
         getTeamSeasonRoster(season).catch((err) => {
           console.error("Team roster query failed; the conference filter is hidden", err);
           return null;
         }),
       ]);
+      out.performance = split?.before ?? [];
+      out.weekPerformance = split?.week ?? [];
       out.roster = roster ?? [];
     } else {
       out.games = await getMarketGamesForWeek(season, week);
     }
     if (out.games[0]?.publicationMode === "predictions") out.systemName = out.games[0].systemName;
   } catch (err) {
-    console.error(`${view} weekly data query failed`, err);
-    out.dbError = view === "picks"
-      ? "Weekly data is temporarily unavailable."
-      : "Weekly results data is temporarily unavailable.";
+    console.error("Weekly data query failed", err);
+    out.dbError = "Weekly data is temporarily unavailable.";
   }
   return out;
 }

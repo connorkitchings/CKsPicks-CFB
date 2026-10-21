@@ -1,9 +1,7 @@
-import { redirect } from "next/navigation";
 import {
   getAvailableWeeks,
   getBiggestEdgesRecord,
   getCurrentWeek,
-  getScoredWeeks,
 } from "@/lib/queries";
 import { SlateView } from "@/components/slate/SlateView";
 import { topLeansRecord, type Tally } from "@/lib/slate";
@@ -23,7 +21,8 @@ export const revalidate = 300;
 
 /**
  * Resolve the target season and week from URL params and publication scope.
- * Scored historical weeks are automatically redirected to /results.
+ * Every available week is browsable, plus the active week; the default is the
+ * requested week, else the active week.
  */
 async function resolveTarget(
   searchParams: SlateSearchParams,
@@ -38,13 +37,17 @@ async function resolveTarget(
   const params = await searchParams;
   if (isUiTestMode()) {
     const requestedWeek = Number(params.week);
-    const week = [0, 1, 2].includes(requestedWeek) ? requestedWeek : 0;
+    // Market fixtures keep their own week list; prediction fixtures cover a final,
+    // an upcoming and a partly graded week.
+    const market = slatePublicationMode(params) === "market";
+    const weeks = market ? [0, 1, 2] : [4, 5, 6];
+    const activeWeek = market ? 0 : 5;
     return {
       season: 2026,
-      week,
-      weeks: [0, 1, 2],
+      week: weeks.includes(requestedWeek) ? requestedWeek : activeWeek,
+      weeks,
       activeSeason: 2026,
-      activeWeek: 0,
+      activeWeek,
       currentUpdatedAt: new Date("2026-08-29T19:30:00.000Z"),
     };
   }
@@ -59,11 +62,10 @@ async function resolveTarget(
     : null;
 
   const season = slateSeason(params);
-
-  const [allAvailableWeeks, scoredWeeks] = await Promise.all([
-    getAvailableWeeks(season),
-    getScoredWeeks(season),
-  ]);
+  const availableWeeks = await getAvailableWeeks(season);
+  const weeks = activeWeek !== null && !availableWeeks.includes(activeWeek)
+    ? [...availableWeeks, activeWeek].sort((a, b) => a - b)
+    : availableWeeks;
 
   const parsedWeek = params.week === undefined ? null : Number(params.week);
   const requestedWeek = parsedWeek !== null
@@ -73,32 +75,15 @@ async function resolveTarget(
     ? parsedWeek
     : null;
 
-  // Scored historical weeks belong on the /results archive
-  if (requestedWeek !== null && scoredWeeks.includes(requestedWeek)) {
-    redirect(`/results?week=${requestedWeek}`);
-  }
-
-  // Picks targets the upcoming / unscored slate
-  const upcomingWeeks = allAvailableWeeks.filter((w) => !scoredWeeks.includes(w));
-  if (
-    activeWeek !== null &&
-    !scoredWeeks.includes(activeWeek) &&
-    !upcomingWeeks.includes(activeWeek)
-  ) {
-    upcomingWeeks.push(activeWeek);
-    upcomingWeeks.sort((a, b) => a - b);
-  }
-  const availableWeeks = upcomingWeeks.length > 0 ? upcomingWeeks : allAvailableWeeks;
-
   const week = requestedWeek
-    ?? (activeWeek !== null && availableWeeks.includes(activeWeek) ? activeWeek : null)
-    ?? availableWeeks[availableWeeks.length - 1]
-    ?? (season !== publicationScope.season ? allAvailableWeeks[0] : publicationScope.weeks[0]);
+    ?? activeWeek
+    ?? weeks[weeks.length - 1]
+    ?? (season !== publicationScope.season ? weeks[0] : publicationScope.weeks[0]);
 
   return {
     season: season ?? 0,
     week,
-    weeks: availableWeeks,
+    weeks,
     activeSeason,
     activeWeek,
     currentUpdatedAt: activeWeek !== null ? current?.updatedAt ?? null : null,
@@ -118,9 +103,6 @@ export default async function Home({
   try {
     target = await resolveTarget(Promise.resolve(params));
   } catch (error) {
-    if ((error as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT")) {
-      throw error;
-    }
     console.error("Weekly target query failed", error);
     targetError = true;
     const requested = Number(params.week);
@@ -143,7 +125,6 @@ export default async function Home({
     : null;
 
   const data = await loadSlateData({
-    view: "picks",
     season,
     week: target.week,
     publicationMode,
@@ -167,7 +148,6 @@ export default async function Home({
 
   return (
     <SlateView
-      mode="picks"
       season={season}
       week={week}
       weeks={weeks}
@@ -175,10 +155,11 @@ export default async function Home({
       games={games}
       roster={data.roster}
       performance={data.performance}
+      weekPerformance={data.weekPerformance}
       topLeansRecord={biggestEdges}
       systemName={data.systemName}
       runState={firstPrediction?.runState ?? null}
-      retrospective={false}
+      retrospective={data.retrospectiveRepair || firstPrediction?.evidenceClass === "replay"}
       updatedAt={slateUpdatedAt(games, target.currentUpdatedAt)}
       publicationMode={publicationMode}
       allowedSeasons={publicationScope.allowedSeasons}

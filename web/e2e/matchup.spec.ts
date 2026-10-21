@@ -193,9 +193,10 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(noteLines.nth(0)).toHaveText(/^Stats through Week \d+\. FBS opponents only, regulation play, garbage time excluded; raw, not opponent-adjusted\. Defense columns show what that defense allowed\.$/);
     await expect(noteLines.nth(1)).toHaveText(/^Ranks are among \d+ teams; T = tied\.$/);
     await expect(page.getByText("before this game")).toHaveCount(0);
-    // One way back at the bottom (the top already has "Back to Picks").
+    // One way back at the bottom (the top already has "← Week N games").
     await expect(page.getByRole("link", { name: /^Return to Week/ })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /^All Week \d+ matchups$/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^← Week \d+ games$/ })).toHaveAttribute("href", /^\/\?week=\d+$/);
+    await expect(page.getByRole("link", { name: /^All Week \d+ games$/ })).toBeVisible();
 
     await expect(page).toHaveTitle(/ at .* · Matchup/);
   });
@@ -273,27 +274,26 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.getByText("This page could not be found")).toBeVisible();
   });
 
-  test("the /matchup index lists the week's games and links to each breakdown", async ({ page }) => {
-    await page.goto("/matchup");
-    await expect(page.getByRole("heading", { name: "Matchups" })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: "Week", exact: true })).toHaveValue("5");
+  test("the Games week view lists the week's games and links to each breakdown", async ({ page }) => {
+    await page.goto("/?week=5");
+    await expect(page.getByRole("heading", { name: "Week 5", exact: true })).toBeVisible();
+    await expect(page.locator("#week-select")).toHaveValue("5");
     const links = page.locator("a[href^='/matchup/']");
     expect(await links.count()).toBeGreaterThan(3);
     await links.first().click();
     await expect(page).toHaveURL(/\/matchup\/\d+$/);
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
-    await page.getByRole("link", { name: /All Week \d+ matchups/ }).click();
-    await expect(page).toHaveURL(/\/matchup\?week=\d+$/);
+    await page.getByRole("link", { name: /All Week \d+ games/ }).click();
+    await expect(page).toHaveURL(/\/\?week=\d+$/);
   });
 
-  test("the index is noindex and fits a phone", async ({ page }) => {
+  test("the Games week view fits a phone", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto("/matchup");
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    await page.goto("/?week=5");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test("game cards carry a Matchup button that opens the breakdown, and team names are not links", async ({ page }) => {
+  test("game cards carry a Matchup button that opens the breakdown; team names link from ratings and matchup pages but not slate cards", async ({ page }) => {
     await page.goto("/");
     const home = page.getByTestId("matchup-link");
     expect(await home.count()).toBeGreaterThanOrEqual(1);
@@ -303,26 +303,30 @@ test.describe("matchup page (fixture mode)", () => {
     await page.getByTestId("matchup-link").first().click();
     await expect(page).toHaveURL(/\/matchup\/\d+$/);
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
-    // No team name anywhere links to a team page (cards, hero, matchup footer).
-    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+    // The hero names and the matchup footer link to team pages (a name appears in both).
+    await expect(page.locator("main a[href^='/teams/']").first()).toBeVisible();
+    expect(await page.locator("[data-side] a[href^='/teams/']").count()).toBe(2);
+    expect(await page.locator("main a[href^='/teams/']").count()).toBe(4);
+    // Slate cards never link to team pages.
     await page.goto("/");
+    expect(await page.getByTestId("matchup-link").count()).toBeGreaterThanOrEqual(1);
     expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
-    await page.goto("/results");
+    await page.goto("/?week=4");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThanOrEqual(1);
     expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
     await page.goto("/ratings");
-    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+    expect(await page.locator("a[href^='/teams/']").count()).toBeGreaterThan(0);
   });
 
   test("slate cards also carry the Matchup button", async ({ page }) => {
     await page.goto("/");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
-    await page.goto("/results");
+    await page.goto("/?week=4");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
   });
 
   test("no page footer shows a GitHub source link", async ({ page }) => {
-    for (const url of ["/", "/results", "/ratings", "/performance", "/matchup", "/matchup/1", "/methodology"]) {
+    for (const url of ["/", "/?week=4", "/ratings", "/model", "/matchup/1", "/model/method"]) {
       await page.goto(url);
       await expect(page.locator("a[href*='github.com']")).toHaveCount(0);
       await expect(page.locator("footer")).toHaveCount(1);

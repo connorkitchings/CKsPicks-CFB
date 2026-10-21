@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import Link from "next/link";
 import type { Performance } from "@/lib/v5";
 import { winRatePct } from "@/lib/slate";
 import { Card } from "@/components/ui/Card";
@@ -77,55 +78,57 @@ const pct = (value: number | null) => (value === null ? "n/a" : `${(value * 100)
 const points = (value: number | null) => (value === null ? "n/a" : value.toFixed(1));
 
 /**
- * The model's record. Picks shows the season so far; Results (`week` set) shows
- * only that week, with its error and interval coverage, and links to
- * /performance for the season.
+ * The model's record: the season so far before this week, plus the week's own
+ * record and accuracy once any of its games is graded. Links to /model.
  */
 export function ModelRecord({
   performance,
+  weekNumber,
   week,
+  weekPerformance = [],
 }: {
-  /** Season-to-date on Picks; the week's own performance when `week` is set. */
+  /** Season-to-date before the week. */
   performance: Performance[];
-  week?: { number: number; spread: Rec; total: Rec };
+  weekNumber: number;
+  /** The week's own tally; omitted until a game in the week is graded. */
+  week?: { spread: Rec; total: Rec };
+  weekPerformance?: Performance[];
 }) {
   const overall = performance.find((p) => p.classification === "all");
-
-  if (!week) {
-    return (
-      <Card as="section" aria-label="Record" padding="none" className="p-2.5">
-        <h2 className="mb-2 text-sm font-semibold text-ink">Season record</h2>
-        <RecordBlock
-          title="Season"
-          note={overall ? `${overall.games} games` : "no games yet"}
-          spread={overall?.spread ?? null}
-          total={overall?.total ?? null}
-          showHeader={false}
-        />
-      </Card>
-    );
-  }
+  const weekOverall = weekPerformance.find((p) => p.classification === "all");
 
   return (
     <Card as="section" aria-label="Record" padding="none" className="p-2.5">
       <div className="mb-1 flex items-center justify-between gap-x-3">
-        <h2 className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-ink">
-          Week {week.number} record
-          <span className="text-xs font-normal text-ink-muted">this slate · small sample</span>
-        </h2>
-        <a
-          href="/performance"
+        <h2 className="text-sm font-semibold text-ink">Season record before Week {weekNumber}</h2>
+        <Link
+          href="/model"
           className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold text-accent-ink underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Season record and audit
-        </a>
+        </Link>
       </div>
-      <RecordBlock title={`Week ${week.number}`} note="" spread={week.spread} total={week.total} showHeader={false} />
-      {overall && overall.evaluated > 0 && (
-        <p data-testid="week-accuracy" className="mt-1.5 hidden text-xs text-ink-muted sm:block">
-          Average miss: spread {points(overall.marginMae)} pts · total {points(overall.totalMae)} pts
-          {" · "}95% interval coverage: spread {pct(overall.marginCoverage95)} · total {pct(overall.totalCoverage95)}
-        </p>
+      <RecordBlock
+        title="Season"
+        note={overall ? `${overall.games} games` : "no games yet"}
+        spread={overall?.spread ?? null}
+        total={overall?.total ?? null}
+        showHeader={false}
+      />
+      {week && (
+        <div className="mt-2">
+          <h3 className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-ink">
+            Week {weekNumber} record
+            <span className="text-xs font-normal text-ink-muted">this slate · small sample</span>
+          </h3>
+          <RecordBlock title={`Week ${weekNumber}`} note="" spread={week.spread} total={week.total} showHeader={false} />
+          {weekOverall && weekOverall.evaluated > 0 && (
+            <p data-testid="week-accuracy" className="mt-1.5 hidden text-xs text-ink-muted sm:block">
+              Average miss: spread {points(weekOverall.marginMae)} pts · total {points(weekOverall.totalMae)} pts
+              {" · "}95% interval coverage: spread {pct(weekOverall.marginCoverage95)} · total {pct(weekOverall.totalCoverage95)}
+            </p>
+          )}
+        </div>
       )}
     </Card>
   );

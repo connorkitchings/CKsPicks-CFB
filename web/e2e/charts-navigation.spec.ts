@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-test("Charts is reachable from the main navigation and keeps the selected side when changing weeks on mobile", async ({ page }) => {
+test("Stats is reachable from the main navigation and keeps the selected side when changing weeks on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto("/ratings");
-  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link")).toHaveText(["Picks", "Results", "Ratings", "Charts", "Performance"]);
-  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Charts", exact: true }).click();
+  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link")).toHaveText(["Games", "Ratings", "Stats", "Model"]);
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Stats", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Team charts" })).toBeVisible();
   await page.getByRole("navigation", { name: "Chart type" }).getByRole("link", { name: "Efficiency vs explosiveness", exact: true }).click();
   await page.getByRole("group", { name: "Side of the ball" }).getByRole("link", { name: "defense", exact: true }).click();

@@ -11,7 +11,7 @@ const charts = [
   { kind: "possession", query: "chart=possession&week=3&team=Alabama", testId: "scatter-chart" },
   { kind: "game-log", query: "chart=game-log&team=Alabama", testId: "game-log-chart" },
 ] as const;
-// Skipped: hidden from /charts (`ready: false` in src/lib/chart-config.ts); their capture branch is kept.
+// Skipped: hidden from /stats (`ready: false` in src/lib/chart-config.ts); their capture branch is kept.
 const HIDDEN_KINDS: readonly string[] = ["rating-trajectory"];
 
 test("capture all chart fixtures and desktop PNG exports in both themes", async ({ page }, testInfo) => {
@@ -23,7 +23,7 @@ test("capture all chart fixtures and desktop PNG exports in both themes", async 
       await page.setViewportSize(viewport);
       for (const chart of charts.filter((entry) => !HIDDEN_KINDS.includes(entry.kind))) {
         const name = `${chart.kind}-${theme}-${viewport.width}`;
-        await page.goto(`/charts?${chart.query}`);
+        await page.goto(`/stats?${chart.query}`);
         await expect(page.getByTestId(chart.testId)).toBeVisible();
         await page.waitForLoadState("networkidle");
         await expect(page.locator("html")).toHaveClass(theme === "dark" ? /dark/ : /^(?!.*dark)/);

@@ -57,6 +57,16 @@ test.describe("mobile team ratings", () => {
     await expect(list.getByRole("listitem")).toHaveCount(4);
   });
 
+  test("phone cards link team names to team pages with 44px targets", async ({ page }) => {
+    await page.goto("/ratings");
+    const link = page.getByRole("list", { name: "Team ratings list" }).getByRole("link", { name: "Appalachian State", exact: true });
+    await expect(link).toHaveAttribute("href", "/teams/Appalachian%20State");
+    expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await link.click();
+    await expect(page).toHaveURL(/\/teams\/Appalachian%20State$/);
+    await expect(page.getByRole("heading", { level: 1, name: "App State" })).toBeVisible();
+  });
+
   test("phone cards show FBS W-L, SOR rank and SOS ranks without WAA or raw SOS values", async ({ page }) => {
     await page.goto("/ratings?period=current");
     const texas = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
@@ -189,7 +199,9 @@ test.describe("résumé columns", () => {
     for (const label of ["SOS Played", "SOS Remaining", "SOS Full"]) {
       await expect(sortHeader(page, label)).toHaveAttribute("title", "Schedule difficulty rank among FBS teams (1 is hardest), measured against an average FBS team.");
     }
-    await expect(page.getByRole("link", { name: "elite", exact: true })).toHaveAttribute("href", "/methodology#elite-reference");
+    await expect(page.getByRole("link", { name: "elite", exact: true })).toHaveAttribute("href", "/model/method#elite-reference");
+    // Team names link to team pages in the desktop table.
+    await expect(page.getByRole("table").getByRole("link", { name: "Texas", exact: true })).toHaveAttribute("href", "/teams/Texas");
     await expect(page.getByText("SOS ranks schedule difficulty for an average FBS team (1 is hardest).")).toBeVisible();
     await expect(page.getByRole("group", { name: "Rating category" })).toHaveCount(0);
     await expect(page.getByRole("group", { name: "Résumé sort" })).toHaveCount(0);

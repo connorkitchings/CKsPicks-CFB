@@ -406,6 +406,32 @@ export function sortResults(games: Game[], sort: ResultSort): Game[] {
   });
 }
 
+export type WeekPhase = "upcoming" | "in-progress" | "final";
+
+/** Where a week stands: no game finished, every game finished, or some of each. An empty week is upcoming. */
+export function weekPhase(games: Game[]): WeekPhase {
+  const finished = games.filter(isFinal).length;
+  if (finished === 0) return "upcoming";
+  return finished === games.length ? "final" : "in-progress";
+}
+
+export type SlateSort = "kickoff" | "bestEdge" | "spreadEdge" | "totalEdge" | "bestResult" | "worstResult";
+
+const EDGE_SORTS: readonly SlateSort[] = ["kickoff", "bestEdge", "spreadEdge", "totalEdge"];
+const RESULT_SORTS: readonly SlateSort[] = ["bestResult", "worstResult"];
+
+/** Sorts offered for a week; result sorts need at least one finished game. */
+export function slateSorts(phase: WeekPhase): readonly SlateSort[] {
+  return phase === "upcoming" ? EDGE_SORTS : [...EDGE_SORTS, ...RESULT_SORTS];
+}
+
+/** Sorts the slate; a sort the phase does not offer falls back to kickoff order. */
+export function sortSlate(games: Game[], sort: SlateSort, phase: WeekPhase): Game[] {
+  const allowed = slateSorts(phase).includes(sort) ? sort : "kickoff";
+  if (allowed === "bestResult" || allowed === "worstResult") return sortResults(games, allowed);
+  return sortGames(games, allowed);
+}
+
 /** Season-level comparison window: the bar spans +/- this many points of win rate. */
 export const BAR_RANGE_PTS = 15;
 

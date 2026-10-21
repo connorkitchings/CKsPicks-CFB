@@ -62,12 +62,12 @@ test.describe("desktop layout at 1280px", () => {
     await expect(biggestEdges.locator("summary").filter({ visible: true })).toHaveCount(0);
 
     const record = page.getByRole("region", { name: "Record", exact: true });
-    await expect(visibleHeading(page, "Season record")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Season record before Week \d+$/ }).filter({ visible: true })).toBeVisible();
     await expect(record).toBeVisible();
   });
 
-  test("results shows Result Highlights without a click", async ({ page }) => {
-    await page.goto("/results");
+  test("a final week shows Result Highlights without a click", async ({ page }) => {
+    await page.goto("/?week=4");
     await expect(visibleHeading(page, "Highlights")).toBeVisible();
     await expect(page.locator("summary").filter({ visible: true, hasText: "Highlights" })).toHaveCount(0);
   });
@@ -154,13 +154,12 @@ test.describe("desktop layout at 1280px", () => {
   test("all routes render one header with theme toggle, one footer, and aligned SiteNav container widths", async ({ page }) => {
     const routes = [
       { path: "/", maxWidth: 1152 }, // max-w-6xl
-      { path: "/results", maxWidth: 1152 },
+      { path: "/stats", maxWidth: 1152 },
       { path: "/ratings", maxWidth: 1024 }, // max-w-5xl
-      { path: "/performance", maxWidth: 1024 },
-      { path: "/matchup", maxWidth: 1024 },
+      { path: "/model", maxWidth: 1024 },
+      { path: "/model/method", maxWidth: 1024 },
       { path: "/matchup/1", maxWidth: 1024 },
-      { path: "/charts", maxWidth: 1152 },
-      { path: "/methodology", maxWidth: 896 }, // max-w-4xl
+      { path: "/teams/Alabama", maxWidth: 896 }, // max-w-4xl
     ];
 
     for (const route of routes) {
@@ -186,7 +185,7 @@ test.describe("desktop layout at 1280px", () => {
     // Verify color-scheme and bg-surface-elevated token resolution in light and dark modes on /matchup/1.
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/matchup/1");
-    const allMatchupsLink = page.getByRole("link", { name: /^All Week \d+ matchups$/ });
+    const allMatchupsLink = page.getByRole("link", { name: /^All Week \d+ games$/ });
     await expect(allMatchupsLink).toBeVisible();
     await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
     await expect(allMatchupsLink).toHaveCSS("background-color", "rgb(255, 255, 255)");

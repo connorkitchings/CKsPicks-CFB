@@ -180,7 +180,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
         <div className="divide-y divide-line sm:hidden">
           {weeklyData.map((row) => (
             <div key={row.week} className="space-y-2 p-3">
-              <Link href={`/results?week=${row.week}`} className="inline-flex min-h-11 items-center gap-2 rounded text-sm font-bold text-ink hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">
+              <Link href={`/?week=${row.week}`} className="inline-flex min-h-11 items-center gap-2 rounded text-sm font-bold text-ink hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">
                 Week {row.week} <span aria-hidden>→</span>
               </Link>
               <div className={clsx("grid gap-2", targetFilter === "all" && "grid-cols-2")}>
@@ -214,7 +214,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
               {weeklyData.map((row) => (
                 <tr key={row.week}>
                   <th scope="row" className="px-3 text-ink">
-                    <Link href={`/results?week=${row.week}`} className="inline-flex min-h-11 items-center rounded font-semibold sm:min-h-9 hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
+                    <Link href={`/?week=${row.week}`} className="inline-flex min-h-11 items-center rounded font-semibold sm:min-h-9 hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
                   </th>
                   {targetFilter !== "total" && <><td className="px-2 py-3 text-right">{recordText(row.spread)}</td><td className="px-2 py-3 text-right">{rateText(row.spread)}</td></>}
                   {targetFilter !== "spread" && <><td className="px-2 py-3 text-right">{recordText(row.total)}</td><td className="px-3 py-3 text-right">{rateText(row.total)}</td></>}
@@ -254,7 +254,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
           )}
         </Disclosure>
       </section>
-      <p className="text-xs text-ink-muted">Select any week above to view its full game-by-game results and graded picks on the Results tab.</p>
+      <p className="text-xs text-ink-muted">Select any week above to view its full game-by-game results and graded picks on the Games tab.</p>
     </div>
   );
 }

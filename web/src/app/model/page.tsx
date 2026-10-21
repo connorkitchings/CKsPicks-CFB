@@ -1,7 +1,8 @@
 import { getV5PerformanceDetail } from "@/lib/v5";
 import { mobilePerformanceFixture } from "@/test/fixtures/performance-mobile";
 import { publicationScope } from "@/lib/publication";
-import { Header, Footer } from "@/components/Header";
+import { PageShell } from "@/components/PageShell";
+import { ModelTabs } from "@/components/model/ModelTabs";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { PerformanceDashboard } from "@/components/PerformanceDashboard";
@@ -10,7 +11,7 @@ import { loadPerformanceRecord } from "@/lib/performance-sections";
 // Selection changes must not serve a record baked into an earlier build.
 export const dynamic = "force-dynamic";
 
-export default async function PerformancePage() {
+export default async function ModelPage() {
   const record = process.env.CFB_UI_TEST_MODE === "1"
     ? { status: "ok" as const, value: mobilePerformanceFixture }
     : await loadPerformanceRecord(
@@ -19,16 +20,17 @@ export default async function PerformancePage() {
     );
   const title = "2026 V5 cumulative record";
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header
-        season={publicationScope.season}
-        systemName={null}
-        updatedAt={null}
-        publicationMode={publicationScope.mode}
-        allowedSeasons={publicationScope.allowedSeasons}
-        width="wide"
-      />
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
+    <PageShell
+      width="wide"
+      header={{
+        season: publicationScope.season,
+        systemName: null,
+        updatedAt: null,
+        allowedSeasons: publicationScope.allowedSeasons,
+      }}
+      mainClassName="space-y-4 py-3 sm:py-6"
+    >
+        <ModelTabs active="record" />
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">2026 · V5</p>
           <PageHeading title="Season record & performance">
@@ -46,9 +48,7 @@ export default async function PerformancePage() {
           Win rate excludes pushes. A game without an eligible market line does not count as a win or loss.
           Grades use captured selected lines and forecasts use point-in-time inputs.
         </p>
-      </main>
-      <Footer publicationMode={publicationScope.mode} width="wide" />
-    </div>
+    </PageShell>
   );
 }
 

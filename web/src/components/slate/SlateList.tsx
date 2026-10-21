@@ -11,46 +11,50 @@ import {
   type RosterRow,
 } from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
-import { sortGames, type SortKey } from "@/lib/slate";
+import { slateSorts, sortSlate, weekPhase, type SlateSort } from "@/lib/slate";
 import { SlateToolbar } from "./SlateToolbar";
 import { SlateGameList } from "./SlateGameList";
 import { dayLabel } from "./format";
 
-const SORT_LABEL: Record<SortKey, string> = {
+const SORT_LABEL: Record<SlateSort, string> = {
   kickoff: "Kickoff time",
   bestEdge: "Biggest edge",
   spreadEdge: "Spread edge",
   totalEdge: "Total edge",
+  bestResult: "Biggest hit",
+  worstResult: "Biggest miss",
 };
 
 type View = "grid" | "list";
 
-/** Search, sort, conference filter and grid/list view over the full slate. */
-export function PicksSlate({
+/** Search, sort, conference filter and grid/list view over one week's games, graded or not. */
+export function SlateList({
   games,
   roster = [],
-  showBetResult = true,
   initialSort = "kickoff",
 }: {
   games: Game[];
   roster?: RosterRow[];
-  /** Show graded results on market-mode cards (the Results page). */
-  showBetResult?: boolean;
-  /** Deep-linked sort (the `?sort=` param); the slate owns it afterwards. */
-  initialSort?: SortKey;
+  /** Deep-linked sort (the `?sort=` param); the list owns it afterwards. */
+  initialSort?: SlateSort;
 }) {
   const [query, setQuery] = useState("");
   const [conference, setConference] = useState<ConferenceFilter>("all");
-  const [sort, setSort] = useState<SortKey>(initialSort);
+  const [sort, setSort] = useState<SlateSort>(initialSort);
   const [view, setView] = useState<View>("grid");
   const conferenceMap = useMemo(() => buildConferenceMap(roster), [roster]);
   const conferences = useMemo(() => conferenceOptions(roster), [roster]);
 
+  const phase = useMemo(() => weekPhase(games), [games]);
   const predictionsVisible = useMemo(
     () => games.some((g) => g.publicationMode === "predictions"),
     [games],
   );
-  const effectiveSort: SortKey = predictionsVisible ? sort : "kickoff";
+  const effectiveSort: SlateSort = predictionsVisible && slateSorts(phase).includes(sort) ? sort : "kickoff";
+  const sortLabels = useMemo(
+    () => Object.fromEntries(slateSorts(phase).map((key) => [key, SORT_LABEL[key]])) as Record<SlateSort, string>,
+    [phase],
+  );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -67,8 +71,8 @@ export function PicksSlate({
         (g) => g.homeTeam.toLowerCase().includes(q) || g.awayTeam.toLowerCase().includes(q),
       );
     }
-    return sortGames(rows, effectiveSort);
-  }, [games, query, conference, conferenceMap, effectiveSort]);
+    return sortSlate(rows, effectiveSort, phase);
+  }, [games, query, conference, conferenceMap, effectiveSort, phase]);
 
   const groups = useMemo(() => {
     if (effectiveSort !== "kickoff") return null;
@@ -82,14 +86,10 @@ export function PicksSlate({
     return out;
   }, [visible, effectiveSort]);
 
-  function renderList(rows: Game[]) {
-    return <SlateGameList games={rows} view={view} mode="picks" showBetResult={showBetResult} />;
-  }
-
   return (
     <div className="space-y-2 sm:space-y-4">
-      <SlateToolbar query={query} onQueryChange={setQuery} conference={conference} onConferenceChange={setConference} conferences={conferences} sort={sort} onSortChange={setSort} sortLabels={SORT_LABEL} predictionsVisible={predictionsVisible} view={view} onViewChange={setView} />
-
+      <SlateToolbar query={query} onQueryChange={setQuery} conference={conference} onConferenceChange={setConference} conferences={conferences} sort={effectiveSort} onSortChange={setSort} sortLabels={sortLabels} predictionsVisible={predictionsVisible} view={view} onViewChange={setView} />
+      <p role="status" className="sr-only">Showing {visible.length} of {games.length} games</p>
 
       {visible.length === 0 ? (
         <Notice tone="empty">No games match these filters.</Notice>
@@ -103,12 +103,12 @@ export function PicksSlate({
                   · {group.games.length} {group.games.length === 1 ? "game" : "games"}
                 </span>
               </Eyebrow>
-              {renderList(group.games)}
+              <SlateGameList games={group.games} view={view} />
             </section>
           ))}
         </div>
       ) : (
-        renderList(visible)
+        <SlateGameList games={visible} view={view} />
       )}
     </div>
   );

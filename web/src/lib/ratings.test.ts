@@ -3,12 +3,12 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { periodBeforeKickoff, PRESEASON_META, type PeriodMeta } from "./rating-periods.ts";
 
-test("SiteNav includes Picks, Results, Ratings, and Performance in navigation items", () => {
+test("SiteNav includes Games, Ratings, Stats, and Model in navigation items", () => {
   const source = readFileSync(new URL("../components/SiteNav.tsx", import.meta.url), "utf8");
-  assert.match(source, /\["Picks",\s*"\/"\]/);
-  assert.match(source, /\["Results",\s*"\/results"\]/);
+  assert.match(source, /\["Games",\s*"\/"\]/);
   assert.match(source, /\["Ratings",\s*"\/ratings"\]/);
-  assert.match(source, /\["Performance",\s*"\/performance"\]/);
+  assert.match(source, /\["Stats",\s*"\/stats"\]/);
+  assert.match(source, /\["Model",\s*"\/model"\]/);
 });
 
 test("ratings page includes rank column, methodology explainer, and disambiguated empty states", () => {
@@ -67,10 +67,10 @@ test("ratings table explains SOS and SOR rank tooltips and the note copy", () =>
   assert.match(viewSource, /Schedule difficulty rank among FBS teams \(1 is hardest\), measured against an average FBS team\./);
   assert.match(viewSource, /Strength of record rank: 1 is the strongest résumé\./);
   assert.match(viewSource, /SOS ranks schedule difficulty for an average FBS team \(1 is hardest\)\./);
-  assert.match(viewSource, /href="\/methodology#elite-reference"/);
+  assert.match(viewSource, /href="\/model\/method#elite-reference"/);
 });
 
-test("TeamPair shows team names as plain text, not links (team pages are not ready)", () => {
+test("TeamPair shows team names as plain text, not links (slate cards never link to team pages)", () => {
   const source = readFileSync(new URL("../components/slate/TeamPair.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\/teams\//);
   assert.doesNotMatch(source, /import Link from "next\/link";/);
@@ -81,7 +81,6 @@ test("slate cards link to the matchup breakdown through the gated button instead
   for (const file of [
     "PredictionGameCard.tsx",
     "SlateGameRow.tsx",
-    "ResultGameRow.tsx",
     "MarketGameCard.tsx",
   ]) {
     const source = readFileSync(new URL(`../components/slate/${file}`, import.meta.url), "utf8");

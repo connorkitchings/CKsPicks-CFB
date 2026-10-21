@@ -285,7 +285,7 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
           season={season}
           week={week}
           weeks={available}
-          basePath="/charts"
+          basePath="/stats"
           compact
           labelMode={CHART_REGISTRY[kind].controls.week === "week" ? "week" : "through-week"}
         />

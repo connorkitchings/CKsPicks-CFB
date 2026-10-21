@@ -8,7 +8,7 @@ import { segmentedGroupClass } from "./ui/SegmentedControl";
 /**
  * Prev / next / dropdown navigator over the available weeks for the active
  * season. Selecting or arrowing swaps the `?season=&week=` query params,
- * which the server component in app/page.tsx reads to fetch the right slice.
+ * which the server component in app/(games)/page.tsx reads to fetch the right slice.
  *
  * Client navigation keeps URLs shareable while preserving chart selections;
  * the server reads each URL window and ISR caches each combination.
@@ -30,7 +30,7 @@ export function WeekNav({
   /** Fits the navigator into a page toolbar without changing its URL behavior. */
   compact?: boolean;
 }) {
-  const chartCompact = compact && basePath.startsWith("/charts");
+  const chartCompact = compact && basePath.startsWith("/stats");
   const noun = labelMode === "through-week" ? "Through Week" : "Week";
   const router = useRouter();
   const params = useSearchParams();

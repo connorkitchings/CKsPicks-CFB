@@ -18,13 +18,15 @@ Charts is ready to publish only when every item holds:
 3. Failure and edge states are verified: a release without chart relations, a retained `charts_v1` release, an unavailable chart query, and a team or week with no data.
 4. Chart requests are measured and acceptable, and do not affect the speed of Picks, Results, Ratings or Performance.
 5. The exact publication step and its rollback are written down and rehearsed on Preview.
-6. The owner records the publication decision. Until then Production keeps `CFB_CHARTS_ENABLED` unset and `/charts` returns 404.
+6. The owner records the publication decision. Until then Production keeps `CFB_CHARTS_ENABLED` unset and `/stats` returns 404.
 
 ## Baseline and constraints
 
+Charts was renamed Stats by the [2026-10-21 reorganization plan](../2026-10-21/01-site-reorganization-and-performance.md); `/charts` references below now mean `/stats`.
+
 Inspected on `dev` at `78c90e34`.
 
-- **Gate.** `isChartsEnabled` returns true only for the exact string `CFB_CHARTS_ENABLED=1` (`web/src/lib/charts-gate.ts`). Unset, empty, `0` and anything else disables Charts everywhere, including local development and Preview. The root layout resolves the flag on the server and passes a boolean to `SiteNav`; a disabled `/charts` returns a real HTTP 404 before any chart parameter or data is read ([gate contract](../2026-10-18/02-charts-publication-gate.md)). Changing the flag needs a rebuild or redeploy.
+- **Gate.** `isChartsEnabled` returns true only for the exact string `CFB_CHARTS_ENABLED=1` (`web/src/lib/charts-gate.ts`). Unset, empty, `0` and anything else disables Charts everywhere, including local development and Preview. The root layout resolves the flag on the server and passes a boolean to `SiteNav`; a disabled `/stats` returns a real HTTP 404 before any chart parameter or data is read ([gate contract](../2026-10-18/02-charts-publication-gate.md)). Changing the flag needs a rebuild or redeploy.
 - **Charts in the registry** (`web/src/lib/chart-config.ts`): net success rate, efficiency vs explosiveness, adjusted PPA/play, possession efficiency, and game log are `ready: true`. V5 rating trajectory is built but `ready: false` by owner decision, reserved for a later move to the Ratings tab. It stays out of this contract's scope.
 - **Data.** Preview and Production both serve the `resume_v1` projection set, which serves the `charts_v2` chart tables. Migrations 0026, 0027 and 0028 are applied on both ([status](../../status.md)). No further migration is needed to publish. Retained `charts_v1` and `core_v1` releases remain readable and show the unavailable or reduced states.
 - **Existing evidence.** The Charts fixture suites, the gate suite (`npm run test:charts-gate`) and CI all pass on `dev`. A fixture screenshot review of 32 screenshots and 12 PNG exports was done on October 18; it is not owner acceptance and does not cover real data. The Week 8 `charts_v2` candidate passed all 24 verification checks and its tables matched the earlier certified snapshot ([parity evidence](../2026-10-18/01a-parity-evidence.md)).
@@ -40,7 +42,7 @@ The Charts contracts ([module](../2026-10-16/01-charts-module.md), [expansion](.
 
 ### 2. Real-data local review
 
-- **Run:** `CFB_CHARTS_ENABLED=1 make web-local` (Preview database, read-only). `make web-local` passes the environment through to the dev server; confirm `/charts` shows five navigation items.
+- **Run:** `CFB_CHARTS_ENABLED=1 make web-local` (Preview database, read-only). `make web-local` passes the environment through to the dev server; confirm `/stats` shows four navigation items (three while the gate is off).
 - **Review matrix:** each of the five ready charts, at 1280px and 390px, in light and dark themes, for the current week and one earlier week, with and without a highlighted team (`team=`), including the table view, the conference filter and the keyboard tooltip. Export a PNG from each chart in both themes.
 - **Record:** a short table in the implementation log with the defects found, each with the chart, width, theme and a screenshot path. Defects block publication; cosmetic notes do not.
 - **Acceptance:** zero blocking defects, or the owner accepts each remaining one in writing.
@@ -49,7 +51,7 @@ The Charts contracts ([module](../2026-10-16/01-charts-module.md), [expansion](.
 ### 3. Preview deployment review
 
 - **Owner action:** set `CFB_CHARTS_ENABLED=1` for the Vercel **Preview** environment only, so builds of `dev` show Charts. Production stays unset. Redeploy after changing it.
-- **Check on the Preview URL:** `/charts` returns 200, navigation shows five items, the five charts load real data, and Picks, Results, Ratings and Performance behave as before.
+- **Check on the Preview URL:** `/stats` returns 200, navigation shows four items, the five charts load real data, and Games, Ratings and Model behave as before.
 - **Acceptance:** the owner reviews the deployment and records acceptance or a defect list.
 
 ### 4. Failure and edge states
@@ -66,7 +68,7 @@ Each should already be covered by the existing suites; any gap found gets a test
 ### 5. Performance
 
 - Measure time to first byte for each chart and `?team=` combination against Preview, cold and warm, and record the numbers.
-- Confirm chart queries run only on `/charts`: `/`, `/results`, `/ratings` and `/performance` keep their time to first byte with Charts enabled.
+- Confirm chart queries run only on `/stats`: `/`, `/ratings` and `/model` keep their time to first byte with Charts enabled.
 - **Acceptance:** each chart's cold time to first byte is below the slowest existing page's, or the owner accepts the figure. If not, add the measurement to the defect list with the slow query.
 
 ### 6. Publication and rollback runbook
@@ -74,8 +76,8 @@ Each should already be covered by the existing suites; any gap found gets a test
 Write the publication procedure in `docs/ops/weekly_runbook.md` (new "Publishing Charts" section), so it exists before the decision:
 
 1. Owner sets `CFB_CHARTS_ENABLED=1` in the Vercel **Production** environment and redeploys.
-2. Verify `/charts` returns 200, navigation shows five items, `/api/health` is 200, and the four existing pages still work.
-3. **Rollback:** unset the variable (or set `0`) and redeploy; `/charts` returns 404 and the navigation returns to four items. No data or release change is involved.
+2. Verify `/stats` returns 200, navigation shows four items, `/api/health` is 200, and the four existing pages still work.
+3. **Rollback:** unset the variable (or set `0`) and redeploy; `/stats` returns 404 and the navigation returns to three items. No data or release change is involved.
 
 Rehearse steps 1 to 3 on Preview before the decision.
 

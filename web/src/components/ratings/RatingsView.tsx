@@ -26,6 +26,7 @@ import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { SearchField } from "@/components/ui/SearchField";
+import { teamHref } from "@/lib/teams";
 
 /** The fields this view renders; the page maps full ratings down to these before they reach the client. */
 export type RatingRow = Pick<
@@ -305,7 +306,7 @@ export function RatingsView({
 
       {hasResume && (
         <p className="text-xs text-ink-muted">
-          SOS ranks schedule difficulty for an average FBS team (1 is hardest). SOR ranks each team’s record against what an <Link href="/methodology#elite-reference" className="font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">elite</Link> team (the average of the top 25 teams) would be expected to do on the same schedule; see the methodology.
+          SOS ranks schedule difficulty for an average FBS team (1 is hardest). SOR ranks each team’s record against what an <Link href="/model/method#elite-reference" className="font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">elite</Link> team (the average of the top 25 teams) would be expected to do on the same schedule; see the methodology.
         </p>
       )}
 
@@ -326,8 +327,10 @@ export function RatingsView({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-2">
                       <span aria-label={`National rank ${position}`} data-rank-tier className={clsx("flex h-6 min-w-6 shrink-0 items-center justify-center rounded px-1 font-mono text-xs", getRankBadgeClass(position, ratings.length))}>{position}</span>
-                      <TeamLogo name={rating.team} px={24} />
-                      <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
+                      <Link href={teamHref(rating.team)} className="flex min-h-11 min-w-0 items-center gap-2 -my-2.5 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                        <TeamLogo name={rating.team} px={24} />
+                        <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
+                      </Link>
                     </div>
                     <div className="shrink-0 text-right">
                       <div data-testid="primary-rating">
@@ -378,7 +381,7 @@ export function RatingsView({
                         <span data-rank-tier className={clsx("inline-flex h-5 min-w-5 items-center justify-center rounded px-1 font-mono text-xs tabular-nums", getRankBadgeClass(position, ratings.length))}>{position}</span>
                       </td>
                       <th scope="row" className="px-2 py-3 text-left font-semibold text-ink">
-                        <div className="flex items-center gap-2"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></div>
+                        <Link href={teamHref(rating.team)} className="flex items-center gap-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></Link>
                       </th>
                       {scoreSorts.map((column) => (
                         <td key={column} className={clsx("px-2 py-3 text-center font-mono", sortedClass(sort === column))}>{ratingText(rating[scoreFields[column]])}</td>

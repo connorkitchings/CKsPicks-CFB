@@ -122,7 +122,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     population: "FBS teams",
     controls: { side: false, week: null, team: true },
     footnote: `V5 model ratings after each week's games (Through Week 0 onward), on the rating scale, not PPA/play. Higher is better for every component, defense included; overall is the mean of offense and defense. Ratings are not centered at zero: the dashed line is each week's unweighted mean over FBS roster teams. A gap means the team has no snapshot that week; a lone week is a dot. From this release's V5 rating snapshots.`,
-    // Hidden from /charts by owner decision on 2026-10-18 (reserved for the Ratings tab); view code retained.
+    // Hidden from /stats by owner decision on 2026-10-18 (reserved for the Ratings tab); view code retained.
     ready: false,
   },
   possession: {
@@ -210,7 +210,7 @@ export function parseTeamParam(raw: RawParam, roster: readonly RosterRow[]): str
 }
 
 /**
- * `/charts` URL of `kind`. Only the params the chart reads are written, except `team`,
+ * `/stats` URL of `kind`. Only the params the chart reads are written, except `team`,
  * which is always carried so the highlight persists across charts.
  */
 export function chartHref(kind: ChartKind, options: { side?: Side; week?: number | null; team?: string | null } = {}): string {
@@ -219,7 +219,7 @@ export function chartHref(kind: ChartKind, options: { side?: Side; week?: number
   if (controls.side) q.set("side", options.side ?? "offense");
   if (controls.week && options.week !== null && options.week !== undefined) q.set("week", String(options.week));
   if (options.team) q.set("team", options.team);
-  return `/charts?${q.toString()}`;
+  return `/stats?${q.toString()}`;
 }
 
 /** `href` with `team` set (or removed when null), keeping every other param. */

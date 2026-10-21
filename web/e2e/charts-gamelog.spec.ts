@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("team game log", () => {
   test("shows the whole release, weekly references, and national ranks", async ({ page }) => {
-    await page.goto("/charts?chart=game-log&team=alabama&week=0");
+    await page.goto("/stats?chart=game-log&team=alabama&week=0");
     await expect(page.getByRole("heading", { name: "Alabama game log" })).toBeVisible();
     await expect(page.getByTestId("chart-subtitle")).toHaveText("Alabama · 2026 · FBS opponents only · Through Week 3");
     for (const side of ["offense", "defense"]) await expect(page.getByTestId(`game-log-rank-${side}`)).toHaveText(/\d+(st|nd|rd|th) of 16 nationally/);
@@ -16,7 +16,7 @@ test.describe("team game log", () => {
   });
 
   test("bars carry their values, results are colored, every game says vs or @, and the header gives FBS context", async ({ page }) => {
-    await page.goto("/charts?chart=game-log&team=alabama&week=0");
+    await page.goto("/stats?chart=game-log&team=alabama&week=0");
     const chart = page.getByTestId("game-log-chart");
     // One value label per bar, in both panels.
     const bars = await chart.locator("[data-bar]").count();
@@ -51,7 +51,7 @@ test.describe("team game log", () => {
 
   test("both panels draw at one pixels-per-unit scale, each fitted to its own values", async ({ page }) => {
     for (const metric of ["success", "ppa"]) {
-      await page.goto(`/charts?chart=game-log&team=alabama&week=0&metric=${metric}`);
+      await page.goto(`/stats?chart=game-log&team=alabama&week=0&metric=${metric}`);
       const scales: number[] = [];
       const heights: number[] = [];
       for (const side of ["offense", "defense"]) {
@@ -73,10 +73,10 @@ test.describe("team game log", () => {
   });
 
   test("capability controls metrics and a team without games stays selectable", async ({ page }) => {
-    await page.goto("/charts?chart=game-log&fixture=v1&team=alabama&metric=explosive_rate");
+    await page.goto("/stats?chart=game-log&fixture=v1&team=alabama&metric=explosive_rate");
     await expect(page.getByTestId("game-log-metric-explosive-rate")).toHaveCount(0);
     await expect(page.getByTestId("game-log-metric-success")).toHaveAttribute("aria-pressed", "true");
-    await page.goto("/charts?chart=game-log&team=alabama");
+    await page.goto("/stats?chart=game-log&team=alabama");
     await page.getByTestId("game-log-metric-explosive-rate").click();
     await expect(page.getByTestId("game-log-metric-explosive-rate")).toHaveAttribute("aria-pressed", "true");
     await page.getByTestId("game-log-metric-ppa").click();
@@ -90,7 +90,7 @@ test.describe("team game log", () => {
   });
 
   test("arrow keys reach games and show each game's tooltip", async ({ page }) => {
-    await page.goto("/charts?chart=game-log&team=alabama");
+    await page.goto("/stats?chart=game-log&team=alabama");
     const games = page.getByTestId("game-log-chart").locator("g[data-game]");
     const tooltip = page.getByTestId("chart-tooltip");
     await expect(async () => {
@@ -110,7 +110,7 @@ test.describe("team game log", () => {
   });
 
   test("PNG export includes decoded logos at 2000 by 1125 pixels", async ({ page }) => {
-    await page.goto("/charts?chart=game-log&team=alabama");
+    await page.goto("/stats?chart=game-log&team=alabama");
     await page.waitForLoadState("networkidle");
     const download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
@@ -123,7 +123,7 @@ test.describe("team game log", () => {
   });
 
   test("team selection survives rapid changes, chart navigation, reload and browser history", async ({ page }) => {
-    await page.goto("/charts?chart=adjusted&week=3&team=alabama");
+    await page.goto("/stats?chart=adjusted&week=3&team=alabama");
     await page.waitForLoadState("networkidle");
     const picker = page.getByTestId("team-highlight");
     await picker.selectOption("Michigan");

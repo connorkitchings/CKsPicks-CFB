@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { PageShell } from "@/components/PageShell";
+import { publicationScope } from "@/lib/publication";
+import { resolveTeam } from "@/lib/teams";
 import { getTeamGames, getTeamHistory, type Rating } from "@/lib/v5";
 import { v5RatingFixture } from "@/test/fixtures/publication";
 import { Card } from "@/components/ui/Card";
@@ -8,13 +13,20 @@ import { homeSpreadFromMargin, homeSpreadText } from "@/lib/betting-format";
 
 export const revalidate = 300;
 
+export async function generateMetadata({ params }: { params: Promise<{ team: string }> }): Promise<Metadata> {
+  const resolved = resolveTeam((await params).team);
+  return resolved ? { title: `${resolved.gameName} · Team page` } : { robots: { index: false, follow: false } };
+}
+
 export default async function TeamPage({ params }: { params: Promise<{ team: string }> }) {
-  const { team } = await params;
+  const resolved = resolveTeam((await params).team);
+  if (!resolved) notFound();
+  const { gameName: team, ratingName } = resolved;
   let history: Rating[] = [];
   let games: Awaited<ReturnType<typeof getTeamGames>> = [];
   let unavailable = false;
   if (process.env.CFB_UI_TEST_MODE === "1") {
-    if (team === v5RatingFixture.team) {
+    if (ratingName === v5RatingFixture.team) {
       history = [v5RatingFixture];
       games = [{ week: 0, startDate: v5RatingFixture.cutoffUtc,
         homeTeam: team, awayTeam: "Ohio State", predictedMargin: 3.5,
@@ -23,14 +35,19 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
     }
   } else {
     try {
-      [history, games] = await Promise.all([getTeamHistory(2026, team), getTeamGames(2026, team)]);
+      // Rating snapshots store nine teams under legacy names; games use CFBD names.
+      [history, games] = await Promise.all([getTeamHistory(2026, ratingName), getTeamGames(2026, team)]);
     } catch (error) {
       console.error("V5 team page query failed", error);
       unavailable = true;
     }
   }
   return (
-    <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-4xl flex-1 space-y-7 px-4 py-8">
+    <PageShell
+      width="narrow"
+      header={{ season: 2026, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons }}
+      mainClassName="space-y-7 py-8"
+    >
       <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div></div>
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : <>
         <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
@@ -43,6 +60,6 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
           <div className="space-y-2">{games.map((game) => <Card as="article" key={`${game.week}-${game.startDate.toISOString()}`}><div className="flex flex-wrap items-center justify-between gap-2"><div><span className="text-xs uppercase tracking-wide text-ink-faint">Week {game.week} · {game.evidenceClass ?? "forecast unavailable"}</span><p className="font-semibold text-ink">{game.awayTeam} at {game.homeTeam}</p></div><div className="text-right text-sm tabular-nums text-ink-muted"><p>Forecast: {homeSpreadText(game.homeTeam, homeSpreadFromMargin(game.predictedMargin))} · {game.predictedTotal?.toFixed(1) ?? "—"} total</p><p>{game.homePoints === null || game.awayPoints === null ? "Not final" : `Final: ${game.awayPoints}–${game.homePoints}`}</p></div></div></Card>)}</div>}
         </section>
       </>}
-    </main>
+    </PageShell>
   );
 }

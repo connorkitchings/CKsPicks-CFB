@@ -6,6 +6,7 @@ import { Eyebrow } from "@/components/ui/SectionHeading";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { bookName } from "@/lib/slate";
+import { teamHref } from "@/lib/teams";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { ShareButton } from "./ShareButton";
 
@@ -30,7 +31,12 @@ function TeamBlock({
     <div className="flex min-w-0 flex-col items-center gap-2 text-center" data-side={side.toLowerCase()}>
       <TeamLogo name={name} px={80} decorative={false} priority className="h-12 w-12 sm:h-16 sm:w-16" />
       <div className="w-full min-w-0">
-        <span className="block break-words text-base font-bold tracking-tight text-ink sm:text-xl">{name}</span>
+        <Link
+          href={teamHref(name)}
+          className="inline-flex min-h-11 max-w-full items-center justify-center break-words text-base font-bold tracking-tight text-ink hover:text-accent-ink hover:underline sm:text-xl"
+        >
+          {name}
+        </Link>
         <p className="text-xs text-ink-muted">
           {side}
           {record && (
@@ -115,10 +121,10 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
       {/* Breadcrumb and game facts */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3 text-xs text-ink-muted">
         <Link
-          href={isFinal ? `/results?week=${matchup.week}` : `/?week=${matchup.week}`}
+          href={`/?week=${matchup.week}`}
           className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent-ink hover:underline"
         >
-          ← Back to {isFinal ? "Results" : "Picks"} (Week {matchup.week})
+          ← Week {matchup.week} games
         </Link>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-muted" data-testid="game-facts">
           <span>{formatKickoff(matchup.startDate)}</span>

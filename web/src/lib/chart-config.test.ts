@@ -43,21 +43,21 @@ test("team param: a roster team in any case is returned in roster spelling; anyt
 });
 
 test("chart hrefs write only the params a chart reads, and always carry the team", () => {
-  assert.equal(chartHref("net-success", { side: "defense", week: 3 }), "/charts?chart=net-success&week=3");
-  assert.equal(chartHref("efficiency", { side: "defense", week: 3, team: "Texas A&M" }), "/charts?chart=efficiency&side=defense&week=3&team=Texas+A%26M");
-  assert.equal(chartHref("efficiency"), "/charts?chart=efficiency&side=offense");
-  assert.equal(chartHref("adjusted", { side: "defense", week: null }), "/charts?chart=adjusted");
-  assert.equal(chartHref("net-success", { week: 0, team: "Alabama" }), "/charts?chart=net-success&week=0&team=Alabama");
-  assert.equal(chartHref("rating-trajectory", { side: "defense", week: 4, team: "Alabama" }), "/charts?chart=rating-trajectory&team=Alabama");
-  assert.equal(chartHref("possession", { side: "defense", week: 2, team: "Alabama" }), "/charts?chart=possession&week=2&team=Alabama", "Through Week N, no side");
+  assert.equal(chartHref("net-success", { side: "defense", week: 3 }), "/stats?chart=net-success&week=3");
+  assert.equal(chartHref("efficiency", { side: "defense", week: 3, team: "Texas A&M" }), "/stats?chart=efficiency&side=defense&week=3&team=Texas+A%26M");
+  assert.equal(chartHref("efficiency"), "/stats?chart=efficiency&side=offense");
+  assert.equal(chartHref("adjusted", { side: "defense", week: null }), "/stats?chart=adjusted");
+  assert.equal(chartHref("net-success", { week: 0, team: "Alabama" }), "/stats?chart=net-success&week=0&team=Alabama");
+  assert.equal(chartHref("rating-trajectory", { side: "defense", week: 4, team: "Alabama" }), "/stats?chart=rating-trajectory&team=Alabama");
+  assert.equal(chartHref("possession", { side: "defense", week: 2, team: "Alabama" }), "/stats?chart=possession&week=2&team=Alabama", "Through Week N, no side");
 });
 
 test("team param editing keeps every other param", () => {
-  assert.equal(withTeamParam("/charts?chart=adjusted&week=2", "Notre Dame"), "/charts?chart=adjusted&week=2&team=Notre+Dame");
-  assert.equal(withTeamParam("/charts?chart=adjusted&team=Alabama&week=2", "Notre Dame"), "/charts?chart=adjusted&team=Notre+Dame&week=2");
-  assert.equal(withTeamParam("/charts?team=Alabama&week=2", null), "/charts?week=2");
-  assert.equal(withTeamParam("/charts?team=Alabama", null), "/charts");
-  assert.equal(withTeamParam("/charts", null), "/charts");
+  assert.equal(withTeamParam("/stats?chart=adjusted&week=2", "Notre Dame"), "/stats?chart=adjusted&week=2&team=Notre+Dame");
+  assert.equal(withTeamParam("/stats?chart=adjusted&team=Alabama&week=2", "Notre Dame"), "/stats?chart=adjusted&team=Notre+Dame&week=2");
+  assert.equal(withTeamParam("/stats?team=Alabama&week=2", null), "/stats?week=2");
+  assert.equal(withTeamParam("/stats?team=Alabama", null), "/stats");
+  assert.equal(withTeamParam("/stats", null), "/stats");
 });
 
 test("registry: every kind is registered; only ready kinds parse and appear in the picker", () => {

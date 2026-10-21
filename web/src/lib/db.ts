@@ -15,7 +15,7 @@ import * as schema from "./schema";
  *
  * The client is initialized lazily so the module is importable during
  * `next build` before DATABASE_URL is configured. The error surfaces at the
- * first query, where callers (e.g. app/page.tsx) wrap it in try/catch.
+ * first query, where callers (e.g. app/(games)/page.tsx) wrap it in try/catch.
  */
 
 export type DB = NeonHttpDatabase<typeof schema>;

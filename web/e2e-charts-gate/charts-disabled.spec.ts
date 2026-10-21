@@ -1,22 +1,22 @@
 import { expect, test } from "@playwright/test";
 
-const pages = ["/", "/results", "/ratings", "/performance"];
-const names = ["Picks", "Results", "Ratings", "Performance"];
+const pages = ["/", "/ratings", "/model"];
+const names = ["Games", "Ratings", "Model"];
 
 for (const query of ["", "?chart=trajectory&team=Alabama", "?chart=rating-trajectory&metric=defense", "?chart=possession&week=2&metric=epa_per_possession", "?chart=game-log&metric=explosive_rate", "?fixture=error", "?fixture=unsupported", "?fixture=schedule&chart=schedule", "?fixture=slate&chart=efficiency"]) {
-  test(`disabled /charts${query} responds with HTTP 404 before loading chart data`, async ({ page }) => {
-    const response = await page.goto(`/charts${query}`);
+  for (const base of ["/stats", "/charts"]) test(`disabled ${base}${query} responds with HTTP 404 before loading chart data`, async ({ page }) => {
+    const response = await page.goto(`${base}${query}`);
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { name: "Team charts", exact: true })).toHaveCount(0);
     await expect(page.getByTestId("charts-notice")).toHaveCount(0);
     await expect(page.getByTestId("chart-picker")).toHaveCount(0);
-    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Charts", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Stats", exact: true })).toHaveCount(0);
     await expect(page.getByText(/Charts are temporarily unavailable|Charts arrive with the next weekly release/)).toHaveCount(0);
   });
 }
 
 for (const width of [1280, 390]) {
-  test(`four navigation links and the core pages work at ${width}px without Charts`, async ({ page }) => {
+  test(`three navigation links and the core pages work at ${width}px without Stats`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     for (const path of pages) {
       const response = await page.goto(path);
@@ -24,7 +24,7 @@ for (const width of [1280, 390]) {
       const nav = page.getByRole("navigation", { name: "Main navigation" });
       const links = nav.getByRole("link");
       await expect(links).toHaveText(names);
-      await expect(nav.getByRole("link", { name: "Charts", exact: true })).toHaveCount(0);
+      await expect(nav.getByRole("link", { name: "Stats", exact: true })).toHaveCount(0);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       await expect.poll(async () => {
         const boxes = await links.evaluateAll((nodes) => nodes.map((node) => {
@@ -46,6 +46,6 @@ test("disabled navigation is absent in server HTML before hydration", async ({ b
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(nav.getByRole("link")).toHaveText(names);
-  await expect(nav.getByRole("link", { name: "Charts", exact: true })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Stats", exact: true })).toHaveCount(0);
   await context.close();
 });

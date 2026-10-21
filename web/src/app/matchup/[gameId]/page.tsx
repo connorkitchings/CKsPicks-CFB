@@ -6,6 +6,7 @@ import { MatchupHero } from "@/components/matchup/MatchupHero";
 import { getMatchupData } from "@/lib/matchup";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { publicationScope } from "@/lib/publication";
+import { teamHref } from "@/lib/teams";
 import { UnitMatchups } from "@/components/matchup/UnitMatchups";
 import { Card } from "@/components/ui/Card";
 
@@ -107,11 +108,20 @@ export default async function MatchupPage({
 
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href={`/matchup?week=${matchup.week}`}
+            href={`/?week=${matchup.week}`}
             className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent-ink"
           >
-            All Week {matchup.week} matchups
+            All Week {matchup.week} games
           </Link>
+          {[matchup.awayTeam, matchup.homeTeam].map((team) => (
+            <Link
+              key={team}
+              href={teamHref(team)}
+              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent-ink"
+            >
+              {team} team page
+            </Link>
+          ))}
         </div>
       </main>
 

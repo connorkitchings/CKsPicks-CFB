@@ -154,7 +154,7 @@ amendment, and commit-policy rules.
 - **Tech Stack:** Python 3.12 (pipeline) + Next.js 16 / React 19 / Tailwind v4 (web app) + Neon Postgres + Cloudflare R2
 - **Data:** V4 artifacts retain 2021–2025; successor-v2 research expands to
   2015–2019 and 2021–2025 in R2 (`CFB_STORAGE_BACKEND='r2'`); 2020 excluded
-- **2026 Deliverable:** Vercel web app at `web/` featuring a full 4-tab operational interface (Picks, Results, Ratings, Performance) showing every FBS game's spread + total lean against market lines, certified Blitzkrieg V5 team ratings, and transparent performance tracking
+- **2026 Deliverable:** Vercel web app at `web/` featuring a 4-tab operational interface (Games, Ratings, Stats, Model; Stats is hidden unless `CFB_CHARTS_ENABLED=1`) showing every FBS game's spread + total lean against market lines, certified Blitzkrieg V5 team ratings, and transparent performance tracking
 - **Commands:** See `.codex/QUICKSTART.md` (Python + Nx task runner) and `web/README.md` (Next.js)
 - **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_runbook.md` (data flow to web app)
 
@@ -301,7 +301,7 @@ Research lives in `scripts/research/` and requires an approved contract before c
 - ✅ Solution: Use `load_point_in_time_data()` for strict temporal splits
 
 **Production-mode screenshots of gated pages:**
-- ❌ Problem: `next start` returns the 404 page for gated routes (e.g. `/matchup`), so screenshots look "fine" but show nothing
+- ❌ Problem: `next start` returns the 404 page for gated routes (e.g. `/matchup/[gameId]`), so screenshots look "fine" but show nothing
 - ✅ Solution: open gated routes with their flag (e.g. `CFB_MATCHUP_ENABLED=1`) plus `CFB_UI_TEST_MODE=1`, and look at the image before sending it
 
 **Raw `db.execute()` in the web app:**

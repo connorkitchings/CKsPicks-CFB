@@ -37,7 +37,7 @@
 - **Chart foundation (Migration 0026).** The `team_season_roster`, `team_game_stats` and `team_adjusted_epa` tables were introduced by `contracts/migrations/0026_team_chart_tables.sql` as the frozen `charts_v1` set. Migration 0026 remains a prerequisite for 0027. Retained `charts_v1` releases keep their recorded set and, when Charts publication is enabled, show release-backed success/PPA charts; `core_v1` releases show the unavailable-chart notice. Neither needs the yardage relation for readback or existing-chart queries. The pinned `teams` input must carry each team's `conference` (CFBD teams data). **New staging uses `charts_v2`, as described below.**
 - **Yardage table (Migration 0027) and the `charts_v2` projection set.** Staging now requires the `charts_v2` set, which adds `team_game_yardage` (explosiveness counts), and refuses `core_v1` and `charts_v1` candidates. **Apply `contracts/migrations/0027_team_game_yardage.sql` to Preview, as the owner/migrator, before the first `charts_v2` staging there, and to Production before the first `charts_v2` staging there, even if the Charts UI is disabled.** Without it staging fails with `projection schema missing: team_game_yardage`. Prepare adds the `chart_yardage_recomputed` check, which recomputes the table from the pinned byplay input. Staging reads nothing new from storage: it checks the table's structure and requires that check's recorded evidence to match the candidate payload and the revision's pinned byplay SHA-256. `make season-release` passes the prepared revision manifest to staging for this. Retained `core_v1` and `charts_v1` releases stay readable, activatable and rollback-able with or without 0027, and the web app shows explosiveness only for a `charts_v2` release.
 - **Object storage:** `CFB_ARTIFACT_ENV` selects the R2 credential set (`CFB_R2_PREVIEW_*` for `preview`, `CFB_R2_*` otherwise). Both sets currently name the same bucket, `cks-picks-cfb-preview`; immutable artifacts are checksummed and environment-neutral, and environment separation is by Neon branch. Any command run *without* a wrapper defaults to `CFB_ARTIFACT_ENV=production`, so every data command below runs under a wrapper.
-- **Charts publication gate:** `CFB_CHARTS_ENABLED` must be the exact string `1` to show Charts navigation or serve `/charts`. Keep Production unset or `0` pending the owner's manual approval. Explicitly enable local/Preview review, for example `CFB_CHARTS_ENABLED=1 make web-local ENV=preview`; fixture mode is not an override. Rebuild/redeploy after changing this setting. Code integration and required chart-table migrations do not grant public Charts approval. With the gate off, normal `dev` → `main` releases may include Charts code after integration/validation and separately approved migration decisions; no charts-free branch is required by UI publication alone.
+- **Charts publication gate:** `CFB_CHARTS_ENABLED` must be the exact string `1` to show the Stats tab or serve `/stats` (formerly `/charts`; `/charts…` redirects to `/stats…`). With the flag off, `/stats` returns HTTP 404 and the phone bar shows three tabs instead of four. Keep Production unset or `0` pending the owner's manual approval. Explicitly enable local/Preview review, for example `CFB_CHARTS_ENABLED=1 make web-local ENV=preview`; fixture mode is not an override. Rebuild/redeploy after changing this setting. Code integration and required chart-table migrations do not grant public Charts approval. With the gate off, normal `dev` → `main` releases may include Charts code after integration/validation and separately approved migration decisions; no charts-free branch is required by UI publication alone.
 - **Vercel:** the [site](https://c-ks-picks-cfb.vercel.app) (Root Directory `web/`) deploys from `main` and reads Production through `cks_prod_web`. `dev` is the working branch.
 - **Run locally against an environment:** `make web-local ENV=preview` (or `ENV=production`).
 
@@ -220,10 +220,10 @@ make season-release ENV=preview RELEASE_ID=<RELEASE_ID> \
 ```
 
 Verify the local web app on Preview (`make web-local ENV=preview`, then `http://localhost:3000`):
-- `/` (Picks): Active week picks displayed with correct model margins and edges.
-- `/results`: Completed weeks scored with final results.
+- `/` (Games): Active week picks displayed with correct model margins and edges; completed weeks show scored results under the same week view (phase chip).
 - `/ratings`: Team ratings ranked accurately.
-- `/performance`: Cumulative ATS record matches database grades.
+- `/model`: Cumulative ATS record matches database grades.
+- `/model/method`: Method page loads; `#elite-reference` anchor resolves.
 
 ---
 
@@ -267,11 +267,23 @@ Commits are allowed again from here.
    ```
 2. Verify live production URLs:
    - `https://c-ks-picks-cfb.vercel.app/`
-   - `https://c-ks-picks-cfb.vercel.app/results`
    - `https://c-ks-picks-cfb.vercel.app/ratings`
-   - `https://c-ks-picks-cfb.vercel.app/performance`
+   - `https://c-ks-picks-cfb.vercel.app/model`
+   - `https://c-ks-picks-cfb.vercel.app/stats` (expect 404 while `CFB_CHARTS_ENABLED` is unset in Production)
    - `https://c-ks-picks-cfb.vercel.app/api/health`
-3. Update [`docs/status.md`](../status.md) with the active release ID, week state, and scoreboard.
+3. Check the redirects below. Each returns 307 for now; switch to 308 only after owner acceptance (see the canonical-domain TODO). Query strings are preserved.
+   - `/results?…` → `/?…`
+   - `/matchup` → `/`
+   - `/performance` → `/model`
+   - `/methodology` → `/model/method`
+   - `/charts…` → `/stats…` (404 while the Charts flag is off)
+
+   Check one with: `curl -sI "https://c-ks-picks-cfb.vercel.app/results?probe=1" | grep -i -E "^(HTTP|location)"`
+4. Update [`docs/status.md`](../status.md) with the active release ID, week state, and scoreboard.
+
+**Optional cache warm-up.** The release data cache is keyed by deployment ID, so it is empty after each deploy. To warm it, request `/`, `/ratings` and `/model` once each. The active-release pointer refreshes within about 60 seconds of a new activation; the signed `/api/revalidate` endpoint makes the change visible immediately. The kill switch is `CFB_DATA_CACHE=0`, which bypasses the release-keyed cache.
+
+**TODO:** confirm the canonical domain before the 307 → 308 switch. This runbook uses `c-ks-picks-cfb.vercel.app`, while `web/src/app/layout.tsx` uses `ckspicks-cfb.vercel.app`.
 
 ---
 
