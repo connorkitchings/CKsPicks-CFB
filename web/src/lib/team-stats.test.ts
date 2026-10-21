@@ -7,7 +7,6 @@ import {
   cohortSizeOf,
   formatMetric,
   gamesBehind,
-  getRankBadgeClass,
   groupUnitRows,
   hasMissingValue,
   rankLabel,
@@ -78,16 +77,6 @@ test("gamesBehind and cohortSizeOf", () => {
   assert.equal(gamesBehind(rows, "Z"), 0);
   assert.equal(cohortSizeOf(rows), 130);
   assert.equal(cohortSizeOf([]), null);
-});
-
-test("rank badge tiers", () => {
-  assert.match(getRankBadgeClass(10), /accent/);
-  assert.match(getRankBadgeClass(120), /loss/);
-  assert.match(getRankBadgeClass(null), /ink-faint/);
-  // Relative to the ranked pool: #10 of 16 is bottom-half, not "top 25".
-  assert.match(getRankBadgeClass(10, 16), /ink-muted|loss/);
-  assert.match(getRankBadgeClass(1, 16), /accent/);
-  assert.match(getRankBadgeClass(16, 16), /loss/);
 });
 
 test("buildMatchupStats is null with no rows and pairs each offense with the opposing defense", () => {
@@ -283,7 +272,7 @@ test("mismatchSummary says who has the edge and by how many places; a panel can 
   assert.deepEqual(spot, [], "a one-place gap is even");
 });
 
-test("rankTier uses the same percentile bands as the badge classes", () => {
+test("rankTier uses the percentile bands for the share card badges", () => {
   assert.equal(rankTier(null), "none");
   assert.equal(rankTier(27, 138), "top"); // 19.6%
   assert.equal(rankTier(28, 138), "high");
@@ -291,8 +280,6 @@ test("rankTier uses the same percentile bands as the badge classes", () => {
   assert.equal(rankTier(63, 138), "mid");
   assert.equal(rankTier(103, 138), "mid"); // 74.6%
   assert.equal(rankTier(104, 138), "low");
-  assert.match(getRankBadgeClass(1, 138), /accent/);
-  assert.match(getRankBadgeClass(138, 138), /loss/);
 });
 
 test("formatMetric shows a PPA that rounds to zero without a sign", () => {

@@ -21,7 +21,7 @@ import {
   type SortDirection,
   type SosRanks,
 } from "@/lib/sos-rank";
-import { getRankBadgeClass } from "@/lib/team-stats";
+import { RankChip } from "@/components/ui/RankChip";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
@@ -108,19 +108,7 @@ function sosRankLine(teamRanks: SosRanks | undefined) {
 }
 
 function RankPill({ rank, cohort }: { rank: number | null | undefined; cohort: number }) {
-  const valid = isNumber(rank) ? rank : null;
-  if (valid === null) return <>{DASH}</>;
-  return (
-    <span
-      data-rank-tier
-      className={clsx(
-        "inline-flex h-5 min-w-5 items-center justify-center rounded px-1 font-mono text-xs tabular-nums",
-        getRankBadgeClass(valid, cohort),
-      )}
-    >
-      {rankText(valid)}
-    </span>
-  );
+  return isNumber(rank) ? <RankChip rank={rank} total={cohort} /> : <>{DASH}</>;
 }
 
 interface SortHeaderProps {
@@ -326,7 +314,7 @@ export function RatingsView({
                 <Card as="li" padding="sm" key={rating.team}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-2">
-                      <span aria-label={`National rank ${position}`} data-rank-tier className={clsx("flex h-6 min-w-6 shrink-0 items-center justify-center rounded px-1 font-mono text-xs", getRankBadgeClass(position, ratings.length))}>{position}</span>
+                      <RankChip aria-label={`National rank ${position}`} rank={position} total={ratings.length} prefix="" className="h-6 min-w-6 shrink-0" />
                       <Link href={teamHref(rating.team)} className="flex min-h-11 min-w-0 items-center gap-2 -my-2.5 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                         <TeamLogo name={rating.team} px={24} />
                         <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
@@ -378,7 +366,7 @@ export function RatingsView({
                   return (
                     <tr key={rating.team}>
                       <td className="px-2 py-3 text-center font-mono text-xs text-ink-muted">
-                        <span data-rank-tier className={clsx("inline-flex h-5 min-w-5 items-center justify-center rounded px-1 font-mono text-xs tabular-nums", getRankBadgeClass(position, ratings.length))}>{position}</span>
+                        <RankChip rank={position} total={ratings.length} prefix="" />
                       </td>
                       <th scope="row" className="px-2 py-3 text-left font-semibold text-ink">
                         <Link href={teamHref(rating.team)} className="flex items-center gap-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></Link>

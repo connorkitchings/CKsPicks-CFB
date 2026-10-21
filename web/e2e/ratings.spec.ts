@@ -351,7 +351,7 @@ test.describe("résumé columns", () => {
 
   test("conference filter narrows rows while preserving national rank and rank-tier badges", async ({ page }) => {
     await page.goto("/ratings");
-    await expect(rows(page).first().locator("[data-rank-tier]").first()).toBeVisible();
+    await expect(rows(page).first().locator("[data-rank-chip]").first()).toBeVisible();
     const filter = page.getByTestId("conference-filter");
     await expect(filter).toBeVisible();
 
@@ -402,4 +402,44 @@ test.describe("release without résumé rows", () => {
     await expect(page.getByText("SOS ranks schedule difficulty")).toBeHidden();
     expect(problems).toEqual([]);
   });
+});
+
+test.describe("rank color scale", () => {
+  // Computed colors may be oklab/srgb strings; rasterize one pixel to compare plain sRGB channels.
+  const rgb = (page: Page, value: string) => page.evaluate((css) => {
+    const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, 1, 1);
+    ctx.fillStyle = css;
+    ctx.fillRect(0, 0, 1, 1);
+    return Array.from(ctx.getImageData(0, 0, 1, 1).data.slice(0, 3));
+  }, value);
+
+  for (const scheme of ["light", "dark"] as const) {
+    test(`rank 1 is greener than the last rank in ${scheme} mode, with the rank as the chip text`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto("/ratings");
+      const bodyRows = page.getByRole("table").locator("tbody tr");
+      await expect(bodyRows.first()).toBeVisible();
+      const count = await bodyRows.count();
+      const first = bodyRows.first().locator("[data-rank-chip]").first();
+      const last = bodyRows.nth(count - 1).locator("[data-rank-chip]").first();
+      await expect(first).toHaveText("1");
+      await expect(last).toHaveText(String(count));
+
+      const style = (chip: Locator) => chip.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { background: s.backgroundColor, border: s.borderTopColor, color: s.color };
+      });
+      const [best, worst] = [await style(first), await style(last)];
+      expect(best.background).not.toBe(worst.background);
+      const [bestR, bestG] = await rgb(page, best.background);
+      const [worstR, worstG] = await rgb(page, worst.background);
+      expect(bestG - bestR).toBeGreaterThan(worstG - worstR);
+      expect(await rgb(page, best.border)).not.toEqual(await rgb(page, worst.border));
+      // Text stays the ink color on every chip: the hue never carries the text.
+      expect(best.color).toBe(worst.color);
+      expect(best.color).toBe(await page.locator("body").evaluate((el) => getComputedStyle(el).color));
+    });
+  }
 });

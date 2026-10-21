@@ -48,6 +48,12 @@
   --edge-low: #71717a; /* zinc-500 */
   --edge-medium: #b45309; /* amber-700 */
   --edge-high: #15803d; /* green-700 */
+  /* Rank scale (rank 1 -> last). Own token set, not the win/loss results hues. Chip text is
+     --ink over a 20% tint; contrast of --ink on that tint (card / inset / page) at rank 1, 69, 138:
+     light 13.46/12.38/12.96, 13.77/12.67/13.26, 12.52/11.49/12.05 (all >= 4.5). */
+  --rank-good: #15803d; /* green-700 */
+  --rank-mid: #71717a; /* zinc-500 */
+  --rank-bad: #b91c1c; /* red-700 */
 }
 
 html.dark {
@@ -79,6 +85,32 @@ html.dark {
   --edge-low: #a1a1aa; /* zinc-400 */
   --edge-medium: #facc15; /* yellow-400 */
   --edge-high: #4ade80; /* green-400 */
+  /* Same hues as light, lighter stops. Contrast of --ink on the 20% tint (card / inset / page):
+     dark 13.31/11.29/14.55, 13.47/11.37/14.77, 14.92/12.92/16.03 (rank 1, 69, 138). */
+  --rank-good: #22c55e; /* green-500 */
+  --rank-mid: #a1a1aa; /* zinc-400 */
+  --rank-bad: #ef4444; /* red-500 */
+}
+
+/*
+ * Rank chip (components/ui/RankChip). `--rank-t` (0 = rank 1 ... 1 = last, set inline from
+ * rankColorMix) drives a two-stage mix with no branching: good -> mid over t 0..0.5, then
+ * mid -> bad over t 0.5..1. Text stays --ink so contrast never depends on the hue.
+ */
+.rank-chip {
+  --rank-color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--rank-mid) calc(clamp(0, var(--rank-t) * 2, 1) * 100%), var(--rank-good)),
+    var(--rank-bad) calc(clamp(0, var(--rank-t) * 2 - 1, 1) * 100%)
+  );
+  background: color-mix(in oklab, var(--rank-color) 20%, transparent);
+  border: 1px solid color-mix(in oklab, var(--rank-color) 55%, transparent);
+  color: var(--ink);
+}
+.rank-chip[data-rank-none] {
+  background: var(--surface-inset);
+  border-color: var(--line);
+  color: var(--ink-muted);
 }
 
 @theme inline {

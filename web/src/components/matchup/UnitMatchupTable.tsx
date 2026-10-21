@@ -2,9 +2,9 @@ import clsx from "clsx";
 import { Fragment } from "react";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
+import { RankChip } from "@/components/ui/RankChip";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import {
-  getRankBadgeClass,
   groupUnitRows,
   rankLabel,
   rankTitle,
@@ -44,16 +44,12 @@ function RankBadge({
   tied: boolean;
 }) {
   return (
-    <span
-      className={clsx(
-        "inline-flex h-5 min-w-5 items-center justify-center whitespace-nowrap rounded px-1 text-xs tabular-nums",
-        getRankBadgeClass(rank, cohort),
-        rank === null && "!text-ink-muted",
-      )}
+    <RankChip
+      rank={rank}
+      total={cohort ?? undefined}
+      label={rankLabel(rank, tied)}
       title={rankTitle(rank, tied, cohort)}
-    >
-      {rankLabel(rank, tied)}
-    </span>
+    />
   );
 }
 
@@ -73,14 +69,14 @@ function RankLine({
       data-testid={testId}
       className="mt-0.5 text-center text-xs leading-snug text-ink-muted"
     >
-      {label} <span className="font-mono">#{rank ?? "—"}</span>
+      {label} <RankChip rank={rank} />
     </div>
   );
 }
 
 /**
  * One team's offense against the other team's defense, with national ranks in
- * tier colors. (Per-row edge calculation lives in team-stats.ts but is not
+ * the shared rank color scale. (Per-row edge calculation lives in team-stats.ts but is not
  * drawn for now.)
  */
 export function UnitMatchupTable({

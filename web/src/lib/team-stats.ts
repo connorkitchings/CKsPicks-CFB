@@ -311,18 +311,6 @@ export function rankTier(rank: number | null, cohortSize: number | null = null):
   return "low";
 }
 
-const RANK_TIER_CLASS: Record<RankTier, string> = {
-  none: "bg-surface-inset text-ink-faint border border-line font-medium",
-  top: "bg-accent/15 text-accent-ink border border-accent/30 font-bold",
-  high: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 font-semibold",
-  mid: "bg-surface-inset text-ink-muted border border-line font-medium",
-  low: "bg-loss-soft text-loss border border-loss/20 font-medium",
-};
-
-export function getRankBadgeClass(rank: number | null, cohortSize: number | null = null): string {
-  return RANK_TIER_CLASS[rankTier(rank, cohortSize)];
-}
-
 export interface MatchupStats {
   /** Snapshot covers FBS-vs-FBS games completed before this week's slate. */
   asOfWeek: number;

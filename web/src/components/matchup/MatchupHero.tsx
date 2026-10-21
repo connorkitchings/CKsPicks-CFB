@@ -2,6 +2,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
+import { RankChip } from "@/components/ui/RankChip";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
@@ -58,11 +59,11 @@ function TeamBlock({
           <div className="mt-2 flex flex-col items-center gap-1 text-xs">
             <span
               data-testid="model-rating"
-              className="inline-flex flex-wrap items-baseline justify-center gap-x-1.5 rounded bg-surface-inset px-2 py-0.5 text-xs font-semibold text-ink"
+              className="inline-flex flex-wrap items-center justify-center gap-x-1.5 text-xs font-semibold text-ink"
               title="Model overall rank among FBS teams"
             >
               <span>Model Rank</span>
-              <span className="font-mono">#{rating.rank ?? "—"}</span>
+              <RankChip rank={rating.rank} />
             </span>
           </div>
         ) : <p className="mt-2 text-xs text-ink-muted">Model ratings unavailable</p>}
