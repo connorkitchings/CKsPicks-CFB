@@ -44,8 +44,6 @@ export default function ModelMethodPage() {
       <Section id="team-strength" title="Team strength: points per possession">
         <p>
           V5 rates every team on offense and on defense by how many points it scores or allows per possession.
-          Rating by possession instead of by game keeps fast and slow tempos comparable, so a team that plays
-          quickly is not credited with more offense just because it ran more plays.
         </p>
         <p>
           The ratings adjust for the opponents played and carry on as one continuous rating for each team across the

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Header";
 import { MatchupHero } from "@/components/matchup/MatchupHero";
 import { getMatchupData } from "@/lib/matchup";
+import { parseGameId } from "@/lib/matchup-id";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { publicationScope } from "@/lib/publication";
 import { teamHref } from "@/lib/teams";
@@ -20,8 +21,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ gameId: string }>;
 }): Promise<Metadata> {
-  const id = Number((await params).gameId);
-  if (!isMatchupEnabled() || !Number.isInteger(id) || id <= 0) return noindex;
+  const id = parseGameId((await params).gameId);
+  if (!isMatchupEnabled() || id === null) return noindex;
   const matchup = await getMatchupData(id).catch(() => null);
   return matchup ? { ...noindex, title: `${matchup.awayTeam} at ${matchup.homeTeam} · Matchup` } : noindex;
 }
@@ -33,11 +34,8 @@ export default async function MatchupPage({
 }) {
   if (!isMatchupEnabled()) notFound();
   const { gameId } = await params;
-  const parsedGameId = Number(gameId);
-
-  if (!Number.isInteger(parsedGameId) || parsedGameId <= 0) {
-    notFound();
-  }
+  const parsedGameId = parseGameId(gameId);
+  if (parsedGameId === null) notFound();
 
   // A database failure surfaces as an error page; only a genuinely unknown or
   // unpublished game is a 404.

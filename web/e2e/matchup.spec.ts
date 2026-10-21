@@ -266,12 +266,20 @@ test.describe("matchup page (fixture mode)", () => {
   test("is noindex and unknown games show the not-found page", async ({ page }) => {
     await page.goto("/matchup/1");
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
-    // Unknown ids stream the 404 page (the root loading boundary has already sent 200).
+    // Unknown ids render the 404 page.
     await page.goto("/matchup/987654");
     await expect(page.getByText("This page could not be found")).toBeVisible();
     await expect(page.getByRole("region", { name: "Team stats" })).toHaveCount(0);
     await page.goto("/matchup/abc");
     await expect(page.getByText("This page could not be found")).toBeVisible();
+  });
+
+  test("unknown and invalid game ids return HTTP 404; known games return 200", async ({ request }) => {
+    expect((await request.get("/matchup/1")).status()).toBe(200);
+    expect((await request.get("/matchup/987654")).status()).toBe(404);
+    expect((await request.get("/matchup/abc")).status()).toBe(404);
+    expect((await request.get("/matchup/0")).status()).toBe(404);
+    expect((await request.get("/matchup/99999999999999999999")).status()).toBe(404);
   });
 
   test("the Games week view lists the week's games and links to each breakdown", async ({ page }) => {
