@@ -6,6 +6,7 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [Site reorganization, design consistency and performance](2026-10-21/01-site-reorganization-and-performance.md) | Release-keyed data cache and query fixes (Phase 1), shared Card/Notice design system (2), four-tab navigation with merged Matchups and Model plus team links (3), Stats publication (4) | Approved October 21; Phase 1 in progress. Do not land while a release candidate is waiting for `run_season.py release`. |
 | [Charts pre-publication verification](2026-10-20/03-charts-pre-publication.md) | What must be tested and decided before `CFB_CHARTS_ENABLED=1` is set in Production; `dev` is focused on this | Draft; awaiting owner approval. |
 | [Incremental weekly ingestion](2026-10-20/02-incremental-weekly-ingestion.md) | Separate promotion (no provider calls), normal week close/open (new-week requests only) and budgeted history repair | Draft; awaiting owner approval. No provider calls or code changes in the plan. |
 | [Website UI/UX foundations, unified shell, matchup hero & performance benchmark](2026-10-20/01-website-ui-ux-improvements.md) | CSS tokens (`--surface-elevated`, `color-scheme`), unified masthead/theme toggle/footer across all 8 routes, matchup hero sources/edges/ranks + top mismatches, 52.4% break-even benchmark on `/performance`, and `TeamHighlightCombobox` hydration fix | Approved with changes October 20; ready for Terra implementation. Land web commits only after the Week 8 line refresh is released. Log: `session_logs/2026-10-20/01-website-ui-ux-review-plan.md`. |
