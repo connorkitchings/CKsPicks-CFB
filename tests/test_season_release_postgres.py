@@ -1652,8 +1652,10 @@ def web_release_projections() -> list[str]:
     return web_projections()["core"]
 
 
-# The real resolver, run with an ``execute`` that replays rows Python read from
-# Postgres; an unanswered query stops the run so Python can execute it next.
+# The real resolver, run with an ``execute`` that replays what Python got from
+# Postgres; an unanswered query stops the run so Python can execute it next. A
+# recorded ``{"sqlstate": ...}`` replays as a driver error with the code on ``cause``,
+# the way drizzle wraps it. Errors the resolver throws come back as ``error``.
 _WEB_CONTEXT = """
 import { PgDialect } from "drizzle-orm/pg-core";
 import { loadReleaseContext } from "./src/lib/season-release-context.ts";
@@ -1666,14 +1668,25 @@ try {
   context = await loadReleaseContext(async (query) => {
     queries.push(dialect.sqlToQuery(query));
     if (queries.length > spec.results.length) throw pending;
-    return { rows: spec.results[queries.length - 1] };
+    const result = spec.results[queries.length - 1];
+    if (!Array.isArray(result)) {
+      throw new Error("Failed query", { cause: Object.assign(new Error("pg"), { code: result.sqlstate }) });
+    }
+    return { rows: result };
   }, spec.season, spec.environment);
 } catch (error) {
-  if (error !== pending) throw error;
+  if (error !== pending) {
+    console.log(JSON.stringify({ queries, error: error.message }));
+    process.exit(0);
+  }
   context = "pending";
 }
 console.log(JSON.stringify({ queries, context }));
 """
+
+
+class WebResolverError(Exception):
+    """``loadReleaseContext`` threw."""
 
 
 def _pg_query(query: dict) -> tuple[str, dict]:
@@ -1696,16 +1709,22 @@ def _json_rows(cursor) -> list[dict]:
 def web_release_context(conn, environment="preview") -> tuple[dict | None, list]:
     """``loadReleaseContext`` of the web app against this database.
 
-    Returns the resolved context (``None`` when there is no active release) and
-    the SQL statements it issued.
+    Returns the resolved context (``None`` when there is no active release or no
+    ``season_releases`` table) and the SQL statements it issued (always one). Raises
+    ``WebResolverError`` with the resolver's message when it throws.
     """
-    results: list[list[dict]] = []
+    results: list = []
     while True:
         spec = {"results": results, "season": SEASON, "environment": environment}
         run = _web_script(_WEB_CONTEXT, spec)
+        if "error" in run:
+            raise WebResolverError(run["error"])
         if run["context"] != "pending":
             return run["context"], run["queries"]
-        results.append(_json_rows(conn.execute(*_pg_query(run["queries"][-1]))))
+        try:
+            results.append(_json_rows(conn.execute(*_pg_query(run["queries"][-1]))))
+        except psycopg.Error as error:
+            results.append({"sqlstate": error.sqlstate})
 
 
 def chart_set(conn, environment="preview") -> str | None:
@@ -1746,7 +1765,9 @@ def test_release_projection_list_matches_migration_and_release_module():
     assert web["recorded"]["resume_v1"]["chartSet"] == "charts_v2"
 
 
-def test_web_existence_probe_false_before_0025(cluster, pre0025_db):
+def test_web_resolver_before_0025_maps_undefined_table_to_no_release(
+    cluster, pre0025_db
+):
     with cluster.connect(pre0025_db, WEB_LOGIN, autocommit=True) as conn:
         context, queries = web_release_context(conn)
 
@@ -1759,7 +1780,7 @@ def test_web_active_query_returns_no_row_without_activation(cluster, db):
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
         context, queries = web_release_context(conn)
 
-    assert context is None and len(queries) == 2
+    assert context is None and len(queries) == 1
 
 
 def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db):
@@ -1772,7 +1793,7 @@ def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db
         context, queries = web_release_context(conn)
         other, _ = web_release_context(conn, "production")
 
-    assert len(queries) == 3  # existence, active release, missing projections
+    assert len(queries) == 1  # one round trip
     assert (
         context["releaseId"],
         context["environment"],
@@ -1784,21 +1805,31 @@ def test_web_active_query_returns_one_row_and_no_missing_projections(cluster, db
     assert other is None
 
 
-def test_web_missing_projection_query_with_one_array_parameter_succeeds(cluster, db):
-    """season-release.test.ts pins drizzle's rendering to one ``$1::text[]``."""
+def test_web_active_query_with_core_projection_missing_raises(cluster, db):
+    """The folded-in missing-projection check refuses an active release without a relation."""
     first = stage(cluster, db, "r1")
     activate(cluster, db, first, None)
-    names = web_release_projections()
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
+        conn.execute("DROP TABLE season_release_game_venues")
+
+    with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
+        with pytest.raises(WebResolverError, match="missing serving projections"):
+            web_release_context(conn)
+
+
+def test_web_active_query_reports_no_missing_projections_for_full_release(cluster, db):
+    """The release row's ``missing_projections`` array is empty when every relation exists."""
+    first = stage(cluster, db, "r1")
+    activate(cluster, db, first, None)
 
     with cluster.connect(db, WEB_LOGIN, autocommit=True) as conn:
         _, queries = web_release_context(conn)
-        statement, params = _pg_query(queries[2])
-        missing = conn.execute(statement, params).fetchall()
-        absent = conn.execute(statement, {"p1": [*names, "season_release_absent"]})
+        statement, params = _pg_query(queries[0])
+        row = conn.execute(statement, params).fetchone()
+        names = [column.name for column in conn.execute(statement, params).description]
 
-        assert params == {"p1": names}
-        assert missing == []
-        assert absent.fetchall() == [("season_release_absent",)]
+    assert row[names.index("missing_projections")] == []
+    assert web_release_projections() in params.values()
 
 
 # --------------------------------------------------------------------------
@@ -1941,7 +1972,7 @@ def test_season_prepare_stage_activate_rollback_e2e(cluster, make_db, tmp_path):
         ]
         if WEB_AVAILABLE:
             context, queries = web_release_context(conn, "production")
-            assert len(queries) == 3  # existence, active, no missing projections
+            assert len(queries) == 1
             assert context["releaseId"] == prod_id1
             assert context["activeWeek"] == ACTIVE_WEEK
             assert context["chartSet"] == "charts_v2"
@@ -2321,7 +2352,7 @@ def test_charts_release_over_core_release_and_owner_rollback_round_trip(
         context, queries = web_release_context(conn)
         cities = web_query_rows(conn, old, "gameVenues", ["city"], chart_set=None)
     assert context["releaseId"] == old and context["chartSet"] is None
-    assert len(queries) == 3  # no missing core projections
+    assert len(queries) == 1  # no missing core projections
     assert {c for (c,) in cities} == {"City"}
 
     # The chart release is rolled_back, so ordinary activation refuses it ...
@@ -2425,5 +2456,5 @@ def test_resolver_without_migration_0026_serves_core_pages_without_charts(
             conn, release_id, "gameVenues", ["city"], chart_set=None
         )
     assert context["releaseId"] == release_id and context["chartSet"] is None
-    assert len(queries) == 3  # no missing core projections
+    assert len(queries) == 1  # no missing core projections
     assert {c for (c,) in cities} == {"City"}

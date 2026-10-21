@@ -34,7 +34,7 @@ export function ShareButton({ matchup, disabled = false }: { matchup: MatchupDat
       backgroundColor="#0b0b0d"
       disabled={disabled}
       disabledReason="Sharing unavailable until matchup data lineage is verified"
-      tooltipAlign="left"
+      atRightEdge
       testIds={TEST_IDS}
     >
       <ShareCard matchup={matchup} />

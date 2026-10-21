@@ -164,6 +164,7 @@ export function ExportActions({
   disabled = false,
   disabledReason,
   tooltipAlign = "right",
+  atRightEdge = false,
   testIds,
   children,
 }: {
@@ -177,6 +178,8 @@ export function ExportActions({
   /** Shown beside the disabled buttons so they are never silently inert. */
   disabledReason?: string;
   tooltipAlign?: "left" | "right";
+  /** The group ends at the viewport's content edge: every tooltip opens leftward, however many buttons show. */
+  atRightEdge?: boolean;
   testIds: ExportTestIds;
   children: ReactNode;
 }) {
@@ -276,7 +279,7 @@ export function ExportActions({
     const outcome = feedback?.action === action ? feedback.outcome : null;
     const index = visible.indexOf(action);
     // A lone button follows the caller's choice; otherwise first opens left, last right, middle centered.
-    const align = visible.length === 1 ? tooltipAlign : index === 0 ? "left" : index === visible.length - 1 ? "right" : "center";
+    const align = atRightEdge ? "right" : visible.length === 1 ? tooltipAlign : index === 0 ? "left" : index === visible.length - 1 ? "right" : "center";
     return { action, testId: testIds[action], outcome, tip: outcome && status ? status : LABELS[action], tooltipAlign: align, disabled: busy } as const;
   };
 

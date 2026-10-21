@@ -49,7 +49,7 @@ required_paths:
     - contracts/teams.ts
     - contracts/migrations
   web:
-    - web/src/app/page.tsx
+    - "web/src/app/(games)/page.tsx"
     - web/src/app/api/health/route.ts
     - web/src/lib/schema.ts
     - web/src/lib/teams.ts

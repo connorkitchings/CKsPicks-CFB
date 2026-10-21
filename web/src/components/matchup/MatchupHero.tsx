@@ -126,7 +126,8 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
         >
           ← Week {matchup.week} games
         </Link>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-muted" data-testid="game-facts">
+        {/* Right-aligned on every line so the share button, always last, keeps its tooltip inside the viewport. */}
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-ink-muted" data-testid="game-facts">
           <span>{formatKickoff(matchup.startDate)}</span>
           {venue && (
             <>
