@@ -285,6 +285,11 @@ export function weekRecord(games: Game[]): { spread: Tally; total: Tally } {
   return out;
 }
 
+/** True when at least one spread or total in the slate carries a recorded grade. */
+export function hasGradedPick(games: Game[]): boolean {
+  return games.some((g) => resultFor(g, "spread") !== null || resultFor(g, "total") !== null);
+}
+
 /** One graded lean, reduced to what ranking needs. */
 export type LeanGradeRow = {
   week: number;

@@ -5,6 +5,7 @@ import {
   biggestEdgesRecord,
   edgeTier,
   edgeTone,
+  hasGradedPick,
   hasLean,
   leanFor,
   leanGradeRows,
@@ -354,4 +355,16 @@ test("sortSlate offers result sorts only once a game has finished", () => {
   const loss = game({ gameId: 4, homePoints: 10, awayPoints: 40, totalLean: null });
   assert.deepEqual(sortSlate([loss, win], "bestResult", "final").map((g) => g.gameId), [3, 4]);
   assert.deepEqual(sortSlate([win, loss], "worstResult", "in-progress").map((g) => g.gameId), [4, 3]);
+});
+
+test("hasGradedPick is false for final games without a recorded grade", () => {
+  const ungradedFinal = game({ homePoints: 30, awayPoints: 20 });
+  assert.equal(hasGradedPick([ungradedFinal]), false);
+  assert.equal(hasGradedPick([]), false);
+});
+
+test("hasGradedPick is true once any spread or total grade exists", () => {
+  const ungraded = game({ homePoints: 30, awayPoints: 20 });
+  assert.equal(hasGradedPick([ungraded, game({ spreadResult: "push" })]), true);
+  assert.equal(hasGradedPick([game({ totalResult: "loss" })]), true);
 });

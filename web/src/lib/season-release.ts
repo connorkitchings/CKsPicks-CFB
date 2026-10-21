@@ -3,9 +3,15 @@ import { db } from "./db";
 import { publicationScope } from "./publication.ts";
 import { releaseEnvironment, createReleaseContextResolver, loadReleaseContext, type SeasonReleaseContext, type ReleaseEnvironment } from "./season-release-context.ts";
 import { seasonReleaseDb, type ChartSet } from "./season-release-query.ts";
-import { cacheDisabled, decodeCacheValue, deploymentId, encodeCacheValue } from "./release-cache.ts";
+import { cacheDisabled, decodeCacheValue, encodeCacheValue, pointerCacheKey } from "./release-cache.ts";
 
-/** Seconds an activation may take to show up without a signed `/api/revalidate`. */
+/**
+ * Seconds an activation may take to show up without a signed `/api/revalidate`. The key
+ * carries a time bucket of this width (see `pointerCacheKey`), so the first request after
+ * the window blocks on one pointer query instead of being served the old release; if that
+ * query throws, the request fails like an uncached one. The tag is constant, so
+ * `revalidateTag(RELEASE_POINTER_TAG)` expires every bucket's entry immediately.
+ */
 export const RELEASE_POINTER_REVALIDATE_SECONDS = 60;
 export const RELEASE_POINTER_TAG = "release-pointer";
 
@@ -18,7 +24,7 @@ async function readPointerCached(season: number, environment: ReleaseEnvironment
   const { unstable_cache } = await import("next/cache");
   const cached = unstable_cache(
     async () => encodeCacheValue(await readPointer(season, environment)),
-    [RELEASE_POINTER_TAG, deploymentId(process.env), environment, String(season)],
+    pointerCacheKey(RELEASE_POINTER_TAG, process.env, environment, season, Date.now(), RELEASE_POINTER_REVALIDATE_SECONDS),
     { tags: [RELEASE_POINTER_TAG], revalidate: RELEASE_POINTER_REVALIDATE_SECONDS },
   );
   return decodeCacheValue<SeasonReleaseContext | null>(await cached());

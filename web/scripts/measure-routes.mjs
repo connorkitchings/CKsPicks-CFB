@@ -6,7 +6,7 @@
 //
 // TTFB is the time until response headers arrive. Routes with a loading.tsx stream a
 // shell immediately, so headers say little about data cost; "total" is the time until the
-// whole body has arrived, and is the number to compare. Body size is also reported. The matchup route is discovered from the first /matchup/<id> link on `/`.
+// whole body has arrived, and is the number to compare. Body size is also reported. The matchup route is discovered from the first /matchup/<id> link in the cold response of the first route (no extra request, so nothing is warmed). Any status other than 200 marks the row as an error and the exit code is 1; /stats is skipped with a note when it returns 404.
 const args = process.argv.slice(2);
 const baseUrl = args.find((arg) => /^https?:\/\//.test(arg));
 if (!baseUrl) {
@@ -32,31 +32,34 @@ async function timed(path) {
 
 const quantile = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)];
 
-async function discoverMatchup() {
-  try {
-    const { body } = await timed("/");
-    return body.match(/\/matchup\/(\d+)/)?.[0] ?? null;
-  } catch {
-    return null;
-  }
-}
-
 const explicit = flag("--route");
-const routes = explicit.length ? explicit : ["/", "/ratings", "/results", "/performance", "/methodology"];
-if (!explicit.length) {
-  const matchup = await discoverMatchup();
-  if (matchup) routes.splice(4, 0, matchup);
-  else console.warn("No /matchup/<id> link found on /; skipping the matchup route");
-}
+const routes = explicit.length ? [...explicit] : ["/", "/ratings", "/model", "/model/method", "/stats"];
+const discover = !explicit.length;
 
 const rows = [];
-for (const route of routes) {
+let failed = false;
+let first = true;
+for (let index = 0; index < routes.length; index++) {
+  const route = routes[index];
   try {
+    // The very first request is the cold measurement of the first route; nothing precedes it.
     const cold = await timed(route);
+    if (first && discover) {
+      first = false;
+      const matchup = cold.body.match(/\/matchup\/(\d+)/)?.[0];
+      if (matchup) routes.push(matchup);
+      else console.warn(`No /matchup/<id> link found on ${route}; skipping the matchup route`);
+    }
+    if (route === "/stats" && cold.status === 404 && discover) {
+      console.warn("/stats returned 404 (not published); skipping");
+      continue;
+    }
+    if (cold.status !== 200) throw new Error(`unexpected status ${cold.status}`);
     const warm = [];
     const warmTotal = [];
     for (let i = 0; i < runs - 1; i++) {
       const result = await timed(route);
+      if (result.status !== 200) throw new Error(`unexpected status ${result.status} on a warm run`);
       warm.push(result.ttfb);
       warmTotal.push(result.total);
     }
@@ -74,7 +77,9 @@ for (const route of routes) {
       "html KB": Math.round(cold.bytes / 1024),
     });
   } catch (error) {
+    failed = true;
     rows.push({ route, status: `error: ${error.message}` });
   }
 }
 console.table(rows);
+if (failed) process.exit(1);

@@ -9,7 +9,7 @@ import { TopLeans } from "@/components/slate/TopLeans";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
 import { SlateList } from "@/components/slate/SlateList";
 import { WeekNav } from "@/components/WeekNav";
-import { isFinal, weekPhase, weekRecord, type SlateSort, type Tally, type WeekPhase } from "@/lib/slate";
+import { hasGradedPick, weekPhase, weekRecord, type SlateSort, type Tally, type WeekPhase } from "@/lib/slate";
 import type { RosterRow } from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
@@ -77,7 +77,7 @@ export function SlateView({
 }: SlateViewProps) {
   const predictionsVisible = games.some((g) => g.publicationMode === "predictions");
   const phase = weekPhase(games);
-  const graded = games.some(isFinal);
+  const graded = hasGradedPick(games);
 
   return (
     <div className="flex min-h-screen flex-col">

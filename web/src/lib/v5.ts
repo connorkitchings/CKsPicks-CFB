@@ -331,7 +331,8 @@ export const getWeeklyRatings = cache(async (
   return known ? cachedWeeklyRatings(season, targetPeriod ?? null) : loadWeeklyRatings(season, targetPeriod);
 });
 
-export const getTeamHistory = cache(async (season: number, team: string): Promise<Rating[]> => {
+/** `team` must be the rating name from `resolveTeam`, which bounds the cache keys to known schools. */
+export const getTeamHistory = cache(releaseCached("getTeamHistory", async (season: number, team: string): Promise<Rating[]> => {
   const db = await getSeasonDb(season);
   const sourceSha = await getSelectedRatingSource(season);
   if (!sourceSha) return [];
@@ -355,9 +356,10 @@ export const getTeamHistory = cache(async (season: number, team: string): Promis
     ))
     .orderBy(asc(schema.v5RatingSnapshots.cutoffUtc));
   return rows;
-});
+}, RUN_STATE_CACHE));
 
-export const getTeamGames = cache(async (season: number, team: string) => {
+/** `team` must be the game name from `resolveTeam`, which bounds the cache keys to known schools. */
+export const getTeamGames = cache(releaseCached("getTeamGames", async (season: number, team: string) => {
   const db = await getSeasonDb(season);
   return db.select({
     week: schema.games.week,
@@ -389,7 +391,7 @@ export const getTeamGames = cache(async (season: number, team: string) => {
       or(eq(schema.games.homeTeam, team), eq(schema.games.awayTeam, team)),
     ))
     .orderBy(asc(schema.games.startDate));
-});
+}, RUN_STATE_CACHE));
 
 /** Selected-run graded rows with their selected week, up to and including `week`. */
 async function selectPerformanceRows(season: number, week: number): Promise<Array<PerformanceRow & { week: number }>> {

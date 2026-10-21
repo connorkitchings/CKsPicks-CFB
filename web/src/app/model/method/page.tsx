@@ -107,6 +107,12 @@ export default function ModelMethodPage() {
           excludes them. The reference to beat is a {BREAK_EVEN_PCT}% win rate, the break-even at standard pricing.
         </p>
         <p>
+          If a completed game has no line captured before kickoff, a separately supplied retrospective benchmark line
+          can be used for that game and target instead. It is not a pre-kickoff capture, so it is labeled as a
+          retrospective benchmark and kept apart from the captured evidence. The live week never uses it, and a game
+          target with neither kind of line stays ungraded.
+        </p>
+        <p>
           Limits: capture times are when a line was fetched, not when a sportsbook posted it. Some design decisions were
           made with early 2026 outcomes known, though those outcomes do not fit any parameter, so reconstructed
           weeks are not blind forward tests.{" "}
