@@ -4,8 +4,9 @@
 //
 //   node web/scripts/measure-routes.mjs <baseUrl> [--runs N] [--route /path ...]
 //
-// TTFB is the time until response headers arrive; the body is then drained and its
-// size reported. The matchup route is discovered from the first /matchup/<id> link on `/`.
+// TTFB is the time until response headers arrive. Routes with a loading.tsx stream a
+// shell immediately, so headers say little about data cost; "total" is the time until the
+// whole body has arrived, and is the number to compare. Body size is also reported. The matchup route is discovered from the first /matchup/<id> link on `/`.
 const args = process.argv.slice(2);
 const baseUrl = args.find((arg) => /^https?:\/\//.test(arg));
 if (!baseUrl) {
@@ -25,7 +26,8 @@ async function timed(path) {
   const response = await fetch(origin + path, { redirect: "manual", headers: { "cache-control": "no-cache" } });
   const ttfb = performance.now() - start;
   const body = await response.text();
-  return { ttfb, status: response.status, bytes: Buffer.byteLength(body), body };
+  const total = performance.now() - start;
+  return { ttfb, total, status: response.status, bytes: Buffer.byteLength(body), body };
 }
 
 const quantile = (sorted, q) => sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)];
@@ -52,14 +54,23 @@ for (const route of routes) {
   try {
     const cold = await timed(route);
     const warm = [];
-    for (let i = 0; i < runs - 1; i++) warm.push((await timed(route)).ttfb);
+    const warmTotal = [];
+    for (let i = 0; i < runs - 1; i++) {
+      const result = await timed(route);
+      warm.push(result.ttfb);
+      warmTotal.push(result.total);
+    }
     warm.sort((a, b) => a - b);
+    warmTotal.sort((a, b) => a - b);
     rows.push({
       route,
       status: cold.status,
       "cold ms": Math.round(cold.ttfb),
       "warm median ms": Math.round(quantile(warm, 0.5)),
       "warm p90 ms": Math.round(quantile(warm, 0.9)),
+      "cold total ms": Math.round(cold.total),
+      "warm total median ms": Math.round(quantile(warmTotal, 0.5)),
+      "warm total p90 ms": Math.round(quantile(warmTotal, 0.9)),
       "html KB": Math.round(cold.bytes / 1024),
     });
   } catch (error) {
