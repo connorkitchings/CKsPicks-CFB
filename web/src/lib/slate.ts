@@ -1,14 +1,12 @@
 import type { Game, PredictionGame } from "./queries.ts";
 import {
+  BREAK_EVEN_PCT,
   marketSpreadView,
   modelSpreadView,
   signedSpread,
   spreadEdge,
   totalEdge,
 } from "./betting-format.ts";
-
-/** Reference win-rate threshold (52.4%) for judging record accuracy; not a payout or price claim. */
-export const BREAK_EVEN_PCT = 52.4;
 
 export type LeanKind = "spread" | "total";
 

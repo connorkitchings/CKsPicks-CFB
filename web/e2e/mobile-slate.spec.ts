@@ -97,7 +97,8 @@ test("biggest edges and highlights are open inline on desktop without a click", 
   await page.goto("/results");
   await expect(page.getByRole("region", { name: "Highlights" }).getByRole("heading", { name: "Highlights" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Highlights" }).locator("details")).toHaveCount(1);
-  await expect(page.getByRole("region", { name: "Highlights" }).locator("details").filter({ visible: true })).toHaveCount(0);
+  // One copy of the content: the summary is hidden on desktop and the content is forced open.
+  await expect(page.getByRole("region", { name: "Highlights" }).locator("summary")).toBeHidden();
 });
 
 test("search waits for hydration before accepting the first filter", async ({ page }) => {

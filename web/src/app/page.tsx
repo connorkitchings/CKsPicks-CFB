@@ -133,6 +133,15 @@ export default async function Home({
   }
   const { season } = target;
 
+  // The season-wide biggest-edges record does not depend on the slate, so it loads alongside it.
+  const edgesInFlight: Promise<Tally | null> | null = publicationMode === "predictions" && !targetError
+    && !isUiTestMode() && season > 0
+    ? getBiggestEdgesRecord(season).catch((err) => {
+      console.error("Biggest edges record query failed", err);
+      return null;
+    })
+    : null;
+
   const data = await loadSlateData({
     view: "picks",
     season,
@@ -149,12 +158,8 @@ export default async function Home({
     if (isUiTestMode()) {
       const fx = await import("@/test/fixtures/slate");
       biggestEdges = topLeansRecord([fx.slateResults().games]);
-    } else if (season > 0) {
-      try {
-        biggestEdges = await getBiggestEdgesRecord(season);
-      } catch (err) {
-        console.error("Biggest edges record query failed", err);
-      }
+    } else {
+      biggestEdges = await edgesInFlight;
     }
   }
 

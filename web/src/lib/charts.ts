@@ -1,5 +1,16 @@
 import { teamAbbr } from "./team-logos.ts";
-import { TEAM_LOGO_MAP } from "./teams.ts";
+export {
+  P4_CONFERENCES,
+  P4_INDEPENDENTS,
+  buildConferenceMap,
+  conferenceOptions,
+  isP4,
+  matchesConference,
+  matchesTeamConference,
+  type ConferenceFilter,
+  type RosterRow,
+} from "./conferences.ts";
+import { matchesConference, type ConferenceFilter, type RosterRow } from "./conferences.ts";
 
 /**
  * Pure transforms for the weekly team charts. Inputs are the rows of the release's
@@ -20,7 +31,6 @@ export type ChartKind =
 export type Side = "offense" | "defense";
 export type EfficiencyMetric = "ppa" | "explosive_rate" | "yards_per_success";
 
-export type RosterRow = { team: string; conference: string | null };
 
 export type TeamGameRow = {
   week: number;
@@ -88,9 +98,6 @@ export type AdjustedRow = {
   cohortSize: number;
 };
 
-/** Power Four conferences; Notre Dame is included by name (it has no conference). */
-export const P4_CONFERENCES = ["ACC", "Big Ten", "Big 12", "SEC"] as const;
-export const P4_INDEPENDENTS = ["Notre Dame"] as const;
 export const FIRST_SCATTER_THROUGH_WEEK = 2;
 
 // ---------------------------------------------------------------------------
@@ -577,53 +584,6 @@ export function ratingTrajectorySeries(roster: readonly RosterRow[], rows: reado
 // ---------------------------------------------------------------------------
 // Filters
 // ---------------------------------------------------------------------------
-
-/** "all", "p4" (Power Four plus Notre Dame) or a conference name from the roster. */
-export type ConferenceFilter = string;
-
-export function isP4(team: string, conference: string | null): boolean {
-  return (
-    (conference !== null && (P4_CONFERENCES as readonly string[]).includes(conference)) ||
-    (P4_INDEPENDENTS as readonly string[]).includes(team)
-  );
-}
-
-export function matchesConference(filter: ConferenceFilter, team: string, conference: string | null): boolean {
-  if (filter === "all") return true;
-  if (filter === "p4") return isP4(team, conference);
-  return conference === filter;
-}
-
-/** Conferences present in the published roster, ascending. */
-export function conferenceOptions(roster: readonly RosterRow[]): string[] {
-  return [...new Set(roster.flatMap((r) => (r.conference ? [r.conference] : [])))].sort();
-}
-
-/**
- * Map both CFBD and legacy rating/game team names to their published conference.
- */
-export function buildConferenceMap(roster: readonly RosterRow[]): Map<string, string | null> {
-  const map = new Map<string, string | null>();
-  for (const { team, conference } of roster) {
-    map.set(team, conference);
-  }
-  for (const [gameName, stored] of Object.entries(TEAM_LOGO_MAP)) {
-    if (map.has(gameName) && !map.has(stored)) {
-      map.set(stored, map.get(gameName) ?? null);
-    } else if (map.has(stored) && !map.has(gameName)) {
-      map.set(gameName, map.get(stored) ?? null);
-    }
-  }
-  return map;
-}
-
-export function matchesTeamConference(
-  filter: ConferenceFilter,
-  team: string,
-  conferenceMap: ReadonlyMap<string, string | null>,
-): boolean {
-  return matchesConference(filter, team, conferenceMap.get(team) ?? null);
-}
 
 /** Case-insensitive match on the team name or its abbreviation. */
 export function matchesSearch(query: string, team: string): boolean {

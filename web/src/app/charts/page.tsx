@@ -5,12 +5,14 @@ import {
   adjustedPoints,
   adjustedThroughWeeks,
   coerceWeek,
+  efficiencyPoints,
   efficiencyThroughWeeks,
   netSuccessBars,
   netSuccessWeeks,
   withYardage,
   type AdjustedRow,
   type ChartKind,
+  type EfficiencyMetric,
   type PossessionRow,
   type RatingSnapshotRow,
   type RosterRow,
@@ -293,7 +295,9 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
       } else if (kind === "efficiency") {
         // Without yardage the chart is success rate vs PPA/play, with no metric toggle.
         const initialMetric = parseEfficiencyMetric(params.metric, explosiveness);
-        body = view(week, { kind, side, rows, initialMetric, explosiveness }, weekNav);
+        const metrics: EfficiencyMetric[] = explosiveness ? ["ppa", "explosive_rate", "yards_per_success"] : ["ppa"];
+        const data = Object.fromEntries(metrics.map((metric) => [metric, efficiencyPoints(roster, rows, week, side, metric)]));
+        body = view(week, { kind, side, data, initialMetric, explosiveness }, weekNav);
       } else if (kind === "possession") {
         // "Through Week N" is the window with as_of_week N + 1.
         let possessionRows: PossessionRow[] | null = null;

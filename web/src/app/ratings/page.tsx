@@ -1,5 +1,5 @@
 import { getTeamSeasonRoster } from "@/lib/chart-queries";
-import type { RosterRow } from "@/lib/charts";
+import type { RosterRow } from "@/lib/conferences";
 import { getRatingPeriods, getWeeklyRatings, type PeriodMeta, type Rating, type RatingPeriod } from "@/lib/v5";
 import { ratingsFixture, ratingsRosterFixture } from "@/test/fixtures/ratings";
 import { parseRatingsSort } from "@/lib/sos-rank";
@@ -7,7 +7,7 @@ import { publicationScope } from "@/lib/publication";
 import { Header, Footer } from "@/components/Header";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { PageHeading } from "@/components/ui/PageHeading";
-import { RatingsView } from "@/components/ratings/RatingsView";
+import { RatingsView, type RatingRow } from "@/components/ratings/RatingsView";
 
 export const revalidate = 300;
 
@@ -55,6 +55,20 @@ export default async function RatingsPage({ searchParams }: {
     }
   }
 
+  const ratingRows: RatingRow[] = ratings.map((r) => ({
+    team: r.team,
+    overallRating: r.overallRating,
+    offenseRating: r.offenseRating,
+    defenseRating: r.defenseRating,
+    wins: r.wins,
+    losses: r.losses,
+    sosPlayedAverage: r.sosPlayedAverage,
+    sosRemainingAverage: r.sosRemainingAverage,
+    sosFullAverage: r.sosFullAverage,
+    sor: r.sor,
+    sorRank: r.sorRank,
+  }));
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header
@@ -89,10 +103,10 @@ export default async function RatingsPage({ searchParams }: {
           <RatingsView
             key={period}
             period={period}
-            timeline={timeline}
-            ratings={ratings}
+            timeline={timeline.map(({ id, label }) => ({ id, label }))}
+            ratings={ratingRows}
             roster={roster}
-            periodMeta={periodMeta}
+            periodMeta={{ label: periodMeta.label }}
             season={season}
             initialSort={sort}
             initialDirection={dir}

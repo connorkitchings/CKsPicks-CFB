@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
@@ -8,7 +9,7 @@ import { PicksSlate } from "@/components/slate/PicksSlate";
 import { ResultsSlate } from "@/components/slate/ResultsSlate";
 import { WeekNav } from "@/components/WeekNav";
 import { weekRecord, type Tally } from "@/lib/slate";
-import type { RosterRow } from "@/lib/charts";
+import type { RosterRow } from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
 
@@ -142,18 +143,18 @@ export function SlateView({
                     Blitzkrieg V5 model predictions and top leans will be posted as betting lines open across sportsbooks ahead of kickoff.
                   </p>
                   <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-                    <a
+                    <Link
                       href={`/results?week=${week > 0 ? week - 1 : 0}`}
-                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-accent-ink shadow-xs transition hover:opacity-90 active:scale-[0.98]"
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent-solid px-4 py-2.5 text-xs font-semibold text-on-accent-solid shadow-xs transition hover:opacity-90 active:scale-[0.98]"
                     >
                       View Week {week > 0 ? week - 1 : 0} Results & Graded Picks →
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/performance"
                       className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface-inset px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-surface-card active:scale-[0.98]"
                     >
                       Performance Dashboard
-                    </a>
+                    </Link>
                   </div>
                 </div>
               ) : (

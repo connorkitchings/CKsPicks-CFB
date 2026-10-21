@@ -11,7 +11,7 @@ import {
   matchesTeamConference,
   type ConferenceFilter,
   type RosterRow,
-} from "@/lib/charts";
+} from "@/lib/conferences";
 import {
   bestFirstDirection,
   isRatingsSort,
@@ -24,6 +24,22 @@ import {
 import { getRankBadgeClass } from "@/lib/team-stats";
 import TeamLogo from "@/components/TeamLogo";
 import { SearchField } from "@/components/ui/SearchField";
+
+/** The fields this view renders; the page maps full ratings down to these before they reach the client. */
+export type RatingRow = Pick<
+  Rating,
+  | "team"
+  | "overallRating"
+  | "offenseRating"
+  | "defenseRating"
+  | "wins"
+  | "losses"
+  | "sosPlayedAverage"
+  | "sosRemainingAverage"
+  | "sosFullAverage"
+  | "sor"
+  | "sorRank"
+>;
 
 type ScoreSort = "overall" | "offense" | "defense";
 const scoreSorts: readonly ScoreSort[] = ["overall", "offense", "defense"];
@@ -53,23 +69,23 @@ const oneDecimal = (value: number | null | undefined) => (isNumber(value) ? valu
 const rankText = (rank: number | null | undefined) => (isNumber(rank) ? `#${rank}` : DASH);
 /** Hover text for a rank cell: the raw value behind the rank. Null values get no title. */
 const valueTitle = (label: string, value: number | null | undefined) => (isNumber(value) ? `${label} ${oneDecimal(value)}` : undefined);
-const recordText = ({ wins, losses }: Rating) => (isNumber(wins) && isNumber(losses) ? `${wins}–${losses}` : DASH);
+const recordText = ({ wins, losses }: RatingRow) => (isNumber(wins) && isNumber(losses) ? `${wins}–${losses}` : DASH);
 const sortedClass = (active: boolean) => (active ? "bg-accent-soft font-bold text-ink" : "text-ink-muted");
 
 /** SOS is shown for the average FBS team only; the elite-reference SOS is stored but not displayed. */
-function sosValues(rating: Rating) {
+function sosValues(rating: RatingRow) {
   return { played: rating.sosPlayedAverage, remaining: rating.sosRemainingAverage, full: rating.sosFullAverage };
 }
 
 /** The SOR or SOS rank a team holds; null for the rating sorts and for a null value. */
-function rankFor(rating: Rating, sort: RatingsSort, sosRanks: Map<string, SosRanks>): number | null {
+function rankFor(rating: RatingRow, sort: RatingsSort, sosRanks: Map<string, SosRanks>): number | null {
   if (sort === "sor") return isNumber(rating.sorRank) ? rating.sorRank : null;
   if (isScoreSort(sort)) return null;
   return sosRanks.get(rating.team)?.[sosRankField[sort]] ?? null;
 }
 
 /** The value a row is ordered by. Rank sorts order by rank, so rank 1 comes first in the ascending direction. */
-function sortKey(rating: Rating, sort: RatingsSort, sosRanks: Map<string, SosRanks>): number | null {
+function sortKey(rating: RatingRow, sort: RatingsSort, sosRanks: Map<string, SosRanks>): number | null {
   return isScoreSort(sort) ? rating[scoreFields[sort]] : rankFor(rating, sort, sosRanks);
 }
 
@@ -79,7 +95,7 @@ function compareRows(a: number | null, b: number | null, direction: SortDirectio
   return direction === "desc" ? b - a : a - b;
 }
 
-function primaryText(rating: Rating, sort: RatingsSort, sosRanks: Map<string, SosRanks>) {
+function primaryText(rating: RatingRow, sort: RatingsSort, sosRanks: Map<string, SosRanks>) {
   return isScoreSort(sort) ? ratingText(rating[scoreFields[sort]]) : rankText(rankFor(rating, sort, sosRanks));
 }
 
@@ -139,11 +155,11 @@ function SortHeader({ column, active, direction, onSort, title, center }: SortHe
 }
 
 interface RatingsViewProps {
-  ratings: Rating[];
+  ratings: RatingRow[];
   roster?: RosterRow[];
-  periodMeta: PeriodMeta;
+  periodMeta: Pick<PeriodMeta, "label">;
   period: string;
-  timeline: PeriodMeta[];
+  timeline: Pick<PeriodMeta, "id" | "label">[];
   season: number;
   initialSort: RatingsSort;
   initialDirection: SortDirection;

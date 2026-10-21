@@ -7,7 +7,7 @@ import {
   matchesTeamConference,
   type ConferenceFilter,
   type RosterRow,
-} from "@/lib/charts";
+} from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
 import { sortResults, type ResultSort } from "@/lib/slate";
 import { SlateToolbar } from "./SlateToolbar";

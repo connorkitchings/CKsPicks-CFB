@@ -337,3 +337,6 @@ artifacts/backups/week6-closeout-20261011/
 
 # Offline descriptive chart comparison datasets and plots
 artifacts/research/chart-explosiveness/
+
+# Team-logo build staging output
+web/public/logos/v2.staging

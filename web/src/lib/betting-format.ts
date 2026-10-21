@@ -5,6 +5,9 @@
  * rendered-output assertions.
  */
 
+/** Reference win-rate threshold (52.4%) for judging record accuracy; not a payout or price claim. */
+export const BREAK_EVEN_PCT = 52.4;
+
 export function signedSpread(n: number): string {
   return n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1);
 }

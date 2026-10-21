@@ -4,9 +4,9 @@ import clsx from "clsx";
 /**
  * Collapsed behind a native `<details>` on phones; open and inline from `sm:` up.
  *
- * The children render twice and CSS shows one copy per width, so there is no JS media hook and
- * no hydration flash. Hidden copies stay in the DOM: give children no `data-testid`s or ids, and
- * filter locators with `visible: true` in tests.
+ * The children render once. From `sm:` up the `responsive-disclosure` rules in globals.css force
+ * the content open (`::details-content`) and hide the summary, so there is no JS media hook, no
+ * hydration flash and no duplicated ids or work.
  */
 export function ResponsiveDisclosure({
   title,
@@ -22,17 +22,12 @@ export function ResponsiveDisclosure({
   className?: string;
 }) {
   return (
-    <>
-      <details className={clsx("sm:hidden", className)}>
-        <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-          {title}
-        </summary>
-        <div className="px-3 pb-3 text-sm text-ink-muted">{children}</div>
-      </details>
-      <div className={clsx("hidden sm:block", className)}>
-        {heading !== undefined && <h3 className="px-3 pt-3 text-sm font-semibold text-ink">{heading}</h3>}
-        <div className="px-3 pb-3 text-sm text-ink-muted">{children}</div>
-      </div>
-    </>
+    <details className={clsx("responsive-disclosure", className)}>
+      <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+        {title}
+      </summary>
+      {heading !== undefined && <h3 className="hidden px-3 pt-3 text-sm font-semibold text-ink sm:block">{heading}</h3>}
+      <div className="px-3 pb-3 text-sm text-ink-muted">{children}</div>
+    </details>
   );
 }

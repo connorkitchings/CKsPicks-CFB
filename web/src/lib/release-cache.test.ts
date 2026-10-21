@@ -1,0 +1,129 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  CACHE_WARN_BYTES, createReleaseCached, decodeCacheValue, encodeCacheValue, releaseCacheKey, RUN_STATE_CACHE,
+  type CacheDeps,
+} from "./release-cache.ts";
+import type { SeasonReleaseContext } from "./season-release-context.ts";
+
+const context: SeasonReleaseContext = {
+  releaseId: "release-a", environment: "preview", season: 2026, activeWeek: 7,
+  activatedAt: new Date("2026-10-14T00:00:00Z"), chartSet: "charts_v2",
+};
+
+type Call = { keyParts: string[]; options: { tags: string[]; revalidate: number | false } };
+
+/** In-memory stand-in for `unstable_cache`: memoizes by key parts and arguments. */
+function harness(env: Record<string, string | undefined>, active: SeasonReleaseContext | null = context) {
+  const calls: Call[] = [];
+  const warnings: string[] = [];
+  const store = new Map<string, string>();
+  const deps: CacheDeps = {
+    env: () => env,
+    getContext: async () => active,
+    cache: async (load, keyParts, options) => {
+      calls.push({ keyParts, options });
+      return async (...args) => {
+        const key = JSON.stringify([keyParts, args]);
+        if (!store.has(key)) store.set(key, await load(...args));
+        return store.get(key)!;
+      };
+    },
+    warn: (message) => warnings.push(message),
+  };
+  return { releaseCached: createReleaseCached(deps), calls, warnings };
+}
+
+test("the codec round-trips Date and Map, nested and invalid", () => {
+  const value = {
+    when: new Date("2026-10-14T12:00:00Z"),
+    ranks: new Map([["Ohio State", 1], ["Texas", 2]]),
+    nested: [{ at: new Date("2026-09-01T00:00:00Z"), byWeek: new Map([[3, { day: new Date("2026-09-20T00:00:00Z") }]]) }],
+    none: null,
+    text: "plain",
+    broken: new Date(NaN),
+  };
+  const back = decodeCacheValue<typeof value>(encodeCacheValue(value));
+  assert.ok(back.when instanceof Date);
+  assert.equal(back.when.toISOString(), "2026-10-14T12:00:00.000Z");
+  assert.ok(back.ranks instanceof Map);
+  assert.deepEqual([...back.ranks], [["Ohio State", 1], ["Texas", 2]]);
+  assert.ok(back.nested[0].byWeek.get(3)!.day instanceof Date);
+  assert.equal(back.nested[0].at.getTime(), Date.parse("2026-09-01T00:00:00Z"));
+  assert.equal(back.none, null);
+  assert.equal(back.text, "plain");
+  assert.ok(Number.isNaN(back.broken.getTime()));
+});
+
+test("the key carries loader, deployment, environment, release, chart set and arguments", () => {
+  const key = releaseCacheKey("getGamesForWeek", { VERCEL_DEPLOYMENT_ID: "dpl_1" }, context, [2026, 7]);
+  assert.deepEqual(key, ["getGamesForWeek", "dpl_1", "preview", "release-a", "charts_v2", "[2026,7]"]);
+  assert.equal(releaseCacheKey("x", {}, { ...context, chartSet: null }, [])[1], "local");
+  assert.equal(releaseCacheKey("x", {}, { ...context, chartSet: null }, [])[4], "none");
+  const other = releaseCacheKey("getGamesForWeek", { VERCEL_DEPLOYMENT_ID: "dpl_1" }, { ...context, releaseId: "release-b" }, [2026, 7]);
+  assert.notDeepEqual(other, key);
+});
+
+test("a release-scoped call is cached, tagged by release, and decoded back to Date and Map", async () => {
+  const { releaseCached, calls } = harness({ VERCEL_DEPLOYMENT_ID: "dpl_1" });
+  let loads = 0;
+  const loader = releaseCached("slate", async (season: number) => {
+    loads++;
+    return { season, at: new Date("2026-10-14T00:00:00Z"), ranks: new Map([["Texas", 2]]) };
+  });
+  const first = await loader(2026);
+  const second = await loader(2026);
+  assert.equal(loads, 1);
+  assert.ok(first.at instanceof Date && second.ranks instanceof Map);
+  assert.deepEqual(calls[0].options, { tags: ["release:release-a"], revalidate: false });
+  assert.equal(calls[0].keyParts[3], "release-a");
+});
+
+test("run-state loaders cap their entries at one hour", async () => {
+  const { releaseCached, calls } = harness({});
+  await releaseCached("runs", async (season: number) => season, RUN_STATE_CACHE)(2026);
+  assert.equal(calls[0].options.revalidate, 3600);
+});
+
+test("test mode and the kill switch bypass the cache entirely", async () => {
+  for (const env of [{ CFB_UI_TEST_MODE: "1" }, { CFB_DATA_CACHE: "0" }]) {
+    const { releaseCached, calls } = harness(env);
+    let loads = 0;
+    const loader = releaseCached("slate", async (season: number) => { loads++; return season; });
+    await loader(2026);
+    await loader(2026);
+    assert.equal(loads, 2, JSON.stringify(env));
+    assert.equal(calls.length, 0);
+  }
+  const { releaseCached, calls } = harness({ CFB_DATA_CACHE: "1" });
+  await releaseCached("slate", async (season: number) => season)(2026);
+  assert.equal(calls.length, 1);
+});
+
+test("a request with no release is never cached", async () => {
+  const { releaseCached, calls } = harness({}, null);
+  let loads = 0;
+  const loader = releaseCached("slate", async (season: number) => { loads++; return season; });
+  await loader(2026);
+  await loader(2026);
+  assert.equal(loads, 2);
+  assert.equal(calls.length, 0);
+});
+
+test("a failing loader is not stored", async () => {
+  const { releaseCached } = harness({});
+  let attempts = 0;
+  const loader = releaseCached("flaky", async (season: number) => {
+    if (++attempts === 1) throw new Error("db down");
+    return season;
+  });
+  await assert.rejects(loader(2026), /db down/);
+  assert.equal(await loader(2026), 2026);
+});
+
+test("an oversized entry is logged", async () => {
+  const { releaseCached, warnings } = harness({});
+  await releaseCached("big", async () => "x".repeat(CACHE_WARN_BYTES + 1))();
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /big/);
+});

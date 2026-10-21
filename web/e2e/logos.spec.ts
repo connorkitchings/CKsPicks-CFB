@@ -19,6 +19,15 @@ test.describe("team logos", () => {
     }
   });
 
+  test("logos load lazily, except the matchup hero's", async ({ page }) => {
+    await page.goto("/");
+    const eager = await page.locator("img[data-logo]:not([loading=lazy])").count();
+    expect(eager).toBe(0);
+    await page.goto("/matchup/1");
+    const priority = await page.locator("img[data-logo][fetchpriority=high]").count();
+    expect(priority).toBeGreaterThan(0);
+  });
+
   test("logos are sharp: natural width is at least 2x the displayed width", async ({ page }) => {
     test.skip(!built, "v2 logo set not built yet (web/scripts/build-team-logos.mjs)");
     for (const url of PAGES) {

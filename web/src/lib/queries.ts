@@ -5,6 +5,7 @@ import { db as legacyDb, schema } from "./db";
 import { publicationScope } from "./publication.ts";
 import { getSeasonDb, getSeasonReleaseContext } from "./season-release";
 import { existsFrom } from "./db-result";
+import { releaseCached, RUN_STATE_CACHE } from "./release-cache.ts";
 import { tiedExistsSql } from "./tie-sql";
 import { isSelectableRun, V5_RECORD_EVIDENCE } from "./run-selection";
 import { selectGradedWeeks } from "./results-weeks.ts";
@@ -118,23 +119,25 @@ export type HistoricalModelContext = {
 };
 
 /** Return the active { season, week, updatedAt } from the singleton current_week row. */
-export const getCurrentWeek = cache(async (): Promise<{
-  season: number;
-  week: number;
-  updatedAt: Date;
-  activeRunId: string | null;
-} | null> => {
+type CurrentWeek = { season: number; week: number; updatedAt: Date; activeRunId: string | null };
+
+/** The release's active week; immutable per release (`site_week_selections` is release-scoped). */
+const getReleaseCurrentWeek = releaseCached("getCurrentWeek", async (season: number): Promise<CurrentWeek> => {
+  const release = await getSeasonReleaseContext(season);
+  if (!release) throw new Error("No active season release");
+  const db = await getSeasonDb(release.season);
+  const rows = await db.select({ runId: schema.siteWeekSelections.runId })
+    .from(schema.siteWeekSelections).where(and(
+      eq(schema.siteWeekSelections.season, release.season),
+      eq(schema.siteWeekSelections.week, release.activeWeek),
+    )).limit(1);
+  if (!rows[0]) throw new Error("Active season release lacks current week selection");
+  return { season: release.season, week: release.activeWeek, updatedAt: release.activatedAt, activeRunId: rows[0].runId };
+});
+
+export const getCurrentWeek = cache(async (): Promise<CurrentWeek | null> => {
   const release = await getSeasonReleaseContext();
-  if (release) {
-    const db = await getSeasonDb(release.season);
-    const rows = await db.select({ runId: schema.siteWeekSelections.runId })
-      .from(schema.siteWeekSelections).where(and(
-        eq(schema.siteWeekSelections.season, release.season),
-        eq(schema.siteWeekSelections.week, release.activeWeek),
-      )).limit(1);
-    if (!rows[0]) throw new Error("Active season release lacks current week selection");
-    return { season: release.season, week: release.activeWeek, updatedAt: release.activatedAt, activeRunId: rows[0].runId };
-  }
+  if (release) return getReleaseCurrentWeek(release.season);
   const db = legacyDb;
   const rows = await db
     .select({
@@ -169,7 +172,7 @@ export type RunSummary = {
  * selected run may be V5 or an eligible legacy V4 rollback (same slate),
  * so eligibility is validated after the join rather than filtered to V5.
  */
-export const getRunForWeek = cache(async (season: number, week: number): Promise<RunSummary | null> => {
+export const getRunForWeek = cache(releaseCached("getRunForWeek", async (season: number, week: number): Promise<RunSummary | null> => {
   const db = await getSeasonDb(season);
   const rows = await db.select({
     runId: schema.predictionRuns.runId,
@@ -204,10 +207,10 @@ export const getRunForWeek = cache(async (season: number, week: number): Promise
     linedGames: row.linedGames,
     displayOnly: isDisplayOnly(row.validation),
   };
-});
+}, RUN_STATE_CACHE));
 
 /** Distinct weeks with published games for a season, ascending. Used by the week nav. */
-export async function getAvailableWeeks(season: number): Promise<number[]> {
+export const getAvailableWeeks = releaseCached("getAvailableWeeks", async (season: number): Promise<number[]> => {
   const db = await getSeasonDb(season);
   const rows = await db.select({
     week: schema.siteWeekSelections.week,
@@ -220,13 +223,13 @@ export async function getAvailableWeeks(season: number): Promise<number[]> {
     .where(eq(schema.siteWeekSelections.season, season))
     .orderBy(asc(schema.siteWeekSelections.week));
   return rows.filter(isSelectableRun).map((row) => row.week);
-}
+}, RUN_STATE_CACHE);
 
 /**
  * Distinct weeks with completed/scored games for a season, ascending: scored
  * selected runs, plus published display-only runs whose games have finals.
  */
-export async function getScoredWeeks(season: number): Promise<number[]> {
+export const getScoredWeeks = cache(releaseCached("getScoredWeeks", async (season: number): Promise<number[]> => {
   if (process.env.CFB_UI_TEST_MODE === "1") {
     return [0, 1, 2];
   }
@@ -250,10 +253,10 @@ export async function getScoredWeeks(season: number): Promise<number[]> {
       inArray(schema.predictionRuns.state, ["published", "scored"]),
     ));
   return selectGradedWeeks(rows);
-}
+}, RUN_STATE_CACHE));
 
 /** Distinct upcoming/unscored weeks with published forecasts for a season, ascending. */
-export async function getUpcomingWeeks(season: number): Promise<number[]> {
+export const getUpcomingWeeks = releaseCached("getUpcomingWeeks", async (season: number): Promise<number[]> => {
   if (process.env.CFB_UI_TEST_MODE === "1") {
     return [0];
   }
@@ -272,7 +275,7 @@ export async function getUpcomingWeeks(season: number): Promise<number[]> {
     ))
     .orderBy(asc(schema.siteWeekSelections.week));
   return rows.filter(isSelectableRun).map((row) => row.week);
-}
+}, RUN_STATE_CACHE);
 
 type CompletedGameRow = {
   startDate: Date;
@@ -287,7 +290,7 @@ type CompletedGameRow = {
  * timeline to snapshot each team's record as of a game's kickoff, so
  * historical week pages never leak later results.
  */
-const getSeasonCompletedGames = cache(async (season: number): Promise<CompletedGameRow[]> => {
+const getSeasonCompletedGames = cache(releaseCached("getSeasonCompletedGames", async (season: number): Promise<CompletedGameRow[]> => {
   const db = await getSeasonDb(season);
   const rows = await db
     .select({
@@ -313,7 +316,7 @@ const getSeasonCompletedGames = cache(async (season: number): Promise<CompletedG
     (row): row is CompletedGameRow =>
       row.homePoints !== null && row.awayPoints !== null,
   );
-});
+}));
 
 function recordLabel(record: { wins: number; losses: number } | undefined): string | null {
   if (!record || record.wins + record.losses === 0) return null;
@@ -361,52 +364,106 @@ function withRecords<
 
 type FrozenLine = { spread: number | null; total: number | null };
 
-/** Frozen pre-kickoff snapshot lines from the week's closed non-V5 run. */
-async function frozenLinesForWeek(
+/**
+ * Optional reads (venues, market selections) degrade to "absent" on failure. A cached loader
+ * must never store that degraded result, so it reads strictly, throws this instead, and the
+ * public wrapper re-runs the loader uncached in tolerant mode.
+ */
+class SwallowedReadError extends Error {
+  constructor(cause: unknown) {
+    super("Optional read failed", { cause });
+  }
+}
+
+async function cachedOrTolerant<A extends unknown[], T>(
+  cached: (...args: A) => Promise<T>,
+  tolerant: (...args: A) => Promise<T>,
+  ...args: A
+): Promise<T> {
+  try {
+    return await cached(...args);
+  } catch (error) {
+    if (!(error instanceof SwallowedReadError)) throw error;
+    return tolerant(...args);
+  }
+}
+
+/**
+ * Frozen pre-kickoff snapshot lines from each week's closed non-V5 run, for several weeks
+ * in two queries (runs, then their snapshot lines) instead of one per run per week. Within
+ * a week, scored runs win over frozen ones and the first run that has snapshot lines is used.
+ */
+async function frozenLinesForWeeks(
   season: number,
-  week: number,
-): Promise<Map<number, FrozenLine>> {
+  weeks: number[],
+): Promise<Map<number, Map<number, FrozenLine>>> {
+  const byWeek = new Map<number, Map<number, FrozenLine>>(weeks.map((week) => [week, new Map()]));
+  if (weeks.length === 0) return byWeek;
   const db = await getSeasonDb(season);
   const runs = await db
     .select({
       runId: schema.predictionRuns.runId,
+      week: schema.predictionRuns.week,
       state: schema.predictionRuns.state,
     })
     .from(schema.predictionRuns)
     .where(
       and(
         eq(schema.predictionRuns.season, season),
-        eq(schema.predictionRuns.week, week),
+        inArray(schema.predictionRuns.week, weeks),
         notLike(schema.predictionRuns.modelId, "v5-%"),
         inArray(schema.predictionRuns.state, ["frozen", "scored"]),
       ),
     );
-  const ordered = [...runs].sort((a, b) =>
-    a.state === b.state ? 0 : a.state === "scored" ? -1 : 1,
-  );
-  const lines = new Map<number, FrozenLine>();
-  for (const run of ordered) {
-    const snapshotRows = await db
-      .select({
-        gameId: schema.predictions.gameId,
-        spread: schema.marketSnapshots.spread,
-        total: schema.marketSnapshots.total,
-      })
-      .from(schema.predictions)
-      .innerJoin(
-        schema.marketSnapshots,
-        eq(schema.predictions.marketSnapshotId, schema.marketSnapshots.snapshotId),
-      )
-      .where(eq(schema.predictions.runId, run.runId));
-    for (const row of snapshotRows) {
-      if (!lines.has(row.gameId)) {
-        lines.set(row.gameId, { spread: row.spread, total: row.total });
+  if (runs.length === 0) return byWeek;
+  const snapshotRows = await db
+    .select({
+      runId: schema.predictions.runId,
+      gameId: schema.predictions.gameId,
+      spread: schema.marketSnapshots.spread,
+      total: schema.marketSnapshots.total,
+    })
+    .from(schema.predictions)
+    .innerJoin(
+      schema.marketSnapshots,
+      eq(schema.predictions.marketSnapshotId, schema.marketSnapshots.snapshotId),
+    )
+    .where(inArray(schema.predictions.runId, runs.map((run) => run.runId)));
+  const linesByRun = new Map<string, Map<number, FrozenLine>>();
+  for (const row of snapshotRows) {
+    const lines = linesByRun.get(row.runId) ?? new Map<number, FrozenLine>();
+    linesByRun.set(row.runId, lines);
+    if (!lines.has(row.gameId)) lines.set(row.gameId, { spread: row.spread, total: row.total });
+  }
+  for (const week of weeks) {
+    const ordered = runs
+      .filter((run) => run.week === week)
+      .sort((a, b) => (a.state === b.state ? 0 : a.state === "scored" ? -1 : 1));
+    for (const run of ordered) {
+      const lines = linesByRun.get(run.runId);
+      if (lines && lines.size > 0) {
+        byWeek.set(week, lines);
+        break;
       }
     }
-    if (lines.size > 0) break;
   }
-  return lines;
+  return byWeek;
 }
+
+type FrozenLineFields = {
+  gameId: number;
+  homeTeamSpreadLine: number | null;
+  totalLine: number | null;
+  predictedSpread: number | null;
+  predictedTotal: number | null;
+  spreadLean: "home" | "away" | null;
+  totalLean: "over" | "under" | null;
+  edgeSpread: number | null;
+  edgeTotal: number | null;
+};
+
+const missesLines = (rows: FrozenLineFields[]) =>
+  rows.some((row) => row.homeTeamSpreadLine === null || row.totalLine === null);
 
 /**
  * Fill market lines missing from serv­ing rows (replay runs are built without
@@ -414,23 +471,7 @@ async function frozenLinesForWeek(
  * grades use — and derive the matching leans and edges. Stored values are
  * never overwritten; the immutable prediction bytes are untouched.
  */
-export async function withFrozenLines<
-  T extends {
-    gameId: number;
-    homeTeamSpreadLine: number | null;
-    totalLine: number | null;
-    predictedSpread: number | null;
-    predictedTotal: number | null;
-    spreadLean: "home" | "away" | null;
-    totalLean: "over" | "under" | null;
-    edgeSpread: number | null;
-    edgeTotal: number | null;
-  },
->(rows: T[], season: number, week: number): Promise<T[]> {
-  if (!rows.some((row) => row.homeTeamSpreadLine === null || row.totalLine === null)) {
-    return rows;
-  }
-  const lines = await frozenLinesForWeek(season, week);
+function applyFrozenLines<T extends FrozenLineFields>(rows: T[], lines: Map<number, FrozenLine>): T[] {
   if (lines.size === 0) return rows;
   return rows.map((row) => {
     const frozen = lines.get(row.gameId);
@@ -450,6 +491,11 @@ export async function withFrozenLines<
     }
     return { ...row, homeTeamSpreadLine, totalLine, spreadLean, totalLean, edgeSpread, edgeTotal };
   });
+}
+
+export async function withFrozenLines<T extends FrozenLineFields>(rows: T[], season: number, week: number): Promise<T[]> {
+  if (!missesLines(rows)) return rows;
+  return applyFrozenLines(rows, (await frozenLinesForWeeks(season, [week])).get(week) ?? new Map());
 }
 
 type TargetSelection = {
@@ -488,6 +534,7 @@ export const hasSelectionsTable = cache(async (season = publicationScope.season)
 export async function getMarketSelectionsForRuns(
   runIds: string[],
   season = publicationScope.season,
+  strict = false,
 ): Promise<Map<string, Map<number, GameSelections>>> {
   const byRun = new Map<string, Map<number, GameSelections>>(
     runIds.map((runId) => [runId, new Map()]),
@@ -529,7 +576,8 @@ export async function getMarketSelectionsForRuns(
       };
     }
     return byRun;
-  } catch {
+  } catch (error) {
+    if (strict) throw new SwallowedReadError(error);
     return new Map(runIds.map((runId) => [runId, new Map()]));
   }
 }
@@ -538,8 +586,9 @@ export async function getMarketSelectionsForRuns(
 export async function getMarketSelectionsForRun(
   runId: string,
   season = publicationScope.season,
+  strict = false,
 ): Promise<Map<number, GameSelections>> {
-  return (await getMarketSelectionsForRuns([runId], season)).get(runId) ?? new Map();
+  return (await getMarketSelectionsForRuns([runId], season, strict)).get(runId) ?? new Map();
 }
 
 /**
@@ -575,42 +624,51 @@ export const hasTeamSeasonStatsTable = cache(async (season = publicationScope.se
  * Pre-game stats snapshot (games completed before `asOfWeek`) for the given teams.
  * Never throws; returns [] when the table or rows are missing.
  */
+const queryTeamSeasonStats = releaseCached("getTeamSeasonStats", async (
+  season: number,
+  asOfWeek: number,
+  teams: string[],
+): Promise<TeamStatRow[]> => {
+  const db = await getSeasonDb(season);
+  const t = schema.teamSeasonStats;
+  const rows = await db
+    .select({
+      team: t.team,
+      role: t.role,
+      metric: t.metric,
+      value: t.value,
+      n: t.n,
+      games: t.games,
+      rank: t.rank,
+      cohortSize: t.cohortSize,
+      // Ties share the minimum rank, so a tie is another team with the same rank.
+      tied: sql<boolean>`${sql.raw(tiedExistsSql("team_season_stats"))}`,
+    })
+    .from(t)
+    .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
+  guardRows("team_season_stats", rows, TEAM_STAT_SPEC, TEAM_STAT_RULES);
+  return rows.map((r) => ({
+    team: r.team,
+    role: r.role === "defense" ? "defense" : "offense",
+    metric: r.metric,
+    value: r.value,
+    n: r.n,
+    games: r.games,
+    rank: r.rank,
+    cohortSize: r.cohortSize,
+    tied: Boolean(r.tied),
+  }));
+});
+
 export async function getTeamSeasonStats(
   season: number,
   asOfWeek: number,
   teams: string[],
 ): Promise<TeamStatRow[]> {
-  const db = await getSeasonDb(season);
+  await getSeasonDb(season);
   if (teams.length === 0 || !(await hasTeamSeasonStatsTable(season))) return [];
   try {
-    const t = schema.teamSeasonStats;
-    const rows = await db
-      .select({
-        team: t.team,
-        role: t.role,
-        metric: t.metric,
-        value: t.value,
-        n: t.n,
-        games: t.games,
-        rank: t.rank,
-        cohortSize: t.cohortSize,
-        // Ties share the minimum rank, so a tie is another team with the same rank.
-        tied: sql<boolean>`${sql.raw(tiedExistsSql("team_season_stats"))}`,
-      })
-      .from(t)
-      .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
-    guardRows("team_season_stats", rows, TEAM_STAT_SPEC, TEAM_STAT_RULES);
-    return rows.map((r) => ({
-      team: r.team,
-      role: r.role === "defense" ? "defense" : "offense",
-      metric: r.metric,
-      value: r.value,
-      n: r.n,
-      games: r.games,
-      rank: r.rank,
-      cohortSize: r.cohortSize,
-      tied: Boolean(r.tied),
-    }));
+    return await queryTeamSeasonStats(season, asOfWeek, teams);
   } catch (error) {
     // A contract violation is not "no stats": let the caller show an unavailable state.
     if (error instanceof RowContractError) throw error;
@@ -637,41 +695,50 @@ export const hasTeamPossessionStatsTable = cache(async (season = publicationScop
  * opponent-adjusted values live in their own table and are never read here.
  * Never throws; returns [] when the table or rows are missing.
  */
+const queryTeamPossessionStats = releaseCached("getTeamPossessionStats", async (
+  season: number,
+  asOfWeek: number,
+  teams: string[],
+): Promise<TeamStatRow[]> => {
+  const db = await getSeasonDb(season);
+  const t = schema.teamPossessionStats;
+  const rows = await db
+    .select({
+      team: t.team,
+      role: t.role,
+      metric: t.metric,
+      value: t.value,
+      n: t.n,
+      games: t.games,
+      rank: t.rank,
+      cohortSize: t.cohortSize,
+      tied: sql<boolean>`${sql.raw(tiedExistsSql("team_possession_stats"))}`,
+    })
+    .from(t)
+    .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
+  guardRows("team_possession_stats", rows, TEAM_STAT_SPEC, TEAM_STAT_RULES);
+  return rows.map((r) => ({
+    team: r.team,
+    role: r.role === "defense" ? "defense" : "offense",
+    metric: r.metric,
+    value: r.value,
+    n: r.n,
+    games: r.games,
+    rank: r.rank,
+    cohortSize: r.cohortSize,
+    tied: Boolean(r.tied),
+  }));
+});
+
 export async function getTeamPossessionStats(
   season: number,
   asOfWeek: number,
   teams: string[],
 ): Promise<TeamStatRow[]> {
-  const db = await getSeasonDb(season);
+  await getSeasonDb(season);
   if (teams.length === 0 || !(await hasTeamPossessionStatsTable(season))) return [];
   try {
-    const t = schema.teamPossessionStats;
-    const rows = await db
-      .select({
-        team: t.team,
-        role: t.role,
-        metric: t.metric,
-        value: t.value,
-        n: t.n,
-        games: t.games,
-        rank: t.rank,
-        cohortSize: t.cohortSize,
-        tied: sql<boolean>`${sql.raw(tiedExistsSql("team_possession_stats"))}`,
-      })
-      .from(t)
-      .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
-    guardRows("team_possession_stats", rows, TEAM_STAT_SPEC, TEAM_STAT_RULES);
-    return rows.map((r) => ({
-      team: r.team,
-      role: r.role === "defense" ? "defense" : "offense",
-      metric: r.metric,
-      value: r.value,
-      n: r.n,
-      games: r.games,
-      rank: r.rank,
-      cohortSize: r.cohortSize,
-      tied: Boolean(r.tied),
-    }));
+    return await queryTeamPossessionStats(season, asOfWeek, teams);
   } catch (error) {
     // A contract violation is not "no stats": let the caller show an unavailable state.
     if (error instanceof RowContractError) throw error;
@@ -683,6 +750,7 @@ export async function getTeamPossessionStats(
 async function withVenues<T extends { gameId: number }>(
   games: T[],
   season: number,
+  strict = false,
 ): Promise<(T & { venueCity: string | null; venueState: string | null; neutralSite: boolean | null })[]> {
   const db = await getSeasonDb(season);
   const empty = games.map((g) => ({ ...g, venueCity: null, venueState: null, neutralSite: null }));
@@ -707,17 +775,22 @@ async function withVenues<T extends { gameId: number }>(
         neutralSite: v?.neutralSite ?? null,
       };
     });
-  } catch {
+  } catch (error) {
+    if (strict) throw new SwallowedReadError(error);
     return empty;
   }
 }
 
-/** Return all games (with optional results) for a given season/week, sorted by start time. */
-export async function getGamesForWeek(season: number, week: number): Promise<Game[]> {
+/**
+ * Return all games (with optional results) for a given season/week, sorted by start time.
+ * Cached per release (the run state it carries is capped at an hour); optional venue and
+ * selection failures are never cached, see `cachedOrTolerant`.
+ */
+async function loadGamesForWeek(season: number, week: number, strict: boolean): Promise<Game[]> {
   const db = await getSeasonDb(season);
   const run = await getRunForWeek(season, week);
   if (run) {
-    const [rows, selectionsMap] = await Promise.all([
+    const [rows, selectionsMap, completed] = await Promise.all([
       db
         .select({
           runId: schema.predictions.runId,
@@ -769,7 +842,8 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
         .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
         .where(eq(schema.predictions.runId, run.runId))
         .orderBy(asc(schema.games.startDate), asc(schema.games.gameId)),
-      getMarketSelectionsForRun(run.runId, season),
+      getMarketSelectionsForRun(run.runId, season, strict),
+      getSeasonCompletedGames(season),
     ]);
 
     guardRows("games_for_week", rows, PREDICTION_GAME_SPEC);
@@ -777,21 +851,26 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
       overlaySelection(row, selectionsMap.get(row.gameId)),
     );
 
-    const completed = await getSeasonCompletedGames(season);
-    const games = await withFrozenLines(
-      (await withVenues(rowsWithSelections, season)).map((row) => ({
+    // Venues and frozen-line fallbacks are independent of each other.
+    const [withVenue, frozenLines] = await Promise.all([
+      withVenues(rowsWithSelections, season, strict),
+      missesLines(rowsWithSelections)
+        ? frozenLinesForWeeks(season, [week]).then((byWeek) => byWeek.get(week) ?? new Map<number, FrozenLine>())
+        : Promise.resolve(new Map<number, FrozenLine>()),
+    ]);
+    const games = applyFrozenLines(
+      withVenue.map((row) => ({
         ...row,
         publicationMode: "predictions" as const,
         runState: run.state,
         evidenceClass: run.evidenceClass,
       })),
-      season,
-      week,
+      frozenLines,
     );
     return withRecords(games, completed) as PredictionGame[];
   }
 
-  if (season === 2026) return getMarketGamesForWeek(season, week);
+  if (season === 2026) return loadMarketGamesForWeek(season, week, strict);
 
   // Temporary compatibility path for rows published before run versioning.
   const rows = await db
@@ -851,15 +930,22 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
   ) as PredictionGame[];
 }
 
+const cachedGamesForWeek = releaseCached("getGamesForWeek", (season: number, week: number) =>
+  loadGamesForWeek(season, week, true), RUN_STATE_CACHE);
+
+export const getGamesForWeek = (season: number, week: number): Promise<Game[]> =>
+  cachedOrTolerant(cachedGamesForWeek, (s: number, w: number) => loadGamesForWeek(s, w, false), season, week);
+
 /** Schedule + current published market lines without selecting model output. */
-export async function getMarketGamesForWeek(
+async function loadMarketGamesForWeek(
   season: number,
   week: number,
+  strict: boolean,
 ): Promise<MarketGame[]> {
   const db = await getSeasonDb(season);
   // A settled grade is safe to disclose, but it must remain tied to the exact
   // versioned run selected for this week. Legacy rows have no run identity.
-  const run = await getRunForWeek(season, week);
+  const [run, completed] = await Promise.all([getRunForWeek(season, week), getSeasonCompletedGames(season)]);
   const spreadResult = run
     ? sql<"win" | "loss" | "push" | null>`(
         SELECT pg.result FROM prediction_grades pg
@@ -899,12 +985,17 @@ export async function getMarketGamesForWeek(
     .where(and(eq(schema.games.season, season), eq(schema.games.week, week)))
     .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
 
-  const completed = await getSeasonCompletedGames(season);
   return withRecords(
-    (await withVenues(rows, season)).map((row) => ({ ...row, publicationMode: "market" as const })),
+    (await withVenues(rows, season, strict)).map((row) => ({ ...row, publicationMode: "market" as const })),
     completed,
   );
 }
+
+const cachedMarketGamesForWeek = releaseCached("getMarketGamesForWeek", (season: number, week: number) =>
+  loadMarketGamesForWeek(season, week, true), RUN_STATE_CACHE);
+
+export const getMarketGamesForWeek = (season: number, week: number): Promise<MarketGame[]> =>
+  cachedOrTolerant(cachedMarketGamesForWeek, (s: number, w: number) => loadMarketGamesForWeek(s, w, false), season, week);
 
 function emptyStats(season: number): Stats {
   return {
@@ -925,7 +1016,7 @@ function emptyStats(season: number): Stats {
  * once grades are available, including selected pending runs. This intentionally does not read `system_stats`:
  * that table is the latest full-season aggregate maintained by the pipeline.
  */
-export const getSystemStatsThroughWeek = cache(async (
+export const getSystemStatsThroughWeek = cache(releaseCached("getSystemStatsThroughWeek", async (
   season: number,
   throughWeek: number,
 ): Promise<Stats> => {
@@ -992,7 +1083,7 @@ export const getSystemStatsThroughWeek = cache(async (
     }
   }
   return { ...stats, asOfWeek };
-});
+}, RUN_STATE_CACHE));
 
 /**
  * Read only the pinned, diagnostic-only V4 historical context. A missing or
@@ -1040,7 +1131,7 @@ export const getHistoricalModelContext = cache(async (
  * `overlaySelection` and `withFrozenLines` steps as the full slate, so the
  * record equals the one computed from every week's full games.
  */
-export const getBiggestEdgesRecord = cache(async (season: number): Promise<Tally> => {
+async function loadBiggestEdgesRecord(season: number, strict: boolean): Promise<Tally> {
   const weeks = await getScoredWeeks(season);
   if (weeks.length === 0) return { win: 0, loss: 0, push: 0 };
   const db = await getSeasonDb(season);
@@ -1091,13 +1182,23 @@ export const getBiggestEdgesRecord = cache(async (season: number): Promise<Tally
   const selections = await getMarketSelectionsForRuns(
     [...new Set(selectable.map((row) => row.runId))],
     season,
+    strict,
+  );
+  const weekRowsByWeek = new Map(weeks.map((week) => [
+    week,
+    selectable
+      .filter((row) => row.week === week)
+      .map((row) => overlaySelection(row, selections.get(row.runId)?.get(row.gameId))),
+  ]));
+  // One batched lookup for every week that lacks lines, instead of one per week.
+  const frozenLines = await frozenLinesForWeeks(
+    season,
+    weeks.filter((week) => missesLines(weekRowsByWeek.get(week) ?? [])),
   );
   const lean: LeanGradeRow[] = [];
   for (const week of weeks) {
-    const weekRows = selectable
-      .filter((row) => row.week === week)
-      .map((row) => overlaySelection(row, selections.get(row.runId)?.get(row.gameId)));
-    for (const row of await withFrozenLines(weekRows, season, week)) {
+    const weekRows = weekRowsByWeek.get(week) ?? [];
+    for (const row of applyFrozenLines(weekRows, frozenLines.get(week) ?? new Map())) {
       const source = { ...row, publicationMode: "predictions" as const };
       for (const kind of ["spread", "total"] as const) {
         const found = leanFor(source, kind);
@@ -1115,4 +1216,10 @@ export const getBiggestEdgesRecord = cache(async (season: number): Promise<Tally
     }
   }
   return biggestEdgesRecord(lean);
-});
+}
+
+const cachedBiggestEdgesRecord = releaseCached("getBiggestEdgesRecord", (season: number) =>
+  loadBiggestEdgesRecord(season, true), RUN_STATE_CACHE);
+
+export const getBiggestEdgesRecord = cache((season: number): Promise<Tally> =>
+  cachedOrTolerant(cachedBiggestEdgesRecord, (value: number) => loadBiggestEdgesRecord(value, false), season));

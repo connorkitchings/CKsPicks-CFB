@@ -6,8 +6,8 @@ import {
   type Game,
 } from "@/lib/queries";
 import { getTeamSeasonRoster } from "@/lib/chart-queries";
-import type { RosterRow } from "@/lib/charts";
-import { getV5Performance, type Performance } from "@/lib/v5";
+import type { RosterRow } from "@/lib/conferences";
+import { getV5PerformanceSplit, type Performance } from "@/lib/v5";
 import { selectsV5, V5_INTENDED_UPDATE_MODEL_ID } from "@/lib/run-selection";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
@@ -107,9 +107,7 @@ export async function loadSlateData(args: {
       [out.games, out.performance, roster] = await Promise.all([
         getGamesForWeek(season, week),
         isV5
-          ? view === "picks"
-            ? getV5Performance(season, week)
-            : getV5Performance(season, undefined, week)
+          ? getV5PerformanceSplit(season, week).then((split) => (view === "picks" ? split.before : split.week))
           : Promise.resolve([]),
         // Optional: a missing roster only removes the conference filter, but say so.
         getTeamSeasonRoster(season).catch((err) => {

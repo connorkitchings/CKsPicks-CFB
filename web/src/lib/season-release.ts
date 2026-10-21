@@ -3,10 +3,28 @@ import { db } from "./db";
 import { publicationScope } from "./publication.ts";
 import { releaseEnvironment, createReleaseContextResolver, loadReleaseContext, type SeasonReleaseContext, type ReleaseEnvironment } from "./season-release-context.ts";
 import { seasonReleaseDb, type ChartSet } from "./season-release-query.ts";
+import { cacheDisabled, decodeCacheValue, deploymentId, encodeCacheValue } from "./release-cache.ts";
 
-const requestResolver = cache(() => createReleaseContextResolver((season, environment) =>
-  loadReleaseContext((query) => db.execute(query), season, environment),
-));
+/** Seconds an activation may take to show up without a signed `/api/revalidate`. */
+export const RELEASE_POINTER_REVALIDATE_SECONDS = 60;
+export const RELEASE_POINTER_TAG = "release-pointer";
+
+const readPointer = (season: number, environment: ReleaseEnvironment) =>
+  loadReleaseContext((query) => db.execute(query), season, environment);
+
+/** Cross-request active-release lookup; the per-request resolver below still pins one release. */
+async function readPointerCached(season: number, environment: ReleaseEnvironment): Promise<SeasonReleaseContext | null> {
+  if (cacheDisabled(process.env)) return readPointer(season, environment);
+  const { unstable_cache } = await import("next/cache");
+  const cached = unstable_cache(
+    async () => encodeCacheValue(await readPointer(season, environment)),
+    [RELEASE_POINTER_TAG, deploymentId(process.env), environment, String(season)],
+    { tags: [RELEASE_POINTER_TAG], revalidate: RELEASE_POINTER_REVALIDATE_SECONDS },
+  );
+  return decodeCacheValue<SeasonReleaseContext | null>(await cached());
+}
+
+const requestResolver = cache(() => createReleaseContextResolver(readPointerCached));
 
 export function getSeasonReleaseContext(
   season = publicationScope.season,

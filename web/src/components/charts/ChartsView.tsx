@@ -22,7 +22,7 @@ import {
 } from "@/lib/charts";
 import { AdjustedView } from "./AdjustedView";
 import type { SharedChartProps } from "./ChartFrame";
-import { EfficiencyView } from "./EfficiencyView";
+import { EfficiencyView, type EfficiencyData } from "./EfficiencyView";
 import { GameLogView } from "./GameLogView";
 import { NetSuccessView } from "./NetSuccessView";
 import { PossessionView } from "./PossessionView";
@@ -31,7 +31,7 @@ import { RatingTrajectoryView } from "./RatingTrajectoryView";
 /** The data of one chart view; a new chart adds its variant here and its case below. */
 export type ChartPayload =
   | { kind: "net-success"; bars: NetSuccessBar[]; notCharted: NotCharted[] }
-  | { kind: "efficiency"; side: Side; rows: TeamGameRow[]; initialMetric: EfficiencyMetric; explosiveness: boolean }
+  | { kind: "efficiency"; side: Side; data: EfficiencyData; initialMetric: EfficiencyMetric; explosiveness: boolean }
   | { kind: "adjusted"; scatter: AdjustedScatter }
   | { kind: "rating-trajectory"; rows: RatingSnapshotRow[]; initialMetric: RatingMetric }
   | { kind: "possession"; rows: PossessionRow[]; initialMetric: PossessionMetric }
@@ -85,7 +85,7 @@ function renderView(chart: ChartPayload, shared: SharedChartProps) {
     case "net-success":
       return <NetSuccessView shared={shared} bars={chart.bars} notCharted={chart.notCharted} />;
     case "efficiency":
-      return <EfficiencyView key={chart.explosiveness ? "charts_v2" : "charts_v1"} shared={shared} side={chart.side} rows={chart.rows} initialMetric={chart.initialMetric} explosiveness={chart.explosiveness} />;
+      return <EfficiencyView key={chart.explosiveness ? "charts_v2" : "charts_v1"} shared={shared} side={chart.side} data={chart.data} initialMetric={chart.initialMetric} explosiveness={chart.explosiveness} />;
     case "adjusted":
       return <AdjustedView shared={shared} scatter={chart.scatter} />;
     case "rating-trajectory":

@@ -11,6 +11,7 @@ export default function TeamLogo({
   size,
   className,
   decorative = true,
+  priority = false,
 }: {
   name: string;
   px: number;
@@ -18,6 +19,8 @@ export default function TeamLogo({
   size?: LogoSize;
   className?: string;
   decorative?: boolean;
+  /** Above-the-fold logo: load eagerly at high priority. Everything else is lazy. */
+  priority?: boolean;
 }) {
   // width/height attributes give the intrinsic size and aspect ratio; unlike
   // inline styles, Tailwind size classes (e.g. `h-16 w-16 sm:h-20 sm:w-20`) can
@@ -26,6 +29,11 @@ export default function TeamLogo({
   const sizedByClass = /(^|\s)(\w+:)?[wh]-/.test(className ?? "");
   const alt = decorative ? "" : name;
   const cls = clsx("shrink-0 object-contain", className);
+  // Lazy images that are `display: none` (the inactive theme variant) are not fetched, so
+  // only the visible variant downloads.
+  const loadProps = priority
+    ? ({ loading: "eager", decoding: "async", fetchPriority: "high" } as const)
+    : ({ loading: "lazy", decoding: "async" } as const);
 
   const asset = size ?? (px > 32 ? "lg" : "sm");
   const light = logoSrc(name, asset, "light");
@@ -49,9 +57,9 @@ export default function TeamLogo({
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={light} alt={alt} {...box} data-logo className={clsx(cls, "dark:hidden")} />
+      <img src={light} alt={alt} {...box} {...loadProps} data-logo className={clsx(cls, "dark:hidden")} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={dark} alt="" aria-hidden {...box} data-logo className={clsx(cls, "hidden dark:block")} />
+      <img src={dark} alt="" aria-hidden {...box} {...loadProps} data-logo className={clsx(cls, "hidden dark:block")} />
     </>
   );
 }

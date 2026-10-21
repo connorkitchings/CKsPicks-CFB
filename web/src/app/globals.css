@@ -34,6 +34,8 @@
   --accent-ink: #1d4ed8; /* blue-700 */
   --accent-soft: #eff6ff; /* blue-50 */
   --accent-line: #bfdbfe; /* blue-200 */
+  --accent-solid: #1d4ed8; /* blue-700: filled button background */
+  --on-accent-solid: #ffffff; /* text on --accent-solid (6.7:1) */
   --win: #047857; /* emerald-700 */
   --win-soft: #ecfdf5; /* emerald-50 */
   --win-line: #a7f3d0; /* emerald-200 */
@@ -63,6 +65,8 @@ html.dark {
   --accent-ink: #93c5fd; /* blue-300 */
   --accent-soft: #172554; /* blue-950 */
   --accent-line: #1e3a8a; /* blue-900 */
+  --accent-solid: #2563eb; /* blue-600 */
+  --on-accent-solid: #ffffff; /* 5.2:1 */
   --win: #34d399; /* emerald-400 */
   --win-soft: #022c22; /* emerald-950 */
   --win-line: #064e3b; /* emerald-900 */
@@ -91,6 +95,8 @@ html.dark {
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-accent-line: var(--accent-line);
+  --color-accent-solid: var(--accent-solid);
+  --color-on-accent-solid: var(--on-accent-solid);
   --color-win: var(--win);
   --color-win-soft: var(--win-soft);
   --color-win-line: var(--win-line);
@@ -160,4 +166,18 @@ html.dark .rounded-xl.bg-surface-card {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto !important; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ResponsiveDisclosure: one <details>. Phones collapse it behind the summary; from `sm:` up the
+   content is forced open and the summary hidden. Browsers without ::details-content keep the
+   summary visible on desktop, so the content stays reachable. */
+@supports selector(::details-content) {
+  @media (min-width: 40rem) {
+    .responsive-disclosure::details-content {
+      content-visibility: visible;
+    }
+    .responsive-disclosure > summary {
+      display: none;
+    }
+  }
 }

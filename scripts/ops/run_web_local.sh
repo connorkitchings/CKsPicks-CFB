@@ -10,9 +10,17 @@
 # production. Port: PORT (default 3000).
 # Charts is on locally so the top links show it for review; CFB_CHARTS_ENABLED=0
 # shows the published navigation.
+# MODE=start builds the production bundle and serves it with `next start`, which is
+# what speed measurements need (default MODE=dev). CFB_QUERY_LOG=1 logs each query.
 set -euo pipefail
 
 target="${1:-preview}"
+mode="${MODE:-dev}"
+case "$mode" in
+  dev) web_cmd='npm run dev -- --hostname 127.0.0.1 --port "${PORT:-3000}"' ;;
+  start) web_cmd='npm run build && npm run start -- --hostname 127.0.0.1 --port "${PORT:-3000}"' ;;
+  *) print -u2 "MODE must be dev or start"; exit 64 ;;
+esac
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 case "$target" in
   preview) wrapper="with_preview_env.sh"; url_var="PREVIEW_DATABASE_URL" ;;
@@ -20,10 +28,10 @@ case "$target" in
   *) print -u2 "Usage: zsh scripts/ops/run_web_local.sh [preview|production]"; exit 64 ;;
 esac
 
-export CFB_CHARTS_ENABLED="${CFB_CHARTS_ENABLED:-1}"
-print "Web on http://127.0.0.1:${PORT:-3000}/matchup  (data: $target, read-only use of the pipeline login, Charts ${CFB_CHARTS_ENABLED})"
+export CFB_CHARTS_ENABLED="${CFB_CHARTS_ENABLED:-1}" WEB_CMD="$web_cmd"
+print "Web on http://127.0.0.1:${PORT:-3000}/matchup  (data: $target, read-only use of the pipeline login, Charts ${CFB_CHARTS_ENABLED}, mode ${mode})"
 exec zsh "$root/scripts/ops/$wrapper" zsh -c '
   export DATABASE_URL="${'"$url_var"'}"
   cd "'"$root"'/web"
-  exec npm run dev -- --hostname 127.0.0.1 --port "${PORT:-3000}"
+  eval "$WEB_CMD"
 '

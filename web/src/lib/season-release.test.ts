@@ -49,11 +49,22 @@ test("legacy query remains unchanged before cutover", () => {
   assert.deepEqual(seasonReleaseDb(db, null).select().from(schema.games).toSQL(), db.select().from(schema.games).toSQL());
 });
 
-test("schema absence and no active release are the only legacy fallback conditions", async () => {
-  assert.equal(await loadReleaseContext(executor([{ rows: [{ exists: false }] }]), 2026, "preview"), null);
-  assert.equal(await loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [] }]), 2026, "preview"), null);
-  await assert.rejects(loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [release] }, { rows: [{ name: "season_release_games" }] }]), 2026, "preview"), /missing serving projections/);
-  await assert.rejects(loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [release, release] }]), 2026, "preview"), /Multiple active/);
+const failWith = (error: unknown) => async () => { throw error; };
+
+test("schema absence (42P01) and no active release are the only legacy fallback conditions", async () => {
+  assert.equal(await loadReleaseContext(failWith(Object.assign(new Error("relation does not exist"), { code: "42P01" })), 2026, "preview"), null);
+  assert.equal(await loadReleaseContext(failWith(new Error("query failed", { cause: { code: "42P01" } })), 2026, "preview"), null);
+  assert.equal(await loadReleaseContext(executor([{ rows: [] }]), 2026, "preview"), null);
+  await assert.rejects(loadReleaseContext(failWith(Object.assign(new Error("connection reset"), { code: "08006" })), 2026, "preview"), /connection reset/);
+  await assert.rejects(loadReleaseContext(executor([{ rows: [{ ...release, missing_projections: ["season_release_games"] }] }]), 2026, "preview"), /missing serving projections/);
+  await assert.rejects(loadReleaseContext(executor([{ rows: [release, release] }]), 2026, "preview"), /Multiple active/);
+});
+
+test("resolving a release is a single query", async () => {
+  let queries = 0;
+  const context = await loadReleaseContext(async () => { queries++; return { rows: [{ ...release, missing_projections: [] }] }; }, 2026, "preview");
+  assert.equal(context?.releaseId, "release-a");
+  assert.equal(queries, 1);
 });
 
 test("activation between queries stays pinned within the request and changes next request", async () => {
@@ -61,7 +72,7 @@ test("activation between queries stays pinned within the request and changes nex
   let loads = 0;
   const load = async (season: number, environment: "preview" | "production") => {
     loads++;
-    return loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [{ ...active, season, environment }] }, { rows: [] }]), season, environment);
+    return loadReleaseContext(executor([{ rows: [{ ...active, season, environment }] }]), season, environment);
   };
   const request = createReleaseContextResolver(load);
   const first = await request(2026, "preview");
@@ -82,17 +93,17 @@ test("environment and season mismatches fail closed", async () => {
   assert.equal(releaseEnvironment({ VERCEL_ENV: "preview" }), "preview");
   assert.throws(() => releaseEnvironment({ CFB_ARTIFACT_ENV: "local" }), /preview or production/);
   assert.throws(() => createReleaseContextResolver(async () => null)(NaN, "preview"), /Invalid release season/);
-  await assert.rejects(loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [release] }, { rows: [] }]), 2026, "production"), /mismatch/);
+  await assert.rejects(loadReleaseContext(executor([{ rows: [release] }]), 2026, "production"), /mismatch/);
 });
 
 test("missing-projection probe binds the projection names as one text[] parameter", async () => {
   const queries: SQL[] = [];
-  const responses = [{ rows: [{ exists: true }] }, { rows: [release] }, { rows: [] }];
-  await loadReleaseContext(async (query) => { queries.push(query); return responses.shift(); }, 2026, "preview");
-  const rendered = new PgDialect().sqlToQuery(queries[2]);
-  assert.match(rendered.sql, /unnest\(\$1::text\[\]\)/);
-  assert.equal(rendered.sql.includes("($1,"), false);
-  assert.deepEqual(rendered.params, [RELEASE_PROJECTIONS]);
+  await loadReleaseContext(async (query) => { queries.push(query); return { rows: [release] }; }, 2026, "preview");
+  const rendered = new PgDialect().sqlToQuery(queries[0]);
+  const index = rendered.params.findIndex((param) => param === RELEASE_PROJECTIONS);
+  assert.ok(index >= 0);
+  assert.match(rendered.sql, new RegExp(`unnest\\(\\$${index + 1}::text\\[\\]\\)`));
+  assert.equal(rendered.sql.includes(`($${index + 1},`), false);
 });
 
 const YARDAGE = "season_release_team_game_yardage";
@@ -138,7 +149,7 @@ test("a chart query shadows the live chart table with the release rows, never th
 
 const v1Release = { ...release, projection_keys: [...CHARTS_V1_KEYS].reverse(), charts_v1_relations: true, charts_v2_relations: null };
 const v2Release = { ...release, projection_keys: [...CHART_SET_KEYS.charts_v2].reverse(), charts_v1_relations: true, charts_v2_relations: true };
-const resolve = (row: Record<string, unknown>) => loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [row] }, { rows: [] }]), 2026, "preview");
+const resolve = (row: Record<string, unknown>) => loadReleaseContext(executor([{ rows: [row] }]), 2026, "preview");
 const capabilities = (context: SeasonReleaseContext | null) =>
   [context?.chartSet, chartsAvailable(context!.chartSet), explosivenessAvailable(context!.chartSet)];
 
@@ -196,9 +207,8 @@ test("unknown or partial recorded keys, or missing charts_v1 relations, have no 
 
 test("the resolver probes each chart set's relations as one bound text[] parameter", async () => {
   const queries: SQL[] = [];
-  const responses = [{ rows: [{ exists: true }] }, { rows: [v2Release] }, { rows: [] }];
-  await loadReleaseContext(async (query) => { queries.push(query); return responses.shift(); }, 2026, "preview");
-  const rendered = new PgDialect().sqlToQuery(queries[1]);
+  await loadReleaseContext(async (query) => { queries.push(query); return { rows: [v2Release] }; }, 2026, "preview");
+  const rendered = new PgDialect().sqlToQuery(queries[0]);
   for (const set of CHART_SETS) assert.match(rendered.sql, new RegExp(`AS "${set}_relations"`));
   assert.deepEqual(rendered.params.slice(0, CHART_SETS.length), CHART_SETS.map((set) => CHART_SET_PROJECTIONS[set]));
 });
@@ -206,7 +216,7 @@ test("the resolver probes each chart set's relations as one bound text[] paramet
 test("one request keeps the release id and chart set even when another release activates", async () => {
   let active: Record<string, unknown> = v1Release;
   const load = async (season: number, environment: "preview" | "production") =>
-    loadReleaseContext(executor([{ rows: [{ exists: true }] }, { rows: [{ ...active, season, environment }] }, { rows: [] }]), season, environment);
+    loadReleaseContext(executor([{ rows: [{ ...active, season, environment }] }]), season, environment);
   const request = createReleaseContextResolver(load);
   const first = await request(2026, "preview");
   active = { ...v2Release, release_id: "release-b" };

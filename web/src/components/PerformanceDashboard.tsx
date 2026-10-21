@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { PerformanceDetail, GradedGamePick } from "@/lib/v5";
 import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy";
-import { BREAK_EVEN_PCT } from "@/lib/slate";
+import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import TeamLogo from "@/components/TeamLogo";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";

@@ -26,7 +26,7 @@ function TeamBlock({
 }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-2 text-center" data-side={side.toLowerCase()}>
-      <TeamLogo name={name} px={80} decorative={false} className="h-12 w-12 sm:h-16 sm:w-16" />
+      <TeamLogo name={name} px={80} decorative={false} priority className="h-12 w-12 sm:h-16 sm:w-16" />
       <div className="w-full min-w-0">
         <span className="block break-words text-base font-bold tracking-tight text-ink sm:text-xl">{name}</span>
         <p className="text-xs text-ink-muted">
