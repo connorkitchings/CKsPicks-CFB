@@ -312,6 +312,42 @@ test.describe("team charts", () => {
     await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
   });
 
+  test("a release without chart tables or a failing query keeps the four-item navigation and the page shell", async ({ page }) => {
+    for (const fixture of ["unsupported", "error"]) {
+      const response = await page.goto(`/stats?fixture=${fixture}`);
+      expect(response?.status()).toBe(200);
+      const nav = page.getByRole("navigation", { name: "Main navigation" });
+      await expect(nav.getByRole("link")).toHaveText(["Games", "Ratings", "Stats", "Model"]);
+      await expect(page.getByRole("heading", { name: "Team charts", exact: true })).toBeVisible();
+      await expect(page.getByTestId("chart-picker")).toHaveCount(0);
+    }
+  });
+
+  test("a window with no completed chart weeks shows an empty notice, not an error", async ({ page }) => {
+    // The slate fixture stores no adjusted or possession windows.
+    for (const chart of ["adjusted", "possession"]) {
+      const response = await page.goto(`/stats?chart=${chart}&week=3&fixture=slate`);
+      expect(response?.status()).toBe(200);
+      await expect(page.getByTestId("charts-notice")).toHaveText("This chart starts after Week 2 is complete.");
+      await expect(page.getByTestId("chart-picker")).toBeVisible();
+    }
+  });
+
+  test("an out-of-range or malformed week is clamped to a stored week and never errors", async ({ page }) => {
+    for (const chart of ["net-success", "efficiency", "adjusted", "possession"]) {
+      for (const week of ["99", "-1", "abc", "1.5", "123"]) {
+        const response = await page.goto(`/stats?chart=${chart}&week=${week}&team=Nowhere%20State`);
+        expect(response?.status(), `${chart} week=${week}`).toBe(200);
+        await expect(page.getByTestId("charts-notice")).toHaveCount(0);
+        await expect(page.getByTestId("chart-picker")).toBeVisible();
+        await expect(page.locator("g[data-team][aria-pressed='true']")).toHaveCount(0);
+      }
+    }
+    // Week 99 is clamped to the latest stored week (Through Week 3 in the fixture).
+    await page.goto("/stats?chart=adjusted&week=99");
+    await expect(page.locator("#week-select")).toHaveValue("3");
+  });
+
   test("explosiveness toggle appears only for a release that serves yardage", async ({ page }) => {
     await page.goto("/stats?chart=efficiency&week=3");
     await expect(page.getByTestId("efficiency-metric-switcher")).toBeVisible();

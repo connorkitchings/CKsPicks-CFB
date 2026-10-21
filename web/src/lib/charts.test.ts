@@ -131,6 +131,19 @@ test("available weeks per chart and week coercion", () => {
   assert.equal(coerceWeek(3, []), null);
 });
 
+test("any requested week resolves to a stored window, so window loaders see a bounded key set", () => {
+  const storedAsOf = [3, 4, 5, 8];
+  const available = adjustedThroughWeeks(storedAsOf);
+  const seen = new Set<number>();
+  for (const requested of [null, undefined, Number.NaN, -1, 0, 1, 2, 3, 4, 6, 7, 11, 99]) {
+    const week = coerceWeek(requested, available);
+    assert.ok(week !== null && available.includes(week), `week ${requested}`);
+    assert.ok(storedAsOf.includes(week + 1), `as_of_week ${week + 1} is a stored window`);
+    seen.add(week + 1);
+  }
+  assert.ok(seen.size <= storedAsOf.length);
+});
+
 test("efficiency: window sums, pooled averages, unavailable teams, defense inversion", () => {
   const rows = [
     ...game(1, 0, ["Alabama", 30, 10, 6], ["Michigan", 10, 10, 4]),

@@ -81,6 +81,8 @@ Write the publication procedure in `docs/ops/weekly_runbook.md` (new "Publishing
 
 Rehearse steps 1 to 3 on Preview before the decision.
 
+The procedure, the rollback and a Preview rehearsal checklist are written in the "Publishing Stats (Charts)" section of [`docs/ops/weekly_runbook.md`](../../ops/weekly_runbook.md). Charts is now served at `/stats` (flag unchanged); the section supersedes the step list above.
+
 ### 7. Weekly releases while Charts is unpublished
 
 Each weekly Production release must keep staging with `resume_v1`, which requires the chart tables. After each release, repeat the Task 2 smoke check on the new week against Preview (a few charts, desktop only) so a regression in chart data is caught before publication, not after.

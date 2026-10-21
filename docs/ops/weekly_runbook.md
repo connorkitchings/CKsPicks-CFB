@@ -287,6 +287,39 @@ Commits are allowed again from here.
 
 ---
 
+## Publishing Stats (Charts)
+
+Stats lives at `/stats` and is gated by `CFB_CHARTS_ENABLED`. Only the exact value `1` enables it. While it is unset, `/stats` and `/charts` return 404 and navigation shows three items (Games, Ratings, Model). Publishing changes an environment variable only: no data, release or pipeline change is involved. Both steps are owner actions in the Vercel project settings.
+
+### Publication procedure
+
+1. **Preview first.** The owner sets `CFB_CHARTS_ENABLED=1` in the Vercel **Preview** environment only, redeploys the Preview, and reviews it.
+2. **Production.** After the owner records acceptance, the owner sets `CFB_CHARTS_ENABLED=1` in the Vercel **Production** environment and redeploys.
+3. **Verify** against the deployment you changed (Preview URL or `https://c-ks-picks-cfb.vercel.app`):
+   - `/stats` returns 200 and the navigation shows four items (Games, Ratings, Stats, Model).
+   - `/charts?x=1` redirects to `/stats?x=1` (`curl -sI "<base>/charts?x=1" | grep -i -E "^(HTTP|location)"`).
+   - `/api/health` returns 200.
+   - `/`, `/ratings`, `/model` and `/model/method` load.
+4. **Rollback.** Unset the variable (or set it to `0`) and redeploy. `/stats` and `/charts` then both return 404 and navigation returns to three items. No data or release change is needed.
+
+### Cold requests after a deploy
+
+The release data cache is keyed by deployment ID, so the first requests after any deploy, including the redeploy in steps 1, 2 and 4, are cold and slower. Optional warm-up: request `/`, `/ratings`, `/model` and `/stats` once each.
+
+### Preview rehearsal
+
+Run steps 1 to 4 on Preview before the publication decision. Record the outcome in the Stats implementation log (`docs/plans/2026-10-21/02-stats-publication-implementation-log.md`).
+
+- [ ] `CFB_CHARTS_ENABLED=1` set in Preview only (Production unchanged) and the Preview redeployed
+- [ ] `/stats` returns 200 and navigation shows four items
+- [ ] `/charts?x=1` redirects to `/stats?x=1`
+- [ ] `/api/health` returns 200
+- [ ] `/`, `/ratings`, `/model` and `/model/method` load
+- [ ] Rollback rehearsed: variable unset and Preview redeployed; `/stats` and `/charts` return 404 and navigation shows three items
+- [ ] Variable set again on Preview if review continues
+
+---
+
 ## Rollback Procedure
 
 If an activated Production release needs to be rolled back to a previous verified release. Rollback needs the owner/migrator login (the pipeline and web roles are refused), explicit owner approval and a decision reference, and a clean committed tree:
