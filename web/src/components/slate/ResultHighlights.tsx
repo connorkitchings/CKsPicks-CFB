@@ -41,7 +41,7 @@ function Column({ title, rows, empty }: { title: string; rows: GradedLean[]; emp
 export function ResultHighlights({ games }: { games: Game[] }) {
   return (
     <section aria-label="Highlights">
-      <ResponsiveDisclosure className="rounded-xl border border-line bg-surface-card" title="Highlights" heading="Highlights">
+      <ResponsiveDisclosure title="Highlights" heading="Highlights">
         <div className="grid gap-4 md:grid-cols-2">
           <Column title="Best calls (largest edge that won)" rows={topResults(games, "win", 3)} empty="No wins graded." />
           <Column title="Biggest misses (largest edge that lost)" rows={topResults(games, "loss", 3)} empty="No losses graded." />

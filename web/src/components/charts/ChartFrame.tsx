@@ -176,7 +176,7 @@ export function ChartFrame({
       </div>
 
       {/* One card: header (title, meta, header controls with the credit beneath), hairline, status, then the chart or table. */}
-      <div className="rounded-xl border border-line bg-surface-card shadow-2xs">
+      <div data-card="" className="rounded-xl border border-line bg-surface-card shadow-2xs">
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 sm:px-4">
           <div className="min-w-0">
             <h2 className="text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{title}</h2>
@@ -219,7 +219,7 @@ export function ChartFrame({
         </p>
       )}
       {unavailable.length > 0 && (
-        <details className="rounded-xl border border-line bg-surface-card px-3 py-2 text-xs text-ink-muted" data-testid="unavailable-teams">
+        <details data-card="" className="rounded-xl border border-line bg-surface-card px-3 py-2 text-xs text-ink-muted shadow-2xs" data-testid="unavailable-teams">
           <summary className="cursor-pointer font-semibold text-ink">Not plotted ({unavailable.length} teams)</summary>
           <p className="mt-1.5 leading-relaxed">
             {unavailable.join(", ")}. These teams have no eligible FBS games or no valid observations for this chart yet.

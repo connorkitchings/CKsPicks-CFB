@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
+import { Card } from "@/components/ui/Card";
 import { coverMargin, edgeTone, isFinal, leanFor, resultFor, venueLabel, type Lean } from "@/lib/slate";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { kickoffTime, dayShort } from "./format";
@@ -57,7 +58,7 @@ export function PredictionGameCard({ game, results = false }: {
   const where = venueLabel(game.venueCity, game.venueState);
   const winner = results && final ? (awayWon ? "away" : homeWon ? "home" : null) : null;
   return (
-    <li id={`game-${game.gameId}`} className="scroll-mt-12 overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    <Card as="li" id={`game-${game.gameId}`} padding="none" className="scroll-mt-12 overflow-hidden">
       <div className="px-3 pb-3 pt-2">
         <div className="mb-1 flex items-center justify-between gap-2 text-xs text-ink-muted">
           <div className="flex flex-wrap items-center gap-2">
@@ -75,6 +76,6 @@ export function PredictionGameCard({ game, results = false }: {
         <BetCell game={game} kind="spread" results={results} />
         <BetCell game={game} kind="total" results={results} />
       </div>
-    </li>
+    </Card>
   );
 }

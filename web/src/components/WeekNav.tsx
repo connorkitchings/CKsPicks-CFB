@@ -70,7 +70,7 @@ export function WeekNav({
       : "flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm";
 
   return (
-    <nav aria-label="Week navigation" className={navClass}>
+    <nav aria-label="Week navigation" data-card={compact ? undefined : ""} className={navClass}>
       <Link
         href={prev !== null ? hrefFor(prev) : "#"}
         aria-disabled={prev === null}

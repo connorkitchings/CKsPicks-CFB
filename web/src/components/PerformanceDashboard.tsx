@@ -7,6 +7,7 @@ import type { PerformanceDetail, GradedGamePick } from "@/lib/v5";
 import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy";
 import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import TeamLogo from "@/components/TeamLogo";
+import { Card } from "@/components/ui/Card";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -123,6 +124,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
               key={target}
               type="button"
               aria-pressed={targetFilter === target}
+              data-card=""
               onClick={() => setTargetFilter(targetFilter === target ? "all" : target)}
               className={clsx(
                 "min-h-11 min-w-0 rounded-xl border bg-surface-card p-3 text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:p-5",
@@ -143,7 +145,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
         })}
       </section>
 
-      <ResponsiveDisclosure className="rounded-xl border border-line bg-surface-card" title="Season-wide forecast diagnostics" heading="Season-wide forecast diagnostics">
+      <ResponsiveDisclosure title="Season-wide forecast diagnostics" heading="Season-wide forecast diagnostics">
         <section aria-labelledby="calibration-heading" className="space-y-3">
           <h2 id="calibration-heading" className="sr-only">Forecast accuracy</h2>
           <p className="text-sm">Season-wide forecasts compared with certified final scores; these diagnostics do not change with the target filter.</p>
@@ -173,7 +175,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
         <p className="text-xs text-ink-muted">{overall.label}: {recordText(overall.focused)} · {rateText(overall.focused)} ({BREAK_EVEN_PCT}% break-even) · {graded(overall.focused)} graded. Pushes excluded from rate.</p>
       </section>
 
-      <section aria-labelledby="weekly-heading" className="overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+      <Card as="section" padding="none" aria-labelledby="weekly-heading" className="overflow-hidden">
         <h2 id="weekly-heading" className="sr-only">Weekly accuracy breakdown</h2>
         <div className="divide-y divide-line sm:hidden">
           {weeklyData.map((row) => (
@@ -228,7 +230,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
             </tfoot>
           </table>
         </div>
-      </section>
+      </Card>
 
       <section aria-label="Graded picks audit">
         <Disclosure title="Graded picks audit">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { PAGE_WIDTHS, pageWidthFor } from "@/lib/page-width";
 
 const items = [
   ["Picks", "/"],
@@ -114,9 +115,7 @@ export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) 
   const visibleItems = chartsEnabled ? items : items.filter(([, href]) => href !== "/charts");
 
   // Align navigation container with page content widths on desktop.
-  const isSlate = pathname === "/" || pathname.startsWith("/results") || (chartsEnabled && pathname.startsWith("/charts"));
-  const wide = pathname.startsWith("/matchup") || pathname.startsWith("/ratings") || pathname.startsWith("/performance");
-  const containerClass = isSlate ? "sm:max-w-6xl" : wide ? "sm:max-w-5xl" : "sm:max-w-4xl";
+  const containerClass = PAGE_WIDTHS[pageWidthFor(pathname)];
 
   return (
     <nav

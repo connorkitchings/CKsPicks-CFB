@@ -3,6 +3,7 @@ import type { PublicationMode } from "@/lib/publication";
 import { displaySystemName } from "@/lib/publication";
 import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
+import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
 
 export function Header({
   season,
@@ -10,8 +11,7 @@ export function Header({
   updatedAt,
   publicationMode,
   allowedSeasons,
-  wide = false,
-  containerWidth,
+  width = "narrow",
   status,
 }: {
   season: number | null;
@@ -19,12 +19,10 @@ export function Header({
   updatedAt: Date | null;
   publicationMode: PublicationMode;
   allowedSeasons?: readonly number[];
-  /** Wider page container (matchup pages); the nav widens itself by route. */
-  wide?: boolean;
-  containerWidth?: string;
+  width?: PageWidth;
   status?: React.ReactNode;
 }) {
-  const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
+  const maxW = PAGE_WIDTHS[width];
   const hasSubrow = Boolean(
     (publicationMode === "predictions" && systemName) || status || updatedAt,
   );
@@ -80,14 +78,12 @@ export function Header({
 
 export function Footer({
   publicationMode,
-  wide = false,
-  containerWidth,
+  width = "narrow",
 }: {
   publicationMode: PublicationMode;
-  wide?: boolean;
-  containerWidth?: string;
+  width?: PageWidth;
 }) {
-  const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
+  const maxW = PAGE_WIDTHS[width];
   return (
     <footer
       className={`mx-auto mt-12 ${maxW} px-4 pb-8 text-center text-xs leading-relaxed text-ink-muted`}

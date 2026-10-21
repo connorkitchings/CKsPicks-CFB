@@ -1,6 +1,8 @@
 import clsx from "clsx";
 import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
+import { Card } from "@/components/ui/Card";
+import { Eyebrow } from "@/components/ui/SectionHeading";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { bookName } from "@/lib/slate";
@@ -43,7 +45,7 @@ function TeamBlock({
 
         {isFinal ? (
           <div className="mt-2 flex flex-col items-center">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Final Score</span>
+            <Eyebrow as="span">Final Score</Eyebrow>
             <span className="font-mono text-3xl font-bold text-ink">{finalPoints}</span>
           </div>
         ) : showRating ? (
@@ -133,7 +135,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface-card p-4 shadow-sm sm:p-6">
+      <Card className="sm:p-6">
         {/* Phones: teams side by side with the forecast beneath. lg+: forecast between the teams. */}
         <div className="grid grid-cols-2 items-start gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
           <TeamBlock
@@ -157,15 +159,15 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           />
         {/* Market and model: beneath the teams on phones, between them from lg. */}
         <div className="col-span-2 mt-2 flex min-w-0 flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-3 py-4 text-center sm:px-5 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:w-[475px]">
-          <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Forecast & Lines</span>
+          <Eyebrow as="span">Forecast & Lines</Eyebrow>
 
           <div
             data-testid="forecast-grid"
             className="mt-3 grid w-full grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 gap-y-3 text-sm sm:gap-x-4"
           >
             <span aria-hidden />
-            <span className="text-center text-xs font-semibold uppercase tracking-wider text-ink-muted">Spread</span>
-            <span className="text-center text-xs font-semibold uppercase tracking-wider text-ink-muted">Total</span>
+            <Eyebrow as="span" className="text-center">Spread</Eyebrow>
+            <Eyebrow as="span" className="text-center">Total</Eyebrow>
 
             <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
             <Cell value={matchup.marketSpread} book={bookName(matchup.spreadSource)} />
@@ -218,7 +220,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           )}
         </div>
         </div>
-      </div>
+      </Card>
     </section>
   );
 }

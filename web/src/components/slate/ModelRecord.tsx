@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import type { Performance } from "@/lib/v5";
 import { winRatePct } from "@/lib/slate";
+import { Card } from "@/components/ui/Card";
 
 type Rec = { win: number; loss: number; push: number };
 const ZERO: Rec = { win: 0, loss: 0, push: 0 };
@@ -92,7 +93,7 @@ export function ModelRecord({
 
   if (!week) {
     return (
-      <section aria-label="Record" className="rounded-xl border border-line bg-surface-card p-2.5 shadow-2xs">
+      <Card as="section" aria-label="Record" padding="none" className="p-2.5">
         <h2 className="mb-2 text-sm font-semibold text-ink">Season record</h2>
         <RecordBlock
           title="Season"
@@ -101,12 +102,12 @@ export function ModelRecord({
           total={overall?.total ?? null}
           showHeader={false}
         />
-      </section>
+      </Card>
     );
   }
 
   return (
-    <section aria-label="Record" className="rounded-xl border border-line bg-surface-card p-2.5 shadow-2xs">
+    <Card as="section" aria-label="Record" padding="none" className="p-2.5">
       <div className="mb-1 flex items-center justify-between gap-x-3">
         <h2 className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-ink">
           Week {week.number} record
@@ -126,6 +127,6 @@ export function ModelRecord({
           {" · "}95% interval coverage: spread {pct(overall.marginCoverage95)} · total {pct(overall.totalCoverage95)}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

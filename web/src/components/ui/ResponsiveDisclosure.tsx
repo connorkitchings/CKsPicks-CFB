@@ -22,7 +22,7 @@ export function ResponsiveDisclosure({
   className?: string;
 }) {
   return (
-    <details className={clsx("responsive-disclosure", className)}>
+    <details data-card="" className={clsx("responsive-disclosure rounded-xl border border-line bg-surface-card shadow-2xs", className)}>
       <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
         {title}
       </summary>

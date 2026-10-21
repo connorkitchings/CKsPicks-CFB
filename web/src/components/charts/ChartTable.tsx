@@ -42,7 +42,7 @@ export function ChartTable<Row>({
   }, [rows, columns, sort, rowKey]);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-surface-card" data-testid="chart-table">
+    <div data-card="" className="overflow-x-auto rounded-xl border border-line bg-surface-card shadow-2xs" data-testid="chart-table">
       <table className="w-full text-left text-xs sm:text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-surface-inset text-ink-muted">

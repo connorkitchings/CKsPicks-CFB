@@ -2,6 +2,7 @@
 
 import { SearchField } from "@/components/ui/SearchField";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Card } from "@/components/ui/Card";
 
 export type SlateLayout = "grid" | "list";
 
@@ -31,7 +32,7 @@ export function SlateToolbar<T extends string>({
   onViewChange: (value: SlateLayout) => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5 rounded-xl border border-line bg-surface-card p-2 shadow-sm sm:flex-wrap sm:gap-2">
+    <Card padding="none" className="flex items-center gap-1.5 p-2 sm:flex-wrap sm:gap-2">
       <SearchField
         id="slate-search"
         label="Filter by team"
@@ -83,6 +84,6 @@ export function SlateToolbar<T extends string>({
           options={[{ value: "grid", label: "Grid" }, { value: "list", label: "List" }]}
         />
       </div>
-    </div>
+    </Card>
   );
 }

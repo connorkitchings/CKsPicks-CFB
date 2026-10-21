@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { notFound } from "next/navigation";
+import { Notice } from "@/components/ui/Notice";
 import { isChartsEnabled } from "@/lib/charts-gate";
 import {
   adjustedPoints,
@@ -145,9 +146,9 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
 
 function notice(text: string) {
   return (
-    <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted" data-testid="charts-notice">
-      {text}
-    </p>
+    <div data-testid="charts-notice">
+      <Notice tone="empty">{text}</Notice>
+    </div>
   );
 }
 
@@ -337,7 +338,7 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
         updatedAt={null}
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
-        containerWidth="max-w-6xl"
+        width="slate"
       />
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:py-4">
         <PageHeading title="Team charts">
@@ -348,7 +349,7 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
         {tabs}
         {body}
       </main>
-      <Footer publicationMode={publicationScope.mode} containerWidth="max-w-6xl" />
+      <Footer publicationMode={publicationScope.mode} width="slate" />
     </div>
   );
 }

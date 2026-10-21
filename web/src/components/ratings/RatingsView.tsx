@@ -23,6 +23,8 @@ import {
 } from "@/lib/sos-rank";
 import { getRankBadgeClass } from "@/lib/team-stats";
 import TeamLogo from "@/components/TeamLogo";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { SearchField } from "@/components/ui/SearchField";
 
 /** The fields this view renders; the page maps full ratings down to these before they reach the client. */
@@ -308,19 +310,19 @@ export function RatingsView({
       )}
 
       {ratings.length === 0 ? (
-        <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-sm text-ink-muted">No certified ratings published for the {season} season yet.</p>
+        <Notice tone="empty">No certified ratings published for the {season} season yet.</Notice>
       ) : visible.length === 0 ? (
-        <div role="status" className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
+        <Notice tone="empty" className="justify-center p-6 text-center">
           <p>No teams match &ldquo;{query}&rdquo;.</p>
           <button type="button" onClick={() => { setQuery(""); setConference("all"); }} className="mt-2 min-h-11 rounded-lg px-3 text-sm font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent">Clear search</button>
-        </div>
+        </Notice>
       ) : (
         <>
           <ul className="space-y-2 sm:hidden" aria-label="Team ratings list">
             {visible.map(({ rating, position }) => {
               const teamRanks = sosRanks.get(rating.team);
               return (
-                <li key={rating.team} className="rounded-xl border border-line bg-surface-card p-3 shadow-2xs">
+                <Card as="li" padding="sm" key={rating.team}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-2">
                       <span aria-label={`National rank ${position}`} data-rank-tier className={clsx("flex h-6 min-w-6 shrink-0 items-center justify-center rounded px-1 font-mono text-xs", getRankBadgeClass(position, ratings.length))}>{position}</span>
@@ -344,12 +346,12 @@ export function RatingsView({
                     <span>SOR <span className="font-mono">{rankText(rankFor(rating, "sor", sosRanks))}</span></span>
                     <span>SOS <span className="font-mono">{sosRankLine(teamRanks)}</span> (Played / Remaining / Full)</span>
                   </div>
-                </li>
+                </Card>
               );
             })}
           </ul>
 
-          <div className="hidden overflow-x-auto rounded-xl border border-line bg-surface-card sm:block">
+          <Card padding="none" className="hidden overflow-x-auto sm:block">
             <table className="w-full text-sm tabular-nums">
               <caption className="sr-only">{season} {periodMeta.label} V5 team ratings, ranked by {sortLabels[sort]}</caption>
               <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
@@ -391,7 +393,7 @@ export function RatingsView({
                 })}
               </tbody>
             </table>
-          </div>
+          </Card>
         </>
       )}
     </div>

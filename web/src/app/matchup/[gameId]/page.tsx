@@ -7,6 +7,7 @@ import { getMatchupData } from "@/lib/matchup";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { publicationScope } from "@/lib/publication";
 import { UnitMatchups } from "@/components/matchup/UnitMatchups";
+import { Card } from "@/components/ui/Card";
 
 // Revalidate every 5 minutes (ISR)
 export const revalidate = 300;
@@ -50,7 +51,7 @@ export default async function MatchupPage({
         updatedAt={matchup.updatedAt}
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
-        wide
+        width="wide"
       />
 
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
@@ -58,11 +59,11 @@ export default async function MatchupPage({
         <MatchupHero matchup={matchup} />
 
         {matchup.lineageStatus !== "ready" ? (
-          <section aria-label="Team stats" role="status" className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted shadow-sm">
+          <Card as="section" role="status" aria-label="Team stats" padding="none" className="p-6 text-sm text-ink-muted">
             {matchup.lineageStatus === "updating"
               ? "Matchup data is updating. Model-derived ratings and statistics are temporarily hidden."
               : "Matchup data provenance is unavailable. Model-derived ratings and statistics are hidden."}
-          </section>
+          </Card>
         ) : matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
             <UnitMatchups
@@ -92,14 +93,16 @@ export default async function MatchupPage({
             </section>
           </section>
         ) : (
-          <section
+          <Card
+            as="section"
             aria-label="Team stats"
-            className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted shadow-sm"
+            padding="none"
+            className="p-6 text-sm text-ink-muted"
           >
             {matchup.statsUnavailable
               ? "Team stats are temporarily unavailable."
               : "Team stats are not published for this game yet."}
-          </section>
+          </Card>
         )}
 
         <div className="flex flex-wrap items-center gap-3">
@@ -112,7 +115,7 @@ export default async function MatchupPage({
         </div>
       </main>
 
-      <Footer publicationMode={publicationScope.mode} wide />
+      <Footer publicationMode={publicationScope.mode} width="wide" />
     </div>
   );
 }

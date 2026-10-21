@@ -2,6 +2,7 @@ import { getV5PerformanceDetail } from "@/lib/v5";
 import { mobilePerformanceFixture } from "@/test/fixtures/performance-mobile";
 import { publicationScope } from "@/lib/publication";
 import { Header, Footer } from "@/components/Header";
+import { Notice } from "@/components/ui/Notice";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 import { loadPerformanceRecord } from "@/lib/performance-sections";
@@ -25,7 +26,7 @@ export default async function PerformancePage() {
         updatedAt={null}
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
-        wide
+        width="wide"
       />
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
         <div>
@@ -46,16 +47,16 @@ export default async function PerformancePage() {
           Grades use captured selected lines and forecasts use point-in-time inputs.
         </p>
       </main>
-      <Footer publicationMode={publicationScope.mode} wide />
+      <Footer publicationMode={publicationScope.mode} width="wide" />
     </div>
   );
 }
 
 function StatusCard({ title, message }: { title: string; message: string }) {
   return (
-    <section role="status" className="rounded-xl border border-line bg-surface-card p-5 text-sm text-ink-muted">
+    <Notice tone="empty">
       <h2 className="font-semibold text-ink">{title}</h2>
       <p className="mt-1">{message}</p>
-    </section>
+    </Notice>
   );
 }

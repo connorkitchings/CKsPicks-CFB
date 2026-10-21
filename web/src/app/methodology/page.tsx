@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Header, Footer } from "@/components/Header";
 import { PageHeading } from "@/components/ui/PageHeading";
+import { Card } from "@/components/ui/Card";
 import { publicationScope } from "@/lib/publication";
 
 export default function MethodologyPage() {
@@ -23,7 +24,7 @@ export default function MethodologyPage() {
         </div>
       </div>
 
-      <section className="rounded-xl border border-line bg-surface-card p-5">
+      <Card as="section" padding="none" className="p-5">
         <h2 className="text-lg font-semibold text-ink">Team strength</h2>
         <p className="mt-2">
           V5 measures offensive and defensive points per eligible possession,
@@ -32,9 +33,9 @@ export default function MethodologyPage() {
           Completed games gradually take more weight. The ratings include
           uncertainty, which generally shrinks as evidence grows.
         </p>
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-line bg-surface-card p-5">
+      <Card as="section" padding="none" className="p-5">
         <h2 className="text-lg font-semibold text-ink">Game forecasts</h2>
         <p className="mt-2">
           A fixed Ridge bridge turns the two teams’ pregame ratings and
@@ -42,9 +43,9 @@ export default function MethodologyPage() {
           game-total forecast. It was fit through the 2025 season. Neither 2026
           outcomes nor sportsbook lines fit this V5 model.
         </p>
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-line bg-surface-card p-5">
+      <Card as="section" padding="none" className="p-5">
         <h2 className="text-lg font-semibold text-ink">Schedule strength and record</h2>
         <p className="mt-2">
           Schedule strength (SOS) and strength of record (SOR) use the same
@@ -68,9 +69,9 @@ export default function MethodologyPage() {
           excluded. Neutral sites are not adjusted because the model has no
           neutral-site term; home field is included.
         </p>
-      </section>
+      </Card>
 
-      <section id="elite-reference" className="rounded-xl border border-line bg-surface-card p-5">
+      <Card as="section" id="elite-reference" padding="none" className="p-5">
         <h2 className="text-lg font-semibold text-ink">Elite reference</h2>
         <p className="mt-2">
           The elite reference is the average rating of the period’s top 25 teams by
@@ -84,9 +85,9 @@ export default function MethodologyPage() {
           other team, including the 26th-ranked team, is measured against the plain
           top-25 average.
         </p>
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-line bg-surface-card p-5">
+      <Card as="section" padding="none" className="p-5">
         <h2 className="text-lg font-semibold text-ink">Reading the record</h2>
         <p className="mt-2">
           The V5 model was fit through the 2025 season. Its 2026 forecasts use
@@ -94,7 +95,7 @@ export default function MethodologyPage() {
           retrain the model. Market comparison uses timestamped lines after the
           model forecast; missing eligible lines yield no grade.
         </p>
-      </section>
+      </Card>
 
       <p>
         The historical V5 study established an accepted model design. It did not

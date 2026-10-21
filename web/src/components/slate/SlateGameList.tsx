@@ -35,6 +35,7 @@ export function SlateGameList({
   return (
     <ul
       data-layout={list ? "list" : "grid"}
+      data-card={list ? "" : undefined}
       className={list ? "overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm" : "grid gap-3 md:grid-cols-2"}
     >
       {games.map((game) => list ? (

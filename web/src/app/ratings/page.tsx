@@ -6,6 +6,7 @@ import { parseRatingsSort } from "@/lib/sos-rank";
 import { publicationScope } from "@/lib/publication";
 import { Header, Footer } from "@/components/Header";
 import { Disclosure } from "@/components/ui/Disclosure";
+import { Notice } from "@/components/ui/Notice";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { RatingsView, type RatingRow } from "@/components/ratings/RatingsView";
 
@@ -77,7 +78,7 @@ export default async function RatingsPage({ searchParams }: {
         updatedAt={null}
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
-        wide
+        width="wide"
       />
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
         <PageHeading title="Team ratings">
@@ -96,9 +97,7 @@ export default async function RatingsPage({ searchParams }: {
         </Disclosure>
 
         {unavailable ? (
-          <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">
-            Ratings are temporarily unavailable.
-          </p>
+          <Notice tone="empty">Ratings are temporarily unavailable.</Notice>
         ) : (
           <RatingsView
             key={period}
@@ -123,7 +122,7 @@ export default async function RatingsPage({ searchParams }: {
           </p>
         )}
       </main>
-      <Footer publicationMode={publicationScope.mode} wide />
+      <Footer publicationMode={publicationScope.mode} width="wide" />
     </div>
   );
 }

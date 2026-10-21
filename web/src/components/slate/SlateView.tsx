@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { PageHeading } from "@/components/ui/PageHeading";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
 import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
@@ -76,7 +78,7 @@ export function SlateView({
         updatedAt={null}
         publicationMode={publicationMode}
         allowedSeasons={allowedSeasons}
-        containerWidth="max-w-6xl"
+        width="slate"
         status={
           <SlateStatusRow
             runState={runState}
@@ -88,16 +90,14 @@ export function SlateView({
 
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:space-y-4 sm:py-6">
         {dbError && (
-          <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
-            {dbError}
-          </div>
+          <Notice tone="warn">{dbError}</Notice>
         )}
 
         {!dbError && season <= 0 && (
-          <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
+          <Notice tone="empty">
             {emptyMessage ??
               "No active week has been published yet. Complete the Week 0 publication workflow to load the approved schedule and market data."}
-          </div>
+          </Notice>
         )}
 
         {!dbError && season > 0 && (
@@ -114,6 +114,7 @@ export function SlateView({
             {displayOnlyNotice && (
               <p
                 role="note"
+                data-card=""
                 data-testid="display-only-notice"
                 className="rounded-xl border border-line bg-surface-card px-4 py-3 text-sm text-ink-muted"
               >
@@ -130,7 +131,7 @@ export function SlateView({
 
             {games.length === 0 ? (
               mode === "picks" ? (
-                <div className="rounded-2xl border border-line bg-surface-card p-8 sm:p-12 text-center shadow-xs">
+                <Card padding="none" className="p-8 text-center sm:p-12">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-accent-line/40 bg-accent-soft text-accent-ink shadow-2xs">
                     <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -156,11 +157,11 @@ export function SlateView({
                       Performance Dashboard
                     </Link>
                   </div>
-                </div>
+                </Card>
               ) : (
-                <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
+                <Notice tone="empty">
                   {emptyMessage ?? `No games loaded for ${season} week ${week}.`}
-                </div>
+                </Notice>
               )
             ) : mode === "picks" ? (
               <PicksSlate
@@ -183,7 +184,7 @@ export function SlateView({
         )}
       </main>
 
-      <Footer publicationMode={publicationMode} containerWidth="max-w-6xl" />
+      <Footer publicationMode={publicationMode} width="slate" />
     </div>
   );
 }

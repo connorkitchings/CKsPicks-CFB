@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Header";
 import TeamLogo from "@/components/TeamLogo";
 import { WeekNav } from "@/components/WeekNav";
+import { Card } from "@/components/ui/Card";
 import { PageHeading } from "@/components/ui/PageHeading";
 import {
   getAvailableWeeks,
@@ -78,16 +79,17 @@ export default async function MatchupIndexPage({
         {week !== null && <WeekNav season={season} week={week} weeks={weeks} basePath="/matchup" />}
 
         {days.length === 0 ? (
-          <p className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted">
+          <Card padding="none" className="p-6 text-sm text-ink-muted">
             No games for this week.
-          </p>
+          </Card>
         ) : (
           days.map((day) => (
             <section key={day.label} aria-label={day.label} className="space-y-2">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
                 {day.label} · {day.games.length} {day.games.length === 1 ? "game" : "games"}
               </h2>
-              <ul className="divide-y divide-line/60 rounded-2xl border border-line bg-surface-card shadow-sm">
+              <Card padding="none" className="overflow-hidden">
+              <ul className="divide-y divide-line/60">
                 {day.games.map((game) => (
                   <li key={game.gameId}>
                     <Link
@@ -112,6 +114,7 @@ export default async function MatchupIndexPage({
                   </li>
                 ))}
               </ul>
+              </Card>
             </section>
           ))
         )}

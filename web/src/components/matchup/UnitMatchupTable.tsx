@@ -1,6 +1,8 @@
 import clsx from "clsx";
 import { Fragment } from "react";
 import TeamLogo from "@/components/TeamLogo";
+import { Card } from "@/components/ui/Card";
+import { Eyebrow } from "@/components/ui/SectionHeading";
 import {
   getRankBadgeClass,
   groupUnitRows,
@@ -101,7 +103,7 @@ export function UnitMatchupTable({
   onToggleSection?: (section: MetricSection) => void;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-line bg-surface-card p-3 shadow-sm sm:p-4">
+    <Card padding="sm" className="min-w-0 sm:p-4">
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 border-b border-line/60 pb-3">
         <div className="flex min-w-0 flex-col items-center gap-1 text-center">
           <div className="hidden lg:block"><TeamLogo name={offenseTeam} px={44} decorative={false} /></div>
@@ -115,7 +117,7 @@ export function UnitMatchupTable({
         <div className="flex min-w-0 flex-col items-center gap-1 text-center">
           <div className="hidden lg:block"><TeamLogo name={defenseTeam} px={44} decorative={false} /></div>
           <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{defenseTeam}</h3>
-          <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Defense</span>
+          <Eyebrow as="span">Defense</Eyebrow>
           <RankLine label="Model Defense Rank" rank={defenseRank} testId="unit-defense-rank" />
         </div>
       </div>
@@ -195,6 +197,6 @@ export function UnitMatchupTable({
           );
         })}
       </table>
-    </div>
+    </Card>
   );
 }

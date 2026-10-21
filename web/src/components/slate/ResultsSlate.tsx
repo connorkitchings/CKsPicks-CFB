@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Eyebrow } from "@/components/ui/SectionHeading";
+import { Notice } from "@/components/ui/Notice";
 import {
   buildConferenceMap,
   conferenceOptions,
@@ -91,19 +93,17 @@ export function ResultsSlate({
 
 
       {visible.length === 0 ? (
-        <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
-          No games match these filters.
-        </div>
+        <Notice tone="empty">No games match these filters.</Notice>
       ) : groups ? (
         <div className="space-y-6">
           {groups.map((group) => (
             <section key={group.day} aria-label={group.day} className="space-y-3">
-              <div className="sticky top-0 z-10 -mx-4 flex items-center gap-2 border-b border-line bg-surface-page/95 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-ink-muted backdrop-blur-xs">
+              <Eyebrow as="div" className="sticky top-0 z-10 -mx-4 flex items-center gap-2 border-b border-line bg-surface-page/95 px-4 py-2 backdrop-blur-xs">
                 <span>{group.day}</span>
                 <span className="font-normal lowercase text-ink-muted">
                   · {group.games.length} {group.games.length === 1 ? "game" : "games"}
                 </span>
-              </div>
+              </Eyebrow>
               {renderList(group.games)}
             </section>
           ))}

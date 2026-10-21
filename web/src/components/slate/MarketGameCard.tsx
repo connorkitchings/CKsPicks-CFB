@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 import TeamLogo from "@/components/TeamLogo";
+import { Card } from "@/components/ui/Card";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { BetTable } from "../BetTable";
 import type { Game } from "@/lib/queries";
@@ -48,7 +49,7 @@ export function MarketGameCard({
   );
 
   return (
-    <li id={`game-${game.gameId}`} className="scroll-mt-12 rounded-xl border border-line bg-surface-card p-4 shadow-sm">
+    <Card as="li" id={`game-${game.gameId}`} className="scroll-mt-12">
       <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
         <span>{formatKickoff(game.startDate)}</span>
         {hasResults && (
@@ -110,7 +111,7 @@ export function MarketGameCard({
           },
         ]}
       />
-    </li>
+    </Card>
   );
 }
 
