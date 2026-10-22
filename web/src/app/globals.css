@@ -213,3 +213,23 @@ html.dark [data-card] {
     }
   }
 }
+
+/* Show details panel on small viewports OR coarse-pointer devices OR landscape phones */
+.show-on-touch-or-small {
+  display: block;
+}
+@media (min-width: 640px) and (pointer: fine) and (min-height: 501px) {
+  .show-on-touch-or-small {
+    display: none !important;
+  }
+}
+
+/* Show floating tooltip ONLY on fine-pointer desktop viewports (not on touch or landscape phones) */
+.hide-on-touch-or-small {
+  display: none !important;
+}
+@media (min-width: 640px) and (pointer: fine) and (min-height: 501px) {
+  .hide-on-touch-or-small {
+    display: block !important;
+  }
+}

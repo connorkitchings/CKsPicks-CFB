@@ -36,13 +36,20 @@ for (const width of [320, 390, 430]) {
   });
 }
 
-test("week navigation closes the sheet and releases body styles", async ({ page }) => {
+test("week navigation keeps the sheet open for consecutive adjustments, and close releases body styles", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/stats?chart=efficiency&week=3");
   await page.getByRole("button", { name: "Chart settings", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
   await page.getByLabel("Through Week", { exact: true }).selectOption("2");
   await expect(page).toHaveURL(/week=2/);
-  await expect(page.getByRole("dialog")).not.toBeVisible();
+  // Sheet must remain open across in-sheet setting adjustments:
+  await expect(dialog).toBeVisible();
+  await expect(page.locator("body")).toHaveCSS("position", "fixed");
+  // Explicit close dismisses the sheet and cleans up body styles:
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(dialog).not.toBeVisible();
   await expect(page.locator("body")).not.toHaveCSS("position", "fixed");
   await expect(page.getByTestId("chart-settings-summary")).toContainText("Through Week 2");
 });

@@ -15,6 +15,7 @@ export type ScatterChartProps = {
   xDomain: Domain;
   yDomain: Domain;
   onToggleHighlight: (team: string) => void;
+  highlight?: string | null;
   average: { x: number; y: number } | null;
   invertX: boolean;
   invertY: boolean;
@@ -39,7 +40,8 @@ export type ScatterChartProps = {
   detailsContainer?: HTMLElement | null;
 };
 
-const MARGIN = { top: 18, right: 22, bottom: 52, left: 84 };
+const EXPORT_MARGIN = { top: 18, right: 22, bottom: 52, left: 84 };
+const INTERACTIVE_MARGIN = { top: 20, right: 26, bottom: 56, left: 86 };
 const BASE_SIZE = 26;
 const SEARCHED_SIZE = 44;
 const HOVER_SIZE = 38;
@@ -64,6 +66,7 @@ export function ScatterChart({
   xDomain,
   yDomain,
   onToggleHighlight,
+  highlight,
   average,
   invertX,
   invertY,
@@ -82,7 +85,7 @@ export function ScatterChart({
   detailsContainer,
 }: ScatterChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [renderedWidth, setRenderedWidth] = useState(width);
+  const [renderedWidth, setRenderedWidth] = useState(interactive ? 760 : width);
   const [choices, setChoices] = useState<string[]>([]);
   const touch = useRef<{ x: number; y: number; pointerId: number; cancelled: boolean } | null>(null);
   const suppressClick = useRef(false);
@@ -97,7 +100,8 @@ export function ScatterChart({
   // Export typography is intentionally untouched. Live labels compensate for base SVG scale.
   const textSize = (size: number) => interactive ? Math.max(size, 12 * width / Math.max(renderedWidth, 1)) : size;
   const labelScale = textSize(11) / 11;
-  const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom };
+  const margin = interactive ? INTERACTIVE_MARGIN : EXPORT_MARGIN;
+  const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   const xd = xDomain;
   const yd = yDomain;
   const fraction = (value: number, domain: Domain) => (value - domain[0]) / (domain[1] - domain[0]);
@@ -130,7 +134,6 @@ export function ScatterChart({
   const selectTeam = (team: string) => {
     setChoices([]);
     setSelected(team);
-    onToggleHighlight(team);
   };
   const onTouchUp = (event: PointerEvent<SVGSVGElement>) => {
     const start = touch.current;
@@ -144,17 +147,56 @@ export function ScatterChart({
       const screen = new DOMPoint(sx(p.x), sy(p.y)).matrixTransform(matrix);
       return { team: p.team, x: screen.x, y: screen.y };
     }), event.clientX, event.clientY);
-    if (candidates.length === 1) selectTeam(candidates[0]);
-    else { setSelected(null); setChoices(candidates); }
+    if (candidates.length === 1) {
+      if (selected === candidates[0]) {
+        setSelected(null);
+        setChoices([]);
+      } else {
+        selectTeam(candidates[0]);
+      }
+    } else {
+      setSelected(null);
+      setChoices(candidates);
+    }
   };
   const validChoices = choices.filter((team) => points.some((p) => p.team === team));
+  const isHighlighted = highlight === tip?.team;
   const details = interactive && (tip || validChoices.length > 0) ? (
-    <div className="mt-3 rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink sm:hidden" data-testid="scatter-details">
-      {validChoices.length > 0 ? <>
-        <p role="status">Several teams are nearby. Choose a team:</p>
-        <div className="mt-2 flex flex-wrap gap-2">{validChoices.map((team) => <button key={team} type="button" className="min-h-11 rounded-lg border border-line px-3" onClick={() => selectTeam(team)}>{team}</button>)}</div>
-      </> : <p role="status">{tip && describe(tip)}</p>}
-      <button type="button" className="mt-2 min-h-11 rounded-lg border border-line px-3" onClick={() => { setSelected(null); setChoices([]); }}>Clear details</button>
+    <div className="show-on-touch-or-small mt-3 rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink" data-testid="scatter-details">
+      {validChoices.length > 0 ? (
+        <>
+          <p role="status">Several teams are nearby. Choose a team:</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {validChoices.map((team) => (
+              <button key={team} type="button" className="min-h-11 rounded-lg border border-line bg-surface-card px-3 text-ink" onClick={() => selectTeam(team)}>
+                {team}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <p role="status">{tip && describe(tip)}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {tip && (
+              <button
+                type="button"
+                className="min-h-11 rounded-lg border border-line bg-surface-card px-3 font-semibold text-ink focus-visible:outline-2 focus-visible:outline-accent"
+                onClick={() => onToggleHighlight(tip.team)}
+              >
+                {isHighlighted ? "Remove highlight" : "Highlight this team"}
+              </button>
+            )}
+            <button
+              type="button"
+              className="min-h-11 rounded-lg border border-line bg-surface-card px-3 text-ink focus-visible:outline-2 focus-visible:outline-accent"
+              onClick={() => { setSelected(null); setChoices([]); }}
+            >
+              Clear details
+            </button>
+          </div>
+        </>
+      )}
     </div>
   ) : null;
 
@@ -184,7 +226,7 @@ export function ScatterChart({
           <g key={`x${tick}`}>
             {/* Every other vertical line, and fainter than the axis, so the marks carry the picture. */}
             {index % 2 === 0 && <line x1={sx(tick)} x2={sx(tick)} y1={plot.top} y2={plot.bottom} stroke="var(--line)" strokeWidth={0.5} opacity={GRID_OPACITY} data-grid="x" />}
-            <text x={sx(tick)} y={plot.bottom + 18} textAnchor="middle" data-chart-label="true" fontSize={textSize(12)} fill="var(--ink-muted)">
+            <text x={sx(tick)} y={plot.bottom + (interactive ? 16 : 18)} textAnchor="middle" data-chart-label="true" data-axis="x-tick" fontSize={textSize(12)} fill="var(--ink-muted)">
               {formatX(tick)}
             </text>
           </g>
@@ -192,7 +234,7 @@ export function ScatterChart({
         {niceTicks(yd[0], yd[1], 6).map((tick) => (
           <g key={`y${tick}`}>
             <line x1={plot.left} x2={plot.right} y1={sy(tick)} y2={sy(tick)} stroke="var(--line)" strokeWidth={0.5} opacity={GRID_OPACITY} data-grid="y" />
-            <text x={plot.left - 8} y={sy(tick)} textAnchor="end" dominantBaseline="central" data-chart-label="true" fontSize={textSize(12)} fill="var(--ink-muted)">
+            <text x={plot.left - (interactive ? 10 : 8)} y={sy(tick)} textAnchor="end" dominantBaseline="central" data-chart-label="true" data-axis="y-tick" fontSize={textSize(12)} fill="var(--ink-muted)">
               {formatY(tick)}
             </text>
           </g>
@@ -218,7 +260,7 @@ export function ScatterChart({
                 <title>{cornerCaptions[key]}</title>
                 <text
                   x={left ? plot.left + 10 : plot.right - 10}
-                  y={top ? plot.top + Math.max(20, textSize(13) + 7) : plot.bottom - 10}
+                  y={top ? plot.top + (interactive ? Math.max(20, textSize(13) + 7) : 20) : plot.bottom - 10}
                   textAnchor={left ? "start" : "end"}
                   data-chart-label="true" fontSize={textSize(13)}
                   fontWeight={700}
@@ -230,15 +272,15 @@ export function ScatterChart({
             ))}
           </g>
         )}
-        <text x={(plot.left + plot.right) / 2} y={height - 10} textAnchor="middle" data-chart-label="true" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)">
+        <text x={(plot.left + plot.right) / 2} y={height - (interactive ? 8 : 10)} textAnchor="middle" data-chart-label="true" data-axis="x-title" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)">
           {xLabel}
         </text>
-        <text transform={`translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" data-chart-label="true" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)">
+        <text transform={`translate(${interactive ? 18 : 14} ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" data-chart-label="true" data-axis="y-title" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)">
           {yLabel}
         </text>
         {/* Every scatter is drawn so up and right is the good end (defense axes are inverted). */}
         {(plot.right - plot.left) / 2 - (xLabel.length * (interactive ? textSize(14) * 0.58 : 8)) / 2 > DIRECTION_CAPTION.length * (interactive ? textSize(11) * 0.55 : 6) + 12 && (
-          <text x={plot.right} y={height - 10} textAnchor="end" data-chart-label="true" fontSize={textSize(11)} fill="var(--ink-muted)" pointerEvents="none" data-testid="direction-caption">
+          <text x={plot.right} y={height - (interactive ? 8 : 10)} textAnchor="end" data-chart-label="true" fontSize={textSize(11)} fill="var(--ink-muted)" pointerEvents="none" data-testid="direction-caption">
             {DIRECTION_CAPTION}
           </text>
         )}
@@ -298,7 +340,7 @@ export function ScatterChart({
         <div
           role="status"
           data-testid="chart-tooltip"
-          className="pointer-events-none absolute z-10 hidden sm:block max-w-72 rounded-lg border border-line bg-surface-card px-2.5 py-1.5 text-xs leading-snug text-ink shadow-md"
+          className="pointer-events-none absolute z-10 hide-on-touch-or-small max-w-72 rounded-lg border border-line bg-surface-card px-2.5 py-1.5 text-xs leading-snug text-ink shadow-md"
           style={{
             left: `${(sx(tip.x) / width) * 100}%`,
             top: `${(sy(tip.y) / height) * 100}%`,

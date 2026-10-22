@@ -79,7 +79,19 @@ export function TeamHighlightCombobox({
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen) listRef.current?.querySelector<HTMLElement>(`[id="${listId}-${active}"]`)?.scrollIntoView({ block: "nearest" });
+    if (isOpen) {
+      const item = listRef.current?.querySelector<HTMLElement>(`[id="${listId}-${active}"]`);
+      if (item && listRef.current) {
+        const list = listRef.current;
+        const itemTop = item.offsetTop;
+        const itemBottom = itemTop + item.offsetHeight;
+        if (itemTop < list.scrollTop) {
+          list.scrollTop = itemTop;
+        } else if (itemBottom > list.scrollTop + list.clientHeight) {
+          list.scrollTop = itemBottom - list.clientHeight;
+        }
+      }
+    }
   }, [active, isOpen, listId]);
 
   const handleSelect = (teamName: string | null) => {

@@ -216,18 +216,30 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
           ))}
         </div>
         <div className="grid grid-cols-2 gap-2 sm:hidden">
-          {pickerGroups().flatMap((group) => group.kinds).map((target, index, kinds) => (
-            <ChartLink
-              key={target}
-              href={chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) })}
-              aria-current={target === kind ? "page" : undefined}
-              className={clsx(
-                "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg px-3 py-2 text-center text-xs font-semibold focus-visible:outline-2 focus-visible:outline-accent",
-                index === kinds.length - 1 && kinds.length % 2 === 1 && "col-span-2",
-                target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted",
-              )}
-            >{CHART_REGISTRY[target].tabLabel}</ChartLink>
-          ))}
+          {pickerGroups().map((group) => {
+            const allKinds = pickerGroups().flatMap((g) => g.kinds);
+            return (
+              <div key={group.id} role="group" aria-label={group.label} className="contents">
+                {group.kinds.map((target) => {
+                  const isLastAndOdd = allKinds.indexOf(target) === allKinds.length - 1 && allKinds.length % 2 === 1;
+                  return (
+                    <ChartLink
+                      key={target}
+                      href={chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) })}
+                      aria-current={target === kind ? "page" : undefined}
+                      className={clsx(
+                        "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg px-3 py-2 text-center text-xs font-semibold focus-visible:outline-2 focus-visible:outline-accent",
+                        isLastAndOdd && "col-span-2",
+                        target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted",
+                      )}
+                    >
+                      {CHART_REGISTRY[target].tabLabel}
+                    </ChartLink>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </nav>
     );

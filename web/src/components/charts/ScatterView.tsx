@@ -45,6 +45,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       xDomain={xDomain}
       yDomain={yDomain}
       onToggleHighlight={onHighlight}
+      highlight={highlight}
       average={data.average}
       invertX={data.invertX}
       invertY={data.invertY}

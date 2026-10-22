@@ -466,9 +466,11 @@ test.describe("team charts", () => {
     await page.goto("/stats?chart=efficiency&week=3");
     const mark = page.locator("g[data-team='Boise State']");
     await mark.tap();
+    const details = page.getByTestId("scatter-details");
+    await expect(details).toContainText("Boise State");
+    await details.getByRole("button", { name: "Highlight this team" }).click();
     await expect(mark).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByTestId("chart-tooltip")).toContainText("Boise State");
-    await mark.tap();
+    await details.getByRole("button", { name: "Remove highlight" }).click();
     await expect(mark).toHaveAttribute("aria-pressed", "false");
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
     await context.close();

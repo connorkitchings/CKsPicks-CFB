@@ -34,6 +34,11 @@ export function MobileGameLog({ log, domains, formatTick, formatValue, describe,
           {log.games.map((game) => {
             const value = game[side];
             const average = game.average[side];
+            const sideLabel = side === "offense" ? "Offense" : "Defense allowed";
+            const siteText = game.site === "away" ? "Away at" : game.site === "neutral" ? "Neutral vs" : "Home vs";
+            const valueText = value === null ? "n/a" : formatValue(value);
+            const avgText = average === null ? "n/a" : formatValue(average);
+            const rowLabel = `${sideLabel}: Wk ${game.week} · ${siteText} ${game.opponent} · ${game.result} · ${valueText} · Weekly FBS avg ${avgText}`;
             return (
               <button
                 key={game.gameId}
@@ -41,7 +46,7 @@ export function MobileGameLog({ log, domains, formatTick, formatValue, describe,
                 data-game={game.gameId}
                 data-side={side}
                 data-value={value ?? "missing"}
-                aria-label={describe(game)}
+                aria-label={rowLabel}
                 aria-pressed={current?.gameId === game.gameId}
                 className="block min-h-11 w-full space-y-2 rounded-md border border-line p-2 text-left text-xs text-ink focus-visible:outline-2 focus-visible:outline-accent"
                 onPointerDown={(event) => { gesture.current = { x: event.clientX, y: event.clientY, moved: false }; }}
