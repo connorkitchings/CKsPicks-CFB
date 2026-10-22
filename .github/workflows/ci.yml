@@ -87,9 +87,7 @@ jobs:
           -n 4 --dist loadfile
           --ignore=tests/test_data_first_possession_rating_runner.py
           --ignore=tests/test_migration_integration.py
-          --ignore=tests/test_v5_batch_selection_v2.py
           --ignore=tests/test_publish_matchup_data.py
-          --ignore=tests/test_publish_null_lean_database.py
           --ignore=tests/test_season_release_postgres.py
           --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
           --junitxml=junit-general.xml
@@ -233,14 +231,12 @@ jobs:
           PY
 
       - name: PostgreSQL integration tests
-        # The first four files reset shared schemas and must run serially.
+        # The first two files reset shared schemas and must run serially.
         # Season-release tests keep their separate, socket-only private cluster.
         run: >-
           PYTHONPATH=src:. uv run pytest
           tests/test_migration_integration.py
-          tests/test_v5_batch_selection_v2.py
           tests/test_publish_matchup_data.py
-          tests/test_publish_null_lean_database.py
           tests/test_season_release_postgres.py
           -q -W error
           --cov=cks_picks_cfb --cov-report= --cov-fail-under=0

@@ -1,4 +1,4 @@
-.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem season-revision season-market-revision season-prepare season-release season-rollback
+.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal export-pickem season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -26,7 +26,6 @@ help:
 	@echo "  make ingest-week YEAR=2026 WEEK=1  - Ingest plays+betting_lines for a week"
 	@echo "  make fetch-source YEAR=2026 WEEK=0 ENTITY=games ENV=preview"
 	@echo "  make build-silver YEAR=2026 DATASET=games CAPTURE_ID=... AS_OF=... ENV=preview"
-	@echo "  make readiness YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview"
 	@echo "  make prepare-week YEAR=2026 WEEK=1 - Rebuild cumulative Silver/Gold before publish"
 	@echo "  make team-stats YEAR=2026 WEEK=6 ENV=preview [DRY=1] - Publish pre-game team stats for the week"
 	@echo "  make promote-silver YEAR=2026 [DRY=1] - Register Preview Silver in the production catalog"
@@ -46,11 +45,6 @@ help:
 	@echo "  make season-prepare WEEK=8 AS_OF=... [MANIFEST=...] [RECONSTRUCT=1]  - Prepare the candidate from a clean committed tree"
 	@echo "  make season-release ENV=preview|production RELEASE_ID=season-2026-... PROJECTION_SHA=... EXPECTED_PREVIOUS=...|INITIAL=1"
 	@echo "  make season-rollback RELEASE_ID=... EXPECTED_PREVIOUS=... DECISION_REF=... OWNER_AUTHORIZED=1  - Production, owner credential"
-	@echo "  make weekly / publish-week / freeze-week / close-week  - Removed (legacy path); they exit with an error"
-	@echo ""
-	@echo "Database (requires DATABASE_URL):"
-	@echo "  make db-publish YEAR=2026 WEEK=1  - Publish predictions CSV to Postgres"
-	@echo "  make db-score   YEAR=2026         - Score + refresh system_stats"
 	@echo ""
 
 # Code formatting
@@ -171,9 +165,6 @@ build-silver:
 build-team-game:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-team-game --year $(YEAR) --as-of $(AS_OF) --plays-ref-uri $(PLAYS_REF_URI) --games-ref-uri $(GAMES_REF_URI) --corrections-ref-uri $(CORRECTIONS_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(TEAMS_REF_URI),--teams-ref-uri $(TEAMS_REF_URI),) $(if $(VENUES_REF_URI),--venues-ref-uri $(VENUES_REF_URI),) $(if $(WEATHER_REF_URI),--weather-ref-uri $(WEATHER_REF_URI),) $(if $(GAME_STATS_REF_URI),--game-stats-ref-uri $(GAME_STATS_REF_URI),)
 
-build-features:
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-features --year $(YEAR) --as-of $(AS_OF) --matchups-ref-uri $(MATCHUPS_REF_URI) --schedule-ref-uri $(SCHEDULE_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(BASELINES_REF_URI),--baselines-ref-uri $(BASELINES_REF_URI),)
-
 build-baselines:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-baselines --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(FROZEN_DESIGN_SHA),--include-locked-2025 --frozen-design-sha $(FROZEN_DESIGN_SHA),)
 
@@ -190,13 +181,6 @@ prepare-week:
 # Weekly operating cycle
 # ---------------------------------------------------------------------------
 
-preflight:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ]; then \
-		echo "Usage: make preflight YEAR=2026 WEEK=1 AS_OF=2026-08-20"; exit 1; \
-	fi
-	@echo "🩺 Running weekly preflight for $(YEAR) week $(WEEK)..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) $(if $(CONFIG),--config $(CONFIG),)
-
 team-stats:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
 		echo "Usage: make team-stats YEAR=2026 WEEK=6 ENV=preview|production [DRY=1]"; exit 1; \
@@ -212,17 +196,6 @@ matchup-data:
 promote-silver:
 	@if [ -z "$(YEAR)" ]; then echo "Usage: make promote-silver YEAR=2026 [DRY=1]"; exit 1; fi
 	PYTHONPATH=src:. uv run python scripts/pipeline/promote_silver_versions.py --season $(YEAR) $(if $(DRY),--dry-run,)
-
-readiness:
-	@if [ "$(ENV)" != "preview" ]; then \
-		echo "Usage: make readiness YEAR=2026 WEEK=1 AS_OF=ISO-8601 ENV=preview [CONFIG=conf/weekly_bets/v2_preview_2026.yaml]"; exit 1; \
-	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops readiness --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),)
-
-# Legacy publication path: it writes public.prediction_runs, which the atomic
-# season release now serves. Removed from operation; the code goes in Phase 3.
-publish-week freeze-week close-week weekly:
-	@echo "make $@ is removed — see docs/ops/weekly_runbook.md (make season-revision / season-prepare / season-release)" >&2; exit 1
 
 # Atomic season releases (docs/ops/weekly_runbook.md). WEEK is the upcoming
 # week being forecast; the completed week is WEEK-1. Data commands run under the
@@ -265,12 +238,6 @@ season-rollback:
 	fi
 	$(SEASON_ENV) zsh scripts/ops/with_production_owner_env.sh uv run python scripts/pipeline/run_season.py rollback --environment production --season 2026 --release-id $(RELEASE_ID) --expected-previous-release-id $(EXPECTED_PREVIOUS) --owner-authorized --decision-ref "$(DECISION_REF)"
 
-replay-season:
-	@if [ -z "$(YEAR)" ] || [ "$(ENV)" != "preview" ]; then \
-		echo "Usage: make replay-season YEAR=2025 ENV=preview"; exit 1; \
-	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops replay-season --year $(YEAR) --environment preview
-
 reconcile:
 	@if [ -z "$(YEAR)" ] || [ -z "$(ENV)" ]; then \
 		echo "Usage: make reconcile YEAR=2026 ENV=preview"; exit 1; \
@@ -312,27 +279,6 @@ generate-game-ordinal:
 
 refit-game-ordinal:
 	PYTHONPATH=.:src uv run python scripts/pipeline/refit_game_ordinal_bundle.py --feature-ref-uri $(FEATURE_REF_URI) --routing-report-uri $(REPORT_URI) --bundle-id $(BUNDLE_ID) --environment $(ENV)
-
-# ---------------------------------------------------------------------------
-# Database publish (Python → Postgres)
-# ---------------------------------------------------------------------------
-
-db-publish:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make db-publish YEAR=2026 WEEK=1"; exit 1; \
-	fi
-	@echo "📤 Publishing $(YEAR) week $(WEEK) predictions to Postgres from durable R2 artifact..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact
-
-db-score:
-	@if [ -z "$(YEAR)" ]; then \
-		echo "Usage: make db-score YEAR=2026 [WEEK=1]"; exit 1; \
-	fi
-	@if [ -n "$(WEEK)" ]; then \
-		PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact; \
-	else \
-		PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --backfill-season --from-artifact; \
-	fi
 
 train-champion:
 	@echo "🏋️ Training champion spread and total models..."

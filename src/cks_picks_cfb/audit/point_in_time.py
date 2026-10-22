@@ -3,8 +3,7 @@
 The public 2026 record is admitted game by game on strict point-in-time inputs. This module
 restates the rules independently of every producer (like the rest of ``cks_picks_cfb.audit``)
 and checks them over plain frames, so the audit cannot mirror a producer defect into
-agreement. Loading the frames from published artifacts is the CLI's job
-(``scripts/pipeline/audit_point_in_time_leakage.py``).
+agreement. Loading the frames from published artifacts is the caller's job.
 
 Every rule is on **event time**. A replay is generated after the games by definition, so
 "generated before kickoff" is never the test; the test is that every input was available at

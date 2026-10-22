@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
-from cks_picks_cfb.ops.v5_release import assert_v5_database_environment
 from cks_picks_cfb.ratings.possession_intended_update import CANDIDATE_ID
+from cks_picks_cfb.season.database_role import assert_v5_database_environment
 
 INSERT_COLUMNS = (
     "snapshot_id",

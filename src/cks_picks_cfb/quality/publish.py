@@ -8,7 +8,7 @@ best available quote, a published game without a venue city). Nothing here repai
 
 Context keys:
 
-- ``records``: the per-game payload dicts (``publish_to_db._row_to_record``)
+- ``records``: the per-game payload dicts (one payload dict per game)
 - ``quote_by_id``: frozen quote dicts keyed by ``quote_id`` (``spread``, ``total``)
 - ``schedule_game_ids``: game ids scheduled for the run's season and week
 - ``allow_partial_slate``: operator override for coverage; it is recorded, not hidden
