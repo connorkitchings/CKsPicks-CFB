@@ -41,7 +41,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Branches
 
-`main` is production (Vercel deploys from it); `dev` is the working branch. Work on `dev`, then merge `dev` into `main` to release. Current focus of `dev` (owner, 2026-10-20): testing and preparing Charts for publication; see [Charts pre-publication verification](plans/2026-10-20/03-charts-pre-publication.md). Charts stays unpublished until the owner decides. No other long-lived branches. Details: `AGENTS.md` (Branching).
+`main` is production (Vercel deploys from it); `dev` is the working branch. Work on `dev`, then merge `dev` into `main` to release. Current focus of `dev` (owner, 2026-10-22): review of the repository consolidation (branch `connorkitchings/repo-consolidation`, [plan](plans/2026-10-22/01-repo-consolidation.md)), then testing and preparing the Stats tab (formerly Charts) for publication; see [Charts pre-publication verification](plans/2026-10-20/03-charts-pre-publication.md). Charts stays unpublished until the owner decides. No other long-lived branches. Details: `AGENTS.md` (Branching).
 
 ## Release state
 
@@ -73,7 +73,7 @@ These obligations survive superseding the overlapping repair/cutover contracts. 
 - **2025 matchup backfill:** complete independent certification, then reviewed publication/readback. Retained [matchup-layer requirements](plans/2026-10-02/01-matchup-data-layer-v2.md) remain evidence; no backfill was performed here.
 - **Non-monotonic play-by-play score:** preserve the documented nullable points-per-scoring-opportunity limitation and repair scope in [known data issues](data/known_issues.md).
 
-Dated release, waiver, deployment and repair narratives moved to [status history](status_history.md). Research and repository cleanup remain separate from live operations.
+Dated release, waiver, deployment and repair narratives moved to [status history](status_history.md). Research remains separate from live operations. Repository cleanup (V4, Hydra, Nx and one-off tooling removed; plans and September logs archived) is complete on the consolidation branch pending owner review: [plan](plans/2026-10-22/01-repo-consolidation.md).
 
 ## Where to look next
 
