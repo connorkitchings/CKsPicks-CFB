@@ -345,6 +345,8 @@ test.describe("matchup page (fixture mode)", () => {
 
   test("share: download exports a fixed 1080x1350 card at 2x, and the card fits its canvas", async ({ page }) => {
     await page.goto("/matchup/1");
+    // The button is in the server HTML; a click before hydration is silently dropped.
+    await page.waitForLoadState("networkidle");
     await expect(page.getByTestId("share-download")).toBeVisible();
     // The card exists only while an image is being made.
     await expect(page.getByTestId("share-card")).toHaveCount(0);
