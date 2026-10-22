@@ -140,4 +140,4 @@ Proposed Phase 2 commit: `docs(season): consolidate V5 operations and preserve V
 
 ## 2026-10-22 Phase 3 closure
 
-Phase 3 was carried out by [2026-10-22/01-repo-consolidation](../2026-10-22/01-repo-consolidation.md) and merged into `dev` on 2026-10-22, which completes this contract. Caveats: the serving-parity check from this plan was not run (see the consolidation session log), and Week 8 Preview execution is tracked by the season-operations contract, not here.
+Phase 3 was carried out by [2026-10-22/01-repo-consolidation](../2026-10-22/01-repo-consolidation.md) and merged into `dev` on 2026-10-22, which completes this contract. The serving-parity check was run afterward on 2026-10-22 and passed: the normalized `serving_projections` payload for the active Week 8 release is byte-identical to a fresh `prepare` on pruned `dev` with equal row counts (see [2026-10-22/02](../2026-10-22/02-parity-and-rebuild-retirement.md)). Caveat: Week 8 Preview execution is tracked by the season-operations contract, not here.
