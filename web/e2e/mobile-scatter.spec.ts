@@ -27,6 +27,8 @@ test.describe("mobile scatter inspection on the page", () => {
 
   test("touch detail lives outside horizontal scroll and empty tap clears only transient detail", async ({ page }) => {
     await page.goto("/stats?chart=efficiency&week=3");
+    // The marks are in the server HTML; a tap before hydration selects nothing.
+    await page.waitForLoadState("networkidle");
     const mark = page.locator('g[data-team="Alabama"]');
     await mark.scrollIntoViewIfNeeded();
     const center = await mark.locator('[data-mark="logo"]').evaluate((node) => {
