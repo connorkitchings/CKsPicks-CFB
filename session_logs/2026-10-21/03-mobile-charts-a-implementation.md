@@ -14,8 +14,11 @@
 - Scatter chart geometry preserved at 1000 × 640 viewBox with horizontal scrolling as directed by owner. Essential text (ticks, axes, quadrants) scaled up to render at ≥ 12 CSS pixels without layout shifts.
 - Mobile game logs rendered as stacked horizontal panels (offense and defense allowed) with shared benchmark scales, 44px min touch targets, and text wrapping.
 - Net success rate renders all games by default in a scrollable list without top-N truncation or virtualization.
-- Settings sheet uses native `<dialog>` with `visualViewport` tracking, backdrop scroll lock & restoration, safe-area padding (`100dvh`), and auto-dismiss on route change.
 - Team combobox implements 44px touch targets on mobile, full keyboard navigation (`ArrowDown`, `ArrowUp`, `Enter`, `Escape`), `aria-activedescendant`, viewport positioning, and `suppressHydrationWarning`.
+- **Accepted Trade-offs (Contract A):**
+  - *Desktop first-paint label scale:* Interactive charts initialize `renderedWidth` to 760 (the mobile minimum width) so mobile phones receive properly scaled text on initial SSR/first paint without jumping. On desktop (real width ≥ 1000px), labels start at ~15.8px and correct to 12px after mount when `ResizeObserver` measures container width. Accepted per owner direction (desktop is less sensitive than mobile readability).
+  - *Team search single-tree DOM constraint:* Rendering duplicate interactive `<TeamHighlightCombobox>` instances in both desktop and mobile containers causes strict-mode failures and duplicate element IDs. The team finder mounts client-side in the mobile container when `mobile` hydrates, maintaining a strictly single-tree DOM.
+  - *Pre-hydration settings trigger:* The native `<dialog>` sheet mounts client-side upon hydration (`mobile = true`), so an early tap before JavaScript executes does not open the dialog, consistent with other client-side controls on the page.
 
 ## Work Completed
 - Built `web/src/components/charts/useMobileChart.ts` hook utilizing `useSyncExternalStore` for SSR-safe `(max-width: 639px)` media query detection.
