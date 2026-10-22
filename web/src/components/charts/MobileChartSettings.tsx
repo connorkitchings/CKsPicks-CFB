@@ -53,7 +53,7 @@ export function MobileChartSettings({ children, summary, conference, finder }: {
 
   function open() {
     const sheet = dialog.current;
-    if (!sheet || sheet.open) return;
+    if (!sheet || sheet.open) return; // no dialog yet: leave the body unlocked
     const body = document.body;
     const x = window.scrollX;
     const y = window.scrollY;
@@ -66,29 +66,25 @@ export function MobileChartSettings({ children, summary, conference, finder }: {
     sheet.showModal();
   }
 
-  if (!mobile) {
-    return (
-      <>
+  // One tree for both states so the summary and trigger keep their DOM nodes (and focus) when
+  // `mobile` flips after hydration. The server renders `mobile === false`; the dialog only exists
+  // once it is true, so the trigger is disabled until `open()` can actually open it.
+  return (
+    <>
+      {!mobile && (
         <div className="hidden sm:flex flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
           {conference}
           {finder}
           {children}
         </div>
-        <div className="min-w-0 flex-1 basis-full space-y-2 sm:hidden" data-testid="mobile-chart-settings">
-          <p className="text-xs leading-relaxed text-ink-muted" data-testid="chart-settings-summary">{summary}</p>
-          <button ref={trigger} type="button" aria-haspopup="dialog" onClick={open} className="min-h-11 rounded-lg border border-line bg-surface-card px-4 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-accent">
-            Chart settings
-          </button>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <div className="min-w-0 flex-1 basis-full space-y-2 sm:hidden" data-testid="mobile-chart-settings">
-      <p className="text-xs leading-relaxed text-ink-muted" data-testid="chart-settings-summary">{summary}</p>
-      <button ref={trigger} type="button" aria-haspopup="dialog" onClick={open} className="min-h-11 rounded-lg border border-line bg-surface-card px-4 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-accent">Chart settings</button>
-      {finder}
+      )}
+      <div className="min-w-0 flex-1 basis-full space-y-2 sm:hidden" data-testid="mobile-chart-settings">
+        <p className="text-xs leading-relaxed text-ink-muted" data-testid="chart-settings-summary">{summary}</p>
+        <button ref={trigger} type="button" aria-haspopup="dialog" disabled={!mobile} aria-disabled={!mobile} onClick={open} className="min-h-11 rounded-lg border border-line bg-surface-card px-4 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-surface-inset disabled:text-ink-muted disabled:opacity-70">
+          Chart settings
+        </button>
+        {mobile && finder}
+        {mobile && (
       <dialog ref={dialog} aria-labelledby={titleId} className="fixed inset-x-0 bottom-auto m-0 h-dvh max-h-none w-full max-w-none border-0 bg-surface-card p-0 text-ink backdrop:bg-black/50" data-testid="chart-settings-dialog">
         <div className="flex h-full min-h-0 flex-col overscroll-contain px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
           <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line pb-3">
@@ -98,6 +94,8 @@ export function MobileChartSettings({ children, summary, conference, finder }: {
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain py-4" role="group" aria-label="Chart controls">{conference}{children}</div>
         </div>
       </dialog>
-    </div>
+        )}
+      </div>
+    </>
   );
 }

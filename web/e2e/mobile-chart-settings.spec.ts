@@ -36,6 +36,28 @@ for (const width of [320, 390, 430]) {
   });
 }
 
+test("settings trigger is disabled until hydration, never locks the body early, then opens the sheet", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  // Hold every script chunk so the server-rendered page stays un-hydrated.
+  let release!: () => void;
+  const hold = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(/\/_next\/static\/.*\.js/, async (route) => { await hold; await route.continue(); });
+  await page.goto("/stats?chart=efficiency&week=3", { waitUntil: "domcontentloaded" });
+  const trigger = page.getByRole("button", { name: "Chart settings", exact: true });
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toBeDisabled();
+  await expect(trigger).toHaveAttribute("aria-disabled", "true");
+  expect((await trigger.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await trigger.click({ force: true });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator("body")).not.toHaveCSS("position", "fixed");
+  release();
+  await expect(trigger).toBeEnabled();
+  await trigger.click();
+  await expect(page.getByRole("dialog", { name: "Chart settings", exact: true })).toBeVisible();
+  await expect(page.locator("body")).toHaveCSS("position", "fixed");
+});
+
 test("week navigation keeps the sheet open for consecutive adjustments, and close releases body styles", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/stats?chart=efficiency&week=3");

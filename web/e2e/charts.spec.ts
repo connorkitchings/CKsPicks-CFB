@@ -464,6 +464,9 @@ test.describe("team charts", () => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
     const page = await context.newPage();
     await page.goto("/stats?chart=efficiency&week=3");
+    // A tap before React hydrates is dropped (no handlers yet); the settings trigger is
+    // disabled until the client has taken over, so enabled means the chart handlers are live.
+    await expect(page.getByRole("button", { name: "Chart settings", exact: true })).toBeEnabled();
     const mark = page.locator("g[data-team='Boise State']");
     await mark.tap();
     const details = page.getByTestId("scatter-details");
