@@ -15,7 +15,6 @@ dependencies = [
     "cfbd==5.20.1", # Generated client pinned to the audited CFBD API contract
     "pyarrow>=15.0", # Parquet IO
     "geopy>=2.4.1",
-    "rich>=13.9.4",
     "boto3>=1.35.0,<2.0.0", # AWS/R2 cloud storage; <2.0.0 guards against breaking SDK changes
     "psycopg[binary]>=3.2", # Neon Postgres access
 ]

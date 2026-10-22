@@ -2482,8 +2482,6 @@ def parse_args() -> argparse.Namespace:
         "fetch-source",
         "build-silver",
         "build-team-game",
-        "build-baselines",
-        "assemble-model-ready",
         "prepare-week",
         "project-v5-ratings",
         "publish-matchup-data",
@@ -2500,8 +2498,6 @@ def parse_args() -> argparse.Namespace:
             "audit-data",
             "build-silver",
             "build-team-game",
-            "build-baselines",
-            "assemble-model-ready",
             "fetch-source",
             "project-v5-ratings",
             "publish-matchup-data",
@@ -2513,8 +2509,6 @@ def parse_args() -> argparse.Namespace:
         if command in {
             "build-silver",
             "build-team-game",
-            "build-baselines",
-            "assemble-model-ready",
             "prepare-week",
             "prepare-rating-history",
         }:
@@ -2594,18 +2588,6 @@ def parse_args() -> argparse.Namespace:
             sub.add_argument("--weather-ref-uri")
             sub.add_argument("--game-stats-ref-uri")
             sub.add_argument("--corrections-ref-uri", required=True)
-            sub.add_argument("--output-ref-uri", required=True)
-        if command == "build-baselines":
-            sub.add_argument("--core-ref-uri", required=True)
-            sub.add_argument("--output-ref-uri", required=True)
-            sub.add_argument("--include-locked-2025", action="store_true")
-            sub.add_argument("--frozen-design-sha")
-        if command == "assemble-model-ready":
-            sub.add_argument("--core-ref-uri", required=True)
-            sub.add_argument("--baselines-ref-uri", required=True)
-            sub.add_argument("--markets-ref-uri")
-            sub.add_argument("--preseason-features-ref-uri")
-            sub.add_argument("--feature-track", choices=("strict", "reconstructed"))
             sub.add_argument("--output-ref-uri", required=True)
     return parser.parse_args()
 

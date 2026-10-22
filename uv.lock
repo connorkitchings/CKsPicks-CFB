@@ -130,7 +130,6 @@ dependencies = [
     { name = "pyarrow" },
     { name = "python-dotenv" },
     { name = "requests" },
-    { name = "rich" },
     { name = "scikit-learn" },
     { name = "scipy" },
 ]
@@ -164,7 +163,6 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=15.0" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "requests", specifier = ">=2.30" },
-    { name = "rich", specifier = ">=13.9.4" },
     { name = "scikit-learn", specifier = ">=1.4" },
     { name = "scipy", specifier = ">=1.13" },
 ]

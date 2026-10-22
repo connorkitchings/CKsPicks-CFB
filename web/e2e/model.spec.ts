@@ -42,7 +42,7 @@ test.describe("model section", () => {
   });
 });
 
-test.describe("performance page is accuracy-only", () => {
+test.describe("model page is accuracy-only", () => {
   test("leads with separate records, keeps diagnostics collapsed on phones", async ({ page }) => {
     await page.goto("/model");
     await expect(page.getByRole("heading", { name: "Season record & performance" })).toBeVisible();

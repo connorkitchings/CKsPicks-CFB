@@ -52,7 +52,7 @@
     "opps","pandas","passattempt","passwordless","pathing","playtype","Postgame","preagg",
     "preaggregation","preaggregations","PYTHONPATH","RMSE","runbook","Runbooks","rushattempt",
     "rushresult","SHAP","sklearn","sportsbook","streamlit","timespec","timestamptz",
-    "twopoint","Uncategorized","unders","wallclock","XGBoost","Yardline"
+    "twopoint","Uncategorized","unders","wallclock","Yardline"
   ],
   "search.exclude": {
     "**/data/raw/**": true,

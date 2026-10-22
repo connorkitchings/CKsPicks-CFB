@@ -52,10 +52,6 @@ error handler can quarantine into the source bucket.
 ```bash
 make inventory-source
 make import-history
-
-# Adding locked 2025 baseline predictions requires the frozen design identity.
-make build-baselines YEAR=2026 ENV=preview AS_OF=<timestamp> \
-  CORE_REF_URI=<uri> OUTPUT_REF_URI=<uri> FROZEN_DESIGN_SHA=<sha>
 ```
 
 Native Bronze objects retain provider `cfbd`; transformed partitions are
