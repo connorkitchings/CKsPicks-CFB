@@ -31,7 +31,6 @@ gha-creds-*.json
 
 # Node and build tooling (web/ has its own .gitignore)
 node_modules/
-.nx/
 .vercel
 .antigravitycli/
 

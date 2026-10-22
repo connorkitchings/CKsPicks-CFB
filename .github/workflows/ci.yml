@@ -17,9 +17,6 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NX_DAEMON: "false"
-
 jobs:
   lint:
     name: Python lint and contracts
@@ -52,6 +49,9 @@ jobs:
 
       - name: Verify data-quality check registry
         run: PYTHONPATH=src uv run python -m cks_picks_cfb.quality --verify-registry
+
+      - name: Build documentation
+        run: uv run mkdocs build --strict
 
   general:
     name: Python general tests
@@ -331,27 +331,22 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            web/package-lock.json
-
-      - name: Install Nx dependencies
-        run: npm ci
+          cache-dependency-path: web/package-lock.json
 
       - name: Install web dependencies
         run: npm ci --prefix web
 
       - name: Lint
-        run: npx nx run web:lint
+        run: npm --prefix web run lint
 
       - name: Build
-        run: npx nx run web:build
+        run: npm --prefix web run build
 
       - name: Typecheck
-        run: npx nx run web:typecheck
+        run: npm --prefix web run typecheck
 
       - name: Test publication boundary
-        run: npx nx run web:test-publication
+        run: npm --prefix web run test:publication
 
       - name: Install browser test runtime
         run: npm --prefix web exec playwright install --with-deps chromium
@@ -371,3 +366,43 @@ jobs:
             web/test-results/
             web/playwright-report/
           if-no-files-found: ignore
+
+  python-audit:
+    name: Python dependency audit (non-blocking)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra dev
+
+      - name: Audit Python dependencies
+        run: uv run --with pip-audit pip-audit
+
+  web-audit:
+    name: Web dependency audit (non-blocking)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Audit web dependencies
+        run: npm --prefix web audit --audit-level=high

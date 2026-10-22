@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem season-revision season-market-revision season-prepare season-release season-rollback
+.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -8,9 +8,8 @@ help:
 	@echo "  make format    - Format code with ruff"
 	@echo "  make lint      - Run linter with ruff"
 	@echo "  make test      - Run tests with pytest"
-	@echo "  make health    - Run full health checks"
-	@echo "  make check     - Format + lint + test (alias for 'all')"
-	@echo "  make all       - Run all quality checks"
+	@echo "  make check     - Mirror CI: lint, contracts, tests, docs build, web checks"
+	@echo "  make all       - Format + lint + test + contracts + quality registry"
 	@echo "  make clean     - Clean cache files"
 	@echo "  make contracts-check - Validate contracts/ files are in sync"
 	@echo "  DB migrations: run scripts/pipeline/migrate_db.py with an explicit --database-url"
@@ -69,18 +68,23 @@ test:
 	@echo "🧪 Running tests..."
 	PYTHONPATH=src:. uv run pytest tests/ -q
 
-# Full health check
-health:
-	@echo "🏥 Running health checks..."
-	sh .agent/workflows/health-check.sh
-
 # Run all checks (format, lint, test, contracts)
 all: format lint test contracts-check quality-check
 	@echo ""
 	@echo "✅ All checks complete!"
 
-# Alias for 'all'
-check: all
+# Mirror of CI: Python lint/contracts/tests, docs build, web checks
+check:
+	uv run ruff format --check .
+	uv run ruff check .
+	$(MAKE) contracts-check quality-check
+	PYTHONPATH=src:. uv run pytest tests -q -n 4
+	uv run mkdocs build --strict
+	npm --prefix web run lint
+	npm --prefix web run typecheck
+	npm --prefix web run test:publication
+	npm --prefix web run build
+	@echo "✅ All CI-equivalent checks passed"
 
 # ---------------------------------------------------------------------------
 # Contracts validation

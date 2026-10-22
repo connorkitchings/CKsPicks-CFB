@@ -164,11 +164,11 @@ This is a **monorepo with two toolchains**:
 
 | Component | Location | Stack | Test/Build |
 |---|---|---|---|
-| ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv (legacy Hydra/MLflow retained pending cleanup) | `npx nx run pipeline:test` or `make test` |
-| Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `npx nx run web:build` or `make web-build` |
+| ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv (legacy Hydra/MLflow retained pending cleanup) | `make test` |
+| Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `make web-build` |
 | Shared contracts | `contracts/` | SQL + TypeScript + Python | `make contracts-check` |
 | Research | `scripts/research/` | Python (data-first runners and verifiers; see contract 2026-10-01/04) | — |
-| Task runner | root (`nx.json`, `project.json`) | Nx 20 — cached cross-stack tasks | `npx nx run-many -t lint typecheck test build` |
+| CI mirror | `Makefile` | make | `make check` |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
 | Web data | Neon Postgres | `season_releases`, `season_release_*` + legacy compatibility and catalog/ops schemas | `scripts/pipeline/migrate_db.py --database-url` (verified target; append-only migrations through 0025; optional tables `game_venues`, `team_season_stats`) |
 
