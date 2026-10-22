@@ -27,7 +27,7 @@ make web-local ENV=production     # read the active Production release locally
 # or: zsh scripts/ops/run_web_local.sh [preview|production]
 ```
 
-The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env`) and the app only reads. Games (`/`) lists the week's games by day (`?week=N` for other weeks); each game card links to its matchup breakdown (`/matchup/[gameId]`), which links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
+The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env.local`) and the app only reads. Games (`/`) lists the week's games by day (`?week=N` for other weeks); each game card links to its matchup breakdown (`/matchup/[gameId]`), which links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
 
 ## Local Stats review
 
@@ -48,8 +48,8 @@ Stats code can follow normal `dev` to `main` integration with public access disa
 ## Local development
 
 ```bash
-# Create web/.env (variable names in the repository-root .env.example)
-# and set DATABASE_URL to an isolated Neon branch.
+# Create web/.env.local from the example, then set DATABASE_URL to an isolated Neon branch.
+cp .env.example .env.local
 npm install
 npm run dev
 ```
@@ -100,7 +100,7 @@ npm run test:charts-gate   # separate disabled production build/server; no datab
 CI=1 CFB_UI_TEST_MODE=1 npx playwright test   # e2e in fixture mode (npm run test:ui)
 ```
 
-`playwright.config.ts` starts its own dev server on port 3100 with `CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions CFB_CHARTS_ENABLED=1`, so the slate tests run against the same fixtures locally and in CI (CI has no `web/.env`; the publication mode otherwise defaults to market). The enabled browser suite and disabled publication-gate suite run sequentially and never reuse an existing server. The gate suite builds with Charts off and tests the production server, including actual HTTP 404 responses, four-item navigation and the core pages. The e2e dev server shares `.next` with `npm run dev`: stop a local dev server before running it, or test a clean `git worktree` (clone `node_modules` with `cp -Rc`; Turbopack rejects a symlinked `node_modules`).
+`playwright.config.ts` starts its own dev server on port 3100 with `CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions CFB_CHARTS_ENABLED=1`, so the slate tests run against the same fixtures locally and in CI (CI has no `web/.env.local`; the publication mode otherwise defaults to market). The enabled browser suite and disabled publication-gate suite run sequentially and never reuse an existing server. The gate suite builds with Charts off and tests the production server, including actual HTTP 404 responses, four-item navigation and the core pages. The e2e dev server shares `.next` with `npm run dev`: stop a local dev server before running it, or test a clean `git worktree` (clone `node_modules` with `cp -Rc`; Turbopack rejects a symlinked `node_modules`).
 
 ## Team logos
 
@@ -108,7 +108,7 @@ Logos are self-hosted, keyed by CFBD team id, and built once per season:
 
 ```bash
 cd web
-npm run logos:build -- --dry-run   # inspect the CFBD response first (needs CFBD_API_KEY in ../.env)
+npm run logos:build -- --dry-run   # inspect the CFBD response first (needs CFBD_API_KEY in the repository-root .env)
 npm run logos:build                # download, resize (96/256 px WebP, light + dark), write manifest
 ```
 
