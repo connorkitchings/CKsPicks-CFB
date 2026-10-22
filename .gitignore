@@ -90,3 +90,4 @@ artifacts/research/chart-explosiveness/
 
 # Team-logo build staging output
 web/public/logos/v2.staging
+/site/
