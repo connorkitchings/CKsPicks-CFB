@@ -1,6 +1,7 @@
 import { forwardRef, type CSSProperties } from "react";
 import type { MatchupData } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
+import { spreadBetLabel } from "@/lib/betting-format";
 import { logoSrc, teamInitials } from "@/lib/team-logos";
 import {
   groupUnitRows,
@@ -160,11 +161,18 @@ function Forecast({ matchup }: { matchup: MatchupData }) {
     color: C.faint,
     textAlign: "center",
   };
-  const betSpread = matchup.spreadLean
-    ? matchup.spreadLean === "home"
-      ? matchup.homeTeam
-      : matchup.awayTeam
-    : null;
+  const betSpread =
+    spreadBetLabel(
+      matchup.homeTeam,
+      matchup.awayTeam,
+      matchup.spreadLean,
+      matchup.marketSpreadLine,
+    ) ??
+    (matchup.spreadLean
+      ? matchup.spreadLean === "home"
+        ? matchup.homeTeam
+        : matchup.awayTeam
+      : null);
   return (
     <div
       style={{

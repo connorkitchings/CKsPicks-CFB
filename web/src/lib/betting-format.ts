@@ -93,9 +93,9 @@ export function spreadBetLabel(
   homeLine: number | null,
 ): string | null {
   if (lean === null || homeLine === null) return null;
-  return lean === "home"
-    ? `${homeTeam} ${signedSpread(homeLine)}`
-    : `${awayTeam} ${signedSpread(-homeLine)}`;
+  const line = lean === "home" ? homeLine : -homeLine;
+  const team = lean === "home" ? homeTeam : awayTeam;
+  return `${team} ${line === 0 ? "PK" : signedSpread(line)}`;
 }
 
 export function totalBetLabel(

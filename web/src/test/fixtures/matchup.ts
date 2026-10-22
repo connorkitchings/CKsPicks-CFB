@@ -89,6 +89,7 @@ export function fixtureMatchup(gameId: number): MatchupData | null {
     modelId: predictions ? game.modelId : null,
     publicationMode: predictions ? "predictions" : "market",
     marketSpread: spreadLabel(marketView),
+    marketSpreadLine: game.homeTeamSpreadLine,
     modelSpread: spreadLabel(modelView),
     marketTotal: game.totalLine,
     modelTotal: predictions ? game.predictedTotal : null,

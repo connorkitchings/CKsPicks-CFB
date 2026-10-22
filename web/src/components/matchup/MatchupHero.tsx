@@ -7,6 +7,7 @@ import { Eyebrow } from "@/components/ui/SectionHeading";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { bookName } from "@/lib/slate";
+import { spreadBetLabel } from "@/lib/betting-format";
 import { teamHref } from "@/lib/teams";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { ShareButton } from "./ShareButton";
@@ -193,11 +194,17 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                   accent
                   testId="model-bet-spread"
                   value={
-                    matchup.spreadLean
+                    spreadBetLabel(
+                      matchup.homeTeam,
+                      matchup.awayTeam,
+                      matchup.spreadLean,
+                      matchup.marketSpreadLine,
+                    ) ??
+                    (matchup.spreadLean
                       ? matchup.spreadLean === "home"
                         ? matchup.homeTeam
                         : matchup.awayTeam
-                      : "No Spread"
+                      : "No Spread")
                   }
                   muted={!matchup.spreadLean}
                   badge={

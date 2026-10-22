@@ -64,6 +64,7 @@ export interface MatchupData {
   publicationMode: "predictions" | "market";
   // Odds & Model
   marketSpread: string;
+  marketSpreadLine: number | null;
   modelSpread: string;
   marketTotal: number | null;
   modelTotal: number | null;
@@ -287,6 +288,7 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     modelId: view.modelId,
     publicationMode: view.publicationMode,
     marketSpread: spreadLabel(marketView),
+    marketSpreadLine: view.marketSpreadLine,
     modelSpread: spreadLabel(modelView),
     marketTotal: view.marketTotal,
     modelTotal: view.predictedTotal,
