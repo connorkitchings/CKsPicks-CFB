@@ -437,6 +437,21 @@ test.describe("rank color scale", () => {
       const [worstR, worstG] = await rgb(page, worst.background);
       expect(bestG - bestR).toBeGreaterThan(worstG - worstR);
       expect(await rgb(page, best.border)).not.toEqual(await rgb(page, worst.border));
+      // The fixture has few teams, so force the scale midpoint (what rank 69 of 138 emits) on a copy of
+      // a chip: it is amber (red and green clearly above blue), distinct from both ends.
+      const midBackground = await first.evaluate((el) => {
+        const copy = el.cloneNode(true) as HTMLElement;
+        copy.style.setProperty("--rank-t", "0.5");
+        el.parentElement!.appendChild(copy);
+        const background = getComputedStyle(copy).backgroundColor;
+        copy.remove();
+        return background;
+      });
+      const [midR, midG, midB] = await rgb(page, midBackground);
+      expect(midR - midB).toBeGreaterThan(30);
+      expect(midG - midB).toBeGreaterThan(30);
+      expect(midR).toBeGreaterThan(bestR);
+      expect(midG).toBeGreaterThan(worstG);
       // Text stays the ink color on every chip: the hue never carries the text.
       expect(best.color).toBe(worst.color);
       expect(best.color).toBe(await page.locator("body").evaluate((el) => getComputedStyle(el).color));
