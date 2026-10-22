@@ -4,7 +4,7 @@
 - **Created:** 2026-10-21
 - **Planner:** Sol
 - **Approval source:** Owner approval of the plan in the 2026-10-21 planning session
-- **Implementation log:** [Stats publication log](./02-stats-publication-implementation-log.md); session log `session_logs/2026-10-21/01-site-reorganization-and-performance.md`
+- **Implementation log:** Stats publication log (`session_logs/2026-10-21/04-stats-publication-implementation-log.md`); session log `session_logs/2026-10-21/01-site-reorganization-and-performance.md`
 - **Commit policy:** Commit with implementation; one worktree branch off `dev` per phase; nothing lands while a prepared release candidate is waiting for `run_season.py release`
 
 ## Goal and acceptance

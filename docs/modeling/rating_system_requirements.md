@@ -4,7 +4,7 @@
 > [methodology](possession_rating_methodology.md) and
 > [V5 common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
 > The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-> is the canonical status page. V4 remains unchanged; historical sections below
+> is the canonical status page. V5 is now the only operational model ([V5 status](v5_status.md)) and V4 is [historical evidence](v4_retrospective.md); this status line is historical, and the sections below
 > retain their original experiment boundaries and do not authorize execution.
 
 ## Current rating direction (specified 2026-09-11; amended 2026-09-13)

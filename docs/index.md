@@ -22,6 +22,10 @@ The [weekly runbook](ops/weekly_runbook.md) is the sole operational guide: build
 - [Implementation contracts](plans/index.md) — task authorization and lifecycle.
 - [Decision log](decisions/decision_log.md) — architectural and publication decisions.
 
+## Data documentation
+
+The data authority is the immutable Bronze/Silver/Gold platform with strict point-in-time provenance: the [data platform](architecture/data_platform_2026.md), [point-in-time pipeline](architecture/cfbd_point_in_time_pipeline.md), [historical data inventory](data/historical_data_inventory.md) and [ingestion guide](data/ingestion_guide.md). Rating work uses the [measurement catalog](modeling/measurement_catalog.md) for football meaning, exposure, provenance and eligibility. [Known data issues](data/known_issues.md) lists open and resolved data-quality issues. Historical provider and transformed-schema prose lives in the [documentation archive](archive.md), not as current schema authority.
+
 Markets never inform football measurements, ratings or prediction selection. They enter after forecasting for line comparison and grading. Research requires separate promotion before changing serving behavior; betting decisions are deferred.
 
 ## Documentation policy

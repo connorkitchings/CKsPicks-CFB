@@ -13,7 +13,7 @@ Recover local space only from byte-verified immutable duplicates and retire the 
 
 ## Current State
 
-- The prior [cleanup inventory](../../reports/2026-09-27-post-v5-cleanup-inventory.md) retained five Preview training files and 455 legacy-archive files pending counterpart proof.
+- The prior [cleanup inventory](../../archive/reports/2026-09-27-post-v5-cleanup-inventory.md) retained five Preview training files and 455 legacy-archive files pending counterpart proof.
 - Production health and the Week 5 release log now show `2026w5-d6366e59fd43` selected and published. The worktree was clean before tracked edits.
 - `preaggregations_flow` appears in historical execution logs and remains available. `example_flow.py` has no repository caller or protected identity, and the user confirmed no external flow users.
 
@@ -42,7 +42,7 @@ An unmatched file, missing immutability evidence, R2 access failure, changed loc
 - [x] Release and baseline gates verified.
 - [x] All 460 local files dispositioned, with no deletion lacking proof; no local artifact qualified for deletion.
 - [x] Example flow removed; historical flow and operating paths retained.
-- [x] Required validation passes; [report](../../reports/2026-09-27-verified-artifact-and-legacy-flow-cleanup.md) and session log complete.
+- [x] Required validation passes; [report](../../archive/reports/2026-09-27-verified-artifact-and-legacy-flow-cleanup.md) and session log complete.
 
 ## Amendments
 

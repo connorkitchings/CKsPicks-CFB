@@ -302,7 +302,7 @@ Exact replica verification revealed that the historical first-boundary lookup
 finds just 330 usable source-game-role observations because its adjusted
 snapshots carry only the target game's teams. The 2026 live replay uses a
 different team-boundary/terminal path. The completed
-[research report](../../research/2026-09-28-v5-intended-update-repair-experiment.md)
+[research report](../../archive/research/2026-09-28-v5-intended-update-repair-experiment.md)
 therefore separates the historical coverage effect from opponent-adjustment
 timing and does not translate the historical lift into a live promotion claim.
 
@@ -318,5 +318,5 @@ The accepted bridge must first reproduce the frozen Week 5 forecast, and both
 arms must cover identical 2026 game keys. Completed Weeks 0–4 are labeled
 retrospective and Week 5 is unscored. Local research outputs and report are
 allowed; this amendment does not authorize production publication or promotion.
-The completed [2026 counterfactual report](../../research/2026-09-28-v5-2026-counterfactual.md)
+The completed [2026 counterfactual report](../../archive/research/2026-09-28-v5-2026-counterfactual.md)
 records the paired scores and the saved per-game rating/prediction tables.

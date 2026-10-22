@@ -11,7 +11,7 @@ make help
 make web-local ENV=preview
 ```
 
-`make web-local ENV=production` reads Production for local inspection; it does not activate a release. `CFB_UI_TEST_MODE=1 npm --prefix web run dev` serves fixtures without a database. Charts is off by default: use `CFB_CHARTS_ENABLED=1 make web-local ENV=preview` for review; Production stays unset/`0` pending owner approval, and a changed value requires rebuilding/redeploying. The UI flag does not bypass chart migration/staging requirements. Matchup pages are public by default; `CFB_MATCHUP_ENABLED=0` is an emergency opt-out.
+`make web-local ENV=production` reads Production for local inspection; it does not activate a release. `CFB_UI_TEST_MODE=1 npm --prefix web run dev` serves fixtures without a database. Stats (`/stats`) is off by default: use `CFB_CHARTS_ENABLED=1 make web-local ENV=preview` for review; Production stays unset/`0` pending owner approval, and a changed value requires rebuilding/redeploying. The UI flag does not bypass chart migration/staging requirements. The 4-tab site (Games / Ratings / Stats / Model) lives on `dev` until merged to `main`. Matchup pages are public by default; `CFB_MATCHUP_ENABLED=0` is an emergency opt-out.
 
 For R2 operations set `CFB_STORAGE_BACKEND=r2` and use the intended environment wrapper. `with_preview_env.sh` injects Preview catalog credentials and `CFB_ARTIFACT_ENV=preview`; Production pipeline and owner wrappers have distinct roles. Verify presence without printing credentials. For the local backend require `CFB_STORAGE_BACKEND=local`, `CFB_MODEL_DATA_ROOT` and a mounted external drive. Never create or read repository-local `./data/`.
 
@@ -34,7 +34,7 @@ make season-release ENV=production RELEASE_ID=<RELEASE_ID> PROJECTION_SHA=<SHA25
 
 `WEEK` names the upcoming week. The revision builder refreshes completed-week controller inputs and unions registered market captures; `DRY=1` only rechecks an existing completed controller run and fetches nothing. It refuses to overwrite an existing manifest. Refresh and hash-pin exact per-game/team score exceptions; unlisted mismatches and unused exceptions fail.
 
-Prepare requires a clean committed tree. Do not commit between prepare and the last release; candidates pin the code commit. Use `RECONSTRUCT=1` only for the runbook's reconstruction case after the pre-week cutoff. Forecasts use pre-cutoff observations even when started/reconstructed games remain visible on Picks; grading selects eligible pre-kickoff quotes. The local folder uses `season-2026-...`; the database prefixes `preview-` or `production-`. Release and rollback accept bare IDs or matching environment prefixes and refuse mismatches.
+Prepare requires a clean committed tree. Do not commit between prepare and the last release; candidates pin the code commit. Use `RECONSTRUCT=1` only for the runbook's reconstruction case after the pre-week cutoff. Forecasts use pre-cutoff observations even when started/reconstructed games remain visible on Games; grading selects eligible pre-kickoff quotes. The local folder uses `season-2026-...`; the database prefixes `preview-` or `production-`. Release and rollback accept bare IDs or matching environment prefixes and refuse mismatches.
 
 Production rollback uses a prior verified V5 release, a clean committed tree, explicit owner authorization and the owner/migrator Keychain credential:
 
@@ -47,6 +47,7 @@ Preview rollback is unsupported by the provided wrappers. `make weekly`, `publis
 ## Validation
 
 ```bash
+make check    # mirrors CI: ruff, contracts, quality registry, pytest, mkdocs --strict, web lint/typecheck/tests/build
 make test
 make contracts-check
 make quality-check
@@ -64,8 +65,8 @@ Run focused Python tests with `uv run pytest tests/<affected_test>.py`. Database
 
 Schema changes start in `contracts/` and append migrations under `contracts/migrations/`; use `scripts/pipeline/migrate_db.py --database-url` only against a verified intended owner/migrator target. `make migrate-db` is disabled. See [contracts](../contracts/README.md).
 
-## Research and retained compatibility
+## Research
 
 Use `scripts/research/README.md`, the [research roadmap](../docs/planning/data-first-football-forecasting-roadmap.md) and an approved task contract. Development evidence is 2015–2019 and 2021–2025; exclude 2020 and prevent future leakage. Market data is post-model comparison evidence. The original Phase 4B retained manifest is prohibited as a forecasting parent. Research cannot alter serving or public publication without separate promotion.
 
-V4 training, Hydra configuration groups, MLflow utilities, historical 6A/6B rebuild tooling and Nx remain in this checkout pending deferred Phase 3 cleanup. Their presence does not authorize retraining or publishing V4. See the [V4 retrospective](../docs/modeling/v4_retrospective.md) for lineage and recovery. Nx task definitions remain available; use Make for pipeline work and `npm --prefix web run ...` for web work.
+V4 code was removed on 2026-10-22. See the [V4 retrospective](../docs/modeling/v4_retrospective.md) for lineage and the recovery commit. Use Make for pipeline work and `npm --prefix web run ...` for web work.

@@ -6,11 +6,10 @@ in this directory.
 - Put reusable measurements, ratings, forecasting, and evaluation logic in
   `src/cks_picks_cfb/`.
 - Put executable research orchestration in `scripts/research/`.
-- Keep exploratory notebooks and one-off analyses in `research/`.
 - Keep supported production workflows in `scripts/pipeline/`.
 
-Production modules and commands must not import from `scripts/research/` or
-`research/`. Research commands may call reusable library code through explicit
+Production modules and commands must not import from `scripts/research/`.
+Research commands may call reusable library code through explicit
 interfaces, but they cannot publish, freeze, close, migrate, deploy, or otherwise
 activate production state.
 

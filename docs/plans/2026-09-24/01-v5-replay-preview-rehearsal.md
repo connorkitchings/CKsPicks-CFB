@@ -37,7 +37,7 @@ Use two clean-code checkpoints: first commit the reviewed replay and rollback-ca
 
 - The existing replay builder, replay serving adapter/config, ops state machine, selected-run query, forecast page, health route, and focused tests.
 - Preview R2 and Neon only; the Vercel Preview deployment must be bound to the isolated Preview Neon branch.
-- The parent [product transformation contract](../2026-09-23/01-v5-product-transformation.md) and [weekly runbook](../../ops/weekly_pipeline.md) remain authoritative for release policy and operations.
+- The parent [product transformation contract](../2026-09-23/01-v5-product-transformation.md) and [weekly runbook](../../archive/ops/weekly_pipeline.md) remain authoritative for release policy and operations.
 
 ## Implementation Tasks
 

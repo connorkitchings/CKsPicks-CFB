@@ -1,6 +1,6 @@
 # 2026-10-21 — Site reorganization, design consistency and performance (Phases 1-4 on dev)
 
-Implements [Site reorganization, design consistency and performance](../../docs/plans/2026-10-21/01-site-reorganization-and-performance.md) and the [Stats publication log](../../docs/plans/2026-10-21/02-stats-publication-implementation-log.md). Commits `a57bb603` through `d1c3ed04` on `dev` (pushed). Two independent reviews followed the first push; their findings are fixed in `69c7713b` and `d1c3ed04`.
+Implements [Site reorganization, design consistency and performance](../../docs/plans/2026-10-21/01-site-reorganization-and-performance.md) and the [Stats publication log](04-stats-publication-implementation-log.md). Commits `a57bb603` through `d1c3ed04` on `dev` (pushed). Two independent reviews followed the first push; their findings are fixed in `69c7713b` and `d1c3ed04`.
 
 ## Outcome
 
@@ -66,6 +66,6 @@ Implements [Site reorganization, design consistency and performance](../../docs/
 
 1. Check the CI result on `d1c3ed04`: `gh run list --branch dev --limit 1`.
 2. Test on a Vercel Preview of `dev`, with `CFB_CHARTS_ENABLED=1` on Preview only: Games on an upcoming, a final and an in-progress week; every redirect; the nine legacy-name team pages; light and dark at 390px and 1280px.
-3. Run `node web/scripts/measure-routes.mjs <preview-url> --runs 10` twice, and record the numbers and the Stats real-data review in the [Stats publication log](../../docs/plans/2026-10-21/02-stats-publication-implementation-log.md).
+3. Run `node web/scripts/measure-routes.mjs <preview-url> --runs 10` twice, and record the numbers and the Stats real-data review in the [Stats publication log](04-stats-publication-implementation-log.md).
 4. After acceptance: owner sets `CFB_CHARTS_ENABLED=1` on Production per the runbook; later switch redirects from 307 to 308 after confirming the canonical domain.
 5. Remove the seven session worktrees and branches under `.claude/worktrees/` once nothing needs them.

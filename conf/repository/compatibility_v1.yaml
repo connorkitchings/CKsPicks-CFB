@@ -2,7 +2,7 @@ schema_version: repository_compatibility_v1
 
 baseline:
   commit: b930066
-  production_model: week0-2026-v4-strict-20260818-r2
+  retired_v4_bundle: week0-2026-v4-strict-20260818-r2  # historical only; V5 is the only operational model
 
 research:
   artifact_namespace: artifacts/research/data-first-football-v1/

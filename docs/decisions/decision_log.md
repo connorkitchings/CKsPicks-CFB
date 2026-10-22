@@ -1,5 +1,7 @@
 # Decision Log
 
+This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
+
 ## 2026-10-15: Exact reconciliation and accepted rebuilt market provenance
 
 - **Decision:** require exact scoring-event-to-final reconciliation per team-game. Only explicit `game_id`, `team` and reason exceptions pinned by the revision manifest are permitted; unlisted mismatches and unused exceptions fail preparation and `season_verification_v2`. Malformed-score tags and a season-wide percentage threshold cannot waive the check.
@@ -469,9 +471,9 @@
 
 - **Context**: Completed Option A (Documentation & Deployment) from session plan.
 - **Updates Made**:
-  - `docs/experiments/index.md` — All 10 V2 experiments documented with results
+  - `docs/archive/experiments/index.md` — All 10 V2 experiments documented with results
   - `docs/modeling/betting_policy.md` — V2 Champion section with optimal thresholds
-  - `docs/project_org/feature_registry.md` — Feature status corrected (recency_weighted_v1 = champion)
+  - `docs/archive/project_org/feature_registry.md` — Feature status corrected (recency_weighted_v1 = champion)
 - **Current Champions**:
   - **Spread**: Linear + recency_weighted_v1 → +0.52% ROI (7.0 pt threshold → +2.1% ROI)
   - **Totals**: Linear + recency_weighted_v1 → +5.3% ROI (0.5 pt threshold → +6.1% ROI)

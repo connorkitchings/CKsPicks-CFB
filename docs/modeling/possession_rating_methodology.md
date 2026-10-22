@@ -1,8 +1,8 @@
 # Possession-Based Rating Methodology
 
-> **Current status (2026-09-28):** [V5 model development is complete and accepted](v5_status.md). The selected PPP rating and through-2025 bridge are frozen. Week 4 is scored, and the authorized Week 5 live run is selected in production. V4 remains available for rollback. The detailed equations below remain the V5 semantic authority.
+> **Current status (2026-09-28):** [V5 model development is complete and accepted](v5_status.md). The selected PPP rating and through-2025 bridge are frozen. Week 4 is scored, and the authorized Week 5 live run is selected in production. V4 is [historical evidence](v4_retrospective.md) and is not an operational rollback path. The equations below remain the V5 semantic authority; the status line and dated checkpoints in this page are historical.
 
-The [current ratings audit](../research/2026-09-28-current-v5-ratings-audit.md)
+The [current ratings audit](../archive/research/2026-09-28-current-v5-ratings-audit.md)
 documents the executable estimator, actual weekly prior weights, and the
 South Carolina–Alabama comparison. It identifies an unresolved semantic
 concern: the selected implementation assigns cumulative adjusted snapshots to

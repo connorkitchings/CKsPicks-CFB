@@ -1,7 +1,7 @@
 # Stats publication implementation log
 
 - **Date:** 2026-10-21
-- **Contract:** Phase 4 of [Site reorganization, design consistency and performance](01-site-reorganization-and-performance.md), which runs tasks 2 to 6 of [Charts pre-publication verification](../2026-10-20/03-charts-pre-publication.md) against `/stats`
+- **Contract:** Phase 4 of [Site reorganization, design consistency and performance](../../docs/plans/2026-10-21/01-site-reorganization-and-performance.md), which runs tasks 2 to 6 of [Charts pre-publication verification](../../docs/plans/2026-10-20/03-charts-pre-publication.md) against `/stats`
 - **Status:** Edge-state audit and runbook written; real-data review, Preview review, measurements and owner acceptance are not yet done.
 
 ## Edge-state coverage

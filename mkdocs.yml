@@ -16,18 +16,19 @@ nav:
   - Current Status: status.md
   - 2026 Direction:
       - V5 Current Status: modeling/v5_status.md
+      - Football Data Architecture Blueprint: planning/data_architecture_blueprint.md
       - Data-First Forecasting Roadmap: planning/data-first-football-forecasting-roadmap.md
       - Production and Historical Roadmap: planning/roadmap.md
       - Rating-System Requirements: modeling/rating_system_requirements.md
       - Possession Rating Methodology: modeling/possession_rating_methodology.md
       - Measurement Catalog: modeling/measurement_catalog.md
-      - Team Charts Methodology: modeling/team_charts_methodology.md
+      - Team Stats Methodology: modeling/team_charts_methodology.md
+      - Record Methodology: modeling/record_methodology.md
       - Evaluation: modeling/evaluation.md
-      - V4 Regime Contract: modeling/early_season_regimes.md
+      - Betting Policy: modeling/betting_policy.md
   - Data Platform:
       - Repository Boundaries: architecture/repository_boundaries.md
       - Data Platform 2026: architecture/data_platform_2026.md
-      - Deferred Data Architecture Blueprint: planning/data_architecture_blueprint.md
       - Point-in-Time Pipeline: architecture/cfbd_point_in_time_pipeline.md
       - Ingestion Guide: data/ingestion_guide.md
       - Historical Data Inventory: data/historical_data_inventory.md
@@ -36,25 +37,27 @@ nav:
       - Provider Audit: cfbd/2026_provider_audit.md
   - Operations:
       - Weekly Operational Runbook: ops/weekly_runbook.md
+      - Data-First Capture: ops/data_first_capture.md
   - Research Notes:
       - Chart Explosiveness Comparison: research/chart-explosiveness-comparison-2026-10-16.md
-      - Data-First Capture: ops/data_first_capture.md
       - Ratings Laboratory v1: research/ratings-lab-v1.md
       - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md
-  - Model and Experiment Lineage:
-      - Feature Registry: project_org/feature_registry.md
-      - Experiment Index: experiments/index.md
-      - Betting Policy: modeling/betting_policy.md
   - Decisions and Contracts:
       - Decision Log: decisions/decision_log.md
       - Implementation Contracts: plans/index.md
       - V5 Contract Archive: archive/v5-contracts/index.md
-      - Transformation Review (2026-09-08): plans/2026-09-08/transformation-review-and-authority-reset.md
-      - Documentation Alignment and Next Steps (2026-09-10): plans/2026-09-10/documentation-alignment-and-next-research-steps.md
-  - Archive: archive.md
+  - Archive:
+      - Archive Index: archive.md
+      - V4 Retrospective: modeling/v4_retrospective.md
 
 exclude_docs: |
   archive/*.md
+  archive/experiments/**
+  archive/modeling/**
+  archive/process/**
+  archive/project_org/**
+  archive/reports/**
+  archive/research/**
   archive/2026-completed-plans/**
   archive/2026-rating-research/**
   archive/data_science_prompt/**

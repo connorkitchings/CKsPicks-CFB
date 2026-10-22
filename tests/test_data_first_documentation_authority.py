@@ -95,7 +95,8 @@ def test_current_plan_index_points_to_the_v5_authority():
     assert "six slates are not a launch prerequisite" in index
     assert "season-operations-and-week7-bridge.md" in index
     assert "awaiting first controller weekly update" in index
-    assert "phase 3 is deferred" in index
+    assert "phase 3 is complete" in index
+    assert "phase 3 is deferred" not in index
 
 
 def test_archived_contracts_preserve_dated_status_and_history():

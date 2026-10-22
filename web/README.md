@@ -6,7 +6,7 @@ only renders the active immutable season release under the configured publicatio
 
 ## Current boundary
 
-V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves Picks, Results, Ratings, Performance and `/api/health` to the same atomic release. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
+V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves the Games, Ratings, Stats and Model tabs and `/api/health` to the same atomic release. The four-tab layout lives on `dev` until it is merged to `main`. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
 
 Current release IDs and week state belong in [`docs/status.md`](../docs/status.md). Follow the [weekly runbook](../docs/ops/weekly_runbook.md) for revision, prepare, Preview rehearsal, owner-approved Production release and rollback.
 
@@ -14,8 +14,7 @@ Current release IDs and week state belong in [`docs/status.md`](../docs/status.m
 Anything else is fail-closed market-only rendering. Prediction publication does
 not authorize a model change.
 
-`CFB_DISPLAY_ONLY_NOTICE=0` hides the display-only timing notice on Picks and
-Results; unset (or anything else) shows it. The run's `display_only` database
+`CFB_DISPLAY_ONLY_NOTICE=0` hides the display-only timing notice on Games; unset (or anything else) shows it. The run's `display_only` database
 flag and its freeze/evidence guards are independent of this presentation flag.
 
 ## Local matchup pages
@@ -23,16 +22,16 @@ flag and its freeze/evidence guards are independent of this presentation flag.
 Matchup pages are a public feature. Use local Preview reads for development and verification.
 
 ```bash
-make web-local                    # preview data (default), http://127.0.0.1:3000/matchup
+make web-local                    # preview data (default), http://127.0.0.1:3000/
 make web-local ENV=production     # read the active Production release locally
 # or: zsh scripts/ops/run_web_local.sh [preview|production]
 ```
 
-The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env`) and the app only reads. `/matchup` lists the week's games by day (`?week=N` for other weeks); each game opens its breakdown, and the breakdown links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
+The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env`) and the app only reads. Games (`/`) lists the week's games by day (`?week=N` for other weeks); each game card links to its matchup breakdown (`/matchup/[gameId]`), which links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
 
-## Local Charts review
+## Local Stats review
 
-Charts is unpublished by default in every environment. Only the exact setting `CFB_CHARTS_ENABLED=1` enables the navigation item and `/charts`. Unset, empty, `0` or invalid values hide the item and return HTTP 404 for direct URLs. Development, Preview and fixture mode do not override the flag. The server resolves visibility before rendering; mobile navigation has four equal items when disabled and five when enabled.
+Stats (`/stats`) is unpublished by default in every environment. Only the exact setting `CFB_CHARTS_ENABLED=1` enables the navigation item and the route. Unset, empty, `0` or invalid values hide the item and return HTTP 404 for direct URLs (`src/proxy.ts` rejects before any data loads); legacy `/charts` URLs redirect to `/stats` when enabled. Development, Preview and fixture mode do not override the flag. Mobile navigation has three equal items when Stats is disabled and four when enabled.
 
 Run these from the repository root:
 
@@ -44,13 +43,13 @@ CFB_CHARTS_ENABLED=1 CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions npm --p
 
 For owner-authorized Vercel Preview review, set `CFB_CHARTS_ENABLED=1` in Preview only. Keep Production unset or `0` until manual publication approval. Rebuild/redeploy after changing the environment setting; this is a deployment-level switch, not an instant runtime toggle.
 
-Charts code can follow normal `dev` → `main` integration with public access disabled. This UI flag does not skip chart projection creation, migration 0026/0027 requirements or owner-approved atomic releases. Review the newer weekly code and required migrations separately before preparing from the actual clean integrated commit.
+Stats code can follow normal `dev` to `main` integration with public access disabled. The flag does not skip chart projection creation, the migration 0026/0027 requirements or owner-approved atomic releases. Review the newer weekly code and required migrations separately before preparing from the actual clean integrated commit.
 
 ## Local development
 
 ```bash
-cp .env.example .env
-# Set DATABASE_URL to an isolated Neon branch.
+# Create web/.env (variable names in the repository-root .env.example)
+# and set DATABASE_URL to an isolated Neon branch.
 npm install
 npm run dev
 ```
@@ -64,24 +63,27 @@ must remain synchronized.
 
 | Route | Status |
 |---|---|
-| `/`, `/results`, `/ratings`, `/performance`, `/teams/[team]` | Public |
-| `/charts` | Disabled unless `CFB_CHARTS_ENABLED=1`; disabled direct requests return HTTP 404 before chart data loading. Requires a chart-capable active release when enabled. |
-| `/matchup` and `/matchup/[gameId]` | A game picker and the pre-game breakdown. Full-time public feature on the site (open in production and dev, emergency-disabled only if `CFB_MATCHUP_ENABLED=0`); always `noindex`. Game cards (Picks and Results) show a **Matchup** button linking to each breakdown. The breakdown shows 12 raw metrics in three sections (the two tables sit side by side from `lg` up; smaller screens select one team’s offense at a time, with values and ranks paired in three columns on phones, in a `max-w-5xl` container); tied national ranks read `T-N`, an exact zero is shown without a rank, and PPA values are CFBD's predicted points added (labelled PPA, not EPA). The top card groups both teams together above a full-width Forecast & Lines grid (Spread and Total columns: Market, Model, Model Bet). A per-row edge calculation (offense rank against the opposing defense's rank) exists in `team-stats.ts` but is not drawn on the page; the explanatory notes sit below the tables. **Share:** when a game has published stats, the top strip offers *Download PNG* (plus *Copy image* or *Share* where the browser supports them): `ShareCard` is a fixed 1080x1350 always-dark card (literal colors, dark logo variants via `logoSrc`, Eastern kickoff time) rasterized at 2x by `html-to-image`; it is mounted only while an image is being made and carries a "Biggest mismatches" box per panel (`topMismatches` in `team-stats.ts`) and a footnote when any value shows "—". Team names are plain text everywhere: team pages are not linked (the `/teams/[team]` route still exists but nothing links to it). Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
+| `/` (Games), `/ratings`, `/model`, `/model/method`, `/teams/[team]` | Public |
+| `/stats` | Disabled unless `CFB_CHARTS_ENABLED=1`; disabled direct requests return HTTP 404 before chart data loading. Requires a chart-capable active release when enabled. |
+| `/results`, `/matchup` | Redirect to `/` |
+| `/performance`, `/methodology` | Redirect to `/model` and `/model/method` |
+| `/charts`, `/charts/...` | Redirect to `/stats` (when enabled) |
+| `/matchup/[gameId]` | The pre-game breakdown. Full-time public feature on the site (open in production and dev, emergency-disabled only if `CFB_MATCHUP_ENABLED=0`); always `noindex`. Game cards on Games show a **Matchup** button linking to each breakdown. The breakdown shows 12 raw metrics in three sections (the two tables sit side by side from `lg` up; smaller screens select one team’s offense at a time, with values and ranks paired in three columns on phones, in a `max-w-5xl` container); tied national ranks read `T-N`, an exact zero is shown without a rank, and PPA values are CFBD's predicted points added (labelled PPA, not EPA). The top card groups both teams together above a full-width Forecast & Lines grid (Spread and Total columns: Market, Model, Model Bet). A per-row edge calculation (offense rank against the opposing defense's rank) exists in `team-stats.ts` but is not drawn on the page; the explanatory notes sit below the tables. **Share:** when a game has published stats, the top strip offers *Download PNG* (plus *Copy image* or *Share* where the browser supports them): `ShareCard` is a fixed 1080x1350 always-dark card (literal colors, dark logo variants via `logoSrc`, Eastern kickoff time) rasterized at 2x by `html-to-image`; it is mounted only while an image is being made and carries a "Biggest mismatches" box per panel (`topMismatches` in `team-stats.ts`) and a footnote when any value shows "—". Team names are plain text everywhere: team pages are not linked (the `/teams/[team]` route still exists but nothing links to it). Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
 
 ## Mobile presentation
 
-Picks and Results use compact game cards on phones, with visible spread/total records and collapsed Best Bets or Highlights. Game details expose the full forecast, line source, venue and applicable grading explanation. The grid/list choice remains available from 640 px; choosing a desktop list still renders cards on a phone without duplicating game anchors.
+Games uses compact game cards on phones, with visible spread/total records and collapsed Best Bets or Highlights. Game details expose the full forecast, line source, venue and applicable grading explanation. The grid/list choice remains available from 640 px; choosing a desktop list still renders cards on a phone without duplicating game anchors.
 
 Ratings emphasizes the selected Overall, Offense or Defense value. The phone period selector and desktop timeline preserve live search and sort when navigating between frozen periods; filtering retains national rank. Overall uncertainty stays explicitly labeled.
 
 Matchup pages show both teams together with forecasts below them. Below 1024 px, the offense selector switches between the two comparisons; larger screens show both. Share-image data and fixed export dimensions remain unchanged.
 
-Performance leads with separate spread and total records. Season diagnostics and the audit are expandable. The audit starts at the latest graded week and exposes each game's captured line, forecast, grade and provenance through game details. Changing target preserves the selected audit week, including an explicit empty state when that week has no matching grades.
+Model (`/model`) leads with separate spread and total records, with season diagnostics expandable; `/model/method` explains the method.
 
 Shared controls use generous touch targets, and the bottom navigation reserves device safe-area space. The mobile implementation contract is [Mobile web experience](../docs/plans/2026-10-18/04-mobile-web-experience.md).
 
 Fixture mode: `CFB_UI_TEST_MODE=1` serves sample data (no database) for the
-Picks/Results slates, the matchup page and the Playwright suite. Optional tables
+Games slates, the matchup page and the Playwright suite. Optional tables
 (`game_venues`, `team_season_stats`, `prediction_market_selections`) are
 checked with `to_regclass`, so the app works before their migrations are
 applied and simply shows no location, stats or best-line source.
@@ -118,4 +120,4 @@ name in `src/lib/team-logos.ts`. The Python leaderboards read the same manifest.
 
 The shared `logoSrc` policy preserves team colors where the standard mark remains readable on dark surfaces: Tennessee, Clemson, Sam Houston, Texas, North Texas, Buffalo and Utah use the existing `light` asset in both themes and sizes. Other schools retain their dark contrast variants, including Alabama, Michigan, Duke and Temple. This curated, visually audited policy applies to cards, charts and image exports; it changes asset selection without rewriting the assets or manifest. Audit evidence is in `session_logs/2026-10-16/10-dark-logo-color-repair.md`.
 
-Started and reconstructed games remain visible on Picks: forecasts use pre-cutoff observations, and grades select eligible pre-kickoff quotes per game/target. See the [record methodology](../docs/modeling/record_methodology.md). Operational release and rollback instructions live only in the [weekly runbook](../docs/ops/weekly_runbook.md).
+Started and reconstructed games remain visible on Games: forecasts use pre-cutoff observations, and grades select eligible pre-kickoff quotes per game/target. See the [record methodology](../docs/modeling/record_methodology.md). Operational release and rollback instructions live only in the [weekly runbook](../docs/ops/weekly_runbook.md).

@@ -69,7 +69,7 @@ PYTHONPATH=.:src uv run python scripts/data/ingest_week.py \
 
 After completed games are published by CFBD, refresh games, plays, lines, and
 game stats for the week before running the feature and scoring path. See the
-[weekly runbook](../ops/weekly_pipeline.md) for the mutation sequence.
+[weekly runbook](../ops/weekly_runbook.md) for the mutation sequence.
 
 ## Availability and validation
 

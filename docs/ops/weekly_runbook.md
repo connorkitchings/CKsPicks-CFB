@@ -308,7 +308,7 @@ The release data cache is keyed by deployment ID, so the first requests after an
 
 ### Preview rehearsal
 
-Run steps 1 to 4 on Preview before the publication decision. Record the outcome in the Stats implementation log (`docs/plans/2026-10-21/02-stats-publication-implementation-log.md`).
+Run steps 1 to 4 on Preview before the publication decision. Record the outcome in the Stats implementation log (`session_logs/2026-10-21/04-stats-publication-implementation-log.md`).
 
 - [ ] `CFB_CHARTS_ENABLED=1` set in Preview only (Production unchanged) and the Preview redeployed
 - [ ] `/stats` returns 200 and navigation shows four items

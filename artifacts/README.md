@@ -7,4 +7,4 @@ of truth and must not act as a mutable production-model registry.
 Production datasets and model/prediction artifacts use immutable Cloudflare R2
 lineage; Neon holds derived serving and workflow state. See the
 [data platform](../docs/architecture/data_platform_2026.md) and
-[production runbook](../docs/ops/production_runbook.md).
+[weekly runbook](../docs/ops/weekly_runbook.md).

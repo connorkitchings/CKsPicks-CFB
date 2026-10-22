@@ -3,7 +3,7 @@
 > **Authority (2026-09-13):** The [V5 common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 > governs new possession work. The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 > is current status authority. Historical measurements below retain their original
-> certification scope; they do not certify possession scoring or change V4 inputs.
+> certification scope; they do not certify possession scoring. This status line is historical: V5 is the only operational model ([V5 status](v5_status.md)) and V4 is [historical evidence](v4_retrospective.md).
 
 ## Current measurement checkpoint
 

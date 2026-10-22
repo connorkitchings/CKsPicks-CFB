@@ -1,5 +1,7 @@
 # Evaluation Policy
 
+> **Status: historical.** This page records the V4-era evaluation policy and the protected shadow-evaluation design. Current V5 results, limits and record policy are in the [V5 status guide](v5_status.md) and [record methodology](record_methodology.md); V4 is [historical evidence](v4_retrospective.md).
+
 > **Authority note (2026-09-05):** V4 and existing frozen experiments retain
 > the policies below. New work under `data-first-football-v1` uses 2015-2019 and
 > 2021-2025 as development data and relies on future pre-kickoff freezes for
@@ -67,7 +69,7 @@ every 2026 candidate:
 Historical candidate-v1 Phase 5 implemented a separate immutable policy:
 Week 1 or later, at least 40 games, T-2h operating target, T-1h hard measured
 freeze lead, 24-hour postgame stabilization, and six eligible slates. See the
-[rating shadow operations runbook](../ops/rating_shadow_operations.md). These
+[rating shadow operations runbook](../archive/ops/rating_shadow_operations.md). These
 are evidence gates only; reported metrics cannot tune or promote the candidate.
 
 ## Promotion review

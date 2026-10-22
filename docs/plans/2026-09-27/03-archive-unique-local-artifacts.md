@@ -31,4 +31,4 @@ Test successful and failure paths, including identical object, collision, incomp
 
 ## Amendments and blockers
 
-The backup and independent verification stages completed on 2026-09-27. The configured Preview R2 key returned `AccessDenied` for the read-only lifecycle configuration request. No current administrator/dashboard rule record was available. The lifecycle proof and eight-file prune tasks remain open; no local file was removed. See the [execution report](../../reports/2026-09-27-local-artifact-archive.md).
+The backup and independent verification stages completed on 2026-09-27. The configured Preview R2 key returned `AccessDenied` for the read-only lifecycle configuration request. No current administrator/dashboard rule record was available. The lifecycle proof and eight-file prune tasks remain open; no local file was removed. See the [execution report](../../archive/reports/2026-09-27-local-artifact-archive.md).
