@@ -195,3 +195,18 @@ test.describe("desktop layout at 1280px", () => {
     await expect(allMatchupsLink).toHaveCSS("background-color", "rgb(28, 25, 23)");
   });
 });
+
+test("method page keeps the tab bar at page width and caps each card to the reading column at desktop", async ({ page }) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto("/model/method");
+  const tabsBox = await page.getByRole("navigation", { name: "Model sections" }).boundingBox();
+  expect(tabsBox, "model tab bar").not.toBeNull();
+  const cards = page.locator("#main-content section[aria-labelledby]");
+  const cardCount = await cards.count();
+  expect(cardCount, "method page section cards").toBeGreaterThanOrEqual(9);
+  for (let index = 0; index < cardCount; index += 1) {
+    const box = await cards.nth(index).boundingBox();
+    expect(box!.width, `method card ${index} width`).toBeLessThanOrEqual(800);
+    expect(tabsBox!.width, `tab bar wider than card ${index}`).toBeGreaterThan(box!.width);
+  }
+});
