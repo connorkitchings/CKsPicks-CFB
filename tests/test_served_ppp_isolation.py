@@ -205,7 +205,7 @@ def _imports(path: Path) -> set[str]:
 
 def test_the_served_path_imports_the_intended_update_and_never_the_epa_candidates():
     served = [
-        "scripts/pipeline/build_v5_intended_update_forecasts.py",
+        "src/cks_picks_cfb/season/prepare.py",
         "scripts/pipeline/publish_v5_intended_update_ratings.py",
     ]
     for relative in served:

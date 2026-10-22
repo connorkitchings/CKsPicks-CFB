@@ -26,6 +26,9 @@ from cks_picks_cfb.season.inputs import load_inputs
 from cks_picks_cfb.season.manifest import canonical, sha
 from cks_picks_cfb.season.runner import prepare
 
+#: The pinned V5 bridge bundle (sha256 pinned as ``BRIDGE_SHA256``).
+BRIDGE_FIXTURE = Path(__file__).resolve().parent / "fixtures/v5_bridge_b2_w5_v1.json"
+
 TEAMS = ("App State", "Bravo", "Charlie", "Delta")
 #: week -> [(game_id, home, away, kickoff)]
 SCHEDULE = {
@@ -360,11 +363,7 @@ def build_season(
     if edit is not None:
         edit(tables)
     reader = MemoryReader()
-    bundle = json.loads(
-        (
-            Path(__file__).resolve().parents[1] / "conf/rebuild/bundle_b2_w5_v1.json"
-        ).read_bytes()
-    )
+    bundle = json.loads(BRIDGE_FIXTURE.read_bytes())
     model = {
         "schema_version": "season_model_v1",
         "model_id": "v5-intended-update-2026-v1",

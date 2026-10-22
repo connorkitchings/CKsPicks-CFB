@@ -21,6 +21,7 @@ from cks_picks_cfb.season import verification as v
 from cks_picks_cfb.season.inputs import load_inputs
 from cks_picks_cfb.season.manifest import canonical, sha
 from cks_picks_cfb.season.runner import prepare, status
+from tests.season_fixtures import BRIDGE_FIXTURE
 from tests.test_season_verification import resume_rows, synthetic_payload
 
 
@@ -244,11 +245,7 @@ def fixture():
             for r in ("offense", "defense")
         ]
     )
-    bundle = json.loads(
-        (
-            Path(__file__).resolve().parents[1] / "conf/rebuild/bundle_b2_w5_v1.json"
-        ).read_bytes()
-    )
+    bundle = json.loads(BRIDGE_FIXTURE.read_bytes())
     model = {
         "schema_version": "season_model_v1",
         "model_id": "v5-intended-update-2026-v1",

@@ -24,7 +24,7 @@ from scripts.analysis.play_identity_impact import (
     source_play_ids,
 )
 
-NULLABLE_PPA = True  # rebuild.silver.PIPELINE_CONFIG["nullable_ppa"]
+NULLABLE_PPA = True
 
 
 def token_lookup(plays: pd.DataFrame, season: int) -> dict[str, str]:
