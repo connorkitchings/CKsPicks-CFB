@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from cks_picks_cfb.ratings.foundation_review import (
     _observation_checks,
@@ -12,7 +11,6 @@ from cks_picks_cfb.ratings.foundation_review import (
     _state_algebra_checks,
     load_foundation_review_config,
 )
-from scripts.pipeline import build_rating_foundation_review as cli
 
 
 def test_foundation_config_locks_authoritative_phase1_and_phase2_refs():
@@ -153,19 +151,3 @@ def test_component_algebra_rejects_wrong_defensive_direction():
     assert (
         _state_algebra_checks(rows)["component_standardization_and_direction"] is False
     )
-
-
-def test_cli_rejects_production_before_reading_inputs():
-    with pytest.raises(ValueError, match="only in preview"):
-        cli.main(
-            [
-                "--environment",
-                "production",
-                "--as-of",
-                "2026-08-25T00:00:00Z",
-                "--run-id",
-                "test",
-                "--report-uri",
-                "unused",
-            ]
-        )

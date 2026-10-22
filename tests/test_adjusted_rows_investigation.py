@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
-from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
@@ -196,46 +194,6 @@ def test_readonly_repeatable_read_configuration():
     assert connection.isolation_level == IsolationLevel.REPEATABLE_READ
 
 
-def cli():
-    spec = importlib.util.spec_from_file_location(
-        "investigate_adjusted_rows",
-        Path(__file__).parents[1] / "scripts/pipeline/investigate_adjusted_rows.py",
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def test_partial_failure_receipt_and_overwrite_refusal(tmp_path, monkeypatch):
-    module = cli()
-    monkeypatch.setattr(
-        module,
-        "run",
-        lambda *args: (_ for _ in ()).throw(
-            ValueError("historical identity unavailable")
-        ),
-    )
-    target = tmp_path / "evidence"
-    arguments = [
-        "--environment",
-        "preview",
-        "--comparison-plan",
-        "unused.yaml",
-        "--output-dir",
-        str(target),
-    ]
-    assert module.main(arguments) == 1
-    import json
-
-    receipt = json.loads((target / "receipt.json").read_bytes())
-    assert receipt["status"] == "blocked"
-    assert receipt["problems"][0]["message"] == "historical identity unavailable"
-    digest = receipt.pop("receipt_sha256")
-    assert digest == audit.sha(audit.canonical(receipt))
-    with pytest.raises(FileExistsError):
-        module.main(arguments)
-
-
 @pytest.mark.parametrize(
     "changes,message",
     [
@@ -259,58 +217,3 @@ def test_source_game_population_conflicts(changes, message):
     assert audit.validate_population(prepared(), pd.DataFrame([game]))
     with pytest.raises(ValueError, match=message):
         audit.validate_population(prepared(), pd.DataFrame([game | changes]))
-
-
-def test_capture_sets_readonly_before_first_query_and_rolls_back(tmp_path, monkeypatch):
-    module = cli()
-    state = {"queries": [], "rollback": False}
-
-    class Cursor:
-        description = []
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            pass
-
-        def execute(self, sql, params=None):
-            assert connection.read_only is True
-            assert connection.isolation_level == IsolationLevel.REPEATABLE_READ
-            assert sql.startswith("SELECT")
-            state["queries"].append(sql)
-
-        def fetchone(self):
-            if len(state["queries"]) == 1:
-                return ("cks_preview_pipeline", "cks_preview_pipeline")
-            return (
-                "cks_preview_pipeline",
-                "cks_preview_pipeline",
-                "neondb",
-                "on",
-                "repeatable read",
-                pd.Timestamp("2026-10-10T00:00:00Z"),
-            )
-
-        def fetchall(self):
-            return []
-
-    class Connection:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            pass
-
-        def cursor(self):
-            return Cursor()
-
-        def rollback(self):
-            state["rollback"] = True
-
-    connection = Connection()
-    monkeypatch.setenv("PREVIEW_DATABASE_URL", "test-placeholder")
-    monkeypatch.setattr(module.psycopg, "connect", lambda *args, **kwargs: connection)
-    snapshot, frame = module.capture("preview", module.Evidence(tmp_path / "capture"))
-    assert frame.empty and snapshot["environment"] == "preview"
-    assert len(state["queries"]) == 5 and state["rollback"]

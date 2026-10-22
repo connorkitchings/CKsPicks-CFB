@@ -392,38 +392,3 @@ def test_cutover7_accepts_signed_week5_evidence_and_preserves_it_exactly():
 
     with pytest.raises(ProspectiveRecordError, match="checksum"):
         validate_v2_packet(packet, environment="preview", storage=storage)
-
-
-def test_cli_build_reads_manifests_and_matches_the_library(tmp_path):
-    import json as _json
-
-    from cks_picks_cfb.artifacts import prediction_run_manifest_path
-    from cks_picks_cfb.ratings_lab.artifacts import canonical_json
-    from scripts.pipeline.build_v5_cutover_packets import build
-
-    storage = Storage()
-    manifests = _manifests()
-    for week, manifest in manifests.items():
-        storage.objects[
-            prediction_run_manifest_path(2026, week, manifest["run_id"]).replace(
-                "/production/", "/preview/"
-            )
-        ] = canonical_json(manifest)
-    storage.read_bytes = lambda uri, _o=storage.objects: _o[
-        uri.replace("/production/", "/preview/")
-    ]
-    spec = {
-        "environment": "preview",
-        "cutover_week": CUTOVER,
-        "decision_ref": "decision-x",
-        "runs": {str(w): m["run_id"] for w, m in manifests.items()},
-    }
-    built = build("authorization", spec, storage)
-    direct = builder.build_authorization_packet(
-        manifests,
-        environment="preview",
-        cutover_week=CUTOVER,
-        decision_ref="decision-x",
-    )
-    assert built == direct
-    assert _json.loads(canonical_json(built))["cutover_week"] == CUTOVER

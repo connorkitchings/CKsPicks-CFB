@@ -86,7 +86,6 @@ jobs:
           PYTHONPATH=src:. uv run pytest tests/ -q -W error
           -n 4 --dist loadfile
           --ignore=tests/test_data_first_possession_rating_runner.py
-          --ignore=tests/test_rebuild_6b_flow.py
           --ignore=tests/test_migration_integration.py
           --ignore=tests/test_v5_batch_selection_v2.py
           --ignore=tests/test_publish_matchup_data.py

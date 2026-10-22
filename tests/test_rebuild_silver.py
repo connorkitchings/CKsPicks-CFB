@@ -136,13 +136,12 @@ def test_play_identity_policy_defaults_to_v1_and_rejects_unknown_values():
 
 
 def test_collision_exceptions_are_read_per_season_from_the_plan():
-    from pathlib import Path
-
-    import yaml
-
-    plan_path = Path(__file__).resolve().parents[1] / "conf/rebuild/6a_w6_v1.yaml"
-    plan = yaml.safe_load(plan_path.read_text())
-    context = _policy_context(**plan["policies"])
+    context = _policy_context(
+        byplay_v1_collision_exceptions={
+            "2021": [401310699],
+            "2025": [401756916, 401761632, 401762831],
+        }
+    )
     assert silver.collision_exceptions_for(context, 2021) == {401310699}
     assert silver.collision_exceptions_for(context, 2025) == {
         401756916,

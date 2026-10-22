@@ -205,7 +205,6 @@ def _imports(path: Path) -> set[str]:
 
 def test_the_served_path_imports_the_intended_update_and_never_the_epa_candidates():
     served = [
-        "scripts/pipeline/build_v5_intended_update_2026.py",
         "scripts/pipeline/build_v5_intended_update_forecasts.py",
         "scripts/pipeline/publish_v5_intended_update_ratings.py",
     ]
@@ -224,16 +223,3 @@ def test_the_served_path_imports_the_intended_update_and_never_the_epa_candidate
         for name in implementation
         if name.startswith("cks_picks_cfb")
     )
-
-
-def test_the_rating_builder_records_the_intended_update_parent_chain():
-    text = (ROOT / "scripts/pipeline/build_v5_intended_update_2026.py").read_text()
-    for parent in (
-        "accepted_rating_manifest_sha256",
-        "historical_measurement_manifest_sha256",
-        "measurement_manifest_sha256",
-        "source_lock_sha256",
-    ):
-        assert parent in text
-    # The builder names the PPP candidate it builds, the same one the updater defines.
-    assert piu.CANDIDATE_ID in text

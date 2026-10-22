@@ -19,7 +19,6 @@ from cks_picks_cfb.ratings.score_models import (
     predict_score_model,
     tournament_selection,
 )
-from scripts.pipeline import build_rating_score_tournament as tournament_cli
 
 
 def _score_frame() -> pd.DataFrame:
@@ -100,13 +99,6 @@ def test_v3_config_uses_distinct_frozen_artifact_schemas():
     assert config.model_schema_version == "rating_score_models_v3"
     assert config.prediction_schema_version == "rating_score_predictions_v3"
     assert config.candidate_schema_version == "rating_score_candidate_v3"
-
-
-def test_nonprospective_dry_run_uses_only_affirmative_lake_validation_checks():
-    assert tournament_cli._prediction_validation() == {
-        "positive_predictive_uncertainty": True,
-        "non_prospective_dry_run": True,
-    }
 
 
 def test_score_predictions_derive_margin_total_and_valid_intervals():
@@ -275,37 +267,3 @@ def test_score_fits_enforce_direction_bounds_and_reject_nonpositive_predictions(
     )
     with pytest.raises(MeasurementContractError, match="non-positive"):
         predict_score_model(nonpositive, frame.iloc[[0]], fold_id="test")
-
-
-def _cli_argv(*, environment: str, prefix: str) -> list[str]:
-    return [
-        "--environment",
-        environment,
-        "--as-of",
-        "2026-08-25T00:00:00Z",
-        "--run-id",
-        "test",
-        "--games-ref-uri",
-        "unused-games",
-        "--outcomes-ref-uri",
-        "unused-outcomes",
-        "--v4-ref-uri",
-        "unused-v4",
-        "--tournament-uri",
-        f"{prefix}/tournament.json",
-        "--models-ref-uri",
-        f"{prefix}/models-ref.json",
-        "--predictions-ref-uri",
-        f"{prefix}/predictions-ref.json",
-        "--candidate-manifest-uri",
-        f"{prefix}/candidate.json",
-    ]
-
-
-def test_cli_rejects_production_and_paths_outside_the_research_prefix():
-    with pytest.raises(ValueError, match="only in preview"):
-        tournament_cli.main(_cli_argv(environment="production", prefix="unused"))
-    with pytest.raises(ValueError, match="run-stamped research prefix"):
-        tournament_cli.main(
-            _cli_argv(environment="preview", prefix="artifacts/production/ratings")
-        )

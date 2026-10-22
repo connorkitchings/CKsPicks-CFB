@@ -132,7 +132,6 @@ named_research_benchmarks:
     classification: named-benchmark-compatibility
     identity: r2-prior-20260904-4c6e610
     paths:
-      - scripts/pipeline/build_r2_prior_tournament.py
       - src/cks_picks_cfb/ratings/priors.py
       - conf/ratings/successor_v2_tournaments.yaml
   direct_early_game:

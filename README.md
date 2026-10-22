@@ -51,4 +51,4 @@ Use `CFB_STORAGE_BACKEND=r2` with the intended environment wrapper for lake oper
 
 CI combines general Python, rating-publication and database-suite coverage with a 60% gate, alongside contracts, lint and web checks. Database tests use disposable PostgreSQL instances; never point `TEST_DATABASE_URL` at a serving database.
 
-The manual `rebuild-6b.yml` fixture workflow and V4/Hydra/MLflow code remain for historical compatibility pending the separately gated Phase 3 cleanup. They do not define the live release path. Nx remains available until that cleanup; direct web scripts and Make targets are also supported.
+V4/Hydra/MLflow code remains for historical compatibility pending the separately gated Phase 3 cleanup. They do not define the live release path. Nx remains available until that cleanup; direct web scripts and Make targets are also supported.

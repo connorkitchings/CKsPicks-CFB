@@ -9,7 +9,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-import yaml
 
 from cks_picks_cfb.data.data_first_phase2d import signed_payload
 from cks_picks_cfb.rebuild import published
@@ -32,11 +31,6 @@ from cks_picks_cfb.rebuild.targets import GuardedStore, InMemoryStore
 REPO = Path(__file__).resolve().parents[1]
 IDENTITY = "memory:preview"
 CODE_SHA = "a" * 40
-# plan_sha values recorded in the signed 6A preflight records (2026-10-05)
-SIGNED_6A_PLAN_SHAS = {
-    "conf/rebuild/6a_v1.yaml": "fc263834be68f4ddb9760876df3e8c9e721258adc498a1b4069d1508f7e096b9",
-    "conf/rebuild/6a_task4_v1.yaml": "dff398aaf15454ade9002b41f79329cc4aef13b3fc45f2a18e20b692ec6154a5",
-}
 
 
 def _plan(tmp_path: Path, **overrides) -> RebuildPlan:
@@ -60,14 +54,6 @@ def _plan(tmp_path: Path, **overrides) -> RebuildPlan:
     )
     values.update(overrides)
     return RebuildPlan(**values)
-
-
-@pytest.mark.parametrize("path", sorted(SIGNED_6A_PLAN_SHAS))
-def test_published_6a_plans_keep_their_signed_hash(path):
-    plan = RebuildPlan.from_dict(yaml.safe_load((REPO / path).read_text()))
-    assert plan.namespace == "rebuild/6a/"
-    assert "namespace" not in plan.as_dict()
-    assert plan.plan_sha() == SIGNED_6A_PLAN_SHAS[path]
 
 
 def test_namespace_enters_the_signed_plan_only_when_not_default(tmp_path):
