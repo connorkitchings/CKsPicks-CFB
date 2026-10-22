@@ -4,7 +4,7 @@ import clsx from "clsx";
 /*
  * Notice: status messages in one surface.
  *   <Notice tone="empty" title="No games">Nothing scheduled.</Notice>
- *   <Notice tone="warn" action={<ButtonLink …/>}>…</Notice>
+ *   <Notice tone="warn" action={<a href="/model">Open the model</a>}>…</Notice>
  * Tones: info and empty announce politely (role="status"); warn and error
  * interrupt (role="alert").
  */

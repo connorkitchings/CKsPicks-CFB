@@ -72,8 +72,8 @@ test.describe("desktop layout at 1280px", () => {
     await expect(page.locator("summary").filter({ visible: true, hasText: "Highlights" })).toHaveCount(0);
   });
 
-  test("performance Pick target control is compact and one line per option", async ({ page }) => {
-    await page.goto("/performance");
+  test("model Pick target control is compact and one line per option", async ({ page }) => {
+    await page.goto("/model");
     const target = page.getByRole("group", { name: "Pick target" }).filter({ visible: true });
     await expect(target).toBeVisible();
     await expectCompactSegments(target);
