@@ -1,6 +1,6 @@
 # Review Weeks 6–7 work, fix pre-Week-8 blockers, streamline to V5-only
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-10-15
 - **Approval source:** Owner approved the plan in chat on 2026-10-15.
 - **Implementation log:** session_logs/2026-10-15/02-review-fixes-implementation.md
@@ -140,4 +140,4 @@ Proposed Phase 2 commit: `docs(season): consolidate V5 operations and preserve V
 
 ## 2026-10-22 Phase 3 closure
 
-Phase 3 was carried out by [2026-10-22/01-repo-consolidation](../2026-10-22/01-repo-consolidation.md) on branch `connorkitchings/repo-consolidation`. This contract moves to Implemented when that branch merges into `dev`; the serving-parity check from this plan was not run (see the consolidation session log).
+Phase 3 was carried out by [2026-10-22/01-repo-consolidation](../2026-10-22/01-repo-consolidation.md) and merged into `dev` on 2026-10-22, which completes this contract. Caveats: the serving-parity check from this plan was not run (see the consolidation session log), and Week 8 Preview execution is tracked by the season-operations contract, not here.
