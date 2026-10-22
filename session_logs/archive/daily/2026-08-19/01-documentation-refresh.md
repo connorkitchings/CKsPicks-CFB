@@ -18,11 +18,11 @@
   display-only posture section for betting policy.
 - **Blockers:** None.
 - **Next:** Stage 4 game-week operations (Aug 25–29) per
-  `docs/plans/2026-08-18/week0-launch-execution.md`.
+  `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md`.
 
 ## Context and Decisions
 
-- Authoritative state sourced from `docs/plans/2026-08-18/week0-launch-execution.md`
+- Authoritative state sourced from `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md`
   (Stages 1–3 complete), session logs 2026-08-18, and the V4 launch artifacts:
   bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`), config
   `conf/weekly_bets/v4_2026.yaml`, production run `2026w0-79ec2aebcb00`

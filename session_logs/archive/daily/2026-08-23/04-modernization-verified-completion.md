@@ -6,7 +6,7 @@
 - **Outcome:** Implemented the quality-gate, contract, weekly CLI, ops seam, and
   web-fixture remediations; completion remains in progress because global
   coverage is 51.56%, below the required 60%.
-- **Plan Contract:** [Verified Modernization Completion](../../../../docs/plans/2026-08-23/modernization-verified-completion.md)
+- **Plan Contract:** [Verified Modernization Completion](../../../../docs/archive/plans/2026-08/2026-08-23/modernization-verified-completion.md)
 - **Approval / Status:** User explicitly authorized implementation on 2026-08-23; In Progress.
 - **Blockers:** Coverage requires an additional 8.44 percentage points under
   the full production source scope. Deep storage/Silver/features/ops extraction
@@ -35,7 +35,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-23/modernization-verified-completion.md` — approved remediation contract.
+- `docs/archive/plans/2026-08/2026-08-23/modernization-verified-completion.md` — approved remediation contract.
 - `session_logs/archive/daily/2026-08-23/04-modernization-verified-completion.md` — implementation session record.
 - Python, ops, contracts, weekly CLI, web, and dependency files — remediation
   implementation and tests.

@@ -6,7 +6,7 @@
   Preview and certified its immutable rerun.
 - **Outcome:** The recovery contract is Implemented. Phase 3's V4-comparison
   prerequisite is satisfied; the Phase 3 foundation review is next.
-- **Plan Contract:** `docs/plans/2026-08-25/phase3-v4-benchmark-recovery.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-25/phase3-v4-benchmark-recovery.md`
 - **Approval / Status:** The user explicitly requested the commit and Preview
   recovery on 2026-08-25.
 - **Blockers:** None for the Phase 3 foundation review. Phase 3 remains In

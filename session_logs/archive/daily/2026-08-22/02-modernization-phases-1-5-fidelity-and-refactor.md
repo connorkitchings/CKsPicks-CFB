@@ -4,7 +4,7 @@
 
 - **Worked On:** Completed the remaining modernization fidelity work and safe structural refactors.
 - **Outcome:** Extracted EWMA/regime helpers, split preseason responsibilities, added reusable weekly-inference primitives, introduced optional webhook failure alerts, repaired stale docs, and expanded regression coverage.
-- **Plan Contract:** [`docs/plans/2026-08-22/modernization-phases-1-5-fidelity-and-refactor.md`](../../../../docs/plans/2026-08-22/modernization-phases-1-5-fidelity-and-refactor.md)
+- **Plan Contract:** [`docs/archive/plans/2026-08/2026-08-22/modernization-phases-1-5-fidelity-and-refactor.md`](../../../../docs/archive/plans/2026-08/2026-08-22/modernization-phases-1-5-fidelity-and-refactor.md)
 - **Approval / Status:** Explicit user authorization on 2026-08-22; contract implemented.
 - **Blockers:** None.
 - **Next:** User may review and commit the completed modernization work. New model candidates/tuning remain a separate research contract.

@@ -108,23 +108,23 @@ These entries retain their dated findings and former lifecycle states. Use the
 [data-first roadmap](data-first-football-forecasting-roadmap.md) for current
 contracts; historical approvals below do not authorize execution.
 
-- [Approved high-level roadmap](../plans/2026-08-24/rating-centric-successor-high-level-roadmap.md)
+- [Approved high-level roadmap](../archive/plans/2026-08/2026-08-24/rating-centric-successor-high-level-roadmap.md)
   — sequencing and governance authority; not a single Terra implementation task.
-- [Phase 1 measurement foundation](../plans/2026-08-24/phase1-rating-measurement-foundation.md)
+- [Phase 1 measurement foundation](../archive/plans/2026-08/2026-08-24/phase1-rating-measurement-foundation.md)
   — Approved documentation and planning contract. Its seven-measurement
   catalog, four-iteration adjustment, temporal-status policy, and Preview-only
   registration policy are frozen; implementation remains a separate Terra task.
-- [Phase 2 minimum viable team-state baseline](../plans/2026-08-24/phase2-minimum-viable-team-state-baseline.md)
+- [Phase 2 minimum viable team-state baseline](../archive/plans/2026-08/2026-08-24/phase2-minimum-viable-team-state-baseline.md)
   — Implemented 2026-08-25 from the bounded Phase 1 v2 handoff
-  ([completion contract](../plans/2026-08-24/phase1-phase2-completion.md));
+  ([completion contract](../archive/plans/2026-08/2026-08-24/phase1-phase2-completion.md));
   Preview state artifacts pass all audit gates with byte-identical reruns.
-- [Phase 3 score-model tournament v2](../plans/2026-08-25/phase3-score-model-tournament-v2.md)
+- [Phase 3 score-model tournament v2](../archive/plans/2026-08/2026-08-25/phase3-score-model-tournament-v2.md)
   — In Progress. v1 is immutable failed research. v2 completed its sealed
   linear-versus-NB2 selection after one mechanical bounded-fit correction, but
   neither complete family passed every frozen gate. Only the immutable
   diagnostic exists; no candidate froze, locked-2025 confirmation ran, or
   Phase 4 work may begin.
-- [True-PPSO Phase 1/2 remediation and Phase 3 v3](../plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
+- [True-PPSO Phase 1/2 remediation and Phase 3 v3](../archive/plans/2026-08/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
   — Implemented 2026-08-26. Phase 1 v3 is certified, Phase 2 v2 passed its
   representative location gates and byte-identical rerun, and the sealed v3
   tournament froze `negative_binomial_scores` as candidate v1 (locked-2025:
@@ -133,8 +133,8 @@ contracts; historical approvals below do not authorize execution.
   Preview-only all-2025 rehearsal passed all 15 weeks and byte-identical rerun
   (summary SHA-256 `b755b585…`); no production interface changed. Phase 5
   protected-evidence tooling is amended into the O2 diagnostic lane under
-  [its operations contract](../plans/2026-08-26/phase5-protected-prospective-evidence.md).
-- [Historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md)
+  [its operations contract](../archive/plans/2026-08/2026-08-26/phase5-protected-prospective-evidence.md).
+- [Historical expansion and ratings methodology reset](../archive/plans/2026-08/2026-08-26/historical-expansion-ratings-methodology-reset.md)
   — **Superseded after completed R1/R2 evidence.** Historical R1–R4 research contract: 2015–2019 plus
   2021–2025, universal 2020 exclusion, staged methodology tournament, and a
   future candidate-v2 evidence lane. The remediated R1 run

@@ -1,0 +1,124 @@
+# Session: Data-First Repair and Recertification v2 Implementation
+
+## TL;DR
+
+- **Worked On:** Began implementation of the approved Repair v2 contract.
+- **Outcome:** Repair v2 code, contracts, and Preview-only immutable evidence
+  are complete and independently verified.
+- **Plan Contract:** `docs/archive/plans/2026-09/2026-09-08/data-first-repair-and-recertification-v2.md`
+- **Approval / Status:** User explicitly authorized implementation on 2026-09-09; contract is `Implemented — Preview verified`.
+- **Blockers:** None. Phase 3 v2 is a separate task and is not authorized here.
+- **Next:** Hand the verified Repair manifest to the separately authorized
+  Phase 3 v2 task.
+
+## Context and Decisions
+
+- Preserve the user-owned untracked `.opencode/` directory.
+- Keep all work isolated to Preview research artifacts; do not alter V4, production state, web serving, or forecasting/tournament code.
+
+## Work Completed
+
+- Reconciled the approved contract against the current repository state.
+- Added isolated Repair v2 normalizers and immutable-data contracts without
+  altering Phase 2/3 v1 code or V4.
+- Added Preview-only runner and independent verifier with exact pinned-parent
+  hashes, dry-run default, output schema validation, and an immutable two-item
+  CFBD capture inventory (2014 FBS roster and pre-2015 coach history).
+- Added the sealed Repair v2 configuration and focused tests for population
+  eligibility, incomplete games, missing measurements, 2020 exclusion,
+  recruiting windows, returning-production conflicts, coaching censoring,
+  roster transfers, constant-feature admission, and parent identity rejection.
+- Ran the sealed-parent Preview dry run with no writes or provider calls. It
+  reproduced 8,936 scheduled games, 8,935 forecast-eligible games, 8,903
+  measurement-usable games, 33 population omissions, and 5,240 auxiliary rows.
+- The dry run generated exactly the approved two planned provider requests,
+  each capped at three attempts and under the 200-request repair budget.
+
+## Files Modified
+
+- `docs/archive/plans/2026-09/2026-09-08/data-first-repair-and-recertification-v2.md` - Marked the Preview-verified implementation complete and linked this log.
+- `session_logs/archive/daily/2026-09-09/01-data-first-repair-v2-implementation.md` - Created implementation session log.
+- `src/cks_picks_cfb/data/data_first_repair_v2.py` - Repair population,
+  auxiliary normalizers, coverage/admission, immutable manifest contracts.
+- `scripts/research/run_data_first_repair_v2.py` - Preview-only dry-run/apply
+  runner with bounded capture implementation.
+- `scripts/research/verify_data_first_repair_v2.py` - Independent artifact
+  reconstruction verifier.
+- `conf/research/data_first_football_v1/repair_v2.yaml` - Sealed identity,
+  capture policy, and semantic fixture configuration.
+- `src/cks_picks_cfb/data/schema_contracts.py` - Executable immutable dataset
+  schemas for Repair v2 outputs.
+- `tests/test_data_first_repair_v2.py` - Focused Repair v2 unit coverage.
+
+## Validation
+
+- [x] Focused Repair v2 + schema tests: `17 passed`.
+- [x] Full Python warning-as-error suite: `788 passed, 2 skipped`.
+- [x] Repository-wide Ruff format check and lint.
+- [x] `make contracts-check`.
+- [x] V4/boundary coverage through the full Python suite.
+- [x] Strict MkDocs build.
+- [x] `git diff --check`.
+- [x] Serialization correction: `19 passed` across the lake and Repair v2
+  focused tests.
+- [x] Sealed-parent Preview dry run after the correction: 8,936 / 8,935 /
+  8,903 / 33 / 5,240 invariants reproduced.
+- [x] Null-serialization correction: `20 passed` across the lake and Repair v2
+  focused tests; full warning-as-error suite: `790 passed, 2 skipped`.
+- [x] Independent Preview verification of
+  `repair-v2-20260909T1417Z/repair-manifest.json`: verified `8,936 / 8,935 /
+  8,903 / 33 / 5,240`, with output rows `8,936 / 5,240 / 230 / 498 / 2`.
+- [x] Final repository validation: `791 passed, 2 skipped`; Ruff format/lint,
+  contract synchronization, strict MkDocs, and `git diff --check` passed.
+
+## Amendments and Blockers
+
+- The required committed checkpoints were completed before each Preview apply.
+  The final artifact is independently verified and no blocker remains within
+  Repair v2's authorized scope.
+- The first committed-Checkpoint Preview apply (`repair-v2-20260909T1340Z`)
+  stopped before any CFBD call or dataset publication: the runner wrote the
+  required user-readable capture inventory, then attempted to overwrite that
+  immutable object with an internal request representation. The now-fixed
+  runner keeps the immutable R2 inventory and uses the catalog header solely
+  for resume validation. The partial run contains only identity/capture-plan
+  evidence and is intentionally retained as immutable failed-run evidence;
+  use a new run ID after the corrective commit.
+- The second Preview apply (`repair-v2-20260909T1342Z`) likewise stopped before
+  any provider call or dataset publication. The catalog resume helper returns
+  semantic requests without an embedded request hash; the runner now derives
+  the deterministic hash from that semantic request before recording attempts.
+  Its identity/capture-plan header is retained as failed-run evidence; use a
+  new run ID after the second corrective commit.
+- The third Preview apply (`repair-v2-20260909T1345Z`) made exactly the two
+  approved, successful provider captures and materialized all immutable output
+  datasets. Independent verification then rejected the artifact because the
+  generic lake serializer encoded a nullable boolean as text. This is an
+  artifact-type failure, not a population or forecast result: the records must
+  not be used as Repair v2 evidence. The correction preserves nullable boolean
+  columns, adds a regression test, and reuses only exact registered captures
+  with reconstructed timing on the replacement run, so it makes no additional
+  provider call.
+- The fourth Preview apply (`repair-v2-20260909T1356Z`) reused exactly those
+  two captures and materialized its output. Its verifier found one population
+  null written as the text `"nan"` rather than a null. The repair population
+  itself was unchanged; the difference is serialization-only. The new
+  correction serializes object NaNs as null and makes the verifier compare
+  nullable object records semantically. This run is retained as immutable,
+  uncertified diagnostic evidence and will not be handed to Phase 3.
+- The final Preview run (`repair-v2-20260909T1417Z`) reused the exact two
+  registered captures, made no provider calls, and materialized all outputs.
+  After declared nullable integer keys were normalized in the independent
+  digest, verification passed. Its manifest raw SHA-256 is
+  `b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4`.
+
+## Handoff Notes
+
+- **Resume at:** Start the separately authorized Phase 3 v2 task with the
+  verified Repair manifest
+  `artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json`.
+- **Then:** Treat the Repair manifest as Preview-only diagnostic evidence and
+  retain its production-activation prohibition.
+- **Watch out for:** 2020 is forbidden in every outcome, feature, state, and fold; historical capture metadata remains reconstructed-only.
+
+**tags:** ["data-first", "repair-v2", "research", "r2"]

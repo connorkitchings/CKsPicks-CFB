@@ -4,7 +4,7 @@
 
 - **Worked On:** Validated and committed the in-progress Early-Season V4 / Game-4 foundation from the two 2026-08-17 sessions; ignored user-owned Preview artifacts.
 - **Outcome:** Full quality gates pass (352 pytest, ruff, contracts, web typecheck/lint/build, MkDocs); the worktree is clean across three commits.
-- **Plan Contract:** `docs/plans/2026-08-17/early-season-v4-modeling.md` (remains `In Progress`).
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-17/early-season-v4-modeling.md` (remains `In Progress`).
 - **Approval / Status:** User explicitly authorized cleanup, commits, and the gitignore change in this session.
 - **Blockers:** None for cleanup. The V4 tournament itself (selection → locked 2025 → refit → Preview rehearsal) is still unexecuted.
 - **Next:** Phase E from this session's plan: assemble strict V5 model-ready Gold in Preview, then run the sealed tournament.

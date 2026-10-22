@@ -8,7 +8,7 @@
   ran tests, added Amendment 4 to the Aug-28 contract, ran all validation gates.
 - **Outcome:** All code + doc changes complete. Task 5 (fresh R1 run) requires
   user commit first (script is in SUCCESSOR_R1_COMMIT_PATHS).
-- **Plan Contract:** `docs/plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`
   — Status: Implemented (Tasks 1–4)
 - **Approval / Status:** Approved by user on 2026-08-31.
 - **Blockers:** User must commit (two commits — Week-1 docs first, then
@@ -48,7 +48,7 @@
 - Task 2: Rewrote `tests/test_successor_legacy_comparison_ref_set.py` with
   5 test cases; all pass.
 - Task 3: Amendment 4 appended to
-  `docs/plans/2026-08-28/r1-cross-lineage-audit-scope-remediation.md`.
+  `docs/archive/plans/2026-08/2026-08-28/r1-cross-lineage-audit-scope-remediation.md`.
 - Task 4: All validation gates passed (see Validation section).
 - Task 5: Not run — requires commit first.
 
@@ -56,8 +56,8 @@
 
 - `scripts/pipeline/build_successor_legacy_comparison_ref_set.py` — REWRITTEN
 - `tests/test_successor_legacy_comparison_ref_set.py` — REWRITTEN
-- `docs/plans/2026-08-28/r1-cross-lineage-audit-scope-remediation.md` — Amendment 4 appended
-- `docs/plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md` — Status: Implemented
+- `docs/archive/plans/2026-08/2026-08-28/r1-cross-lineage-audit-scope-remediation.md` — Amendment 4 appended
+- `docs/archive/plans/2026-08/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md` — Status: Implemented
 
 ## Validation
 

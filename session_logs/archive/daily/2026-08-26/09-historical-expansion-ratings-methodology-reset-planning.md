@@ -8,7 +8,7 @@
   and 2021–2025, and O1–O3 operations that preserve V4 plus candidate-v1 as a
   diagnostic baseline.
 - **Plan Contract:**
-  `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`
+  `docs/archive/plans/2026-08/2026-08-26/historical-expansion-ratings-methodology-reset.md`
 - **Approval / Status:** User explicitly authorized implementation in Codex on
   2026-08-26; plan is `Approved` pending its required separate plan commit.
 - **Blockers:** None for planning. Data coverage and source-semantic gates may

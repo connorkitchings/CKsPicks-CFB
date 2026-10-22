@@ -7,9 +7,9 @@
   4 isolated shadow operations are implemented and documented. Phase 5 Week 1
   is plan-eligible only; no prospective 2026 evidence has been created.
 - **Plan Contracts:**
-  [`Phase 1/2 true-PPSO remediation and Phase 3 v3`](../../../docs/plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
+  [`Phase 1/2 true-PPSO remediation and Phase 3 v3`](../../../../docs/archive/plans/2026-08/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
   and
-  [`Phase 4 isolated shadow operations`](../../../docs/plans/2026-08-26/phase4-shadow-operations.md).
+  [`Phase 4 isolated shadow operations`](../../../../docs/archive/plans/2026-08/2026-08-26/phase4-shadow-operations.md).
 - **Approval / Status:** User authorized both implementation contracts; both are
   `Implemented`.
 - **Blockers:** None for closure. A separate approved Phase 5 contract is

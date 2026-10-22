@@ -2,7 +2,7 @@
 
 - **Status:** Estimates complete; probes pending user approval (no spend
   committed beyond the two approved 2-credit live rehearsals)
-- **Contract:** `docs/plans/2026-09-03/market-line-retention.md` (Task 5, D7)
+- **Contract:** `docs/archive/plans/2026-09/2026-09-03/market-line-retention.md` (Task 5, D7)
 - **Policy:** research-only, budget-gated. Backfilled quotes would carry
   authentic provider snapshot timestamps and enter canonical `market_quotes`
   (never `legacy_market_references`), and can never alter a published or frozen
@@ -80,6 +80,6 @@ Proceed to a backfill contract only if:
   (logged, never guessed).
 
 A "go" requires a new contract or an amendment to
-`docs/plans/2026-09-03/market-line-retention.md` before any bulk execution;
+`docs/archive/plans/2026-09/2026-09-03/market-line-retention.md` before any bulk execution;
 backfilled quotes land in R2 Bronze/Silver `market_quotes` only, and Neon
 population of historical quotes is a separate decision.

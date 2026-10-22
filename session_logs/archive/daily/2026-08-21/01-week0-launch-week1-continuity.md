@@ -4,7 +4,7 @@
 
 - **Worked On:** Implemented the approved Week 0 safety and Week 1 continuity contract.
 - **Outcome:** Canonical Week 0 source ingestion is provider-week aware; close/scoring is bound to immutable outcomes and rejects partial finals; a resumable `prepare-week` rebuilds cumulative 2026 Silver/Gold and gates later-week publishing on an explicit prepared Gold ref.
-- **Plan Contract:** `docs/plans/2026-08-21/week0-launch-week1-continuity.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-21/week0-launch-week1-continuity.md`
 - **Approval / Status:** User approved implementation in this task. Contract remains `In Progress` pending the intentionally deferred live Preview Week 1 rehearsal after Week 0 closes.
 - **Blockers:** No code blocker. Live Preview execution must wait for completed Week 0 games and the stated approval boundary.
 - **Next:** After Week 0 is frozen and closed, run `make prepare-week YEAR=2026 WEEK=1 AS_OF=<timestamp> ENV=preview`, then `make readiness` and private Preview publish using its emitted Gold ref.

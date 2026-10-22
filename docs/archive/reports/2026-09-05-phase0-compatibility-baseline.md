@@ -102,7 +102,7 @@ repository's `.venv/bin/python`; this is an execution-environment limitation,
 not a command failure. No credentialed or state-mutating check was run.
 
 Phase 1 may start from
-`docs/plans/2026-09-05/01-data-and-evidence-audit.md`. It must first verify the
+`docs/archive/plans/2026-09/2026-09-05/01-data-and-evidence-audit.md`. It must first verify the
 storage backend needed for that task and resolve manifests/catalog entries
 before reading datasets. Contract synchronization, repository boundaries,
 supported production interfaces, and deterministic fixture outputs are all

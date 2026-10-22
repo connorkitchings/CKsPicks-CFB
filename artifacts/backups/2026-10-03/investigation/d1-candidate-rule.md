@@ -23,7 +23,7 @@ Inputs per completed game and team: the team's running score s_t on every play r
 - It uses the game final, so it applies only to completed games before the cutoff (as the weekly cycle already requires).
 
 ## Delta specification (Tier 1)
-- Inputs pinned to the served lineage: locked source lock `docs/plans/2026-09-29/v5-repair-2026-source-lock.json`, the signed
+- Inputs pinned to the served lineage: locked source lock `docs/archive/plans/2026-09/2026-09-29/v5-repair-2026-source-lock.json`, the signed
   measurement and rating manifests it references, the certified 276-row priors, the 2025 terminal table, the schedule.
   Priors and terminal are NOT changed (Tier 2, re-deriving the 2025 terminal and priors, is only scoped for the D4 contract).
 - Everything runs in memory. Baseline = served observations. Candidate = served observations with the ppp-family rows of the

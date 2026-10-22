@@ -54,7 +54,7 @@
 - Added `test_rating_cli_defaults_point_at_current_lineage_configs` in
   `tests/ratings/test_cli.py` pinning all four defaults.
 - Updated `docs/plans/index.md` (Phase 3 v2 contract → Superseded),
-  `docs/plans/2026-08-25/phase3-score-model-tournament-v2.md` (status →
+  `docs/archive/plans/2026-08/2026-08-25/phase3-score-model-tournament-v2.md` (status →
   Superseded), and `docs/modeling/measurement_catalog.md` (header reflects v3
   current; Phase 4 plan-eligible note; config-supersession record).
 
@@ -67,7 +67,7 @@
   version-neutral wording.
 - `tests/ratings/test_cli.py` — explicit v1 config in the state CLI test; new
   defaults guard test.
-- `docs/plans/index.md`, `docs/plans/2026-08-25/phase3-score-model-tournament-v2.md`,
+- `docs/plans/index.md`, `docs/archive/plans/2026-08/2026-08-25/phase3-score-model-tournament-v2.md`,
   `docs/modeling/measurement_catalog.md` — supersession records.
 - `session_logs/archive/daily/2026-08-26/03-rating-config-lineage-cleanup.md` — this log.
 

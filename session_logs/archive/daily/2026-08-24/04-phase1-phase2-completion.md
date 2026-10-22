@@ -10,7 +10,7 @@
   code (`48c0f11`), and Phase 2 is Implemented — state artifacts pass all
   seven audit gates with a byte-identical rerun. Phase 3 is the next Sol
   contract.
-- **Plan Contract:** `docs/plans/2026-08-24/phase1-phase2-completion.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-24/phase1-phase2-completion.md`
   (Tasks 3–5 closed; Amendment 1 covers the bounded materialization)
 - **Approval / Status:** User authorized the bounded-memory fix on 2026-08-25
   and the Phase 2 completion plan (bounded refs, Phase 1 cutoff, two docs
@@ -68,7 +68,7 @@
 - `scripts/pipeline/build_rating_measurements.py` — season-scoped bounded materialization, execution diagnostics, report identity handling.
 - `src/cks_picks_cfb/ratings/`, `src/cks_picks_cfb/data/schema_contracts.py` — formatting drift only (two are committed-code-gated paths).
 - `tests/ratings/{helpers,test_cli,test_season_scoped}.py` — fixtures and coverage for the bounded path.
-- `docs/modeling/measurement_catalog.md`, `docs/plans/2026-08-24/phase1-phase2-completion.md` — authoritative refs and amendment.
+- `docs/modeling/measurement_catalog.md`, `docs/archive/plans/2026-08/2026-08-24/phase1-phase2-completion.md` — authoritative refs and amendment.
 
 ## Validation
 

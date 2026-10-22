@@ -4,7 +4,7 @@
 
 - **Worked On:** Implemented the approved V4 Games 1-4 modeling foundation and Game-4 handoff contract.
 - **Outcome:** Canonical routing, ten-route bundle support, optional-talent source policy, result-only established comparator, numerical warning failure, schema migration, comparison tooling, tests, and documentation are in place.
-- **Plan Contract:** `docs/plans/2026-08-17/early-season-v4-modeling.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-17/early-season-v4-modeling.md`
 - **Approval / Status:** User explicitly authorized implementation; contract remains `In Progress` pending an immutable V4 tournament and Preview rehearsal.
 - **Blockers:** A real V4 selection/refit requires a new immutable point-in-time feature snapshot and Preview R2/Neon operation.  No operational artifact was created in this session.
 

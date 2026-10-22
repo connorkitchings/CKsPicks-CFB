@@ -144,7 +144,9 @@ def test_archived_successor_contracts_keep_prohibited_parent_boundary():
         "phase5-rating-based-forecast-selection-v2.md",
         "phase6-prospective-evidence-v2.md",
     ):
-        text = _plain((ROOT / "docs/plans/2026-09-08" / name).read_text())
+        text = _plain(
+            (ROOT / "docs/archive/plans/2026-09/2026-09-08" / name).read_text()
+        )
         assert "status: superseded" in text
         assert "does not authorize executing old runners" in text
 

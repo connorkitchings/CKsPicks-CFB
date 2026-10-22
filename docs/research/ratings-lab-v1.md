@@ -1,6 +1,6 @@
 # Ratings laboratory v1
 
-The ratings laboratory is a separate, private research path for designing V6 candidates. Its normal CLI reads the exact accepted V5 historical parents and writes only to a dedicated R2 research bucket. It does not change the V5 forecast, production selection, Neon, or the public site. The implementation contract is [`v6-ratings-research-platform.md`](../plans/2026-09-28/v6-ratings-research-platform.md).
+The ratings laboratory is a separate, private research path for designing V6 candidates. Its normal CLI reads the exact accepted V5 historical parents and writes only to a dedicated R2 research bucket. It does not change the V5 forecast, production selection, Neon, or the public site. The implementation contract is [`v6-ratings-research-platform.md`](../archive/plans/2026-09/2026-09-28/v6-ratings-research-platform.md).
 
 The [V5 intended-update repair experiment](../archive/research/2026-09-28-v5-intended-update-repair-experiment.md)
 is an explicitly scoped local-output exception while that dedicated bucket is
@@ -127,7 +127,7 @@ Phase 4 introduces multi-factor forecast bridges and historical paired benchmark
 
 ## Deferred architectural decisions
 
-As documented in [`01-v6-ratings-lab-architecture-hardening.md`](../plans/2026-09-30/01-v6-ratings-lab-architecture-hardening.md), three architectural items are intentionally deferred:
+As documented in [`01-v6-ratings-lab-architecture-hardening.md`](../archive/plans/2026-09/2026-09-30/01-v6-ratings-lab-architecture-hardening.md), three architectural items are intentionally deferred:
 - **Dedicated R2 bucket**: Local storage remains the active research engine until private research bucket credentials are provisioned.
 - **Opponent adjustment**: The opponent adjustment layer is kept fixed to V5 logic for initial candidate comparisons; alternative opponent adjustment methods are deferred to a dedicated study.
 - **Batch sweep orchestration**: The CLI operates single-candidate runs for now; multi-candidate parallel execution is deferred until large candidate sweeps begin.

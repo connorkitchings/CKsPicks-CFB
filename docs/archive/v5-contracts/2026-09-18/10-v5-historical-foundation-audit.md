@@ -5,7 +5,7 @@
 - **Planner:** Sol
 - **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18. Status remains Draft per the documentation-authority gate; see Amendment 1 in the 10a contract.
 - **Completed:** 2026-09-19 — 10a and 10b both Implemented; all DoD items met.
-- **Implementation log:** `session_logs/2026-09-18/05-v5-contract-10-umbrella-planning.md`, `session_logs/2026-09-19/01-v5-10b-completion.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-18/05-v5-contract-10-umbrella-planning.md`, `session_logs/archive/daily/2026-09-19/01-v5-10b-completion.md`
 - **Commit policy:** Separate plan-package commit; user controls Git operations.
 
 ## Goal and entry gate

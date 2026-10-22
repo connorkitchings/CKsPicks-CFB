@@ -4,7 +4,7 @@
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved this exact plan for implementation on 2026-09-18.
-- **Implementation log:** `session_logs/2026-09-18/04-v5-historical-first-documentation-reset.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-18/04-v5-historical-first-documentation-reset.md`
 - **Commit policy:** Separate documentation-contract commit; user controls Git operations.
 
 ## Goal

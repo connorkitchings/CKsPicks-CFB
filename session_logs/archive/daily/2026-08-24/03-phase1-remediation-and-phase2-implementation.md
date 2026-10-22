@@ -7,8 +7,8 @@
 - **Outcome:** Local implementation and validation are complete; Preview
   materialization is deliberately blocked until the relevant source is in a
   recorded Git commit.
-- **Plan Contracts:** `docs/plans/2026-08-24/phase1-rating-measurement-remediation.md`
-  and `docs/plans/2026-08-24/phase2-minimum-viable-team-state-baseline.md`.
+- **Plan Contracts:** `docs/archive/plans/2026-08/2026-08-24/phase1-rating-measurement-remediation.md`
+  and `docs/archive/plans/2026-08/2026-08-24/phase2-minimum-viable-team-state-baseline.md`.
 - **Approval / Status:** User explicitly authorized both on 2026-08-24. Both
   remain `In Progress` pending committed-code Preview artifact builds.
 - **Blockers:** User-controlled commit is required before Preview writes; a

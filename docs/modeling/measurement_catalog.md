@@ -13,7 +13,7 @@ lineage, ratings, forecast fit, and independent verification completed and
 accepted the historical V5 lane, closing all four audit findings. See the [current V5 status](v5_status.md) for operational gates and the revised site cutover policy.
 
 The repaired source/population manifest supplies the exact parent roles.
-[Phase 3 v2](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) is certified
+[Phase 3 v2](../archive/plans/2026-09/2026-09-10/phase3-v2-compact-tournament-state.md) is certified
 benchmark evidence, not the possession definition. Repaired coaching, same-team
 roster continuity and recruiting/returning-production semantics supply only their
 admitted preseason-prior roles. Polls and markets remain diagnostic-only.
@@ -167,7 +167,7 @@ The v1 observation version `b1da5e85a0438fab109937bf`, snapshot version
 consumption. They remain immutable history. Phase 2 may consume only the
 replacement v2 observation, season-to-date snapshot, terminal snapshot, and
 passing audit produced under
-`docs/plans/2026-08-24/phase1-rating-measurement-remediation.md`.
+`docs/archive/plans/2026-08/2026-08-24/phase1-rating-measurement-remediation.md`.
 
 **Authoritative v2 build (bounded season-scoped materialization, 2026-08-25):**
 measurement design ID `340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b`,

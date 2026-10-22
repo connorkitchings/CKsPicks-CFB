@@ -9,7 +9,7 @@
   files). Phase 3 v3 **passed every frozen gate** and froze candidate v1
   (`negative_binomial_scores`); Phase 4 shadow operations are now plan-eligible
   under a fresh Sol contract.
-- **Plan Contract:** `docs/plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md`
 - **Approval / Status:** User approved this execution plan on 2026-08-26
   (detached-worktree rerun; stop after Phase 3 closure); contract now
   `Implemented`.
@@ -67,7 +67,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md`
+- `docs/archive/plans/2026-08/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md`
   — status to Implemented; DoD complete; Amendment 5 records both outcomes.
 - `docs/plans/index.md` — rating-transition contract statuses.
 - `docs/planning/roadmap.md` — phase queue entry for the 2026-08-26 contract.

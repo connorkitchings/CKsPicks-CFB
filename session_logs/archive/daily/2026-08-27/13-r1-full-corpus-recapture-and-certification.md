@@ -6,7 +6,7 @@
 - **Outcome:** Terminally blocked before capture by missing required 2019
   comparison evidence; the immutable failure report is published.
 - **Plan Contract:**
-  `docs/plans/2026-08-27/r1-full-corpus-recapture-and-certification.md`
+  `docs/archive/plans/2026-08/2026-08-27/r1-full-corpus-recapture-and-certification.md`
 - **Approval / Status:** User explicitly authorized implementation in Codex on
   2026-08-27; contract is `In Progress`.
 - **Blockers:** Preview catalog has zero validated legacy 2019 artifacts.
@@ -58,7 +58,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-27/r1-full-corpus-recapture-and-certification.md`
+- `docs/archive/plans/2026-08/2026-08-27/r1-full-corpus-recapture-and-certification.md`
 - `session_logs/archive/daily/2026-08-27/13-r1-full-corpus-recapture-and-certification.md`
 - `src/cks_picks_cfb/data/history_source_capture.py`
 - `src/cks_picks_cfb/data/history_play_capture.py`

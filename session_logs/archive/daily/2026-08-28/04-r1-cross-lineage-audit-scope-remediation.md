@@ -16,7 +16,7 @@
   the contract's finals-exact rate. Both fixed and tested; run
   `r1-full-corpus-20260829-e9edee5` (code `e9edee5`) is in flight.
 - **Plan Contract:**
-  `docs/plans/2026-08-28/r1-cross-lineage-audit-scope-remediation.md`
+  `docs/archive/plans/2026-08/2026-08-28/r1-cross-lineage-audit-scope-remediation.md`
 - **Approval / Status:** User directed continuous execution on 2026-08-28
   ("keep rolling"); the contract is `Approved` with Amendments 1–2.
 - **Blockers:** None currently; R2 stays blocked until
@@ -83,8 +83,8 @@
   finals-exact evidence extraction.
 - `tests/ratings/test_cross_lineage.py`, `tests/ratings/test_successor_history.py`
   — regression coverage (7 + 2 new tests).
-- `docs/plans/2026-08-28/r1-cross-lineage-audit-scope-remediation.md`,
-  `docs/plans/2026-08-28/r1-derived-schema-registration-and-atomicity.md`,
+- `docs/archive/plans/2026-08/2026-08-28/r1-cross-lineage-audit-scope-remediation.md`,
+  `docs/archive/plans/2026-08/2026-08-28/r1-derived-schema-registration-and-atomicity.md`,
   `docs/plans/index.md` — contract record.
 
 ## Validation

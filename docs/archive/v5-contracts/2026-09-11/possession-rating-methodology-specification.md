@@ -7,8 +7,8 @@
   (compete both rating definitions; carry the full Phase 4A v2 prior/updater
   grid; volume proxy now; accepted the overtime and non-offense-scoring
   defaults) and approved the complete contract in the same planning session.
-- **Planning log:** `session_logs/2026-09-11/05-possession-rating-methodology-planning.md`
-- **Implementation log:** `session_logs/2026-09-11/06-possession-methodology-implementation.md`
+- **Planning log:** `session_logs/archive/daily/2026-09-11/05-possession-rating-methodology-planning.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-11/06-possession-methodology-implementation.md`
 - **Commit policy:** Commit with implementation (contained documentation work).
 
 > **Methodology amended (2026-09-13):** This remains an Implemented historical
@@ -24,7 +24,7 @@
 
 Settle every open methodology decision for the possession-based rating system
 (step 3 of the approved handoff queue in
-`docs/plans/2026-09-10/documentation-alignment-and-next-research-steps.md`) and
+`docs/archive/plans/2026-09/2026-09-10/documentation-alignment-and-next-research-steps.md`) and
 persist it as decision-complete semantic authority, so the four replacement
 execution contracts — possession measurement certification, rating estimation,
 score forecasting, and prospective evaluation — can be authored without new
@@ -55,7 +55,7 @@ tests are consistent; and no estimator, measurement, or data code has changed.
   play-by-play but attributed to no unit; the drives dataset
   `points`/`points_on_opps` columns are Boolean-sum-defective and unusable.
 - The execution-held Phase 4A v2 contract
-  (`docs/plans/2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md`)
+  (`docs/archive/plans/2026-09/2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md`)
   specifies a 6-prior × 5-updater grid (including one local-level Kalman
   challenger) that has never been executed; no Kalman code exists anywhere.
 - Prior-feature defects found by the 2026-09-08 review (constant coaching

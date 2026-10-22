@@ -4,7 +4,7 @@
 
 - **Worked On:** Implemented the approved v2 lineage, environment isolation, durable pipeline ownership, and executable schema contract plan.
 - **Outcome:** New immutable datasets have v2 identities and schema hashes; mutating operations resolve explicit environments; pipeline resume is definition-bound, lease-fenced, and output-verified; PostgreSQL migration and CI coverage validate fresh and pre-hardening upgrade paths.
-- **Plan Contract:** `docs/plans/2026-08-15/pipeline-data-integrity-hardening.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-15/pipeline-data-integrity-hardening.md`
 - **Approval / Status:** User authorized implementation; contract marked `Implemented` after validation.
 - **Blockers:** None.
 - **Next:** Review the changes and apply migration `0006_pipeline_data_hardening.sql` to Preview in a separately approved rollout before running lease-fenced operations there.

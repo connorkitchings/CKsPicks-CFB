@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-27
 
-**Contract:** [Conservative Post-V5 Repository Simplification](../plans/2026-09-27/01-post-v5-repo-simplification.md)
+**Contract:** [Conservative Post-V5 Repository Simplification](../plans/2026-09/2026-09-27/01-post-v5-repo-simplification.md)
 **Decision:** Retain all tracked candidates in this pass. No importable code, script, config, test, plan, or session log is moved or deleted.
 
 ## Method and limits
@@ -77,7 +77,7 @@ Every path below was checked and is **retained** for this contract. Reference co
 | `scripts/pipeline/generate_game_ordinal_candidates.py` | commands/config 2, code 1, docs/other 3, lineage 2 | `Makefile` |
 | `scripts/pipeline/refit_game_ordinal_bundle.py` | commands/config 1, tests 1, docs/other 1, lineage 4 | `Makefile` |
 | `scripts/pipeline/restore_legacy_comparison_2019.py` | none in tracked text | unresolved external/identity use |
-| `scripts/pipeline/run_rating_shadow_rehearsal.py` | lineage 2 | `docs/plans/2026-08-26/phase4-shadow-operations.md` |
+| `scripts/pipeline/run_rating_shadow_rehearsal.py` | lineage 2 | `docs/archive/plans/2026-08/2026-08-26/phase4-shadow-operations.md` |
 | `scripts/pipeline/run_successor_tournament.py` | code 1, lineage 2 | `scripts/pipeline/build_r2_prior_tournament.py` |
 
 ### 1D legacy configs and template (41 tracked files)
@@ -131,22 +131,22 @@ Every path below was checked and is **retained** for this contract. Reference co
 | Candidate path | Observed references | Example matching path |
 | --- | --- | --- |
 | `scripts/research/audit_data_first_evidence.py` | tests 1, docs/other 1, lineage 3 | `tests/test_data_first_evidence_audit.py` |
-| `scripts/research/build_data_first_eligibility.py` | lineage 1 | `docs/plans/2026-09-06/04-phase2d-recertification-eligibility-and-capture-activation.md` |
-| `scripts/research/build_data_first_phase2c.py` | lineage 3 | `docs/plans/2026-09-06/03-phase2c-materialization-and-ref-set-closure.md` |
-| `scripts/research/build_phase2d_eligibility.py` | lineage 2 | `session_logs/2026-09-06/06-phase2d-recertification-and-capture-activation.md` |
+| `scripts/research/build_data_first_eligibility.py` | lineage 1 | `docs/archive/plans/2026-09/2026-09-06/04-phase2d-recertification-eligibility-and-capture-activation.md` |
+| `scripts/research/build_data_first_phase2c.py` | lineage 3 | `docs/archive/plans/2026-09/2026-09-06/03-phase2c-materialization-and-ref-set-closure.md` |
+| `scripts/research/build_phase2d_eligibility.py` | lineage 2 | `session_logs/archive/daily/2026-09-06/06-phase2d-recertification-and-capture-activation.md` |
 | `scripts/research/capture_data_first_phase2.py` | commands/config 1, docs/other 1, lineage 3 | `.github/workflows/data-first-pregame-capture.yml` |
-| `scripts/research/certify_data_first_phase2e.py` | lineage 2 | `session_logs/2026-09-06/07-transformation-check-in-phase2d-repair.md` |
+| `scripts/research/certify_data_first_phase2e.py` | lineage 2 | `session_logs/archive/daily/2026-09-06/07-transformation-check-in-phase2d-repair.md` |
 | `scripts/research/recertify_data_first_phase2d.py` | tests 1, lineage 2 | `tests/test_data_first_phase2d.py` |
 | `scripts/research/repair_data_first_catalog.py` | none in tracked text | unresolved external/identity use |
 | `scripts/research/run_data_first_historical_audit.py` | code 1, docs/other 1, lineage 3 | `src/cks_picks_cfb/audit/independence.py` |
 | `scripts/research/run_data_first_phase3.py` | code 1, lineage 1 | `scripts/research/verify_data_first_phase3_v2.py` |
 | `scripts/research/run_data_first_phase3_v2.py` | code 1, lineage 7 | `scripts/research/verify_data_first_phase3_v2.py` |
-| `scripts/research/run_data_first_phase4a.py` | lineage 1 | `session_logs/2026-09-08/01-phase3-closure-and-phase4a-rating-selection.md` |
-| `scripts/research/run_data_first_phase4b.py` | lineage 2 | `docs/plans/2026-09-07/03-phase4b-target-context-selection.md` |
-| `scripts/research/run_v5_foundation_blocker_diagnosis.py` | lineage 1 | `session_logs/2026-09-21/02-v5-foundation-blocker-diagnosis.md` |
+| `scripts/research/run_data_first_phase4a.py` | lineage 1 | `session_logs/archive/daily/2026-09-08/01-phase3-closure-and-phase4a-rating-selection.md` |
+| `scripts/research/run_data_first_phase4b.py` | lineage 2 | `docs/archive/plans/2026-09/2026-09-07/03-phase4b-target-context-selection.md` |
+| `scripts/research/run_v5_foundation_blocker_diagnosis.py` | lineage 1 | `session_logs/archive/daily/2026-09-21/02-v5-foundation-blocker-diagnosis.md` |
 | `scripts/research/run_v5_historical_readiness_review.py` | docs/other 1, lineage 2 | `docs/archive/v5-contracts/2026-09-21/06-v5-12-historical-results-and-readiness-review.md` |
 | `scripts/research/verify_data_first_historical_audit.py` | code 1, docs/other 2, lineage 1 | `src/cks_picks_cfb/audit/independence.py` |
-| `scripts/research/verify_data_first_phase3.py` | lineage 2 | `docs/plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md` |
+| `scripts/research/verify_data_first_phase3.py` | lineage 2 | `docs/archive/plans/2026-09/2026-09-07/01-phase3-measurement-certification-and-core-selection.md` |
 | `scripts/research/verify_data_first_phase3_v2.py` | code 1, lineage 2 | `scripts/research/run_data_first_phase3_v2.py` |
 | `scripts/research/verify_data_first_phase4a.py` | code 1, tests 1, lineage 1 | `scripts/research/run_data_first_phase4a.py` |
 | `scripts/research/verify_data_first_phase4b.py` | code 1, tests 1, lineage 2 | `scripts/research/run_data_first_phase4b.py` |

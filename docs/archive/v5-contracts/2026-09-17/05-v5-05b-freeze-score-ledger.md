@@ -4,7 +4,7 @@
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User explicitly approved implementation on 2026-09-17 ("proceed").
-- **Implementation log:** `session_logs/2026-09-17/12-v5-05b-freeze-score-ledger.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-17/12-v5-05b-freeze-score-ledger.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
 - **Certified Freeze Artifact:** `artifacts/research/data-first-football-v1/possession-v1/shadow/runs/shadow-v1-20260918-73e8e9b-05b-freeze/freeze-manifest.json`
 - **Certified Score Artifact:** `artifacts/research/data-first-football-v1/possession-v1/shadow/runs/shadow-v1-20260918-7aec1c8-05b-score/score-manifest.json`

@@ -37,7 +37,7 @@ All receipt fields are filled except the production decision and the production 
 - Not run: real Preview checks beyond the read-only venue dry run and verifier, publish-time venue gate test (only `require_venue_cities` itself is unit-tested; the wiring in `publish_to_db.py` needs a DB and is covered by the Preview rehearsal).
 
 ## Verifier run on served Preview artifacts (verified 2026-10-04, read-only)
-- Command: `verify_v5_intended_update_serving` with `docs/plans/2026-09-29/v5-repair-2026-source-lock.json`, `--release-tag 20260929-p1`, reading Preview R2; no `--apply`, nothing written.
+- Command: `verify_v5_intended_update_serving` with `docs/archive/plans/2026-09/2026-09-29/v5-repair-2026-source-lock.json`, `--release-tag 20260929-p1`, reading Preview R2; no `--apply`, nothing written.
 - **Committed (old) rule: 0 failures. Corrected rule: 32 spread failures, every one an `Away` pick** ("selected quote differs from original eligible best quote"). No total failures under either rule.
 - Reading: the served `v5repair-20260929-p1` artifacts selected the highest home-signed line for Away spreads, which is the worst line for the bettor. The old verifier encoded the same ordering, so it could not catch it. This is the defect Task 1 fixes; it is now confirmed in served data, not only in code.
 - Sizing (below) answers the earlier open questions.

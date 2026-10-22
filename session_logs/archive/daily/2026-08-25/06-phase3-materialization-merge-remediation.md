@@ -8,7 +8,7 @@
   corrected code now uses authoritative outcome-score columns even when the
   canonical schedule also carries scores.
 - **Plan Contract:**
-  `docs/plans/2026-08-25/phase3-structured-margin-total-baseline.md`
+  `docs/archive/plans/2026-08/2026-08-25/phase3-structured-margin-total-baseline.md`
 - **Approval / Status:** User authorized Preview materialization on 2026-08-25;
   Phase 3 remains `In Progress` pending a commit and a fresh Preview run.
 - **Blockers:** Required corrective-code commit before retry.

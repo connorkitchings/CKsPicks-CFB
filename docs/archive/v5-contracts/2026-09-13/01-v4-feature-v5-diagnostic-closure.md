@@ -4,7 +4,7 @@
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User explicitly selected separate diagnostic closure and approved the full package on 2026-09-13 with “Implement the proposed plan.” Execution authorized 2026-09-22 ("Use the repository-local implement-plan skill and implement the approved contract…").
-- **Implementation log:** `session_logs/2026-09-22/02-v4-feature-v5-diagnostic-closure.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-22/02-v4-feature-v5-diagnostic-closure.md`
 - **Commit policy:** Separate diagnostic evidence/documentation checkpoint; user executes Git.
 
 ## Goal and current state

@@ -6,7 +6,7 @@
   tournament and its Preview-only artifact CLI.
 - **Outcome:** The committed sealed selection produced only an immutable
   diagnostic report; neither complete score family passed every frozen gate.
-- **Plan Contract:** `docs/plans/2026-08-25/phase3-score-model-tournament-v2.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-25/phase3-score-model-tournament-v2.md`
 - **Approval / Status:** User explicitly authorized implementation; `In Progress`
   after the frozen historical gate failure.
 - **Blockers:** Frozen historical gates failed; Phase 4 is blocked.
@@ -61,7 +61,7 @@
 - `src/cks_picks_cfb/ratings/score_models.py` — sealed score-family logic.
 - `scripts/pipeline/build_rating_score_tournament.py` — Preview materializer.
 - `tests/ratings/test_score_models.py` — v2 regression coverage.
-- `docs/plans/2026-08-25/*`, `docs/planning/roadmap.md`,
+- `docs/archive/plans/2026-08/2026-08-25/*`, `docs/planning/roadmap.md`,
   `docs/modeling/rating_system_requirements.md`, `docs/plans/index.md` —
   authority closure and v2 handoff.
 

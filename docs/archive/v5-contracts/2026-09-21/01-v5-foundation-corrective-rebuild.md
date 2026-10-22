@@ -4,7 +4,7 @@
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation with "Let's do Option B." on 2026-09-21.
-- **Implementation log:** `session_logs/2026-09-21/03-v5-foundation-corrective-rebuild.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-21/03-v5-foundation-corrective-rebuild.md`
 - **Commit policy:** Phased checkpoints; user controls Git operations.
 
 ## Goal

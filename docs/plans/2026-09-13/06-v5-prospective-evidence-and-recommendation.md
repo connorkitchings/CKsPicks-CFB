@@ -1,12 +1,12 @@
 # V5-06: Prospective Evidence and Promotion Recommendation
 
-> **Current policy amendment (2026-09-22):** This contract's immutable attempt ledger, eligibility checks, outcome-versioned evaluations, and quote diagnostics remain active as prospective monitoring. Its six-slate count and three-category recommendation are no longer prerequisites for completing V5 development or reviewing a site cutover. The [current V5 status](../../modeling/v5_status.md) and [verified-cutover contract](../2026-09-22/04-v5-authority-simplification-and-site-cutover.md) govern those milestones. Diagnostic and retrospective records never count, and 2026 outcomes cannot refit this V5 identity.
+> **Current policy amendment (2026-09-22):** This contract's immutable attempt ledger, eligibility checks, outcome-versioned evaluations, and quote diagnostics remain active as prospective monitoring. Its six-slate count and three-category recommendation are no longer prerequisites for completing V5 development or reviewing a site cutover. The [current V5 status](../../modeling/v5_status.md) and [verified-cutover contract](../../archive/plans/2026-09/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) govern those milestones. Diagnostic and retrospective records never count, and 2026 outcomes cannot refit this V5 identity.
 
 - **Status:** In Progress — monitoring tooling ready; no qualifying live slate yet
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; collection starts only after the verified live-readiness dependency passes.
-- **Implementation log:** Code-readiness implementation: `session_logs/2026-09-22/11-v5-live-research-tooling-completion.md`. Create a separate log for each evidence-collection session and the final `NN-v5-prospective-evidence-review.md`.
+- **Implementation log:** Code-readiness implementation: `session_logs/archive/daily/2026-09-22/11-v5-live-research-tooling-completion.md`. Create a separate log for each evidence-collection session and the final `NN-v5-prospective-evidence-review.md`.
 - **Commit policy:** Separate evidence/review checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -216,7 +216,7 @@ periodic review window. The three original recommendation categories may be
 reported descriptively after six slates; they are not prerequisites for a site
 cutover. Live readiness, exact lineage, pre-kickoff timing, and diagnostic
 exclusions remain unchanged. The [current V5 guide](../../modeling/v5_status.md)
-and [cutover contract](../2026-09-22/04-v5-authority-simplification-and-site-cutover.md)
+and [cutover contract](../../archive/plans/2026-09/2026-09-22/04-v5-authority-simplification-and-site-cutover.md)
 govern activation review.
 
 **Impact:** Contract 06 is now In Progress as an ongoing monitoring program.

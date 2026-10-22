@@ -476,7 +476,7 @@ def render_diagnosis_report(
 
 - **Date:** 2026-09-21
 - **Status:** Complete (Read-Only)
-- **Contract:** `docs/plans/2026-09-20/02-v5-foundation-blocker-diagnosis.md`
+- **Contract:** `docs/archive/v5-contracts/2026-09-20/02-v5-foundation-blocker-diagnosis.md`
 - **Audit Parent:** `artifacts/research/data-first-football-v1/audits/historical-foundation-v1/runs/historical-audit-10b-20260919-full/audit-manifest.json`
 - **Permitted Use:** `diagnosis_and_corrective_contract_planning_only`
 - **Production Activation Authorized:** `false`
@@ -587,7 +587,7 @@ graph TD
 ## Corrective Execution Contract Recommendation
 
 We recommend exactly **ONE** subsequent corrective execution contract:
-`docs/plans/2026-09-21/01-v5-foundation-corrective-rebuild.md`
+`docs/archive/v5-contracts/2026-09-21/01-v5-foundation-corrective-rebuild.md`
 
 ### Proposed Contract Scope
 

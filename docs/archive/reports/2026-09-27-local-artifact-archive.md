@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-27 18:18 UTC
 
-**Contract:** [Archive Unique Local Artifacts](../plans/2026-09-27/03-archive-unique-local-artifacts.md)
+**Contract:** [Archive Unique Local Artifacts](../../plans/2026-09-27/03-archive-unique-local-artifacts.md)
 
 **Manifest:** [Tracked copy](2026-09-27-local-artifact-archive-manifest.json)
 

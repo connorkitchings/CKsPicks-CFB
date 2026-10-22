@@ -4,7 +4,7 @@
 - **Created:** 2026-09-19
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation with “PLEASE IMPLEMENT THIS PLAN” on 2026-09-19.
-- **Implementation log:** `session_logs/2026-09-19/01-v5-conditional-results-gate-reset.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-19/01-v5-conditional-results-gate-reset.md`
 - **Commit policy:** Documentation-only commit; user controls Git operations.
 
 ## Goal

@@ -6,7 +6,7 @@
 - **Outcome:** Saved a decision-complete Draft plan. No implementation, data
   operation, R2/Neon access, or live 2026 freeze occurred.
 - **Plan Contract:**
-  `docs/plans/2026-08-26/phase5-protected-prospective-evidence.md`
+  `docs/archive/plans/2026-08/2026-08-26/phase5-protected-prospective-evidence.md`
 - **Approval / Status:** User authorized planning/documentation only on
   2026-08-26; contract remains `Draft` pending implementation approval.
 - **Blockers:** None for plan review. Live implementation must close the
@@ -52,7 +52,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-26/phase5-protected-prospective-evidence.md` — Draft
+- `docs/archive/plans/2026-08/2026-08-26/phase5-protected-prospective-evidence.md` — Draft
   implementation and six-slate operations contract.
 - `session_logs/archive/daily/2026-08-26/06-phase5-protected-evidence-planning.md` — planning
   investigation and handoff.
@@ -80,7 +80,7 @@ Copy-ready Terra handoff after approval:
 ```text
 Use the repository-local implement-plan skill and implement the approved contract at:
 
-docs/plans/2026-08-26/phase5-protected-prospective-evidence.md
+docs/archive/plans/2026-08/2026-08-26/phase5-protected-prospective-evidence.md
 
 Treat it as authoritative. Preserve its architectural decisions, run its validation,
 and stop for any material conflict. This request explicitly authorizes implementation.

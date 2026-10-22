@@ -7,7 +7,7 @@
 - **Outcome:** Complete — current documentation centers the 2026 rating-centric
   transition while V4 remains production; historical material is archived or
   removed according to the audit.
-- **Plan Contract:** `docs/plans/2026-08-23/repository-documentation-and-2026-ratings-realignment.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-23/repository-documentation-and-2026-ratings-realignment.md`
 - **Approval / Status:** User explicitly approved the contract; implemented.
 - **Blockers:** None.
 - **Next:** Hand the measurement/adjustment implementation contract to a new

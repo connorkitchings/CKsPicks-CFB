@@ -4,7 +4,7 @@
 
 - **Worked On:** Independently audited modernization commits `9ac7490` and `2a2f9f9` against `ff8a71b`.
 - **Outcome:** Recorded a repository-only audit verdict of **Not verified** in [the audit report](../../docs/reports/2026_modernization_verification.md).
-- **Plan Contract:** [Modernization Verification Audit](../../../../docs/plans/2026-08-23/modernization-verification-audit.md)
+- **Plan Contract:** [Modernization Verification Audit](../../../../docs/archive/plans/2026-08/2026-08-23/modernization-verification-audit.md)
 - **Approval / Status:** User explicitly authorized execution on 2026-08-23; audit contract implemented.
 - **Blockers:** No external blockers. The audited implementation has P1 remediation items.
 - **Next:** Create a focused remediation contract; do not change V4 model, production storage, or publication policy without explicit scope.
@@ -25,7 +25,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-23/modernization-verification-audit.md` — approved audit contract and result.
+- `docs/archive/plans/2026-08/2026-08-23/modernization-verification-audit.md` — approved audit contract and result.
 - `docs/reports/2026_modernization_verification.md` — evidence-backed audit report.
 - `session_logs/archive/daily/2026-08-23/03-modernization-verification-audit.md` — this handoff log.
 

@@ -4,7 +4,7 @@
 
 - **Worked On:** Historical data readiness, immutable weekly publication, market-only web mode, and CFBD Pick'em rehearsal for the August 29, 2026 Week 0 slate.
 - **Outcome:** Preview data audits pass, private run `2026w0-d990f9b0e495` published exactly eight fully lined games with zero high-confidence claims, and an eight-row local Pick'em CSV was generated without an API call or submission.
-- **Plan Contract:** [Week 0 Launch Readiness](../../../../docs/plans/2026-08-15/week0-launch-readiness.md)
+- **Plan Contract:** [Week 0 Launch Readiness](../../../../docs/archive/plans/2026-08/2026-08-15/week0-launch-readiness.md)
 - **Approval / Status:** User approved implementation in this task; contract is Implemented.
 - **External Blocker:** `CFBD_PREDICTION_TOKEN` is not configured, so authenticated contest reconciliation and dry-run remain gated. This does not block market-only launch readiness.
 - **Production State:** Unchanged. No production migration, Vercel deployment, Git staging/commit/push, or Pick'em POST occurred.

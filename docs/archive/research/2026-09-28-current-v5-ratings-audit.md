@@ -309,6 +309,6 @@ places where predictive errors can arise.
   `default_transaction_read_only=on`.
 - [Current V5 status](../modeling/v5_status.md),
   [methodology](../modeling/possession_rating_methodology.md),
-  [manual operator contract](../plans/2026-09-24/02-v5-weekly-operator-and-release-gates.md),
-  [product transformation](../plans/2026-09-23/01-v5-product-transformation.md),
-  [history replay contract](../plans/2026-09-27/05-weekly-ratings-history-replay.md).
+  [manual operator contract](../plans/2026-09/2026-09-24/02-v5-weekly-operator-and-release-gates.md),
+  [product transformation](../../plans/2026-09-23/01-v5-product-transformation.md),
+  [history replay contract](../plans/2026-09/2026-09-27/05-weekly-ratings-history-replay.md).

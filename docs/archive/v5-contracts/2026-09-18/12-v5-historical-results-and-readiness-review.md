@@ -4,7 +4,7 @@
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User explicit approval of `implementation_plan.md` ("The user has approved this document")
-- **Implementation log:** `session_logs/2026-09-21/11-v5-historical-results-and-readiness-review.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-21/11-v5-historical-results-and-readiness-review.md`
 - **Commit policy:** Commit with implementation; user controls Git operations.
 
 ## Goal and entry gate

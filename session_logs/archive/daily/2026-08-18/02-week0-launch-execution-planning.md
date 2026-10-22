@@ -4,7 +4,7 @@
 
 - **Worked On:** Investigated Week 0 readiness across ingestion, transformations, models, pipelines, and publishing; produced the Week 0 launch execution contract.
 - **Outcome:** Contract approved by the user with four decisions: V4 timebox with V2 fallback, full production setup, Pick'em prep included, and no further CFBD talent rechecks.
-- **Plan Contract:** `docs/plans/2026-08-18/week0-launch-execution.md` (Approved)
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md` (Approved)
 - **Approval / Status:** User approved the plan and authorized implementation on 2026-08-18.
 - **Blockers:** None planning-side. External: `CFBD_PREDICTION_TOKEN` still needed before authenticated Pick'em reconciliation (Stage 4).
 - **Next:** Stage 1 — apply migration `0008` to `preview-2026`, resolve frozen input refs, assemble strict V5 Gold, run the sealed V4 tournament.

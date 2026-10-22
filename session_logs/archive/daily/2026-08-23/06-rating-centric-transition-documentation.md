@@ -10,7 +10,7 @@
   → rating/state → prediction → optional residual → probabilistic output →
   market flow.
 - **Plan Contract:**
-  [`docs/plans/2026-08-23/rating-centric-transition-documentation.md`](../../../../docs/plans/2026-08-23/rating-centric-transition-documentation.md)
+  [`docs/archive/plans/2026-08/2026-08-23/rating-centric-transition-documentation.md`](../../../../docs/archive/plans/2026-08/2026-08-23/rating-centric-transition-documentation.md)
 - **Approval / Status:** User explicitly authorized implementation on
   2026-08-23; contract is `Implemented`.
 - **Blockers:** None.
@@ -52,7 +52,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-23/rating-centric-transition-documentation.md` — approved
+- `docs/archive/plans/2026-08/2026-08-23/rating-centric-transition-documentation.md` — approved
   and implemented task contract.
 - `docs/planning/roadmap.md` — current-state, target-state, and Phase 0–5
   transition roadmap.

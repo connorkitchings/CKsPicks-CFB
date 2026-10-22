@@ -20,7 +20,7 @@ identities when a shared change could affect production.
 
 The [current V5 status guide](../modeling/v5_status.md) is the concise authority for model completion, certified lineage, results, and remaining operational work. V5 historical model development is complete and accepted; V4 still serves the public site. The Week 4 refresh of 07/08 remains a current-input gate for Contract 09, not an unfinished modeling milestone. Code for live forecasts, shadow readiness, and prospective reporting is ready; no operational 09 apply or qualifying slate exists yet.
 
-The [verified cutover contract](../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) replaces the older six-slate prelaunch sequence. A current independently verified forecast, Preview serving rehearsal, V4 rollback proof, and a separate activation decision precede site replacement. Contract 06 keeps prospective freezes and outcome reports as monitoring after launch; 2026 outcomes never refit the frozen V5 identity. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Detailed dated sections below preserve research history and should not override this current checkpoint.
+The [verified cutover contract](../archive/plans/2026-09/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) replaces the older six-slate prelaunch sequence. A current independently verified forecast, Preview serving rehearsal, V4 rollback proof, and a separate activation decision precede site replacement. Contract 06 keeps prospective freezes and outcome reports as monitoring after launch; 2026 outcomes never refit the frozen V5 identity. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Detailed dated sections below preserve research history and should not override this current checkpoint.
 
 ## Governing boundaries
 
@@ -85,7 +85,7 @@ original context and is not prospective evidence.
 **Repair v2, Phase 3 v2, the R6 possession measurements, possession ratings, and the
 forecast bridge are independently certified in Preview.** The recorded September 11 apply
 `phase3-v2-compact-state-20260910-r2` passed preflight, independent verification, and an
-idempotent rerun under the [Phase 3 compact-state contract](../plans/2026-09-10/phase3-v2-compact-tournament-state.md).
+idempotent rerun under the [Phase 3 compact-state contract](../archive/plans/2026-09/2026-09-10/phase3-v2-compact-tournament-state.md).
 Its selected `quality_core_epa_split` is historical reconstructed benchmark evidence, not
 the definition or automatic parent of possession ratings. The R6 possession manifest
 `possession-v1-measurements-20260915-18fb0aa-r6` passed preflight (910.150s), apply
@@ -209,7 +209,7 @@ See the operating runbooks for current weekly actions.
 
 ## Retained and superseded evidence
 
-The [September 8 review](../plans/2026-09-08/transformation-review-and-authority-reset.md#review-evidence-and-dispositions)
+The [September 8 review](../archive/plans/2026-09/2026-09-08/transformation-review-and-authority-reset.md#review-evidence-and-dispositions)
 retains the authoritative findings: same-game Phase 4B leakage, constant coaching,
 incorrect roster continuity, and 32 omitted completed schedule games. Repair v2
 and the corrected Phase 3 v2 benchmark addressed the repaired lineage/population.
@@ -227,7 +227,7 @@ R2, direct early-game, and candidate-v1 results keep their exact audit dispositi
 
 | Phase/evidence | Immutable identity and code binding | Timing and permitted use | Activation |
 | --- | --- | --- | --- |
-| Phase 0 alignment | [Implemented contract](../plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md) and its compatibility baseline | Repository boundary and V4-regression protection; no model input | Not applicable |
+| Phase 0 alignment | [Implemented contract](../archive/plans/2026-09/2026-09-05/00-repository-architecture-and-documentation-alignment.md) and its compatibility baseline | Repository boundary and V4-regression protection; no model input | Not applicable |
 | Corrected Phase 1 audit v3 | `artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3/` | Preserves the exact unsupported/correction-required dispositions of historical results | Research evidence only |
 | Phase 2d audit | `phase1/2026-09-06T2358Z-phase2d-recertification-v2/audit-v5.json` — SHA `0fd8a32a13ce64a261fa8a0179cdaa1de1cb93e428e362d50ad0aa9970c7761f`, code `285422026816bc933279a69e997021847b4bfb31` | Certifies core lineage, omissions, coverage, and timing for measurement construction | False |
 | Phase 2d automation admission | `phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/automation-admission.json` — SHA `7a46adfaff0bcb89b86f244c586d93085557ba3119699da81824ffa4e83f5518`, code `285422026816bc933279a69e997021847b4bfb31` | Enables only the verified Preview capture workflow; it is not a model artifact | False |

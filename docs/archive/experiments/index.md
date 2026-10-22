@@ -34,7 +34,7 @@ V2 experiment details are retained in the [archive](../archive.md).
 
 Canonical timestamped market quotes (2026 onward) persist to R2 Silver and Neon
 `market_quotes`/`market_snapshot_quotes` atomically with every publish
-(`docs/plans/2026-09-03/market-line-retention.md`). An opt-in live The Odds API
+(`docs/archive/plans/2026-09/2026-09-03/market-line-retention.md`). An opt-in live The Odds API
 capture (`CFB_ODDS_API_ENABLED=1` + `THE_ODDS_API_KEY`) adds per-book quotes and
 degrades softly to CFBD-only on provider failure. A budget-gated exploration of
 recovering 2021–2025 timestamped lines via The Odds API historical endpoint

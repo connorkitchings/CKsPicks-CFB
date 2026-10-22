@@ -4,7 +4,7 @@
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the full V5 package with “Implement the proposed plan.” on 2026-09-13, then explicitly authorized this exact contract with “This explicitly authorizes that contract only.” in the implementation handoff.
-- **Implementation log:** `session_logs/2026-09-13/03-v5-documentation-alignment.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-13/03-v5-documentation-alignment.md`.
 - **Commit policy:** Separate documentation/authority-test commit; user executes Git.
 
 ## Goal and current state

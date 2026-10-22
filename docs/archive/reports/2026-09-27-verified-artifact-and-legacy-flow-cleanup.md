@@ -2,13 +2,13 @@
 
 **Date:** 2026-09-27
 
-**Contract:** [Verified Artifact and Legacy Flow Cleanup](../plans/2026-09-27/02-verified-artifact-and-legacy-flow-cleanup.md)
+**Contract:** [Verified Artifact and Legacy Flow Cleanup](../plans/2026-09/2026-09-27/02-verified-artifact-and-legacy-flow-cleanup.md)
 
 **Outcome:** Retired one unused example flow. Retained all 460 ignored local artifact files because no immutable R2 counterpart or explicit provenance mapping was found. No local artifact was deleted or uploaded.
 
 ## Release and source gates
 
-- Before tracked edits, `git status --short` was empty. Production `/api/health` showed Week 5 run `2026w5-d6366e59fd43` selected in `published` state, 56 predicted games, 34 lined; `session_logs/2026-09-27/06.md` records the completed release.
+- Before tracked edits, `git status --short` was empty. Production `/api/health` showed Week 5 run `2026w5-d6366e59fd43` selected in `published` state, 56 predicted games, 34 lined; `session_logs/archive/daily/2026-09-27/06.md` records the completed release.
 - The CI-equivalent Python baseline passed: 1,458 tests, 2 skipped, 66.16% coverage; Ruff format and lint were clean.
 - A tracked-text scan found no caller of `src/cks_picks_cfb/flows/example_flow.py` or `example_data_flow`. The prior inventory named the file only as a candidate. No Make, CI, test, compatibility, or current operator path names it. The user confirmed that no external flow runs it. The historical `preaggregations_flow` appears in two 2025 session logs, so its module and package remain.
 

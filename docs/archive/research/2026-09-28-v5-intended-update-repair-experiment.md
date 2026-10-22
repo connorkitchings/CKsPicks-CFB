@@ -2,7 +2,7 @@
 
 **Status:** Research completed 2026-09-28. No production rating, forecast,
 selection, R2 artifact, or Neon state changed. This report follows the
-[implementation contract](../plans/2026-09-28/v5-estimator-three-way-review.md)
+[implementation contract](../plans/2026-09/2026-09-28/v5-estimator-three-way-review.md)
 and its cutoff-specific amendment.
 
 ## What the experiment establishes

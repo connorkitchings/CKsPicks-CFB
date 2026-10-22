@@ -1,7 +1,7 @@
 # 2026 Historical Bootstrap and Week 0 Execution Plan
 
 - **Status:** Phases 1–5 complete; Phase 6 superseded by the launch contract
-  ([`docs/plans/2026-08-18/week0-launch-execution.md`](../plans/2026-08-18/week0-launch-execution.md),
+  ([`docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md`](../plans/2026-08/2026-08-18/week0-launch-execution.md),
   Stages 4–5 pending game week)
 - **Decision date:** 2026-08-09
 - **Execution environment:** Preview only until every promotion gate passes
@@ -180,7 +180,7 @@ ten-route V4 bundle `week0-2026-v4-strict-20260818-r2`
 (`conf/weekly_bets/v4_2026.yaml`). Market-dependent gates were correctly marked
 unavailable (legacy lines are quarantined); a research-only 2025 betting
 simulation reported +17.9 units (+3.1% ROI). See
-[`docs/plans/2026-08-18/week0-launch-execution.md`](../plans/2026-08-18/week0-launch-execution.md)
+[`docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md`](../plans/2026-08/2026-08-18/week0-launch-execution.md)
 Amendment 3.
 
 ### Phase 6: Capture and rehearse live 2026 Week 0 — 🟡 IN PROGRESS (superseded by the launch contract)
@@ -235,7 +235,7 @@ Stop rather than infer or silently degrade if:
 
 The 6-phase buildout is complete. Current work is governed by the Week 0 launch
 contract,
-[`docs/plans/2026-08-18/week0-launch-execution.md`](../plans/2026-08-18/week0-launch-execution.md)
+[`docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md`](../plans/2026-08/2026-08-18/week0-launch-execution.md)
 (Stages 1–3 complete):
 
 - **Stage 4 (game week, Aug 25–29):** rerun `publish-week ENV=production` as

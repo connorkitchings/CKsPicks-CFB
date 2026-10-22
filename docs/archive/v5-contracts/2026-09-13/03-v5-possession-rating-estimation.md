@@ -4,7 +4,7 @@
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution is dependency-gated.
-- **Implementation log:** `session_logs/2026-09-16/02-v5-possession-rating-estimation.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-16/02-v5-possession-rating-estimation.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -31,7 +31,7 @@ the common contract. No V4 changes, catalog registration, live forecasts,
 market inputs, auxiliary acquisition, or registry expansion.
 
 Explicitly inherit the following sections of the execution-held
-[September 8 rating contract](../../../plans/2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md):
+[September 8 rating contract](../../plans/2026-09/2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md):
 Prior registry, deterministic q/r fitting settings, stage definitions,
 within-definition selection gates and tie order, and named FCS fallback.
 Replace its composite parent/observation, component-information formula,

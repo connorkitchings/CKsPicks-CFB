@@ -6,7 +6,7 @@
 > warnings now enter the Phase 1 evidence audit; they do not authorize R3.
 
 - **Date:** 2026-09-04
-- **Contract:** `docs/plans/2026-09-02/early-week-strength-prior-research.md`
+- **Contract:** `docs/archive/plans/2026-09/2026-09-02/early-week-strength-prior-research.md`
 - **Feature track:** reconstructed (research-only, activation-ineligible)
 - **Code binding:** R2 tournament at commit `4c6e6103ca7d8bbe8820a46c34432055f86e85a9`; context corpus bound to `786580ec58b76ade6489251f4c2b18af80e0430e`
 - **Production impact:** none. V4 (`week0-2026-v4-strict-20260818-r2`) remains the unchanged champion; no bundle, readiness, Neon, or publication state was touched.

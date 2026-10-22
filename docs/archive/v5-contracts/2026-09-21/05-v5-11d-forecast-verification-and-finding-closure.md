@@ -4,7 +4,7 @@
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User authorized the full Contract 11 decomposition on 2026-09-21 ("Let's do it all"); targeted-closure vehicle (no renewed full audit) confirmed by structured decision the same day.
-- **Implementation log:** `session_logs/2026-09-21/09-v5-11d-forecast-verification-and-finding-closure.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-21/09-v5-11d-forecast-verification-and-finding-closure.md`
 - **Commit policy:** Separate commits — verifier checkpoint, then evidence checkpoints per phase. User controls Git operations.
 
 ## Goal

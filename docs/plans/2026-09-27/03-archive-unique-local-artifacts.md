@@ -3,7 +3,7 @@
 - **Status:** In Progress
 - **Created:** 2026-09-27
 - **Approval source:** User explicitly requested implementation of this plan on 2026-09-27
-- **Implementation log:** `session_logs/2026-09-27/08-archive-unique-local-artifacts.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-27/08-archive-unique-local-artifacts.md`
 - **Commit policy:** User controls Git operations
 
 ## Goal

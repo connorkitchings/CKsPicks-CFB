@@ -9,7 +9,7 @@
   chronological established-route compatibility replay. No V4, Neon, public,
   or Preview artifact was changed in this session.
 - **Plan Contract:**
-  [`phase3-v4-benchmark-recovery.md`](../../../../docs/plans/2026-08-25/phase3-v4-benchmark-recovery.md)
+  [`phase3-v4-benchmark-recovery.md`](../../../../docs/archive/plans/2026-08/2026-08-25/phase3-v4-benchmark-recovery.md)
   (`In Progress`).
 - **Approval / Status:** The user explicitly authorized the recovery plan on
   2026-08-25. Code/configuration must be committed before the first Preview
@@ -49,7 +49,7 @@
 - `tests/ratings/test_v4_benchmark.py` — route filtering, duplicate,
   established-label, temporal, audit-parity, CLI isolation, successful
   immutable publication, and same-run rerun tests.
-- `docs/plans/2026-08-25/phase3-v4-benchmark-recovery.md` — approved recovery
+- `docs/archive/plans/2026-08/2026-08-25/phase3-v4-benchmark-recovery.md` — approved recovery
   contract; `phase3-structured-margin-total-baseline.md` records it as a
   prerequisite.
 

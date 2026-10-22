@@ -9,7 +9,7 @@
 - **Outcome:** Production game-week operations are proven end-to-end. Active
   run is now `2026w0-55de0317120d` (fresh Aug-20 lines, 8/8/8, market mode).
   Publishes now refresh the site instantly via signed revalidation.
-- **Plan Contract:** `docs/plans/2026-08-18/week0-launch-execution.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md`
   (In Progress — Stages 4–5; Amendment 4 records this session)
 - **Approval / Status:** User approved the Stage 4 plan and all Phase 0
   decisions on 2026-08-20 (rehearsal now; daily assistant-run publishes;
@@ -57,7 +57,7 @@
 ## Files Modified
 
 - `docs/ops/production_runbook.md` — revalidation configured; credential notes
-- `docs/plans/2026-08-18/week0-launch-execution.md` — Amendment 4
+- `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md` — Amendment 4
 - `session_logs/archive/daily/2026-08-20/01-stage4-phase0-game-week-readiness.md` — this log
 - Local `.env` (not committed) — revalidation vars added; stale entry removed
 - Vercel: `REVALIDATION_SECRET` (production) added; production redeployed

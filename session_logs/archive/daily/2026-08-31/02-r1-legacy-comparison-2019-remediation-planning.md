@@ -6,9 +6,9 @@
   failure in runs `e9edee5` and `6bc4be6`; designed the manifest-anchored
   remediation; produced and saved the approved plan.
 - **Outcome:** Plan approved. Implementation contract saved at
-  `docs/plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`.
+  `docs/archive/plans/2026-08/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`.
   Plans index and roadmap updated. No implementation files changed.
-- **Plan Contract:** `docs/plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`
 - **Approval / Status:** Approved by user on 2026-08-31. Status: Approved.
 - **Blockers:** Week-1 docs must be committed before the remediation commit
   (script is in SUCCESSOR_R1_COMMIT_PATHS; commit ordering matters).
@@ -52,7 +52,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md` — NEW
+- `docs/archive/plans/2026-08/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md` — NEW
 - `docs/plans/index.md` — R1 remediation entry added
 - `docs/planning/roadmap.md` — R1 status updated with remediation reference
 
@@ -69,7 +69,7 @@
 ## Handoff Notes
 
 - **Resume at:** Open fresh Terra task, read
-  `docs/plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`,
+  `docs/archive/plans/2026-08/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md`,
   implement Tasks 1–5 in order.
 - **Watch out for:**
   1. Read the live R2 manifest first to derive the SHA256 constant — it's not

@@ -2,7 +2,7 @@
 
 Rule frozen in writing before the run: `d1-candidate-rule.md` (R1: monotone envelope capped at the game final; a team-game whose running
 maximum is below the final stays quarantined). Inputs pinned to the served lineage (source lock
-`docs/plans/2026-09-29/v5-repair-2026-source-lock.json`, signed measurement/rating manifests, certified 276-row priors, 2025 terminal table,
+`docs/archive/plans/2026-09/2026-09-29/v5-repair-2026-source-lock.json`, signed measurement/rating manifests, certified 276-row priors, 2025 terminal table,
 schedule). Priors and terminal are NOT changed. Scripts (scratch, not committed): `delta_build_candidate.py`, `delta_run_ratings.py`,
 `delta_identity.py`, `delta_channels.py`. Outputs: `delta_ratings_week5.csv`, `delta_channels.csv`, `delta_identity_compare.csv`.
 

@@ -4,7 +4,7 @@
 - **Created:** 2026-09-16
 - **Planner:** Codex planning task
 - **Approval source:** User explicitly approved this exact contract path on 2026-09-16.
-- **Implementation log:** `session_logs/2026-09-16/04-v5-rating-materializer-and-tournament.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-16/04-v5-rating-materializer-and-tournament.md`.
 - **Commit policy:** Separate code checkpoint; user executes Git before any Preview run identity is selected.
 
 ## Goal

@@ -7,7 +7,7 @@
 - **Outcome:** Phase 1 v3 is certified in Preview with passing reconciliation,
   terminal PPSO means, and a byte-identical rerun. Phase 2 v2 is next; V4,
   Neon, markets, and Phase 4 remain untouched.
-- **Plan Contract:** `docs/plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md`
 - **Approval / Status:** User explicitly authorized implementation on
   2026-08-26; contract remains `In Progress`.
 - **Blockers:** None for local Phase 2 v2 implementation; a user-controlled

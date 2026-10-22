@@ -4,7 +4,7 @@
 
 - **Worked On:** Began the approved full-package branch-coverage closure tranche.
 - **Outcome:** Global branch-aware coverage gate passes at 60.02% (`414 passed, 2 skipped`); module stretch targets remain in progress.
-- **Plan Contract:** [Modernization Coverage Closure to 60%](../../../../docs/plans/2026-08-23/modernization-coverage-60.md)
+- **Plan Contract:** [Modernization Coverage Closure to 60%](../../../../docs/archive/plans/2026-08/2026-08-23/modernization-coverage-60.md)
 - **Approval / Status:** User explicitly authorized implementation on 2026-08-23; In Progress.
 - **Blockers:** None at session start.
 - **Next:** Implement and measure offline coverage tranches without exclusions.
@@ -22,7 +22,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-23/modernization-coverage-60.md` — approved coverage contract.
+- `docs/archive/plans/2026-08/2026-08-23/modernization-coverage-60.md` — approved coverage contract.
 - `session_logs/archive/daily/2026-08-23/05-modernization-coverage-60.md` — implementation record.
 - `tests/test_cloud_storage_backends.py` — fake S3/R2 behavior coverage.
 - `tests/test_feature_selector.py`, `tests/test_v2_recency_helpers.py` — feature behavior coverage.
@@ -51,7 +51,7 @@
 ## Commit Handoff
 
 - **Suggested commit:** `test: close global modernization coverage gate to 60%`
-- **Suggested files:** `tests/test_catalog_offline.py`, `tests/test_cloud_storage_backends.py`, `tests/test_feature_selector.py`, `tests/test_v2_recency_helpers.py`, `tests/test_validation_utilities.py`, `tests/test_ops_state_machine.py`, `tests/test_silver_reconciliation.py`, `docs/plans/2026-08-23/modernization-coverage-60.md`, `docs/plans/2026-08-23/modernization-verified-completion.md`, `docs/reports/2026_modernization_verification.md`, and `session_logs/archive/daily/2026-08-23/05-modernization-coverage-60.md`.
+- **Suggested files:** `tests/test_catalog_offline.py`, `tests/test_cloud_storage_backends.py`, `tests/test_feature_selector.py`, `tests/test_v2_recency_helpers.py`, `tests/test_validation_utilities.py`, `tests/test_ops_state_machine.py`, `tests/test_silver_reconciliation.py`, `docs/archive/plans/2026-08/2026-08-23/modernization-coverage-60.md`, `docs/archive/plans/2026-08/2026-08-23/modernization-verified-completion.md`, `docs/reports/2026_modernization_verification.md`, and `session_logs/archive/daily/2026-08-23/05-modernization-coverage-60.md`.
 - **User control:** Nothing was staged, committed, or pushed.
 
 **tags:** ["modernization", "coverage", "verification"]
