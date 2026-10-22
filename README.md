@@ -33,7 +33,7 @@ V5 Blitzkrieg is the only operational model. Research uses 2015â€“2019 and 2021â
 ## Local setup and checks
 
 ```bash
-uv sync --extra dev
+uv sync
 make test
 make contracts-check
 make quality-check

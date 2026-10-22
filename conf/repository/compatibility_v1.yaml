@@ -3,10 +3,6 @@ schema_version: repository_compatibility_v1
 baseline:
   commit: b930066
   production_model: week0-2026-v4-strict-20260818-r2
-  production_config: conf/weekly_bets/v4_2026.yaml
-  production_bundle_manifest:
-    artifact_uri: artifacts/preview/models/week0-2026-v4-strict-20260818-r2/manifest.json
-    sha256: 72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c
 
 research:
   artifact_namespace: artifacts/research/data-first-football-v1/
@@ -25,8 +21,6 @@ public_make_targets:
 required_paths:
   production:
     - Makefile
-    - conf/weekly_bets/v4_2026.yaml
-    - src/cks_picks_cfb/model_bundle_v3.py
     - src/cks_picks_cfb/ops/__main__.py
     - src/cks_picks_cfb/ops/state_machine.py
   contracts:
@@ -61,10 +55,6 @@ required_paths:
 
 supported_production_scripts: []
 
-production_configs:
-  - conf/weekly_bets/v4_2026.yaml
-  - conf/weekly_bets/v2_preview_2026.yaml
-
 named_research_benchmarks:
   certified_r1_foundation:
     classification: named-benchmark-compatibility
@@ -73,8 +63,6 @@ named_research_benchmarks:
       - scripts/pipeline/build_successor_r1_foundation.py
       - scripts/pipeline/build_successor_history_ref_set.py
       - scripts/pipeline/certify_successor_history.py
-      - src/cks_picks_cfb/ratings/successor_manifest.py
-      - conf/ratings/foundation_review_v2.yaml
   fixed_rating_baseline:
     classification: named-benchmark-compatibility
     paths:
@@ -84,28 +72,6 @@ named_research_benchmarks:
       - src/cks_picks_cfb/ratings/states.py
       - conf/ratings/measurement_baseline_v3.yaml
       - conf/ratings/team_state_baseline_v2.yaml
-  candidate_v1_shadow:
-    classification: named-benchmark-compatibility
-    identity: ac1fba1
-    paths:
-      - scripts/pipeline/build_rating_shadow_freeze.py
-      - scripts/pipeline/build_rating_shadow_score.py
-      - scripts/pipeline/audit_rating_prospective_evidence.py
-      - src/cks_picks_cfb/ratings/shadow.py
-      - conf/ratings/shadow_operations_v1.yaml
-  completed_r2_prior:
-    classification: named-benchmark-compatibility
-    identity: r2-prior-20260904-4c6e610
-    paths:
-      - src/cks_picks_cfb/ratings/priors.py
-      - conf/ratings/successor_v2_tournaments.yaml
-  direct_early_game:
-    classification: named-benchmark-compatibility
-    paths:
-      - scripts/pipeline/generate_game_ordinal_candidates.py
-      - scripts/pipeline/evaluate_game_ordinal_predictions.py
-      - src/cks_picks_cfb/models/game_ordinal_training.py
-      - conf/weekly_bets/v3_preview_games_ordinal_2026.yaml
 
 dependency_rules:
   prohibited_import_prefixes:

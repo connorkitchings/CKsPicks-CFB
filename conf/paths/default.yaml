@@ -1,8 +1,0 @@
-# Paths configuration
-data: ${oc.env:CFB_MODEL_DATA_ROOT}
-raw: ${paths.data}/raw
-processed: ${paths.data}/processed
-external: ${paths.data}/external
-interim: ${paths.data}/interim
-models: ${paths.data}/models
-reports: ${paths.data}/reports

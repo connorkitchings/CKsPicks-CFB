@@ -350,30 +350,6 @@ def test_week_lock_rejects_concurrent_owner():
                 pass
 
 
-def test_publish_pipeline_accepts_live_week_zero():
-    context = new_context(
-        command="publish-week",
-        environment="preview",
-        season=2026,
-        week=0,
-        as_of="2026-08-20T00:00:00Z",
-        pipeline_run_id="week-zero-pipeline",
-    )
-    assert context.prediction_run_id == "2026w0-week-zero-pi"
-    steps = build_steps(context, conn_url="postgresql://unused")
-    assert [step.name for step in steps] == [
-        "preflight",
-        "audit_data",
-        "ingest_schedule",
-        "ingest_market",
-        "ingest_market_quotes",
-        "build_market_snapshot",
-        "snapshot_inputs",
-        "predict",
-        "activate",
-    ]
-
-
 def test_prepare_week_rebuilds_gold_from_completed_canonical_weeks():
     context = new_context(
         command="prepare-week",
@@ -419,20 +395,6 @@ def test_prepare_week_rebuilds_gold_from_completed_canonical_weeks():
         value.endswith("rating_input_ref_set.json")
         for value in team_game.definition["argv"]
     )
-
-
-def test_publish_after_week_zero_requires_explicit_prepared_gold():
-    context = new_context(
-        command="publish-week",
-        environment="preview",
-        season=2026,
-        week=1,
-        as_of="2026-09-01T12:00:00Z",
-        pipeline_run_id="publish-week-one",
-    )
-
-    with pytest.raises(ValueError, match="prepared-gold-ref-uri"):
-        build_steps(context, conn_url="postgresql://unused")
 
 
 def test_command_builders_preserve_optional_arguments_and_scoped_commands(monkeypatch):

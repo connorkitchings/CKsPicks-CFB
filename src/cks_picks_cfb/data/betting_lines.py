@@ -270,7 +270,6 @@ class BettingLinesIngester(BaseIngester):
 def main() -> None:
     """CLI entry point for betting lines ingestion."""
     # This main function is for standalone execution and testing.
-    # The primary CLI entrypoint is in scripts/cli.py
     import argparse
 
     parser = argparse.ArgumentParser(description="Ingest betting lines from CFBD API.")

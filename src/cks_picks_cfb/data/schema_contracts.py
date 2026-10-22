@@ -202,13 +202,31 @@ from cks_picks_cfb.ratings.state_contracts import (
     TEAM_STATE_KEYS,
     TEAM_STATE_SCHEMA_VERSION,
 )
-from cks_picks_cfb.ratings.v4_benchmark import (
-    BENCHMARK_COLUMNS,
-    BENCHMARK_KEYS,
-    V4_BENCHMARK_SCHEMA_VERSION,
-)
 
 _IDENTIFIER_TEXT = re.compile(r"-?\d+")
+
+# Historical V4 benchmark dataset registered for readers of stored artifacts.
+V4_BENCHMARK_SCHEMA_VERSION = "rating_v4_historical_predictions_v1"
+BENCHMARK_COLUMNS = (
+    "season",
+    "game_id",
+    "target",
+    "regime",
+    "actual",
+    "v4_prediction",
+    "training_max_year",
+    "route_candidate",
+    "source_kind",
+    "feature_ref_version_id",
+    "feature_ref_content_sha",
+    "selection_design_sha",
+    "v4_bundle_id",
+    "benchmark_schema_version",
+    "benchmark_design_id",
+    "replay_engine_commit",
+    "recovery_code_sha",
+)
+BENCHMARK_KEYS = ("season", "game_id", "target")
 
 
 class DatasetSchemaError(ValueError):

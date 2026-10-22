@@ -6,6 +6,11 @@ that payload. Structural defects block (a duplicate key, a null required field, 
 impossible value, a scheduled game missing from the run, a selection that is not the
 best available quote, a published game without a venue city). Nothing here repairs data.
 
+Only the venue-payload checks have a live caller (``scripts/pipeline/publish_game_venues.py``).
+The per-game run-payload checks (coverage, quote selection) served the removed legacy
+prediction publisher and are kept registered, with their tests, until the quality policy
+is revised.
+
 Context keys:
 
 - ``records``: the per-game payload dicts (one payload dict per game)

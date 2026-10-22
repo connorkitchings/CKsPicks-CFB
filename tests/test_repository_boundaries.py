@@ -77,17 +77,6 @@ def test_data_first_research_roots_exist():
     assert (ROOT / manifest["research"]["config_root"]).is_dir()
 
 
-def test_production_configs_do_not_reference_data_first_artifacts():
-    manifest = _manifest()
-    namespace = manifest["research"]["artifact_namespace"]
-    violations = [
-        path
-        for path in manifest["production_configs"]
-        if namespace in (ROOT / path).read_text()
-    ]
-    assert violations == []
-
-
 def test_data_first_configs_do_not_reference_production_outputs():
     manifest = _manifest()
     config_root = ROOT / manifest["research"]["config_root"]

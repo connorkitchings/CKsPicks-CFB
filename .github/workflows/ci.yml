@@ -36,7 +36,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Check formatting
         run: uv run ruff format --check .
@@ -78,7 +78,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Parallel Python tests
         # Shared-database resets and threaded rating publication need isolation.
@@ -132,7 +132,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Rating publication tests
         run: >-
@@ -207,7 +207,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Provide PostgreSQL 16 server binaries for the private cluster
         shell: bash
@@ -294,7 +294,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Download suite coverage
         uses: actions/download-artifact@v8
@@ -381,7 +381,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Audit Python dependencies
         run: uv run --with pip-audit pip-audit

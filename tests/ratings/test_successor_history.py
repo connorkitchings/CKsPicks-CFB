@@ -6,10 +6,6 @@ import pytest
 
 from cks_picks_cfb.data.lake import DatasetRef
 from cks_picks_cfb.data.season_lineage import load_season_lineage_policy
-from cks_picks_cfb.ratings.context_admission import (
-    ContextFamilyEvidence,
-    evaluate_context_family,
-)
 from cks_picks_cfb.ratings.successor_history import (
     R1_REQUIRED_DATASETS,
     REQUIRED_DATASETS,
@@ -185,25 +181,3 @@ def test_derived_ref_set_entries_round_trip_through_the_scope_aware_parser():
     payload["entries"] = [{"season": 2015, "dataset": "plays"}]
     with pytest.raises(SuccessorHistoryError, match="immutable dataset fields"):
         derived_history_dataset_refs(payload)
-
-
-def test_context_admission_fails_closed_for_market_or_missing_authentic_capture():
-    coverage = {
-        season: 0.95 for season in (*POLICY.prior_selection_target_seasons, 2025)
-    }
-    admitted = evaluate_context_family(
-        POLICY,
-        ContextFamilyEvidence(
-            "returning_production", True, True, True, coverage, ("returning_yards",)
-        ),
-    )
-    assert admitted["admitted"] is True
-
-    rejected = evaluate_context_family(
-        POLICY,
-        ContextFamilyEvidence(
-            "market_proxy", True, True, False, coverage, ("opening_spread",)
-        ),
-    )
-    assert rejected["admitted"] is False
-    assert rejected["checks"]["football_only"] is False

@@ -1,4 +1,4 @@
-.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal export-pickem season-revision season-market-revision season-prepare season-release season-rollback
+.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -32,12 +32,6 @@ help:
 	@echo "  make matchup-data YEAR=2026 ENV=preview RATING_URI=... MEASUREMENT_URI=... [APPLY=1] - Publish V5 matchup data (dry run by default)"
 	@echo "  make reconcile YEAR=2026 ENV=preview - Catalog orphaned immutable artifacts"
 	@echo "  make audit-data YEAR=2026 ENV=preview - Audit Gold training data and lineage"
-	@echo "  make train-week0 - Generate temporal regime candidate predictions"
-	@echo "  make evaluate-week0 OOF=... WEIGHTS=... REPORT_URI=..."
-	@echo "  make refit-week0-bundle FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"
-	@echo "  make generate-game-ordinal STAGE=selection|locked FEATURE_REF_URI=... OUTPUT=... ENV=preview"
-	@echo "  make evaluate-game-ordinal STAGE=selection|locked CANDIDATES=... REPORT_URI=... ENV=preview"
-	@echo "  make refit-game-ordinal FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"
 	@echo ""
 	@echo "Weekly season release (docs/ops/weekly_runbook.md; WEEK = upcoming week):"
 	@echo "  make season-revision WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
@@ -165,12 +159,6 @@ build-silver:
 build-team-game:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-team-game --year $(YEAR) --as-of $(AS_OF) --plays-ref-uri $(PLAYS_REF_URI) --games-ref-uri $(GAMES_REF_URI) --corrections-ref-uri $(CORRECTIONS_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(TEAMS_REF_URI),--teams-ref-uri $(TEAMS_REF_URI),) $(if $(VENUES_REF_URI),--venues-ref-uri $(VENUES_REF_URI),) $(if $(WEATHER_REF_URI),--weather-ref-uri $(WEATHER_REF_URI),) $(if $(GAME_STATS_REF_URI),--game-stats-ref-uri $(GAME_STATS_REF_URI),)
 
-build-baselines:
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-baselines --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(FROZEN_DESIGN_SHA),--include-locked-2025 --frozen-design-sha $(FROZEN_DESIGN_SHA),)
-
-assemble-model-ready:
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops assemble-model-ready --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --baselines-ref-uri $(BASELINES_REF_URI) $(if $(MARKETS_REF_URI),--markets-ref-uri $(MARKETS_REF_URI),) $(if $(PRESEASON_FEATURES_REF_URI),--preseason-features-ref-uri $(PRESEASON_FEATURES_REF_URI) --feature-track $(FEATURE_TRACK),) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV)
-
 prepare-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \
 		echo "Usage: make prepare-week YEAR=2026 WEEK=1 AS_OF=ISO-8601 ENV=preview|production"; exit 1; \
@@ -249,47 +237,6 @@ audit-data:
 		echo "Usage: make audit-data YEAR=2026 ENV=preview"; exit 1; \
 	fi
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops audit-data --year $(YEAR) --environment $(ENV) $(if $(MODE),--mode $(MODE),)
-
-train-week0:
-	PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
-
-evaluate-week0:
-	@if [ -z "$(OOF)" ] || [ -z "$(WEIGHTS)" ] || [ -z "$(REPORT_URI)" ]; then \
-		echo "Usage: make evaluate-week0 OOF=/path/candidates.csv WEIGHTS=/path/weights.json REPORT_URI=artifacts/preview/models/report.json"; exit 1; \
-	fi
-	PYTHONPATH=.:src uv run python scripts/pipeline/evaluate_regimes.py --oof-csv $(OOF) --blend-weights-json $(WEIGHTS) --output-uri $(REPORT_URI)
-
-refit-week0-bundle:
-	@if [ -z "$(FEATURE_REF_URI)" ] || [ -z "$(REPORT_URI)" ] || [ -z "$(BUNDLE_ID)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make refit-week0-bundle FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"; exit 1; \
-	fi
-	PYTHONPATH=.:src uv run python scripts/pipeline/refit_regime_bundle.py --feature-ref-uri $(FEATURE_REF_URI) --routing-report-uri $(REPORT_URI) --bundle-id $(BUNDLE_ID) --environment $(ENV)
-
-evaluate-game-ordinal:
-	@if [ -z "$(STAGE)" ] || [ -z "$(CANDIDATES)" ] || [ -z "$(REPORT_URI)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make evaluate-game-ordinal STAGE=selection|locked CANDIDATES=... REPORT_URI=... ENV=preview"; exit 1; \
-	fi
-	PYTHONPATH=.:src uv run python scripts/pipeline/evaluate_game_ordinal_predictions.py --stage $(STAGE) --candidates-csv $(CANDIDATES) --output-uri $(REPORT_URI) --environment $(ENV) $(if $(FEATURE_REF_URI),--feature-ref-uri $(FEATURE_REF_URI),) $(if $(SELECTION_REPORT_URI),--selection-report-uri $(SELECTION_REPORT_URI),) $(if $(BLEND_WEIGHTS),--blend-weights-json $(BLEND_WEIGHTS),)
-
-generate-game-ordinal:
-	@if [ -z "$(STAGE)" ] || [ -z "$(FEATURE_REF_URI)" ] || [ -z "$(OUTPUT)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make generate-game-ordinal STAGE=selection|locked FEATURE_REF_URI=... OUTPUT=... ENV=preview [SELECTION_REPORT_URI=...]"; exit 1; \
-	fi
-	PYTHONPATH=.:src uv run python scripts/pipeline/generate_game_ordinal_candidates.py --stage $(STAGE) --feature-ref-uri $(FEATURE_REF_URI) --output-csv $(OUTPUT) --environment $(ENV) $(if $(SELECTION_REPORT_URI),--selection-report-uri $(SELECTION_REPORT_URI),)
-
-refit-game-ordinal:
-	PYTHONPATH=.:src uv run python scripts/pipeline/refit_game_ordinal_bundle.py --feature-ref-uri $(FEATURE_REF_URI) --routing-report-uri $(REPORT_URI) --bundle-id $(BUNDLE_ID) --environment $(ENV)
-
-train-champion:
-	@echo "🏋️ Training champion spread and total models..."
-	PYTHONPATH=src uv run python -m cks_picks_cfb.train model=linear model.target=spread_target
-	PYTHONPATH=src uv run python -m cks_picks_cfb.train model=linear model.target=total_target
-
-export-pickem:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make export-pickem YEAR=2026 WEEK=0 [VALIDATE=1] [DRY_RUN=1] [SUBMIT=1]"; exit 1; \
-	fi
-	PYTHONPATH=.:src uv run python scripts/pipeline/export_cfbd_pickem.py --year $(YEAR) --week $(WEEK) $(if $(VALIDATE),--validate-api,) $(if $(DRY_RUN),--dry-run,) $(if $(SUBMIT),--submit-api,)
 
 # Clean cache files
 clean:
