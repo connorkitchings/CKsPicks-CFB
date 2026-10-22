@@ -150,7 +150,7 @@ test("a graded week shows the week record beside the season record, with accurac
   const record = page.getByRole("region", { name: "Record" });
   await expect(record.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
   await expect(record.getByRole("heading", { name: /^Week \d+ record/ })).toBeVisible();
-  await expect(record.getByRole("link", { name: "Season record and audit" })).toHaveAttribute("href", "/model");
+  await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
   // The accuracy line is dropped on phones to keep the slate close to the top.
   await expect(record.getByTestId("week-accuracy")).toBeHidden();
   await page.setViewportSize({ width: 1280, height: 900 });

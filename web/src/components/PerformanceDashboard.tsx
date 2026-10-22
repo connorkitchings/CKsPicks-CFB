@@ -3,16 +3,24 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
-import type { PerformanceDetail, GradedGamePick } from "@/lib/v5";
+import type { PerformanceSummary } from "@/lib/v5";
 import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy";
 import { BREAK_EVEN_PCT } from "@/lib/betting-format";
-import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
-import { Disclosure } from "@/components/ui/Disclosure";
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { MatchupButton } from "@/components/MatchupLinks";
-import { homeSpreadFromMargin, homeSpreadText } from "@/lib/betting-format";
+
+/** Only what the dashboard renders; the per-game audit facts stay server-side. */
+export interface GradedResult {
+  week: number;
+  spreadResult: AccuracyResult;
+  totalResult: AccuracyResult;
+}
+export interface PerformanceView {
+  summary: PerformanceSummary;
+  weeks: number[];
+  gradedGames: GradedResult[];
+}
 
 type TargetFilter = "all" | "spread" | "total";
 type Record3 = ReturnType<typeof accuracyRecord>;
@@ -32,61 +40,13 @@ function merge(a: Record3, b: Record3): Record3 {
   return { win, loss, push: a.push + b.push, winRate: win + loss ? (100 * win) / (win + loss) : null };
 }
 
-function recordFor(games: GradedGamePick[], pick: (game: GradedGamePick) => AccuracyResult) {
+function recordFor(games: GradedResult[], pick: (game: GradedResult) => AccuracyResult) {
   return accuracyRecord(games.map(pick));
 }
 
-function AuditGame({ game, target }: { game: GradedGamePick; target: TargetFilter }) {
-  return (
-    <article data-testid="audit-game" data-game-id={game.gameId}>
-      <Disclosure
-        title={
-          <span className="inline-flex flex-wrap items-center gap-1.5 break-words">
-            <TeamLogo name={game.awayTeam} px={16} />
-            <span>{game.awayTeam}</span>
-            <span className="text-ink-muted">@</span>
-            <TeamLogo name={game.homeTeam} px={16} />
-            <span>{game.homeTeam}</span>
-          </span>
-        }
-      >
-        <p className="mb-2 text-xs">Week {game.week} · V5 · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}</p>
-        <MatchupButton gameId={game.gameId} />
-        <p className="mt-2 break-words text-xs">Original run: <code className="break-all">{game.runId}</code></p>
-        {game.freezeReceiptSha256 && (
-          <p className="mt-1 text-xs">Freeze evidence SHA-256: <code className="break-all">{game.freezeReceiptSha256}</code></p>
-        )}
-        <dl className="mt-3 space-y-3 text-sm">
-          {target !== "total" && game.spreadResult !== null && (
-            <div>
-              <dt className="font-semibold text-ink">Spread · captured line {homeSpreadText(game.homeTeam, game.marketSpread)}</dt>
-              <dd>Forecast {homeSpreadText(game.homeTeam, homeSpreadFromMargin(game.predictedSpread))} · {game.spreadLean ?? "No stored lean"} · {game.spreadResult}</dd>
-              <dd className="mt-1 text-xs">Price: {game.spreadPriceProvenance ?? "unavailable"}</dd>
-            </div>
-          )}
-          {target !== "spread" && game.totalResult !== null && (
-            <div>
-              <dt className="font-semibold text-ink">Total · captured line {decimal(game.marketTotal)}</dt>
-              <dd>Forecast {decimal(game.predictedTotal)} · {game.totalLean ?? "No stored lean"} · {game.totalResult}</dd>
-              <dd className="mt-1 text-xs">Price: {game.totalPriceProvenance ?? "unavailable"}</dd>
-            </div>
-          )}
-        </dl>
-      </Disclosure>
-    </article>
-  );
-}
-
-export function PerformanceDashboard({ data, title }: { data: PerformanceDetail; title: string }) {
+export function PerformanceDashboard({ data, title }: { data: PerformanceView; title: string }) {
   const [targetFilter, setTargetFilter] = useState<TargetFilter>("all");
   const games = data.gradedGames;
-  const auditWeeks = useMemo(
-    () => [...new Set(games.filter((game) => game.spreadResult !== null || game.totalResult !== null).map((game) => game.week))].sort((a, b) => b - a),
-    [games],
-  );
-  // Target changes do not alter the chosen week, including a week empty for that target.
-  const [auditWeek, setAuditWeek] = useState(() => auditWeeks[0] ?? null);
-
   const overall = useMemo(() => {
     const spread = recordFor(games, (game) => game.spreadResult);
     const total = recordFor(games, (game) => game.totalResult);
@@ -103,13 +63,6 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
       return { week, spread, total, combined: merge(spread, total) };
     }).filter((row) => graded(row.combined) > 0),
     [data.weeks, games],
-  );
-
-  const auditGames = useMemo(
-    () => games.filter((game) => game.week === auditWeek && (
-      targetFilter === "spread" ? game.spreadResult !== null : targetFilter === "total" ? game.totalResult !== null : game.spreadResult !== null || game.totalResult !== null
-    )),
-    [games, auditWeek, targetFilter],
   );
 
   return (
@@ -232,28 +185,6 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
         </div>
       </Card>
 
-      <section aria-label="Graded picks audit">
-        <Disclosure title="Graded picks audit">
-          <p className="mb-3 text-xs">Grades use the captured selected line. Price source is an audit fact; accuracy does not assume a payout.</p>
-          <label htmlFor="audit-week" className="mb-1 block text-sm font-medium text-ink">Audit week</label>
-          <select
-            id="audit-week"
-            name="audit-week"
-            value={auditWeek ?? ""}
-            onChange={(event) => setAuditWeek(Number(event.target.value))}
-            className="mb-3 min-h-11 w-full rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-accent sm:w-auto sm:text-sm"
-          >
-            {auditWeeks.map((week) => <option key={week} value={week}>Week {week}</option>)}
-          </select>
-          {auditGames.length === 0 ? (
-            <p role="status" className="text-sm">No graded {targetFilter === "all" ? "picks" : targetFilter === "spread" ? "spreads" : "totals"} in Week {auditWeek}.</p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {auditGames.map((game) => <AuditGame key={game.gameId} game={game} target={targetFilter} />)}
-            </div>
-          )}
-        </Disclosure>
-      </section>
       <p className="text-xs text-ink-muted">Select any week above to view its full game-by-game results and graded picks on the Games tab.</p>
     </div>
   );

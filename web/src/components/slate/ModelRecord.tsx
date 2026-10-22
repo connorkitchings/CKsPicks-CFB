@@ -105,7 +105,7 @@ export function ModelRecord({
           href="/model"
           className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold text-accent-ink underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          Season record and audit
+          Season record
         </Link>
       </div>
       <RecordBlock

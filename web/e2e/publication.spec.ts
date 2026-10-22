@@ -106,7 +106,7 @@ test.describe("upcoming week (/)", () => {
 
     const record = page.getByRole("region", { name: "Record" });
     await expect(record.getByRole("heading", { name: "Season record before Week 5" })).toBeVisible();
-    await expect(record.getByRole("link", { name: "Season record and audit" })).toHaveAttribute("href", "/model");
+    await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
     await expect(record.getByText("93–103–3")).toBeVisible();
     await expect(record.getByText("47.4%")).toBeVisible();
 
