@@ -1,6 +1,6 @@
 # 2026-10-21 — Site reorganization, design consistency and performance (Phases 1-4 on dev)
 
-Implements [Site reorganization, design consistency and performance](../../docs/plans/2026-10-21/01-site-reorganization-and-performance.md) and the [Stats publication log](../../docs/plans/2026-10-21/02-stats-publication-implementation-log.md). Commits `a57bb603` through `f7a80399` on `dev` (pushed), followed by independent-review fixes.
+Implements [Site reorganization, design consistency and performance](../../docs/plans/2026-10-21/01-site-reorganization-and-performance.md) and the [Stats publication log](../../docs/plans/2026-10-21/02-stats-publication-implementation-log.md). Commits `a57bb603` through `d1c3ed04` on `dev` (pushed). Two independent reviews followed the first push; their findings are fixed in `69c7713b` and `d1c3ed04`.
 
 ## Outcome
 
@@ -14,7 +14,11 @@ Implements [Site reorganization, design consistency and performance](../../docs/
 ## Decisions
 
 - Owner: the first tab is named Games (not Matchups).
-- Review fixes after the pushed work: the Model method page now states the retrospective benchmark fallback; the week record block on Games appears only when at least one pick has a recorded grade (previously any final score, which could show 0-0-0); status and plan docs updated.
+- First review: the Model method page now states the retrospective benchmark fallback; the week record block on Games appears only when at least one pick has a recorded grade (previously any final score, which could show 0-0-0); status and plan docs updated.
+- First review, cache: `unstable_cache` revalidation is stale-while-revalidate, so a new release could stay hidden after the TTL. Cache keys now carry a time bucket (60 s for the release pointer, 3600 s for run-state loaders) so the first request after the TTL blocks on one query.
+- Second review: each loader read the clock itself, so a request crossing a bucket boundary could store old data under the new bucket. One clock reading is now pinned per request (`request-clock.ts`), so staleness is bounded by one bucket.
+- Team-page reads (`getTeamHistory`, `getTeamGames`) are release-cached with the 3600 s cap; callers must pass names resolved by `resolveTeam`.
+- The measurement script defaults to `/`, `/ratings`, `/model`, `/model/method`, `/stats` and a discovered matchup; any non-200 fails the run. A reviewer ran it against a local production-mode server and confirmed this.
 
 ## Files changed, by commit
 
@@ -27,12 +31,18 @@ Implements [Site reorganization, design consistency and performance](../../docs/
 - `07d12aec` fix(web): 404 for unknown game ids (`matchup-id.ts`, layout), method copy trimmed.
 - `76d923b7` fix(ci): `tests/test_season_release_postgres.py`, `conf/repository/compatibility_v1.yaml`, share tooltip and `ExportActions` overflow.
 - `f7a80399` feat(web): `rank-color.ts`, `RankChip.tsx`, `globals.css` scale, ratings and matchup tables.
-- Review fixes (uncommitted): `web/src/app/model/method/page.tsx`, `web/src/lib/slate.ts` (`hasGradedPick`), `web/src/components/slate/SlateView.tsx`, `web/src/lib/slate.test.ts`, `docs/status.md`, the plan, `docs/plans/index.md`, this log.
+- `69c7713b` fix(web): time buckets in cache keys and `releaseCached`, `season-release.ts` pointer key, `v5.ts` team caching, `measure-routes.mjs`, `model/method/page.tsx`, `slate.ts` (`hasGradedPick`), `SlateView.tsx`, `slate.test.ts`, `docs/status.md`, the plan, `docs/plans/index.md`, this log.
+- `d1c3ed04` fix(web): `request-clock.ts` (new), `release-cache.ts`, `season-release.ts`, `release-cache.test.ts` (boundary-crossing tests).
 
 ## Validation
 
-- `lint`, `typecheck` and `test:publication` for the review fixes: see the final report of that work.
+- On the final code (`d1c3ed04`), run by the implementing worker: `lint`, `typecheck`, `test:publication` (319 pass, 1 skipped), `build`, `test:ui` (188 passed, 10 skipped), `test:charts-gate` (21 passed), `git diff --check`. Earlier combined runs also passed `make contracts-check` and `mkdocs build --strict`.
+- CI: run 39695504822 on `f7a80399` passed (the three earlier failures are resolved). The run on `d1c3ed04` was still in progress when this log was written.
 - Local route timings above came from the measurement script against a local database.
+
+## Blockers
+
+- The plan stays `In Progress`: acceptance needs real-data and Preview evidence that fixtures cannot provide.
 
 ## Not verified
 
@@ -40,6 +50,7 @@ Implements [Site reorganization, design consistency and performance](../../docs/
 - The bundle-size claim for `charts.ts`.
 - Teams with legacy names against the real database.
 - The older-browser disclosure.
+- The per-request clock pin inside a live Next request (tested with a stand-in memo, not React `cache()` itself); `/api/health` is the only route handler calling these loaders and gets a fresh reading per call.
 - The real-data Stats review and Preview acceptance.
 
 ## Open follow-ups
@@ -50,3 +61,11 @@ Implements [Site reorganization, design consistency and performance](../../docs/
 - 307 to 308 and the canonical domain.
 - The Model copy "52.4%" is sourced from `docs/modeling/betting_policy.md`.
 - A cold matchup page shows no skeleton.
+
+## Next step
+
+1. Check the CI result on `d1c3ed04`: `gh run list --branch dev --limit 1`.
+2. Test on a Vercel Preview of `dev`, with `CFB_CHARTS_ENABLED=1` on Preview only: Games on an upcoming, a final and an in-progress week; every redirect; the nine legacy-name team pages; light and dark at 390px and 1280px.
+3. Run `node web/scripts/measure-routes.mjs <preview-url> --runs 10` twice, and record the numbers and the Stats real-data review in the [Stats publication log](../../docs/plans/2026-10-21/02-stats-publication-implementation-log.md).
+4. After acceptance: owner sets `CFB_CHARTS_ENABLED=1` on Production per the runbook; later switch redirects from 307 to 308 after confirming the canonical domain.
+5. Remove the seven session worktrees and branches under `.claude/worktrees/` once nothing needs them.
