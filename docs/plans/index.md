@@ -6,6 +6,9 @@
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [Mobile charts A: page](2026-10-21/03-mobile-charts-a-page.md) | Independent mobile reflow, readable chart text, game-log rows, selection and settings | Draft; fresh Terra exact-path authorization, implementation and real iPhone/Android acceptance required. |
+| [Mobile charts B: inspector](2026-10-21/04-mobile-charts-b-inspector.md) | Shared state, native-dialog SVG inspector, button zoom and native scrolling | Draft; blocked on A acceptance and separate owner authorization. |
+| [Mobile charts C: evaluation](2026-10-21/05-mobile-charts-c-evaluation.md) | Evaluate custom gestures/history only after inspector device evidence | Deferred; no gesture/history code authorized. |
 | [Site reorganization, design consistency and performance](2026-10-21/01-site-reorganization-and-performance.md) | Release-keyed data cache and query fixes (Phase 1), shared Card/Notice design system (2), four-tab navigation with merged Matchups and Model plus team links (3), Stats publication (4) | In Progress: Phases 1-4 implemented on `dev`; Preview acceptance, real-data Stats review and Vercel cache measurements pending. |
 | [Charts pre-publication verification](2026-10-20/03-charts-pre-publication.md) | What must be tested and decided before `CFB_CHARTS_ENABLED=1` is set in Production; `dev` is focused on this | Draft; awaiting owner approval. |
 | [Incremental weekly ingestion](2026-10-20/02-incremental-weekly-ingestion.md) | Separate promotion (no provider calls), normal week close/open (new-week requests only) and budgeted history repair | Draft; awaiting owner approval. No provider calls or code changes in the plan. |
