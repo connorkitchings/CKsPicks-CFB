@@ -6,7 +6,7 @@ const sortHeader = (page: Page, label: string) => page.getByRole("columnheader",
 const sortButton = (page: Page, label: string) => page.getByRole("button", { name: `Sort by ${label}`, exact: true });
 const SORT_LABELS = ["Overall", "Offense", "Defense", "SOR", "SOS Played", "SOS Remaining", "SOS Full"];
 
-// Returns a locator for one team's cell by column header name. The `#` cell is a td and the
+// Returns a locator for one team's cell by column header name. The `Rank` cell is a td and the
 // team is a th row header, so `td, th` in DOM order lines up with `thead th` indices.
 const rowCells = async (page: Page, team: string) => {
   const row = page.getByRole("table").locator("tbody tr", { hasText: team });
@@ -189,7 +189,7 @@ test.describe("résumé columns", () => {
     const headers = page.getByRole("table").locator("thead th");
     // Sortable headers carry a direction arrow in their text on the active column, so match by prefix.
     await expect(headers).toHaveText([
-      /^#$/, /^Team$/, /^Overall/, /^Offense/, /^Defense/, /^FBS W-L$/, /^SOR/, /^SOS Played/, /^SOS Remaining/, /^SOS Full/,
+      /^Rank$/, /^Team$/, /^Overall/, /^Offense/, /^Defense/, /^FBS W-L$/, /^SOR/, /^SOS Played/, /^SOS Remaining/, /^SOS Full/,
     ]);
     await expect(page.getByRole("columnheader", { name: "WAA", exact: true })).toHaveCount(0);
     await expect(page.getByRole("columnheader", { name: "Overall uncertainty" })).toHaveCount(0);
@@ -362,7 +362,7 @@ test.describe("résumé columns", () => {
 
     const appState = await rowCells(page, "Appalachian State");
     // National overall position #3 and SOR #3 are preserved when filtered to Sun Belt.
-    await expect(appState("#")).toHaveText("3");
+    await expect(appState("Rank")).toHaveText("3");
     await expect(appState("SOR")).toHaveText("#3");
     await expect(appState("SOS Full")).toHaveText("#2");
 
@@ -415,17 +415,41 @@ test.describe("rank color scale", () => {
     return Array.from(ctx.getImageData(0, 0, 1, 1).data.slice(0, 3));
   }, value);
 
+  // The SOR chip in a row. The first column's position chip is neutral, so the scale is read from SOR.
+  const sorChip = async (page: Page) => {
+    const headers = (await page.getByRole("table").locator("thead th").allTextContents()).map((text) => text.replace(/[↑↓]/g, "").trim());
+    const index = headers.indexOf("SOR");
+    if (index < 0) throw new Error('No table column named "SOR"');
+    return (row: Locator) => row.locator("td, th").nth(index).locator("[data-rank-chip]");
+  };
+
+  test("the first-column position chip is neutral while SOR chips stay on the scale", async ({ page }) => {
+    await page.goto("/ratings?sort=sor");
+    const bodyRows = page.getByRole("table").locator("tbody tr");
+    await expect(bodyRows.first()).toBeVisible();
+    const background = (chip: Locator) => chip.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const position = (row: Locator) => row.locator("td").first().locator("[data-rank-chip]");
+    const sor = await sorChip(page);
+
+    await expect(position(bodyRows.first())).toHaveAttribute("data-rank-none", "");
+    await expect(position(bodyRows.first())).toHaveText("1");
+    expect(await background(position(bodyRows.first()))).toBe(await background(position(bodyRows.last())));
+    expect(await background(sor(bodyRows.first()))).not.toBe(await background(sor(bodyRows.nth(2))));
+  });
+
   for (const scheme of ["light", "dark"] as const) {
-    test(`rank 1 is greener than the last rank in ${scheme} mode, with the rank as the chip text`, async ({ page }) => {
+    test(`rank 1 is greener than the last ranked SOR in ${scheme} mode, with the rank as the chip text`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await page.goto("/ratings");
+      // Sorted by SOR, rank 1 comes first. Southern Mississippi has no SOR (its chip is neutral), so the
+      // last scored chip is the third row, Appalachian State at SOR #3.
+      await page.goto("/ratings?sort=sor");
       const bodyRows = page.getByRole("table").locator("tbody tr");
       await expect(bodyRows.first()).toBeVisible();
-      const count = await bodyRows.count();
-      const first = bodyRows.first().locator("[data-rank-chip]").first();
-      const last = bodyRows.nth(count - 1).locator("[data-rank-chip]").first();
-      await expect(first).toHaveText("1");
-      await expect(last).toHaveText(String(count));
+      const sor = await sorChip(page);
+      const first = sor(bodyRows.first());
+      const last = sor(bodyRows.nth(2));
+      await expect(first).toHaveText("#1");
+      await expect(last).toHaveText("#3");
 
       const style = (chip: Locator) => chip.evaluate((el) => {
         const s = getComputedStyle(el);

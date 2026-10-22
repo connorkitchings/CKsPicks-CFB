@@ -314,7 +314,7 @@ export function RatingsView({
                 <Card as="li" padding="sm" key={rating.team}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-2">
-                      <RankChip aria-label={`National rank ${position}`} rank={position} total={ratings.length} prefix="" className="h-6 min-w-6 shrink-0" />
+                      <RankChip aria-label={`National rank ${position}`} rank={null} label={String(position)} prefix="" className="h-6 min-w-6 shrink-0" />
                       <Link href={teamHref(rating.team)} className="flex min-h-11 min-w-0 items-center gap-2 -my-2.5 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                         <TeamLogo name={rating.team} px={24} />
                         <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
@@ -347,7 +347,7 @@ export function RatingsView({
               <caption className="sr-only">{season} {periodMeta.label} V5 team ratings, ranked by {sortLabels[sort]}</caption>
               <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
                 <tr>
-                  <th scope="col" className="px-2 py-3 text-center">#</th>
+                  <th scope="col" className="whitespace-nowrap px-2 py-3 text-center">Rank</th>
                   <th scope="col" className="px-2 py-3 text-left">Team</th>
                   {scoreSorts.map((column) => (
                     <SortHeader key={column} column={column} active={sort === column} direction={direction} onSort={chooseSort} center />
@@ -366,7 +366,8 @@ export function RatingsView({
                   return (
                     <tr key={rating.team}>
                       <td className="px-2 py-3 text-center font-mono text-xs text-ink-muted">
-                        <RankChip rank={position} total={ratings.length} prefix="" />
+                        {/* Neutral on purpose: the color scale marks the SOR and SOS rank columns, not the position. */}
+                        <RankChip rank={null} label={String(position)} prefix="" />
                       </td>
                       <th scope="row" className="px-2 py-3 text-left font-semibold text-ink">
                         <Link href={teamHref(rating.team)} className="flex items-center gap-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"><TeamLogo name={rating.team} px={20} /><span>{rating.team}</span></Link>

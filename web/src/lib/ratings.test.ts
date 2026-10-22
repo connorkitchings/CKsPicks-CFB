@@ -17,7 +17,7 @@ test("ratings page includes rank column, methodology explainer, and disambiguate
   const source = `${pageSource}\n${viewSource}`;
 
   // Rank column in table header and body (computed pre-filter)
-  assert.match(source, /<th scope="col"[^>]*>#<\/th>/);
+  assert.match(source, /<th scope="col"[^>]*>Rank<\/th>/);
   assert.match(source, /\{rank\}/);
   assert.match(source, /Rank before filtering/);
   assert.match(source, /aria-label="Ratings timeline"/);
