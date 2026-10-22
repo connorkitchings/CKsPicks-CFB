@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { CHART_REGISTRY, chartSubtitle, exportFilename, groupLabel, type ScatterConfig } from "@/lib/chart-config";
 import { domainFor, matchesConference, type ChartKind, type ScatterData, type ScatterPoint, type Side } from "@/lib/charts";
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, HighlightStatus, type SharedChartProps } from "./ChartFrame";
@@ -26,6 +26,7 @@ export type ScatterViewProps = {
 
 /** A team scatter in the shared frame: national geometry, conference filter, highlight and export. */
 export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, description }: ScatterViewProps) {
+  const [detailsContainer, setDetailsContainer] = useState<HTMLDivElement | null>(null);
   const { season, week, roster, filter, highlight, onHighlight } = shared;
   const title = CHART_REGISTRY[kind].title;
   const subtitle = chartSubtitle(kind, season, week, side);
@@ -58,6 +59,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       formatX={config.tickX}
       formatY={config.tickY}
       interactive={interactive}
+      detailsContainer={interactive ? detailsContainer : undefined}
       label={`${title}. ${subtitle}`}
     />
   );
@@ -76,6 +78,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       subtitle={subtitle}
       description={description ?? CHART_REGISTRY[kind].description}
       controls={controls}
+      settingsSummary={[subtitle, config.metricLabel].filter(Boolean).join(" · ")}
       highlightTeams={eligibleRoster}
       exportSpec={{
         filename: exportFilename(kind, season, week, side, exportMetric),
@@ -95,6 +98,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
           <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team scatter chart, horizontally scrollable" tabIndex={0} data-testid="scatter-scroll">
             <div className="min-w-[760px] lg:min-w-0">{chart(SCATTER_VIEW, true)}</div>
           </div>
+          <div ref={setDetailsContainer} />
         </>
       }
       unavailable={unavailable}

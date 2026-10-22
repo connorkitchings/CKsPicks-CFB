@@ -180,8 +180,10 @@ test.describe("team charts", () => {
     const position = await alabama.evaluate((node) => [node.getAttribute("x"), node.getAttribute("y")]);
     const averages = await page.getByTestId("average-lines").innerHTML();
     const domains = await page.getByTestId("scatter-chart").evaluate((node) => [node.getAttribute("data-x-domain"), node.getAttribute("data-y-domain")]);
-    await page.getByTestId("conference-filter").selectOption("SEC");
-    await expect(marks).toHaveCount(SEC_TEAMS);
+    await expect(async () => {
+      await page.getByTestId("conference-filter").selectOption("SEC");
+      await expect(marks).toHaveCount(SEC_TEAMS, { timeout: 500 });
+    }).toPass();
     await expect(page.locator("g[data-team='Michigan']")).toHaveCount(0);
     expect(await alabama.evaluate((node) => [node.getAttribute("x"), node.getAttribute("y")])).toEqual(position);
     expect(await page.getByTestId("average-lines").innerHTML()).toEqual(averages);
@@ -241,8 +243,10 @@ test.describe("team charts", () => {
 
   test("highlight survives week navigation and reports an unavailable observation", async ({ page }) => {
     await page.goto("/stats?chart=adjusted&week=2");
-    await page.getByTestId("team-highlight").selectOption("Notre Dame");
-    await expect(page.locator("g[data-team='Notre Dame']")).toHaveAttribute("aria-pressed", "true");
+    await expect(async () => {
+      await page.getByTestId("team-highlight").selectOption("Notre Dame");
+      await expect(page.locator("g[data-team='Notre Dame']")).toHaveAttribute("aria-pressed", "true", { timeout: 500 });
+    }).toPass();
     await page.locator("#week-select").selectOption("3");
     await expect(page.getByTestId("highlight-status")).toContainText("Notre Dame");
     await expect(page.locator("g[data-team='Notre Dame']")).toHaveCount(0);
@@ -401,8 +405,14 @@ test.describe("team charts", () => {
 
   test("filtered export contains the chart population, group, metric and persistent highlight", async ({ page }) => {
     await page.goto("/stats?chart=efficiency&week=3");
-    await page.getByTestId("conference-filter").selectOption("SEC");
-    await page.getByTestId("team-highlight").selectOption("Alabama");
+    await expect(async () => {
+      await page.getByTestId("conference-filter").selectOption("SEC");
+      await expect(page.locator("g[data-team]")).toHaveCount(SEC_TEAMS, { timeout: 500 });
+    }).toPass();
+    await expect(async () => {
+      await page.getByTestId("team-highlight").selectOption("Alabama");
+      await expect(page.locator("g[data-team='Alabama']")).toHaveAttribute("aria-pressed", "true", { timeout: 500 });
+    }).toPass();
     const teams = await page.locator("g[data-team]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-team")!).sort());
     const { file, capture } = await exportPng(page);
     expect(capture.teams.sort()).toEqual(teams);

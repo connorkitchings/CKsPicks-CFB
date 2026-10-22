@@ -26,6 +26,8 @@ import {
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { GameLogChart } from "./GameLogChart";
+import { MobileGameLog } from "./MobileGameLog";
+import { useMobileChart } from "./useMobileChart";
 
 const GAME_LOG_VIEW = { width: 1000, height: 560 };
 const SCOPE_NOTE = "FBS opponents only";
@@ -55,6 +57,7 @@ function SeasonStat({ side, log }: { side: Side; log: TeamGameLog }) {
 
 /** Every game of one team: offense and defense-allowed bars against each week's FBS average. */
 export function GameLogView({ shared, rows, adjusted, initialMetric, explosiveness }: GameLogViewProps) {
+  const narrow = useMobileChart();
   const [metric, setMetric] = useState<GameLogMetric>(initialMetric);
   const { season, roster, filter, highlight } = shared;
   const team = highlight ?? defaultGameLogTeam(roster, rows, adjusted, filter);
@@ -82,6 +85,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       title={title}
       subtitle={subtitle}
       description={description}
+      settingsSummary={`${subtitle} · ${metricText.label}`}
       controls={
         <SegmentedControl
           size="sm"
@@ -116,9 +120,9 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       emptyText={team ? `${team} has no FBS games in this release yet.` : "No team can be charted yet."}
       figure={
         <>
-          <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team game log chart, horizontally scrollable" tabIndex={0} data-testid="game-log-scroll">
+          {narrow && log ? <MobileGameLog log={log} domains={domains} formatTick={metricText.tick} formatValue={metricText.value} describe={describe} width={GAME_LOG_VIEW.width} height={GAME_LOG_VIEW.height} label={label} /> : <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team game log chart, horizontally scrollable" tabIndex={0} data-testid="game-log-scroll">
             <div className="min-w-[640px] lg:min-w-0">{chart(GAME_LOG_VIEW, true)}</div>
-          </div>
+          </div>}
         </>
       }
       footnote={footnote}

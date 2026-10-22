@@ -194,35 +194,41 @@ async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams 
     const week = coerceWeek(requested, available);
 
     tabs = (
-      // Phones scroll the tab row edge to edge; wider screens wrap whole groups.
-      <nav className="-mx-4 flex items-end gap-x-5 gap-y-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0" aria-label="Chart type" data-testid="chart-picker">
-        {pickerGroups().map((group) => (
-          <div key={group.id} className="flex shrink-0 flex-col gap-1" role="group" aria-label={group.label}>
-            <span className="px-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>
-              {group.label}
-            </span>
-            <div className="flex gap-1.5">
-              {group.kinds.map((target) => {
-                const active = target === kind;
-                // The link carries the week coerced for that chart; ChartLink adds `team`.
-                const href = chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) });
-                return (
+      <nav aria-label="Chart type" data-testid="chart-picker">
+        <div className="hidden flex-wrap items-end gap-x-5 gap-y-2 sm:flex">
+          {pickerGroups().map((group) => (
+            <div key={group.id} className="flex shrink-0 flex-col gap-1" role="group" aria-label={group.label}>
+              <span className="px-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>{group.label}</span>
+              <div className="flex gap-1.5">
+                {group.kinds.map((target) => (
                   <ChartLink
                     key={target}
-                    href={href}
-                    aria-current={active ? "page" : undefined}
+                    href={chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) })}
+                    aria-current={target === kind ? "page" : undefined}
                     className={clsx(
-                      "inline-flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-sm",
-                      active ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+                      "inline-flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
                     )}
-                  >
-                    {CHART_REGISTRY[target].tabLabel}
-                  </ChartLink>
-                );
-              })}
+                  >{CHART_REGISTRY[target].tabLabel}</ChartLink>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:hidden">
+          {pickerGroups().flatMap((group) => group.kinds).map((target, index, kinds) => (
+            <ChartLink
+              key={target}
+              href={chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) })}
+              aria-current={target === kind ? "page" : undefined}
+              className={clsx(
+                "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg px-3 py-2 text-center text-xs font-semibold focus-visible:outline-2 focus-visible:outline-accent",
+                index === kinds.length - 1 && kinds.length % 2 === 1 && "col-span-2",
+                target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted",
+              )}
+            >{CHART_REGISTRY[target].tabLabel}</ChartLink>
+          ))}
+        </div>
       </nav>
     );
 

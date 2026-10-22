@@ -70,7 +70,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
           describe={describeBar}
           orientation={narrow ? "horizontal" : "vertical"}
           width={narrow ? 420 : netSuccessWidth(shown.length)}
-          height={narrow ? 56 + 36 * shown.length : 640}
+          height={narrow ? 56 + 48 * shown.length : 640}
           label={label}
         />
       }

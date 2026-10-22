@@ -22,6 +22,10 @@ export function TeamHighlightCombobox({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [listHeight, setListHeight] = useState(240);
+  const [listAbove, setListAbove] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
 
   // Close when clicking outside
   useEffect(() => {
@@ -40,6 +44,43 @@ export function TeamHighlightCombobox({
     if (!q) return teams;
     return teams.filter((t) => matchesSearch(q, t.team));
   }, [teams, query]);
+
+  const options = useMemo(() => [
+    ...(highlight && !query.trim() ? [{ team: null, label: "None (clear highlight)", conference: null }] : []),
+    ...filteredTeams.map((team) => ({ ...team, label: team.team })),
+  ], [highlight, filteredTeams, query]);
+  const active = Math.min(activeIndex, options.length - 1);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const viewport = window.visualViewport;
+    const update = () => {
+      const input = inputRef.current?.getBoundingClientRect();
+      if (!input) return;
+      const top = viewport?.offsetTop ?? 0;
+      const bottom = top + (viewport?.height ?? window.innerHeight);
+      const below = bottom - input.bottom - 12;
+      const above = input.top - top - 12;
+      const openAbove = below < 132 && above > below;
+      setListAbove(openAbove);
+      setListHeight(Math.max(0, Math.min(240, openAbove ? above : below)));
+    };
+    update();
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) listRef.current?.querySelector<HTMLElement>(`[id="${listId}-${active}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [active, isOpen, listId]);
 
   const handleSelect = (teamName: string | null) => {
     onSelect(teamName);
@@ -61,27 +102,39 @@ export function TeamHighlightCombobox({
           aria-label="Highlight a team"
           aria-autocomplete="list"
           aria-haspopup="listbox"
+          aria-activedescendant={isOpen && active >= 0 ? `${listId}-${active}` : undefined}
+          suppressHydrationWarning
           value={displayValue}
           placeholder="Highlight a team..."
           onFocus={() => {
             setIsOpen(true);
             setQuery("");
+            setActiveIndex(0);
           }}
           onChange={(e) => {
             setQuery(e.target.value);
+            setActiveIndex(0);
             if (!isOpen) setIsOpen(true);
           }}
           onKeyDown={(e) => {
             if (e.key === "Escape") {
+              e.preventDefault();
+              e.stopPropagation();
               setIsOpen(false);
               setQuery("");
-              inputRef.current?.blur();
-            } else if (e.key === "Enter" && isOpen && filteredTeams.length > 0) {
+            } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
               e.preventDefault();
-              handleSelect(filteredTeams[0].team);
+              setIsOpen(true);
+              setActiveIndex(isOpen && options.length ? (active + (e.key === "ArrowDown" ? 1 : -1) + options.length) % options.length : 0);
+            } else if (e.key === "Enter" && isOpen && options[active]) {
+              e.preventDefault();
+              handleSelect(options[active].team);
+            } else if (e.key === "Tab") {
+              setIsOpen(false);
+              setQuery("");
             }
           }}
-          className="min-h-9 w-full rounded-lg border border-line bg-surface-card pl-3 pr-8 py-1.5 text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent"
+          className="min-h-11 sm:min-h-9 w-full rounded-lg border border-line bg-surface-card pl-3 pr-12 sm:pr-8 py-1.5 text-base sm:text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent"
           data-testid="team-search"
         />
 
@@ -92,7 +145,7 @@ export function TeamHighlightCombobox({
               e.stopPropagation();
               handleSelect(null);
             }}
-            className="absolute right-2 text-ink-muted hover:text-ink p-0.5 rounded focus:outline-none"
+            className="absolute right-0 sm:right-2 flex min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 items-center justify-center text-ink-muted hover:text-ink p-0.5 rounded focus-visible:outline-2 focus-visible:outline-accent"
             aria-label="Clear team highlight"
             title="Clear highlight"
           >
@@ -112,7 +165,7 @@ export function TeamHighlightCombobox({
       {/* Hidden toggle select (kept for scripted access): it rests on the placeholder so
           choosing the highlighted team again fires a change and unhighlights it. */}
       <select
-        id="team-highlight"
+        id={`${listId}-select`}
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"
@@ -133,45 +186,31 @@ export function TeamHighlightCombobox({
       {isOpen && (
         <ul
           id={listId}
+          ref={listRef}
           role="listbox"
+          aria-label="Teams"
+          style={{ maxHeight: listHeight, bottom: listAbove ? "calc(100% + 4px)" : undefined }}
           className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-line bg-surface-card p-1 shadow-lg focus:outline-none"
         >
-          {highlight && (
-            <li
-              role="option"
-              aria-selected={false}
-              onClick={() => handleSelect(null)}
-              className="cursor-pointer rounded-lg px-2.5 py-1.5 text-xs text-ink-muted hover:bg-surface-inset hover:text-ink transition-colors"
-            >
-              None (clear highlight)
-            </li>
-          )}
-          {filteredTeams.length === 0 ? (
+          {options.length === 0 ? (
             <li className="px-2.5 py-2 text-xs text-ink-muted">No teams found</li>
-          ) : (
-            filteredTeams.map((t) => {
-              const isSelected = t.team === highlight;
-              return (
-                <li
-                  key={t.team}
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => handleSelect(t.team)}
-                  className={clsx(
-                    "flex items-center justify-between cursor-pointer rounded-lg px-2.5 py-1.5 text-xs transition-colors",
-                    isSelected
-                      ? "bg-accent/10 font-semibold text-accent-ink"
-                      : "text-ink hover:bg-surface-inset"
-                  )}
-                >
-                  <span>{t.team}</span>
-                  {t.conference && (
-                    <span className="text-[10px] text-ink-muted">{t.conference}</span>
-                  )}
-                </li>
-              );
-            })
-          )}
+          ) : options.map((option, index) => (
+            <li
+              id={`${listId}-${index}`}
+              key={option.team ?? "clear"}
+              role="option"
+              aria-selected={index === active}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => handleSelect(option.team)}
+              className={clsx(
+                "flex min-h-11 sm:min-h-0 items-center justify-between gap-2 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs transition-colors",
+                index === active ? "bg-accent/10 font-semibold text-accent-ink" : "text-ink hover:bg-surface-inset",
+              )}
+            >
+              <span>{option.label}</span>
+              {option.conference && <span className="text-[10px] text-ink-muted">{option.conference}</span>}
+            </li>
+          ))}
         </ul>
       )}
     </div>

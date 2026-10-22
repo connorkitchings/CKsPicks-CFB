@@ -7,8 +7,11 @@ test("Stats is reachable from the main navigation and keeps the selected side wh
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Stats", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Team charts" })).toBeVisible();
   await page.getByRole("navigation", { name: "Chart type" }).getByRole("link", { name: "Efficiency vs explosiveness", exact: true }).click();
+  await expect(page).toHaveURL(/chart=efficiency/);
+  await page.getByRole("button", { name: "Chart settings", exact: true }).click();
   await page.getByRole("group", { name: "Side of the ball" }).getByRole("link", { name: "defense", exact: true }).click();
   await expect(page.getByTestId("chart-subtitle")).toContainText("Defense");
+  await page.getByRole("button", { name: "Chart settings", exact: true }).click();
   await page.getByLabel("Through Week", { exact: true }).selectOption("2");
   await expect(page).toHaveURL(/side=defense/);
   await expect(page.getByTestId("chart-subtitle")).toContainText("Through Week 2");

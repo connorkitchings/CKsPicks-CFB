@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import clsx from "clsx";
 import { footnoteLines } from "@/lib/chart-config";
 import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
+import { MobileChartSettings } from "./MobileChartSettings";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
 
 /**
@@ -89,6 +89,8 @@ export type ChartFrameProps = {
   highlightTeams?: readonly RosterRow[];
   /** The chart's own settings (metric or sort toggle), after the page's side and week settings. */
   controls?: ReactNode;
+  /** Current metric/side context for the always-visible mobile settings summary. */
+  settingsSummary?: string;
   /** PNG export of `card`, offered while the chart has data. */
   exportSpec: { filename: string; width: number; height: number; card: ReactNode };
   /** A compact line between the header hairline and the figure (highlight status, summaries). */
@@ -115,6 +117,7 @@ export function ChartFrame({
   headerControls,
   highlightTeams,
   controls,
+  settingsSummary,
   exportSpec,
   status,
   hasData,
@@ -132,36 +135,29 @@ export function ChartFrame({
     <section className="space-y-3" aria-label={title}>
       {/* One row of every setting: filter, highlight, side, week, metric/sort; display and export at the right end. */}
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-testid="chart-controls">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
-          {/* On phones the filter and highlight share the first line half and half. */}
-          <div className={clsx("gap-2.5", highlightTeams ? "grid w-full grid-cols-2 sm:flex sm:w-auto" : "flex")}>
-            <select
-              className="min-h-9 min-w-0 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
-              value={filter}
-              onChange={(event) => onFilterChange(event.target.value)}
-              data-testid="conference-filter"
-              aria-label="Filter by conference"
-            >
-              <option value="all">All FBS</option>
-              <option value="p4">Power Four + Notre Dame</option>
-              {conferenceOptions(roster).map((conference) => (
-                <option key={conference} value={conference}>
-                  {conference}
-                </option>
-              ))}
-            </select>
-            {highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />}
-          </div>
+        <MobileChartSettings finder={highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />} summary={<>{settingsSummary ?? subtitle}<span className="text-ink-faint"> · </span>{filter === "all" ? "All FBS" : filter === "p4" ? "Power Four + Notre Dame" : filter}</>} conference={
+          <select
+            className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent sm:min-h-9 sm:text-xs"
+            value={filter}
+            onChange={(event) => onFilterChange(event.target.value)}
+            data-testid="conference-filter"
+            aria-label="Filter by conference"
+          >
+            <option value="all">All FBS</option>
+            <option value="p4">Power Four + Notre Dame</option>
+            {conferenceOptions(roster).map((conference) => <option key={conference} value={conference}>{conference}</option>)}
+          </select>
+        }>
           {settings}
           {controls}
-        </div>
+        </MobileChartSettings>
         <div className="flex flex-wrap items-center gap-2 sm:ml-auto" role="group" aria-label="Chart display and export">
           {table && (
             <button
               type="button"
               aria-pressed={asTable}
               onClick={() => setAsTable((current) => !current)}
-              className="min-h-9 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
+              className="min-h-11 rounded-lg border border-line bg-surface-card px-3 py-1.5 sm:min-h-9 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
               data-testid="table-toggle"
             >
               {asTable ? "Show chart" : "Show as table"}
