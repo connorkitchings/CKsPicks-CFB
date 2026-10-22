@@ -27,6 +27,7 @@ nav:
   - Data Platform:
       - Repository Boundaries: architecture/repository_boundaries.md
       - Data Platform 2026: architecture/data_platform_2026.md
+      - Deferred Data Architecture Blueprint: planning/data_architecture_blueprint.md
       - Point-in-Time Pipeline: architecture/cfbd_point_in_time_pipeline.md
       - Ingestion Guide: data/ingestion_guide.md
       - Historical Data Inventory: data/historical_data_inventory.md
