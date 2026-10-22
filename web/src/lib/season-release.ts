@@ -3,6 +3,7 @@ import { db } from "./db";
 import { publicationScope } from "./publication.ts";
 import { releaseEnvironment, createReleaseContextResolver, loadReleaseContext, type SeasonReleaseContext, type ReleaseEnvironment } from "./season-release-context.ts";
 import { seasonReleaseDb, type ChartSet } from "./season-release-query.ts";
+import { requestNow } from "./request-clock.ts";
 import { cacheDisabled, decodeCacheValue, encodeCacheValue, pointerCacheKey } from "./release-cache.ts";
 
 /**
@@ -24,7 +25,7 @@ async function readPointerCached(season: number, environment: ReleaseEnvironment
   const { unstable_cache } = await import("next/cache");
   const cached = unstable_cache(
     async () => encodeCacheValue(await readPointer(season, environment)),
-    pointerCacheKey(RELEASE_POINTER_TAG, process.env, environment, season, Date.now(), RELEASE_POINTER_REVALIDATE_SECONDS),
+    pointerCacheKey(RELEASE_POINTER_TAG, process.env, environment, season, requestNow(), RELEASE_POINTER_REVALIDATE_SECONDS),
     { tags: [RELEASE_POINTER_TAG], revalidate: RELEASE_POINTER_REVALIDATE_SECONDS },
   );
   return decodeCacheValue<SeasonReleaseContext | null>(await cached());

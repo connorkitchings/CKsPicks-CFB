@@ -10,7 +10,11 @@
  * A new bucket is a different key, hence a cache miss computed synchronously, and entries of
  * older buckets are never read again. GUARANTEE: a change to mutable state is visible within
  * the TTL; the first request after the TTL blocks on one query. If that query throws, the
- * request fails like an uncached one (no stale fallback). The tag is constant across buckets,
+ * request fails like an uncached one (no stale fallback). The clock is pinned per request
+ * (`requestNow`, shared with the release pointer key): every loader in one request computes
+ * the same bucket, so a request straddling a boundary cannot hand an old-bucket value (via
+ * React's per-request memoization) to a loader that then stores it under the new bucket.
+ * Worst case, data is at most one bucket stale. The tag is constant across buckets,
  * so `revalidateTag` / `release:<id>` expiry reaches every bucket's entry. It is bypassed (the loader runs directly) when `CFB_UI_TEST_MODE=1`, when
  * `CFB_DATA_CACHE=0` (kill switch), and when the request has no release (legacy tables).
  *
@@ -55,6 +59,7 @@
  * - `getHistoricalModelContext` reads a live table and is deliberately not cached.
  */
 import { publicationScope } from "./publication.ts";
+import { requestNow } from "./request-clock.ts";
 import type { SeasonReleaseContext } from "./season-release-context.ts";
 
 /** Entries above this serialized size are logged: Vercel limits one cache entry to about 2 MB. */
@@ -131,7 +136,7 @@ type TextLoader = (...args: unknown[]) => Promise<string>;
 
 export type CacheDeps = {
   env: () => Env;
-  /** Epoch milliseconds; injectable so tests control the time bucket. */
+  /** Epoch milliseconds, pinned per request in production; injectable so tests control the bucket. */
   now: () => number;
   getContext: (season: number) => Promise<SeasonReleaseContext | null>;
   cache: (load: TextLoader, keyParts: string[], options: { tags: string[]; revalidate: number | false }) => Promise<TextLoader>;
@@ -167,7 +172,7 @@ export function createReleaseCached(deps: CacheDeps) {
 /** Production wiring. Next and the release resolver load lazily so the pure parts stay unit-testable. */
 export const releaseCached = createReleaseCached({
   env: () => process.env,
-  now: () => Date.now(),
+  now: requestNow,
   getContext: async (season) => (await import("./season-release")).getSeasonReleaseContext(season),
   cache: async (load, keyParts, options) => (await import("next/cache")).unstable_cache(load, keyParts, options),
   warn: (message) => console.warn(message),

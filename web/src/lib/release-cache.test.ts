@@ -4,6 +4,7 @@ import {
   CACHE_WARN_BYTES, createReleaseCached, decodeCacheValue, encodeCacheValue, pointerCacheKey, releaseCacheKey, RUN_STATE_CACHE, timeBucket,
   type CacheDeps,
 } from "./release-cache.ts";
+import { requestNow } from "./request-clock.ts";
 import type { SeasonReleaseContext } from "./season-release-context.ts";
 
 const context: SeasonReleaseContext = {
@@ -171,4 +172,80 @@ test("team loaders key on the resolved names", async () => {
   const loader = releaseCached("getTeamGames", async (season: number, team: string) => `${season}${team}`, RUN_STATE_CACHE);
   await loader(2026, "San José State");
   assert.equal(calls[0].keyParts[5], JSON.stringify([2026, "San José State"]));
+});
+
+/** Stand-in for React `cache()`: memoizes per "request", reset by `newRequest()`. */
+function requestScope(clock: { ms: number }) {
+  let pinned: number | undefined;
+  return { now: () => (pinned ??= clock.ms), newRequest: () => { pinned = undefined; } };
+}
+
+/** Harness whose clock is either pinned per request or read fresh on every call. */
+function boundaryHarness(pin: boolean) {
+  const clock = { ms: 0 };
+  const scope = requestScope(clock);
+  const calls: Call[] = [];
+  const store = new Map<string, string>();
+  const deps: CacheDeps = {
+    env: () => ({}),
+    now: pin ? scope.now : () => clock.ms,
+    getContext: async () => context,
+    cache: async (load, keyParts, options) => {
+      calls.push({ keyParts, options });
+      return async (...args) => {
+        const key = JSON.stringify([keyParts, args]);
+        if (!store.has(key)) store.set(key, await load(...args));
+        return store.get(key)!;
+      };
+    },
+    warn: () => {},
+  };
+  const releaseCached = createReleaseCached(deps);
+  let state = "old";
+  const requestMemo = new Map<string, Promise<unknown>>();
+  const getRun = releaseCached("getRunForWeek", async (season: number) => `${state}${season * 0 || ""}`, RUN_STATE_CACHE);
+  const getGames = releaseCached("getGamesForWeek", async (season: number) => `games(${await memoRun()})${season * 0 || ""}`, RUN_STATE_CACHE);
+  const memoRun = () => {
+    if (!requestMemo.has("run")) requestMemo.set("run", getRun(2026));
+    return requestMemo.get("run") as Promise<string>;
+  };
+  return {
+    clock, calls, setState: (next: string) => { state = next; },
+    newRequest: () => { scope.newRequest(); requestMemo.clear(); },
+    /** Loader A reads at `startMs`; loader B (depending on A's memoized output) reads at `endMs`. */
+    request: async (startMs: number, endMs: number) => {
+      clock.ms = startMs;
+      const run = await memoRun();
+      clock.ms = endMs;
+      const games = await getGames(2026);
+      return { run, games };
+    },
+  };
+}
+
+test("a request straddling a bucket boundary uses one bucket for every loader", async () => {
+  const h = boundaryHarness(true);
+  await h.request(3600_000 - 1, 3600_000 + 1);
+  const buckets = h.calls.map((call) => call.keyParts.at(-1));
+  assert.deepEqual(buckets, ["bucket:0", "bucket:0"]);
+  // A later request, after the boundary, uses the new bucket and blocks on a fresh read.
+  h.setState("frozen");
+  h.newRequest();
+  const result = await h.request(3600_000 + 5, 3600_000 + 6);
+  assert.equal(h.calls.at(-1)!.keyParts.at(-1), "bucket:1");
+  assert.equal(result.run, "frozen");
+  assert.equal(result.games, "games(frozen)");
+});
+
+test("without a pinned clock the same request mixes buckets (failure mode)", async () => {
+  const h = boundaryHarness(false);
+  await h.request(3600_000 - 1, 3600_000 + 1);
+  const buckets = h.calls.map((call) => call.keyParts.at(-1));
+  assert.deepEqual(buckets, ["bucket:0", "bucket:1"]);
+});
+
+test("the production request clock returns epoch milliseconds", () => {
+  const before = Date.now();
+  const value = requestNow();
+  assert.ok(value >= before && value <= Date.now());
 });
