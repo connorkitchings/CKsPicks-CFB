@@ -8,7 +8,7 @@ import { PAGE_WIDTHS, pageWidthFor } from "@/lib/page-width";
 const items = [
   ["Games", "/"],
   ["Ratings", "/ratings"],
-  ["Stats", "/stats"],
+  ["Graphs", "/stats"],
   ["Model", "/model"],
 ] as const;
 

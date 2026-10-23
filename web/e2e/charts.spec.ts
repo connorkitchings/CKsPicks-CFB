@@ -321,7 +321,7 @@ test.describe("team charts", () => {
       const response = await page.goto(`/stats?fixture=${fixture}`);
       expect(response?.status()).toBe(200);
       const nav = page.getByRole("navigation", { name: "Main navigation" });
-      await expect(nav.getByRole("link")).toHaveText(["Games", "Ratings", "Stats", "Model"]);
+      await expect(nav.getByRole("link")).toHaveText(["Games", "Ratings", "Graphs", "Model"]);
       await expect(page.getByRole("heading", { name: "Team charts", exact: true })).toBeVisible();
       await expect(page.getByTestId("chart-picker")).toHaveCount(0);
     }
@@ -385,14 +385,14 @@ test.describe("team charts", () => {
     await expect(page.getByTestId("net-success-chart")).toHaveAttribute("data-orientation", "horizontal");
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
-    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Stats" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Graphs" })).toBeVisible();
   });
 
-  test("nav shows Stats and the nav width matches the chart page", async ({ page }) => {
+  test("nav shows Graphs and the nav width matches the chart page", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/stats");
     const nav = page.getByRole("navigation", { name: "Main navigation" });
-    await expect(nav.getByRole("link", { name: "Stats" })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("link", { name: "Graphs" })).toHaveAttribute("aria-current", "page");
     // Styles may still be compiling on the first request; poll until the layout settles.
     await expect
       .poll(async () => {

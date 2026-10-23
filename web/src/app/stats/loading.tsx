@@ -8,7 +8,7 @@ export default function StatsLoading() {
       footer={false}
       mainClassName="space-y-4 py-3 sm:py-6"
       aria-busy="true"
-      aria-label="Loading stats"
+      aria-label="Loading graphs"
     >
       <Skeleton className="h-11 w-56" />
       <Skeleton className="h-11 w-full" />

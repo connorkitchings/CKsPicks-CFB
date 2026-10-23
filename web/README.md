@@ -6,7 +6,7 @@ only renders the active immutable season release under the configured publicatio
 
 ## Current boundary
 
-V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves the Games, Ratings, Stats and Model tabs and `/api/health` to the same atomic release. The four-tab layout lives on `dev` until it is merged to `main`. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
+V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves the Games, Ratings, Graphs and Model tabs and `/api/health` to the same atomic release. The four-tab layout lives on `dev` until it is merged to `main`. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
 
 Current release IDs and week state belong in [`docs/status.md`](../docs/status.md). Follow the [weekly runbook](../docs/ops/weekly_runbook.md) for revision, prepare, Preview rehearsal, owner-approved Production release and rollback.
 
@@ -29,9 +29,9 @@ make web-local ENV=production     # read the active Production release locally
 
 The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env.local`) and the app only reads. Games (`/`) lists the week's games by day (`?week=N` for other weeks); each game card links to its matchup breakdown (`/matchup/[gameId]`), which links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
 
-## Stats (`/stats`)
+## Graphs (`/stats`)
 
-Stats (`/stats`) is public alongside Games, Ratings and Model. Legacy `/charts` URLs redirect to `/stats` with a 307. Mobile navigation has four equal items (`grid-cols-4`).
+Graphs (`/stats`) is public alongside Games, Ratings and Model. Legacy `/charts` URLs redirect to `/stats` with a 307. Mobile navigation has four equal items (`grid-cols-4`).
 
 Run these from the repository root:
 

@@ -9,7 +9,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const TITLES: [prefix: string, title: string][] = [
   ["/ratings", "Ratings"],
-  ["/stats", "Stats"],
+  ["/stats", "Graphs"],
   ["/model", "Model"],
   ["/matchup", "Matchup"],
   ["/teams", "Team"],
