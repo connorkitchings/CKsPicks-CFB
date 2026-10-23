@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { nearestScatterTeams } from "@/lib/scatter-selection";
 import type { CornerCaptions } from "@/lib/chart-config";
 import { leastCrowdedSpot, niceTicks, type Box, type Domain, type ScatterPoint } from "@/lib/charts";
+import { teamColor } from "@/lib/team-logos";
 import { TeamMark } from "./TeamMark";
 import { useChartSelection } from "./useChartSelection";
 
@@ -42,7 +43,24 @@ export type ScatterChartProps = {
 
 const EXPORT_MARGIN = { top: 18, right: 22, bottom: 52, left: 84 };
 const INTERACTIVE_MARGIN = { top: 20, right: 26, bottom: 56, left: 86 };
+const MOBILE_MARGIN = { top: 12, right: 12, bottom: 50, left: 64 };
+/** Narrow phone views wrap quadrant captions and thin the x ticks so neighbours never overlap. */
+const COMPACT_BELOW = 500;
+
+function captionLines(text: string, maxChars: number): string[] {
+  if (maxChars <= 0) return [text];
+  const lines: string[] = [];
+  for (const word of text.split(" ")) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && last.length + 1 + word.length <= maxChars) lines[lines.length - 1] = `${last} ${word}`;
+    else lines.push(word);
+  }
+  return lines;
+}
 const BASE_SIZE = 26;
+/** Phone dots: 8px drawn, 24px tappable. */
+const DOT_RADIUS = 4;
+const DOT_HIT_RADIUS = 12;
 const SEARCHED_SIZE = 44;
 const HOVER_SIZE = 38;
 const DIRECTION_CAPTION = "Up and right is better ↗";
@@ -85,7 +103,7 @@ export function ScatterChart({
   detailsContainer,
 }: ScatterChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [renderedWidth, setRenderedWidth] = useState(interactive ? 760 : width);
+  const [renderedWidth, setRenderedWidth] = useState(interactive ? Math.min(width, 760) : width);
   const [choices, setChoices] = useState<string[]>([]);
   const touch = useRef<{ x: number; y: number; pointerId: number; cancelled: boolean } | null>(null);
   const suppressClick = useRef(false);
@@ -100,8 +118,11 @@ export function ScatterChart({
   // Export typography is intentionally untouched. Live labels compensate for base SVG scale.
   const textSize = (size: number) => interactive ? Math.max(size, 12 * width / Math.max(renderedWidth, 1)) : size;
   const labelScale = textSize(11) / 11;
-  const margin = interactive ? INTERACTIVE_MARGIN : EXPORT_MARGIN;
+  const compact = interactive && width < COMPACT_BELOW;
+  const margin = !interactive ? EXPORT_MARGIN : compact ? MOBILE_MARGIN : INTERACTIVE_MARGIN;
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
+  // Each top caption may use half the plot minus its inset, so the pair never meets in the middle.
+  const captionChars = compact ? Math.max(8, Math.floor(((plot.right - plot.left) / 2 - 16) / (textSize(13) * 0.62))) : 0;
   const xd = xDomain;
   const yd = yDomain;
   const fraction = (value: number, domain: Domain) => (value - domain[0]) / (domain[1] - domain[0]);
@@ -129,7 +150,19 @@ export function ScatterChart({
     points,
     cornerNames: cornerCaptions?.names,
     labelScale,
+    compact,
+    captionChars,
   }) : null;
+
+  // Top captions grow downward from the plot top, bottom captions upward from the plot bottom.
+  const captionY = (top: boolean, lines: number) => top
+    ? plot.top + (interactive ? Math.max(20, textSize(13) + 7) : 20)
+    : plot.bottom - 10 - (lines - 1) * textSize(13) * 1.15;
+
+  // A long x title is centred on the plot, shifted (and on a phone shrunk to 12px) to stay inside the view.
+  const xTitleSize = compact && xLabel.length * textSize(14) * 0.58 > width - 8 ? textSize(12) : textSize(14);
+  const xTitleHalf = interactive ? (xLabel.length * xTitleSize * 0.58) / 2 : 0;
+  const xTitleX = Math.max(xTitleHalf + 2, Math.min((plot.left + plot.right) / 2, width - xTitleHalf - 2));
 
   const selectTeam = (team: string) => {
     setChoices([]);
@@ -222,7 +255,7 @@ export function ScatterChart({
         } : undefined}
         viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
         <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-card)" stroke="var(--line)" />
-        {niceTicks(xd[0], xd[1], 6).map((tick, index) => (
+        {niceTicks(xd[0], xd[1], compact ? Math.max(3, Math.floor((plot.right - plot.left) / 55)) : 6).map((tick, index) => (
           <g key={`x${tick}`}>
             {/* Every other vertical line, and fainter than the axis, so the marks carry the picture. */}
             {index % 2 === 0 && <line x1={sx(tick)} x2={sx(tick)} y1={plot.top} y2={plot.bottom} stroke="var(--line)" strokeWidth={0.5} opacity={GRID_OPACITY} data-grid="x" />}
@@ -260,22 +293,24 @@ export function ScatterChart({
                 <title>{cornerCaptions[key]}</title>
                 <text
                   x={left ? plot.left + 10 : plot.right - 10}
-                  y={top ? plot.top + (interactive ? Math.max(20, textSize(13) + 7) : 20) : plot.bottom - 10}
+                  y={captionY(top, captionLines(cornerCaptions.names[key], captionChars).length)}
                   textAnchor={left ? "start" : "end"}
                   data-chart-label="true" fontSize={textSize(13)}
                   fontWeight={700}
                   fill="var(--ink-muted)"
                 >
-                  {cornerCaptions.names[key]}
+                  {captionLines(cornerCaptions.names[key], captionChars).map((line, index) => (
+                    <tspan key={line} x={left ? plot.left + 10 : plot.right - 10} dy={index === 0 ? 0 : textSize(13) * 1.15}>{line}</tspan>
+                  ))}
                 </text>
               </g>
             ))}
           </g>
         )}
-        <text x={(plot.left + plot.right) / 2} y={height - (interactive ? 8 : 10)} textAnchor="middle" data-chart-label="true" data-axis="x-title" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)">
+        <text x={xTitleX} y={height - (interactive ? 8 : 10)} textAnchor="middle" data-chart-label="true" data-axis="x-title" fontSize={xTitleSize} fontWeight={600} fill="var(--ink)">
           {xLabel}
         </text>
-        <text transform={`translate(${interactive ? 18 : 14} ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" data-chart-label="true" data-axis="y-title" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)">
+        <text transform={`translate(${compact ? 15 : interactive ? 18 : 14} ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" data-chart-label="true" data-axis="y-title" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)">
           {yLabel}
         </text>
         {/* Every scatter is drawn so up and right is the good end (defense axes are inverted). */}
@@ -324,7 +359,14 @@ export function ScatterChart({
             >
               {interactive && <circle className="focus-ring opacity-0" cx={cx} cy={cy} r={size / 2 + 3} fill="none" stroke="var(--accent)" strokeWidth={2.5} />}
               {state === "searched" && <circle cx={cx} cy={cy} r={size / 2 + 3} fill="var(--accent-soft)" stroke="var(--accent)" strokeWidth={2.5} />}
-              <TeamMark team={p.team} cx={cx} cy={cy} size={size} />
+              {compact && state !== "searched" ? (
+                <g data-mark="dot">
+                  <circle cx={cx} cy={cy} r={DOT_HIT_RADIUS} fill="transparent" />
+                  <circle cx={cx} cy={cy} r={DOT_RADIUS} fill={teamColor(p.team)} stroke="var(--surface-card)" strokeWidth={1} />
+                </g>
+              ) : (
+                <TeamMark team={p.team} cx={cx} cy={cy} size={size} />
+              )}
               {state === "searched" && <text x={labelX} y={labelY} textAnchor="middle" data-testid="highlight-label" data-chart-label="true" fontSize={textSize(13)} fontWeight={700} fill="var(--ink)" stroke="var(--surface-card)" strokeWidth={3} paintOrder="stroke">{p.team}</text>}
             </g>
           );
@@ -355,7 +397,7 @@ export function ScatterChart({
   );
 }
 
-type LabelSpot = { text: string; x: number; baseline: number; anchor: "start" | "end" };
+type LabelSpot = { text: string; x: number; baseline: number; anchor: "start" | "middle" | "end" };
 
 const LABEL_CHAR = 6.3;
 const LABEL_HEIGHT = 14;
@@ -365,7 +407,7 @@ const LABEL_HEIGHT = 14;
  * its line (line ends first, then further in), so it stays clear of logos and corner names
  * in any week or filter. The vertical label is placed first and then counts as an obstacle.
  */
-function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, points, cornerNames, labelScale = 1 }: {
+function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, points, cornerNames, labelScale = 1, compact = false, captionChars = 0 }: {
   average: { x: number; y: number };
   names: { x: string; y: string };
   formatX: (value: number) => string;
@@ -376,21 +418,34 @@ function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, po
   points: readonly ScatterPoint[];
   cornerNames?: CornerCaptions["names"];
   labelScale?: number;
+  compact?: boolean;
+  captionChars?: number;
 }): { x: LabelSpot; y: LabelSpot } {
   const bounds: Box = { x: plot.left, y: plot.top, w: plot.right - plot.left, h: plot.bottom - plot.top };
-  const obstacles: Box[] = points.map((p) => ({ x: sx(p.x) - BASE_SIZE / 2, y: sy(p.y) - BASE_SIZE / 2, w: BASE_SIZE, h: BASE_SIZE }));
+  const mark = compact ? DOT_RADIUS * 2 + 2 : BASE_SIZE;
+  const obstacles: Box[] = points.map((p) => ({ x: sx(p.x) - mark / 2, y: sy(p.y) - mark / 2, w: mark, h: mark }));
   if (cornerNames) {
-    const width = (text: string) => text.length * 8 * labelScale;
-    obstacles.push(
-      { x: plot.left + 10, y: plot.top + 6, w: width(cornerNames.topLeft), h: 18 * labelScale },
-      { x: plot.right - 10 - width(cornerNames.topRight), y: plot.top + 6, w: width(cornerNames.topRight), h: 18 * labelScale },
-      { x: plot.left + 10, y: plot.bottom - 24, w: width(cornerNames.bottomLeft), h: 18 * labelScale },
-      { x: plot.right - 10 - width(cornerNames.bottomRight), y: plot.bottom - 24, w: width(cornerNames.bottomRight), h: 18 * labelScale },
-    );
+    const lineHeight = 18 * labelScale;
+    const box = (text: string, left: boolean, top: boolean): Box => {
+      const lines = captionLines(text, captionChars);
+      const w = Math.max(...lines.map((line) => line.length)) * 8 * labelScale;
+      const h = lines.length * lineHeight;
+      return { x: left ? plot.left + 10 : plot.right - 10 - w, y: top ? plot.top + 6 : plot.bottom - 24 - (lines.length - 1) * lineHeight, w, h };
+    };
+    // Text over text is worse than text over a dot, so on a phone (where dots are everywhere) a caption counts three times.
+    const weight = compact ? 3 : 1;
+    for (let i = 0; i < weight; i++) {
+      obstacles.push(
+        box(cornerNames.topLeft, true, true),
+        box(cornerNames.topRight, false, true),
+        box(cornerNames.bottomLeft, true, false),
+        box(cornerNames.bottomRight, false, false),
+      );
+    }
   }
   const spotBox = (spot: LabelSpot): Box => {
     const w = spot.text.length * LABEL_CHAR * labelScale;
-    return { x: spot.anchor === "end" ? spot.x - w : spot.x, y: spot.baseline - 11 * labelScale, w, h: LABEL_HEIGHT * labelScale };
+    return { x: spot.anchor === "end" ? spot.x - w : spot.anchor === "middle" ? spot.x - w / 2 : spot.x, y: spot.baseline - 11 * labelScale, w, h: LABEL_HEIGHT * labelScale };
   };
   const choose = (spots: LabelSpot[]): LabelSpot => spots[leastCrowdedSpot(spots.map(spotBox), obstacles, bounds)];
 
@@ -404,7 +459,9 @@ function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, po
       { text: textX, x: lineX - 6, baseline, anchor: "end" as const },
     ];
   });
-  const vertical = choose(verticalSpots);
+  // On a phone neither side of the line may fit the whole label; centring it on the line (its halo keeps it legible) is the last resort.
+  const centered: LabelSpot[] = compact ? Array.from({ length: 17 }, (_, i) => 0.1 + i * 0.05).map((fraction) => ({ text: textX, x: lineX, baseline: plot.top + height * fraction, anchor: "middle" as const })) : [];
+  const vertical = choose([...verticalSpots, ...centered]);
   obstacles.push(spotBox(vertical));
 
   const lineY = sy(average.y);
@@ -419,5 +476,11 @@ function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, po
     { text: textY, ...spot, baseline: lineY - 6 },
     { text: textY, ...spot, baseline: lineY + 14 * labelScale },
   ]);
-  return { x: vertical, y: choose(horizontalSpots) };
+  const centeredAcross: LabelSpot[] = compact
+    ? Array.from({ length: 9 }, (_, i) => 0.2 + i * 0.075).flatMap((fraction) => [
+      { text: textY, x: plot.left + width * fraction, anchor: "middle" as const, baseline: lineY - 6 },
+      { text: textY, x: plot.left + width * fraction, anchor: "middle" as const, baseline: lineY + 14 * labelScale },
+    ])
+    : [];
+  return { x: vertical, y: choose([...horizontalSpots, ...centeredAcross]) };
 }
