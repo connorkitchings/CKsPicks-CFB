@@ -25,6 +25,8 @@ function applyTheme(theme: Theme) {
   ).matches;
   const dark = theme === "dark" || (theme === "system" && prefersDark);
   root.classList.toggle("dark", dark);
+  // Keep in step with --surface-page (and the theme script in app/layout.tsx).
+  document.querySelector("meta[name=theme-color]")?.setAttribute("content", dark ? "#000000" : "#fafafa");
 }
 
 function subscribe(callback: () => void) {

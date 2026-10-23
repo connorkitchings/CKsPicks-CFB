@@ -29,7 +29,9 @@ test.describe("phone chart picker", () => {
     expect((await bar.boundingBox())!.y).toBeGreaterThan(20);
     await page.mouse.wheel(0, 800);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
-    await expect.poll(async () => Math.abs((await bar.boundingBox())!.y)).toBeLessThanOrEqual(1);
+    // Pinned just below the app bar.
+    const appBar = page.getByTestId("app-bar");
+    await expect.poll(async () => Math.abs((await bar.boundingBox())!.y - (await appBar.boundingBox())!.height)).toBeLessThanOrEqual(1);
     await expect(page.getByTestId("chart-select")).toBeInViewport();
     expect(await bar.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
     await page.getByRole("button", { name: "Chart settings", exact: true }).click();
@@ -86,7 +88,8 @@ test.describe("phone chart picker", () => {
       expect(top).toBeLessThan(335);
 
       await page.mouse.wheel(0, 800);
-      await expect.poll(async () => Math.abs((await bar.boundingBox())!.y)).toBeLessThanOrEqual(1);
+      const appBar = page.getByTestId("app-bar");
+      await expect.poll(async () => Math.abs((await bar.boundingBox())!.y - (await appBar.boundingBox())!.height)).toBeLessThanOrEqual(1);
       await expect(settings).toBeInViewport();
       await settings.click();
       const dialog = page.getByRole("dialog", { name: "Chart settings", exact: true });

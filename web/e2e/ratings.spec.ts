@@ -148,9 +148,10 @@ test.describe("mobile team ratings", () => {
     // The footnote follows the list on phones.
     const note = page.getByText(/SOS ranks schedule difficulty/);
     expect((await note.boundingBox())!.y).toBeGreaterThan((await list.boundingBox())!.y + (await list.boundingBox())!.height - 1);
-    // The bar pins at the top while the page scrolls.
+    // The bar pins just below the app bar while the page scrolls.
     await page.mouse.wheel(0, 800);
-    await expect.poll(async () => Math.abs((await bar.boundingBox())!.y)).toBeLessThanOrEqual(1);
+    const appBar = page.getByTestId("app-bar");
+    await expect.poll(async () => Math.abs((await bar.boundingBox())!.y - (await appBar.boundingBox())!.height)).toBeLessThanOrEqual(1);
     expect(await bar.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
     // The sheet sits above the bar with the three controls; Sort applies immediately and focus returns on close.
     await filters.click();

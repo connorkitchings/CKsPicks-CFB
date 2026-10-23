@@ -43,7 +43,7 @@ export function SlateStatusRow({
 }) {
   if (!runState && !retrospective && !publishedAt) return null;
   return (
-    <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {runState && (
         <span
           className={clsx(
@@ -68,8 +68,8 @@ export function SlateStatusRow({
         </span>
       )}
       {publishedAt && (
-        <span className="basis-full text-xs text-ink-muted sm:basis-auto sm:text-xs sm:flex sm:items-center sm:gap-1.5">
-          <span className="hidden sm:inline text-line-strong" aria-hidden="true">·</span>
+        <span className="flex items-center gap-1.5 text-xs text-ink-muted">
+          <span className="text-line-strong" aria-hidden="true">·</span>
           <span>Run published {stamp(publishedAt)}</span>
         </span>
       )}

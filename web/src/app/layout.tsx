@@ -34,17 +34,13 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
 };
 
 /**
  * Pre-paint theme init: must run before React hydration to avoid a flash.
- * Reads localStorage.theme; defaults to system (honors prefers-color-scheme).
+ * Reads localStorage.theme and creates the theme-color meta (matching --surface-page; ThemeToggle keeps it current). It is not a JSX tag because React would duplicate it on hydration. Defaults to system (honors prefers-color-scheme).
  */
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);var m=document.querySelector('meta[name=theme-color]');if(!m){m=document.createElement('meta');m.name='theme-color';document.head.appendChild(m);}m.content=d?'#000000':'#fafafa';}catch(e){}})();`;
 
 export default function RootLayout({
   children,

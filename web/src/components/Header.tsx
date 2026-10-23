@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PublicationMode } from "@/lib/publication";
 import { displaySystemName } from "@/lib/publication";
+import { AppBar } from "./AppBar";
 import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
@@ -26,10 +27,14 @@ export function Header({
   const hasSubrow = Boolean(
     (publicationMode === "predictions" && systemName) || status || updatedAt,
   );
+  const systemLabel = publicationMode === "predictions" && systemName ? displaySystemName(systemName) : null;
   return (
-    <header className="border-b border-line bg-surface-card/80 backdrop-blur">
+    <>
+      {/* Phones: the sticky app bar replaces the brand row and menu controls; only `status` stays on the page. */}
+      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={updatedAt?.toISOString() ?? null} />
+    <header className={`border-b border-line bg-surface-card/80 backdrop-blur${status ? "" : " max-sm:hidden"}`}>
       <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-2.5 sm:py-3.5`}>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 max-sm:hidden">
           <Link href="/" className="inline-flex min-h-11 items-center rounded text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent sm:text-xl">
             CK&rsquo;s Picks
             <span className="ml-1.5 text-xs font-normal text-ink-muted sm:text-sm">
@@ -52,14 +57,14 @@ export function Header({
 
         {hasSubrow && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
-            {publicationMode === "predictions" && systemName && (
-              <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                {displaySystemName(systemName)}
+            {systemLabel && (
+              <span className="max-sm:hidden inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                {systemLabel}
               </span>
             )}
             {status}
             {updatedAt && (
-              <span>
+              <span className="max-sm:hidden">
                 Updated{" "}
                 {updatedAt.toLocaleString("en-US", {
                   month: "short",
@@ -73,6 +78,7 @@ export function Header({
         )}
       </div>
     </header>
+    </>
   );
 }
 

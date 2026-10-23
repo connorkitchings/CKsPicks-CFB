@@ -51,7 +51,7 @@ export function WeekNav({
 
   function onSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const w = Number(e.target.value);
-    if (Number.isFinite(w)) router.push(hrefFor(w));
+    if (Number.isFinite(w)) router.push(hrefFor(w), { scroll: false });
   }
 
   const arrow = clsx(
