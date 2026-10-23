@@ -87,7 +87,7 @@ test.describe("mobile team ratings", () => {
     await expect(texas).toContainText("FBS W-L 4–0");
     await expect(texas).toContainText("SOR #2");
     // Current period Played, Remaining and Full ranks for Texas are each third of four.
-    await expect(texas).toContainText("SOS #3 / #3 / #3 (Played / Remaining / Full)");
+    await expect(texas).toContainText("SOS played #3 · remaining #3 · full #3");
     await expect(texas).not.toContainText("WAA");
     await expect(texas).not.toContainText("±");
     await expect(texas).not.toContainText("81.2");
@@ -104,7 +104,7 @@ test.describe("mobile team ratings", () => {
     await expect(page).toHaveURL(/q=Texas/);
     await expect(page).toHaveURL(/season=2026/);
     await expect(page.getByRole("searchbox", { name: "Search teams" })).toHaveValue("Texas");
-    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Offense · Post-Week 3");
+    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Offense · Post-Week 3 · V5");
     await openFilters(page);
     await expect(phoneSort(page)).toHaveValue("offense");
     await closeFilters(page);
@@ -137,9 +137,12 @@ test.describe("mobile team ratings", () => {
     const filters = page.getByRole("button", { name: "Filters", exact: true });
     await expect(filters).toBeEnabled();
     expect((await filters.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Overall");
+    await expect(page.getByTestId("ratings-summary")).toHaveText(/^All FBS · Overall · Post-Week \d+ · V5$/);
     await expect(page.getByTestId("ratings-filters-dot")).toHaveCount(0);
-    await expect(page.getByText(/^Post-Week \d+ · V5$/)).toBeVisible();
+    // The heading is screen-reader only on phones, and the about disclosure sits after the list.
+    expect((await page.getByRole("heading", { level: 1, name: "Team ratings" }).boundingBox())!.width).toBeLessThanOrEqual(1);
+    const about = page.getByText("About V5 possession ratings", { exact: true });
+    expect((await about.boundingBox())!.y).toBeGreaterThan((await page.getByRole("list", { name: "Team ratings list" }).boundingBox())!.y);
     await expect(page.getByText(/Frozen ratings|Latest frozen/).first()).toBeHidden();
     const list = page.getByRole("list", { name: "Team ratings list" });
     const firstTop = (await list.getByRole("listitem").first().boundingBox())!.y;
@@ -168,13 +171,14 @@ test.describe("mobile team ratings", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     await expect(filters).toBeFocused();
-    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Offense");
+    await expect(page.getByTestId("ratings-summary")).toHaveText(/^All FBS · Offense · Post-Week \d+ · V5$/);
     await expect(page.getByTestId("ratings-filters-dot")).toBeVisible();
   });
 
-  test("320px keeps the sticky bar inside the viewport", async ({ page }) => {
+  test("320px keeps the sticky bar inside the viewport and the first card up top", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto("/ratings");
+    expect((await page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first().boundingBox())!.y).toBeLessThan(335);
     await expect(page.getByRole("button", { name: "Filters", exact: true })).toBeEnabled();
     expect(await fits(page)).toBe(true);
     const box = (await page.getByTestId("ratings-bar").boundingBox())!;

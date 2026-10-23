@@ -173,8 +173,9 @@ export function ChartFrame({
 
       {/* One card: header (title, meta, header controls with the credit beneath), hairline, status, then the chart or table. */}
       <div data-card="" className="rounded-xl border border-line bg-surface-card shadow-2xs">
-        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 sm:px-4">
-          <div className="min-w-0">
+        {/* Phones: the pinned dropdown already names the chart, so the title is screen-reader only, and the description and credit move to "About this chart" under the card. */}
+        <header className={headerControls ? "flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 sm:px-4" : "flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 max-sm:sr-only sm:px-4"}>
+          <div className="min-w-0 max-sm:sr-only">
             <h2 className="text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{title}</h2>
             {description && <p className="mt-1 text-xs text-ink-muted sm:text-[13px]" data-testid="chart-description">{description}</p>}
             <p className={description ? "sr-only" : "mt-1 text-xs text-ink-muted sm:text-[13px]"} data-testid="chart-subtitle">
@@ -185,14 +186,14 @@ export function ChartFrame({
             <div className="flex flex-col items-start gap-0.5 sm:items-end">
               {headerControls}
               {credit && (
-                <p className="text-[10.5px] text-ink-muted/80" data-testid="chart-credit">
+                <p className="text-[10.5px] text-ink-muted/80 max-sm:hidden" data-testid="chart-credit">
                   {credit}
                 </p>
               )}
             </div>
           )}
         </header>
-        <div className="border-t border-line">
+        <div className={headerControls ? "border-t border-line" : "border-t border-line max-sm:border-t-0"}>
           {/* HighlightStatus renders nothing without a highlight; :empty drops this padding with it. */}
           <div className="px-3 pt-2 empty:hidden sm:px-4">{status}</div>
           {!hasData ? (
@@ -208,6 +209,14 @@ export function ChartFrame({
           )}
         </div>
       </div>
+
+      {(description || credit) && (
+        <details className="rounded-xl border border-line bg-surface-card px-3 text-xs text-ink-muted shadow-2xs sm:hidden" data-testid="chart-about">
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">About this chart</summary>
+          {description && <p className="pb-2">{description}</p>}
+          {credit && <p className="pb-3">{credit}</p>}
+        </details>
+      )}
 
       {notCharted.length > 0 && (
         <p className="text-xs text-ink-muted" data-testid="not-charted">

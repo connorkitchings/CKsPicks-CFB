@@ -29,6 +29,7 @@ import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { SearchField } from "@/components/ui/SearchField";
+import { SummaryLine, summaryText } from "@/components/ui/SummaryLine";
 import { teamHref } from "@/lib/teams";
 
 /** The fields this view renders; the page maps full ratings down to these before they reach the client. */
@@ -105,9 +106,11 @@ function primaryText(rating: RatingRow, sort: RatingsSort, sosRanks: Map<string,
   return isScoreSort(sort) ? ratingText(rating[scoreFields[sort]]) : rankText(rankFor(rating, sort, sosRanks));
 }
 
-/** "#12 / #40 / #25" for Played / Remaining / Full, with dashes for null values. */
+/** "played #12 · remaining #40 · full #25", with dashes for null values. */
 function sosRankLine(teamRanks: SosRanks | undefined) {
-  return [teamRanks?.played, teamRanks?.remaining, teamRanks?.full].map(rankText).join(" / ");
+  return [["played", teamRanks?.played], ["remaining", teamRanks?.remaining], ["full", teamRanks?.full]]
+    .map(([label, rank]) => `${label} ${rankText(rank as number | null | undefined)}`)
+    .join(" · ");
 }
 
 function RankPill({ rank, cohort }: { rank: number | null | undefined; cohort: number }) {
@@ -226,7 +229,7 @@ export function RatingsView({
   const periodLabel = timeline.find((entry) => entry.id === period)?.label ?? periodMeta.label;
   const conferenceLabel = conference === "all" ? "All FBS" : conference === "p4" ? "Power Four + Notre Dame" : conference;
   const filtersActive = conference !== "all" || sort !== "overall" || period !== latestPeriod;
-  const summary = [conferenceLabel, sortLabels[sort], ...(period === latestPeriod ? [] : [periodLabel])].join(" · ");
+  const summary = summaryText(conferenceLabel, sortLabels[sort], periodLabel, "V5");
 
   const periodSelect = timeline.length > 0 && (
     <div>
@@ -312,7 +315,7 @@ export function RatingsView({
         {!mobile && conferenceSelect && <div className="hidden sm:block">{conferenceSelect}</div>}
       </MobileStickyBar>
 
-      <p className="-mt-2 text-xs text-ink-muted sm:hidden" data-testid="ratings-summary">{summary}</p>
+      <SummaryLine parts={[summary]} className="-mt-2 text-xs text-ink-muted sm:hidden" data-testid="ratings-summary" />
 
       {hasResume && (
         <p className="text-xs text-ink-muted max-sm:order-last">
@@ -357,7 +360,7 @@ export function RatingsView({
                     ))}
                     <span>FBS W-L <span className="font-mono">{recordText(rating)}</span></span>
                     <span>SOR <span className="font-mono">{rankText(rankFor(rating, "sor", sosRanks))}</span></span>
-                    <span>SOS <span className="font-mono">{sosRankLine(teamRanks)}</span> (Played / Remaining / Full)</span>
+                    <span className="basis-full">SOS <span className="font-mono">{sosRankLine(teamRanks)}</span></span>
                   </div>
                 </Card>
               );

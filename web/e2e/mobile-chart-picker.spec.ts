@@ -87,6 +87,18 @@ test.describe("phone chart picker", () => {
       console.log(`chart card top ${chart}: ${Math.round(top)}px`);
       expect(top).toBeLessThan(335);
 
+      // The chart title is screen-reader only; the description and credit sit in "About this chart".
+      const chartTitle = page.getByRole("heading", { level: 2, name: TITLES[CHARTS.findIndex(([name]) => name === chart)] });
+      expect((await chartTitle.boundingBox())!.width).toBeLessThanOrEqual(1);
+      // Screen-reader only (Playwright counts a clipped 1px node as visible), so it takes no room.
+      expect((await page.getByTestId("chart-description").boundingBox())!.width).toBeLessThanOrEqual(1);
+      const about = page.getByTestId("chart-about");
+      await expect(about).toBeVisible();
+      expect((await about.boundingBox())!.y).toBeGreaterThan((await card.boundingBox())!.y);
+      await about.locator("summary").click();
+      await expect(about.locator("p").first()).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
       await page.mouse.wheel(0, 800);
       const appBar = page.getByTestId("app-bar");
       await expect.poll(async () => Math.abs((await bar.boundingBox())!.y - (await appBar.boundingBox())!.height)).toBeLessThanOrEqual(1);
@@ -110,6 +122,8 @@ test.describe("phone chart picker", () => {
     const settings = page.getByTestId("chart-picker").getByRole("button", { name: "Chart settings", exact: true });
     await expect(settings).toBeVisible();
     await expect(settings.locator("span")).toBeHidden();
+    const card320 = page.locator("[data-card]", { has: page.getByTestId("chart-figure") }).first();
+    expect((await card320.boundingBox())!.y).toBeLessThan(335);
     expect((await settings.boundingBox())!.width).toBeLessThan(60);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     // Icon-only up to 439px; the "Settings" label returns from 440px, still below the 640px phone layout.

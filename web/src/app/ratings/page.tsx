@@ -80,16 +80,17 @@ export default async function RatingsPage({ searchParams }: {
         allowedSeasons={publicationScope.allowedSeasons}
         width="wide"
       />
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
-        <PageHeading
-          title="Team ratings"
-          actions={<p className="text-xs font-semibold uppercase tracking-wider text-accent-ink sm:hidden">{periodMeta.label} · V5</p>}
-        >
-          <p className="hidden text-xs font-semibold uppercase tracking-wider text-accent-ink sm:block">{season} · {periodMeta.label} · V5</p>
-          <p className="mt-1 hidden sm:block">{periodMeta.description} Higher is better for overall, offense, and defense.</p>
-        </PageHeading>
+      <main id="main-content" tabIndex={-1} className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-3 sm:py-6">
+        {/* Phones: the app bar names the page and the summary line carries the period, so the heading is screen-reader only. */}
+        <div className="max-sm:sr-only">
+          <PageHeading title="Team ratings">
+            <p className="hidden text-xs font-semibold uppercase tracking-wider text-accent-ink sm:block">{season} · {periodMeta.label} · V5</p>
+            <p className="mt-1 hidden sm:block">{periodMeta.description} Higher is better for overall, offense, and defense.</p>
+          </PageHeading>
+        </div>
 
-        <Disclosure title="About V5 possession ratings">
+        {/* Phones: the disclosure follows the list and the cutoff note. */}
+        <Disclosure title="About V5 possession ratings" className="max-sm:order-last">
           {/* Phones keep the summary sentence here instead of above the controls. */}
           <p className="mb-2 leading-relaxed sm:hidden">{periodMeta.description} Higher is better for overall, offense, and defense.</p>
           <p className="leading-relaxed">
@@ -120,7 +121,7 @@ export default async function RatingsPage({ searchParams }: {
         )}
 
         {ratings[0] && (
-          <p className="text-xs text-ink-muted">
+          <p className="text-xs text-ink-muted max-sm:order-last">
             {period === "preseason"
               ? "Preseason baseline priors before 2026 kickoff."
               : `Evidence cutoff: ${ratings[0].cutoffUtc.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC.`}
