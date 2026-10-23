@@ -66,3 +66,10 @@ Record changed interfaces/behavior and scoped validation in the implementation l
 Resume in a fresh Terra task using implement-plan with this exact path and explicit authorization. Implement A only. B requires recorded acceptance of A and separate owner approval. C remains deferred. No application files are changed by the Sol persistence session.
 
 Mechanical amendments may proceed only when architecture, interfaces, scope and acceptance remain unchanged. Record their reason, previous approach, revised approach and impact; material conflicts return to Sol. Real-device evidence and publication decisions cannot be replaced by local fixture tests.
+
+## Amendment 2026-10-23: phone scatter and compact header
+
+- **Reason:** Mobile checks showed most of the first Stats and Ratings screen was header, and the 760px scatter hid most teams off screen.
+- **Previous approach:** One national scatter geometry in a horizontally scrolling area at every width; chart chips in a grid; a full page header above the chart.
+- **Revised approach:** Below 640px the scatter uses a phone portrait viewBox that follows the container width at 1:1 scale in a tall aspect, so the whole chart fits without scrolling. This reverses the earlier owner direction against a phone-specific scatter arrangement; the owner has since approved it. Desktop geometry, domains, averages and exports are unchanged. The chart chip grid is replaced by a pinned chart dropdown, the settings trigger and a summary line sit in a pinned bar, chart descriptions collapse into disclosures, and Ratings gets the same pinned search and Filters bar.
+- **Impact:** Acceptance still requires the real-device evidence above. Follow-on shell work is tracked in [03-mobile-app-feel](../2026-10-23/03-mobile-app-feel.md).
