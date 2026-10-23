@@ -8,6 +8,7 @@ import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy"
 import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import { Card } from "@/components/ui/Card";
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
+import { SummaryLine } from "@/components/ui/SummaryLine";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 
 /** Only what the dashboard renders; the per-game audit facts stay server-side. */
@@ -67,7 +68,12 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <h2 className="text-lg font-semibold text-ink">{title}</h2>
+      <SummaryLine
+        parts={["2026 · V5", `${weeklyData.length} graded ${weeklyData.length === 1 ? "week" : "weeks"}`]}
+        className="-mt-2 text-xs text-ink-muted sm:hidden"
+        data-testid="model-summary"
+      />
+      <h2 className="text-lg font-semibold text-ink max-sm:sr-only">{title}</h2>
       <section aria-labelledby="kpi-heading" className="grid grid-cols-2 gap-2.5 sm:gap-4">
         <h2 id="kpi-heading" className="sr-only">Forecast accuracy summary</h2>
         {(["spread", "total"] as const).map((target) => {
@@ -123,7 +129,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
           onChange={setTargetFilter}
           options={[{ value: "all", label: "All Picks" }, { value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]}
           fill
-          className="sm:w-fit"
+          className="max-sm:hidden sm:w-fit"
         />
         <p className="text-xs text-ink-muted">{overall.label}: {recordText(overall.focused)} · {rateText(overall.focused)} ({BREAK_EVEN_PCT}% break-even) · {graded(overall.focused)} graded. Pushes excluded from rate.</p>
       </section>
@@ -185,7 +191,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
         </div>
       </Card>
 
-      <p className="text-xs text-ink-muted">Select any week above to view its full game-by-game results and graded picks on the Games tab.</p>
+      <p className="text-xs text-ink-muted max-sm:hidden">Select any week above to view its full game-by-game results and graded picks on the Games tab.</p>
     </div>
   );
 }

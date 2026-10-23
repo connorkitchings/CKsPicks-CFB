@@ -1,5 +1,6 @@
 import Link from "next/link";
 import clsx from "clsx";
+import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
 
 const TABS = [
   { key: "record", label: "Record", href: "/model" },
@@ -11,7 +12,7 @@ export type ModelTab = (typeof TABS)[number]["key"];
 /** Sub-navigation shared by the Model section's pages; each page passes its own tab. */
 export function ModelTabs({ active }: { active: ModelTab }) {
   return (
-    <nav aria-label="Model sections" className="flex gap-1 border-b border-line">
+    <MobileStickyBar as="nav" aria-label="Model sections" className="flex gap-1 border-b border-line max-sm:pb-0">
       {TABS.map(tab => (
         <Link
           key={tab.key}
@@ -27,6 +28,6 @@ export function ModelTabs({ active }: { active: ModelTab }) {
           {tab.label}
         </Link>
       ))}
-    </nav>
+    </MobileStickyBar>
   );
 }

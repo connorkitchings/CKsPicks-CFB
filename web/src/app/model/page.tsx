@@ -4,6 +4,7 @@ import { publicationScope } from "@/lib/publication";
 import { PageShell } from "@/components/PageShell";
 import { ModelTabs } from "@/components/model/ModelTabs";
 import { Notice } from "@/components/ui/Notice";
+import { Disclosure } from "@/components/ui/Disclosure";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { PerformanceDashboard, type PerformanceView } from "@/components/PerformanceDashboard";
 import { loadPerformanceRecord } from "@/lib/performance-sections";
@@ -12,6 +13,8 @@ import { loadPerformanceRecord } from "@/lib/performance-sections";
 export const dynamic = "force-dynamic";
 
 // The client bundle receives only the fields the dashboard renders.
+const EXPLAINER = `Win rate excludes pushes. A game without an eligible market line does not count as a win or loss. Grades use captured selected lines and forecasts use point-in-time inputs.`;
+
 function clientView(detail: PerformanceDetail): PerformanceView {
   return {
     summary: detail.summary,
@@ -40,8 +43,9 @@ export default async function ModelPage() {
       mainClassName="space-y-4 py-3 sm:py-6"
     >
         <ModelTabs active="record" />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">2026 · V5</p>
+        {/* Phones: the app bar names the page, so the heading stays for screen readers only. */}
+        <div className="max-sm:sr-only">
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink max-sm:hidden">2026 · V5</p>
           <PageHeading title="Season record & performance">
             One continuous V5 record from Week 0 onward, with spreads and totals reported separately.
           </PageHeading>
@@ -53,10 +57,14 @@ export default async function ModelPage() {
         ) : record.value.gradedGames.length === 0 ? (
           <StatusCard title={title} message="The selected runs have games, but no grades are available yet." />
         ) : <PerformanceDashboard data={clientView(record.value)} title={title} />}
-        <p className="text-xs leading-relaxed text-ink-muted">
-          Win rate excludes pushes. A game without an eligible market line does not count as a win or loss.
-          Grades use captured selected lines and forecasts use point-in-time inputs.
-        </p>
+        <p className="text-xs leading-relaxed text-ink-muted max-sm:hidden">{EXPLAINER}</p>
+        <Disclosure title="About this record" className="sm:hidden">
+          <div className="space-y-2 text-xs leading-relaxed">
+            <p>One continuous V5 record from Week 0 onward, with spreads and totals reported separately.</p>
+            <p>{EXPLAINER}</p>
+            <p>Select any week to view its full game-by-game results and graded picks on the Games tab.</p>
+          </div>
+        </Disclosure>
     </PageShell>
   );
 }
