@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import copy
 import importlib.util
 import json
 import sys
@@ -189,15 +190,22 @@ def _verifier_parents(inputs) -> verifier.VerifierParents:
     )
 
 
-def test_producer_verifier_bit_exact_agreement() -> None:
-    inputs = _fixture_module._fixture()
+@pytest.fixture(scope="module")
+def tournament_baseline():
+    """Producer and verifier results on the unperturbed fixture, built once."""
     from cks_picks_cfb.ratings.possession_rating_materializer import compute_tournament
 
+    inputs = _fixture_module._fixture()
     computation = compute_tournament(inputs=inputs, progress=_noop)
-    evidence = computation.preflight_evidence()
     rebuilt = verifier.reconstruct_tournament(
         parents=_verifier_parents(inputs), progress=_noop
     )
+    return inputs, computation, rebuilt
+
+
+def test_producer_verifier_bit_exact_agreement(tournament_baseline) -> None:
+    _, computation, rebuilt = tournament_baseline
+    evidence = computation.preflight_evidence()
     assert rebuilt.selected_candidate == computation.selected_candidate
     assert rebuilt.candidate_status == computation.candidate_status
     assert rebuilt.selection_sha256 == evidence["selection_sha256"]
@@ -218,11 +226,8 @@ def test_producer_verifier_bit_exact_agreement() -> None:
         assert plan.records_sha == rebuilt.records_shas[name]
 
 
-def test_verifier_detects_perturbed_parents() -> None:
-    inputs = _fixture_module._fixture()
-    baseline = verifier.reconstruct_tournament(
-        parents=_verifier_parents(inputs), progress=_noop
-    )
+def test_verifier_detects_perturbed_parents(tournament_baseline) -> None:
+    inputs, _, baseline = tournament_baseline
     perturbed = inputs.snapshots.copy()
     # Game 6 is the certified boundary target for the week-1 sources, so its
     # snapshots are definitely consumed by observation streams.
@@ -262,35 +267,49 @@ def test_verifier_detects_perturbed_parents() -> None:
     )
 
 
-def _applied_storage(monkeypatch, tmp_path, run_id: str = "verify-test"):
+@pytest.fixture(scope="module")
+def applied_artifact(tmp_path_factory):
+    """Preflight and apply once; tests get a private copy via `_applied_storage`."""
+    run_id = "verify-test"
     storage = _VStorage()
     _seed_parents(storage)
     inputs = _fixture_module._fixture()
-    monkeypatch.setattr(
-        ratings_runner, "load_rating_inputs", lambda **kwargs: inputs, raising=True
-    )
-    args = _rating_args(run_id)
-    payload = ratings_runner.preflight(storage=storage, args=args)
-    path = tmp_path / f"{run_id}-evidence.json"
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str))
-    identity = payload["identity"]
-    evidence = ratings_runner._load_rating_preflight_evidence(path, identity=identity)
-    result = ratings_runner.apply(
-        storage=storage, args=args, identity=identity, evidence=evidence
-    )
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(
+            ratings_runner, "load_rating_inputs", lambda **kwargs: inputs, raising=True
+        )
+        args = _rating_args(run_id)
+        payload = ratings_runner.preflight(storage=storage, args=args)
+        path = tmp_path_factory.mktemp("applied") / f"{run_id}-evidence.json"
+        path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str))
+        identity = payload["identity"]
+        evidence = ratings_runner._load_rating_preflight_evidence(
+            path, identity=identity
+        )
+        result = ratings_runner.apply(
+            storage=storage, args=args, identity=identity, evidence=evidence
+        )
     assert result["state"] == "applied"
     prefix = f"{ratings_runner.POSSESSION_RATING_OUTPUT_ROOT}/{run_id}"
     manifest_uri = f"{prefix}/{ratings_runner.RATING_MANIFEST_NAME}"
     manifest = json.loads(storage.read_bytes(manifest_uri))
-    parents = _verifier_parents(inputs)
+    return storage, manifest, manifest_uri, payload, _verifier_parents(inputs)
+
+
+def _applied_storage(monkeypatch, applied):
+    shared, manifest, manifest_uri, payload, parents = applied
+    storage = _VStorage()
+    storage.objects = dict(shared.objects)
+    storage.write_order = list(shared.write_order)
+    parents = copy.deepcopy(parents)
     monkeypatch.setattr(
         verifier, "load_verifier_parents", lambda **kwargs: parents, raising=True
     )
-    return storage, manifest, manifest_uri, payload
+    return storage, copy.deepcopy(manifest), manifest_uri, payload
 
 
-def test_verifier_confirms_applied_artifact(monkeypatch, tmp_path) -> None:
-    storage, manifest, manifest_uri, _ = _applied_storage(monkeypatch, tmp_path)
+def test_verifier_confirms_applied_artifact(monkeypatch, applied_artifact) -> None:
+    storage, manifest, manifest_uri, _ = _applied_storage(monkeypatch, applied_artifact)
     report = verifier.verify_rating_artifact(
         storage=storage,
         manifest=manifest,
@@ -320,10 +339,10 @@ def test_verifier_confirms_applied_artifact(monkeypatch, tmp_path) -> None:
     assert repeat["verifier_manifest_sha256"] == report["verifier_manifest_sha256"]
 
 
-def test_verifier_catches_tampered_stored_artifact(monkeypatch, tmp_path) -> None:
-    storage, manifest, manifest_uri, _ = _applied_storage(
-        monkeypatch, tmp_path, run_id="verify-tamper"
-    )
+def test_verifier_catches_tampered_stored_artifact(
+    monkeypatch, applied_artifact
+) -> None:
+    storage, manifest, manifest_uri, _ = _applied_storage(monkeypatch, applied_artifact)
     children = sorted(key for key in storage.objects if key.endswith("/data.parquet"))
     assert children, "applied artifact must contain child objects"
     victim = children[0]
@@ -342,10 +361,8 @@ def test_verifier_catches_tampered_stored_artifact(monkeypatch, tmp_path) -> Non
         )
 
 
-def test_verify_cli_reports_verified(monkeypatch, tmp_path, capsys) -> None:
-    storage, manifest, manifest_uri, _ = _applied_storage(
-        monkeypatch, tmp_path, run_id="verify-cli"
-    )
+def test_verify_cli_reports_verified(monkeypatch, applied_artifact, capsys) -> None:
+    storage, manifest, manifest_uri, _ = _applied_storage(monkeypatch, applied_artifact)
     monkeypatch.setattr(
         verify_script, "get_storage", lambda environment: storage, raising=True
     )
@@ -370,10 +387,10 @@ def test_verify_cli_reports_verified(monkeypatch, tmp_path, capsys) -> None:
     assert report["selected_candidate"] == manifest["selected_candidate"]
 
 
-def test_verify_cli_rejects_tampered_artifact(monkeypatch, tmp_path, capsys) -> None:
-    storage, manifest, manifest_uri, _ = _applied_storage(
-        monkeypatch, tmp_path, run_id="verify-cli-tamper"
-    )
+def test_verify_cli_rejects_tampered_artifact(
+    monkeypatch, applied_artifact, capsys
+) -> None:
+    storage, manifest, manifest_uri, _ = _applied_storage(monkeypatch, applied_artifact)
     children = sorted(key for key in storage.objects if key.endswith("/data.parquet"))
     raw = bytearray(storage.objects[children[0]])
     raw[-1] ^= 0xFF

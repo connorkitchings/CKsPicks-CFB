@@ -741,10 +741,20 @@ class TestTournamentSelection:
 
 
 class TestFullTournament:
-    def test_deterministic_selection_and_plan_digests(self, monkeypatch):
+    @pytest.fixture(scope="class")
+    @classmethod
+    def baseline(cls):
+        """Unperturbed tournament computed once; tests must treat it read-only."""
+        with pytest.MonkeyPatch.context() as patch:
+            _lower_fbs_threshold(patch)
+            inputs = _fixture()
+            return inputs, compute_tournament(
+                inputs=inputs, progress=_noop, retain_frames=True
+            )
+
+    def test_deterministic_selection_and_plan_digests(self, monkeypatch, baseline):
         _lower_fbs_threshold(monkeypatch)
-        inputs = _fixture()
-        first = compute_tournament(inputs=inputs, progress=_noop, retain_frames=True)
+        inputs, first = baseline
         second = compute_tournament(
             inputs=copy.deepcopy(inputs), progress=_noop, retain_frames=True
         )
@@ -767,12 +777,8 @@ class TestFullTournament:
         ):
             assert field in evidence
 
-    def test_all_sixty_candidates_reported_with_equal_bridge_population(
-        self, monkeypatch
-    ):
-        _lower_fbs_threshold(monkeypatch)
-        inputs = _fixture()
-        computation = compute_tournament(inputs=inputs, progress=_noop)
+    def test_all_sixty_candidates_reported_with_equal_bridge_population(self, baseline):
+        _, computation = baseline
         assert len(computation.attribution) == 60
         assert set(computation.candidate_status.values()) <= {"ok"}
         counts = computation.predictions.groupby("candidate_id").size()
@@ -787,13 +793,13 @@ class TestFullTournament:
         assert computation.diagnostics["fbs_team_seasons"] >= 4
 
     def test_same_game_and_future_perturbations_leave_earlier_states_unchanged(
-        self, monkeypatch
+        self, monkeypatch, baseline
     ):
         _lower_fbs_threshold(monkeypatch)
         inputs = _fixture()
-        baseline = compute_tournament(inputs=inputs, progress=_noop, retain_frames=True)
-        base_states = baseline.frames["rating_states"][
-            baseline.frames["rating_states"]["season"].eq(2017)
+        _, shared = baseline
+        base_states = shared.frames["rating_states"][
+            shared.frames["rating_states"]["season"].eq(2017)
         ].reset_index(drop=True)
         perturbed = copy.deepcopy(inputs)
         # Perturb every 2018 snapshot value (same-season and future evidence).
@@ -815,12 +821,8 @@ class TestFullTournament:
         ].reset_index(drop=True)
         pd.testing.assert_frame_equal(base_states, later_states)
 
-    def test_fcs_team_without_predecessor_uses_partial_pool(self, monkeypatch):
-        _lower_fbs_threshold(monkeypatch)
-        inputs = _fixture()
-        computation = compute_tournament(
-            inputs=inputs, progress=_noop, retain_frames=True
-        )
+    def test_fcs_team_without_predecessor_uses_partial_pool(self, baseline):
+        _, computation = baseline
         states = computation.frames["rating_states"]
         candidate = candidate_id("ppp", "rho_0_60", "exposure")
         fcs_rows = states[
@@ -836,12 +838,8 @@ class TestFullTournament:
         ]
         assert len(pooled) > 0, "expected FCS fallback rows in the first season"
 
-    def test_fbs_team_without_predecessor_keeps_neutral_prior(self, monkeypatch):
-        _lower_fbs_threshold(monkeypatch)
-        inputs = _fixture()
-        computation = compute_tournament(
-            inputs=inputs, progress=_noop, retain_frames=True
-        )
+    def test_fbs_team_without_predecessor_keeps_neutral_prior(self, baseline):
+        _, computation = baseline
         states = computation.frames["rating_states"]
         candidate = candidate_id("ppp", "rho_0_60", "exposure")
         rows = states[
@@ -852,10 +850,8 @@ class TestFullTournament:
         assert len(rows) > 0
         assert not rows["fallback_reason"].eq("preceding_fcs_partial_pool").any()
 
-    def test_partition_plans_are_strictly_ordered_and_schema_valid(self, monkeypatch):
-        _lower_fbs_threshold(monkeypatch)
-        inputs = _fixture()
-        computation = compute_tournament(inputs=inputs, progress=_noop)
+    def test_partition_plans_are_strictly_ordered_and_schema_valid(self, baseline):
+        _, computation = baseline
         for name, plan in computation.plans.items():
             keys = [
                 tuple(part["partition"][key] for key in plan.partition_keys)
