@@ -30,12 +30,12 @@ function TeamBlock({
   showRating: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center gap-2 text-center" data-side={side.toLowerCase()}>
-      <TeamLogo name={name} px={80} decorative={false} priority className="h-12 w-12 sm:h-16 sm:w-16" />
+    <div className="flex min-w-0 flex-col items-center gap-1 text-center sm:gap-2" data-side={side.toLowerCase()}>
+      <TeamLogo name={name} px={80} decorative={false} priority className="h-10 w-10 sm:h-16 sm:w-16" />
       <div className="w-full min-w-0">
         <Link
           href={teamHref(name)}
-          className="inline-flex min-h-11 max-w-full items-center justify-center break-words text-base font-bold tracking-tight text-ink hover:text-accent-ink hover:underline sm:text-xl"
+          className="inline-flex min-h-9 max-w-full items-center justify-center break-words text-base leading-tight sm:min-h-11 font-bold tracking-tight text-ink hover:text-accent-ink hover:underline sm:text-xl"
         >
           {name}
         </Link>
@@ -52,12 +52,12 @@ function TeamBlock({
         </p>
 
         {isFinal ? (
-          <div className="mt-2 flex flex-col items-center">
+          <div className="mt-1 flex flex-col items-center sm:mt-2">
             <Eyebrow as="span">Final Score</Eyebrow>
-            <span className="font-mono text-3xl font-bold text-ink">{finalPoints}</span>
+            <span className="font-mono text-2xl font-bold text-ink sm:text-3xl">{finalPoints}</span>
           </div>
         ) : showRating ? (
-          <div className="mt-2 flex flex-col items-center gap-1 text-xs">
+          <div className="mt-1 flex flex-col items-center gap-1 text-xs sm:mt-2">
             <span
               data-testid="model-rating"
               className="inline-flex flex-wrap items-center justify-center gap-x-1.5 text-xs font-semibold text-ink"
@@ -67,7 +67,7 @@ function TeamBlock({
               <RankChip rank={rating.rank} />
             </span>
           </div>
-        ) : <p className="mt-2 text-xs text-ink-muted">Model ratings unavailable</p>}
+        ) : <p className="mt-1 text-xs text-ink-muted sm:mt-2">Model ratings unavailable</p>}
       </div>
     </div>
   );
@@ -115,16 +115,16 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
   const venue = venueLine(matchup);
 
   return (
-    <section aria-labelledby="matchup-header" className="space-y-4">
+    <section aria-labelledby="matchup-header" className="space-y-2 sm:space-y-4">
       <h1 id="matchup-header" className="sr-only">
         {matchup.awayTeam} at {matchup.homeTeam}
       </h1>
 
       {/* Breadcrumb and game facts */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3 text-xs text-ink-muted">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted sm:border-b sm:border-line sm:pb-3">
         <Link
           href={`/?week=${matchup.week}`}
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent-ink hover:underline"
+          className="inline-flex max-sm:hidden min-h-11 items-center gap-1 text-sm font-medium text-accent-ink hover:underline"
         >
           ← Week {matchup.week} games
         </Link>
@@ -137,16 +137,16 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
               <span>{venue}</span>
             </>
           )}
-          <span className="rounded bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <span className="rounded bg-surface-inset px-2 py-0.5 max-sm:hidden text-xs font-semibold uppercase tracking-wider text-ink-muted">
             Game Breakdown
           </span>
           <ShareButton matchup={matchup} disabled={matchup.lineageStatus !== "ready"} />
         </div>
       </div>
 
-      <Card className="sm:p-6">
+      <Card className="max-sm:p-3 sm:p-6">
         {/* Phones: teams side by side with the forecast beneath. lg+: forecast between the teams. */}
-        <div className="grid grid-cols-2 items-start gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+        <div className="grid grid-cols-2 items-start gap-2 sm:gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
           <TeamBlock
             name={matchup.awayTeam}
             side="Away"
@@ -167,12 +167,12 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             showRating={matchup.lineageStatus === "ready"}
           />
         {/* Market and model: beneath the teams on phones, between them from lg. */}
-        <div className="col-span-2 mt-2 flex min-w-0 flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-3 py-4 text-center sm:px-5 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:w-[475px]">
-          <Eyebrow as="span">Forecast & Lines</Eyebrow>
+        <div className="col-span-2 mt-1 flex min-w-0 flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-3 py-2 sm:mt-2 sm:py-4 text-center sm:px-5 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:w-[475px]">
+          <Eyebrow as="span" className="max-sm:sr-only">Forecast & Lines</Eyebrow>
 
           <div
             data-testid="forecast-grid"
-            className="mt-3 grid w-full grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 gap-y-3 text-sm sm:gap-x-4"
+            className="grid w-full sm:mt-3 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 gap-y-2 text-sm sm:gap-y-3 sm:gap-x-4"
           >
             <span aria-hidden />
             <Eyebrow as="span" className="text-center">Spread</Eyebrow>
