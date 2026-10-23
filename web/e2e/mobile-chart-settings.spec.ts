@@ -4,10 +4,9 @@ for (const width of [320, 390, 430]) {
   test(`mobile chart settings reflow at ${width}px and retain local configuration`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto("/stats?chart=efficiency&week=3");
-    const picker = page.getByTestId("chart-picker");
-    const chips = picker.locator("a:visible");
-    await expect(chips).toHaveCount(5);
-    for (const chip of await chips.all()) expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const select = page.getByTestId("chart-select");
+    await expect(select.locator("option")).toHaveCount(5);
+    expect((await select.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(page.getByTestId("team-search")).toBeVisible();
     await expect(page.getByTestId("conference-filter")).toHaveCount(1);
     await expect(page.getByTestId("conference-filter")).not.toBeVisible();
@@ -36,23 +35,22 @@ for (const width of [320, 390, 430]) {
   });
 }
 
-test("settings trigger is disabled until hydration, never locks the body early, then opens the sheet", async ({ page }) => {
+test("settings trigger is absent until hydration, never locks the body early, then opens the sheet", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   // Hold every script chunk so the server-rendered page stays un-hydrated.
   let release!: () => void;
   const hold = new Promise<void>((resolve) => { release = resolve; });
   await page.route(/\/_next\/static\/.*\.js/, async (route) => { await hold; await route.continue(); });
   await page.goto("/stats?chart=efficiency&week=3", { waitUntil: "domcontentloaded" });
-  const trigger = page.getByRole("button", { name: "Chart settings", exact: true });
-  await expect(trigger).toBeVisible();
-  await expect(trigger).toBeDisabled();
-  await expect(trigger).toHaveAttribute("aria-disabled", "true");
-  expect((await trigger.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-  await trigger.click({ force: true });
+  // The trigger is portalled into the sticky bar's slot by the client, so the server HTML has none to tap early.
+  await expect(page.getByTestId("chart-picker")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Chart settings", exact: true })).toHaveCount(0);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator("body")).not.toHaveCSS("position", "fixed");
   release();
+  const trigger = page.getByRole("button", { name: "Chart settings", exact: true });
   await expect(trigger).toBeEnabled();
+  expect((await trigger.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await trigger.click();
   await expect(page.getByRole("dialog", { name: "Chart settings", exact: true })).toBeVisible();
   await expect(page.locator("body")).toHaveCSS("position", "fixed");

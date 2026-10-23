@@ -111,11 +111,10 @@ test.describe("possession efficiency chart", () => {
   });
 });
 
-test("possession stays horizontally scrollable at 390px without page overflow", async ({ page }) => {
+test("possession fits the 390px screen without scrolling or page overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto("/stats?chart=possession&team=Alabama");
-  const scroll = page.getByTestId("scatter-scroll");
-  await expect(scroll).toBeVisible();
-  await expect.poll(() => scroll.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
+  await expect(page.getByTestId("scatter-fit")).toBeVisible();
+  await expect(page.getByTestId("scatter-scroll")).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

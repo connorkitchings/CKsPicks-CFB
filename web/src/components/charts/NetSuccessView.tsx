@@ -9,7 +9,7 @@ import {
   type NetSuccessBar,
   type NotCharted,
 } from "@/lib/charts";
-import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
+import { ChartFrame, mobileSummary, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
 import { NetSuccessChart } from "./NetSuccessChart";
 
 // The net-success width max(1000, 70 + 15 n) exports at 2x as max(2000, 140 + 30 n) px.
@@ -45,6 +45,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
       shared={shared}
       title={title}
       subtitle={subtitle}
+      summary={mobileSummary({ week: { n: week, through: false }, filter })}
       description={CHART_REGISTRY["net-success"].description}
       credit={credit}
       exportSpec={{

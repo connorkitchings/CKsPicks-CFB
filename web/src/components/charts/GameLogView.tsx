@@ -23,7 +23,7 @@ import {
   type TeamGameLog,
   type TeamGameRow,
 } from "@/lib/charts";
-import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
+import { ChartFrame, mobileSummary, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { GameLogChart } from "./GameLogChart";
 import { MobileGameLog } from "./MobileGameLog";
@@ -85,7 +85,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       title={title}
       subtitle={subtitle}
       description={description}
-      settingsSummary={`${subtitle} · ${metricText.label}`}
+      summary={mobileSummary({ team, week: through === null || through === undefined ? null : { n: through, through: true }, filter, scope: "FBS opponents", metric: metricText.label })}
       controls={
         <SegmentedControl
           size="sm"

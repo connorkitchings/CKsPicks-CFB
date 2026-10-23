@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { footnoteLines } from "@/lib/chart-config";
-import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
+import { footnoteLines, groupLabel } from "@/lib/chart-config";
+import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow, type Side } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
 import { MobileChartSettings } from "./MobileChartSettings";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
@@ -24,6 +24,29 @@ export type SharedChartProps = {
   /** URL-backed settings rendered by the page (side links, week stepper), placed before `controls`. */
   settings?: ReactNode;
 };
+
+/**
+ * The one phone summary line of every chart, "·"-joined and without the season (the site
+ * header shows it): `Alabama · Offense · Through Week 7 · All FBS · 20+ yard rate`. `scope` stands in
+ * for an unfiltered conference ("FBS opponents" on the game log).
+ */
+export function mobileSummary({ team, side, week, filter, scope, metric }: {
+  team?: string | null;
+  side?: Side | null;
+  week?: { n: number; through: boolean } | null;
+  filter: ConferenceFilter;
+  scope?: string;
+  metric?: string | null;
+}): string {
+  const conference = scope && filter === "all" ? scope : groupLabel(filter);
+  return [
+    team,
+    side ? (side === "offense" ? "Offense" : "Defense") : null,
+    week ? `${week.through ? "Through Week" : "Week"} ${week.n}` : null,
+    conference,
+    metric,
+  ].filter(Boolean).join(" · ");
+}
 
 // Exports are captured at 2x: 1000 x 562.5 CSS px is a 2000 x 1125 px PNG.
 export const EXPORT_SIZE = { width: 1000, height: 562.5, header: 70, footer: 86 };
@@ -89,8 +112,8 @@ export type ChartFrameProps = {
   highlightTeams?: readonly RosterRow[];
   /** The chart's own settings (metric or sort toggle), after the page's side and week settings. */
   controls?: ReactNode;
-  /** Current metric/side context for the always-visible mobile settings summary. */
-  settingsSummary?: string;
+  /** The phone summary row, built with `mobileSummary`. */
+  summary: string;
   /** PNG export of `card`, offered while the chart has data. */
   exportSpec: { filename: string; width: number; height: number; card: ReactNode };
   /** A compact line between the header hairline and the figure (highlight status, summaries). */
@@ -117,7 +140,7 @@ export function ChartFrame({
   headerControls,
   highlightTeams,
   controls,
-  settingsSummary,
+  summary,
   exportSpec,
   status,
   hasData,
@@ -135,7 +158,7 @@ export function ChartFrame({
     <section className="space-y-3" aria-label={title}>
       {/* One row of every setting: filter, highlight, side, week, metric/sort; display and export at the right end. */}
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-testid="chart-controls">
-        <MobileChartSettings finder={highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />} summary={<>{settingsSummary ?? subtitle}<span className="text-ink-faint"> · </span>{filter === "all" ? "All FBS" : filter === "p4" ? "Power Four + Notre Dame" : filter}</>} conference={
+        <MobileChartSettings finder={highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />} summary={summary} conference={
           <select
             className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent sm:min-h-9 sm:text-xs"
             value={filter}
@@ -151,7 +174,7 @@ export function ChartFrame({
           {settings}
           {controls}
         </MobileChartSettings>
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto" role="group" aria-label="Chart display and export">
+        <div className="order-2 ml-auto flex flex-wrap items-center gap-2" role="group" aria-label="Chart display and export">
           {table && (
             <button
               type="button"

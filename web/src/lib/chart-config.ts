@@ -245,6 +245,9 @@ export function chartSubtitle(kind: ChartKind, season: number, week: number, sid
   return controls.week === "through-week" ? `${sideText}${base} | Through Week ${week}` : `${sideText}${base}`;
 }
 
+/** Id of the empty slot in the sticky phone chart bar that receives the settings trigger. */
+export const SETTINGS_SLOT_ID = "chart-settings-slot";
+
 export function groupLabel(filter: ConferenceFilter): string {
   return filter === "all" ? "All FBS" : filter === "p4" ? "Power Four + Notre Dame" : filter;
 }

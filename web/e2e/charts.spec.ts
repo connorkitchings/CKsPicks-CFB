@@ -451,6 +451,11 @@ test.describe("team charts", () => {
     fs.copyFileSync(file, "test-results/chart-visuals/dense-national-export.png");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "test-results/chart-visuals/dense-national-mobile.png", fullPage: true });
+    // On a phone the whole scatter fits the screen: no scroll region at all.
+    await expect(page.getByTestId("scatter-scroll")).toHaveCount(0);
+    await expect(page.getByTestId("scatter-fit")).toBeVisible();
+    // 640-1023px keeps the horizontally scrollable scatter.
+    await page.setViewportSize({ width: 800, height: 844 });
     const scroll = page.getByTestId("scatter-scroll");
     await expect(scroll).toHaveAttribute("tabindex", "0");
     expect(await scroll.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);

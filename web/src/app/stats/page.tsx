@@ -28,6 +28,7 @@ import {
   parseRatingMetric,
   parseSide,
   pickerGroups,
+  SETTINGS_SLOT_ID,
 } from "@/lib/chart-config";
 import { publicationScope } from "@/lib/publication";
 import {
@@ -52,6 +53,7 @@ import {
   chartsYardageFixture,
 } from "@/test/fixtures/charts";
 import { ChartLink } from "@/components/charts/ChartLink";
+import { ChartSelect } from "@/components/charts/ChartSelect";
 import { ChartsView, type ChartPayload } from "@/components/charts/ChartsView";
 import { Header, Footer } from "@/components/Header";
 import { PageHeading } from "@/components/ui/PageHeading";
@@ -185,8 +187,13 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
     const available = weeksFor(kind);
     const week = coerceWeek(requested, available);
 
+    // On phones the nav itself is the sticky bar: a sticky child could not leave its short parent.
     tabs = (
-      <nav aria-label="Chart type" data-testid="chart-picker">
+      <nav
+        aria-label="Chart type"
+        data-testid="chart-picker"
+        className="max-sm:sticky max-sm:top-0 max-sm:z-30 max-sm:-mx-4 max-sm:border-b max-sm:border-line max-sm:bg-surface-page max-sm:px-4 max-sm:pb-2 max-sm:pt-[calc(env(safe-area-inset-top)+0.5rem)]"
+      >
         <div className="hidden flex-wrap items-end gap-x-5 gap-y-2 sm:flex">
           {pickerGroups().map((group) => (
             <div key={group.id} className="flex shrink-0 flex-col gap-1" role="group" aria-label={group.label}>
@@ -207,31 +214,20 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:hidden">
-          {pickerGroups().map((group) => {
-            const allKinds = pickerGroups().flatMap((g) => g.kinds);
-            return (
-              <div key={group.id} role="group" aria-label={group.label} className="contents">
-                {group.kinds.map((target) => {
-                  const isLastAndOdd = allKinds.indexOf(target) === allKinds.length - 1 && allKinds.length % 2 === 1;
-                  return (
-                    <ChartLink
-                      key={target}
-                      href={chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) })}
-                      aria-current={target === kind ? "page" : undefined}
-                      className={clsx(
-                        "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg px-3 py-2 text-center text-xs font-semibold focus-visible:outline-2 focus-visible:outline-accent",
-                        isLastAndOdd && "col-span-2",
-                        target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted",
-                      )}
-                    >
-                      {CHART_REGISTRY[target].tabLabel}
-                    </ChartLink>
-                  );
-                })}
-              </div>
-            );
-          })}
+        <div className="flex items-center gap-2 sm:hidden">
+          <ChartSelect
+            currentHref={chartHref(kind, { side, week: coerceWeek(week ?? requested, weeksFor(kind)) })}
+            groups={pickerGroups().map((group) => ({
+              id: group.id,
+              label: group.label,
+              options: group.kinds.map((target) => ({
+                href: chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) }),
+                label: CHART_REGISTRY[target].tabLabel,
+              })),
+            }))}
+          />
+          {/* Receives the phone settings trigger from MobileChartSettings (one settings tree, below in the chart frame). */}
+          <div id={SETTINGS_SLOT_ID} className="min-w-11 shrink-0" />
         </div>
       </nav>
     );
@@ -351,11 +347,14 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         width="slate"
       />
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:py-4">
-        <PageHeading title="Team charts">
-          {season}
-          <span className="text-ink-faint"> · </span>
-          {CHART_REGISTRY[kind].population}
-        </PageHeading>
+        {/* Phones drop the visible heading (the sticky bar names the chart) but keep it for assistive tech. */}
+        <div className="max-sm:sr-only">
+          <PageHeading title="Team charts">
+            {season}
+            <span className="text-ink-faint"> · </span>
+            {CHART_REGISTRY[kind].population}
+          </PageHeading>
+        </div>
         {tabs}
         {body}
       </main>
