@@ -20,10 +20,10 @@ for (const width of [375, 420]) {
     await expect(page.getByRole("heading", { name: "2026 Season Record" })).toHaveCount(0);
     await expect(page.getByRole("table", { name: "Market and model comparison" })).toHaveCount(0);
     await expect(page.getByText("Blitzkrieg")).toHaveCount(0);
-    await page.locator("#week-select").focus();
-    await expect(page.locator("#week-select")).toBeFocused();
+    await page.locator("#week-select-phone").focus();
+    await expect(page.locator("#week-select-phone")).toBeFocused();
     await expect(page.getByText("1 / 3", { exact: true })).toHaveCount(0);
-    await page.locator("#week-select").selectOption("1");
+    await page.locator("#week-select-phone").selectOption("1");
     await expect(page).toHaveURL(/week=1/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
@@ -107,7 +107,7 @@ test.describe("upcoming week (/)", () => {
     const record = page.getByRole("region", { name: "Record" });
     await expect(record.getByRole("heading", { name: "Season record before Week 5" })).toBeVisible();
     await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
-    await expect(record.getByText("93–103–3")).toBeVisible();
+    await expect(record.getByText("93–103–3", { exact: true })).toBeVisible();
     await expect(record.getByText("47.4%")).toBeVisible();
 
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
@@ -278,7 +278,7 @@ test.describe("final week (/?week=4)", () => {
     const record = page.getByRole("region", { name: "Record" });
     await expect(shown(record.getByText("this slate · small sample"))).toBeVisible();
     await expect(shown(record.getByText("4–3–1"))).toBeVisible();
-    await expect(record.getByText("93–103–3")).toBeVisible();
+    await expect(record.getByText("93–103–3", { exact: true })).toBeVisible();
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
     await expect(record.getByText(/Live/)).toHaveCount(0);
     const ohioState = page.locator("li[id^='game-']").filter({ hasText: "Ohio State" }).first();

@@ -74,6 +74,7 @@ function RecordBlock({
   );
 }
 
+const tally = (rec: Rec) => `${rec.win}–${rec.loss}${rec.push ? `–${rec.push}` : ""}`;
 const pct = (value: number | null) => (value === null ? "n/a" : `${(value * 100).toFixed(0)}%`);
 const points = (value: number | null) => (value === null ? "n/a" : value.toFixed(1));
 
@@ -98,38 +99,54 @@ export function ModelRecord({
   const weekOverall = weekPerformance.find((p) => p.classification === "all");
 
   return (
-    <Card as="section" aria-label="Record" padding="none" className="p-2.5">
-      <div className="mb-1 flex items-center justify-between gap-x-3">
-        <h2 className="text-sm font-semibold text-ink">Season record before Week {weekNumber}</h2>
-        <Link
-          href="/model"
-          className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold text-accent-ink underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    <Card as="section" aria-label="Record" padding="none">
+      {/* One content tree: collapsed behind the summary line on phones, open and inline from `sm:` up. */}
+      <details className="responsive-disclosure group">
+        <summary
+          data-testid="record-summary"
+          className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden"
         >
-          Season record
-        </Link>
-      </div>
-      <RecordBlock
-        title="Season"
-        note={overall ? `${overall.games} games` : "no games yet"}
-        spread={overall?.spread ?? null}
-        total={overall?.total ?? null}
-        showHeader={false}
-      />
-      {week && (
-        <div className="mt-2">
-          <h3 className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-ink">
-            Week {weekNumber} record
-            <span className="text-xs font-normal text-ink-muted">this slate · small sample</span>
-          </h3>
-          <RecordBlock title={`Week ${weekNumber}`} note="" spread={week.spread} total={week.total} showHeader={false} />
-          {weekOverall && weekOverall.evaluated > 0 && (
-            <p data-testid="week-accuracy" className="mt-1.5 hidden text-xs text-ink-muted sm:block">
-              Average miss: spread {points(weekOverall.marginMae)} pts · total {points(weekOverall.totalMae)} pts
-              {" · "}95% interval coverage: spread {pct(weekOverall.marginCoverage95)} · total {pct(weekOverall.totalCoverage95)}
-            </p>
+          <span className="min-w-0 truncate tabular-nums">
+            {overall
+              ? `Season ${tally(overall.spread ?? ZERO)} ATS · Totals ${tally(overall.total ?? ZERO)}`
+              : "Season record"}
+          </span>
+          <span aria-hidden className="shrink-0 text-ink-muted transition-transform group-open:rotate-90">›</span>
+        </summary>
+        <div className="p-2.5 max-sm:pt-0">
+          <div className="mb-1 flex items-center justify-between gap-x-3">
+            <h2 className="text-sm font-semibold text-ink">Season record before Week {weekNumber}</h2>
+            <Link
+              href="/model"
+              className="inline-flex min-h-11 shrink-0 items-center text-xs font-semibold text-accent-ink underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Season record
+            </Link>
+          </div>
+          <RecordBlock
+            title="Season"
+            note={overall ? `${overall.games} games` : "no games yet"}
+            spread={overall?.spread ?? null}
+            total={overall?.total ?? null}
+            showHeader={false}
+          />
+          {week && (
+            <div className="mt-2">
+              <h3 className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-ink">
+                Week {weekNumber} record
+                <span className="text-xs font-normal text-ink-muted">this slate · small sample</span>
+              </h3>
+              <RecordBlock title={`Week ${weekNumber}`} note="" spread={week.spread} total={week.total} showHeader={false} />
+              {weekOverall && weekOverall.evaluated > 0 && (
+                <p data-testid="week-accuracy" className="mt-1.5 hidden text-xs text-ink-muted sm:block">
+                  Average miss: spread {points(weekOverall.marginMae)} pts · total {points(weekOverall.totalMae)} pts
+                  {" · "}95% interval coverage: spread {pct(weekOverall.marginCoverage95)} · total {pct(weekOverall.totalCoverage95)}
+                </p>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </details>
     </Card>
   );
 }

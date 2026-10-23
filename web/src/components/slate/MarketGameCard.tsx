@@ -49,7 +49,7 @@ export function MarketGameCard({
   );
 
   return (
-    <Card as="li" id={`game-${game.gameId}`} className="scroll-mt-12">
+    <Card as="li" id={`game-${game.gameId}`} className="scroll-mt-12 max-sm:scroll-mt-24">
       <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
         <span>{formatKickoff(game.startDate)}</span>
         {hasResults && (

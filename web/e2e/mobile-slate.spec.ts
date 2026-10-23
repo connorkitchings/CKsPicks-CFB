@@ -148,6 +148,9 @@ test("a graded week shows the week record beside the season record, with accurac
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?week=4");
   const record = page.getByRole("region", { name: "Record" });
+  // Phones show one compact line; it opens the full card.
+  await expect(record.getByRole("heading", { name: "Season record before Week 4" })).toBeHidden();
+  await record.getByTestId("record-summary").click();
   await expect(record.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
   await expect(record.getByRole("heading", { name: /^Week \d+ record/ })).toBeVisible();
   await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
@@ -163,8 +166,9 @@ test("an upcoming week has no week record, and an in-progress week keeps phone c
   await expect(page.getByRole("region", { name: "Record" }).getByRole("heading", { name: /^Week \d+ record/ })).toHaveCount(0);
   await page.goto("/?week=6");
   await expect(page.getByTestId("week-phase")).toHaveText("In progress");
-  await expect(page.getByRole("region", { name: "Record" }).getByRole("heading", { name: "Week 6 record" })).toBeVisible();
   await expect(page.locator("li[id^='game-']")).toHaveCount(4);
   await expect(page.locator("details[open]")).toHaveCount(0);
+  await page.getByTestId("record-summary").click();
+  await expect(page.getByRole("region", { name: "Record" }).getByRole("heading", { name: "Week 6 record" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });

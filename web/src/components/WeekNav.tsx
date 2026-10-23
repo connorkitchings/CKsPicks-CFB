@@ -20,6 +20,8 @@ export function WeekNav({
   basePath = "/",
   labelMode = "week",
   compact = false,
+  selectId = "week-select",
+  className,
 }: {
   season: number;
   week: number;
@@ -29,6 +31,9 @@ export function WeekNav({
   labelMode?: "week" | "through-week";
   /** Fits the navigator into a page toolbar without changing its URL behavior. */
   compact?: boolean;
+  /** Distinct id when a page mounts a second navigator (the phone copy). */
+  selectId?: string;
+  className?: string;
 }) {
   const chartCompact = compact && basePath.startsWith("/stats");
   const noun = labelMode === "through-week" ? "Through Week" : "Week";
@@ -70,7 +75,7 @@ export function WeekNav({
       : "flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm";
 
   return (
-    <nav aria-label="Week navigation" data-card={compact ? undefined : ""} className={navClass}>
+    <nav aria-label="Week navigation" data-card={compact ? undefined : ""} className={clsx(navClass, className)}>
       <Link
         href={prev !== null ? hrefFor(prev) : "#"}
         aria-disabled={prev === null}
@@ -83,11 +88,11 @@ export function WeekNav({
       </Link>
 
       <div className="flex items-center text-sm">
-        <label htmlFor="week-select" className="sr-only">
+        <label htmlFor={selectId} className="sr-only">
           {noun}
         </label>
         <select
-          id="week-select"
+          id={selectId}
           value={week}
           onChange={onSelect}
           className={clsx(

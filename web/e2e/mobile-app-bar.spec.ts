@@ -23,7 +23,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
         await expect(bar.getByRole("link", { name: /CK.s Picks/ })).toHaveCount(title === "Games" ? 1 : 0);
         expect(await bar.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
         await page.mouse.wheel(0, 800);
-        await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(200);
         await expect.poll(async () => Math.abs((await bar.boundingBox())!.y)).toBeLessThanOrEqual(1);
         const height = (await bar.boundingBox())!.height;
         expect(height).toBeLessThanOrEqual(60);

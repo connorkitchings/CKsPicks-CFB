@@ -52,7 +52,8 @@ export function AppBar({
             CK&rsquo;s Picks <span className="text-xs font-normal text-ink-muted">CFB</span>
           </Link>
         )}
-        <span data-testid="app-bar-title" className={title === "Games" ? "truncate text-sm font-medium text-ink-muted" : "truncate text-base font-bold tracking-tight text-ink"}>{title}</span>
+        {/* On Games the brand is the title; the name stays for assistive tech and tests. */}
+        <span data-testid="app-bar-title" className={title === "Games" ? "sr-only" : "truncate text-base font-bold tracking-tight text-ink"}>{title}</span>
       </div>
       <button
         ref={triggerRef}

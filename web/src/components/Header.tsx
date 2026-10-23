@@ -33,7 +33,7 @@ export function Header({
       {/* Phones: the sticky app bar replaces the brand row and menu controls; only `status` stays on the page. */}
       <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={updatedAt?.toISOString() ?? null} />
     <header className={`border-b border-line bg-surface-card/80 backdrop-blur${status ? "" : " max-sm:hidden"}`}>
-      <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-2.5 sm:py-3.5`}>
+      <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-1.5 sm:py-3.5`}>
         <div className="flex items-center justify-between gap-3 max-sm:hidden">
           <Link href="/" className="inline-flex min-h-11 items-center rounded text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent sm:text-xl">
             CK&rsquo;s Picks

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PageHeading } from "@/components/ui/PageHeading";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { Header, Footer } from "@/components/Header";
@@ -97,7 +96,7 @@ export function SlateView({
         }
       />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:space-y-4 sm:py-6">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-2 px-4 py-3 max-sm:pt-2 sm:space-y-4 sm:py-6">
         {dbError && (
           <Notice tone="warn">{dbError}</Notice>
         )}
@@ -111,18 +110,24 @@ export function SlateView({
 
         {!dbError && season > 0 && (
           <>
-            <PageHeading
-              title={`Week ${week}`}
-              actions={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact /> : undefined}
-            >
-              <span
-                data-testid="week-phase"
-                data-phase={phase}
-                className="inline-flex items-center rounded-full border border-line bg-surface-inset px-2 py-0.5 text-xs font-semibold text-ink-muted"
-              >
-                {PHASE_LABEL[phase]}
-              </span>
-            </PageHeading>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                {/* Phones: the heading is read aloud only; the summary line below is the visible label. */}
+                <h1 className="text-lg font-bold tracking-tight text-ink max-sm:sr-only sm:text-xl">{`Week ${week}`}</h1>
+                <p className="text-xs text-ink-muted sm:mt-1 sm:text-sm">
+                  <span className="sm:hidden">Week {week} · </span>
+                  <span
+                    data-testid="week-phase"
+                    data-phase={phase}
+                    className="font-semibold sm:inline-flex sm:items-center sm:rounded-full sm:border sm:border-line sm:bg-surface-inset sm:px-2 sm:py-0.5 sm:text-xs"
+                  >
+                    {PHASE_LABEL[phase]}
+                  </span>
+                  <span className="sm:hidden"> · {games.length} {games.length === 1 ? "game" : "games"}</span>
+                </p>
+              </div>
+              {weeks.length > 1 && <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact className="max-sm:hidden" />}
+            </div>
             {publicationMode === "predictions" && (performance.length > 0 || graded) && (
               <ModelRecord
                 performance={performance}
@@ -143,8 +148,6 @@ export function SlateView({
               </p>
             )}
 
-            {predictionsVisible && phase !== "final" && <TopLeans games={games} record={topLeansRecord} season={season} />}
-            {predictionsVisible && phase !== "upcoming" && <ResultHighlights games={games} />}
 
             {games.length === 0 ? (
               <Card padding="none" className="p-8 text-center sm:p-12">
@@ -177,7 +180,18 @@ export function SlateView({
                 </div>
               </Card>
             ) : (
-              <SlateList games={games} roster={roster} initialSort={initialSort} />
+              <SlateList
+                games={games}
+                roster={roster}
+                initialSort={initialSort}
+                weekNav={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact selectId="week-select-phone" /> : undefined}
+                extras={predictionsVisible ? (
+                  <div className="space-y-3 sm:space-y-4">
+                    {phase !== "final" && <TopLeans games={games} record={topLeansRecord} season={season} />}
+                    {phase !== "upcoming" && <ResultHighlights games={games} />}
+                  </div>
+                ) : undefined}
+              />
             )}
           </>
         )}
