@@ -23,11 +23,12 @@ import {
   type TeamGameLog,
   type TeamGameRow,
 } from "@/lib/charts";
-import { ChartFrame, mobileSummary, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
+import { chartSummary } from "@/components/ui/SummaryLine";
+import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { GameLogChart } from "./GameLogChart";
 import { MobileGameLog } from "./MobileGameLog";
-import { useMobileChart } from "./useMobileChart";
+import { useIsPhone } from "@/lib/use-is-phone";
 
 const GAME_LOG_VIEW = { width: 1000, height: 560 };
 const SCOPE_NOTE = "FBS opponents only";
@@ -57,7 +58,7 @@ function SeasonStat({ side, log }: { side: Side; log: TeamGameLog }) {
 
 /** Every game of one team: offense and defense-allowed bars against each week's FBS average. */
 export function GameLogView({ shared, rows, adjusted, initialMetric, explosiveness }: GameLogViewProps) {
-  const narrow = useMobileChart();
+  const narrow = useIsPhone();
   const [metric, setMetric] = useState<GameLogMetric>(initialMetric);
   const { season, roster, filter, highlight } = shared;
   const team = highlight ?? defaultGameLogTeam(roster, rows, adjusted, filter);
@@ -85,7 +86,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       title={title}
       subtitle={subtitle}
       description={description}
-      summary={mobileSummary({ team, week: through === null || through === undefined ? null : { n: through, through: true }, filter, scope: "FBS opponents", metric: metricText.label })}
+      summary={chartSummary({ team, week: through === null || through === undefined ? null : { n: through, through: true }, filter, scope: "FBS opponents", metric: metricText.label })}
       controls={
         <SegmentedControl
           size="sm"

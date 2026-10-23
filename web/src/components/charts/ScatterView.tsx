@@ -3,9 +3,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { CHART_REGISTRY, chartSubtitle, exportFilename, groupLabel, type ScatterConfig } from "@/lib/chart-config";
 import { domainFor, matchesConference, type ChartKind, type ScatterData, type ScatterPoint, type Side } from "@/lib/charts";
-import { ChartFrame, mobileSummary, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, HighlightStatus, type SharedChartProps } from "./ChartFrame";
+import { chartSummary } from "@/components/ui/SummaryLine";
+import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, HighlightStatus, type SharedChartProps } from "./ChartFrame";
 import { ScatterChart } from "./ScatterChart";
-import { useMobileChart } from "./useMobileChart";
+import { useIsPhone } from "@/lib/use-is-phone";
 
 const SCATTER_VIEW = { width: 1000, height: 640 };
 /** Phone portrait view: the viewBox follows the container width (1:1 scale, so text is true size) in a tall aspect. */
@@ -31,7 +32,7 @@ export type ScatterViewProps = {
 
 /** A team scatter in the shared frame: national geometry, conference filter, highlight and export. */
 export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, description }: ScatterViewProps) {
-  const mobile = useMobileChart();
+  const mobile = useIsPhone();
   const [fitNode, setFitNode] = useState<HTMLDivElement | null>(null);
   const [fitWidth, setFitWidth] = useState(MOBILE_FALLBACK_WIDTH);
   useEffect(() => {
@@ -93,7 +94,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       subtitle={subtitle}
       description={description ?? CHART_REGISTRY[kind].description}
       controls={controls}
-      summary={mobileSummary({ side: CHART_REGISTRY[kind].controls.side ? side : null, week: { n: week, through: CHART_REGISTRY[kind].controls.week === "through-week" }, filter, metric: config.metricLabel })}
+      summary={chartSummary({ side: CHART_REGISTRY[kind].controls.side ? side : null, week: { n: week, through: CHART_REGISTRY[kind].controls.week === "through-week" }, filter, metric: config.metricLabel })}
       highlightTeams={eligibleRoster}
       exportSpec={{
         filename: exportFilename(kind, season, week, side, exportMetric),

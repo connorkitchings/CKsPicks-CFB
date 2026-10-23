@@ -23,7 +23,8 @@ import {
 } from "@/lib/sos-rank";
 import { RankChip } from "@/components/ui/RankChip";
 import { RatingsFilterSheet } from "./RatingsFilterSheet";
-import { useMobileChart } from "@/components/charts/useMobileChart";
+import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
+import { useIsPhone } from "@/lib/use-is-phone";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
@@ -173,7 +174,7 @@ export function RatingsView({
   initialConference = "all",
 }: RatingsViewProps) {
   const router = useRouter();
-  const mobile = useMobileChart();
+  const mobile = useIsPhone();
   const [sort, setSort] = useState<RatingsSort>(initialSort);
   const [direction, setDirection] = useState<SortDirection>(initialDirection);
   const [query, setQuery] = useState(initialQuery);
@@ -293,10 +294,7 @@ export function RatingsView({
       )}
 
       {/* Phones: this row is the sticky bar (search + Filters). */}
-      <div
-        data-testid="ratings-bar"
-        className="flex items-center gap-2 max-sm:sticky max-sm:top-0 max-sm:z-30 max-sm:-mx-4 max-sm:border-b max-sm:border-line max-sm:bg-surface-page max-sm:px-4 max-sm:pb-2 max-sm:pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:justify-between"
-      >
+      <MobileStickyBar data-testid="ratings-bar" className="flex items-center gap-2 sm:justify-between">
         <SearchField
           id="rating-search"
           label="Search teams"
@@ -312,7 +310,7 @@ export function RatingsView({
           {mobile && sortSelect}
         </RatingsFilterSheet>
         {!mobile && conferenceSelect && <div className="hidden sm:block">{conferenceSelect}</div>}
-      </div>
+      </MobileStickyBar>
 
       <p className="-mt-2 text-xs text-ink-muted sm:hidden" data-testid="ratings-summary">{summary}</p>
 

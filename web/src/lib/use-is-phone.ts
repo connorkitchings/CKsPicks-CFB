@@ -9,7 +9,7 @@ const subscribe = (notify: () => void) => {
   return () => media.removeEventListener("change", notify);
 };
 
-/** Shares the chart breakpoint without changing the server's initial markup. */
-export function useMobileChart(): boolean {
-  return useSyncExternalStore(subscribe, () => window.matchMedia(QUERY).matches, () => false);
+/** True below the 640px breakpoint. The server and hydration render `server` (default false) so initial markup stays stable. */
+export function useIsPhone(server = false): boolean {
+  return useSyncExternalStore(subscribe, () => window.matchMedia(QUERY).matches, () => server);
 }

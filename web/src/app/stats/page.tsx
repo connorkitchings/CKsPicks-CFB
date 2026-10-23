@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
 import { Notice } from "@/components/ui/Notice";
 import {
   adjustedPoints,
@@ -189,11 +190,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
 
     // On phones the nav itself is the sticky bar: a sticky child could not leave its short parent.
     tabs = (
-      <nav
-        aria-label="Chart type"
-        data-testid="chart-picker"
-        className="max-sm:sticky max-sm:top-0 max-sm:z-30 max-sm:-mx-4 max-sm:border-b max-sm:border-line max-sm:bg-surface-page max-sm:px-4 max-sm:pb-2 max-sm:pt-[calc(env(safe-area-inset-top)+0.5rem)]"
-      >
+      <MobileStickyBar as="nav" aria-label="Chart type" data-testid="chart-picker">
         <div className="hidden flex-wrap items-end gap-x-5 gap-y-2 sm:flex">
           {pickerGroups().map((group) => (
             <div key={group.id} className="flex shrink-0 flex-col gap-1" role="group" aria-label={group.label}>
@@ -229,7 +226,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
           {/* Receives the phone settings trigger from MobileChartSettings (one settings tree, below in the chart frame). */}
           <div id={SETTINGS_SLOT_ID} className="min-w-11 shrink-0" />
         </div>
-      </nav>
+      </MobileStickyBar>
     );
 
     // Side links and the week stepper join the chart's controls row through `settings`.

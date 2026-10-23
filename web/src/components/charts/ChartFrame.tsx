@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { footnoteLines, groupLabel } from "@/lib/chart-config";
-import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow, type Side } from "@/lib/charts";
+import { footnoteLines } from "@/lib/chart-config";
+import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
 import { MobileChartSettings } from "./MobileChartSettings";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
@@ -24,29 +24,6 @@ export type SharedChartProps = {
   /** URL-backed settings rendered by the page (side links, week stepper), placed before `controls`. */
   settings?: ReactNode;
 };
-
-/**
- * The one phone summary line of every chart, "·"-joined and without the season (the site
- * header shows it): `Alabama · Offense · Through Week 7 · All FBS · 20+ yard rate`. `scope` stands in
- * for an unfiltered conference ("FBS opponents" on the game log).
- */
-export function mobileSummary({ team, side, week, filter, scope, metric }: {
-  team?: string | null;
-  side?: Side | null;
-  week?: { n: number; through: boolean } | null;
-  filter: ConferenceFilter;
-  scope?: string;
-  metric?: string | null;
-}): string {
-  const conference = scope && filter === "all" ? scope : groupLabel(filter);
-  return [
-    team,
-    side ? (side === "offense" ? "Offense" : "Defense") : null,
-    week ? `${week.through ? "Through Week" : "Week"} ${week.n}` : null,
-    conference,
-    metric,
-  ].filter(Boolean).join(" · ");
-}
 
 // Exports are captured at 2x: 1000 x 562.5 CSS px is a 2000 x 1125 px PNG.
 export const EXPORT_SIZE = { width: 1000, height: 562.5, header: 70, footer: 86 };
@@ -112,7 +89,7 @@ export type ChartFrameProps = {
   highlightTeams?: readonly RosterRow[];
   /** The chart's own settings (metric or sort toggle), after the page's side and week settings. */
   controls?: ReactNode;
-  /** The phone summary row, built with `mobileSummary`. */
+  /** The phone summary row, built with `chartSummary`. */
   summary: string;
   /** PNG export of `card`, offered while the chart has data. */
   exportSpec: { filename: string; width: number; height: number; card: ReactNode };
