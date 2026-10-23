@@ -81,12 +81,17 @@ export default async function RatingsPage({ searchParams }: {
         width="wide"
       />
       <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
-        <PageHeading title="Team ratings">
-          <p className="text-xs font-semibold uppercase tracking-wider text-accent-ink">{season} · {periodMeta.label} · V5</p>
-          <p className="mt-1">{periodMeta.description} Higher is better for overall, offense, and defense.</p>
+        <PageHeading
+          title="Team ratings"
+          actions={<p className="text-xs font-semibold uppercase tracking-wider text-accent-ink sm:hidden">{periodMeta.label} · V5</p>}
+        >
+          <p className="hidden text-xs font-semibold uppercase tracking-wider text-accent-ink sm:block">{season} · {periodMeta.label} · V5</p>
+          <p className="mt-1 hidden sm:block">{periodMeta.description} Higher is better for overall, offense, and defense.</p>
         </PageHeading>
 
         <Disclosure title="About V5 possession ratings">
+          {/* Phones keep the summary sentence here instead of above the controls. */}
+          <p className="mb-2 leading-relaxed sm:hidden">{periodMeta.description} Higher is better for overall, offense, and defense.</p>
           <p className="leading-relaxed">
             Ratings represent expected <strong>scoring efficiency per possession (PPP)</strong> against an average FBS opponent under standard conditions.
             Both offense and defense are oriented so higher is better: positive offense scores more points per possession, while positive defense holds opponents to fewer.

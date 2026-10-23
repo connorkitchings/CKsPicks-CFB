@@ -22,6 +22,8 @@ import {
   type SosRanks,
 } from "@/lib/sos-rank";
 import { RankChip } from "@/components/ui/RankChip";
+import { RatingsFilterSheet } from "./RatingsFilterSheet";
+import { useMobileChart } from "@/components/charts/useMobileChart";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
@@ -171,6 +173,7 @@ export function RatingsView({
   initialConference = "all",
 }: RatingsViewProps) {
   const router = useRouter();
+  const mobile = useMobileChart();
   const [sort, setSort] = useState<RatingsSort>(initialSort);
   const [direction, setDirection] = useState<SortDirection>(initialDirection);
   const [query, setQuery] = useState(initialQuery);
@@ -218,37 +221,82 @@ export function RatingsView({
     return `/ratings?${params.toString()}`;
   }
 
+  const latestPeriod = timeline[timeline.length - 1]?.id ?? period;
+  const periodLabel = timeline.find((entry) => entry.id === period)?.label ?? periodMeta.label;
+  const conferenceLabel = conference === "all" ? "All FBS" : conference === "p4" ? "Power Four + Notre Dame" : conference;
+  const filtersActive = conference !== "all" || sort !== "overall" || period !== latestPeriod;
+  const summary = [conferenceLabel, sortLabels[sort], ...(period === latestPeriod ? [] : [periodLabel])].join(" · ");
+
+  const periodSelect = timeline.length > 0 && (
+    <div>
+      <label htmlFor="rating-period" className="mb-1 block text-sm font-semibold text-ink">Rating period</label>
+      <select
+        id="rating-period"
+        value={period}
+        onChange={(event) => router.push(periodHref(event.target.value), { scroll: false })}
+        className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {timeline.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
+      </select>
+    </div>
+  );
+  const conferenceSelect = conferences.length > 0 && (
+    <div>
+      <label htmlFor="rating-conference" className="mb-1 block text-sm font-semibold text-ink sm:sr-only">Filter by conference</label>
+      <select
+        id="rating-conference"
+        data-testid="conference-filter"
+        aria-label="Filter by conference"
+        value={conference}
+        onChange={(event) => setConference(event.target.value)}
+        className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        <option value="all">All FBS</option>
+        <option value="p4">Power Four + Notre Dame</option>
+        {conferences.map((conf) => (
+          <option key={conf} value={conf}>{conf}</option>
+        ))}
+      </select>
+    </div>
+  );
+  const sortSelect = (
+    <div>
+      <label htmlFor="rating-sort" className="mb-1 block text-sm font-semibold text-ink">Sort by</label>
+      <select
+        id="rating-sort"
+        value={sort}
+        onChange={(event) => onSortSelect(event.target.value)}
+        className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {RATINGS_SORTS.map((value) => <option key={value} value={value}>{sortLabels[value]}</option>)}
+      </select>
+    </div>
+  );
+
+  // One control tree: on phones the period, conference and sort selects live in the Filters sheet;
+  // from 640px the timeline links and the conference select sit inline, as before.
   return (
-    <div className="space-y-4">
-      {timeline.length > 0 && (
-        <>
-          <div className="sm:hidden">
-            <label htmlFor="rating-period" className="mb-1 block text-sm font-semibold text-ink">Rating period</label>
-            <select
-              id="rating-period"
-              value={period}
-              onChange={(event) => router.push(periodHref(event.target.value), { scroll: false })}
-              className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              {timeline.map((entry) => <option key={entry.id} value={entry.id}>{entry.label}</option>)}
-            </select>
-          </div>
-          <nav aria-label="Ratings timeline" className="hidden flex-wrap gap-2 sm:flex">
-            {timeline.map((entry) => <Link
-              key={entry.id}
-              href={periodHref(entry.id)}
-              scroll={false}
-              aria-current={entry.id === period ? "page" : undefined}
-              className={clsx(
-                "inline-flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm sm:min-h-9 sm:py-1.5 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                entry.id === period ? "border-accent bg-accent-soft text-accent-ink" : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
-              )}
-            >{entry.label}</Link>)}
-          </nav>
-        </>
+    <div className="flex flex-col gap-4">
+      {!mobile && timeline.length > 0 && (
+        <nav aria-label="Ratings timeline" className="hidden flex-wrap gap-2 sm:flex">
+          {timeline.map((entry) => <Link
+            key={entry.id}
+            href={periodHref(entry.id)}
+            scroll={false}
+            aria-current={entry.id === period ? "page" : undefined}
+            className={clsx(
+              "inline-flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm sm:min-h-9 sm:py-1.5 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+              entry.id === period ? "border-accent bg-accent-soft text-accent-ink" : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+            )}
+          >{entry.label}</Link>)}
+        </nav>
       )}
 
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+      {/* Phones: this row is the sticky bar (search + Filters). */}
+      <div
+        data-testid="ratings-bar"
+        className="flex items-center gap-2 max-sm:sticky max-sm:top-0 max-sm:z-30 max-sm:-mx-4 max-sm:border-b max-sm:border-line max-sm:bg-surface-page max-sm:px-4 max-sm:pb-2 max-sm:pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:justify-between"
+      >
         <SearchField
           id="rating-search"
           label="Search teams"
@@ -256,44 +304,20 @@ export function RatingsView({
           onChange={setQuery}
           placeholder="Search teams…"
           clearLabel="Clear search"
-          className="w-full sm:max-w-md"
+          className="min-w-0 flex-1 sm:max-w-md"
         />
-        <div className={clsx("grid gap-2 sm:flex sm:items-center", conferences.length > 0 ? "grid-cols-2" : "grid-cols-1")}>
-          {conferences.length > 0 && (
-            <div>
-              <label htmlFor="rating-conference" className="mb-1 block text-sm font-semibold text-ink sm:sr-only">Filter by conference</label>
-              <select
-                id="rating-conference"
-                data-testid="conference-filter"
-                aria-label="Filter by conference"
-                value={conference}
-                onChange={(event) => setConference(event.target.value)}
-                className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                <option value="all">All FBS</option>
-                <option value="p4">Power Four + Notre Dame</option>
-                {conferences.map((conf) => (
-                  <option key={conf} value={conf}>{conf}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="sm:hidden">
-            <label htmlFor="rating-sort" className="mb-1 block text-sm font-semibold text-ink">Sort by</label>
-            <select
-              id="rating-sort"
-              value={sort}
-              onChange={(event) => onSortSelect(event.target.value)}
-              className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface-card px-3 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              {RATINGS_SORTS.map((value) => <option key={value} value={value}>{sortLabels[value]}</option>)}
-            </select>
-          </div>
-        </div>
+        <RatingsFilterSheet mobile={mobile} active={filtersActive}>
+          {mobile && periodSelect}
+          {mobile && conferenceSelect}
+          {mobile && sortSelect}
+        </RatingsFilterSheet>
+        {!mobile && conferenceSelect && <div className="hidden sm:block">{conferenceSelect}</div>}
       </div>
 
+      <p className="-mt-2 text-xs text-ink-muted sm:hidden" data-testid="ratings-summary">{summary}</p>
+
       {hasResume && (
-        <p className="text-xs text-ink-muted">
+        <p className="text-xs text-ink-muted max-sm:order-last">
           SOS ranks schedule difficulty for an average FBS team (1 is hardest). SOR ranks each team’s record against what an <Link href="/model/method#elite-reference" className="font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">elite</Link> team (the average of the top 25 teams) would be expected to do on the same schedule; see the methodology.
         </p>
       )}

@@ -1,6 +1,17 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const fits = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+/** Opens the phone Filters sheet once hydration has enabled its button. */
+const openFilters = async (page: Page) => {
+  const button = page.getByRole("button", { name: "Filters", exact: true });
+  await expect(button).toBeEnabled();
+  await button.click();
+  await expect(page.getByRole("dialog", { name: "Filters", exact: true })).toBeVisible();
+};
+const closeFilters = async (page: Page) => {
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+};
 const phoneSort = (page: Page) => page.getByLabel("Sort by", { exact: true });
 const sortHeader = (page: Page, label: string) => page.getByRole("columnheader", { name: `Sort by ${label}`, exact: true });
 const sortButton = (page: Page, label: string) => page.getByRole("button", { name: `Sort by ${label}`, exact: true });
@@ -25,6 +36,7 @@ test.describe("mobile team ratings", () => {
 
   test("the sort select lists every sortable column", async ({ page }) => {
     await page.goto("/ratings");
+    await openFilters(page);
     await expect(phoneSort(page).locator("option")).toHaveText(SORT_LABELS);
     await expect(page.getByRole("group", { name: "Rating category" })).toHaveCount(0);
     await expect(page.getByRole("group", { name: "Résumé sort" })).toHaveCount(0);
@@ -33,6 +45,7 @@ test.describe("mobile team ratings", () => {
   test("each sort promotes its own value and preserves national rank when filtered", async ({ page }) => {
     await page.goto("/ratings");
     const list = page.getByRole("list", { name: "Team ratings list" });
+    await openFilters(page);
     // Each case selects a value different from the current one; a same-value select is not a user action.
     const cases = [
       { option: "Offense", team: "Ohio State", primary: "Offense+4.80" },
@@ -48,6 +61,7 @@ test.describe("mobile team ratings", () => {
       await expect(first.getByTestId("primary-rating")).toHaveText(entry.primary);
     }
     await phoneSort(page).selectOption({ label: "Offense" });
+    await closeFilters(page);
     await page.getByRole("searchbox", { name: "Search teams" }).fill("Appalachian State");
     await expect(list.getByRole("listitem")).toHaveCount(1);
     await expect(list.getByLabel("National rank 3")).toBeVisible();
@@ -83,15 +97,20 @@ test.describe("mobile team ratings", () => {
   test("period changes preserve live search and sort and update frozen values", async ({ page }) => {
     await page.goto("/ratings?season=2026");
     await page.getByRole("searchbox", { name: "Search teams" }).fill("Texas");
+    await openFilters(page);
     await phoneSort(page).selectOption({ label: "Offense" });
     await page.getByLabel("Rating period", { exact: true }).selectOption({ label: "Post-Week 3" });
     await expect(page).toHaveURL(/sort=offense/);
     await expect(page).toHaveURL(/q=Texas/);
     await expect(page).toHaveURL(/season=2026/);
     await expect(page.getByRole("searchbox", { name: "Search teams" })).toHaveValue("Texas");
+    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Offense · Post-Week 3");
+    await openFilters(page);
     await expect(phoneSort(page)).toHaveValue("offense");
+    await closeFilters(page);
     await expect(page.getByTestId("primary-rating")).toHaveText("Offense+3.20");
     await expect(page.getByText(/Evidence cutoff: Sep 22, 2026/)).toBeVisible();
+    await openFilters(page);
     await page.getByLabel("Rating period", { exact: true }).selectOption({ label: "Preseason" });
     await expect(page.getByTestId("primary-rating")).toHaveText("Offense+3.00");
     await expect(page.getByText("Preseason baseline priors before 2026 kickoff.", { exact: true })).toBeVisible();
@@ -99,8 +118,11 @@ test.describe("mobile team ratings", () => {
 
   test("phone search, sort and period controls are at least 44px tall", async ({ page }) => {
     await page.goto("/ratings");
+    await openFilters(page);
     for (const control of [
       page.getByRole("searchbox", { name: "Search teams" }),
+      page.getByRole("button", { name: "Filters", exact: true }),
+      page.getByLabel("Filter by conference", { exact: true }),
       phoneSort(page),
       page.getByLabel("Rating period", { exact: true }),
     ]) {
@@ -109,19 +131,73 @@ test.describe("mobile team ratings", () => {
     }
   });
 
+  test("compact phone header: first team row up top, pinned bar, Filters sheet above it, footnote after the list", async ({ page }) => {
+    await page.goto("/ratings");
+    const bar = page.getByTestId("ratings-bar");
+    const filters = page.getByRole("button", { name: "Filters", exact: true });
+    await expect(filters).toBeEnabled();
+    expect((await filters.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Overall");
+    await expect(page.getByTestId("ratings-filters-dot")).toHaveCount(0);
+    await expect(page.getByText(/^Post-Week \d+ · V5$/)).toBeVisible();
+    await expect(page.getByText(/Frozen ratings|Latest frozen/).first()).toBeHidden();
+    const list = page.getByRole("list", { name: "Team ratings list" });
+    const firstTop = (await list.getByRole("listitem").first().boundingBox())!.y;
+    console.log(`first team row top: ${Math.round(firstTop)}px`);
+    expect(firstTop).toBeLessThan(335);
+    // The footnote follows the list on phones.
+    const note = page.getByText(/SOS ranks schedule difficulty/);
+    expect((await note.boundingBox())!.y).toBeGreaterThan((await list.boundingBox())!.y + (await list.boundingBox())!.height - 1);
+    // The bar pins at the top while the page scrolls.
+    await page.mouse.wheel(0, 800);
+    await expect.poll(async () => Math.abs((await bar.boundingBox())!.y)).toBeLessThanOrEqual(1);
+    expect(await bar.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
+    // The sheet sits above the bar with the three controls; Sort applies immediately and focus returns on close.
+    await filters.click();
+    const dialog = page.getByRole("dialog", { name: "Filters", exact: true });
+    await expect(dialog).toBeVisible();
+    expect(await page.evaluate(() => {
+      const rect = document.querySelector("dialog[open]")!.getBoundingClientRect();
+      return document.elementFromPoint(rect.x + rect.width / 2, rect.y + 10)?.closest("dialog") !== null;
+    })).toBe(true);
+    await expect(dialog.getByLabel("Rating period", { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel("Filter by conference", { exact: true })).toBeVisible();
+    await dialog.getByLabel("Sort by", { exact: true }).selectOption({ label: "Offense" });
+    await expect(list.getByRole("listitem").first()).toContainText("Ohio State");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(filters).toBeFocused();
+    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Offense");
+    await expect(page.getByTestId("ratings-filters-dot")).toBeVisible();
+  });
+
+  test("320px keeps the sticky bar inside the viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/ratings");
+    await expect(page.getByRole("button", { name: "Filters", exact: true })).toBeEnabled();
+    expect(await fits(page)).toBe(true);
+    const box = (await page.getByTestId("ratings-bar").boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  });
+
   for (const width of [320, 360, 390, 430, 639, 640, 768, 1024, 1280]) {
     test(`loaded ratings and period controls fit ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await page.goto("/ratings");
       await expect(page.getByRole("heading", { name: "Team ratings" })).toBeVisible();
       if (width < 640) {
-        await expect(page.getByLabel("Rating period", { exact: true })).toBeVisible();
-        await expect(phoneSort(page)).toBeVisible();
+        await expect(page.getByRole("button", { name: "Filters", exact: true })).toBeVisible();
+        // The controls live in the closed Filters sheet.
+        await expect(page.getByLabel("Rating period", { exact: true })).toBeHidden();
+        await expect(phoneSort(page)).toBeHidden();
         await expect(page.getByRole("navigation", { name: "Ratings timeline" })).toBeHidden();
         await expect(page.getByRole("list", { name: "Team ratings list" })).toContainText("Southern Mississippi");
       } else {
-        await expect(page.getByLabel("Rating period", { exact: true })).toBeHidden();
-        await expect(phoneSort(page)).toBeHidden();
+        await expect(page.getByLabel("Rating period", { exact: true })).toHaveCount(0);
+        await expect(phoneSort(page)).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Filters", exact: true })).toBeHidden();
+        await expect(page.getByLabel("Filter by conference", { exact: true })).toBeVisible();
         await expect(page.getByRole("navigation", { name: "Ratings timeline" })).toBeVisible();
         await expect(page.getByRole("table")).toContainText("Southern Mississippi");
       }
