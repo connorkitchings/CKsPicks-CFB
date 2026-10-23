@@ -2,29 +2,31 @@
 
 ## TL;DR
 
-- **Worked On:** Phases 1 and 3 of the CI speed and stability contract; Phase 2 deliberately deferred.
-- **Outcome:** `general` uses `--dist worksteal`, drops `fetch-depth: 0`, and single-threads BLAS. Playwright runs against a fixture production build in CI with an explicit hydration marker. Audits already exit 0, so no change.
+- **Worked On:** Phases 1, 2 and 3 of the CI speed and stability contract; all merged to `dev`.
+- **Outcome:** `general` uses `--dist worksteal`, drops `fetch-depth: 0`, and single-threads BLAS. Playwright runs against a fixture production build in CI with an explicit hydration marker. Possession-rating tests share tournament setup (PR #8). Audits already exit 0, so no change.
 - **Plan Contract:** [`docs/plans/2026-10-23/02-ci-speed-and-stability.md`](../../docs/plans/2026-10-23/02-ci-speed-and-stability.md)
-- **Approval / Status:** Owner-approved plan; contract In Progress until the PR's CI timings are compared.
+- **Approval / Status:** Owner-approved plan; contract Implemented.
 - **Blockers:** None
-- **Next:** Owner pushes the branch and opens a PR to `dev`; compare `gh run view <id> --json jobs` against baseline run `39854431096`. Do Phase 2 only if `general` stays above about 3 minutes.
+- **Next:** Phase 4 backlog as separate contracts; consider sharding Playwright only if `web` becomes the bottleneck.
 
 **tags:** ["ci", "playwright", "pytest"]
 
 ## Context and Decisions
 
-- Branch `worktree-connorkitchings-ci-speed-stability` was reset to local `dev` (`de47d608`) because the worktree tool branched from `main`. Rename the branch to `connorkitchings/ci-speed-stability` before pushing if desired.
-- Phase 2 is gated on CI measurement, so it was not implemented.
+- The worktree tool branched from `main`, so the branch was reset to local `dev` (`de47d608`) before any work.
+- Phase 2 ran after Phase 1 left `general` at 5m19s. Both branches were fast-forwarded into `dev` with `git push origin HEAD:dev` and then deleted (PR #8 carried the Phase 2 CI run).
 - `networkidle` stays in `logos.spec.ts`, `charts-visual.spec.ts`, `charts-export-theme.spec.ts` and the broken-image check in `charts.spec.ts`, since those wait on image loads.
 
 ## Work Completed
 
 - `.github/workflows/ci.yml`: worksteal, no deep fetch, BLAS thread caps, separate fixture build step before browser tests.
 - `web/`: `HydrationMarker`, `gotoHydrated`, production `next start` under `CI`, specs migrated.
+- Possession-rating tests: module- and class-scoped shared setup; assertions unchanged.
 
 ## Files Modified
 
 - `.github/workflows/ci.yml`, `web/playwright.config.ts`, `web/src/app/layout.tsx`, `web/src/components/HydrationMarker.tsx`, `web/e2e/helpers.ts` and seven e2e specs.
+- `tests/test_possession_rating_verification.py`, `tests/ratings/test_possession_rating_materializer.py` — shared setup fixtures.
 
 ## Validation
 
@@ -32,7 +34,9 @@
 - [x] `CI=1 npm --prefix web run test:ui`: 211 passed, 10 skipped.
 - [x] Flake gate `--repeat-each=20 --retries=0` on `matchup` and `mobile-scatter`: 680 passed.
 - [x] Web lint, typecheck, `test:publication` (324 passed).
-- [ ] CI timing comparison (needs a pushed branch).
+- [x] Phase 2 files: 32 passed before and after; serial 42s to 22s.
+- [x] CI timings, `general` / `web`: baseline run `39854431096` 5m54s / 4m03s; Phase 1 on `dev` (run `39990215575`) 5m19s / 2m34s; with Phase 2 (PR #8 run `39993143753`) 3m20s / 2m39s. The `Python tests` coverage gate passed.
+- [ ] CI run on `dev` after the Phase 2 fast-forward (`32ad7a42`) not checked.
 
 ## Amendments and Blockers
 
@@ -40,5 +44,5 @@
 
 ## Handoff Notes
 
-- **Resume at:** CI timing comparison.
-- **Watch out for:** the `OMP/OPENBLAS/MKL` caps must be reverted if bit-exact SHA tests or timing regress in CI.
+- **Resume at:** Session complete.
+- **Watch out for:** the shared tournament run keeps frames (`retain_frames=True`), unverified against the previous no-frames runs for two tests. The `OMP/OPENBLAS/MKL` caps must be reverted if bit-exact SHA tests or timing regress.
