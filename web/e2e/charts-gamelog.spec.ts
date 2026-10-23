@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
+import { gotoHydrated } from "./helpers";
 
 test.describe("team game log", () => {
   test("shows the whole release, weekly references, and national ranks", async ({ page }) => {
@@ -110,8 +111,7 @@ test.describe("team game log", () => {
   });
 
   test("PNG export includes decoded logos at 2000 by 1125 pixels", async ({ page }) => {
-    await page.goto("/stats?chart=game-log&team=alabama");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=game-log&team=alabama");
     const download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
     const bytes = fs.readFileSync(await (await download).path());
@@ -123,8 +123,7 @@ test.describe("team game log", () => {
   });
 
   test("team selection survives rapid changes, chart navigation, reload and browser history", async ({ page }) => {
-    await page.goto("/stats?chart=adjusted&week=3&team=alabama");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=adjusted&week=3&team=alabama");
     const picker = page.getByTestId("team-highlight");
     await picker.selectOption("Michigan");
     await picker.selectOption("Georgia");

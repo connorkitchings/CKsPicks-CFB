@@ -1,5 +1,11 @@
 import { expect, type Page } from "@playwright/test";
 
+/** Navigates and waits for React to hydrate, so clicks on server-rendered controls are not dropped. */
+export async function gotoHydrated(page: Page, url: string): Promise<void> {
+  await page.goto(url);
+  await page.locator('html[data-hydrated="true"]').waitFor({ state: "attached" });
+}
+
 /** Switches the chart to its table view, retrying a click that landed before hydration. */
 export async function openTable(page: Page): Promise<void> {
   const toggle = page.getByTestId("table-toggle");

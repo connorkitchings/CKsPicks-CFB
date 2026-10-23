@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
+import { gotoHydrated } from "./helpers";
 
 // Fixture: possession windows as_of_week 3 and 4 (Through Weeks 2-3) for 16 teams
 // (Wyoming has none). App State has no defense rows Through Week 2; Boise State's
@@ -75,8 +76,7 @@ test.describe("possession efficiency chart", () => {
   });
 
   test("PNG export is 2000x1125 and named for the measurement and window", async ({ page }) => {
-    await page.goto("/stats?chart=possession&week=3&team=Alabama");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=possession&week=3&team=Alabama");
     let download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
     expect((await download).suggestedFilename()).toBe("ckspicks-possession-ppp-2026-through-week-3.png");

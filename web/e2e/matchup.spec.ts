@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { sharedFiles, stubWebShare } from "./helpers";
+import { gotoHydrated, sharedFiles, stubWebShare } from "./helpers";
 
 test.describe("matchup page (fixture mode)", () => {
   test("mismatched publication lineage hides model sections and disables sharing", async ({ page }) => {
@@ -344,9 +344,8 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("share: download exports a fixed 1080x1350 card at 2x, and the card fits its canvas", async ({ page }) => {
-    await page.goto("/matchup/1");
     // The button is in the server HTML; a click before hydration is silently dropped.
-    await page.waitForLoadState("networkidle");
+    await gotoHydrated(page, "/matchup/1");
     await expect(page.getByTestId("share-download")).toBeVisible();
     // The card exists only while an image is being made.
     await expect(page.getByTestId("share-card")).toHaveCount(0);

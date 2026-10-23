@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
-import { sharedFiles, stubWebShare } from "./helpers";
+import { gotoHydrated, sharedFiles, stubWebShare } from "./helpers";
 
 // Fixture: 17-team roster (Wyoming has no games), net-success weeks 0-3, efficiency and
 // adjusted "Through Week" 2-3. See src/test/fixtures/charts.ts.
@@ -480,8 +480,7 @@ test.describe("team charts", () => {
   });
 
   test("PNG export of a scatter is 2000x1125 with every logo decoded", async ({ page }) => {
-    await page.goto("/stats?chart=efficiency&week=3");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=efficiency&week=3");
     const { file, report } = await exportPng(page);
     expect(pngSize(file)).toEqual({ width: 2000, height: 1125 });
     expect(report.logos).toBeGreaterThan(0);
@@ -490,8 +489,7 @@ test.describe("team charts", () => {
 
   test("charts share through the same export actions as the matchup card when the browser can", async ({ page }) => {
     await stubWebShare(page);
-    await page.goto("/stats?chart=efficiency&week=3");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=efficiency&week=3");
     await page.getByTestId("chart-share").click();
     await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
     const [file] = await sharedFiles(page);
@@ -501,8 +499,7 @@ test.describe("team charts", () => {
   });
 
   test("export icon buttons are named, show a tooltip on keyboard focus and announce the result", async ({ page }) => {
-    await page.goto("/stats?chart=efficiency&week=3");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=efficiency&week=3");
     await expect(page.getByRole("button", { name: /table/i })).toHaveCount(0);
     const download = page.getByRole("button", { name: "Download PNG", exact: true });
     await expect(download).toHaveText("");
@@ -522,8 +519,7 @@ test.describe("team charts", () => {
   });
 
   test("PNG export of a full Week 0 slate is as wide as 140 + 30 per game and keeps its logos", async ({ page }) => {
-    await page.goto("/stats?chart=net-success&week=0&fixture=slate");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=net-success&week=0&fixture=slate");
     await expect(page.getByTestId("net-success-chart").locator("g[data-game]")).toHaveCount(69);
     const { file, report } = await exportPng(page);
     expect(pngSize(file)).toEqual({ width: 140 + 30 * 69, height: 1125 });

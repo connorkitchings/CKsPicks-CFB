@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
-import { openTable } from "./helpers";
+import { gotoHydrated, openTable } from "./helpers";
 
 // Fixture: `current` V5 rating snapshots for weeks 0-3 of 16 teams (Wyoming has none);
 // Tulane has no week 2 snapshot, so its line breaks into weeks 0-1 and a lone week-3 dot.
@@ -88,8 +88,7 @@ test.describe.skip("V5 rating trajectory chart", () => {
   });
 
   test("PNG export is 2000x1125, named for the metric, with the highlighted logo decoded", async ({ page }) => {
-    await page.goto("/stats?chart=rating-trajectory&metric=defense&team=Alabama");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=rating-trajectory&metric=defense&team=Alabama");
     const download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
     expect((await download).suggestedFilename()).toBe("ckspicks-rating-trajectory-defense-2026.png");

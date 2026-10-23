@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
+import { HydrationMarker } from "@/components/HydrationMarker";
 import { MatchupLinksProvider } from "@/components/MatchupLinks";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 
@@ -62,6 +63,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] sm:pb-0">
+        <HydrationMarker />
         <MatchupLinksProvider enabled={isMatchupEnabled()}>
           <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface-card focus:px-3 focus:py-3 focus:text-sm focus:font-medium focus:text-ink focus:shadow-lg">Skip to main content</a>
           <SiteNav />

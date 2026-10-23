@@ -60,12 +60,12 @@ jobs:
     env:
       COVERAGE_FILE: .coverage.general
       CFBD_API_KEY: ci-placeholder
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-        with:
-          # Legacy freeze attestation reads source at a historical commit.
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -81,10 +81,11 @@ jobs:
         run: uv sync --frozen
 
       - name: Parallel Python tests
-        # Shared-database resets and threaded rating publication need isolation.
+        # Shared-database resets and threaded rating publication are ignored
+        # here and run in their own jobs; worksteal balances the heavy files.
         run: >-
           PYTHONPATH=src:. uv run pytest tests/ -q -W error
-          -n 4 --dist loadfile
+          -n 4 --dist worksteal
           --ignore=tests/test_data_first_possession_rating_runner.py
           --ignore=tests/test_migration_integration.py
           --ignore=tests/test_publish_matchup_data.py
@@ -117,6 +118,9 @@ jobs:
     env:
       COVERAGE_FILE: .coverage.ratings
       CFBD_API_KEY: ci-placeholder
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -342,6 +346,14 @@ jobs:
 
       - name: Test publication boundary
         run: npm --prefix web run test:publication
+
+      - name: Build fixture bundle for browser tests
+        # ISR pages bake build-time env into their HTML, so the browser tests
+        # need their own build with fixture mode on.
+        env:
+          CFB_UI_TEST_MODE: "1"
+          CFB_PUBLICATION_MODE: predictions
+        run: npm --prefix web run build
 
       - name: Install browser test runtime
         run: npm --prefix web exec playwright install --with-deps chromium
