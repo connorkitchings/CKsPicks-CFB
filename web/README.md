@@ -29,21 +29,17 @@ make web-local ENV=production     # read the active Production release locally
 
 The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env.local`) and the app only reads. Games (`/`) lists the week's games by day (`?week=N` for other weeks); each game card links to its matchup breakdown (`/matchup/[gameId]`), which links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
 
-## Local Stats review
+## Stats (`/stats`)
 
-Stats (`/stats`) is unpublished by default in every environment. Only the exact setting `CFB_CHARTS_ENABLED=1` enables the navigation item and the route. Unset, empty, `0` or invalid values hide the item and return HTTP 404 for direct URLs (`src/proxy.ts` rejects before any data loads); legacy `/charts` URLs redirect to `/stats` when enabled. Development, Preview and fixture mode do not override the flag. Mobile navigation has three equal items when Stats is disabled and four when enabled.
+Stats (`/stats`) is public alongside Games, Ratings and Model. Legacy `/charts` URLs redirect to `/stats` with a 307. Mobile navigation has four equal items (`grid-cols-4`).
 
 Run these from the repository root:
 
 ```bash
-CFB_CHARTS_ENABLED=1 make web-local ENV=preview
+make web-local ENV=preview
 # Fixture-only review without a database:
-CFB_CHARTS_ENABLED=1 CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions npm --prefix web run dev
+CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions npm --prefix web run dev
 ```
-
-For owner-authorized Vercel Preview review, set `CFB_CHARTS_ENABLED=1` in Preview only. Keep Production unset or `0` until manual publication approval. Rebuild/redeploy after changing the environment setting; this is a deployment-level switch, not an instant runtime toggle.
-
-Stats code can follow normal `dev` to `main` integration with public access disabled. The flag does not skip chart projection creation, the migration 0026/0027 requirements or owner-approved atomic releases. Review the newer weekly code and required migrations separately before preparing from the actual clean integrated commit.
 
 ## Local development
 
@@ -63,11 +59,10 @@ must remain synchronized.
 
 | Route | Status |
 |---|---|
-| `/` (Games), `/ratings`, `/model`, `/model/method`, `/teams/[team]` | Public |
-| `/stats` | Disabled unless `CFB_CHARTS_ENABLED=1`; disabled direct requests return HTTP 404 before chart data loading. Requires a chart-capable active release when enabled. |
+| `/` (Games), `/ratings`, `/stats`, `/model`, `/model/method`, `/teams/[team]` | Public |
 | `/results`, `/matchup` | Redirect to `/` |
 | `/performance`, `/methodology` | Redirect to `/model` and `/model/method` |
-| `/charts`, `/charts/...` | Redirect to `/stats` (when enabled) |
+| `/charts`, `/charts/...` | Redirect to `/stats` |
 | `/matchup/[gameId]` | The pre-game breakdown. Full-time public feature on the site (open in production and dev, emergency-disabled only if `CFB_MATCHUP_ENABLED=0`); always `noindex`. Game cards on Games show a **Matchup** button linking to each breakdown. The breakdown shows 12 raw metrics in three sections (the two tables sit side by side from `lg` up; smaller screens select one team’s offense at a time, with values and ranks paired in three columns on phones, in a `max-w-5xl` container); tied national ranks read `T-N`, an exact zero is shown without a rank, and PPA values are CFBD's predicted points added (labelled PPA, not EPA). The top card groups both teams together above a full-width Forecast & Lines grid (Spread and Total columns: Market, Model, Model Bet). A per-row edge calculation (offense rank against the opposing defense's rank) exists in `team-stats.ts` but is not drawn on the page; the explanatory notes sit below the tables. **Share:** when a game has published stats, the top strip offers *Download PNG* (plus *Copy image* or *Share* where the browser supports them): `ShareCard` is a fixed 1080x1350 always-dark card (literal colors, dark logo variants via `logoSrc`, Eastern kickoff time) rasterized at 2x by `html-to-image`; it is mounted only while an image is being made and carries a "Biggest mismatches" box per panel (`topMismatches` in `team-stats.ts`) and a footnote when any value shows "—". Team names are plain text everywhere: team pages are not linked (the `/teams/[team]` route still exists but nothing links to it). Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
 
 ## Mobile presentation
@@ -93,14 +88,13 @@ applied and simply shows no location, stats or best-line source.
 ```bash
 npm run lint
 npm run typecheck
-npm run test:publication   # unit tests (publication boundary, picks helpers, team stats, logos, gates)
+npm run test:publication   # unit tests (publication boundary, picks helpers, team stats, logos)
 npm run test:logos         # logo build script helpers
 npm run build
-npm run test:charts-gate   # separate disabled production build/server; no database
 CI=1 CFB_UI_TEST_MODE=1 npx playwright test   # e2e in fixture mode (npm run test:ui)
 ```
 
-`playwright.config.ts` starts its own dev server on port 3100 with `CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions CFB_CHARTS_ENABLED=1`, so the slate tests run against the same fixtures locally and in CI (CI has no `web/.env.local`; the publication mode otherwise defaults to market). The enabled browser suite and disabled publication-gate suite run sequentially and never reuse an existing server. The gate suite builds with Charts off and tests the production server, including actual HTTP 404 responses, four-item navigation and the core pages. The e2e dev server shares `.next` with `npm run dev`: stop a local dev server before running it, or test a clean `git worktree` (clone `node_modules` with `cp -Rc`; Turbopack rejects a symlinked `node_modules`).
+`playwright.config.ts` starts its own dev server on port 3100 with `CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions`, so the slate tests run against the same fixtures locally and in CI (CI has no `web/.env.local`; the publication mode otherwise defaults to market). The e2e dev server shares `.next` with `npm run dev`: stop a local dev server before running it, or test a clean `git worktree` (clone `node_modules` with `cp -Rc`; Turbopack rejects a symlinked `node_modules`).
 
 ## Team logos
 

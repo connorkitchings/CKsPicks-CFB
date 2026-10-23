@@ -1,7 +1,5 @@
 import clsx from "clsx";
-import { notFound } from "next/navigation";
 import { Notice } from "@/components/ui/Notice";
-import { isChartsEnabled } from "@/lib/charts-gate";
 import {
   adjustedPoints,
   adjustedThroughWeeks,
@@ -152,13 +150,7 @@ function notice(text: string) {
   );
 }
 
-/** Keep the disabled response synchronous, ahead of the ancestor loading boundary. */
-export default function ChartsPage(props: { searchParams: SearchParams }) {
-  if (!isChartsEnabled()) notFound();
-  return <EnabledChartsPage {...props} />;
-}
-
-async function EnabledChartsPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function ChartsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const season = publicationScope.season;
   // Only `ready` kinds parse, so a hidden chart's branch below (and its lazy query) never runs.

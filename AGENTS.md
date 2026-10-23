@@ -42,7 +42,7 @@ Data flow: immutable R2 captures and reconciled Silver inputs, then a hash-pinne
 
 The web copies of `schema.ts` and `teams.ts` in `web/src/lib/` must match `contracts/`; `make contracts-check` verifies this. Migrations run only through `scripts/pipeline/migrate_db.py --database-url <verified target>`; `make migrate-db` is disabled.
 
-Site: the 4-tab interface (Games `/`, Ratings `/ratings`, Stats `/stats`, Model `/model`, plus `/matchup/[gameId]` and `/teams/[team]`) lives on `dev` until it is merged to `main`; `main` still serves the older route set. Stats is hidden (HTTP 404) unless `CFB_CHARTS_ENABLED=1`; matchup pages are on unless `CFB_MATCHUP_ENABLED=0`; `CFB_UI_TEST_MODE=1` serves fixtures. Details in [`web/README.md`](web/README.md).
+Site: the 4-tab interface (Games `/`, Ratings `/ratings`, Stats `/stats`, Model `/model`, plus `/matchup/[gameId]` and `/teams/[team]`) lives on `dev` until it is merged to `main`; `main` still serves the older route set. Matchup pages are on unless `CFB_MATCHUP_ENABLED=0`; `CFB_UI_TEST_MODE=1` serves fixtures. Details in [`web/README.md`](web/README.md).
 
 ## Workflow
 

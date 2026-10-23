@@ -349,9 +349,6 @@ jobs:
       - name: Test browser fixtures
         run: npm --prefix web run test:ui
 
-      - name: Test unpublished Charts boundary in a production build
-        run: npm --prefix web run test:charts-gate
-
       - name: Upload browser test failures
         if: failure()
         uses: actions/upload-artifact@v7

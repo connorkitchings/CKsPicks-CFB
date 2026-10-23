@@ -39,7 +39,7 @@ make help     # every available target
 make check    # mirrors CI: ruff, contracts, quality registry, pytest, mkdocs --strict, web lint/typecheck/tests/build
 ```
 
-The web app has four tabs: Games, Ratings, Stats and Model (Stats is hidden unless `CFB_CHARTS_ENABLED=1`). This layout lives on `dev` until it is merged to `main`; see [web development](web/README.md).
+The web app has four tabs: Games, Ratings, Stats and Model. This layout lives on `dev` until it is merged to `main`; see [web development](web/README.md).
 
 Use `CFB_STORAGE_BACKEND=r2` with the intended environment wrapper for lake operations. The local backend requires `CFB_STORAGE_BACKEND=local` and an accessible external `CFB_MODEL_DATA_ROOT`; never create repository-local `./data/`. Credentials come from the Keychain wrappers and must not appear in logs. See [web development](web/README.md) and the [quickstart](.codex/QUICKSTART.md).
 

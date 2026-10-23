@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// Legacy URLs answer a 307 with the query string preserved. Runs in the Stats-enabled config
-// (playwright.config.ts sets CFB_CHARTS_ENABLED=1); the disabled `/charts` 404 lives in e2e-charts-gate.
+// Legacy URLs answer a 307 with the query string preserved.
 const redirects = [
   ["/results?week=5", "/?week=5"],
   ["/results", "/"],

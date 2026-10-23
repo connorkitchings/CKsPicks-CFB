@@ -8,8 +8,6 @@
 # restricted pipeline role from the macOS Keychain (never the owner URL in
 # web/.env); the app only reads. Preview holds the same Week 5 data as
 # production. Port: PORT (default 3000).
-# Charts is on locally so the top links show it for review; CFB_CHARTS_ENABLED=0
-# shows the published navigation.
 # MODE=start builds the production bundle and serves it with `next start`, which is
 # what speed measurements need (default MODE=dev). CFB_QUERY_LOG=1 logs each query.
 set -euo pipefail
@@ -28,8 +26,8 @@ case "$target" in
   *) print -u2 "Usage: zsh scripts/ops/run_web_local.sh [preview|production]"; exit 64 ;;
 esac
 
-export CFB_CHARTS_ENABLED="${CFB_CHARTS_ENABLED:-1}" WEB_CMD="$web_cmd"
-print "Web on http://127.0.0.1:${PORT:-3000}/matchup  (data: $target, read-only use of the pipeline login, Charts ${CFB_CHARTS_ENABLED}, mode ${mode})"
+export WEB_CMD="$web_cmd"
+print "Web on http://127.0.0.1:${PORT:-3000}/matchup  (data: $target, read-only use of the pipeline login, mode ${mode})"
 exec zsh "$root/scripts/ops/$wrapper" zsh -c '
   export DATABASE_URL="${'"$url_var"'}"
   cd "'"$root"'/web"

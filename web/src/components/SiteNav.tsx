@@ -105,9 +105,8 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
   }
 }
 
-export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) {
+export function SiteNav() {
   const pathname = usePathname();
-  const visibleItems = chartsEnabled ? items : items.filter(([, href]) => href !== "/stats");
 
   // Align navigation container with page content widths on desktop.
   const containerClass = PAGE_WIDTHS[pageWidthFor(pathname)];
@@ -119,12 +118,11 @@ export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) 
     >
       <div
         className={clsx(
-          "mx-auto grid h-14 items-stretch px-2 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
-          chartsEnabled ? "grid-cols-4" : "grid-cols-3",
+          "mx-auto grid h-14 items-stretch px-2 grid-cols-4 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
           containerClass,
         )}
       >
-        {visibleItems.map(([label, href]) => {
+        {items.map(([label, href]) => {
           const isActive = isTabActive(href, pathname);
           return (
             <Link
