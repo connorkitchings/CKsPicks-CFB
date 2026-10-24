@@ -10,7 +10,10 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
         await gotoHydrated(page, url);
         const card = page.locator("li[id^='game-']").first();
         await expect(card).toBeVisible();
-        expect((await card.boundingBox())!.y).toBeLessThan(330);
+        // Measured stack, graded week (the tallest): app bar 48 + Retrospective row 35 + top padding 8 +
+        // summary line 16 + record row 44 + gaps 18 + slate bar 105 + gap 8 + edges/highlights row 46 +
+        // gap 8 + day header 25 + gap 4 = 366px. The upcoming week lands at 331-347px.
+        expect((await card.boundingBox())!.y).toBeLessThan(370);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         await expect(page.getByTestId("week-phase")).toBeVisible();
         await expect(page.getByTestId("record-summary")).toBeVisible();
@@ -29,7 +32,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
         return Math.abs(b!.y - (a!.y + a!.height));
       }).toBeLessThanOrEqual(1);
       const barBox = (await bar.boundingBox())!;
-      expect(barBox.height).toBeLessThanOrEqual(115);
+      expect(barBox.height).toBeLessThanOrEqual(110);
       // The sticky day header sits just below the bar, not under it. Headers of groups scrolled
       // fully past the bar don't count; the group in view has its header stuck at the bar's bottom.
       const barBottom = barBox.y + barBox.height;
@@ -65,12 +68,31 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       await expect(page.locator("li[id^='game-']")).toHaveCount(1);
     });
 
-    test("biggest edges follows the first day's games, collapsed", async ({ page }) => {
+    test("biggest edges sits collapsed under the slate bar, above the first day's games", async ({ page }) => {
       await gotoHydrated(page, "/");
       const edges = page.getByRole("region", { name: "Biggest edges" });
       await expect(edges.locator("summary")).toBeVisible();
+      await expect(edges.locator("details")).not.toHaveAttribute("open", "");
       const firstGroup = page.locator("section[aria-label]").filter({ has: page.locator("li[id^='game-']") }).first();
-      expect((await edges.boundingBox())!.y).toBeGreaterThan((await firstGroup.boundingBox())!.y);
+      expect((await edges.boundingBox())!.y).toBeLessThan((await firstGroup.boundingBox())!.y);
+      expect((await edges.locator("summary").boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect((await edges.boundingBox())!.height).toBeLessThan(60);
+    });
+
+    test("the run state folds into the summary line and the publish stamp moves to the menu", async ({ page }) => {
+      await gotoHydrated(page, "/");
+      await expect(page.getByText(/Run published/)).toBeHidden();
+      const summary = page.locator("p").filter({ has: page.getByTestId("week-phase") });
+      await expect(summary).toContainText(/Week \d+ · Upcoming · \d+ games · Frozen before kickoff/);
+    });
+
+    test("the week stepper is centered in the slate bar", async ({ page }) => {
+      await gotoHydrated(page, "/");
+      const nav = page.getByTestId("slate-bar").getByRole("navigation", { name: "Week navigation" });
+      const box = (await nav.boundingBox())!;
+      expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(2);
+      const search = page.getByTestId("slate-bar").getByRole("searchbox", { name: "Filter by team" });
+      expect((await search.boundingBox())!.y).toBeGreaterThan(box.y + box.height - 1);
     });
 
     test("the Retrospective replay state stays visible on one status line", async ({ page }) => {

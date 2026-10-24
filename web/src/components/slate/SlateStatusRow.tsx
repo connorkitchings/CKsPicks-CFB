@@ -27,6 +27,16 @@ const STATE_STYLES: Record<string, { pill: string; dot: string }> = {
   },
 };
 
+/** Phone summary-line form of the run state: a colored dot and the label, no pill. */
+export function RunStateInline({ runState }: { runState: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className={clsx("h-1.5 w-1.5 rounded-full", STATE_STYLES[runState]?.dot ?? "bg-ink-muted")} aria-hidden="true" />
+      {STATE_LABEL[runState] ?? runState}
+    </span>
+  );
+}
+
 /**
  * Compact slate metadata line: run state badge, retrospective flag, and publication
  * time. The model system chip and season already live in the global Header;
@@ -47,7 +57,7 @@ export function SlateStatusRow({
       {runState && (
         <span
           className={clsx(
-            "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium tracking-wide shadow-2xs",
+            "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium tracking-wide shadow-2xs max-sm:hidden",
             STATE_STYLES[runState]?.pill ?? "border-line bg-surface-inset text-ink-muted",
           )}
         >
@@ -68,7 +78,7 @@ export function SlateStatusRow({
         </span>
       )}
       {publishedAt && (
-        <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-muted">
+        <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-muted max-sm:hidden">
           <span className="text-line-strong" aria-hidden="true">·</span>
           <span className="truncate">Run published {stamp(publishedAt)}</span>
         </span>

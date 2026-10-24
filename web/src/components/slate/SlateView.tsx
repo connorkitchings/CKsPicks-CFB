@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
-import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
+import { RunStateInline, SlateStatusRow } from "@/components/slate/SlateStatusRow";
 import { TopLeans } from "@/components/slate/TopLeans";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
 import { SlateList } from "@/components/slate/SlateList";
@@ -85,6 +85,8 @@ export function SlateView({
         season={season > 0 ? season : null}
         systemName={systemName}
         updatedAt={null}
+        menuUpdatedAt={updatedAt}
+        phoneStatus={retrospective}
         publicationMode={publicationMode}
         allowedSeasons={allowedSeasons}
         width="slate"
@@ -125,6 +127,7 @@ export function SlateView({
                     {PHASE_LABEL[phase]}
                   </span>
                   <span className="sm:hidden"> · {games.length} {games.length === 1 ? "game" : "games"}</span>
+                  {runState && <span className="sm:hidden"> · <RunStateInline runState={runState} /></span>}
                 </p>
               </div>
               {weeks.length > 1 && <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact className="max-sm:hidden" />}

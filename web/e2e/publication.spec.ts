@@ -66,7 +66,7 @@ test.describe("upcoming week (/)", () => {
     await page.goto("/");
 
     await expect(page.getByText("Blitzkrieg")).toBeVisible();
-    await expect(page.getByText("Frozen before kickoff")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Frozen before kickoff")).toBeVisible();
     await expect(page.getByText(/Run published Sep 29/)).toBeVisible();
     await expect(page.getByText("Retrospective replay", { exact: true })).toHaveCount(0);
   });
@@ -268,7 +268,7 @@ test.describe("final week (/?week=4)", () => {
   test("status line shows the scored run with a retrospective flag", async ({ page }) => {
     await page.goto("/?week=4");
 
-    await expect(page.getByText("Scored")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Scored")).toBeVisible();
     await expect(page.getByText("Retrospective replay", { exact: true })).toBeVisible();
   });
 

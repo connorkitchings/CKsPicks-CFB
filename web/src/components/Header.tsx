@@ -14,6 +14,8 @@ export function Header({
   allowedSeasons,
   width = "narrow",
   status,
+  phoneStatus,
+  menuUpdatedAt,
   back,
 }: {
   season: number | null;
@@ -23,6 +25,10 @@ export function Header({
   allowedSeasons?: readonly number[];
   width?: PageWidth;
   status?: React.ReactNode;
+  /** Whether `status` shows anything on phones; defaults to whether `status` is set. */
+  phoneStatus?: boolean;
+  /** Publication time for the phone menu when `updatedAt` is withheld from the desktop sub-row. */
+  menuUpdatedAt?: Date | null;
   /** Phones: the app bar shows this back link and title in place of the section name. */
   back?: AppBarBack;
 }) {
@@ -34,8 +40,8 @@ export function Header({
   return (
     <>
       {/* Phones: the sticky app bar replaces the brand row and menu controls; only `status` stays on the page. */}
-      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={updatedAt?.toISOString() ?? null} back={back} />
-    <header className={`border-b border-line bg-surface-card/80 backdrop-blur${status ? "" : " max-sm:hidden"}`}>
+      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={(menuUpdatedAt ?? updatedAt)?.toISOString() ?? null} back={back} />
+    <header className={`border-b border-line bg-surface-card/80 backdrop-blur${(phoneStatus ?? Boolean(status)) ? "" : " max-sm:hidden"}`}>
       <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-1.5 sm:py-3.5`}>
         <div className="flex items-center justify-between gap-3 max-sm:hidden">
           <Link href="/" className="inline-flex min-h-11 items-center rounded text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent sm:text-xl">

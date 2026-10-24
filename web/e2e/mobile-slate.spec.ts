@@ -90,8 +90,11 @@ test("collapsed biggest edges preserve every game anchor and selected category",
   const target = await firstAnchor.getAttribute("href");
   await firstAnchor.click();
   expect(new URL(page.url()).hash).toBe(target);
-  // The card lands just under the pinned bars (about 188px), not a second scroll margin lower.
+  // The card lands just under the pinned bars (app bar 48 + slate bar 105 + day header 25 = 178px),
+  // not hidden beneath them and not a second scroll margin lower.
   await expect.poll(async () => (await page.locator(target!).boundingBox())!.y).toBeLessThan(230);
+  const [bar, card] = [await page.getByTestId("slate-bar").boundingBox(), await page.locator(target!).boundingBox()];
+  expect(card!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height + 24);
 });
 
 

@@ -44,7 +44,7 @@ export function SlateList({
   weekNav?: ReactNode;
   /**
    * Collapsed disclosures (biggest edges, highlights). Rendered once: above the toolbar from 640px,
-   * after the first day group (or the whole list, when not grouped by day) on phones, by flex `order`.
+   * directly under the pinned bar, before the first day group, on phones, by flex `order`.
    */
   extras?: ReactNode;
 }) {
@@ -97,8 +97,8 @@ export function SlateList({
   }, [visible, effectiveSort]);
 
   return (
-    <div className="flex flex-col gap-2 [--slate-bar-h:111px] sm:gap-4">
-      {extras && <div className="order-2 sm:-order-1">{extras}</div>}
+    <div className="flex flex-col gap-2 [--slate-bar-h:105px] sm:gap-4">
+      {extras && <div className="order-1 sm:-order-1">{extras}</div>}
       <SlateToolbar query={query} onQueryChange={setQuery} conference={conference} onConferenceChange={setConference} conferences={conferences} sort={effectiveSort} onSortChange={setSort} sortLabels={sortLabels} predictionsVisible={predictionsVisible} view={view} onViewChange={setView} weekNav={weekNav} />
       <p role="status" className="sr-only">Showing {visible.length} of {games.length} games</p>
 
@@ -106,8 +106,8 @@ export function SlateList({
         <Notice tone="empty">No games match these filters.</Notice>
       ) : groups ? (
         groups.map((group, index) => (
-          <section key={group.day} aria-label={group.day} className={clsx("space-y-2 sm:space-y-3", index === 0 ? "order-1" : "order-3 mt-4 sm:mt-2")}>
-            <Eyebrow as="div" className="sticky z-10 -mx-4 flex items-center gap-2 border-b border-line bg-surface-page px-4 py-1.5 sm:bg-surface-page/95 sm:backdrop-blur-xs max-sm:top-[calc(var(--app-bar-h)+var(--slate-bar-h))] sm:top-0 sm:py-2">
+          <section key={group.day} aria-label={group.day} className={clsx("space-y-1 sm:space-y-3", "order-1", index > 0 && "mt-4 sm:mt-2")}>
+            <Eyebrow as="div" className="sticky z-10 -mx-4 flex items-center gap-2 border-b border-line bg-surface-page px-4 py-1 sm:bg-surface-page/95 sm:backdrop-blur-xs max-sm:top-[calc(var(--app-bar-h)+var(--slate-bar-h))] sm:top-0 sm:py-2">
               <span>{group.day}</span>
               <span className="font-normal lowercase text-ink-muted">
                 · {group.games.length} {group.games.length === 1 ? "game" : "games"}

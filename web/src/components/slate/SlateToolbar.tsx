@@ -15,9 +15,9 @@ const SELECT_CLASS =
   "min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent";
 
 /**
- * Search, conference, sort and layout. On phones this is the pinned bar: the week navigator and
- * the Filters button on one row, the search field below; conference and sort live in the Filters
- * sheet. From 640px up it is the single toolbar card, unchanged.
+ * Search, conference, sort and layout. On phones this is the pinned bar: the week navigator centered
+ * on one row, the search field and the Filters button below it; conference and sort live in the
+ * Filters sheet. From 640px up it is the single toolbar card, unchanged.
  */
 export function SlateToolbar<T extends string>({
   query,
@@ -95,14 +95,8 @@ export function SlateToolbar<T extends string>({
   ));
 
   return (
-    <MobileStickyBar data-testid="slate-bar" className="max-sm:space-y-1.5">
-      <div className="flex items-center gap-2 sm:hidden">
-        {weekNav}
-        <SlateFilterSheet mobile={mobile} active={filtersActive}>
-          {conferenceSelect}
-          {sortSelect}
-        </SlateFilterSheet>
-      </div>
+    <MobileStickyBar data-testid="slate-bar" className="max-sm:space-y-1.5 max-sm:pt-1! max-sm:pb-1.5!">
+      <div className="flex justify-center sm:hidden">{weekNav}</div>
       <Card padding="none" className="flex items-center gap-1.5 p-2 max-sm:border-0 max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none sm:flex-wrap sm:gap-2">
         <SearchField
           id="slate-search"
@@ -112,6 +106,10 @@ export function SlateToolbar<T extends string>({
           onChange={onQueryChange}
           className="min-w-0 flex-[1.2_1_0%] sm:flex-[1_1_9rem]"
         />
+        <SlateFilterSheet mobile={mobile} active={filtersActive}>
+          {conferenceSelect}
+          {sortSelect}
+        </SlateFilterSheet>
         {!mobile && conferenceSelect}
         {!mobile && sortSelect}
         <div className="hidden shrink-0 sm:block">

@@ -158,8 +158,8 @@ html {
   html { scroll-padding-top: var(--app-bar-h); }
   /* Anchor jumps also clear a pinned bar (about 3.5rem: 44px control plus padding). */
   html:has([data-mobile-sticky-bar]) { scroll-padding-top: calc(var(--app-bar-h) + 3.5rem); }
-  /* Games: the pinned bar is two rows (111px) and the sticky day header sits under it (about 33px). */
-  html:has([data-testid="slate-bar"]) { scroll-padding-top: calc(var(--app-bar-h) + 9rem); }
+  /* Games: the pinned bar is two rows (105px) and the sticky day header sits under it (about 25px). */
+  html:has([data-testid="slate-bar"]) { scroll-padding-top: calc(var(--app-bar-h) + 8.5rem); }
 }
 
 body {
