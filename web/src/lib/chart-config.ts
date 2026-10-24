@@ -301,6 +301,8 @@ const TEAM_QUADRANTS: Corners = {
 export type ScatterConfig = {
   xLabel: string;
   yLabel: string;
+  /** Y title on phones, where the rotated full title would not fit the plot height. */
+  shortYLabel: string;
   /** Axis tick text. */
   tickX: (value: number) => string;
   tickY: (value: number) => string;
@@ -326,6 +328,8 @@ type EfficiencyMetricText = {
   /** Toggle button and export subtitle. */
   label: string;
   yLabel: Record<Side, string>;
+  /** Phone y title. */
+  shortYLabel: Record<Side, string>;
   /** Corner caption term. */
   caption: string;
   /** Footnote term. */
@@ -342,6 +346,7 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
   ppa: {
     label: "PPA/play",
     yLabel: { offense: "PPA/play", defense: "PPA/play" },
+    shortYLabel: { offense: "PPA/play", defense: "Def PPA/play allowed" },
     caption: "PPA",
     footnote: "PPA/play",
     describe: "PPA/play",
@@ -352,6 +357,7 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
   explosive_rate: {
     label: "20+ Yard Rate",
     yLabel: { offense: "20+ Yard Play Rate", defense: "20+ Yard Play Rate Allowed" },
+    shortYLabel: { offense: "20+ yard rate", defense: "20+ yard rate allowed" },
     caption: "20+ rate",
     footnote: "20+ yard play rate",
     describe: "20+ yard rate",
@@ -362,6 +368,7 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
   yards_per_success: {
     label: "Yards / Success",
     yLabel: { offense: "Yards / Successful Play", defense: "Yards / Success Allowed" },
+    shortYLabel: { offense: "Yds / success", defense: "Yds / success allowed" },
     caption: "yards/success",
     footnote: "yards per successful play",
     describe: "yards/success",
@@ -400,6 +407,7 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
   return {
     xLabel: "Success Rate",
     yLabel: text.yLabel[side],
+    shortYLabel: text.shortYLabel[side],
     tickX: percentTick,
     tickY: text.tick,
     metricLabel: text.label,
@@ -426,6 +434,7 @@ export function formatEpaTick(value: number): string {
 export const ADJUSTED_CONFIG: ScatterConfig = {
   xLabel: "Adjusted offense PPA/play",
   yLabel: "Adjusted defense PPA/play allowed",
+  shortYLabel: "Def PPA/play allowed",
   tickX: formatEpaTick,
   tickY: formatEpaTick,
   metricLabel: "",
@@ -481,6 +490,7 @@ export function possessionConfig(metric: PossessionMetric): ScatterConfig {
   return {
     xLabel: `Adjusted offense ${text.unit}`,
     yLabel: `Adjusted defense ${text.unit} allowed`,
+    shortYLabel: metric === "ppp" ? "Def pts/poss allowed" : "Def PPA/poss allowed",
     tickX: text.tick,
     tickY: text.tick,
     metricLabel: text.unit.charAt(0).toUpperCase() + text.unit.slice(1),

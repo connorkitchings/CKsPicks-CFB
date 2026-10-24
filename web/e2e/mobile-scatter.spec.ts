@@ -249,38 +249,45 @@ test.describe("mobile scatter inspection on the page", () => {
   });
 });
 
-test.describe("scatter label collisions on narrow phones", () => {
+test.describe("scatter labels on narrow phones", () => {
   test.use({ viewport: { width: 320, height: 568 }, hasTouch: true });
 
+  const kinds = [["efficiency", 3, false], ["efficiency", 3, true], ["adjusted", 2, false], ["possession", 3, false]] as const;
   for (const width of [320, 360, 390]) {
-    test(`quadrant and average labels never overlap each other or leave the plot at ${width}px`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 844 });
-      await gotoHydrated(page, "/stats?chart=efficiency&week=3");
-      await expect(page.getByTestId("scatter-chart")).toBeVisible();
-      await expect(page.getByTestId("average-labels")).toBeVisible();
-      const result = await page.evaluate(() => {
-        const rect = (node: Element) => { const r = node.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; };
-        const plot = rect(document.querySelector('[data-testid="scatter-chart"] svg > rect')!);
-        const labels = [
-          ...document.querySelectorAll('[data-testid="corner-labels"] text'),
-          ...document.querySelectorAll('[data-testid="average-labels"] text'),
-        ].map((node) => ({ text: node.textContent, ...rect(node) }));
-        const captionLines = [...document.querySelectorAll('[data-testid="corner-labels"] text')].map((node) => node.querySelectorAll("tspan").length);
-        return { plot, labels, captionLines };
-      });
-      expect(result.labels).toHaveLength(6);
-      // A quadrant name never needs more than two lines, so it stays clear of the average-line labels.
-      expect(Math.max(...result.captionLines)).toBeLessThanOrEqual(2);
-      for (const label of result.labels) {
-        expect(label.l, `${label.text} left`).toBeGreaterThanOrEqual(result.plot.l - 1);
-        expect(label.r, `${label.text} right`).toBeLessThanOrEqual(result.plot.r + 1);
-      }
-      for (const [i, a] of result.labels.entries()) {
-        for (const b of result.labels.slice(i + 1)) {
-          const apart = a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
-          expect(apart, `"${a.text}" overlaps "${b.text}"`).toBe(true);
+    for (const [chart, week, defense] of kinds) {
+      test(`${chart}${defense ? " defense" : ""} keeps the y title inside, the averages under the plot and the direction hint at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await gotoHydrated(page, `/stats?chart=${chart}&week=${week}${defense ? "&side=defense" : ""}`);
+        await expect(page.getByTestId("scatter-chart")).toBeVisible();
+        await expect(page.getByTestId("average-labels")).toHaveCount(0);
+        await expect(page.getByTestId("direction-caption")).toBeVisible();
+        const result = await page.evaluate(() => {
+          const rect = (node: Element) => { const r = node.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; };
+          const svg = document.querySelector('[data-testid="scatter-chart"] svg')!;
+          return {
+            svg: rect(svg),
+            plot: rect(svg.querySelector(":scope > rect")!),
+            yTitle: rect(svg.querySelector('text[data-axis="y-title"]')!),
+            average: svg.querySelector('[data-testid="average-caption"]')?.textContent ?? "",
+            averageBox: rect(svg.querySelector('[data-testid="average-caption"]')!),
+            direction: rect(svg.querySelector('[data-testid="direction-caption"]')!),
+            labelsInPlot: [...svg.querySelectorAll("text")].filter((node) => /^Avg /.test(node.textContent ?? "") && node.closest('[data-testid="average-caption"]') === null).length,
+          };
+        });
+        expect(result.yTitle.l).toBeGreaterThanOrEqual(result.svg.l - 1);
+        expect(result.yTitle.r).toBeLessThanOrEqual(result.plot.l);
+        expect(result.yTitle.t).toBeGreaterThanOrEqual(result.plot.t - 1);
+        expect(result.yTitle.b).toBeLessThanOrEqual(result.plot.b + 1);
+        expect(result.labelsInPlot).toBe(0);
+        expect(result.average).toMatch(/^Dashed lines: Avg .*\d%?$/);
+        for (const box of [result.averageBox, result.direction]) {
+          expect(box.t).toBeGreaterThanOrEqual(result.plot.b);
+          expect(box.l).toBeGreaterThanOrEqual(result.svg.l - 1);
+          expect(box.r).toBeLessThanOrEqual(result.svg.r + 1);
+          expect(box.b).toBeLessThanOrEqual(result.svg.b + 1);
         }
-      }
-    });
+        expect(result.direction.t).toBeGreaterThanOrEqual(result.averageBox.b - 1);
+      });
+    }
   }
 });
