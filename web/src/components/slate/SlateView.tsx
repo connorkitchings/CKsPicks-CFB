@@ -78,6 +78,7 @@ export function SlateView({
   const predictionsVisible = games.some((g) => g.publicationMode === "predictions");
   const phase = weekPhase(games);
   const graded = hasGradedPick(games);
+  const showRecord = publicationMode === "predictions" && (performance.length > 0 || graded);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -117,7 +118,8 @@ export function SlateView({
               <div className="min-w-0">
                 {/* Phones: the heading is read aloud only; the summary line below is the visible label. */}
                 <h1 className="text-lg font-bold tracking-tight text-ink max-sm:sr-only sm:text-xl">{`Week ${week}`}</h1>
-                <p className="text-xs text-ink-muted sm:mt-1 sm:text-sm">
+                {/* With the record card, phones read this line inside the card's summary instead. */}
+                <p className={`text-xs text-ink-muted sm:mt-1 sm:text-sm${showRecord ? " max-sm:sr-only" : ""}`}>
                   <span className="sm:hidden">Week {week} · </span>
                   <span
                     data-testid="week-phase"
@@ -132,8 +134,15 @@ export function SlateView({
               </div>
               {weeks.length > 1 && <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact className="max-sm:hidden" />}
             </div>
-            {publicationMode === "predictions" && (performance.length > 0 || graded) && (
+            {showRecord && (
               <ModelRecord
+                phoneHeader={(
+                  <>
+                    Week {week} · <span className="font-semibold">{PHASE_LABEL[phase]}</span>
+                    {" · "}{games.length} {games.length === 1 ? "game" : "games"}
+                    {runState && <> · <RunStateInline runState={runState} /></>}
+                  </>
+                )}
                 performance={performance}
                 weekNumber={week}
                 week={graded ? weekRecord(games) : undefined}

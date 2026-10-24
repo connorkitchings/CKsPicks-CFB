@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { Performance } from "@/lib/v5";
 import { winRatePct } from "@/lib/slate";
 import { Card } from "@/components/ui/Card";
@@ -88,6 +89,7 @@ export function ModelRecord({
   weekNumber,
   week,
   weekPerformance = [],
+  phoneHeader,
 }: {
   /** Season-to-date before the week. */
   performance: Performance[];
@@ -95,6 +97,8 @@ export function ModelRecord({
   /** The week's own tally; omitted until a game in the week is graded. */
   week?: { spread: Rec; total: Rec };
   weekPerformance?: Performance[];
+  /** Phone-only header line (week, phase, game count, run state) shown above the season record in the summary. */
+  phoneHeader?: ReactNode;
 }) {
   const overall = performance.find((p) => p.classification === "all");
   const combined = overall ? sumRecords(overall.spread ?? ZERO, overall.total ?? ZERO) : null;
@@ -107,12 +111,15 @@ export function ModelRecord({
       <details className="responsive-disclosure group">
         <summary
           data-testid="record-summary"
-          className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden"
+          className="relative flex min-h-11 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl px-8 py-1.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden"
         >
-          <span className="min-w-0 truncate tabular-nums">
+          {phoneHeader && (
+            <span aria-hidden className="text-xs font-normal text-ink-muted">{phoneHeader}</span>
+          )}
+          <span className="max-w-full truncate tabular-nums">
             {combined ? `Season ${tally(combined)}${combinedRate === null ? "" : ` · ${combinedRate.toFixed(1)}%`}` : "Season record"}
           </span>
-          <span aria-hidden className="shrink-0 text-ink-muted transition-transform group-open:rotate-90">›</span>
+          <span aria-hidden className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted transition-transform group-open:rotate-90">›</span>
         </summary>
         <div className="p-2.5 max-sm:pt-0">
           <div className="mb-1 flex items-center justify-between gap-x-3">
