@@ -151,10 +151,10 @@ function SortHeader({ column, active, direction, onSort, title, center }: SortHe
         type="button"
         aria-label={`Sort by ${label}`}
         onClick={() => onSort(column)}
-        className={clsx("inline-flex min-h-9 items-center gap-1 rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent", center ? "justify-center" : "justify-end")}
+        className={clsx("relative inline-flex min-h-9 items-center rounded-md font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent", center ? "justify-center" : "justify-end")}
       >
         {label}
-        <span aria-hidden="true" className="w-3 text-center text-xs">{active ? indicator : ""}</span>
+        <span aria-hidden="true" className={clsx("absolute left-full ml-1 w-3 text-center text-xs", !active && "invisible")}>{active ? indicator : "↓"}</span>
       </button>
     </th>
   );
@@ -371,7 +371,7 @@ export function RatingsView({
               <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
                 <tr>
                   <th scope="col" className="whitespace-nowrap px-2 py-3 text-center">Rank</th>
-                  <th scope="col" className="px-2 py-3 text-left">Team</th>
+                  <th scope="col" className="px-2 py-3 text-center">Team</th>
                   {scoreSorts.map((column) => (
                     <SortHeader key={column} column={column} active={sort === column} direction={direction} onSort={chooseSort} center />
                   ))}
