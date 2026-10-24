@@ -90,7 +90,8 @@ test.describe("upcoming week (/)", () => {
     // A game with no recorded source shows the model's number but no invented book.
     const oklahoma = page.locator("#game-9");
     await expect(oklahoma).toContainText("Oklahoma +4.0");
-    await expect(oklahoma).toContainText(/Model: [+-]?\d/);
+    // The model has Oklahoma winning against a market that favors Texas, so its model line names the team.
+    await expect(oklahoma).toContainText("Model: Oklahoma -2.0");
     await expect(oklahoma.getByText(/DraftKings|FanDuel|Bovada|BetMGM|ESPN Bet|Caesars/)).toHaveCount(0);
     // The per-card edge footnote and the Game details block are gone.
     await expect(page.getByText("The number in parentheses after the model is its edge")).toHaveCount(0);
