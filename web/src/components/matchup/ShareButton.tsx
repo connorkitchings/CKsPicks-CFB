@@ -34,6 +34,7 @@ export function ShareButton({ matchup, disabled = false }: { matchup: MatchupDat
       backgroundColor="#0b0b0d"
       disabled={disabled}
       disabledReason="Sharing unavailable until matchup data lineage is verified"
+      compactReason
       atRightEdge
       testIds={TEST_IDS}
     >

@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { Fragment } from "react";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
+import { teamAbbr } from "@/lib/team-logos";
 import { RankChip } from "@/components/ui/RankChip";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import {
@@ -67,10 +68,21 @@ function RankLine({
   return (
     <div
       data-testid={testId}
-      className="mt-0.5 text-center text-xs leading-snug text-ink-muted"
+      className="mt-0.5 text-center text-xs leading-snug text-ink-muted max-sm:mt-0"
     >
-      {label} <RankChip rank={rank} />
+      {/* Phones show the chip alone, inline in the header; the label stays for assistive tech and the chip's tooltip. */}
+      <span className="max-sm:sr-only">{label}</span> <RankChip rank={rank} title={label} />
     </div>
+  );
+}
+
+/** The team name; phones show its abbreviation (the full name stays in the tooltip and for assistive tech off-phone). */
+function TeamName({ name }: { name: string }) {
+  return (
+    <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">
+      <bdi className="max-sm:hidden">{name}</bdi>
+      <abbr title={name} className="no-underline sm:hidden">{teamAbbr(name)}</abbr>
+    </h3>
   );
 }
 
@@ -100,19 +112,19 @@ export function UnitMatchupTable({
 }) {
   return (
     <Card padding="sm" className="min-w-0 sm:p-4">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 border-b border-line/60 pb-3">
-        <div className="flex min-w-0 flex-col items-center gap-1 text-center">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 border-b border-line/60 pb-3 max-sm:items-center max-sm:gap-2 max-sm:pb-2">
+        <div className="flex min-w-0 flex-col items-center gap-1 text-center max-sm:flex-row max-sm:flex-wrap max-sm:justify-center max-sm:gap-x-1 max-sm:gap-y-0">
           <div className="hidden lg:block"><TeamLogo name={offenseTeam} px={44} decorative={false} /></div>
-          <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{offenseTeam}</h3>
+          <TeamName name={offenseTeam} />
           <span className="text-xs font-semibold uppercase tracking-wider text-accent-ink">Offense</span>
           <RankLine label="Model Offense Rank" rank={offenseRank} testId="unit-offense-rank" />
         </div>
-        <span className="mt-4 shrink-0 rounded-full border border-line/60 bg-surface-inset px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-ink-muted">
+        <span className="mt-4 shrink-0 rounded-full max-sm:mt-0 border border-line/60 bg-surface-inset px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-ink-muted">
           vs
         </span>
-        <div className="flex min-w-0 flex-col items-center gap-1 text-center">
+        <div className="flex min-w-0 flex-col items-center gap-1 text-center max-sm:flex-row max-sm:flex-wrap max-sm:justify-center max-sm:gap-x-1 max-sm:gap-y-0">
           <div className="hidden lg:block"><TeamLogo name={defenseTeam} px={44} decorative={false} /></div>
-          <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{defenseTeam}</h3>
+          <TeamName name={defenseTeam} />
           <Eyebrow as="span">Defense</Eyebrow>
           <RankLine label="Model Defense Rank" rank={defenseRank} testId="unit-defense-rank" />
         </div>
@@ -137,7 +149,7 @@ export function UnitMatchupTable({
             </th>
             <th scope="col" className="py-2 text-center font-semibold">Metric</th>
             <th scope="col" className="py-2 text-right font-medium sm:pr-2">
-              <span className="flex items-center justify-between gap-1">
+              <span className="flex items-center justify-between gap-1 max-sm:justify-end">
                 <span aria-hidden className="hidden sm:inline">Rank</span>
                 <span>Defense<span className="sr-only"> ({defenseTeam}), value and rank</span></span>
               </span>

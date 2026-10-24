@@ -8,6 +8,7 @@ import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { bookName } from "@/lib/slate";
 import { spreadBetLabel } from "@/lib/betting-format";
+import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/teams";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { ShareButton } from "./ShareButton";
@@ -73,9 +74,16 @@ function TeamBlock({
   );
 }
 
+/** "James Madison -10.5" -> "JMU -10.5" for the team that leads the label (or is the whole label); other values pass through. */
+function abbreviateLead(value: string, teams: readonly string[]): string {
+  const team = teams.find((name) => value === name || value.startsWith(`${name} `));
+  return team ? `${teamAbbr(team)}${value.slice(team.length)}` : value;
+}
+
 /** One centered value in the forecast grid, with the sportsbook beneath when known. */
 function Cell({
   value,
+  short = value,
   book,
   badge,
   accent = false,
@@ -83,6 +91,8 @@ function Cell({
   testId,
 }: {
   value: string;
+  /** Phones show this instead, so a long team name never wraps the cell. */
+  short?: string;
   book?: string | null;
   badge?: React.ReactNode;
   accent?: boolean;
@@ -90,7 +100,7 @@ function Cell({
   testId?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center justify-center text-center" data-testid={testId}>
+    <div className="flex min-w-0 flex-col items-center justify-center text-center max-sm:flex-row max-sm:flex-wrap max-sm:gap-x-1" data-testid={testId}>
       <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-1 sm:gap-1.5">
         <span
           className={clsx(
@@ -101,11 +111,16 @@ function Cell({
             muted && "!font-normal !text-ink-muted",
           )}
         >
-          {value}
+          {short === value ? value : (
+            <>
+              <span className="max-sm:hidden">{value}</span>
+              <span className="sm:hidden" title={value}>{short}</span>
+            </>
+          )}
         </span>
         {badge}
       </div>
-      {book && <span className="block font-sans text-xs leading-tight text-ink-muted">{book}</span>}
+      {book && <span className="block font-sans text-xs leading-tight text-ink-muted max-sm:text-[10px]">{book}</span>}
     </div>
   );
 }
@@ -113,6 +128,10 @@ function Cell({
 export function MatchupHero({ matchup }: { matchup: MatchupData }) {
   const isFinal = matchup.homeFinalPoints !== null && matchup.awayFinalPoints !== null;
   const venue = venueLine(matchup);
+  const teams = [matchup.homeTeam, matchup.awayTeam];
+  const betSpread =
+    spreadBetLabel(matchup.homeTeam, matchup.awayTeam, matchup.spreadLean, matchup.marketSpreadLine) ??
+    (matchup.spreadLean ? (matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam) : "No Spread");
 
   return (
     <section aria-labelledby="matchup-header" className="space-y-2 sm:space-y-4">
@@ -121,7 +140,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
       </h1>
 
       {/* Breadcrumb and game facts */}
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted sm:border-b sm:border-line sm:pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted max-sm:flex-nowrap sm:border-b sm:border-line sm:pb-3">
         <Link
           href={`/?week=${matchup.week}`}
           className="inline-flex max-sm:hidden min-h-11 items-center gap-1 text-sm font-medium text-accent-ink hover:underline"
@@ -129,14 +148,17 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           ← Week {matchup.week} games
         </Link>
         {/* Right-aligned on every line so the share button, always last, keeps its tooltip inside the viewport. */}
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-ink-muted" data-testid="game-facts">
-          <span>{formatKickoff(matchup.startDate)}</span>
-          {venue && (
-            <>
-              <span aria-hidden>·</span>
-              <span>{venue}</span>
-            </>
-          )}
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-ink-muted max-sm:w-full max-sm:flex-nowrap max-sm:justify-between max-sm:gap-x-3" data-testid="game-facts">
+          {/* Phones: the date and place share one left block beside the share buttons (wrapping if long); from sm the spans are items of the row. */}
+          <p className="min-w-0 max-sm:flex-1 sm:contents">
+            <span>{formatKickoff(matchup.startDate)}</span>
+            {venue && (
+              <>
+                <span aria-hidden className="max-sm:mx-1.5">·</span>
+                <span>{venue}</span>
+              </>
+            )}
+          </p>
           <span className="rounded bg-surface-inset px-2 py-0.5 max-sm:hidden text-xs font-semibold uppercase tracking-wider text-ink-muted">
             Game Breakdown
           </span>
@@ -179,13 +201,13 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             <Eyebrow as="span" className="text-center">Total</Eyebrow>
 
             <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
-            <Cell value={matchup.marketSpread} book={bookName(matchup.spreadSource)} />
+            <Cell value={matchup.marketSpread} short={abbreviateLead(matchup.marketSpread, teams)} book={bookName(matchup.spreadSource)} />
             <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} book={bookName(matchup.totalSource)} />
 
             {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
               <>
                 <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
-                <Cell value={matchup.modelSpread} />
+                <Cell value={matchup.modelSpread} short={abbreviateLead(matchup.modelSpread, teams)} />
                 <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
 
                 <div className="col-span-3 border-t border-line/60" aria-hidden />
@@ -193,19 +215,8 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                 <Cell
                   accent
                   testId="model-bet-spread"
-                  value={
-                    spreadBetLabel(
-                      matchup.homeTeam,
-                      matchup.awayTeam,
-                      matchup.spreadLean,
-                      matchup.marketSpreadLine,
-                    ) ??
-                    (matchup.spreadLean
-                      ? matchup.spreadLean === "home"
-                        ? matchup.homeTeam
-                        : matchup.awayTeam
-                      : "No Spread")
-                  }
+                  value={betSpread}
+                  short={abbreviateLead(betSpread, teams)}
                   muted={!matchup.spreadLean}
                   badge={
                     isFinal && matchup.spreadLean && matchup.spreadResult ? (

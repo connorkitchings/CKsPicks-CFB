@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { PublicationMode } from "@/lib/publication";
 import { displaySystemName } from "@/lib/publication";
-import { AppBar } from "./AppBar";
+import { AppBar, type AppBarBack } from "./AppBar";
 import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
@@ -14,6 +14,7 @@ export function Header({
   allowedSeasons,
   width = "narrow",
   status,
+  back,
 }: {
   season: number | null;
   systemName: string | null;
@@ -22,6 +23,8 @@ export function Header({
   allowedSeasons?: readonly number[];
   width?: PageWidth;
   status?: React.ReactNode;
+  /** Phones: the app bar shows this back link and title in place of the section name. */
+  back?: AppBarBack;
 }) {
   const maxW = PAGE_WIDTHS[width];
   const hasSubrow = Boolean(
@@ -31,7 +34,7 @@ export function Header({
   return (
     <>
       {/* Phones: the sticky app bar replaces the brand row and menu controls; only `status` stays on the page. */}
-      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={updatedAt?.toISOString() ?? null} />
+      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={updatedAt?.toISOString() ?? null} back={back} />
     <header className={`border-b border-line bg-surface-card/80 backdrop-blur${status ? "" : " max-sm:hidden"}`}>
       <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-1.5 sm:py-3.5`}>
         <div className="flex items-center justify-between gap-3 max-sm:hidden">

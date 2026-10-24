@@ -7,10 +7,10 @@ import { getMatchupData } from "@/lib/matchup";
 import { parseGameId } from "@/lib/matchup-id";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { publicationScope } from "@/lib/publication";
+import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/teams";
 import { UnitMatchups } from "@/components/matchup/UnitMatchups";
 import { Card } from "@/components/ui/Card";
-import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
 
 // Revalidate every 5 minutes (ISR)
 export const revalidate = 300;
@@ -52,19 +52,15 @@ export default async function MatchupPage({
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
         width="wide"
+        back={{
+          href: `/?week=${matchup.week}`,
+          label: `Week ${matchup.week} games`,
+          // Abbreviated so it fits beside the back and menu buttons; the page's h1 carries the full names.
+          title: `${teamAbbr(matchup.awayTeam)} at ${teamAbbr(matchup.homeTeam)}`,
+        }}
       />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6 max-sm:space-y-2 max-sm:pt-0">
-        {/* Phones: a pinned slim row under the app bar; the hero repeats this link from sm up. */}
-        <MobileStickyBar className="sm:hidden" data-testid="matchup-back-bar">
-          <Link
-            href={`/?week=${matchup.week}`}
-            className="-my-1 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-accent-ink hover:underline"
-          >
-            <span aria-hidden>‹</span> Week {matchup.week} games
-          </Link>
-        </MobileStickyBar>
-
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6 max-sm:space-y-2 max-sm:pt-2">
         {/* Hero Section */}
         <MatchupHero matchup={matchup} />
 

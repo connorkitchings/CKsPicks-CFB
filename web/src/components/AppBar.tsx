@@ -19,6 +19,9 @@ function titleFor(pathname: string): string {
   return TITLES.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] ?? "Games";
 }
 
+/** A page that sits under another (a matchup under its week) supplies this to show a back link and its own title. */
+export type AppBarBack = { href: string; label: string; title: string };
+
 /**
  * The phone app bar: one slim sticky row with the page name (plus the brand on Games) and a menu
  * button. The menu sheet holds the season selector, theme toggle and publication time, and exists
@@ -30,30 +33,44 @@ export function AppBar({
   allowedSeasons,
   systemLabel,
   updatedAt,
+  back,
 }: {
   season: number | null;
   allowedSeasons?: readonly number[];
   systemLabel: string | null;
   updatedAt: string | null;
+  back?: AppBarBack;
 }) {
   const pathname = usePathname();
   const phone = useIsPhone();
   const { dialogRef, triggerRef, titleId, open, close } = useSheet({ enabled: phone, closeOn: [pathname, season] });
-  const title = titleFor(pathname);
+  const title = back?.title ?? titleFor(pathname);
   const updated = updatedAt
     ? new Date(updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
     : null;
 
   return (
     <div data-testid="app-bar" className="sticky top-0 z-40 box-border flex h-(--app-bar-h) items-center justify-between gap-3 border-b border-line bg-surface-card px-4 pt-[env(safe-area-inset-top)] sm:hidden">
-      <div className="flex min-w-0 items-baseline gap-2">
+      <div className="flex min-w-0 items-center gap-1">
+        {back && (
+          <Link
+            href={back.href}
+            aria-label={back.label}
+            data-testid="app-bar-back"
+            className="-ml-3 inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-accent-ink focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            <svg aria-hidden viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </Link>
+        )}
         {title === "Games" && (
           <Link href="/" className="shrink-0 rounded text-base font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent">
             CK&rsquo;s Picks <span className="text-xs font-normal text-ink-muted">CFB</span>
           </Link>
         )}
         {/* On Games the brand is the title; the name stays for assistive tech and tests. */}
-        <span data-testid="app-bar-title" className={title === "Games" ? "sr-only" : "truncate text-base font-bold tracking-tight text-ink"}>{title}</span>
+        <span data-testid="app-bar-title" title={back ? title : undefined} className={title === "Games" ? "sr-only" : "truncate text-base font-bold tracking-tight text-ink"}>{title}</span>
       </div>
       <button
         ref={triggerRef}

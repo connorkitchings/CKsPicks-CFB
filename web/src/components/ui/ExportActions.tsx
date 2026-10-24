@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 type Action = "download" | "copy" | "share";
@@ -163,6 +164,7 @@ export function ExportActions({
   backgroundColor,
   disabled = false,
   disabledReason,
+  compactReason = false,
   tooltipAlign = "right",
   atRightEdge = false,
   testIds,
@@ -177,6 +179,8 @@ export function ExportActions({
   disabled?: boolean;
   /** Shown beside the disabled buttons so they are never silently inert. */
   disabledReason?: string;
+  /** Phones: keep the reason for assistive tech (and a hover title) but not as visible text. */
+  compactReason?: boolean;
   tooltipAlign?: "left" | "right";
   /** The group ends at the viewport's content edge: every tooltip opens leftward, however many buttons show. */
   atRightEdge?: boolean;
@@ -284,11 +288,11 @@ export function ExportActions({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5" data-testid={testIds.container} data-last-export={report ? JSON.stringify(report) : undefined}>
+    <div className="flex flex-wrap items-center gap-1.5" title={disabled && compactReason ? disabledReason : undefined} data-testid={testIds.container} data-last-export={report ? JSON.stringify(report) : undefined}>
       <ActionButton {...buttonProps("download")} onClick={() => void run("download")} />
       {caps.copy && <ActionButton {...buttonProps("copy")} onClick={() => void run("copy")} />}
       {caps.share && <ActionButton {...buttonProps("share")} onClick={() => (ready ? void shareReady() : void run("share"))} />}
-      {disabled && disabledReason && <span className="text-xs text-ink-muted">{disabledReason}</span>}
+      {disabled && disabledReason && <span className={clsx("text-xs text-ink-muted", compactReason && "max-sm:sr-only")}>{disabledReason}</span>}
       {/* Announced only: the buttons show the outcome, and visible text here would reflow the controls row. */}
       <span role="status" aria-live="polite" className="sr-only">
         {status}

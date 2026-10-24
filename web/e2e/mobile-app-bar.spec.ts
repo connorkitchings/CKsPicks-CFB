@@ -47,7 +47,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
 
       // Matchups carry a forecast update time, which the sheet shows.
       await gotoHydrated(page, "/matchup/1");
-      await expect(page.getByTestId("app-bar-title")).toHaveText("Matchup");
+      await expect(page.getByTestId("app-bar-title")).toHaveText(/ at /);
+      await expect(page.getByTestId("app-bar").getByRole("link", { name: /^Week \d+ games$/ })).toBeVisible();
       await expect(menu).toBeEnabled();
       await menu.click();
       await expect(dialog).toContainText(/Updated Sep (29|30)/);
