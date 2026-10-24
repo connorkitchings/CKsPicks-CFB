@@ -367,6 +367,8 @@ export const getTeamGames = cache(releaseCached("getTeamGames", async (season: n
     startDate: schema.games.startDate,
     homeTeam: schema.games.homeTeam,
     awayTeam: schema.games.awayTeam,
+    homeTeamSpreadLine: schema.games.homeTeamSpreadLine,
+    totalLine: schema.games.totalLine,
     predictedMargin: schema.predictions.predictedSpread,
     predictedTotal: schema.predictions.predictedTotal,
     homePoints: schema.gameResults.homePoints,

@@ -60,10 +60,10 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       history = [v5RatingFixture, { ...v5RatingFixture, week: 1, overallRating: 5.9, cutoffUtc: new Date(v5RatingFixture.cutoffUtc.getTime() + 7 * 864e5) }];
       games = [{ gameId: 1, week: 0, startDate: v5RatingFixture.cutoffUtc,
         homeTeam: team, awayTeam: "Ohio State", predictedMargin: 3.5,
-        predictedTotal: 52, homePoints: 24, awayPoints: 21,
+        homeTeamSpreadLine: -2.5, totalLine: 51.5, predictedTotal: 52, homePoints: 24, awayPoints: 21,
         evidenceClass: "replay" },
         { gameId: 2, week: 1, startDate: new Date(v5RatingFixture.cutoffUtc.getTime() + 7 * 864e5),
-          homeTeam: "Ohio State", awayTeam: team, predictedMargin: 6.2, predictedTotal: 54.84,
+          homeTeam: "Ohio State", awayTeam: team, homeTeamSpreadLine: -7, totalLine: 55.5, predictedMargin: 6.2, predictedTotal: 54.84,
           homePoints: null, awayPoints: null, evidenceClass: "replay" }];
     }
   } else {
