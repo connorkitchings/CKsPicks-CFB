@@ -35,8 +35,8 @@ function BetCell({ game, kind, results }: {
       {lean ? <>
         <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></p>
         <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums text-ink-muted">
-          <span>Model: <span className="font-mono font-medium text-ink">{modelNumber(lean)}</span></span>
-          <span className={clsx("font-mono font-semibold", edgeTone(lean.edge, kind))}>(+{lean.edge.toFixed(1)})</span>
+          <span>Model: <span className="font-medium text-ink">{modelNumber(lean)}</span></span>
+          <span className={clsx("font-semibold", edgeTone(lean.edge, kind))}>(+{lean.edge.toFixed(1)})</span>
         </p>
         {results && (lean.source || cover) && (
           <p className="mt-0.5 text-xs text-ink-muted">

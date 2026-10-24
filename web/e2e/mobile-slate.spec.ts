@@ -20,7 +20,11 @@ for (const path of ["/", "/?week=4"]) {
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await expect(card.locator("[data-pick]")).toHaveCount(2);
-    await expect(card.getByRole("link", { name: "Matchup" })).toBeVisible();
+    const link = card.getByRole("link", { name: "Matchup" });
+    await expect(link).toBeVisible();
+    // A quiet text link on phones (no border or fill), with a full-size tap target.
+    await expect(link).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+    expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 
   test(`${path}: the first phone card clears a 34px home-indicator safe area`, async ({ page }) => {
