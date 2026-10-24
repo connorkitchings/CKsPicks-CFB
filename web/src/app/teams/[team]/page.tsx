@@ -7,22 +7,23 @@ import { resolveTeam } from "@/lib/teams";
 import { getTeamGames, getTeamHistory, getWeeklyRatings, type Rating } from "@/lib/v5";
 import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
-import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { RatingHistoryTable } from "@/components/teams/RatingHistoryTable";
 import { RatingSparkline } from "@/components/teams/RatingSparkline";
 import { teamAbbr } from "@/lib/team-logos";
-import { getTeamSeasonRoster, getV5RatingSnapshots } from "@/lib/chart-queries";
+import { getTeamGameStats, getTeamSeasonRoster, getV5RatingSnapshots } from "@/lib/chart-queries";
 import { teamRankHistory } from "@/lib/team-rank-history";
 import { buildTeamSummary } from "@/lib/team-summary";
 import { TeamHero } from "@/components/teams/TeamHero";
 import { TeamResume } from "@/components/teams/TeamResume";
 import { chartsRosterFixture } from "@/test/fixtures/charts";
-import { teamRankSnapshotsFixture, texasGamesFixture } from "@/test/fixtures/team-page";
-import { MatchupRowLink } from "@/components/teams/MatchupRowLink";
-import { TeamGameRow } from "@/components/teams/TeamGameRow";
+import { teamRankSnapshotsFixture, texasGameStatsFixture, texasGamesFixture } from "@/test/fixtures/team-page";
+import { GameLogChart } from "@/components/teams/GameLogChart";
+import { TeamSchedule } from "@/components/teams/TeamSchedule";
+import { TeamSection } from "@/components/teams/TeamSection";
+import { gameLogBars } from "@/lib/team-game-log";
 import { isFinal } from "@/lib/team-games";
-import type { RatingSnapshotRow, RosterRow } from "@/lib/charts";
+import type { RatingSnapshotRow, RosterRow, TeamGameRow } from "@/lib/charts";
 
 export const revalidate = 300;
 
@@ -40,6 +41,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
   let current: Rating[] = [];
   let snapshots: RatingSnapshotRow[] = [];
   let roster: RosterRow[] = [];
+  let gameStats: TeamGameRow[] | null = [];
   let unavailable = false;
   if (process.env.CFB_UI_TEST_MODE === "1") {
     current = ratingsFixture("current").ratings;
@@ -48,6 +50,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
     if (ratingName === v5RatingFixture.team) {
       history = [v5RatingFixture, { ...v5RatingFixture, week: 1, overallRating: 5.9, cutoffUtc: new Date(v5RatingFixture.cutoffUtc.getTime() + 7 * 864e5) }];
       games = texasGamesFixture;
+      gameStats = texasGameStatsFixture;
     }
   } else {
     try {
@@ -58,10 +61,11 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       unavailable = true;
     }
     // The summary, rank history and conference are secondary: a failed read leaves them out instead of hiding the page.
-    [current, snapshots, roster] = await Promise.all([
+    [current, snapshots, roster, gameStats] = await Promise.all([
       getWeeklyRatings(2026, "current").then((result) => result.ratings).catch(() => []),
       getV5RatingSnapshots(2026).then((rows) => rows ?? []).catch(() => []),
       getTeamSeasonRoster(2026).then((rows) => rows ?? []).catch(() => []),
+      getTeamGameStats(2026).catch(() => null),
     ]);
   }
   const nextGame = games.find((game) => !isFinal(game)) ?? null;
@@ -79,10 +83,10 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : (
         <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-start">
           <div className="min-w-0 space-y-4">
-            <section aria-labelledby="team-games"><h2 id="team-games" className="mb-3 text-lg font-semibold text-ink">Schedule</h2>
-              {games.length === 0 ? <Notice tone="empty">No selected V5 forecasts are available yet.</Notice> :
-                <Card padding="none"><ul aria-label="Schedule" className="divide-y divide-line">{games.map((game) => <li key={game.gameId}><MatchupRowLink gameId={game.gameId}><TeamGameRow game={game} team={team} /></MatchupRowLink></li>)}</ul></Card>}
-            </section>
+            <TeamSchedule games={games} team={team} />
+            {gameStats === null ? (
+              <TeamSection id="team-game-log" title="Game log"><Notice tone="empty">The game log is not available right now.</Notice></TeamSection>
+            ) : <GameLogChart bars={gameLogBars(gameStats, [team, ratingName])} />}
           </div>
           <div className="min-w-0 space-y-4">
             <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>

@@ -1,4 +1,4 @@
-import { homeSpreadFromMargin, homeSpreadText, marketSpreadView, spreadLabel } from "./betting-format.ts";
+import { homeSpreadFromMargin, homeSpreadText, marketSpreadView, signedSpread, spreadLabel } from "./betting-format.ts";
 import { phoneTeamName } from "./team-logos.ts";
 
 export interface TeamGameFields {
@@ -25,11 +25,16 @@ export function gameResultText(game: TeamGameFields, team: string): string | nul
   return forecast === null ? null : `Forecast: ${forecast}`;
 }
 
+/** The model's line alone: "Rice -3.5". Null when no forecast exists. */
+export function forecastLine(game: TeamGameFields): string | null {
+  if (game.predictedMargin === null) return null;
+  return homeSpreadText(phoneTeamName(game.homeTeam), homeSpreadFromMargin(game.predictedMargin));
+}
+
 /** The model's line and total: "Rice -3.5 · 54.8". Null when no forecast exists. */
 export function forecastText(game: TeamGameFields): string | null {
-  if (game.predictedMargin === null) return null;
-  const spread = homeSpreadText(phoneTeamName(game.homeTeam), homeSpreadFromMargin(game.predictedMargin));
-  return `${spread}${game.predictedTotal === null ? "" : ` · ${game.predictedTotal.toFixed(1)}`}`;
+  const line = forecastLine(game);
+  return line === null ? null : `${line}${game.predictedTotal === null ? "" : ` · ${game.predictedTotal.toFixed(1)}`}`;
 }
 
 /** A game's market lines. Both are null until a provider posts them. */
@@ -59,6 +64,11 @@ function sidePoints(game: TeamGameFields, team: string): [number, number] | null
 export function lineForTeam(game: TeamGameFields & TeamGameLines, team: string): number | null {
   if (game.homeTeamSpreadLine === null) return null;
   return game.homeTeam === team ? game.homeTeamSpreadLine : -game.homeTeamSpreadLine;
+}
+
+/** A line from one side as the schedule prints it: "-3.5", "+7.0", "PK"; "—" without a line. */
+export function lineText(line: number | null): string {
+  return line === null ? "—" : line === 0 ? "PK" : signedSpread(line);
 }
 
 /** Against the spread for `team`: null when the game is not final or has no line. */
