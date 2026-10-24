@@ -81,18 +81,37 @@ test.describe("mobile team ratings", () => {
     await expect(page.getByRole("heading", { level: 1, name: "App State" })).toBeVisible();
   });
 
-  test("phone cards show FBS W-L, SOR rank and SOS ranks without WAA or raw SOS values", async ({ page }) => {
+  test("phone cards show the record, SOR rank and played SOS rank without WAA or raw SOS values", async ({ page }) => {
     await page.goto("/ratings?period=current");
     const texas = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
-    await expect(texas).toContainText("FBS W-L 4–0");
-    await expect(texas).toContainText("SOR #2");
-    // Current period Played, Remaining and Full ranks for Texas are each third of four.
-    await expect(texas).toContainText("SOS played #3 · remaining #3 · full #3");
+    await expect(texas).toContainText("4–0");
+    await expect(texas.getByRole("group", { name: "Strength of record rank" })).toContainText("#2");
+    // Current period played-SOS rank for Texas is third of four.
+    await expect(texas.getByRole("group", { name: "Strength of schedule played" })).toContainText("#3");
+    await expect(texas).not.toContainText("remaining");
     await expect(texas).not.toContainText("WAA");
     await expect(texas).not.toContainText("±");
     await expect(texas).not.toContainText("81.2");
     await expect(texas).not.toContainText("56.5");
   });
+
+  for (const width of [390, 320]) {
+    test(`phone card stats sit on one line without overflow at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/ratings");
+      const card = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
+      const stats = card.getByRole("group");
+      await expect(stats).toHaveCount(4);
+      await expect(card.locator("dt")).toHaveText(["OFF", "DEF", "SOR", "SOS"]);
+      const tops = await stats.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+      expect(new Set(tops).size).toBe(1);
+      for (const dd of await card.locator("dd").all()) {
+        const lines = await dd.evaluate((el) => el.getClientRects().length);
+        expect(lines).toBe(1);
+      }
+      expect(await fits(page)).toBe(true);
+    });
+  }
 
   test("period changes preserve live search and sort and update frozen values", async ({ page }) => {
     await page.goto("/ratings?season=2026");

@@ -106,11 +106,20 @@ function primaryText(rating: RatingRow, sort: RatingsSort, sosRanks: Map<string,
   return isScoreSort(sort) ? ratingText(rating[scoreFields[sort]]) : rankText(rankFor(rating, sort, sosRanks));
 }
 
-/** "played #12 · remaining #40 · full #25", with dashes for null values. */
-function sosRankLine(teamRanks: SosRanks | undefined) {
-  return [["played", teamRanks?.played], ["remaining", teamRanks?.remaining], ["full", teamRanks?.full]]
-    .map(([label, rank]) => `${label} ${rankText(rank as number | null | undefined)}`)
-    .join(" · ");
+/**
+ * The four phone-card stat cells. The column the card is sorted by lives in the primary slot, so
+ * Overall takes its cell; SOS Remaining and SOS Full sorts keep the played-SOS cell.
+ */
+function cardStats(rating: RatingRow, sort: RatingsSort, sosRanks: Map<string, SosRanks>) {
+  const overall = { label: "OVR", title: "Overall rating", value: ratingText(rating.overallRating) };
+  const cells = {
+    offense: { label: "OFF", title: "Offense rating", value: ratingText(rating.offenseRating) },
+    defense: { label: "DEF", title: "Defense rating", value: ratingText(rating.defenseRating) },
+    sor: { label: "SOR", title: "Strength of record rank", value: rankText(rankFor(rating, "sor", sosRanks)) },
+    sos: { label: "SOS", title: "Strength of schedule played", value: rankText(sosRanks.get(rating.team)?.played) },
+  };
+  const swapped = sort === "sos_played" ? "sos" : sort === "offense" || sort === "defense" || sort === "sor" ? sort : null;
+  return [cells.offense, cells.defense, cells.sor, cells.sos].map((cell) => (swapped && cell === cells[swapped] ? overall : cell));
 }
 
 function RankPill({ rank, cohort }: { rank: number | null | undefined; cohort: number }) {
@@ -333,38 +342,34 @@ export function RatingsView({
       ) : (
         <>
           <ul className="space-y-2 sm:hidden" aria-label="Team ratings list">
-            {visible.map(({ rating, position }) => {
-              const teamRanks = sosRanks.get(rating.team);
-              return (
-                <Card as="li" padding="sm" key={rating.team}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-2">
-                      <RankChip aria-label={`National rank ${position}`} rank={null} label={String(position)} prefix="" className="h-6 min-w-6 shrink-0" />
-                      <Link href={teamHref(rating.team)} className="flex min-h-11 min-w-0 items-center gap-2 -my-2.5 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-                        <TeamLogo name={rating.team} px={24} />
-                        <span className="min-w-0 break-words text-sm font-semibold text-ink">{rating.team}</span>
-                      </Link>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div data-testid="primary-rating">
-                        <p className="text-xs font-medium text-ink-muted">{sortLabels[sort]}</p>
-                        <p className="font-mono text-lg font-bold tabular-nums text-ink">{primaryText(rating, sort, sosRanks)}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-2 text-xs text-ink-muted">
-                    {scoreSorts.filter((column) => column !== sort).map((column) => (
-                      <span key={column}>
-                        {sortLabels[column]} <span className="font-mono">{ratingText(rating[scoreFields[column]])}</span>
+            {visible.map(({ rating, position }) => (
+              <Card as="li" padding="sm" key={rating.team}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <RankChip aria-label={`National rank ${position}`} rank={null} label={String(position)} prefix="" className="h-6 min-w-6 shrink-0" />
+                    <Link href={teamHref(rating.team)} className="flex min-h-11 min-w-0 items-center gap-2 -my-2.5 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                      <TeamLogo name={rating.team} px={24} />
+                      <span className="min-w-0">
+                        <span className="block break-words text-sm font-semibold leading-tight text-ink">{rating.team}</span>
+                        <span className="block text-xs text-ink-muted" title={tooltips.record}>{recordText(rating)}</span>
                       </span>
-                    ))}
-                    <span>FBS W-L <span className="font-mono">{recordText(rating)}</span></span>
-                    <span>SOR <span className="font-mono">{rankText(rankFor(rating, "sor", sosRanks))}</span></span>
-                    <span className="basis-full">SOS <span className="font-mono">{sosRankLine(teamRanks)}</span></span>
+                    </Link>
                   </div>
-                </Card>
-              );
-            })}
+                  <div className="shrink-0 text-right" data-testid="primary-rating">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-ink-muted">{sortLabels[sort]}</p>
+                    <p className="font-mono text-lg font-bold tabular-nums text-ink">{primaryText(rating, sort, sosRanks)}</p>
+                  </div>
+                </div>
+                <dl className="mt-2 grid grid-cols-4 gap-1 border-t border-line pt-2">
+                  {cardStats(rating, sort, sosRanks).map((cell) => (
+                    <div key={cell.label} title={cell.title} aria-label={cell.title} role="group" className="min-w-0">
+                      <dt className="text-[10px] uppercase tracking-wide text-ink-muted">{cell.label}</dt>
+                      <dd className="font-mono text-sm font-semibold tabular-nums text-ink">{cell.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Card>
+            ))}
           </ul>
 
           <Card padding="none" className="hidden overflow-x-auto sm:block">
