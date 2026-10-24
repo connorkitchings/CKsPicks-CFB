@@ -58,7 +58,7 @@ export function PredictionGameCard({ game, results = false }: {
   const where = venueLabel(game.venueCity, game.venueState);
   const winner = results && final ? (awayWon ? "away" : homeWon ? "home" : null) : null;
   return (
-    <Card as="li" id={`game-${game.gameId}`} padding="none" className="scroll-mt-12 max-sm:scroll-mt-24 overflow-hidden">
+    <Card as="li" id={`game-${game.gameId}`} padding="none" className="scroll-mt-12 max-sm:scroll-mt-0 overflow-hidden">
       <div className="px-3 pb-3 pt-2">
         <div className="mb-1 flex items-center justify-between gap-2 text-xs text-ink-muted">
           <div className="flex flex-wrap items-center gap-2">
