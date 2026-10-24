@@ -111,6 +111,27 @@ test.describe("mobile team ratings", () => {
       }
       expect(await fits(page)).toBe(true);
     });
+
+    test(`phone card stat grid is centered in the card at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/ratings");
+      const card = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
+      const cardBox = await card.boundingBox();
+      const cells = await card.getByRole("group").evaluateAll((els) => els.map((el) => {
+        const r = el.getBoundingClientRect();
+        const label = el.querySelector("dt")!.getBoundingClientRect();
+        const value = el.querySelector("dd")!.getBoundingClientRect();
+        return { center: r.left + r.width / 2, width: r.width, labelCenter: label.left + label.width / 2, valueCenter: value.left + value.width / 2 };
+      }));
+      const cardCenter = cardBox!.x + cardBox!.width / 2;
+      expect(Math.abs((cells[0].center + cells[3].center) / 2 - cardCenter)).toBeLessThan(3);
+      expect(Math.abs((cells[1].center + cells[2].center) / 2 - cardCenter)).toBeLessThan(3);
+      for (const cell of cells) {
+        expect(Math.abs(cell.width - cells[0].width)).toBeLessThan(1);
+        expect(Math.abs(cell.labelCenter - cell.center)).toBeLessThan(2);
+        expect(Math.abs(cell.valueCenter - cell.center)).toBeLessThan(2);
+      }
+    });
   }
 
   test("period changes preserve live search and sort and update frozen values", async ({ page }) => {

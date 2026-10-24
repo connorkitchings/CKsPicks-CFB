@@ -362,7 +362,7 @@ export function RatingsView({
                 </div>
                 <dl className="mt-2 grid grid-cols-4 gap-1 border-t border-line pt-2">
                   {cardStats(rating, sort, sosRanks).map((cell) => (
-                    <div key={cell.label} title={cell.title} aria-label={cell.title} role="group" className="min-w-0">
+                    <div key={cell.label} title={cell.title} aria-label={cell.title} role="group" className="min-w-0 text-center">
                       <dt className="text-[10px] uppercase tracking-wide text-ink-muted">{cell.label}</dt>
                       <dd className="font-mono text-sm font-semibold tabular-nums text-ink">{cell.value}</dd>
                     </div>

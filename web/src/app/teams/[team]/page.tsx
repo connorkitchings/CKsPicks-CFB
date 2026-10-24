@@ -22,18 +22,16 @@ export async function generateMetadata({ params }: { params: Promise<{ team: str
 
 const rankText = (rank: number | null | undefined) => (typeof rank === "number" ? `#${rank}` : "—");
 
-/** Record, SOR rank and the three SOS ranks from the current ratings period, ranked against the whole field. */
+/** Record, SOR rank and the SOS-played rank from the current ratings period, ranked against the whole field. */
 function teamSummary(current: Rating[], ratingName: string) {
   const rating = current.find((row) => row.team === ratingName);
   if (!rating) return null;
   const sos = rankSosByTeam(current).get(ratingName);
   const record = typeof rating.wins === "number" && typeof rating.losses === "number" ? `${rating.wins}–${rating.losses}` : "—";
   return [
-    ["Record", record],
-    ["SOR", rankText(rating.sorRank)],
-    ["SOS played", rankText(sos?.played)],
-    ["SOS remaining", rankText(sos?.remaining)],
-    ["SOS full", rankText(sos?.full)],
+    ["Record", record, "Record against FBS teams"],
+    ["SOR", rankText(rating.sorRank), "Strength of record rank"],
+    ["SOS", rankText(sos?.played), "Strength of schedule played"],
   ] as const;
 }
 
@@ -73,7 +71,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       mainClassName="space-y-7 py-8"
     >
       <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div>
-        {summary && <dl aria-label="Team summary" className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2 sm:grid-cols-5">{summary.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-[10px] uppercase tracking-wide text-ink-muted">{label}</dt><dd className="font-mono text-sm font-semibold tabular-nums text-ink">{value}</dd></div>)}</dl>}</div>
+        {summary && <dl aria-label="Team summary" className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2">{summary.map(([label, value, title]) => <div key={label} title={title} className="min-w-0"><dt className="text-[10px] uppercase tracking-wide text-ink-muted">{label}</dt><dd className="font-mono text-sm font-semibold tabular-nums text-ink">{value}</dd></div>)}</dl>}</div>
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : <>
         <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
           {history.length === 0 ? <Notice tone="empty">No certified rating history is available for this team.</Notice> :

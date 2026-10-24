@@ -11,13 +11,17 @@ test.describe("team pages (fixture mode)", () => {
   });
 
   for (const width of [390, 1280]) {
-    test(`the summary shows record, SOR and the SOS trio at ${width}px`, async ({ page }) => {
+    test(`the summary shows record, SOR and one SOS rank at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await page.goto("/teams/Texas");
       const summary = page.locator('dl[aria-label="Team summary"]');
-      await expect(summary.locator("dt")).toHaveText(["Record", "SOR", "SOS played", "SOS remaining", "SOS full"]);
+      await expect(summary.locator("dt")).toHaveText(["Record", "SOR", "SOS"]);
       await expect(summary.locator("dd").nth(0)).toHaveText("4–0");
-      for (const index of [2, 3, 4]) await expect(summary.locator("dd").nth(index)).toHaveText(/^#\d+$/);
+      await expect(summary.locator("dd")).toHaveCount(3);
+      await expect(summary.locator("dd").nth(1)).toHaveText(/^#\d+$/);
+      // Same played-SOS rank the ratings table shows for Texas (third of four).
+      await expect(summary.locator("dd").nth(2)).toHaveText("#3");
+      await expect(summary.locator('[title="Strength of schedule played"]')).toHaveCount(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   }
