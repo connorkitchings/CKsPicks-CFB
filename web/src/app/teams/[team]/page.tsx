@@ -10,6 +10,7 @@ import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
+import { RatingHistoryTable } from "@/components/teams/RatingHistoryTable";
 import { RatingSparkline } from "@/components/teams/RatingSparkline";
 import TeamLogo from "@/components/TeamLogo";
 import { ratingText, StatGrid, type StatCell } from "@/components/ratings/StatGrid";
@@ -103,16 +104,16 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
         </Card>}
       </div>
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : <>
-        <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
-          {history.length === 0 ? <Notice tone="empty">No certified rating history is available for this team.</Notice> :
-          <><RatingSparkline history={history} /><Card padding="none"><table className="w-full text-sm tabular-nums"><thead className="border-b border-line bg-surface-inset text-xs uppercase tracking-wide text-ink-faint"><tr><th scope="col" className="px-3 py-3 text-left sm:px-4">Week</th><th scope="col" className="px-3 py-3 text-right">Overall</th><th scope="col" className="px-3 py-3 text-right">OFF</th><th scope="col" className="px-3 py-3 text-right">DEF</th><th scope="col" className="px-4 py-3 text-right max-sm:hidden">Uncertainty</th></tr></thead><tbody>{history.map((rating, index) => <tr key={`${rating.cutoffUtc.toISOString()}-${index}`} className="border-b border-line last:border-0"><td className="px-3 py-3 text-ink sm:px-4">Week {rating.week}</td><td className="px-3 py-3 text-right text-ink">{rating.overallRating.toFixed(2)}</td><td className="px-3 py-3 text-right text-ink-muted">{rating.offenseRating.toFixed(2)}</td><td className="px-3 py-3 text-right text-ink-muted">{rating.defenseRating.toFixed(2)}</td><td className="px-4 py-3 text-right text-ink-muted max-sm:hidden">±{Math.sqrt(Math.max(0, rating.overallVariance)).toFixed(2)}</td></tr>)}</tbody></table></Card></>}
-          <p className="mt-2 text-xs text-ink-faint">These are pregame states. Preseason information has more influence early; completed games gain weight as evidence accumulates.</p>
-        </section>
         <section aria-labelledby="team-games"><h2 id="team-games" className="mb-3 text-lg font-semibold text-ink">Schedule</h2>
           {games.length === 0 ? <Notice tone="empty">No selected V5 forecasts are available yet.</Notice> : <>
             {nextGame && <Card padding="none" className="mb-3" aria-label="Next game"><p className="px-3 pt-2.5 text-[10px] font-medium uppercase tracking-wide text-accent-ink">Next game</p><div className="px-3 pb-1 pt-1"><TeamGameRow game={nextGame} team={team} /></div><div className="flex justify-end px-3 pb-1"><MatchupButton gameId={nextGame.gameId} /></div></Card>}
             <Card padding="none"><ul aria-label="Schedule" className="divide-y divide-line">{games.map((game) => <li key={game.gameId}><MatchupRowLink gameId={game.gameId}><TeamGameRow game={game} team={team} /></MatchupRowLink></li>)}</ul></Card>
           </>}
+        </section>
+        <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
+          {history.length === 0 ? <Notice tone="empty">No certified rating history is available for this team.</Notice> :
+          <><RatingSparkline history={history} /><RatingHistoryTable history={history} /></>}
+          <p className="mt-2 text-xs text-ink-faint">These are pregame states. Preseason information has more influence early; completed games gain weight as evidence accumulates.</p>
         </section>
       </>}
     </PageShell>
