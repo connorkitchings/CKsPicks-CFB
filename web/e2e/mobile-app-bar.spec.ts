@@ -64,6 +64,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       const bar = page.getByTestId("app-bar");
       await expect(bar.getByRole("link", { name: /CK.s Picks/ })).toHaveCount(0);
       await expect(page.getByTestId("app-bar-title")).toBeVisible();
+      await expect(page.getByTestId("app-bar-title")).toHaveText("ALA");
+      await expect(bar.getByRole("link", { name: "Back to ratings" })).toHaveAttribute("href", "/ratings");
     });
 
     test("the menu shows the slate run time on Games", async ({ page }) => {
