@@ -15,7 +15,7 @@ function hash(text: string): number {
  * has an exact-zero explosive rate (a value with no rank); every other row is
  * ranked, with a few ties.
  */
-function fixtureRows(teams: string[], unrankedTeam: string): TeamStatRow[] {
+export function fixtureRows(teams: string[], unrankedTeam: string): TeamStatRow[] {
   const rows: TeamStatRow[] = [];
   for (const team of teams) {
     for (const role of ["offense", "defense"] as const) {

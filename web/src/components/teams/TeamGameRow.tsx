@@ -1,9 +1,9 @@
 import TeamLogo from "@/components/TeamLogo";
 import { dayShort } from "@/components/slate/format";
-import { gameResultText, isFinal, type TeamGameFields } from "@/lib/team-games";
+import { gameResultText, isFinal, type TeamGameFields, type TeamGameLines } from "@/lib/team-games";
 import { phoneTeamName } from "@/lib/team-logos";
 
-export interface TeamGame extends TeamGameFields {
+export interface TeamGame extends TeamGameFields, TeamGameLines {
   gameId: number;
   week: number;
   startDate: Date;

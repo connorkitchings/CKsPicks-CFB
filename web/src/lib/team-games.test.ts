@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  atsResult, gameResultText, lineForTeam, modelPickedWinner, overUnderResult, recordText, teamRecords,
+  atsResult, forecastText, gameResultText, lineForTeam, marketText, modelPickedWinner, overUnderResult, recordText, teamRecords,
   type TeamGameFields, type TeamGameLines,
 } from "./team-games.ts";
 
@@ -85,6 +85,19 @@ test("teamRecords tallies each record over the games that have the data", () => 
     overUnder: { overs: 1, unders: 1, pushes: 0 },
     modelWinner: { right: 1, wrong: 2 },
   });
+});
+
+test("marketText reads the line from the favorite's side with the total", () => {
+  assert.equal(marketText(lined({ homeTeamSpreadLine: -3.5, totalLine: 51.5 })), "Texas -3.5 · 51.5");
+  assert.equal(marketText(lined({ homeTeamSpreadLine: 7, totalLine: 51 })), "Rice -7.0 · 51.0");
+  assert.equal(marketText(lined({ homeTeamSpreadLine: 0 })), "PK");
+  assert.equal(marketText(lined({ totalLine: 51.5 })), "51.5");
+  assert.equal(marketText(lined({})), null);
+});
+
+test("forecastText gives the model line and total without a prefix", () => {
+  assert.equal(forecastText(game({ predictedMargin: 3.5, predictedTotal: 54.84 })), "Texas -3.5 · 54.8");
+  assert.equal(forecastText(game({})), null);
 });
 
 test("recordText shows pushes only when there are some", () => {

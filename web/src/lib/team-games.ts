@@ -1,4 +1,4 @@
-import { homeSpreadFromMargin, homeSpreadText } from "./betting-format.ts";
+import { homeSpreadFromMargin, homeSpreadText, marketSpreadView, spreadLabel } from "./betting-format.ts";
 import { phoneTeamName } from "./team-logos.ts";
 
 export interface TeamGameFields {
@@ -21,15 +21,29 @@ export function gameResultText(game: TeamGameFields, team: string): string | nul
     const [own, other] = game.homeTeam === team ? [game.homePoints, game.awayPoints] : [game.awayPoints, game.homePoints];
     return `${own === other ? "T" : own > other ? "W" : "L"} ${own}–${other}`;
   }
+  const forecast = forecastText(game);
+  return forecast === null ? null : `Forecast: ${forecast}`;
+}
+
+/** The model's line and total: "Rice -3.5 · 54.8". Null when no forecast exists. */
+export function forecastText(game: TeamGameFields): string | null {
   if (game.predictedMargin === null) return null;
   const spread = homeSpreadText(phoneTeamName(game.homeTeam), homeSpreadFromMargin(game.predictedMargin));
-  return `Forecast: ${spread}${game.predictedTotal === null ? "" : ` · ${game.predictedTotal.toFixed(1)}`}`;
+  return `${spread}${game.predictedTotal === null ? "" : ` · ${game.predictedTotal.toFixed(1)}`}`;
 }
 
 /** A game's market lines. Both are null until a provider posts them. */
 export interface TeamGameLines {
   homeTeamSpreadLine: number | null;
   totalLine: number | null;
+}
+
+/** The market line and total: "Rice -3.5 · 51.5", each part left out when missing; null with neither. */
+export function marketText(game: TeamGameFields & TeamGameLines): string | null {
+  const view = marketSpreadView(game.homeTeam, game.awayTeam, game.homeTeamSpreadLine);
+  const parts = [view === null ? null : spreadLabel(view, phoneTeamName), game.totalLine === null ? null : game.totalLine.toFixed(1)];
+  const text = parts.filter((part) => part !== null).join(" · ");
+  return text === "" ? null : text;
 }
 
 export type BetResult = "W" | "L" | "P";
