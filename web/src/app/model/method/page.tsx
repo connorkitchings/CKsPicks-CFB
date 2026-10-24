@@ -117,7 +117,7 @@ export default function ModelMethodPage() {
             Limits: capture times are when a line was fetched, not when a sportsbook posted it. Some design decisions were
             made with early 2026 outcomes known, though those outcomes do not fit any parameter, so reconstructed
             weeks are not blind forward tests.{" "}
-            <Link href="/model" className="font-semibold text-accent-ink underline">
+            <Link href="/model" className="font-semibold text-accent-ink underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
               See the 2026 record
             </Link>
             .

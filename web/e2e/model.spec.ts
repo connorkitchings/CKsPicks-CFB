@@ -98,3 +98,20 @@ test.describe("model page is accuracy-only", () => {
     });
   }
 });
+
+test.describe("inline links on phones", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("the method page record link is a 44px tap target", async ({ page }) => {
+    await page.goto("/model/method");
+    const box = (await page.getByRole("link", { name: "See the 2026 record" }).boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("the ratings elite link is a 44px tap target", async ({ page }) => {
+    await page.goto("/ratings");
+    const box = (await page.getByRole("link", { name: "elite", exact: true }).boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.width).toBeGreaterThanOrEqual(44);
+  });
+});

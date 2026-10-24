@@ -319,7 +319,7 @@ export function RatingsView({
 
       {hasResume && (
         <p className="text-xs text-ink-muted max-sm:order-last">
-          SOS ranks schedule difficulty for an average FBS team (1 is hardest). SOR ranks each team’s record against what an <Link href="/model/method#elite-reference" className="font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">elite</Link> team (the average of the top 25 teams) would be expected to do on the same schedule; see the methodology.
+          SOS ranks schedule difficulty for an average FBS team (1 is hardest). SOR ranks each team’s record against what an <Link href="/model/method#elite-reference" className="font-semibold text-accent-ink hover:underline max-sm:-mx-2.5 max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:min-w-11 max-sm:items-center max-sm:justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">elite</Link> team (the average of the top 25 teams) would be expected to do on the same schedule; see the methodology.
         </p>
       )}
 
