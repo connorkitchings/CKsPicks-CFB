@@ -87,7 +87,7 @@ test.describe("team pages (fixture mode)", () => {
     await expect(record).toContainText("ATS (W–L) 1–1–1 · 50%");
     await expect(record).toContainText("O/U 1–2 · 33%");
     await expect(record).toContainText("Model picked the winner 2–1 · 67%");
-    await expect(page.getByText("Model picks use the forecast published before each game. Display only — not betting advice.")).toBeVisible();
+    await expect(page.getByText("Model picks use the pregame forecast for each game. Display only — not betting advice.")).toBeVisible();
   });
 
   test("on desktop both unit sections show their rows without a tap", async ({ page }) => {

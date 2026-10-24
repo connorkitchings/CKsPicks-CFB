@@ -110,7 +110,7 @@ export function ModelOnTeam({ games, team }: { games: readonly TeamGame[]; team:
         ))}
       </ul>
       <Summary games={games} team={team} />
-      <p className="mt-2 text-xs text-ink-muted">Model picks use the forecast published before each game. Display only — not betting advice.</p>
+      <p className="mt-2 text-xs text-ink-muted">Model picks use the pregame forecast for each game. Display only — not betting advice.</p>
     </TeamSection>
   );
 }
