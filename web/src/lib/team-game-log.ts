@@ -1,16 +1,16 @@
 import type { TeamGameRow } from "./charts.ts";
 
-/** One played game of the team page's game log: points and per-game success rates for each unit. */
+/** One played game of the team page's game log: points and per-game success rates for the team and its opponent. */
 export interface GameLogBar {
   gameId: number;
   week: number;
   opponent: string;
   pointsFor: number;
   pointsAgainst: number;
-  /** Offense success rate; null when the game has no counted plays. */
-  offenseSuccess: number | null;
-  /** Success rate the defense allowed; null when the game has no counted plays. */
-  defenseSuccess: number | null;
+  /** The team's offensive success rate; null when the game has no counted plays. */
+  teamSuccess: number | null;
+  /** The opponent's offensive success rate (what the team's defense allowed); null when the game has no counted plays. */
+  opponentSuccess: number | null;
 }
 
 const rate = (sum: number, n: number) => (n > 0 ? sum / n : null);
@@ -30,7 +30,7 @@ export function gameLogBars(rows: readonly TeamGameRow[], names: readonly string
       opponent: row.opponent,
       pointsFor: row.pointsFor,
       pointsAgainst: row.pointsAgainst,
-      offenseSuccess: rate(row.offSuccessSum, row.offSuccessN),
-      defenseSuccess: rate(row.defSuccessSum, row.defSuccessN),
+      teamSuccess: rate(row.offSuccessSum, row.offSuccessN),
+      opponentSuccess: rate(row.defSuccessSum, row.defSuccessN),
     }));
 }

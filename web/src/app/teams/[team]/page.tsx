@@ -117,10 +117,10 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
             <TeamSchedule games={games} team={team} />
             {gameStats === null ? (
               <TeamSection id="team-game-log" title="Game log"><Notice tone="empty">The game log is not available right now.</Notice></TeamSection>
-            ) : <GameLogChart bars={gameLogBars(gameStats, [team, ratingName])} />}
+            ) : <GameLogChart team={team} bars={gameLogBars(gameStats, [team, ratingName])} />}
           </div>
           <div className="min-w-0 space-y-4">
-            <RatingTrend points={rankHistory} />
+            <RatingTrend team={team} points={rankHistory} />
             {summary && <TeamResume summary={summary} />}
             {unitRows ? <UnitProfile rows={unitRows} /> : (
               <TeamSection id="team-unit-profile" title="Unit profile"><Notice tone="empty">Unit stats are not available right now.</Notice></TeamSection>

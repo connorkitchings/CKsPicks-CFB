@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ratingText } from "@/components/ratings/StatGrid";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TeamSection } from "@/components/teams/TeamSection";
+import { chartColor } from "@/lib/charts";
+import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import { trendAxis, trendWeekLabels, type TeamRankPoint } from "@/lib/team-rank-history";
 
 type Measure = "rating" | "rank";
@@ -14,7 +16,7 @@ const MEASURES = [{ value: "rating", label: "Rating" }, { value: "rank", label: 
 const W = 320;
 const H = 170;
 const PAD = { left: 40, right: 12, top: 18, bottom: 26 };
-function Chart({ points, measure }: { points: readonly TeamRankPoint[]; measure: Measure }) {
+function Chart({ points, measure, color }: { points: readonly TeamRankPoint[]; measure: Measure; color: string }) {
   const { lo, hi, ticks } = trendAxis(points.map((point) => point[measure]), measure);
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
@@ -32,17 +34,18 @@ function Chart({ points, measure }: { points: readonly TeamRankPoint[]; measure:
   const summary = `${measure === "rating" ? "Overall rating" : "Overall rank"} by week: ${label(first)} for Week ${first.week + 1}, ${label(last)} for Week ${last.week + 1}`;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="block h-auto w-full text-[11px]">
+      <rect x={PAD.left} y={PAD.top} width={plotW} height={plotH} fill="var(--surface-card)" stroke="var(--line)" />
       {ticks.map((tick) => (
         <g key={tick}>
-          <line x1={PAD.left} x2={W - PAD.right} y1={y(tick)} y2={y(tick)} className={tick === 0 && measure === "rating" ? "stroke-ink-faint" : "stroke-line"} />
+          <line x1={PAD.left} x2={W - PAD.right} y1={y(tick)} y2={y(tick)} stroke={tick === 0 && measure === "rating" ? "var(--ink-faint)" : "var(--line)"} strokeWidth={0.6} />
           <text x={PAD.left - 6} y={y(tick) + 4} textAnchor="end" className="fill-ink-muted font-mono">{measure === "rating" ? tick.toFixed(1) : `#${tick}`}</text>
         </g>
       ))}
       {coords.length > 1 && <>
-        <path d={`M${line.replaceAll(" ", "L")}L${endX},${PAD.top + plotH}L${coords[0][0]},${PAD.top + plotH}Z`} className="fill-accent opacity-10" />
-        <polyline points={line} fill="none" strokeWidth={2} strokeLinejoin="round" className="stroke-accent" />
+        <path d={`M${line.replaceAll(" ", "L")}L${endX},${PAD.top + plotH}L${coords[0][0]},${PAD.top + plotH}Z`} fill={color} opacity={0.12} />
+        <polyline points={line} fill="none" strokeWidth={2} strokeLinejoin="round" stroke={color} />
       </>}
-      <circle cx={endX} cy={endY} r={4} className="fill-accent" />
+      <circle cx={endX} cy={endY} r={4} fill={color} />
       <text x={endX} y={endY - 9} textAnchor="end" className="fill-ink font-mono font-semibold">{label(last)}</text>
       {weekLabels.map((week, i) => (
         <text key={week} x={x(week)} y={H - 6} textAnchor={i === 0 && weekLabels.length > 1 ? "start" : i === weekLabels.length - 1 ? "end" : "middle"} className="fill-ink-muted font-mono">Wk {week + 1}</text>
@@ -52,7 +55,7 @@ function Chart({ points, measure }: { points: readonly TeamRankPoint[]; measure:
 }
 
 /** Overall rating or national rank after each stored week, switchable, with the latest value labelled. */
-export function RatingTrend({ points }: { points: readonly TeamRankPoint[] }) {
+export function RatingTrend({ points, team }: { points: readonly TeamRankPoint[]; team: string }) {
   const [measure, setMeasure] = useState<Measure>("rating");
   return (
     <TeamSection
@@ -60,7 +63,7 @@ export function RatingTrend({ points }: { points: readonly TeamRankPoint[] }) {
       title="Rating trend"
       actions={points.length > 0 && <SegmentedControl<Measure> label="Trend measure" value={measure} onChange={setMeasure} options={MEASURES} size="sm" testId="trend-measure" />}
     >
-      {points.length === 0 ? <p className="text-sm text-ink-muted">No weekly rating history is available for this team.</p> : <Chart points={points} measure={measure} />}
+      {points.length === 0 ? <p className="text-sm text-ink-muted">No weekly rating history is available for this team.</p> : <Chart points={points} measure={measure} color={chartColor(teamColor(team), teamAltColor(team), FALLBACK_TEAM_COLOR)} />}
     </TeamSection>
   );
 }

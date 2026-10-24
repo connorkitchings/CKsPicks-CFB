@@ -9,10 +9,10 @@ const row = (over: Partial<TeamGameRow>): TeamGameRow => ({
   defPlays: 50, defSuccessN: 50, defSuccessSum: 15, defEpaN: 50, defEpaSum: -3, ...over,
 });
 
-test("gameLogBars derives success rates for each unit", () => {
+test("gameLogBars derives success rates for the team and its opponent", () => {
   const [bar] = gameLogBars([row({})], ["Texas"]);
-  assert.equal(bar.offenseSuccess, 0.45);
-  assert.equal(bar.defenseSuccess, 0.3);
+  assert.equal(bar.teamSuccess, 0.45);
+  assert.equal(bar.opponentSuccess, 0.3);
   assert.deepEqual([bar.pointsFor, bar.pointsAgainst, bar.opponent], [30, 10, "Rice"]);
 });
 
@@ -27,6 +27,6 @@ test("gameLogBars matches either spelling of the team name", () => {
 
 test("gameLogBars gives a null rate when no plays were counted", () => {
   const [bar] = gameLogBars([row({ offSuccessN: 0, offSuccessSum: 0 })], ["Texas"]);
-  assert.equal(bar.offenseSuccess, null);
-  assert.equal(bar.defenseSuccess, 0.3);
+  assert.equal(bar.teamSuccess, null);
+  assert.equal(bar.opponentSuccess, 0.3);
 });
