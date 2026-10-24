@@ -75,7 +75,7 @@ test.describe("upcoming week (/)", () => {
     await page.goto("/");
 
     // Edge sits in parentheses after the model's number; no separate "Edge" label.
-    await expect(page.getByText("(+5.1)").first()).toBeVisible();
+    await expect(page.getByText("(5.1)").first()).toBeVisible();
     await expect(page.getByText(/^Edge \d/)).toHaveCount(0);
     // Each bet cell: the pick with its sportsbook, then one line with the model's number and the edge.
     const appState = page.locator("#game-1");

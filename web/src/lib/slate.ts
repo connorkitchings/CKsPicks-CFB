@@ -184,6 +184,20 @@ export function leanDetail(lean: Lean): string | null {
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+/**
+ * True when the model makes the other team the favorite than the market does, e.g. the pick is
+ * "Georgia +3.5" but the model has Georgia winning. Only then does the bare model number need a team.
+ */
+export function modelCrossesMarket(lean: Lean): boolean {
+  if (lean.kind !== "spread") return false;
+  const line = lean.pick.match(/([+-]\d+(?:\.\d+)?)$/);
+  const margin = lean.model?.match(/by\s+(-?\d+(?:\.\d+)?)$/);
+  if (!line || !margin) return false;
+  const modelMargin = Number(margin[1]);
+  if (Math.abs(modelMargin) < 0.05) return false;
+  return modelMargin > 0 !== Number(line[1]) < 0;
+}
+
 /** The lean as phones show it: a long team name in the pick and model text becomes its abbreviation. */
 export function phoneLean(lean: Lean): Lean {
   if (lean.team === null) return lean;

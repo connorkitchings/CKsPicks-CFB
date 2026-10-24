@@ -9,6 +9,7 @@ import {
   hasLean,
   leanFor,
   leanGradeRows,
+  modelCrossesMarket,
   phoneLean,
   sortGames,
   sortSlate,
@@ -104,6 +105,16 @@ test("phoneLean abbreviates a long leaned team in the pick and model text only",
   assert.equal(phoneLean(short), short);
   const total = leanFor(game({ homeTeam: "Florida International" }), "total")!;
   assert.equal(phoneLean(total), total);
+});
+
+test("modelCrossesMarket is true only when the model flips the favorite", () => {
+  // Home -3.5 market, model has home by 6.5: same favorite.
+  assert.equal(modelCrossesMarket(leanFor(game({}), "spread")!), false);
+  // Away +3.5 pick, model says home wins by 6.5 so away loses: the model agrees the home team is favored.
+  assert.equal(modelCrossesMarket(leanFor(game({ spreadLean: "away" }), "spread")!), false);
+  // Away +3.5 pick, model has the away team winning by 2: favorite flips.
+  assert.equal(modelCrossesMarket(leanFor(game({ spreadLean: "away", predictedSpread: -2 }), "spread")!), true);
+  assert.equal(modelCrossesMarket(leanFor(game({}), "total")!), false);
 });
 
 test("no lean when the lean or the line is missing, and for market games", () => {
