@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { chartColor, niceTicks, type GameLogGame } from "@/lib/charts";
+import { Card } from "@/components/ui/Card";
 import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import type { GameLogChartProps } from "./GameLogChart";
 
@@ -21,10 +22,10 @@ export function MobileGameLog({ log, domains, formatTick, formatValue, describe,
 
   return (
     <div data-testid="game-log-chart" data-orientation="horizontal" role="group" aria-label={label}>
-      {current && <div role="status" data-testid="chart-selected-details" className="sticky top-2 z-10 mb-3 space-y-2 rounded-md border border-line bg-surface-card p-3 text-sm text-ink">
+      {current && <Card padding="sm" role="status" data-testid="chart-selected-details" className="sticky top-2 z-10 mb-3 space-y-2 text-sm text-ink">
         <p>{describe(current)}</p>
         <button type="button" className="min-h-11 px-3 font-semibold text-accent" onClick={() => setSelected(null)}>Clear selection</button>
-      </div>}
+      </Card>}
       {(["offense", "defense"] as const).map((side) => (
         <section key={side} className="mb-5 space-y-2" data-testid={`game-log-panel-${side}`}>
           <h3 className="text-sm font-semibold text-ink">{side === "offense" ? "Offense · higher is better" : "Defense allowed · lower is better"}</h3>

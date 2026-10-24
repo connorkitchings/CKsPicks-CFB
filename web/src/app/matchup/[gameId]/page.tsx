@@ -9,6 +9,7 @@ import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { publicationScope } from "@/lib/publication";
 import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/teams";
+import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import { UnitMatchups } from "@/components/matchup/UnitMatchups";
 import { Card } from "@/components/ui/Card";
 
@@ -60,7 +61,7 @@ export default async function MatchupPage({
         }}
       />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6 max-sm:space-y-2 max-sm:pt-2">
+      <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-5xl flex-1 px-4 sm:space-y-6 sm:py-6 ${PHONE_PAGE_RHYTHM}`}>
         {/* Hero Section */}
         <MatchupHero matchup={matchup} />
 

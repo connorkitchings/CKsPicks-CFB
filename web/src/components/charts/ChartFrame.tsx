@@ -225,7 +225,7 @@ export function ChartFrame({
       )}
       {unavailable.length > 0 && (
         <details data-card="" className="rounded-xl border border-line bg-surface-card px-3 py-2 text-xs text-ink-muted shadow-2xs" data-testid="unavailable-teams">
-          <summary className="cursor-pointer font-semibold text-ink">Not plotted ({unavailable.length} teams)</summary>
+          <summary className="cursor-pointer font-semibold text-ink max-sm:min-h-11 max-sm:py-3">Not plotted ({unavailable.length} teams)</summary>
           <p className="mt-1.5 leading-relaxed">
             {unavailable.join(", ")}. These teams have no eligible FBS games or no valid observations for this chart yet.
           </p>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { chartColor, netSuccessDomain, niceTicks, type NetSuccessBar } from "@/lib/charts";
+import { Card } from "@/components/ui/Card";
 import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import type { MarkerState } from "./ScatterChart";
 import { TeamMark } from "./TeamMark";
@@ -92,10 +93,10 @@ export function NetSuccessChart({
   return (
     <div ref={root} className="relative" data-testid="net-success-chart" data-orientation={orientation}>
       {tipBar && horizontal && interactive && (
-        <div role="status" data-testid="chart-selected-details" className="sticky top-2 z-10 mb-3 rounded-md border border-line bg-surface-card p-3 text-sm text-ink">
+        <Card padding="sm" role="status" data-testid="chart-selected-details" className="sticky top-2 z-10 mb-3 text-sm text-ink">
           <p>{describe(tipBar)}</p>
           <button type="button" className="min-h-11 px-3 font-semibold text-accent" onClick={() => setSelected(null)}>Clear selection</button>
-        </div>
+        </Card>
       )}
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
         <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-card)" stroke="var(--line)" />

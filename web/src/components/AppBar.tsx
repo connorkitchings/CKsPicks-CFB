@@ -65,7 +65,7 @@ export function AppBar({
           </Link>
         )}
         {title === "Games" && (
-          <Link href="/" className="shrink-0 rounded text-base font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent">
+          <Link href="/" className="inline-flex min-h-11 shrink-0 items-center rounded text-base font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent">
             CK&rsquo;s Picks <span className="text-xs font-normal text-ink-muted">CFB</span>
           </Link>
         )}

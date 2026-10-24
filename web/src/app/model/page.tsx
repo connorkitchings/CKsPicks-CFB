@@ -1,6 +1,7 @@
 import { getV5PerformanceDetail, type PerformanceDetail } from "@/lib/v5";
 import { mobilePerformanceFixture } from "@/test/fixtures/performance-mobile";
 import { publicationScope } from "@/lib/publication";
+import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import { PageShell } from "@/components/PageShell";
 import { ModelTabs } from "@/components/model/ModelTabs";
 import { Notice } from "@/components/ui/Notice";
@@ -40,7 +41,7 @@ export default async function ModelPage() {
         updatedAt: null,
         allowedSeasons: publicationScope.allowedSeasons,
       }}
-      mainClassName="space-y-4 py-3 sm:py-6"
+      mainClassName={`${PHONE_PAGE_RHYTHM} sm:space-y-4 sm:py-6`}
     >
         <ModelTabs active="record" />
         {/* Phones: the app bar names the page, so the heading stays for screen readers only. */}

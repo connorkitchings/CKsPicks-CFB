@@ -48,7 +48,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       header={{ season: 2026, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons }}
       mainClassName="space-y-7 py-8"
     >
-      <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div></div>
+      <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div></div>
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : <>
         <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
           {history.length === 0 ? <Notice tone="empty">No certified rating history is available for this team.</Notice> :

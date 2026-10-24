@@ -67,10 +67,10 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-2 sm:space-y-6">
       <SummaryLine
         parts={["2026 · V5", `${weeklyData.length} graded ${weeklyData.length === 1 ? "week" : "weeks"}`]}
-        className="-mt-2 text-xs text-ink-muted sm:hidden"
+        className="text-xs text-ink-muted sm:hidden"
         data-testid="model-summary"
       />
       <h2 className="text-lg font-semibold text-ink max-sm:sr-only">{title}</h2>

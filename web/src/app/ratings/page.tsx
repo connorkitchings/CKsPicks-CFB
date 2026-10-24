@@ -80,7 +80,7 @@ export default async function RatingsPage({ searchParams }: {
         allowedSeasons={publicationScope.allowedSeasons}
         width="wide"
       />
-      <main id="main-content" tabIndex={-1} className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-3 sm:py-6">
+      <main id="main-content" tabIndex={-1} className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-2 px-4 pt-2 pb-4 sm:gap-4 sm:py-6">
         {/* Phones: the app bar names the page and the summary line carries the period, so the heading is screen-reader only. */}
         <div className="max-sm:sr-only">
           <PageHeading title="Team ratings">

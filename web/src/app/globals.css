@@ -210,7 +210,30 @@ html.dark [data-card] {
 :focus-visible { outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto !important; }
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0s !important; transition-delay: 0s !important; }
+}
+
+/*
+ * Press feedback on phones: every enabled link, button, disclosure summary and tab dims while it is
+ * pressed, and shrinks slightly when motion is allowed. One rule, so cards, nav items, menu and filter
+ * buttons all respond alike; `prefers-reduced-motion: reduce` keeps only the instant dimming (no
+ * movement, no transition). From 640px up nothing changes. Lives in the base layer so a component's own
+ * utility classes (a `transition-colors`, an explicit opacity) take precedence.
+ */
+@layer base {
+  @media (max-width: 639px) {
+    :where(a[href], button, summary, [role="tab"], [role="button"]):not(:disabled, [aria-disabled="true"]):active {
+      opacity: 0.7;
+    }
+  }
+  @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+    :where(a[href], button, summary, [role="tab"], [role="button"]):not(:disabled, [aria-disabled="true"]) {
+      transition: opacity 90ms ease-out, transform 90ms ease-out;
+    }
+    :where(a[href], button, summary, [role="tab"], [role="button"]):not(:disabled, [aria-disabled="true"]):active {
+      transform: scale(0.985);
+    }
+  }
 }
 
 /* ResponsiveDisclosure: one <details>. Phones collapse it behind the summary; from `sm:` up the

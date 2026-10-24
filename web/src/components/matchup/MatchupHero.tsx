@@ -36,7 +36,7 @@ function TeamBlock({
       <div className="w-full min-w-0">
         <Link
           href={teamHref(name)}
-          className="inline-flex min-h-9 max-w-full items-center justify-center break-words text-base leading-tight sm:min-h-11 font-bold tracking-tight text-ink hover:text-accent-ink hover:underline sm:text-xl"
+          className="inline-flex min-h-11 max-w-full items-center justify-center break-words text-base leading-tight font-bold tracking-tight text-ink hover:text-accent-ink hover:underline sm:text-xl"
         >
           {name}
         </Link>

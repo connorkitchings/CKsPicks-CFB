@@ -1,8 +1,12 @@
 import { PageShell } from "@/components/PageShell";
 import { Card } from "@/components/ui/Card";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
+import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 
-/** Matchup loading skeleton: back link, two team blocks with the forecast, and stat cards. */
+/**
+ * Matchup loading skeleton: back link, two team blocks with the forecast, and stat cards. Phones
+ * drop the back link (the app bar carries it) and show the compact hero at its loaded height.
+ */
 export default function Loading() {
   return (
     <PageShell
@@ -10,11 +14,12 @@ export default function Loading() {
       footer={false}
       aria-busy="true"
       aria-label="Loading matchup"
-      mainClassName="space-y-6 py-6"
+      mainClassName={`${PHONE_PAGE_RHYTHM} sm:space-y-6 sm:py-6`}
     >
       <p role="status" className="sr-only">Loading matchup…</p>
-      <Skeleton className="h-5 w-40" />
-      <Card className="sm:p-6">
+      <Skeleton className="h-87 rounded-xl sm:hidden" />
+      <Skeleton className="h-5 w-40 max-sm:hidden" />
+      <Card className="max-sm:hidden sm:p-6">
         <div className="grid grid-cols-2 items-start gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
           {[0, 1].map((i) => (
             <div key={i} className="flex flex-col items-center gap-2">

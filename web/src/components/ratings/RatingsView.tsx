@@ -280,7 +280,7 @@ export function RatingsView({
   // One control tree: on phones the period, conference and sort selects live in the Filters sheet;
   // from 640px the timeline links and the conference select sit inline, as before.
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2 sm:gap-4">
       {!mobile && timeline.length > 0 && (
         <nav aria-label="Ratings timeline" className="hidden flex-wrap gap-2 sm:flex">
           {timeline.map((entry) => <Link
@@ -315,7 +315,7 @@ export function RatingsView({
         {!mobile && conferenceSelect && <div className="hidden sm:block">{conferenceSelect}</div>}
       </MobileStickyBar>
 
-      <SummaryLine parts={[summary]} className="-mt-2 text-xs text-ink-muted sm:hidden" data-testid="ratings-summary" />
+      <SummaryLine parts={[summary]} className="text-xs text-ink-muted sm:hidden" data-testid="ratings-summary" />
 
       {hasResume && (
         <p className="text-xs text-ink-muted max-sm:order-last">
