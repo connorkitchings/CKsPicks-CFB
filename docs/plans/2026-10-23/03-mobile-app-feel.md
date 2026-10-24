@@ -1,6 +1,6 @@
 # Contract: Mobile app-feel pass across Games, Ratings, Stats and Model
 
-- **Status:** Draft
+- **Status:** In Progress (code complete and automated checks pass; real iPhone and Android acceptance is outstanding)
 - **Created:** 2026-10-23
 - **Approval source:** Owner approved the plan in the 2026-10-23 session and asked for it to be implemented. Decisions: browser only (no manifest, service worker or install prompt), a compact app bar on phones, and commit the Stats and Ratings work first.
 - **Implementation log:** `session_logs/2026-10-23/03-mobile-app-feel.md` (written at the end of each implementation session).
@@ -58,3 +58,7 @@ Manifest, installability, service worker, offline mode, push notifications, nati
 ## Amendments
 
 Mechanical amendments may proceed when architecture, interfaces, scope and acceptance remain unchanged; record reason, previous approach, revised approach and impact.
+
+- **2026-10-23, tab renamed:** the fourth tab is called "Graphs" again in every visible label and title. The route stays `/stats` so links and the `/charts` redirect keep working. Owner decision.
+- **2026-10-24, matchup top bar:** the separate pinned "Week N games" row was merged into the app bar (back chevron plus an abbreviated "AWAY at HOME" title) through an optional `back` prop on `Header` and `AppBar`. This replaces the pinned back row described under Phase C and saves 53px.
+- **Local review note:** `make web-local` needs `CFB_PUBLICATION_MODE=predictions`; without it the server defaults to market mode and every matchup shows "provenance is unavailable". Production already sets the mode.
