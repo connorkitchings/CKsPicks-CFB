@@ -73,7 +73,7 @@ test.describe("mobile team ratings", () => {
 
   test("phone cards link team names to team pages with 44px targets", async ({ page }) => {
     await page.goto("/ratings");
-    const link = page.getByRole("list", { name: "Team ratings list" }).getByRole("link", { name: "Appalachian State", exact: true });
+    const link = page.getByRole("list", { name: "Team ratings list" }).getByRole("link", { name: /^Appalachian State/ });
     await expect(link).toHaveAttribute("href", "/teams/Appalachian%20State");
     expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await link.click();

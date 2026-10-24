@@ -10,6 +10,18 @@ test.describe("team pages (fixture mode)", () => {
     await expect(page.getByRole("link", { name: "← All ratings" })).toBeVisible();
   });
 
+  for (const width of [390, 1280]) {
+    test(`the summary shows record, SOR and the SOS trio at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/teams/Texas");
+      const summary = page.locator('dl[aria-label="Team summary"]');
+      await expect(summary.locator("dt")).toHaveText(["Record", "SOR", "SOS played", "SOS remaining", "SOS full"]);
+      await expect(summary.locator("dd").nth(0)).toHaveText("4–0");
+      for (const index of [2, 3, 4]) await expect(summary.locator("dd").nth(index)).toHaveText(/^#\d+$/);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
+
   test("legacy rating names and CFBD names reach the same page", async ({ page }) => {
     for (const segment of ["San%20Jos%C3%A9%20State", "San%20Jose%20State", "Hawai'i", "Hawai_i"]) {
       const response = await page.goto(`/teams/${segment}`);

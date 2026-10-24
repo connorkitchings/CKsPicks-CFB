@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
 import { publicationScope } from "@/lib/publication";
 import { resolveTeam } from "@/lib/teams";
-import { getTeamGames, getTeamHistory, type Rating } from "@/lib/v5";
+import { getTeamGames, getTeamHistory, getWeeklyRatings, type Rating } from "@/lib/v5";
+import { rankSosByTeam } from "@/lib/sos-rank";
+import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
@@ -18,14 +20,33 @@ export async function generateMetadata({ params }: { params: Promise<{ team: str
   return resolved ? { title: `${resolved.gameName} · Team page` } : { robots: { index: false, follow: false } };
 }
 
+const rankText = (rank: number | null | undefined) => (typeof rank === "number" ? `#${rank}` : "—");
+
+/** Record, SOR rank and the three SOS ranks from the current ratings period, ranked against the whole field. */
+function teamSummary(current: Rating[], ratingName: string) {
+  const rating = current.find((row) => row.team === ratingName);
+  if (!rating) return null;
+  const sos = rankSosByTeam(current).get(ratingName);
+  const record = typeof rating.wins === "number" && typeof rating.losses === "number" ? `${rating.wins}–${rating.losses}` : "—";
+  return [
+    ["Record", record],
+    ["SOR", rankText(rating.sorRank)],
+    ["SOS played", rankText(sos?.played)],
+    ["SOS remaining", rankText(sos?.remaining)],
+    ["SOS full", rankText(sos?.full)],
+  ] as const;
+}
+
 export default async function TeamPage({ params }: { params: Promise<{ team: string }> }) {
   const resolved = resolveTeam((await params).team);
   if (!resolved) notFound();
   const { gameName: team, ratingName } = resolved;
   let history: Rating[] = [];
   let games: Awaited<ReturnType<typeof getTeamGames>> = [];
+  let current: Rating[] = [];
   let unavailable = false;
   if (process.env.CFB_UI_TEST_MODE === "1") {
+    current = ratingsFixture("current").ratings;
     if (ratingName === v5RatingFixture.team) {
       history = [v5RatingFixture];
       games = [{ week: 0, startDate: v5RatingFixture.cutoffUtc,
@@ -37,18 +58,22 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
     try {
       // Rating snapshots store nine teams under legacy names; games use CFBD names.
       [history, games] = await Promise.all([getTeamHistory(2026, ratingName), getTeamGames(2026, team)]);
+      // The summary is secondary: a failed ratings read leaves it out instead of hiding the page.
+      current = await getWeeklyRatings(2026, "current").then((result) => result.ratings).catch(() => []);
     } catch (error) {
       console.error("V5 team page query failed", error);
       unavailable = true;
     }
   }
+  const summary = teamSummary(current, ratingName);
   return (
     <PageShell
       width="narrow"
       header={{ season: 2026, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons }}
       mainClassName="space-y-7 py-8"
     >
-      <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div></div>
+      <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div>
+        {summary && <dl aria-label="Team summary" className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2 sm:grid-cols-5">{summary.map(([label, value]) => <div key={label} className="min-w-0"><dt className="text-[10px] uppercase tracking-wide text-ink-muted">{label}</dt><dd className="font-mono text-sm font-semibold tabular-nums text-ink">{value}</dd></div>)}</dl>}</div>
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : <>
         <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
           {history.length === 0 ? <Notice tone="empty">No certified rating history is available for this team.</Notice> :
