@@ -10,7 +10,7 @@ type Measure = "rating" | "rank";
 
 const MEASURES = [{ value: "rating", label: "Rating" }, { value: "rank", label: "Rank" }] as const;
 
-/** Each point is the rating after that week's games, so the last one is the pregame rating of the following week. */
+/** Each point is the rating after that week's games, labelled as the pregame rating of the following week to match the weekly table. */
 const W = 320;
 const H = 170;
 const PAD = { left: 40, right: 12, top: 18, bottom: 26 };
@@ -29,7 +29,7 @@ function Chart({ points, measure }: { points: readonly TeamRankPoint[]; measure:
   const label = (point: TeamRankPoint) => (measure === "rating" ? ratingText(point.rating) : `#${point.rank}`);
   const first = points[0];
   const weekLabels = trendWeekLabels(points.map((point) => point.week), plotW, 52);
-  const summary = `${measure === "rating" ? "Overall rating" : "Overall rank"} by week: ${label(first)} after Week ${first.week}, ${label(last)} after Week ${last.week}`;
+  const summary = `${measure === "rating" ? "Overall rating" : "Overall rank"} by week: ${label(first)} for Week ${first.week + 1}, ${label(last)} for Week ${last.week + 1}`;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={summary} className="block h-auto w-full text-[11px]">
       {ticks.map((tick) => (
@@ -45,7 +45,7 @@ function Chart({ points, measure }: { points: readonly TeamRankPoint[]; measure:
       <circle cx={endX} cy={endY} r={4} className="fill-accent" />
       <text x={endX} y={endY - 9} textAnchor="end" className="fill-ink font-mono font-semibold">{label(last)}</text>
       {weekLabels.map((week, i) => (
-        <text key={week} x={x(week)} y={H - 6} textAnchor={i === 0 && weekLabels.length > 1 ? "start" : i === weekLabels.length - 1 ? "end" : "middle"} className="fill-ink-muted font-mono">Wk {week}</text>
+        <text key={week} x={x(week)} y={H - 6} textAnchor={i === 0 && weekLabels.length > 1 ? "start" : i === weekLabels.length - 1 ? "end" : "middle"} className="fill-ink-muted font-mono">Wk {week + 1}</text>
       ))}
     </svg>
   );
