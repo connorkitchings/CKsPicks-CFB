@@ -7,7 +7,7 @@ test("page widths map to the shared container classes", () => {
 });
 
 test("slate routes use the slate width", () => {
-  for (const p of ["/", "/stats", "/stats/x"]) {
+  for (const p of ["/", "/stats", "/stats/x", "/teams/Ohio%20State"]) {
     assert.equal(pageWidthFor(p), "slate", p);
   }
 });
@@ -18,8 +18,8 @@ test("ratings, model and matchup routes use the wide width", () => {
   }
 });
 
-test("team pages and other routes use the narrow width", () => {
-  for (const p of ["/teams/Ohio%20State", "/nope"]) {
+test("other routes use the narrow width", () => {
+  for (const p of ["/nope"]) {
     assert.equal(pageWidthFor(p), "narrow", p);
   }
 });

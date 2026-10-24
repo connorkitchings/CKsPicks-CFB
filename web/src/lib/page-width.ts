@@ -16,11 +16,11 @@ export const PHONE_PAGE_RHYTHM = "space-y-2 pt-2 pb-4";
 export type PageWidth = keyof typeof PAGE_WIDTHS;
 
 /**
- * Width for a route: slate for Games and Stats; wide for Ratings, Model and Matchup;
- * narrow for team pages and everything else.
+ * Width for a route: slate for Games, Stats and team pages; wide for Ratings, Model and Matchup;
+ * narrow for everything else.
  */
 export function pageWidthFor(pathname: string): PageWidth {
-  if (pathname === "/" || pathname.startsWith("/stats")) return "slate";
+  if (pathname === "/" || pathname.startsWith("/stats") || pathname.startsWith("/teams")) return "slate";
   if (
     pathname.startsWith("/ratings") ||
     pathname.startsWith("/model") ||
