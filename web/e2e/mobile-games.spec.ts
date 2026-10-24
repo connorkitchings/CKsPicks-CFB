@@ -79,11 +79,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       expect((await edges.boundingBox())!.height).toBeLessThan(60);
     });
 
-    test("the run state folds into the summary line and the publish stamp moves to the menu", async ({ page }) => {
+    test("the record card header carries the week status without the run state or publish stamp", async ({ page }) => {
       await gotoHydrated(page, "/");
       await expect(page.getByText(/Run published/)).toBeHidden();
-      const summary = page.locator("p").filter({ has: page.getByTestId("week-phase") });
-      await expect(summary).toContainText(/Week \d+ · Upcoming · \d+ games · Frozen before kickoff/);
+      const summary = page.getByTestId("record-summary");
+      await expect(summary).toContainText(/Week \d+ · Upcoming · \d+ games/);
+      await expect(summary).not.toContainText("Frozen before kickoff");
+      await expect(page.getByText("Frozen before kickoff")).toBeHidden();
     });
 
     test("the week stepper is centered in the slate bar", async ({ page }) => {

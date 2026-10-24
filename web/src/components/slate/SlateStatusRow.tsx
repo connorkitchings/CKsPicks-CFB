@@ -27,16 +27,6 @@ const STATE_STYLES: Record<string, { pill: string; dot: string }> = {
   },
 };
 
-/** Phone summary-line form of the run state: a colored dot and the label, no pill. */
-export function RunStateInline({ runState }: { runState: string }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span className={clsx("h-1.5 w-1.5 rounded-full", STATE_STYLES[runState]?.dot ?? "bg-ink-muted")} aria-hidden="true" />
-      {STATE_LABEL[runState] ?? runState}
-    </span>
-  );
-}
-
 /**
  * Compact slate metadata line: run state badge, retrospective flag, and publication
  * time. The model system chip and season already live in the global Header;
