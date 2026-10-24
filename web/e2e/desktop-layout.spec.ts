@@ -159,7 +159,7 @@ test.describe("desktop layout at 1280px", () => {
       { path: "/model", maxWidth: 1024 },
       { path: "/model/method", maxWidth: 1024 },
       { path: "/matchup/1", maxWidth: 1024 },
-      { path: "/teams/Alabama", maxWidth: 896 }, // max-w-4xl
+      { path: "/teams/Alabama", maxWidth: 1152 }, // max-w-6xl
     ];
 
     for (const route of routes) {
