@@ -5,12 +5,14 @@ import { PageShell } from "@/components/PageShell";
 import { publicationScope } from "@/lib/publication";
 import { resolveTeam } from "@/lib/teams";
 import { getTeamGames, getTeamHistory, getWeeklyRatings, type Rating } from "@/lib/v5";
-import { rankSosByTeam } from "@/lib/sos-rank";
+import { competitionRanks, rankSosByTeam } from "@/lib/sos-rank";
 import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
-import { PageHeading } from "@/components/ui/PageHeading";
+import TeamLogo from "@/components/TeamLogo";
+import { ratingText, StatGrid, type StatCell } from "@/components/ratings/StatGrid";
+import { teamAbbr } from "@/lib/team-logos";
 import { homeSpreadFromMargin, homeSpreadText } from "@/lib/betting-format";
 
 export const revalidate = 300;
@@ -22,17 +24,21 @@ export async function generateMetadata({ params }: { params: Promise<{ team: str
 
 const rankText = (rank: number | null | undefined) => (typeof rank === "number" ? `#${rank}` : "—");
 
-/** Record, SOR rank and the SOS-played rank from the current ratings period, ranked against the whole field. */
+/** Record, ratings and ranks from the current ratings period, ranked against the whole field. */
 function teamSummary(current: Rating[], ratingName: string) {
-  const rating = current.find((row) => row.team === ratingName);
+  const index = current.findIndex((row) => row.team === ratingName);
+  const rating = current[index];
   if (!rating) return null;
   const sos = rankSosByTeam(current).get(ratingName);
-  const record = typeof rating.wins === "number" && typeof rating.losses === "number" ? `${rating.wins}–${rating.losses}` : "—";
-  return [
-    ["Record", record, "Record against FBS teams"],
-    ["SOR", rankText(rating.sorRank), "Strength of record rank"],
-    ["SOS", rankText(sos?.played), "Strength of schedule played"],
-  ] as const;
+  const overallRank = competitionRanks(current.map((row) => row.overallRating))[index];
+  const record = typeof rating.wins === "number" && typeof rating.losses === "number" ? `${rating.wins}–${rating.losses}` : null;
+  const cells: StatCell[] = [
+    { label: "OFF", title: "Offense rating", value: ratingText(rating.offenseRating) },
+    { label: "DEF", title: "Defense rating", value: ratingText(rating.defenseRating) },
+    { label: "SOR", title: "Strength of record rank", value: rankText(rating.sorRank) },
+    { label: "SOS", title: "Strength of schedule played", value: rankText(sos?.played) },
+  ];
+  return { record, overall: ratingText(rating.overallRating), overallRank: rankText(overallRank), cells };
 }
 
 export default async function TeamPage({ params }: { params: Promise<{ team: string }> }) {
@@ -67,11 +73,27 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
   return (
     <PageShell
       width="narrow"
-      header={{ season: 2026, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons }}
-      mainClassName="space-y-7 py-8"
+      header={{ season: 2026, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons,
+        back: { href: "/ratings", label: "Back to ratings", title: teamAbbr(team) } }}
+      mainClassName="space-y-5 py-4 sm:space-y-7 sm:py-8"
     >
-      <div><Link href="/ratings" className="text-sm text-accent-ink hover:underline max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">← All ratings</Link><div className="mt-3"><PageHeading title={team}>V5 team state and selected 2026 forecasts.</PageHeading></div>
-        {summary && <dl aria-label="Team summary" className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2">{summary.map(([label, value, title]) => <div key={label} title={title} className="min-w-0"><dt className="text-[10px] uppercase tracking-wide text-ink-muted">{label}</dt><dd className="font-mono text-sm font-semibold tabular-nums text-ink">{value}</dd></div>)}</dl>}</div>
+      <div>
+        <Link href="/ratings" className="mb-3 inline-block text-sm text-accent-ink hover:underline max-sm:hidden">← All ratings</Link>
+        <div className="flex items-center gap-3">
+          <TeamLogo name={team} px={48} priority />
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{team}</h1>
+            {summary?.record && <p className="text-sm text-ink-muted" title="Record against FBS teams">{summary.record}</p>}
+          </div>
+        </div>
+        {summary && <Card padding="sm" className="mt-3">
+          <div className="flex items-baseline justify-between gap-3" title="Overall rating">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-ink-muted">Overall</span>
+            <span><span className="font-mono text-lg font-bold tabular-nums text-ink">{summary.overall}</span> <span className="font-mono text-sm tabular-nums text-ink-muted" title="Overall rank">{summary.overallRank}</span></span>
+          </div>
+          <StatGrid cells={summary.cells} className="mt-2" />
+        </Card>}
+      </div>
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : <>
         <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
           {history.length === 0 ? <Notice tone="empty">No certified rating history is available for this team.</Notice> :

@@ -23,6 +23,7 @@ import {
 } from "@/lib/sos-rank";
 import { RankChip } from "@/components/ui/RankChip";
 import { RatingsFilterSheet } from "./RatingsFilterSheet";
+import { ratingText, StatGrid } from "./StatGrid";
 import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
 import { useIsPhone } from "@/lib/use-is-phone";
 import TeamLogo from "@/components/TeamLogo";
@@ -71,7 +72,6 @@ const DASH = "—";
 const isNumber = (value: number | null | undefined): value is number => typeof value === "number" && Number.isFinite(value);
 const isScoreSort = (sort: RatingsSort): sort is ScoreSort => sort === "overall" || sort === "offense" || sort === "defense";
 
-const ratingText = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
 const oneDecimal = (value: number | null | undefined) => (isNumber(value) ? value.toFixed(1) : DASH);
 const rankText = (rank: number | null | undefined) => (isNumber(rank) ? `#${rank}` : DASH);
 /** Hover text for a rank cell: the raw value behind the rank. Null values get no title. */
@@ -360,14 +360,7 @@ export function RatingsView({
                     <p className="font-mono text-lg font-bold tabular-nums text-ink">{primaryText(rating, sort, sosRanks)}</p>
                   </div>
                 </div>
-                <dl className="mt-2 grid grid-cols-4 gap-1 border-t border-line pt-2">
-                  {cardStats(rating, sort, sosRanks).map((cell) => (
-                    <div key={cell.label} title={cell.title} aria-label={cell.title} role="group" className="min-w-0 text-center">
-                      <dt className="text-[10px] uppercase tracking-wide text-ink-muted">{cell.label}</dt>
-                      <dd className="font-mono text-sm font-semibold tabular-nums text-ink">{cell.value}</dd>
-                    </div>
-                  ))}
-                </dl>
+                <StatGrid cells={cardStats(rating, sort, sosRanks)} className="mt-2" />
               </Card>
             ))}
           </ul>
