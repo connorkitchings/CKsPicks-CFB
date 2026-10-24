@@ -54,9 +54,10 @@ test.describe("team pages (fixture mode)", () => {
     await expect(table).toBeVisible();
     await expect(page.getByRole("list", { name: "Schedule" })).toBeHidden();
     const record = page.getByTestId("schedule-record");
-    await expect(record).toContainText("ATS 2–1–1");
-    await expect(record).toContainText("O/U 1–3");
-    await expect(record).toContainText("Model picked the winner 3–1");
+    await expect(record).toContainText("ATS (W–L) 2–1–1 · 67% cover");
+    await expect(record).toContainText("O/U (Over–Under) 1–3 · 25% over");
+    await expect(record).not.toContainText("Model picked the winner");
+    await expect(table.getByRole("columnheader")).toHaveText(["Wk", "Date", "Opponent", "Line", "Total", "Result", "ATS", "O/U", "Matchup"]);
     await expect(table.getByTestId("schedule-next-row")).toContainText("Ohio State");
   });
 

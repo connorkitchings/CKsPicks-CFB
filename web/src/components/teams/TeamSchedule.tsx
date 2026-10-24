@@ -5,7 +5,7 @@ import { MatchupCellLink, MatchupRowLink } from "@/components/teams/MatchupRowLi
 import { TeamGameRow, type TeamGame } from "@/components/teams/TeamGameRow";
 import { TeamSection } from "@/components/teams/TeamSection";
 import {
-  atsResult, forecastLine, isFinal, lineForTeam, lineText, overUnderResult, recordText, teamRecords,
+  atsResult, isFinal, lineForTeam, lineText, overUnderResult, recordText, teamRecords, winPercent,
   type BetResult,
 } from "@/lib/team-games";
 import { phoneTeamName } from "@/lib/team-logos";
@@ -35,7 +35,7 @@ function ScheduleTable({ games, team, nextId }: { games: readonly TeamGame[]; te
         <thead>
           <tr>
             <th scope="col" className={TH}>Wk</th><th scope="col" className={TH}>Date</th><th scope="col" className={TH}>Opponent</th>
-            <th scope="col" className={clsx(TH, "text-right")}>Line</th><th scope="col" className={clsx(TH, "text-right")}>Total</th><th scope="col" className={clsx(TH, "text-right")}>Forecast</th>
+            <th scope="col" className={clsx(TH, "text-right")}>Line</th><th scope="col" className={clsx(TH, "text-right")}>Total</th>
             <th scope="col" className={TH}>Result</th><th scope="col" className={TH}>ATS</th><th scope="col" className={TH}>O/U</th>
             <th scope="col" className="sr-only">Matchup</th>
           </tr>
@@ -61,7 +61,6 @@ function ScheduleTable({ games, team, nextId }: { games: readonly TeamGame[]; te
                 </td>
                 <td className={clsx(TD, "text-right font-mono")}>{line === null ? NONE : lineText(line)}</td>
                 <td className={clsx(TD, "text-right font-mono")}>{game.totalLine === null ? NONE : game.totalLine.toFixed(1)}</td>
-                <td className={clsx(TD, "text-right font-mono")}>{forecastLine(game) ?? NONE}</td>
                 <td className={TD}>{final ? <Outcome game={game} team={team} /> : NONE}</td>
                 <td className={TD}>{ats ? <span className={clsx("font-semibold", BET_TONE[ats])}>{ats}</span> : NONE}</td>
                 <td className={TD}>{ou ?? NONE}</td>
@@ -75,25 +74,28 @@ function ScheduleTable({ games, team, nextId }: { games: readonly TeamGame[]; te
   );
 }
 
-/** ATS, over/under and model-pick records over the games that have the data; nothing before any result. */
+/** The market records and cover rates over the games that have the data; nothing before any result. */
 function RecordLine({ games, team }: { games: readonly TeamGame[]; team: string }) {
-  const { ats, overUnder, modelWinner } = teamRecords(games, team);
+  const { ats, overUnder } = teamRecords(games, team);
+  const cover = winPercent(ats.wins, ats.losses);
+  const over = winPercent(overUnder.overs, overUnder.unders);
   const items = [
-    ats.wins + ats.losses + ats.pushes > 0 && { label: "ATS", value: recordText(ats.wins, ats.losses, ats.pushes) },
-    overUnder.overs + overUnder.unders + overUnder.pushes > 0 && { label: "O/U", value: recordText(overUnder.overs, overUnder.unders, overUnder.pushes) },
-    modelWinner.right + modelWinner.wrong > 0 && { label: "Model picked the winner", value: recordText(modelWinner.right, modelWinner.wrong) },
+    ats.wins + ats.losses + ats.pushes > 0 && { label: "ATS (W–L)", value: recordText(ats.wins, ats.losses, ats.pushes), rate: cover && `${cover} cover` },
+    overUnder.overs + overUnder.unders + overUnder.pushes > 0 && { label: "O/U (Over–Under)", value: recordText(overUnder.overs, overUnder.unders, overUnder.pushes), rate: over && `${over} over` },
   ].filter((item) => item !== false);
   if (items.length === 0) return null;
   return (
     <p data-testid="schedule-record" className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3 text-[13px] text-ink-muted">
-      {items.map((item) => <span key={item.label}>{item.label} <b className="font-mono font-medium tabular-nums text-ink">{item.value}</b></span>)}
+      {items.map((item) => (
+        <span key={item.label}>{item.label} <b className="font-mono font-medium tabular-nums text-ink">{item.value}</b>{item.rate && <> · {item.rate}</>}</span>
+      ))}
     </p>
   );
 }
 
 /**
- * The schedule as a lines-and-results table from `sm:` up and a two-line list on phones, with the
- * ATS, over/under and model-pick records underneath. The first unplayed game is highlighted.
+ * The schedule as a market-only lines-and-results table from `sm:` up and a two-line list on phones,
+ * with the ATS and over/under records and cover rates underneath. The first unplayed game is highlighted.
  */
 export function TeamSchedule({ games, team }: { games: readonly TeamGame[]; team: string }) {
   const nextId = games.find((game) => !isFinal(game))?.gameId;

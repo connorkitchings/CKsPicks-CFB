@@ -2,7 +2,7 @@ import clsx from "clsx";
 import TeamLogo from "@/components/TeamLogo";
 import { dayShort } from "@/components/slate/format";
 import {
-  atsResult, forecastLine, gameResultText, isFinal, lineForTeam, lineText, overUnderResult,
+  atsResult, gameResultText, isFinal, lineForTeam, lineText, overUnderResult,
   type TeamGameFields, type TeamGameLines,
 } from "@/lib/team-games";
 import { phoneTeamName } from "@/lib/team-logos";
@@ -13,19 +13,19 @@ export interface TeamGame extends TeamGameFields, TeamGameLines {
   startDate: Date;
 }
 
-/** The second line of a row: line, ATS and over/under once final; line, total and forecast before. */
+/** The second line of a row: line, ATS and over/under once final; line and total before. */
 function detailParts(game: TeamGame, team: string): [label: string, value: string][] {
   const line = lineForTeam(game, team);
   const total = game.totalLine === null ? null : game.totalLine.toFixed(1);
   const parts: [string, string | null][] = isFinal(game)
     ? [["Line", line === null ? null : lineText(line)], ["ATS", atsResult(game, team)], [overUnderResult(game) ?? "Total", total]]
-    : [["Line", line === null ? null : lineText(line)], ["Total", total], ["Fcst", forecastLine(game)]];
+    : [["Line", line === null ? null : lineText(line)], ["Total", total]];
   return parts.filter((part): part is [string, string] => part[1] !== null);
 }
 
 /**
  * One schedule line from `team`'s side: opponent, week and date, the score once final, and a
- * second line with the market line and bet results (or the total and forecast before kickoff).
+ * second line with the market line and bet results (or the line and total before kickoff).
  * Upcoming games are dimmed unless they are the team's `next` game.
  */
 export function TeamGameRow({ game, team, next = false }: { game: TeamGame; team: string; next?: boolean }) {

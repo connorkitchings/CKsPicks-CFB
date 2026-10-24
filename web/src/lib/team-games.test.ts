@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  atsResult, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, overUnderResult, recordText, teamRecords,
+  atsResult, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, overUnderResult, recordText, teamRecords, winPercent,
   type TeamGameFields, type TeamGameLines,
 } from "./team-games.ts";
 
@@ -83,8 +83,13 @@ test("teamRecords tallies each record over the games that have the data", () => 
   assert.deepEqual(teamRecords(games, "Texas"), {
     ats: { wins: 1, losses: 0, pushes: 1 },
     overUnder: { overs: 1, unders: 1, pushes: 0 },
-    modelWinner: { right: 1, wrong: 2 },
   });
+});
+
+test("winPercent leaves pushes out of the denominator", () => {
+  assert.equal(winPercent(2, 1), "67%");
+  assert.equal(winPercent(0, 0), null);
+  assert.equal(winPercent(0, 3), "0%");
 });
 
 test("marketText reads the line from the favorite's side with the total", () => {

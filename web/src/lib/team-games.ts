@@ -97,19 +97,14 @@ export function modelPickedWinner(game: TeamGameFields, team: string): boolean |
   return actual > 0 === predicted > 0;
 }
 
-/** ATS, over/under and model-winner records over the games where each result exists. */
+/** ATS and over/under records over the games where each result exists. */
 export interface TeamRecords {
   ats: { wins: number; losses: number; pushes: number };
   overUnder: { overs: number; unders: number; pushes: number };
-  modelWinner: { right: number; wrong: number };
 }
 
 export function teamRecords(games: readonly (TeamGameFields & TeamGameLines)[], team: string): TeamRecords {
-  const records: TeamRecords = {
-    ats: { wins: 0, losses: 0, pushes: 0 },
-    overUnder: { overs: 0, unders: 0, pushes: 0 },
-    modelWinner: { right: 0, wrong: 0 },
-  };
+  const records: TeamRecords = { ats: { wins: 0, losses: 0, pushes: 0 }, overUnder: { overs: 0, unders: 0, pushes: 0 } };
   for (const game of games) {
     const ats = atsResult(game, team);
     if (ats === "W") records.ats.wins++;
@@ -119,11 +114,13 @@ export function teamRecords(games: readonly (TeamGameFields & TeamGameLines)[], 
     if (ou === "Over") records.overUnder.overs++;
     else if (ou === "Under") records.overUnder.unders++;
     else if (ou === "Push") records.overUnder.pushes++;
-    const picked = modelPickedWinner(game, team);
-    if (picked === true) records.modelWinner.right++;
-    else if (picked === false) records.modelWinner.wrong++;
   }
   return records;
+}
+
+/** Share of decided picks that won, "67%"; pushes are not decisions. Null with none decided. */
+export function winPercent(wins: number, losses: number): string | null {
+  return wins + losses === 0 ? null : `${Math.round((wins / (wins + losses)) * 100)}%`;
 }
 
 /** "2–3" or "2–3–1" with pushes; the shared wording of the record line. */
