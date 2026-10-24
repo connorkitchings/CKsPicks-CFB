@@ -7,6 +7,7 @@ import {
   spreadEdge,
   totalEdge,
 } from "./betting-format.ts";
+import { phoneTeamName } from "./team-logos.ts";
 
 export type LeanKind = "spread" | "total";
 
@@ -181,6 +182,14 @@ export function leanDetail(lean: Lean): string | null {
     lean.source ? `best line: ${lean.source}` : null,
   ].filter((p): p is string => p !== null);
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/** The lean as phones show it: a long team name in the pick and model text becomes its abbreviation. */
+export function phoneLean(lean: Lean): Lean {
+  if (lean.team === null) return lean;
+  const short = phoneTeamName(lean.team);
+  if (short === lean.team) return lean;
+  return { ...lean, pick: lean.pick.replace(lean.team, short), model: lean.model?.replace(lean.team, short) ?? null };
 }
 
 export type TopLean = Lean & { game: PredictionGame };

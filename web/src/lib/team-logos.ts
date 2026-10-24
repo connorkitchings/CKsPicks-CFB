@@ -26,6 +26,14 @@ const LOGO_ALIASES: Record<string, string> = {
   "Louisiana-Monroe": "UL Monroe",
 };
 
+/** House abbreviations where CFBD's read poorly ("TA&M", "CONN"); keyed by CFBD school name. */
+const ABBR_OVERRIDES: Record<string, string> = {
+  "Texas A&M": "TAMU",
+  UConn: "UCONN",
+  Louisiana: "ULL",
+  Tulane: "TUL",
+};
+
 function schoolKey(teamName: string): string {
   return teamName in LOGO_IDS ? teamName : (LOGO_ALIASES[teamName] ?? teamName);
 }
@@ -55,11 +63,20 @@ export const FALLBACK_TEAM_COLOR = "#64748b";
 
 /** CFBD abbreviation (display only); falls back to the team's initials. */
 export function teamAbbr(teamName: string): string {
-  const display = TEAM_DISPLAY[schoolKey(teamName)];
-  if (display?.abbr) return display.abbr;
+  const key = schoolKey(teamName);
+  const abbr = ABBR_OVERRIDES[key] ?? TEAM_DISPLAY[key]?.abbr;
+  if (abbr) return abbr;
   const words = teamName.replace(/[^A-Za-z\s]/g, "").split(/\s+/).filter(Boolean);
   const text = words.length > 1 ? words.map((w) => w[0]).join("").slice(0, 4) : (words[0] ?? "").slice(0, 4);
   return (text || "?").toUpperCase();
+}
+
+/** Names longer than this wrap a phone pick label, so phones show the abbreviation instead. */
+const PHONE_NAME_MAX_CHARS = 14;
+
+/** The name a phone pick label shows: the full name when short, otherwise the abbreviation. */
+export function phoneTeamName(teamName: string): string {
+  return teamName.length > PHONE_NAME_MAX_CHARS ? teamAbbr(teamName) : teamName;
 }
 
 /** CFBD primary color (display only), or a neutral fallback. */

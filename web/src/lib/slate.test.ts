@@ -9,6 +9,7 @@ import {
   hasLean,
   leanFor,
   leanGradeRows,
+  phoneLean,
   sortGames,
   sortSlate,
   slateSorts,
@@ -91,6 +92,18 @@ test("leanFor labels the pick side with a positive edge", () => {
   assert.equal(away?.pick, "Away +3.5");
   assert.equal(away?.edge, 4.2);
   assert.equal(leanFor(game({ totalLean: "under" }), "total")?.pick, "Under 50.5");
+});
+
+test("phoneLean abbreviates a long leaned team in the pick and model text only", () => {
+  const long = leanFor(game({ homeTeam: "Florida International", awayTeam: "Georgia" }), "spread")!;
+  const phone = phoneLean(long);
+  assert.equal(phone.pick, "FIU -3.5");
+  assert.equal(phone.model, "FIU by 6.5");
+  assert.equal(phone.team, "Florida International");
+  const short = leanFor(game({ homeTeam: "Georgia", awayTeam: "Florida International" }), "spread")!;
+  assert.equal(phoneLean(short), short);
+  const total = leanFor(game({ homeTeam: "Florida International" }), "total")!;
+  assert.equal(phoneLean(total), total);
 });
 
 test("no lean when the lean or the line is missing, and for market games", () => {

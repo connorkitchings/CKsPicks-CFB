@@ -216,28 +216,27 @@ test.describe("game location next to the time", () => {
   });
 });
 
-test.describe("long team names keep the full pick visible on a small phone", () => {
-  test("picks: Appalachian State -2.5 is not truncated at 360px", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto("/");
-    await expect(page.locator("#game-1").getByText("Appalachian State -2.5", { exact: true })).toBeVisible();
-    const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
-      els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
-    );
-    expect(clipped).toEqual([]);
-    expect(await fits(page)).toBe(true);
-  });
+test.describe("long team names shorten to the abbreviation in phone picks", () => {
+  for (const { path, gameId, full, phone } of [
+    { path: "/", gameId: 1, full: "Appalachian State -2.5", phone: "APP -2.5" },
+    { path: "/?week=4", gameId: 108, full: "Southern Mississippi +4.0", phone: "USM +4.0" },
+  ]) {
+    test(`${path}: ${phone} at 360px, ${full} at 1280px`, async ({ page }) => {
+      await page.setViewportSize({ width: 360, height: 800 });
+      await page.goto(path);
+      const card = page.locator(`#game-${gameId}`);
+      await expect(card.getByText(phone, { exact: true }).first()).toBeVisible();
+      await expect(card.getByText(full, { exact: true }).first()).toBeHidden();
+      const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
+        els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
+      );
+      expect(clipped).toEqual([]);
+      expect(await fits(page)).toBe(true);
 
-  test("final week: Southern Mississippi +4.0 is not truncated at 360px", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto("/?week=4");
-    await expect(page.locator("#game-108").getByText("Southern Mississippi +4.0", { exact: true })).toBeVisible();
-    const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
-      els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
-    );
-    expect(clipped).toEqual([]);
-    expect(await fits(page)).toBe(true);
-  });
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await expect(card.getByText(full, { exact: true }).first()).toBeVisible();
+    });
+  }
 });
 
 test("footer carries the team-logo trademark attribution", async ({ page }) => {

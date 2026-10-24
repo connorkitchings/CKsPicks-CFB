@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
 import { Card } from "@/components/ui/Card";
-import { coverMargin, edgeTone, isFinal, leanFor, resultFor, venueLabel, type Lean } from "@/lib/slate";
+import { coverMargin, edgeTone, isFinal, leanFor, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
+import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { kickoffTime, dayShort } from "./format";
 import { TeamPair } from "./TeamPair";
@@ -32,7 +33,7 @@ function BetCell({ game, kind, results }: {
         {grade ? <ResultBadge grade={grade} /> : results ? <span>Ungraded</span> : lean?.source ? <span className="truncate text-ink-muted">{lean.source}</span> : null}
       </div>
       {lean ? <>
-        <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}>{lean.pick}</p>
+        <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></p>
         <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums text-ink-muted">
           <span>Model: <span className="font-mono font-medium text-ink">{modelNumber(lean)}</span></span>
           <span className={clsx("font-mono font-semibold", edgeTone(lean.edge, kind))}>(+{lean.edge.toFixed(1)})</span>

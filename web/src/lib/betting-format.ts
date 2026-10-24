@@ -57,10 +57,10 @@ export function modelSpreadView(
     : { team: awayTeam, line: predictedSpread };
 }
 
-export function spreadLabel(view: SpreadView): string {
+export function spreadLabel(view: SpreadView, teamName: (team: string) => string = (team) => team): string {
   if (view === null) return "—";
   if (view === "PK") return "PK";
-  return `${view.team} ${signedSpread(view.line)}`;
+  return `${teamName(view.team)} ${signedSpread(view.line)}`;
 }
 
 /** Signed difference between the displayed model and market spread numbers. */

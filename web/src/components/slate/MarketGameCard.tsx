@@ -2,6 +2,8 @@ import { clsx } from "clsx";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { PhoneSwap } from "@/components/ui/PhoneSwap";
+import { phoneTeamName } from "@/lib/team-logos";
 import { BetTable } from "../BetTable";
 import type { Game } from "@/lib/queries";
 
@@ -92,7 +94,7 @@ export function MarketGameCard({
           {
             label: "Spread",
             cells: [
-              spreadLabel(marketSpread),
+              <PhoneSwap key="spread" full={spreadLabel(marketSpread)} phone={spreadLabel(marketSpread, phoneTeamName)} />,
               ...(showBetResult
                 ? [<ResultCell key="result" result={game.spreadResult} />]
                 : []),

@@ -1,5 +1,6 @@
 import type { Game } from "@/lib/queries";
-import { coverMargin, edgeTone, isFinal, leanFor, resultFor } from "@/lib/slate";
+import { coverMargin, edgeTone, isFinal, leanFor, phoneLean, resultFor } from "@/lib/slate";
+import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { dayShort, kickoffTime } from "./format";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { MarketGameCard } from "./MarketGameCard";
@@ -18,7 +19,7 @@ function GradedCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
     <div className="space-y-0.5 text-xs">
       <div className="flex items-center gap-2">
         <LeanMarker lean={lean} />
-        <span className="min-w-0 break-words text-sm font-semibold text-ink">{lean.pick}</span>
+        <span className="min-w-0 break-words text-sm font-semibold text-ink"><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></span>
         <span className={`shrink-0 tabular-nums ${edgeTone(lean.edge, lean.kind)}`}>({lean.edge.toFixed(1)})</span>
         {grade && <ResultBadge grade={grade} />}
       </div>
