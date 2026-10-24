@@ -161,6 +161,25 @@ test.describe("team pages (fixture mode)", () => {
     await expect(table.getByRole("row")).toHaveCount(3);
   });
 
+  for (const width of [1280, 390, 320]) {
+    test(`the weekly ratings table fits its card at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await gotoHydrated(page, "/teams/Texas");
+      await weeklyRatings(page).click();
+      const table = page.getByRole("table").filter({ has: page.getByRole("columnheader", { name: "Week" }) });
+      await expect(table).toBeVisible();
+      const fits = await table.evaluate((el) => {
+        const box = el.closest("[data-card]") as HTMLElement;
+        const cell = el.querySelector("tbody td") as HTMLElement;
+        return { scroll: box.scrollWidth <= box.clientWidth, oneLine: cell.getBoundingClientRect().height < 48 };
+      });
+      expect(fits.scroll, "the card has nothing to scroll sideways").toBe(true);
+      expect(fits.oneLine, "the week cell stays on one line").toBe(true);
+      await expect(table.getByRole("cell", { name: "Wk 1" })).toBeVisible();
+      expect(await noOverflow(page)).toBe(true);
+    });
+  }
+
   test("Matchup links from the hero and the schedule open the matchup", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
