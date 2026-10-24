@@ -362,6 +362,7 @@ export const getTeamHistory = cache(releaseCached("getTeamHistory", async (seaso
 export const getTeamGames = cache(releaseCached("getTeamGames", async (season: number, team: string) => {
   const db = await getSeasonDb(season);
   return db.select({
+    gameId: schema.games.gameId,
     week: schema.games.week,
     startDate: schema.games.startDate,
     homeTeam: schema.games.homeTeam,

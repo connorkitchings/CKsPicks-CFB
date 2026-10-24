@@ -14,7 +14,10 @@ import { RatingSparkline } from "@/components/teams/RatingSparkline";
 import TeamLogo from "@/components/TeamLogo";
 import { ratingText, StatGrid, type StatCell } from "@/components/ratings/StatGrid";
 import { teamAbbr } from "@/lib/team-logos";
-import { homeSpreadFromMargin, homeSpreadText } from "@/lib/betting-format";
+import { MatchupButton } from "@/components/MatchupLinks";
+import { MatchupRowLink } from "@/components/teams/MatchupRowLink";
+import { TeamGameRow } from "@/components/teams/TeamGameRow";
+import { isFinal } from "@/lib/team-games";
 
 export const revalidate = 300;
 
@@ -54,10 +57,13 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
     current = ratingsFixture("current").ratings;
     if (ratingName === v5RatingFixture.team) {
       history = [v5RatingFixture, { ...v5RatingFixture, week: 1, overallRating: 5.9, cutoffUtc: new Date(v5RatingFixture.cutoffUtc.getTime() + 7 * 864e5) }];
-      games = [{ week: 0, startDate: v5RatingFixture.cutoffUtc,
+      games = [{ gameId: 1, week: 0, startDate: v5RatingFixture.cutoffUtc,
         homeTeam: team, awayTeam: "Ohio State", predictedMargin: 3.5,
         predictedTotal: 52, homePoints: 24, awayPoints: 21,
-        evidenceClass: "replay" }];
+        evidenceClass: "replay" },
+        { gameId: 2, week: 1, startDate: new Date(v5RatingFixture.cutoffUtc.getTime() + 7 * 864e5),
+          homeTeam: "Ohio State", awayTeam: team, predictedMargin: 6.2, predictedTotal: 54.84,
+          homePoints: null, awayPoints: null, evidenceClass: "replay" }];
     }
   } else {
     try {
@@ -70,6 +76,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       unavailable = true;
     }
   }
+  const nextGame = games.find((game) => !isFinal(game));
   const summary = teamSummary(current, ratingName);
   return (
     <PageShell
@@ -101,9 +108,11 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
           <><RatingSparkline history={history} /><Card padding="none"><table className="w-full text-sm tabular-nums"><thead className="border-b border-line bg-surface-inset text-xs uppercase tracking-wide text-ink-faint"><tr><th scope="col" className="px-3 py-3 text-left sm:px-4">Week</th><th scope="col" className="px-3 py-3 text-right">Overall</th><th scope="col" className="px-3 py-3 text-right">OFF</th><th scope="col" className="px-3 py-3 text-right">DEF</th><th scope="col" className="px-4 py-3 text-right max-sm:hidden">Uncertainty</th></tr></thead><tbody>{history.map((rating, index) => <tr key={`${rating.cutoffUtc.toISOString()}-${index}`} className="border-b border-line last:border-0"><td className="px-3 py-3 text-ink sm:px-4">Week {rating.week}</td><td className="px-3 py-3 text-right text-ink">{rating.overallRating.toFixed(2)}</td><td className="px-3 py-3 text-right text-ink-muted">{rating.offenseRating.toFixed(2)}</td><td className="px-3 py-3 text-right text-ink-muted">{rating.defenseRating.toFixed(2)}</td><td className="px-4 py-3 text-right text-ink-muted max-sm:hidden">±{Math.sqrt(Math.max(0, rating.overallVariance)).toFixed(2)}</td></tr>)}</tbody></table></Card></>}
           <p className="mt-2 text-xs text-ink-faint">These are pregame states. Preseason information has more influence early; completed games gain weight as evidence accumulates.</p>
         </section>
-        <section aria-labelledby="team-games"><h2 id="team-games" className="mb-3 text-lg font-semibold text-ink">Games and forecasts</h2>
-          {games.length === 0 ? <Notice tone="empty">No selected V5 forecasts are available yet.</Notice> :
-          <div className="space-y-2">{games.map((game) => <Card as="article" key={`${game.week}-${game.startDate.toISOString()}`}><div className="flex flex-wrap items-center justify-between gap-2"><div><span className="text-xs uppercase tracking-wide text-ink-faint">Week {game.week} · {game.evidenceClass ?? "forecast unavailable"}</span><p className="font-semibold text-ink">{game.awayTeam} at {game.homeTeam}</p></div><div className="text-right text-sm tabular-nums text-ink-muted"><p>Forecast: {homeSpreadText(game.homeTeam, homeSpreadFromMargin(game.predictedMargin))} · {game.predictedTotal?.toFixed(1) ?? "—"} total</p><p>{game.homePoints === null || game.awayPoints === null ? "Not final" : `Final: ${game.awayPoints}–${game.homePoints}`}</p></div></div></Card>)}</div>}
+        <section aria-labelledby="team-games"><h2 id="team-games" className="mb-3 text-lg font-semibold text-ink">Schedule</h2>
+          {games.length === 0 ? <Notice tone="empty">No selected V5 forecasts are available yet.</Notice> : <>
+            {nextGame && <Card padding="none" className="mb-3" aria-label="Next game"><p className="px-3 pt-2.5 text-[10px] font-medium uppercase tracking-wide text-accent-ink">Next game</p><div className="px-3 pb-1 pt-1"><TeamGameRow game={nextGame} team={team} /></div><div className="flex justify-end px-3 pb-1"><MatchupButton gameId={nextGame.gameId} /></div></Card>}
+            <Card padding="none"><ul aria-label="Schedule" className="divide-y divide-line">{games.map((game) => <li key={game.gameId}><MatchupRowLink gameId={game.gameId}><TeamGameRow game={game} team={team} /></MatchupRowLink></li>)}</ul></Card>
+          </>}
         </section>
       </>}
     </PageShell>

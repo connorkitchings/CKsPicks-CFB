@@ -74,3 +74,7 @@ test("parseRatingsSort honours a valid direction and replaces an unknown one wit
   assert.deepEqual(parseRatingsSort("sos_full", "desc"), { sort: "sos_full", dir: "desc" });
   assert.deepEqual(parseRatingsSort("sor", "sideways"), { sort: "sor", dir: "asc" });
 });
+
+test("competitionRanks gives teams with equal overall ratings the same rank", () => {
+  assert.deepEqual(competitionRanks([0.53, 1.2, 0.53, -0.4]), [2, 1, 2, 4]);
+});

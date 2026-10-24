@@ -9,7 +9,7 @@ import { createContext, useContext } from "react";
  * it here so client-rendered cards can show a Matchup button without the flag
  * ever being exposed to the browser. Closed by default.
  */
-const MatchupLinksContext = createContext(false);
+export const MatchupLinksContext = createContext(false);
 
 export function MatchupLinksProvider({
   enabled,
