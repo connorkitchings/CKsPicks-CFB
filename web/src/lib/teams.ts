@@ -16,9 +16,9 @@ export const TEAM_LOGO_MAP: Record<string, string> = {
   "Texas A&M": "Texas A&M",
 };
 
-/** Link to a team page; the name is a CFBD game name or a stored rating name. */
+/** Link to a team page; the name is a CFBD game name or a stored rating name. Spaces become underscores. */
 export function teamHref(name: string): string {
-  return `/teams/${encodeURIComponent(name)}`;
+  return `/teams/${encodeURIComponent(name.replaceAll(" ", "_"))}`;
 }
 
 export type ResolvedTeam = { gameName: string; ratingName: string };
@@ -33,6 +33,12 @@ export function resolveTeam(segment: string): ResolvedTeam | null {
   if (name.includes("%")) {
     try { name = decodeURIComponent(name); } catch { return null; }
   }
+  // Links write spaces as underscores; the exact segment is tried first so "%20" links and names that
+  // really contain an underscore keep working.
+  return lookupTeam(name) ?? (name.includes("_") ? lookupTeam(name.replaceAll("_", " ")) : null);
+}
+
+function lookupTeam(name: string): ResolvedTeam | null {
   // A CFBD name wins ("Florida International" is both a game name and a stored name).
   if (Object.hasOwn(LOGO_IDS, name)) return { gameName: name, ratingName: TEAM_LOGO_MAP[name] ?? name };
   // Otherwise a stored name: the single alias key that is a CFBD name is the game name.
