@@ -248,3 +248,39 @@ test.describe("mobile scatter inspection on the page", () => {
     await context.close();
   });
 });
+
+test.describe("scatter label collisions on narrow phones", () => {
+  test.use({ viewport: { width: 320, height: 568 }, hasTouch: true });
+
+  for (const width of [320, 360, 390]) {
+    test(`quadrant and average labels never overlap each other or leave the plot at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await gotoHydrated(page, "/stats?chart=efficiency&week=3");
+      await expect(page.getByTestId("scatter-chart")).toBeVisible();
+      await expect(page.getByTestId("average-labels")).toBeVisible();
+      const result = await page.evaluate(() => {
+        const rect = (node: Element) => { const r = node.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; };
+        const plot = rect(document.querySelector('[data-testid="scatter-chart"] svg > rect')!);
+        const labels = [
+          ...document.querySelectorAll('[data-testid="corner-labels"] text'),
+          ...document.querySelectorAll('[data-testid="average-labels"] text'),
+        ].map((node) => ({ text: node.textContent, ...rect(node) }));
+        const captionLines = [...document.querySelectorAll('[data-testid="corner-labels"] text')].map((node) => node.querySelectorAll("tspan").length);
+        return { plot, labels, captionLines };
+      });
+      expect(result.labels).toHaveLength(6);
+      // A quadrant name never needs more than two lines, so it stays clear of the average-line labels.
+      expect(Math.max(...result.captionLines)).toBeLessThanOrEqual(2);
+      for (const label of result.labels) {
+        expect(label.l, `${label.text} left`).toBeGreaterThanOrEqual(result.plot.l - 1);
+        expect(label.r, `${label.text} right`).toBeLessThanOrEqual(result.plot.r + 1);
+      }
+      for (const [i, a] of result.labels.entries()) {
+        for (const b of result.labels.slice(i + 1)) {
+          const apart = a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t;
+          expect(apart, `"${a.text}" overlaps "${b.text}"`).toBe(true);
+        }
+      }
+    });
+  }
+});

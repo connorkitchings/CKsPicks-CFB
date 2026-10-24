@@ -122,7 +122,9 @@ export function ScatterChart({
   const margin = !interactive ? EXPORT_MARGIN : compact ? MOBILE_MARGIN : INTERACTIVE_MARGIN;
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   // Each top caption may use half the plot minus its inset, so the pair never meets in the middle.
-  const captionChars = compact ? Math.max(8, Math.floor(((plot.right - plot.left) / 2 - 16) / (textSize(13) * 0.62))) : 0;
+  // On a phone captions drop to 12px and wrap by their measured width (about 0.5em per bold character), so the longest ("Efficient and explosive") takes two lines, not three.
+  const captionSize = compact ? textSize(12) : textSize(13);
+  const captionChars = compact ? Math.max(8, Math.floor(((plot.right - plot.left) / 2 - 12) / (captionSize * 0.5))) : 0;
   const xd = xDomain;
   const yd = yDomain;
   const fraction = (value: number, domain: Domain) => (value - domain[0]) / (domain[1] - domain[0]);
@@ -156,8 +158,8 @@ export function ScatterChart({
 
   // Top captions grow downward from the plot top, bottom captions upward from the plot bottom.
   const captionY = (top: boolean, lines: number) => top
-    ? plot.top + (interactive ? Math.max(20, textSize(13) + 7) : 20)
-    : plot.bottom - 10 - (lines - 1) * textSize(13) * 1.15;
+    ? plot.top + (interactive ? Math.max(20, captionSize + 7) : 20)
+    : plot.bottom - 10 - (lines - 1) * captionSize * 1.15;
 
   // A long x title is centred on the plot, shifted (and on a phone shrunk to 12px) to stay inside the view.
   const xTitleSize = compact && xLabel.length * textSize(14) * 0.58 > width - 8 ? textSize(12) : textSize(14);
@@ -295,12 +297,12 @@ export function ScatterChart({
                   x={left ? plot.left + 10 : plot.right - 10}
                   y={captionY(top, captionLines(cornerCaptions.names[key], captionChars).length)}
                   textAnchor={left ? "start" : "end"}
-                  data-chart-label="true" fontSize={textSize(13)}
+                  data-chart-label="true" fontSize={captionSize}
                   fontWeight={700}
                   fill="var(--ink-muted)"
                 >
                   {captionLines(cornerCaptions.names[key], captionChars).map((line, index) => (
-                    <tspan key={line} x={left ? plot.left + 10 : plot.right - 10} dy={index === 0 ? 0 : textSize(13) * 1.15}>{line}</tspan>
+                    <tspan key={line} x={left ? plot.left + 10 : plot.right - 10} dy={index === 0 ? 0 : captionSize * 1.15}>{line}</tspan>
                   ))}
                 </text>
               </g>
@@ -447,7 +449,13 @@ function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, po
     const w = spot.text.length * LABEL_CHAR * labelScale;
     return { x: spot.anchor === "end" ? spot.x - w : spot.anchor === "middle" ? spot.x - w / 2 : spot.x, y: spot.baseline - 11 * labelScale, w, h: LABEL_HEIGHT * labelScale };
   };
-  const choose = (spots: LabelSpot[]): LabelSpot => spots[leastCrowdedSpot(spots.map(spotBox), obstacles, bounds)];
+  // A label wider than its spot allows slides back inside the plot rather than being clipped at an edge.
+  const clamp = (spot: LabelSpot): LabelSpot => {
+    const { x, w } = spotBox(spot);
+    const shift = Math.max(0, bounds.x - x) - Math.max(0, x + w - (bounds.x + bounds.w));
+    return shift === 0 ? spot : { ...spot, x: spot.x + shift };
+  };
+  const choose = (spots: LabelSpot[]): LabelSpot => clamp(spots[leastCrowdedSpot(spots.map(spotBox), obstacles, bounds)]);
 
   const lineX = sx(average.x);
   const textX = `${names.x} ${formatX(average.x)}`;
