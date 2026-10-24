@@ -9,7 +9,12 @@ import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
 import { Notice } from "@/components/ui/Notice";
 import { RatingHistoryTable } from "@/components/teams/RatingHistoryTable";
-import { RatingSparkline } from "@/components/teams/RatingSparkline";
+import { RatingTrend } from "@/components/teams/RatingTrend";
+import { UnitProfile } from "@/components/teams/UnitProfile";
+import { Disclosure } from "@/components/ui/Disclosure";
+import { getTeamPossessionStats, getTeamSeasonStats } from "@/lib/queries";
+import { buildUnitRows, type UnitMatchupRow } from "@/lib/team-stats";
+import { fixtureRows } from "@/test/fixtures/matchup";
 import { teamAbbr } from "@/lib/team-logos";
 import { getTeamGameStats, getTeamSeasonRoster, getV5RatingSnapshots } from "@/lib/chart-queries";
 import { teamRankHistory } from "@/lib/team-rank-history";
@@ -30,6 +35,18 @@ export const revalidate = 300;
 export async function generateMetadata({ params }: { params: Promise<{ team: string }> }): Promise<Metadata> {
   const resolved = resolveTeam((await params).team);
   return resolved ? { title: `${resolved.gameName} · Team page` } : { robots: { index: false, follow: false } };
+}
+
+/** The team's offense and defense stats as of `week`, or null when they cannot be read or none are published. */
+async function loadUnitRows(team: string, week: number): Promise<UnitMatchupRow[] | null> {
+  try {
+    const [season, possession] = await Promise.all([getTeamSeasonStats(2026, week, [team]), getTeamPossessionStats(2026, week, [team])]);
+    const rows = [...season, ...possession];
+    return rows.length === 0 ? null : buildUnitRows(rows, team, team);
+  } catch (error) {
+    console.error("Team unit stats query failed", error);
+    return null;
+  }
 }
 
 export default async function TeamPage({ params }: { params: Promise<{ team: string }> }) {
@@ -69,7 +86,13 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
     ]);
   }
   const nextGame = games.find((game) => !isFinal(game)) ?? null;
-  const summary = buildTeamSummary(current, ratingName, teamRankHistory(snapshots, ratingName));
+  // Stats snapshots cover games completed before a week's slate: the next game's week, else the one after the last game.
+  const statsWeek = nextGame ? nextGame.week : games.length > 0 ? games[games.length - 1].week + 1 : null;
+  const unitRows = statsWeek === null ? null
+    : process.env.CFB_UI_TEST_MODE === "1" ? buildUnitRows(fixtureRows([team], ""), team, team)
+    : await loadUnitRows(team, statsWeek);
+  const rankHistory = teamRankHistory(snapshots, ratingName);
+  const summary = buildTeamSummary(current, ratingName, rankHistory);
   const conference = roster.find((row) => row.team === ratingName || row.team === team)?.conference ?? null;
   return (
     <PageShell
@@ -89,12 +112,17 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
             ) : <GameLogChart bars={gameLogBars(gameStats, [team, ratingName])} />}
           </div>
           <div className="min-w-0 space-y-4">
-            <section aria-labelledby="rating-history"><h2 id="rating-history" className="mb-3 text-lg font-semibold text-ink">Rating history</h2>
-              {history.length === 0 ? <Notice tone="empty">No certified rating history is available for this team.</Notice> :
-              <><RatingSparkline history={history} /><RatingHistoryTable history={history} /></>}
-              <p className="mt-2 text-xs text-ink-faint">These are pregame states. Preseason information has more influence early; completed games gain weight as evidence accumulates.</p>
-            </section>
+            <RatingTrend points={rankHistory} />
             {summary && <TeamResume summary={summary} />}
+            {unitRows ? <UnitProfile rows={unitRows} /> : (
+              <TeamSection id="team-unit-profile" title="Unit profile"><Notice tone="empty">Unit stats are not available right now.</Notice></TeamSection>
+            )}
+            {history.length > 0 && (
+              <Disclosure title="Weekly ratings">
+                <RatingHistoryTable history={history} />
+                <p className="mt-2 text-xs text-ink-faint">These are pregame states. Preseason information has more influence early; completed games gain weight as evidence accumulates.</p>
+              </Disclosure>
+            )}
           </div>
         </div>
       )}

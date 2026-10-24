@@ -250,6 +250,19 @@ html.dark [data-card] {
   }
 }
 
+/* Team page unit sections: collapsible on phones; from `sm:` up the content is forced open and the
+   summary stays as a static heading (no pointer, no caret or headline stat). */
+@supports selector(::details-content) {
+  @media (min-width: 40rem) {
+    .unit-section::details-content {
+      content-visibility: visible;
+    }
+    .unit-section > summary {
+      pointer-events: none;
+    }
+  }
+}
+
 /* Show details panel on small viewports OR coarse-pointer devices OR landscape phones */
 .show-on-touch-or-small {
   display: block;
