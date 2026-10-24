@@ -19,8 +19,12 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
         await gotoHydrated(page, url);
         const bar = page.getByTestId("app-bar");
         await expect(page.getByTestId("app-bar-title")).toHaveText(title);
-        // The brand shows on Games only.
-        await expect(bar.getByRole("link", { name: /CK.s Picks/ })).toHaveCount(title === "Games" ? 1 : 0);
+        // The brand shows once on every tab, centered; the page name stays for assistive tech only.
+        const brand = bar.getByRole("link", { name: /CK.s Picks/ });
+        await expect(brand).toHaveCount(1);
+        const brandBox = (await brand.boundingBox())!;
+        expect(Math.abs(brandBox.x + brandBox.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(2);
+        await expect(page.getByTestId("app-bar-title")).toHaveClass(/sr-only/);
         expect(await bar.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
         await page.mouse.wheel(0, 800);
         await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(200);
@@ -48,10 +52,24 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       // Matchups carry a forecast update time, which the sheet shows.
       await gotoHydrated(page, "/matchup/1");
       await expect(page.getByTestId("app-bar-title")).toHaveText(/ at /);
+      await expect(page.getByTestId("app-bar").getByRole("link", { name: /CK.s Picks/ })).toHaveCount(0);
       await expect(page.getByTestId("app-bar").getByRole("link", { name: /^Week \d+ games$/ })).toBeVisible();
       await expect(menu).toBeEnabled();
       await menu.click();
       await expect(dialog).toContainText(/Updated Sep (29|30)/);
+    });
+
+    test("a team page keeps the back link and its visible title instead of the brand", async ({ page }) => {
+      await gotoHydrated(page, "/teams/Alabama");
+      const bar = page.getByTestId("app-bar");
+      await expect(bar.getByRole("link", { name: /CK.s Picks/ })).toHaveCount(0);
+      await expect(page.getByTestId("app-bar-title")).toBeVisible();
+    });
+
+    test("the menu shows the slate run time on Games", async ({ page }) => {
+      await gotoHydrated(page, "/");
+      await page.getByTestId("app-menu-button").click();
+      await expect(page.getByRole("dialog", { name: "Menu", exact: true })).toContainText(/Updated \w{3} \d+/);
     });
 
     test("the theme-color meta follows the toggle and the stored choice", async ({ page }) => {

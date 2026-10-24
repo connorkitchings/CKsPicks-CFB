@@ -7,6 +7,9 @@ import { useIsPhone } from "@/lib/use-is-phone";
 import { SeasonSelector } from "./SeasonSelector";
 import { ThemeToggle } from "./ThemeToggle";
 
+/** Pages whose app bar centers the brand: the four tabs. Matchup and team pages keep a back link and their own title. */
+const TAB_TITLES = new Set(["Games", "Ratings", "Graphs", "Model"]);
+
 const TITLES: [prefix: string, title: string][] = [
   ["/ratings", "Ratings"],
   ["/stats", "Graphs"],
@@ -23,8 +26,8 @@ function titleFor(pathname: string): string {
 export type AppBarBack = { href: string; label: string; title: string };
 
 /**
- * The phone app bar: one slim sticky row with the page name (plus the brand on Games) and a menu
- * button. The menu sheet holds the season selector, theme toggle and publication time, and exists
+ * The phone app bar: one slim sticky row with a menu button and either the centered brand (the four
+ * tabs, with the page name kept for assistive tech and tests) or a back link and visible page title. The menu sheet holds the season selector, theme toggle and publication time, and exists
  * only while the viewport is a phone. Its height is the `--app-bar-h` CSS variable (globals.css),
  * which the pinned bars and `scroll-padding-top` build on. Hidden from 640px up.
  */
@@ -45,13 +48,15 @@ export function AppBar({
   const phone = useIsPhone();
   const { dialogRef, triggerRef, titleId, open, close } = useSheet({ enabled: phone, closeOn: [pathname, season] });
   const title = back?.title ?? titleFor(pathname);
+  const tab = !back && TAB_TITLES.has(title);
   const updated = updatedAt
     ? new Date(updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
     : null;
 
   return (
-    <div data-testid="app-bar" className="sticky top-0 z-40 box-border flex h-(--app-bar-h) items-center justify-between gap-3 border-b border-line bg-surface-card px-4 pt-[env(safe-area-inset-top)] sm:hidden">
-      <div className="flex min-w-0 items-center gap-1">
+    <div data-testid="app-bar" className={`sticky top-0 z-40 box-border h-(--app-bar-h) items-center gap-3 border-b border-line bg-surface-card px-4 pt-[env(safe-area-inset-top)] sm:hidden ${tab ? "grid grid-cols-[2.75rem_1fr_2.75rem]" : "flex justify-between"}`}>
+      {tab && <span aria-hidden />}
+      <div className={tab ? "flex min-w-0 items-center justify-center" : "flex min-w-0 items-center gap-1"}>
         {back && (
           <Link
             href={back.href}
@@ -64,13 +69,13 @@ export function AppBar({
             </svg>
           </Link>
         )}
-        {title === "Games" && (
+        {tab && (
           <Link href="/" className="inline-flex min-h-11 shrink-0 items-center rounded text-base font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent">
             CK&rsquo;s Picks <span className="text-xs font-normal text-ink-muted">CFB</span>
           </Link>
         )}
-        {/* On Games the brand is the title; the name stays for assistive tech and tests. */}
-        <span data-testid="app-bar-title" title={back ? title : undefined} className={title === "Games" ? "sr-only" : "truncate text-base font-bold tracking-tight text-ink"}>{title}</span>
+        {/* On the tabs the brand is the title; the name stays for assistive tech and tests. */}
+        <span data-testid="app-bar-title" title={back ? title : undefined} className={tab ? "sr-only" : "truncate text-base font-bold tracking-tight text-ink"}>{title}</span>
       </div>
       <button
         ref={triggerRef}
@@ -80,7 +85,7 @@ export function AppBar({
         disabled={!phone}
         onClick={open}
         data-testid="app-menu-button"
-        className="-mr-2 inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-ink focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-70"
+        className={`${tab ? "" : "-mr-2 "}inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-ink focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-70`}
       >
         <svg aria-hidden viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <path d="M4 7h16M4 12h16M4 17h16" />
