@@ -140,7 +140,22 @@ export function ScatterChart({
   const yd = yDomain;
   const fraction = (value: number, domain: Domain) => (value - domain[0]) / (domain[1] - domain[0]);
   const sx = (v: number) => plot.left + (invertX ? 1 - fraction(v, xd) : fraction(v, xd)) * (plot.right - plot.left);
-  const sy = (v: number) => plot.top + (invertY ? fraction(v, yd) : 1 - fraction(v, yd)) * (plot.bottom - plot.top);
+  // Quadrant captions own a band at the top and bottom of the plot; data maps into the rows between,
+  // so a mark can never sit under a caption whatever the data. Marks are kept their own radius clear of the band.
+  const captioned = Boolean(average && cornerCaptions);
+  const lineCount = (a: keyof CornerCaptions["names"], b: keyof CornerCaptions["names"]) => Math.max(
+    ...[a, b].map((key) => captionLines(cornerCaptions?.names[key] ?? "", captionChars).length),
+  );
+  const markRadius = (compact ? DOT_RADIUS + 1 : BASE_SIZE / 2) + 2;
+  const topBand = captioned
+    ? (interactive ? Math.max(20, captionSize + 7) : 20) + (lineCount("topLeft", "topRight") - 1) * captionSize * 1.15 + captionSize * 0.5 + markRadius
+    : 0;
+  const bottomBand = captioned
+    ? 10 + (lineCount("bottomLeft", "bottomRight") - 1) * captionSize * 1.15 + captionSize + markRadius
+    : 0;
+  const dataTop = plot.top + topBand;
+  const dataBottom = plot.bottom - bottomBand;
+  const sy = (v: number) => dataTop + (invertY ? fraction(v, yd) : 1 - fraction(v, yd)) * (dataBottom - dataTop);
 
   const ordered = points.filter((p) => stateOf(p) !== "dim").map((p) => p.team);
   const { selected, setSelected, register, handlers } = useChartSelection(ordered, { manualTouch: true });

@@ -101,6 +101,60 @@ test.describe("mobile scatter inspection on the page", () => {
   });
   }
 
+  const SCATTERS = [
+    ["adjusted", "chart=adjusted&week=2"],
+    ["possession", "chart=possession&week=3"],
+    ["efficiency offense", "chart=efficiency&week=3&side=offense"],
+    ["efficiency defense", "chart=efficiency&week=3&side=defense"],
+  ];
+  for (const width of [320, 360, 390]) {
+    for (const [kind, query] of SCATTERS) {
+      test(`no dot touches a quadrant label on ${kind} at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await gotoHydrated(page, `/stats?${query}`);
+        const svg = page.getByTestId("scatter-chart").locator("svg");
+        await expect(svg.locator("g[data-corner]")).toHaveCount(4);
+        const { dots, labels } = await svg.evaluate((node) => {
+          const box = (el: Element) => { const r = el.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; };
+          return {
+            dots: [...node.querySelectorAll('g[data-team] [data-mark="dot"] circle:last-child')].map(box),
+            labels: [...node.querySelectorAll("g[data-corner] text")].map(box),
+          };
+        });
+        expect(dots.length).toBeGreaterThan(5);
+        expect(labels).toHaveLength(4);
+        for (const dot of dots) {
+          for (const label of labels) {
+            const apart = dot.r <= label.l || dot.l >= label.r || dot.b <= label.t || dot.t >= label.b;
+            expect(apart, `dot ${JSON.stringify(dot)} vs label ${JSON.stringify(label)}`).toBe(true);
+          }
+        }
+      });
+    }
+  }
+
+  for (const [kind, query] of SCATTERS) {
+    test(`no logo touches a quadrant label on ${kind} at desktop width`, async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await gotoHydrated(page, `/stats?${query}`);
+      const svg = page.getByTestId("scatter-chart").locator("svg");
+      await expect(svg.locator("g[data-corner]")).toHaveCount(4);
+      const { marks, labels } = await svg.evaluate((node) => {
+        const box = (el: Element) => { const r = el.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; };
+        return {
+          marks: [...node.querySelectorAll("g[data-team] [data-mark]")].map(box),
+          labels: [...node.querySelectorAll("g[data-corner] text")].map(box),
+        };
+      });
+      expect(marks.length).toBeGreaterThan(5);
+      for (const mark of marks) {
+        for (const label of labels) {
+          expect(mark.r <= label.l || mark.l >= label.r || mark.b <= label.t || mark.t >= label.b, JSON.stringify({ mark, label })).toBe(true);
+        }
+      }
+    });
+  }
+
   test("native scrolling and pointer cancellation cannot select a team", async ({ page }) => {
     await page.goto("/stats?chart=efficiency&week=3");
     const svg = page.getByTestId("scatter-chart").locator("svg");
