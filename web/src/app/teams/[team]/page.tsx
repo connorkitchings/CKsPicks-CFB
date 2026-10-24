@@ -37,12 +37,18 @@ export async function generateMetadata({ params }: { params: Promise<{ team: str
   return resolved ? { title: `${resolved.gameName} · Team page` } : { robots: { index: false, follow: false } };
 }
 
-/** The team's offense and defense stats as of `week`, or null when they cannot be read or none are published. */
+/**
+ * The team's offense and defense stats as of `week`, or the week before when that snapshot is not published
+ * yet. Null when they cannot be read or none are published.
+ */
 async function loadUnitRows(team: string, week: number): Promise<UnitMatchupRow[] | null> {
   try {
-    const [season, possession] = await Promise.all([getTeamSeasonStats(2026, week, [team]), getTeamPossessionStats(2026, week, [team])]);
-    const rows = [...season, ...possession];
-    return rows.length === 0 ? null : buildUnitRows(rows, team, team);
+    for (const asOfWeek of week > 0 ? [week, week - 1] : [week]) {
+      const [season, possession] = await Promise.all([getTeamSeasonStats(2026, asOfWeek, [team]), getTeamPossessionStats(2026, asOfWeek, [team])]);
+      const rows = [...season, ...possession];
+      if (rows.length > 0) return buildUnitRows(rows, team, team);
+    }
+    return null;
   } catch (error) {
     console.error("Team unit stats query failed", error);
     return null;
@@ -86,8 +92,10 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
     ]);
   }
   const nextGame = games.find((game) => !isFinal(game)) ?? null;
-  // Stats snapshots cover games completed before a week's slate: the next game's week, else the one after the last game.
-  const statsWeek = nextGame ? nextGame.week : games.length > 0 ? games[games.length - 1].week + 1 : null;
+  // Stats snapshots cover games completed before a week's slate: the week after the last played game, so a bye
+  // before the next game does not ask for a snapshot that is not published yet.
+  const played = games.filter(isFinal);
+  const statsWeek = played.length > 0 ? played[played.length - 1].week + 1 : nextGame ? nextGame.week : null;
   const unitRows = statsWeek === null ? null
     : process.env.CFB_UI_TEST_MODE === "1" ? buildUnitRows(fixtureRows([team], ""), team, team)
     : await loadUnitRows(team, statsWeek);
