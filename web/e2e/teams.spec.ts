@@ -61,6 +61,35 @@ test.describe("team pages (fixture mode)", () => {
     await expect(table.getByTestId("schedule-next-row")).toContainText("Ohio State");
   });
 
+  test("the desktop model card lists each pick with its mark and the model record", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHydrated(page, "/teams/Texas");
+    await expect(heading(page, "Model on this team")).toBeVisible();
+    const schedule = await card(page, "team-games");
+    const model = await card(page, "team-model");
+    const gameLog = await card(page, "team-game-log");
+    expect(model.y).toBeGreaterThanOrEqual(schedule.y + schedule.height - 1);
+    expect(gameLog.y).toBeGreaterThanOrEqual(model.y + model.height - 1);
+    const table = page.getByRole("table", { name: "Model picks" });
+    await expect(table.getByRole("columnheader")).toHaveText(["Wk", "Opponent", "ATS pick", "O/U pick", "Winner"]);
+    const row = (name: string) => table.getByRole("row").filter({ hasText: name });
+    await expect(row("Ohio State").first()).toContainText("Texas -2.5");
+    await expect(row("Ohio State").first().getByRole("img", { name: "Hit" })).toHaveCount(2);
+    await expect(row("Ohio State").first().getByRole("img", { name: "Miss" })).toHaveCount(1);
+    await expect(row("Georgia")).toContainText("Texas -6.5");
+    await expect(row("Georgia").getByRole("img", { name: "Miss" })).toHaveCount(2);
+    await expect(row("Georgia").getByRole("img", { name: "Hit" })).toHaveCount(1);
+    await expect(row("Alabama")).toContainText("No pick");
+    await expect(row("LSU").getByRole("img", { name: "Push" })).toHaveCount(1);
+    expect(await noOverflow(page)).toBe(true);
+    await expect(row("Rice")).toContainText("No line");
+    const record = page.getByTestId("model-record");
+    await expect(record).toContainText("ATS (W–L) 1–1–1 · 50%");
+    await expect(record).toContainText("O/U 1–2 · 33%");
+    await expect(record).toContainText("Model picked the winner 2–1 · 67%");
+    await expect(page.getByText("Model picks use the forecast published before each game. Display only — not betting advice.")).toBeVisible();
+  });
+
   test("on desktop both unit sections show their rows without a tap", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
@@ -78,7 +107,7 @@ test.describe("team pages (fixture mode)", () => {
       await expect(page.getByRole("link", { name: "← All ratings" })).toBeHidden();
       await expect(page.getByRole("heading", { level: 1, name: "Texas" })).toBeVisible();
 
-      const ids = ["team-games", "team-game-log", "team-rating-trend", "team-resume", "team-unit-profile"];
+      const ids = ["team-games", "team-model", "team-game-log", "team-rating-trend", "team-resume", "team-unit-profile"];
       const boxes = [await hero(page)];
       for (const id of ids) boxes.push(await card(page, id));
       for (let i = 1; i < boxes.length; i++) {
@@ -88,6 +117,12 @@ test.describe("team pages (fixture mode)", () => {
       await expect(page.getByRole("table", { name: "Lines and results" })).toBeHidden();
       await expect(page.getByRole("list", { name: "Schedule" }).getByRole("listitem")).toHaveCount(6);
       await expect(page.getByLabel("Next game")).toContainText(/at\s*Ohio State/);
+      const picks = page.getByRole("list", { name: "Model picks" });
+      await expect(picks).toBeVisible();
+      await expect(page.getByRole("table", { name: "Model picks" })).toBeHidden();
+      await expect(picks.getByRole("listitem")).toHaveCount(6);
+      const overflowing = await picks.evaluate((el) => [...el.querySelectorAll("li")].filter((li) => li.scrollWidth > li.clientWidth).length);
+      expect(overflowing, "model rows fit without sideways scrolling").toBe(0);
       expect(await noOverflow(page)).toBe(true);
     });
   }
@@ -99,7 +134,7 @@ test.describe("team pages (fixture mode)", () => {
     await expect(summary.getByRole("group", { name: /Offense rating and rank/ })).toBeVisible();
     await expect(summary.getByTestId("rating-change")).toBeVisible();
     await expect(page.getByLabel("Next game")).toContainText(/at\s*Ohio State/);
-    for (const name of ["Schedule · lines and results", "Game log", "Rating trend", "Résumé", "Unit profile"]) await expect(heading(page, name)).toBeVisible();
+    for (const name of ["Schedule · lines and results", "Model on this team", "Game log", "Rating trend", "Résumé", "Unit profile"]) await expect(heading(page, name)).toBeVisible();
     const resume = page.locator('section[aria-labelledby="team-resume"]');
     for (const label of ["Strength of record", /^SOS played \(\d+\)$/, /^SOS remaining \(\d+\)$/, "SOS full season", "Wins above average"]) {
       await expect(resume.getByRole("term").filter({ hasText: label })).toBeVisible();

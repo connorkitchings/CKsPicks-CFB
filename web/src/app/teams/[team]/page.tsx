@@ -24,6 +24,7 @@ import { TeamResume } from "@/components/teams/TeamResume";
 import { chartsRosterFixture } from "@/test/fixtures/charts";
 import { teamRankSnapshotsFixture, texasGameStatsFixture, texasGamesFixture } from "@/test/fixtures/team-page";
 import { GameLogChart } from "@/components/teams/GameLogChart";
+import { ModelOnTeam } from "@/components/teams/ModelOnTeam";
 import { TeamSchedule } from "@/components/teams/TeamSchedule";
 import { TeamSection } from "@/components/teams/TeamSection";
 import { gameLogBars } from "@/lib/team-game-log";
@@ -115,6 +116,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
         <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-start">
           <div className="min-w-0 space-y-4">
             <TeamSchedule games={games} team={team} />
+            <ModelOnTeam games={games} team={team} />
             {gameStats === null ? (
               <TeamSection id="team-game-log" title="Game log"><Notice tone="empty">The game log is not available right now.</Notice></TeamSection>
             ) : <GameLogChart team={team} bars={gameLogBars(gameStats, [team, ratingName])} />}

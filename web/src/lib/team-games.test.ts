@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  atsResult, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, overUnderResult, recordText, teamRecords, winPercent,
+  atsResult, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
+  modelTotalPick, modelWinnerName, overUnderResult, recordText, teamRecords, winPercent,
   type TeamGameFields, type TeamGameLines,
 } from "./team-games.ts";
 
@@ -83,6 +84,58 @@ test("teamRecords tallies each record over the games that have the data", () => 
   assert.deepEqual(teamRecords(games, "Texas"), {
     ats: { wins: 1, losses: 0, pushes: 1 },
     overUnder: { overs: 1, unders: 1, pushes: 0 },
+  });
+});
+
+test("modelSpreadPick takes the home side when the forecast beats the home line and grades it", () => {
+  const g = lined({ homeTeamSpreadLine: -3.5, predictedMargin: 4, homePoints: 30, awayPoints: 24 });
+  assert.deepEqual(modelSpreadPick(g), { label: "Texas -3.5", result: "W" });
+});
+
+test("modelSpreadPick takes the away side and grades a miss", () => {
+  const g = lined({ homeTeamSpreadLine: -3.5, predictedMargin: 2, homePoints: 30, awayPoints: 24 });
+  assert.deepEqual(modelSpreadPick(g), { label: "Rice +3.5", result: "L" });
+});
+
+test("modelSpreadPick pushes on the number and sends an exact tie to the away side", () => {
+  assert.equal(modelSpreadPick(lined({ homeTeamSpreadLine: -3, predictedMargin: 5, homePoints: 24, awayPoints: 21 }))?.result, "P");
+  assert.equal(modelSpreadPick(lined({ homeTeamSpreadLine: -3, predictedMargin: 3 }))?.label, "Rice +3.0");
+});
+
+test("modelSpreadPick has no result before the game ends and no pick without a forecast or a line", () => {
+  assert.deepEqual(modelSpreadPick(lined({ homeTeamSpreadLine: -3.5, predictedMargin: 4 })), { label: "Texas -3.5", result: null });
+  assert.equal(modelSpreadPick(lined({ predictedMargin: 4 })), null);
+  assert.equal(modelSpreadPick(lined({ homeTeamSpreadLine: -3.5 })), null);
+});
+
+test("modelTotalPick grades over and under picks and an exact tie goes to the under", () => {
+  assert.deepEqual(modelTotalPick(lined({ totalLine: 44.5, predictedTotal: 50, homePoints: 24, awayPoints: 21 })), { label: "↑ Over 44.5", result: "W" });
+  assert.deepEqual(modelTotalPick(lined({ totalLine: 44.5, predictedTotal: 40, homePoints: 24, awayPoints: 21 })), { label: "↓ Under 44.5", result: "L" });
+  assert.equal(modelTotalPick(lined({ totalLine: 45, predictedTotal: 50, homePoints: 24, awayPoints: 21 }))?.result, "P");
+  assert.equal(modelTotalPick(lined({ totalLine: 45, predictedTotal: 45 }))?.label, "↓ Under 45.0");
+  assert.equal(modelTotalPick(lined({ totalLine: 45 })), null);
+  assert.equal(modelTotalPick(lined({ predictedTotal: 45 })), null);
+});
+
+test("modelWinnerName names the forecast winner and is null on a dead-even forecast", () => {
+  assert.equal(modelWinnerName(game({ predictedMargin: 2 })), "Texas");
+  assert.equal(modelWinnerName(game({ predictedMargin: -2 })), "Rice");
+  assert.equal(modelWinnerName(game({ predictedMargin: 0 })), null);
+  assert.equal(modelWinnerName(game({})), null);
+});
+
+test("modelRecords tallies picks over played games with lines and a forecast", () => {
+  const games = [
+    lined({ homeTeamSpreadLine: -3.5, totalLine: 44.5, predictedMargin: 4, predictedTotal: 50, homePoints: 30, awayPoints: 24 }),
+    lined({ homeTeamSpreadLine: -3, totalLine: 60, predictedMargin: 5, predictedTotal: 70, homePoints: 24, awayPoints: 21 }),
+    lined({ homeTeamSpreadLine: -3, predictedMargin: -2, homePoints: 30, awayPoints: 20 }),
+    lined({ homeTeamSpreadLine: -3, totalLine: 50, predictedMargin: 5, predictedTotal: 60 }),
+    lined({ homePoints: 10, awayPoints: 20 }),
+  ];
+  assert.deepEqual(modelRecords(games, "Texas"), {
+    ats: { wins: 1, losses: 1, pushes: 1 },
+    overUnder: { wins: 1, losses: 1, pushes: 0 },
+    winner: { right: 2, wrong: 1 },
   });
 });
 

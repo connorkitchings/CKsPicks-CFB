@@ -1,4 +1,5 @@
-import { homeSpreadFromMargin, homeSpreadText, marketSpreadView, signedSpread, spreadLabel } from "./betting-format.ts";
+import { homeSpreadFromMargin, homeSpreadText, marketSpreadView, signedSpread, spreadBetLabel, spreadLabel, totalBetLabel } from "./betting-format.ts";
+import { deriveSpreadView, deriveTotalView } from "./publication.ts";
 import { phoneTeamName } from "./team-logos.ts";
 
 export interface TeamGameFields {
@@ -114,6 +115,68 @@ export function teamRecords(games: readonly (TeamGameFields & TeamGameLines)[], 
     if (ou === "Over") records.overUnder.overs++;
     else if (ou === "Under") records.overUnder.unders++;
     else if (ou === "Push") records.overUnder.pushes++;
+  }
+  return records;
+}
+
+/** A model pick against the market: the label as the app prints a lean, and its result once final. */
+export interface ModelPick {
+  label: string;
+  result: BetResult | null;
+}
+
+const settle = (margin: number): BetResult => (margin > 0 ? "W" : margin < 0 ? "L" : "P");
+
+/**
+ * The model's side against the market spread, using the app's lean rule (`deriveSpreadView`: home
+ * when the forecast margin beats the home line, an exact tie goes to the away side; no minimum
+ * edge). Null without a forecast or a line. `result` is null until the game is final.
+ */
+export function modelSpreadPick(game: TeamGameFields & TeamGameLines): ModelPick | null {
+  const { lean } = deriveSpreadView(game.predictedMargin, game.homeTeamSpreadLine);
+  const label = spreadBetLabel(phoneTeamName(game.homeTeam), phoneTeamName(game.awayTeam), lean, game.homeTeamSpreadLine);
+  if (lean === null || label === null || game.homeTeamSpreadLine === null) return null;
+  if (game.homePoints === null || game.awayPoints === null) return { label, result: null };
+  const homeCover = game.homePoints - game.awayPoints + game.homeTeamSpreadLine;
+  return { label, result: settle(lean === "home" ? homeCover : -homeCover) };
+}
+
+/** The model's over/under against the market total (an exact tie goes to the under). Null without a forecast total or a line. */
+export function modelTotalPick(game: TeamGameFields & TeamGameLines): ModelPick | null {
+  const { lean } = deriveTotalView(game.predictedTotal, game.totalLine);
+  const label = totalBetLabel(lean, game.totalLine);
+  if (lean === null || label === null || game.totalLine === null) return null;
+  if (game.homePoints === null || game.awayPoints === null) return { label, result: null };
+  const over = game.homePoints + game.awayPoints - game.totalLine;
+  return { label, result: settle(lean === "over" ? over : -over) };
+}
+
+/** The team the forecast margin has winning, as the schedule prints names. Null without a decisive forecast. */
+export function modelWinnerName(game: TeamGameFields): string | null {
+  if (game.predictedMargin === null || game.predictedMargin === 0) return null;
+  return phoneTeamName(game.predictedMargin > 0 ? game.homeTeam : game.awayTeam);
+}
+
+/** The model's graded picks over the played games: spread and total (W/L/P) and straight-up winners. */
+export interface ModelRecords {
+  ats: { wins: number; losses: number; pushes: number };
+  overUnder: { wins: number; losses: number; pushes: number };
+  winner: { right: number; wrong: number };
+}
+
+export function modelRecords(games: readonly (TeamGameFields & TeamGameLines)[], team: string): ModelRecords {
+  const records: ModelRecords = { ats: { wins: 0, losses: 0, pushes: 0 }, overUnder: { wins: 0, losses: 0, pushes: 0 }, winner: { right: 0, wrong: 0 } };
+  const tally = (record: ModelRecords["ats"], result: BetResult | null | undefined) => {
+    if (result === "W") record.wins++;
+    else if (result === "L") record.losses++;
+    else if (result === "P") record.pushes++;
+  };
+  for (const game of games) {
+    tally(records.ats, modelSpreadPick(game)?.result);
+    tally(records.overUnder, modelTotalPick(game)?.result);
+    const picked = modelPickedWinner(game, team);
+    if (picked === true) records.winner.right++;
+    else if (picked === false) records.winner.wrong++;
   }
   return records;
 }

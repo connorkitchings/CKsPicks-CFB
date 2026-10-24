@@ -6,7 +6,7 @@ import { v5RatingFixture } from "./publication";
 /**
  * Texas, the one fixture team with a full team page: a 4-0 start with lines, graded results and
  * two games ahead (Week 4 at Ohio State is next). Spreads, totals and results are chosen so every
- * ATS, over/under and model-pick outcome appears: ATS 2-1-1, O/U 1-3, model right 3-1.
+ * market outcome appears (ATS 2-1-1, O/U 1-3) and the model cases hit, miss, push, no pick (Week 2, no forecast) and no line (Week 5, upcoming): model ATS 1-1-1, O/U 1-2, winner 2-1.
  */
 type FixtureGame = Awaited<ReturnType<typeof getTeamGames>>[number];
 
@@ -17,11 +17,11 @@ const game = (gameId: number, week: number, homeTeam: string, awayTeam: string, 
 
 export const texasGamesFixture: FixtureGame[] = [
   game(1, 0, "Texas", "Ohio State", { homeTeamSpreadLine: -2.5, totalLine: 51.5, predictedMargin: 3.5, predictedTotal: 52, homePoints: 24, awayPoints: 21 }),
-  game(3, 1, "Georgia", "Texas", { homeTeamSpreadLine: 6.5, totalLine: 49.5, predictedMargin: -4, predictedTotal: 50.1, homePoints: 21, awayPoints: 24 }),
-  game(4, 2, "Texas", "Alabama", { homeTeamSpreadLine: -7, totalLine: 55, predictedMargin: 7, predictedTotal: 53.3, homePoints: 35, awayPoints: 17 }),
+  game(3, 1, "Georgia", "Texas", { homeTeamSpreadLine: 6.5, totalLine: 49.5, predictedMargin: -8, predictedTotal: 50.1, homePoints: 21, awayPoints: 24 }),
+  game(4, 2, "Texas", "Alabama", { homeTeamSpreadLine: -7, totalLine: 55, predictedMargin: null, predictedTotal: null, homePoints: 35, awayPoints: 17 }),
   game(5, 3, "LSU", "Texas", { homeTeamSpreadLine: 3, totalLine: 56.5, predictedMargin: 1, predictedTotal: 57.2, homePoints: 27, awayPoints: 30 }),
   game(2, 4, "Ohio State", "Texas", { homeTeamSpreadLine: -7, totalLine: 55.5, predictedMargin: 6.2, predictedTotal: 54.84, homePoints: null, awayPoints: null }),
-  game(6, 5, "Texas", "Rice", { homeTeamSpreadLine: -10.5, totalLine: 48, predictedMargin: 9.8, predictedTotal: 50.2, homePoints: null, awayPoints: null }),
+  game(6, 5, "Texas", "Rice", { homeTeamSpreadLine: null, totalLine: null, predictedMargin: 9.8, predictedTotal: 50.2, homePoints: null, awayPoints: null }),
 ];
 
 /** Texas's four charted team-games, matching the played rows of `texasGamesFixture`. */
