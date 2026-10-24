@@ -74,6 +74,7 @@ function RecordBlock({
   );
 }
 
+const sumRecords = (a: Rec, b: Rec): Rec => ({ win: a.win + b.win, loss: a.loss + b.loss, push: a.push + b.push });
 const tally = (rec: Rec) => `${rec.win}–${rec.loss}${rec.push ? `–${rec.push}` : ""}`;
 const pct = (value: number | null) => (value === null ? "n/a" : `${(value * 100).toFixed(0)}%`);
 const points = (value: number | null) => (value === null ? "n/a" : value.toFixed(1));
@@ -96,6 +97,8 @@ export function ModelRecord({
   weekPerformance?: Performance[];
 }) {
   const overall = performance.find((p) => p.classification === "all");
+  const combined = overall ? sumRecords(overall.spread ?? ZERO, overall.total ?? ZERO) : null;
+  const combinedRate = combined ? winRatePct(combined.win, combined.loss) : null;
   const weekOverall = weekPerformance.find((p) => p.classification === "all");
 
   return (
@@ -107,9 +110,7 @@ export function ModelRecord({
           className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl px-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden"
         >
           <span className="min-w-0 truncate tabular-nums">
-            {overall
-              ? `Season ${tally(overall.spread ?? ZERO)} ATS · Totals ${tally(overall.total ?? ZERO)}`
-              : "Season record"}
+            {combined ? `Season ${tally(combined)}${combinedRate === null ? "" : ` · ${combinedRate.toFixed(1)}%`}` : "Season record"}
           </span>
           <span aria-hidden className="shrink-0 text-ink-muted transition-transform group-open:rotate-90">›</span>
         </summary>
