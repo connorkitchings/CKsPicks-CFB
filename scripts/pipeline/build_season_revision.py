@@ -112,9 +112,21 @@ def _ref_from_input(dataset: str, entry: dict) -> DatasetRef:
 
 
 def refresh_controller_silver(
-    conn_url: str, *, season: int, week: int, as_of: str, run_id: str
+    conn_url: str,
+    *,
+    season: int,
+    week: int,
+    as_of: str,
+    run_id: str,
+    advance: dict | None = None,
 ) -> None:
-    """Fetch Weeks 0..week-1 and rebuild their Silver via the ops controller."""
+    """Fetch the completed weeks' observations and rebuild their Silver.
+
+    With ``advance`` (incremental mode) the controller command is
+    ``advance-week``: only week ``week - 1`` is fetched, certified earlier-week
+    captures are carried into the Silver builds, and the completed-week history
+    is gated against the previous certified revision.
+    """
     from cks_picks_cfb.ops.__main__ import build_steps
     from cks_picks_cfb.ops.state_machine import (
         PostgresStateStore,
@@ -127,19 +139,67 @@ def refresh_controller_silver(
     os.environ["CFB_ARTIFACT_ENV"] = "preview"
     os.environ["CFB_RUNTIME_TARGET_RESOLVED"] = "preview"
     context = new_context(
-        command="prepare-week",
+        command="advance-week" if advance is not None else "prepare-week",
         environment="preview",
         season=season,
         week=week,
         as_of=as_of,
         pipeline_run_id=run_id,
     )
-    steps = build_steps(context, conn_url=conn_url)
+    steps = build_steps(context, conn_url=conn_url, advance=advance)
     steps = steps[: [step.name for step in steps].index(LAST_CONTROLLER_STEP) + 1]
     with PostgresStateStore(conn_url) as store:
         StateMachine(store, notifier=WebhookFailureNotifier.from_env()).run(
             context, steps
         )
+
+
+def carried_capture_ids(storage, previous: dict) -> dict[str, list[str]]:
+    """Certified Weeks 0..N-2 Bronze capture IDs behind the previous manifest.
+
+    Recovered from the certified ``byplay`` manifest's parent version IDs; each
+    version ID resolves by reading the candidate dataset's sealed manifest,
+    because ``parent_versions`` records IDs without dataset names. These are the
+    captures the incremental rollover reuses instead of re-fetching history.
+    """
+    byplay_uri = previous["inputs"]["byplay"]["uri"]
+    manifest_uri = byplay_uri.rsplit("/", 1)[0] + "/manifest.json"
+    byplay = json.loads(storage.read_bytes(manifest_uri).decode())
+    parent_versions = byplay["parent_versions"]
+    if not parent_versions:
+        raise LookupError(
+            f"Certified byplay manifest {byplay_uri} lists no parent versions; "
+            "the incremental rollover cannot recover the certified history"
+        )
+    resolved: dict[str, list[str]] = {}
+    for dataset in ("plays", "team_game_stats"):
+        manifest = None
+        for version_id in parent_versions:
+            candidate = (
+                f"lake/silver/dataset={dataset}/version={version_id}/manifest.json"
+            )
+            if not storage.exists(candidate):
+                continue
+            loaded = json.loads(storage.read_bytes(candidate).decode())
+            if (
+                loaded.get("dataset") == dataset
+                and loaded.get("version_id") == version_id
+            ):
+                manifest = loaded
+                break
+        if manifest is None:
+            raise LookupError(
+                f"Certified byplay manifest {byplay_uri} has no resolvable "
+                f"{dataset} parent version"
+            )
+        capture_ids = manifest.get("source_capture_ids") or []
+        if not capture_ids:
+            raise LookupError(
+                f"Certified {dataset} version {manifest.get('version_id')} lists "
+                "no source captures; the incremental rollover cannot carry history"
+            )
+        resolved[dataset] = [str(capture_id) for capture_id in capture_ids]
+    return resolved
 
 
 def controller_refs(storage, run_id: str) -> dict[str, DatasetRef]:
@@ -386,6 +446,16 @@ def parse_args() -> argparse.Namespace:
         help="Ops controller run that captures and builds the completed-week Silver.",
     )
     parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help=(
+            "Normal week close/open: fetch only the completed week's observations, "
+            "carry the certified earlier-week captures, and gate the completed-week "
+            "history against the previous manifest. The default full-history path "
+            "re-ingests every completed week and is a repair vehicle."
+        ),
+    )
+    parser.add_argument(
         "--previous-manifest",
         help="Defaults to conf/season/<season>/revision_manifest_w<N-1>_v1.json.",
     )
@@ -416,6 +486,22 @@ def main() -> None:
     as_of, pre_week_cutoff = _utc(args.as_of), _utc(args.pre_week_cutoff)
     conn_url = resolve_runtime_target(args.environment).database_url
     source = get_storage(environment=args.environment)
+    advance = None
+    if args.incremental:
+        advance = {
+            "carried_captures": carried_capture_ids(source, previous),
+            "gate": {
+                "previous_games": previous["inputs"]["schedule"],
+                "previous_outcomes": previous["inputs"]["finals"],
+                "through_week": args.week - 2,
+            },
+        }
+        print(
+            "Incremental rollover: carrying "
+            f"{len(advance['carried_captures']['plays'])} plays and "
+            f"{len(advance['carried_captures']['team_game_stats'])} team_game_stats "
+            f"certified captures; fetching only week {args.week - 1} observations."
+        )
     if not args.dry_run:
         refresh_controller_silver(
             conn_url,
@@ -423,6 +509,7 @@ def main() -> None:
             week=args.week,
             as_of=_iso(as_of),
             run_id=args.pipeline_run_id,
+            advance=advance,
         )
     with tempfile.TemporaryDirectory(prefix="season-revision-") as scratch:
         sink = LocalStorage(scratch) if args.dry_run else source
