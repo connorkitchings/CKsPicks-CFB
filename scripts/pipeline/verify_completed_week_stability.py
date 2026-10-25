@@ -7,6 +7,17 @@ derives from them, this gate compares every completed week below the just-
 closed week against the previous certified revision. Any difference stops the
 run and names the affected games; the affected history then needs an explicitly
 approved repair, never a silent rewrite.
+
+Two column groups cannot differ meaningfully between Silver versions and are
+excluded from the comparison (a denylist: any other column, including ones
+added later, is compared):
+
+- Provenance (``__capture_id``, ``__captured_at``, ``__capture_provider``) is
+  re-stamped on every Silver build.
+- ``*_postgame_elo`` is recomputed by CFBD for the most recently completed week
+  as the next week finishes (verified 2026-10-25: exactly the Week 7 games
+  moved while pregame Elo and finals stayed identical, and no code outside the
+  ingester reads any ``_elo`` column). ``*_pregame_elo`` stays gated.
 """
 
 from __future__ import annotations
@@ -43,6 +54,24 @@ def _ref_from_input(dataset: str, entry: dict[str, Any]) -> DatasetRef:
 
 def _completed_week_ids(games: pd.DataFrame, through_week: int) -> set[Any]:
     return set(games.loc[games["week"] <= through_week, "game_id"])
+
+
+#: Columns excluded from the row comparison; see the module docstring for the
+#: evidence behind each exclusion.
+COMPARISON_EXCLUSIONS = frozenset(
+    {
+        "__capture_id",
+        "__captured_at",
+        "__capture_provider",
+        "home_postgame_elo",
+        "away_postgame_elo",
+    }
+)
+
+
+def _comparable(frame: pd.DataFrame) -> pd.DataFrame:
+    """Drop the excluded columns, keeping every other column in the comparison."""
+    return frame.drop(columns=sorted(set(frame.columns) & COMPARISON_EXCLUSIONS))
 
 
 def _value_differences(
@@ -88,8 +117,8 @@ def compare_completed_weeks(
     problems.extend(
         _value_differences(
             "games",
-            new_games[new_games["week"] <= through_week],
-            previous_games[previous_games["week"] <= through_week],
+            _comparable(new_games[new_games["week"] <= through_week]),
+            _comparable(previous_games[previous_games["week"] <= through_week]),
             shared_ids,
         )
     )
@@ -99,7 +128,9 @@ def compare_completed_weeks(
     for game_id in sorted(set(previous["game_id"]) - set(outcomes["game_id"]), key=str):
         problems.append(f"game_outcomes: game {game_id} lost its certified finals row")
     problems.extend(
-        _value_differences("game_outcomes", outcomes, previous, outcome_ids)
+        _value_differences(
+            "game_outcomes", _comparable(outcomes), _comparable(previous), outcome_ids
+        )
     )
     return problems
 

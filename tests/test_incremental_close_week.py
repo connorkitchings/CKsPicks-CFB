@@ -128,6 +128,24 @@ def games_frame(rows: list[tuple[int, int, int]]) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["game_id", "week", "venue_id"])
 
 
+def elo_games_frame(
+    rows: list[tuple[int, int, str, float, float, float, float]],
+) -> pd.DataFrame:
+    """game_id, week, capture id, pregame/postgame Elo for home and away."""
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "game_id",
+            "week",
+            "__capture_id",
+            "home_pregame_elo",
+            "away_pregame_elo",
+            "home_postgame_elo",
+            "away_postgame_elo",
+        ],
+    )
+
+
 def outcomes_frame(rows: list[tuple[int, int, int]]) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["game_id", "home_points", "away_points"])
 
@@ -141,6 +159,29 @@ def test_stop_gate_passes_on_identical_completed_weeks():
         )
         == []
     )
+
+
+def test_stop_gate_ignores_provenance_and_postgame_elo_drift():
+    """The two observed drift sources: re-stamped provenance and CFBD's Elo recompute."""
+    new = elo_games_frame([(1, 7, "cap-new", 1121.0, 1252.0, 1104.0, 1269.0)])
+    previous = elo_games_frame([(1, 7, "cap-old", 1121.0, 1252.0, 1094.0, 1279.0)])
+    outcomes = outcomes_frame([(1, 31, 24)])
+    assert (
+        gate.compare_completed_weeks(
+            new, previous, outcomes, outcomes.copy(), through_week=7
+        )
+        == []
+    )
+
+
+def test_stop_gate_still_stops_on_pregame_elo_drift():
+    new = elo_games_frame([(1, 7, "cap-new", 1121.0, 1252.0, 1104.0, 1269.0)])
+    previous = elo_games_frame([(1, 7, "cap-new", 1111.0, 1252.0, 1104.0, 1269.0)])
+    outcomes = outcomes_frame([(1, 31, 24)])
+    problems = gate.compare_completed_weeks(
+        new, previous, outcomes, outcomes.copy(), through_week=7
+    )
+    assert problems == ["games: game 1 changed columns ['home_pregame_elo']"]
 
 
 def test_stop_gate_names_a_changed_completed_week_row():
