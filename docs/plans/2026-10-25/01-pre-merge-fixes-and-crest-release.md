@@ -1,10 +1,10 @@
 # Contract: Pre-merge fixes and Crest release completion
 
-- **Status:** In Progress (implemented and validated in a worktree, not committed; the revised wordmark lettering awaits owner review; deployment has not happened)
+- **Status:** Implemented and integrated on `dev`; the owner accepted the regenerated wordmark lettering. Production deployment pending (release pull request #9 not yet merged).
 - **Created:** 2026-10-25
 - **Approval source:** Owner supplied the bundle definition in the 2026-10-25 session.
 - **Implementation log:** `session_logs/2026-10-25/03-pre-merge-bundle.md`
-- **Commit policy:** Git staging, commits, pushing and merging stay with the owner. Release pull request #9 stays open until this bundle passes validation and the revised wordmark is accepted.
+- **Commit policy:** The bundle was committed to `dev` as separate commits on the owner's instruction; merging `dev` into `main` stays with the owner. Release pull request #9 carries the bundle.
 - **Related:** [Site reorganization](../2026-10-21/01-site-reorganization-and-performance.md), [Mobile app-feel](../2026-10-23/03-mobile-app-feel.md), [Crest wordmark decision](../../decisions/2026-10-25-crest-wordmark.md).
 
 ## Goal and scope
@@ -20,6 +20,7 @@ Deliver six review fixes and the wordmark font-source cleanup as one bundle on t
 5. **Setup command.** `uv sync --group dev` replaces `uv sync --extra dev`.
 6. **Historical audit evidence.** The deleted V4 YAML is restored byte for byte from the reviewed `main` revision to `conf/research/data_first_football_v1/historical/v4_2026.yaml`, and the audit root pins its checksum. The retired operational path stays absent.
 7. **Wordmark font sources.** "CFB" is regenerated from Arimo Bold (SIL Open Font License) and "CREST" from Bitstream Charter Bold (explicit licence in the CTAN `charter` package). Provenance, licences and a reproducible generator are retained under `design/crest-wordmarks/`.
+8. **Export lifecycle (follow-up from an independent review).** An export that is still rendering when its component unmounts, because the user switched chart type or left the page, can no longer download, share or finish a clipboard write.
 
 ## Acceptance
 
@@ -27,6 +28,7 @@ Deliver six review fixes and the wordmark font-source cleanup as one bundle on t
 - Browser share tests cover gesture failure, successful retry, changed content, cancellation and genuine failure, and confirm cancellation never downloads.
 - Environment-example tests parse the files and check actual defaults without reading credentials or fetching provider data.
 - The restored file matches the pinned checksum and the audit root resolves locally; no cloud audit was run.
+- A delayed-render navigation test confirms an unmounted export produces no download, share call or saved clipboard image, with a control that still shares when the user stays.
 - The wordmark is verified in both themes at 1440, 1280, 390 and 320 pixels, including theme switching, accessible name, home navigation, keyboard focus and clipping.
 - `make check`, the fixture browser suite, a final code review and `git diff --check` pass.
 - The development-tool dependency advisory (`esbuild` through `drizzle-kit`, non-blocking in CI) is recorded separately and not silenced by a forced downgrade.

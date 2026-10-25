@@ -1,8 +1,9 @@
 # Crest CFB wordmark decision
 
 **Date:** 2026-10-25  
-**Status:** Design selected by the owner; implementation deferred.  
-**Authority:** The owner selected lettering C, then navy color option B, and explicitly requested documentation without implementation.
+**Status:** Accepted and integrated on `dev` (header and phone app bar); Production deployment pending.
+
+**Authority:** The owner selected lettering C, then navy color option B, then instructed that it be implemented; the owner reviewed the regenerated open-font lettering and accepted it.
 
 ## Selected design
 
@@ -34,12 +35,12 @@ The SVG originally selected by the owner (superseded original, SHA-256 `b0d06ae0
 
 The prototypes use 66 vector units for the CREST cap height and 30 for CFB, with a shared baseline. Desktop and phone specimens were shown at 32px and 26px overall SVG height respectively. Those display sizes are review references; final integration must verify fit and legibility within the existing header and phone app bar.
 
-## Deferred implementation and acceptance
+## Integration and acceptance
 
-No application integration, deployment, or production change is authorized by this documentation request. The prototype remains separate from the application. Before implementing, obtain the owner's instruction to proceed and preserve this selected appearance.
+Integrated on `dev` on 2026-10-25 as `web/src/components/Wordmark.tsx`, used by the desktop header and the phone app bar: theme-aware foreground colors, an accessible name of “Crest CFB”, the existing home-link behavior and visible keyboard focus preserved, and no font files or runtime font requests. Licensing and provenance of the font-derived outlines are documented in `design/crest-wordmarks/PROVENANCE.md`.
 
-Future integration should use the same scalable vector geometry in the desktop header and phone app bar, with theme-aware foreground colors and an accessible name of “Crest CFB.” Preserve existing home-link behavior and visible keyboard focus. Licensing and provenance of the font-derived outlines are documented in `design/crest-wordmarks/PROVENANCE.md`; no font files are bundled. Deployment has not happened; the app integration remains pending the usual release process.
+Verified both themes at 1440, 1280, 390 and 320 pixels for fit, clipping, contrast, baseline alignment, CFB legibility, a live theme switch without a layout change, accessible name, home navigation and keyboard focus, with browser tests (`web/e2e/wordmark.spec.ts`) and by inspecting screenshots. Real-device acceptance was not performed. Favicon, social images, exports, broader typography, and other brand surfaces keep their earlier look and need a separately defined scope.
 
-Verify both themes at desktop and phone sizes, including a 320px viewport, for contrast, clipping, baseline alignment, CFB legibility, and theme changes without a font-loading shift. Prototype browser inspection is complete; actual application and real-device acceptance remain pending. Favicon, social images, exports, broader typography, and other brand surfaces need a separately defined scope.
+**Deployment:** pending. Nothing has been deployed to Production; that happens when the owner merges `dev` into `main`.
 
 Session evidence: `session_logs/2026-10-25/02-crest-wordmark-concepts.md` (repository file outside the published documentation site).

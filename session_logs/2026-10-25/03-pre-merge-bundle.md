@@ -41,6 +41,10 @@
 - Three new share-export tests first failed because of the test code, not the product: wrong expected filenames (the efficiency chart's export name includes `offense`), then strict-mode matches on a duplicated chart while the offscreen export card is mounted. A first fix guessed at page structure and made it worse; the page was then inspected and the selector corrected (SVG elements need `local-name()` in XPath).
 - A strict docs build failed once on links that reach outside the docs site; fixed by citing the path as code.
 
+## Follow-up: export lifecycle (independent review)
+
+An independent review of the bundle at `b648fc1f` found that an export still rendering when its component unmounts (chart type switched, or navigation away) could still download, share or finish a clipboard write. `ExportActions` now tracks whether it is mounted, bumps its generation counter on unmount, and checks both after the render and before every download, share and clipboard write; the download path also gained the changed-inputs check the share path already had. New browser tests navigate away mid-share, mid-download and mid-copy with the render held and assert nothing is saved or shared, with a control that still shares when the user stays; they fail on the previous code. Two older share tests flaked intermittently (about 2 failures per 20 repeats, also on the previous code) because they waited on a card that can mount and unmount between polls; they now count mounted cards with a `MutationObserver`. The wordmark decision and the bundle contract were corrected from "deferred" and "uncommitted" to accepted and integrated on `dev`, with Production deployment pending.
+
 ## Deployment Status
 
 Pending. Nothing in this bundle has been deployed. After the owner merges `dev` into `main` and Vercel reports Ready, run the live checks listed in the contract and record the merge commit, deployment ID and readback evidence in `docs/status.md`.
