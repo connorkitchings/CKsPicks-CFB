@@ -92,7 +92,7 @@ Do not run `ingest_season.py --entities games`, `build_expected_request_inventor
 
 **1c. Build the revision incrementally — the normal weekly path.** `make season-close-week WEEK=<NEXT_WEEK> …` runs `build_season_revision.py --incremental`, which:
 
-1. Resolves the certified carry set from the previous manifest: the `byplay` manifest's parent version IDs resolve to the certified `plays` and `team_game_stats` versions, whose `source_capture_ids` are the retained Bronze captures.
+1. Picks the previous manifest — by default the highest-versioned `conf/season/2026/revision_manifest_w<COMPLETED_WEEK>_v<k>.json` (the builder prints which file and why; override with `PREVIOUS_MANIFEST=<path>`) — and resolves the certified carry set from it: the `byplay` manifest's parent version IDs resolve to the certified `plays` and `team_game_stats` versions, whose `source_capture_ids` are the retained Bronze captures.
 2. Runs the controller's `advance-week` steps: the season schedule refresh, then `request_inventory_week_<COMPLETED_WEEK>`, `ingest_plays_week_<COMPLETED_WEEK>` and `ingest_game_stats_week_<COMPLETED_WEEK>` — the completed week only.
 3. Builds Silver `games` and `game_outcomes` from the fresh capture, runs the stop gate (`verify_completed_week_stability`: completed weeks 0..N−2 must equal the previous certified schedule and finals; any difference stops the run and names the games — route them to an approved repair, never a silent rewrite), then builds `plays` and `team_game_stats` from the union of the carried captures and the new week's captures.
 4. Derives `byplay`, `drives` and `source_reconciliation` from that Silver, builds one content-addressed cumulative `market_quotes` version from every registered capture, and writes `conf/season/2026/revision_manifest_w<NEXT_WEEK>_v1.json`.
@@ -111,6 +111,7 @@ make season-close-week WEEK=<NEXT_WEEK> AS_OF="$POST_WEEK_CUTOFF" \
 
 - **It refuses to overwrite** an existing `revision_manifest_w<NEXT_WEEK>_v1.json`. Delete any stale or template file for that week first.
 - **`DRY=1` (`--dry-run`) re-checks an existing run; it cannot preview a new one.** It fetches nothing and reads the Silver refs that `RUN_ID` already wrote under `artifacts/preview/pipeline-runs/<RUN_ID>/`, so it fails for a run ID that has not completed. It builds the derived and market versions in a temporary directory and prints the manifest. It uploads, registers and writes nothing, and ignores the overwrite rule.
+- **Dry-run does not evaluate the stop gate.** The builder prints an explicit `Stop gate NOT evaluated in dry-run` line; a dry run is not evidence that completed-week history is unchanged.
 - **Stop gate:** if the gate reports a changed completed-week game, stop. The affected history needs an explicitly approved repair; do not delete the manifest and retry silently.
 
 Check that every completed FBS game has a score, the required play/drive streams and reconciled totals. The `source_reconciliation` build fails on blocking conflicts.

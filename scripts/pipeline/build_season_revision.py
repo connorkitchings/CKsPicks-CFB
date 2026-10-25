@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 """Build the weekly season revision manifest from registered Preview captures.
 
-For ``--week N`` (the week to forecast) the completed history is Weeks 0..N-1:
+For ``--week N`` (the week to forecast) the completed history is Weeks 0..N-1.
+Two paths refresh the completed-week Silver under ``--pipeline-run-id``:
 
-1. Refresh Silver ``games``, ``game_outcomes``, ``plays`` and ``team_game_stats``
-   through the ops controller's ``prepare-week`` source and Silver steps (the
-   ``fetch-source``/``build-silver`` machinery) under ``--pipeline-run-id``.
+- ``--incremental`` (the normal weekly path, ``make season-close-week``): the
+  controller's ``advance-week`` steps fetch only the completed week N-1, carry
+  the certified Weeks 0..N-2 Bronze captures behind ``--previous-manifest``
+  (default: the highest-versioned ``revision_manifest_w<N-1>_v<k>.json``), and
+  stop if the completed-week schedule or finals differ from that manifest.
+- Without ``--incremental`` (the full-history repair path, ``make
+  season-revision FULL_HISTORY=1``): the ``prepare-week`` steps re-ingest every
+  completed week 0..N-1.
+
+Then, on either path:
+
+1. Silver ``games``, ``game_outcomes``, ``plays`` and ``team_game_stats`` are
+   refreshed as above (the ``fetch-source``/``build-silver`` machinery).
 2. Derive ``byplay``, ``drives`` and ``source_reconciliation`` from those parents.
 3. Build one content-addressed cumulative ``market_quotes`` version from every
    registered season CFBD betting-lines and The Odds API capture.
@@ -24,6 +35,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -280,11 +292,34 @@ def build_market_quotes(source, sink, *, captures, games: pd.DataFrame, code_sha
     )
 
 
+def require_completed_weeks(frames: dict[str, pd.DataFrame], through_week: int) -> None:
+    """Every completed week 0..``through_week`` must be in plays and team stats.
+
+    Guards the incremental carry: a certified week whose captures were silently
+    dropped would otherwise vanish from history without any other signal.
+    """
+    for dataset in ("plays", "team_game_stats"):
+        present = set(frames[dataset]["week"].dropna().astype(int))
+        for week in range(through_week + 1):
+            if week not in present:
+                raise LookupError(
+                    f"Built {dataset} Silver has no rows for completed week {week}; "
+                    "the carried captures do not cover the certified history"
+                )
+
+
 def build_derived(
-    source, sink, *, parents: dict[str, DatasetRef], as_of: datetime, code_sha: str
+    source,
+    sink,
+    *,
+    parents: dict[str, DatasetRef],
+    as_of: datetime,
+    code_sha: str,
+    through_week: int,
 ):
     """Derive byplay, drives and source reconciliation from pinned Silver parents."""
     frames = {name: read_dataset(source, parents[name]) for name in DERIVED_PARENTS}
+    require_completed_weeks(frames, through_week)
     games = frames["games"].rename(columns={"kickoff_utc": "start_date"})
     byplay, drives, team_game, _ = build_preaggregation_pipeline(
         frames["plays"],
@@ -396,7 +431,14 @@ def build_revision(
     season = previous["season"]
     refs = controller_refs(source, run_id)
     refs["teams"] = _ref_from_input("teams", previous["inputs"]["teams"])
-    derived = build_derived(source, sink, parents=refs, as_of=as_of, code_sha=code_sha)
+    derived = build_derived(
+        source,
+        sink,
+        parents=refs,
+        as_of=as_of,
+        code_sha=code_sha,
+        through_week=week - 1,
+    )
     captures = market_captures(
         conn_url, season_market_capture_ids(conn_url, season, now)
     )
@@ -457,7 +499,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--previous-manifest",
-        help="Defaults to conf/season/<season>/revision_manifest_w<N-1>_v1.json.",
+        help=(
+            "Defaults to the highest-versioned conf/season/<season>/"
+            "revision_manifest_w<N-1>_v<k>.json with --incremental, else "
+            "revision_manifest_w<N-1>_v1.json."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -470,13 +516,36 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
+def latest_previous_manifest(conf: Path, completed_week: int) -> Path:
+    """The highest-versioned ``revision_manifest_w<completed_week>_v<k>.json``."""
+    pattern = re.compile(rf"revision_manifest_w{completed_week}_v(\d+)\.json")
+    versions = {
+        int(match.group(1)): path
+        for path in conf.glob(f"revision_manifest_w{completed_week}_v*.json")
+        if (match := pattern.fullmatch(path.name))
+    }
+    if not versions:
+        raise FileNotFoundError(
+            f"No revision_manifest_w{completed_week}_v<k>.json in {conf}; "
+            "pass --previous-manifest explicitly"
+        )
+    return versions[max(versions)]
+
+
 def main() -> None:
     load_dotenv()
     args = parse_args()
     conf = Path(f"conf/season/{args.season}")
-    previous_path = Path(
-        args.previous_manifest or conf / f"revision_manifest_w{args.week - 1}_v1.json"
-    )
+    if args.previous_manifest:
+        previous_path = Path(args.previous_manifest)
+    elif args.incremental:
+        previous_path = latest_previous_manifest(conf, args.week - 1)
+        print(
+            f"Previous manifest: {previous_path} (highest version of week "
+            f"{args.week - 1}; pass --previous-manifest to override)"
+        )
+    else:
+        previous_path = conf / f"revision_manifest_w{args.week - 1}_v1.json"
     output = Path(args.output or conf / f"revision_manifest_w{args.week}_v1.json")
     if not args.dry_run and output.exists():
         raise SystemExit(f"Refusing to overwrite {output}")
@@ -502,6 +571,11 @@ def main() -> None:
             f"{len(advance['carried_captures']['team_game_stats'])} team_game_stats "
             f"certified captures; fetching only week {args.week - 1} observations."
         )
+        if args.dry_run:
+            print(
+                "Stop gate NOT evaluated in dry-run: completed-week history was "
+                "not compared against the previous manifest."
+            )
     if not args.dry_run:
         refresh_controller_silver(
             conn_url,

@@ -1,4 +1,4 @@
-.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-revision season-market-revision season-prepare season-release season-rollback
+.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-close-week season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -194,10 +194,10 @@ SEASON_ENV := CFB_STORAGE_BACKEND=r2 PYTHONPATH=src:.
 # Normal weekly close/open (incremental): fetches only the completed week's
 # observations, carries the certified earlier-week captures, and gates the
 # completed-week history against the previous manifest. PREVIOUS_MANIFEST
-# defaults to revision_manifest_w<WEEK-1>_v1.json.
+# defaults to the highest-versioned revision_manifest_w<WEEK-1>_v<k>.json.
 season-close-week:
 	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(PRE_WEEK_CUTOFF)" ] || [ -z "$(RUN_ID)" ]; then \
-		echo "Usage: make season-close-week WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [PREVIOUS_MANIFEST=<certified manifest>] [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
+		echo "Usage: make season-close-week WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [PREVIOUS_MANIFEST=<certified manifest; default: highest-versioned week WEEK-1 manifest>] [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
 	fi
 	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/build_season_revision.py --season 2026 --week $(WEEK) --environment preview --incremental --as-of $(AS_OF) --pre-week-cutoff $(PRE_WEEK_CUTOFF) --pipeline-run-id $(RUN_ID) $(if $(PREVIOUS_MANIFEST),--previous-manifest $(PREVIOUS_MANIFEST),) $(if $(DRY),--dry-run,)
 

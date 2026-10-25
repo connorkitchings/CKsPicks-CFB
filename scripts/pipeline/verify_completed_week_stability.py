@@ -83,9 +83,13 @@ def _value_differences(
     problems: list[str] = []
     new_index = new.set_index("game_id")
     previous_index = previous.set_index("game_id")
-    shared_columns = [
-        column for column in new_index.columns if column in previous_index.columns
-    ]
+    only_new = [c for c in new_index.columns if c not in previous_index.columns]
+    only_previous = [c for c in previous_index.columns if c not in new_index.columns]
+    for column in sorted(only_new):
+        problems.append(f"{label}: column {column} exists only in the new data")
+    for column in sorted(only_previous):
+        problems.append(f"{label}: column {column} exists only in the previous data")
+    shared_columns = [c for c in new_index.columns if c in previous_index.columns]
     new_frame = new_index.loc[game_ids, shared_columns].astype(str)
     previous_frame = previous_index.loc[game_ids, shared_columns].astype(str)
     differing = new_frame.ne(previous_frame)
@@ -125,6 +129,11 @@ def compare_completed_weeks(
     outcomes = new_outcomes[new_outcomes["game_id"].isin(new_ids)]
     previous = previous_outcomes[previous_outcomes["game_id"].isin(previous_ids)]
     outcome_ids = sorted(set(outcomes["game_id"]) & set(previous["game_id"]), key=str)
+    for game_id in sorted(set(outcomes["game_id"]) - set(previous["game_id"]), key=str):
+        problems.append(
+            f"game_outcomes: game {game_id} has a finals row that the certified "
+            "previous outcomes lack"
+        )
     for game_id in sorted(set(previous["game_id"]) - set(outcomes["game_id"]), key=str):
         problems.append(f"game_outcomes: game {game_id} lost its certified finals row")
     problems.extend(
@@ -143,7 +152,9 @@ def main() -> None:
     parser.add_argument("--previous-games", required=True)
     parser.add_argument("--previous-outcomes", required=True)
     parser.add_argument("--through-week", type=int, required=True)
-    parser.add_argument("--environment", choices=("preview", "production"))
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), required=True
+    )
     args = parser.parse_args()
     storage = get_storage(environment=args.environment)
     problems = compare_completed_weeks(
