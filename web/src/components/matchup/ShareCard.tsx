@@ -400,7 +400,7 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
           </span>
         </div>
         <div style={{ fontSize: 16, color: C.muted }}>
-          {formatKickoff(matchup.startDate, "America/New_York")}
+          {formatKickoff(matchup.startDate)}
           {venue ? ` · ${venue}` : ""}
         </div>
       </div>

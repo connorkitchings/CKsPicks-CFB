@@ -1,3 +1,5 @@
+import { etDate, etDateYear } from "./time-et.ts";
+
 /**
  * Pure ratings-period helpers shared by the serving layer and its tests.
  *
@@ -62,8 +64,8 @@ export const PRESEASON_META: PeriodMeta = {
 };
 
 export function formatCutoffLabel(cutoff: Date): { label: string; shortLabel: string } {
-  const label = `As of ${cutoff.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
-  const shortLabel = cutoff.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const label = `As of ${etDateYear(cutoff)}`;
+  const shortLabel = etDate(cutoff);
   return { label, shortLabel };
 }
 

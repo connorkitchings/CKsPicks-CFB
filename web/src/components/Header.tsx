@@ -5,6 +5,7 @@ import { AppBar, type AppBarBack } from "./AppBar";
 import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
+import { etDateTime } from "@/lib/time-et";
 
 export function Header({
   season,
@@ -74,13 +75,7 @@ export function Header({
             {status}
             {updatedAt && (
               <span className="max-sm:hidden">
-                Updated{" "}
-                {updatedAt.toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
+                Updated {etDateTime(updatedAt)}
               </span>
             )}
           </div>

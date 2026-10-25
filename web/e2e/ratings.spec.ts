@@ -149,7 +149,7 @@ test.describe("mobile team ratings", () => {
     await expect(phoneSort(page)).toHaveValue("offense");
     await closeFilters(page);
     await expect(page.getByTestId("primary-rating")).toHaveText("Offense+3.20");
-    await expect(page.getByText(/Evidence cutoff: Sep 22, 2026/)).toBeVisible();
+    await expect(page.getByText(/Evidence cutoff: Sep 22, 2026, 10:58 AM ET\./)).toBeVisible();
     await openFilters(page);
     await page.getByLabel("Rating period", { exact: true }).selectOption({ label: "Preseason" });
     await expect(page.getByTestId("primary-rating")).toHaveText("Offense+3.00");

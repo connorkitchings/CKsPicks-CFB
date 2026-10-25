@@ -9,6 +9,7 @@ import { Disclosure } from "@/components/ui/Disclosure";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { RatingsView, type RatingRow } from "@/components/ratings/RatingsView";
+import { etDateYearTime } from "@/lib/time-et";
 
 export const revalidate = 300;
 
@@ -124,7 +125,7 @@ export default async function RatingsPage({ searchParams }: {
           <p className="text-xs text-ink-muted max-sm:order-last">
             {period === "preseason"
               ? "Preseason baseline priors before 2026 kickoff."
-              : `Evidence cutoff: ${ratings[0].cutoffUtc.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC.`}
+              : `Evidence cutoff: ${etDateYearTime(ratings[0].cutoffUtc)}.`}
           </p>
         )}
       </main>

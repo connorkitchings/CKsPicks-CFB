@@ -9,6 +9,7 @@ import {
   type BetResult,
 } from "@/lib/team-games";
 import { phoneTeamName } from "@/lib/team-logos";
+import { etDate } from "@/lib/time-et";
 
 const TH = "px-1.5 pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted whitespace-nowrap";
 const TD = "whitespace-nowrap border-t border-line px-1.5 py-2";
@@ -51,7 +52,7 @@ function ScheduleTable({ games, team, nextId }: { games: readonly TeamGame[]; te
             return (
               <tr key={game.gameId} data-testid={game.gameId === nextId ? "schedule-next-row" : undefined} className={clsx(!final && "text-ink-muted", game.gameId === nextId && "bg-accent-soft")}>
                 <td className={clsx(TD, "font-mono")}>{game.week}</td>
-                <td className={TD}>{game.startDate.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })}</td>
+                <td className={TD}>{etDate(game.startDate)}</td>
                 <td className={TD}>
                   <span className="flex items-center gap-2">
                     <span className="w-4 text-xs text-ink-faint">{home ? "vs" : "at"}</span>

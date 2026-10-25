@@ -83,6 +83,8 @@ test("default period labels from cutoff date when no résumé facts exist", () =
   assert.equal(meta.id, "2026-09-27T14:15:00.000Z");
   assert.equal(meta.label, "As of Sep 27, 2026");
   assert.equal(meta.shortLabel, "Sep 27");
+  // The label is the Eastern calendar date: 03:00Z is still the evening before.
+  assert.equal(defaultPeriodForRows([rating("Alabama", new Date("2026-10-20T03:00:00Z"), 1.4)], NO_RESUME_FACTS).label, "As of Oct 19, 2026");
   assert.equal(meta.postWeek, undefined);
   assert.equal(meta.description, "Frozen team ratings from all evidence available at cutoff (active model state).");
 });

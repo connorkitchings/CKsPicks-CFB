@@ -11,6 +11,7 @@ import {
   marketSpreadView,
   spreadLabel,
 } from "@/lib/betting-format";
+import { etWeekdayDateTime } from "@/lib/time-et";
 
 function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
   if (result === null) {
@@ -53,7 +54,7 @@ export function MarketGameCard({
   return (
     <Card as="li" id={`game-${game.gameId}`} className="scroll-mt-12 max-sm:scroll-mt-0">
       <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
-        <span>{formatKickoff(game.startDate)}</span>
+        <span>{etWeekdayDateTime(game.startDate)}</span>
         {hasResults && (
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Final
@@ -115,22 +116,6 @@ export function MarketGameCard({
       />
     </Card>
   );
-}
-
-function formatKickoff(startDate: Date): string {
-  // Node and Safari use different date/time joining words; assemble named parts
-  // so hydration preserves one Eastern-time timestamp on every browser.
-  const parts = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/New_York",
-    timeZoneName: "short",
-  }).formatToParts(startDate);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((entry) => entry.type === type)?.value ?? "";
-  return `${part("weekday")}, ${part("month")} ${part("day")}, ${part("hour")}:${part("minute")} ${part("dayPeriod")} ${part("timeZoneName")}`;
 }
 
 function TeamLine({

@@ -29,7 +29,7 @@ test("ratings page includes rank column, methodology explainer, and disambiguate
   assert.match(source, /Both offense and defense are oriented so higher is better/);
   assert.match(source, /through-2025 Ridge regression bridge with earlier-only non-offense offsets/);
   assert.match(source, /Preseason baseline priors before 2026 kickoff\./);
-  assert.match(source, /Evidence cutoff: \$\{ratings\[0\]\.cutoffUtc/);
+  assert.match(source, /Evidence cutoff: \$\{etDateYearTime\(ratings\[0\]\.cutoffUtc\)\}\./);
 
   // Disambiguated empty states
   assert.match(source, /No certified ratings published for the \{season\} season yet\./);

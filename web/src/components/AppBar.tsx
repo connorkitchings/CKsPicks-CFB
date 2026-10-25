@@ -6,6 +6,7 @@ import { BottomSheet, useSheet } from "@/components/ui/BottomSheet";
 import { useIsPhone } from "@/lib/use-is-phone";
 import { SeasonSelector } from "./SeasonSelector";
 import { ThemeToggle } from "./ThemeToggle";
+import { etDateTime } from "@/lib/time-et";
 
 /** Pages whose app bar centers the brand: the four tabs. Matchup and team pages keep a back link and their own title. */
 const TAB_TITLES = new Set(["Games", "Ratings", "Graphs", "Model"]);
@@ -50,7 +51,7 @@ export function AppBar({
   const title = back?.title ?? titleFor(pathname);
   const tab = !back && TAB_TITLES.has(title);
   const updated = updatedAt
-    ? new Date(updatedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    ? etDateTime(new Date(updatedAt))
     : null;
 
   return (

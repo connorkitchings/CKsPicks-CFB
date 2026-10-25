@@ -149,7 +149,7 @@ test("market timestamps hydrate without replacing the slate", async ({ page }) =
   await page.goto("/?mode=market");
   await expect(page.getByRole("searchbox", { name: "Filter by team" })).toBeEditable();
   await expect(page.getByRole("table", { name: "Market and results" })).toBeVisible();
-  await expect(page.getByText("Sat, Aug 29, 3:30 PM EDT", { exact: true })).toBeVisible();
+  await expect(page.getByText("Sat, Aug 29, 3:30 PM ET", { exact: true })).toBeVisible();
   expect(hydrationErrors).toEqual([]);
 });
 

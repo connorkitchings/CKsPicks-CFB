@@ -71,7 +71,7 @@ export function PredictionGameCard({ game, results = false }: {
       <div className="px-3 pb-3 pt-2">
         <div className="mb-1 flex items-center justify-between gap-2 text-xs text-ink-muted">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium tabular-nums">{results ? dayShort(game.startDate) : `${kickoffTime(game.startDate)} ET`}</span>
+            <span className="font-medium tabular-nums">{results ? dayShort(game.startDate) : kickoffTime(game.startDate)}</span>
             {where && <span>· {where}</span>}
             {game.neutralSite && <span>· Neutral site</span>}
             {final && <span className="rounded bg-surface-inset px-1.5 py-0.5 text-xs font-semibold">Final</span>}
