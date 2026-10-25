@@ -7,7 +7,8 @@ import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
 import { etDateTime } from "@/lib/time-et";
-import { BRAND_FULL, BRAND_NAME, BRAND_SUFFIX } from "@/lib/brand";
+import { BRAND_FULL } from "@/lib/brand";
+import { Wordmark } from "./Wordmark";
 
 export function Header({
   season,
@@ -54,11 +55,8 @@ export function Header({
     <header className={`border-b border-line bg-surface-card/80 backdrop-blur${(phoneStatus ?? Boolean(status)) ? "" : " max-sm:hidden"}`}>
       <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-1.5 sm:py-3.5`}>
         <div className="flex items-center justify-between gap-3 max-sm:hidden">
-          <Link href="/" className="inline-flex min-h-11 items-center rounded text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent sm:text-xl">
-            {BRAND_NAME}
-            <span className="ml-1.5 text-xs font-normal text-ink-muted sm:text-sm">
-              {BRAND_SUFFIX}
-            </span>
+          <Link href="/" className="inline-flex min-h-11 items-center rounded text-wordmark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+            <Wordmark className="h-8 w-auto" />
           </Link>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {season !== null && allowedSeasons && allowedSeasons.length > 1 && (

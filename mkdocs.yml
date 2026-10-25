@@ -44,6 +44,7 @@ nav:
       - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md
   - Decisions and Contracts:
       - Decision Log: decisions/decision_log.md
+      - Crest Wordmark Decision: decisions/2026-10-25-crest-wordmark.md
       - Implementation Contracts: plans/index.md
       - V5 Contract Archive: archive/v5-contracts/index.md
   - Archive:

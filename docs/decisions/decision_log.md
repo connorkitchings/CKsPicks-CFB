@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-10-25: Crest CFB wordmark and theme colors
+
+- **Context:** The owner reviewed serif/sans-serif wordmarks and light/dark color comparisons for the Crest rebrand.
+- **Decision:** Retain Crest CFB; select lettering C / Balance and navy pairing B / Navy + crisp white. CREST and CFB share navy `#20344D` in light mode and crisp white `#F8FAFC` in dark mode, with no accent stripe.
+- **Impact:** Design selection only. The owner explicitly deferred implementation; application files and deployments remain unchanged.
+- **Source:** [Wordmark decision and retained references](2026-10-25-crest-wordmark.md), session log `session_logs/2026-10-25/02-crest-wordmark-concepts.md`. No implementation contract is approved by this entry.
+
 ## 2026-10-15: Exact reconciliation and accepted rebuilt market provenance
 
 - **Decision:** require exact scoring-event-to-final reconciliation per team-game. Only explicit `game_id`, `team` and reason exceptions pinned by the revision manifest are permitted; unlisted mismatches and unused exceptions fail preparation and `season_verification_v2`. Malformed-score tags and a season-wide percentage threshold cannot waive the check.
