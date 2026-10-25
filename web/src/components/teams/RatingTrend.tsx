@@ -46,7 +46,7 @@ function Chart({ points, measure, color }: { points: readonly TeamRankPoint[]; m
         <polyline points={line} fill="none" strokeWidth={2} strokeLinejoin="round" stroke={color} />
       </>}
       <circle cx={endX} cy={endY} r={4} fill={color} />
-      <text x={endX} y={endY - 9} textAnchor="end" className="fill-ink font-mono font-semibold">{label(last)}</text>
+      <text x={endX} y={endY - 12} textAnchor="end" stroke="var(--surface-card)" strokeWidth={3} paintOrder="stroke" className="fill-ink font-mono font-semibold">{label(last)}</text>
       {weekLabels.map((week, i) => (
         <text key={week} x={x(week)} y={H - 6} textAnchor={i === 0 && weekLabels.length > 1 ? "start" : i === weekLabels.length - 1 ? "end" : "middle"} className="fill-ink-muted font-mono">Wk {week + 1}</text>
       ))}
