@@ -75,7 +75,7 @@ These obligations survive superseding the overlapping repair/cutover contracts. 
 - **2025 matchup backfill:** complete independent certification, then reviewed publication/readback. Retained [matchup-layer requirements](plans/2026-10-02/01-matchup-data-layer-v2.md) remain evidence; no backfill was performed here.
 - **Non-monotonic play-by-play score:** preserve the documented nullable points-per-scoring-opportunity limitation and repair scope in [known data issues](data/known_issues.md).
 
-Dated release, waiver, deployment and repair narratives moved to [status history](status_history.md). Research remains separate from live operations. Repository cleanup (V4, Hydra, Nx and one-off tooling removed; plans and September logs archived) is complete on the consolidation branch pending owner review: [plan](plans/2026-10-22/01-repo-consolidation.md).
+Dated release, waiver, deployment and repair narratives moved to [status history](status_history.md). Research remains separate from live operations. Repository cleanup (V4, Hydra, Nx and one-off tooling removed; plans and September logs archived) is complete and merged: [plan](plans/2026-10-22/01-repo-consolidation.md).
 
 ## Where to look next
 
