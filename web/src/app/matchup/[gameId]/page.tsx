@@ -6,6 +6,7 @@ import { MatchupHero } from "@/components/matchup/MatchupHero";
 import { getMatchupData } from "@/lib/matchup";
 import { parseGameId } from "@/lib/matchup-id";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
+import { pageNow, type SlateSearchParams } from "@/lib/slate-page";
 import { publicationScope } from "@/lib/publication";
 import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/team-routes";
@@ -31,8 +32,10 @@ export async function generateMetadata({
 
 export default async function MatchupPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ gameId: string }>;
+  searchParams: SlateSearchParams;
 }) {
   if (!isMatchupEnabled()) notFound();
   const { gameId } = await params;
@@ -63,7 +66,7 @@ export default async function MatchupPage({
 
       <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-5xl flex-1 px-4 sm:space-y-6 sm:py-6 ${PHONE_PAGE_RHYTHM}`}>
         {/* Hero Section */}
-        <MatchupHero matchup={matchup} />
+        <MatchupHero matchup={matchup} now={pageNow(await searchParams)} />
 
         {matchup.lineageStatus !== "ready" ? (
           <Card as="section" role="status" aria-label="Team stats" padding="none" className="p-6 text-sm text-ink-muted">

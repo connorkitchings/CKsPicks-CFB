@@ -73,7 +73,7 @@ export function AppBar({
         )}
         {tab && (
           <Link href="/" className="inline-flex min-h-11 shrink-0 items-center rounded text-base font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent">
-            {BRAND_NAME} <span className="text-xs font-normal text-ink-muted">{BRAND_SUFFIX}</span>
+            {BRAND_NAME}<span className="ml-1 text-xs font-normal text-ink-muted">{BRAND_SUFFIX}</span>
           </Link>
         )}
         {/* On the tabs the brand is the title; the name stays for assistive tech and tests. */}

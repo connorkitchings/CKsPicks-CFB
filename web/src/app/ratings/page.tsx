@@ -33,11 +33,13 @@ export default async function RatingsPage({ searchParams }: {
     description: "Latest frozen team ratings (active model state).",
   };
   let timeline: PeriodMeta[] = [];
+  let defaultPeriod: RatingPeriod = "current";
   let unavailable = false;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
     ({ ratings, period, periodMeta, timeline } = ratingsFixture(requestedPeriod));
     roster = ratingsRosterFixture;
+    defaultPeriod = ratingsFixture("current").period;
   } else {
     try {
       const [result, loadedTimeline, loadedRoster] = await Promise.all([
@@ -50,6 +52,7 @@ export default async function RatingsPage({ searchParams }: {
       periodMeta = result.periodMeta;
       timeline = loadedTimeline;
       roster = loadedRoster ?? [];
+      defaultPeriod = requestedPeriod === "current" ? period : (await getWeeklyRatings(season, "current")).period;
     } catch (error) {
       console.error("V5 ratings query failed", error);
       unavailable = true;
@@ -108,6 +111,7 @@ export default async function RatingsPage({ searchParams }: {
           <RatingsView
             key={period}
             period={period}
+            defaultPeriod={defaultPeriod}
             timeline={timeline.map(({ id, label }) => ({ id, label }))}
             ratings={ratingRows}
             roster={roster}

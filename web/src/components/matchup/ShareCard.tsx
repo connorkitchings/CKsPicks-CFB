@@ -397,7 +397,7 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
           <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>{BRAND_FULL}</span>
           <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: 1.4, textTransform: "uppercase", color: C.accent }}>
-            CFB · Week {matchup.week}
+            Week {matchup.week}
           </span>
         </div>
         <div style={{ fontSize: 16, color: C.muted }}>

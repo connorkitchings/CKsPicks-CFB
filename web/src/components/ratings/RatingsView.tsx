@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { PeriodMeta, Rating } from "@/lib/rating-periods";
+import { isDefaultView } from "@/lib/ratings-default-view";
 import {
   buildConferenceMap,
   conferenceOptions,
@@ -171,6 +172,8 @@ interface RatingsViewProps {
   periodMeta: Pick<PeriodMeta, "label">;
   period: string;
   timeline: Pick<PeriodMeta, "id" | "label">[];
+  /** The period the page serves when no `?period=` is given. */
+  defaultPeriod: string;
   season: number;
   initialSort: RatingsSort;
   initialDirection: SortDirection;
@@ -184,6 +187,7 @@ export function RatingsView({
   periodMeta,
   period,
   timeline,
+  defaultPeriod,
   season,
   initialSort,
   initialDirection,
@@ -239,10 +243,9 @@ export function RatingsView({
     return `/ratings?${params.toString()}`;
   }
 
-  const latestPeriod = timeline[timeline.length - 1]?.id ?? period;
   const periodLabel = timeline.find((entry) => entry.id === period)?.label ?? periodMeta.label;
   const conferenceLabel = conference === "all" ? "All FBS" : conference === "p4" ? "Power Four + Notre Dame" : conference;
-  const filtersActive = conference !== "all" || sort !== "overall" || period !== latestPeriod;
+  const filtersActive = !isDefaultView({ conference, sort, period, defaultPeriod });
   const summary = summaryText(conferenceLabel, sortLabels[sort], periodLabel, "V5");
 
   const periodSelect = timeline.length > 0 && (

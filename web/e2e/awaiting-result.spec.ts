@@ -58,3 +58,21 @@ test("an unparseable now falls back to the default clock", async ({ page }) => {
   await page.goto("/?now=tomorrow");
   await expect(page.getByTestId("week-phase")).toHaveText("Upcoming");
 });
+
+test("the matchup hero tags a past unscored game, and only that", async ({ page }) => {
+  await page.goto(`/matchup/1?now=${WEEK_5_OVER}`);
+  await expect(page.getByTestId("awaiting-tag")).toHaveCount(1);
+  await expect(page.getByTestId("awaiting-tag")).toHaveText("Awaiting result");
+  await page.goto("/matchup/1");
+  await expect(page.getByTestId("awaiting-tag")).toHaveCount(0);
+  await page.goto(`/matchup/101?now=${WEEK_5_OVER}`);
+  await expect(page.getByText(/Final: \d+–\d+/)).toBeVisible();
+  await expect(page.getByTestId("awaiting-tag")).toHaveCount(0);
+});
+
+test("the matchup awaiting tag fits on a 320px phone", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.goto(`/matchup/1?now=${WEEK_5_OVER}`);
+  await expect(page.getByTestId("awaiting-tag")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});

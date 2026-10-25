@@ -179,6 +179,10 @@ test.describe("mobile team ratings", () => {
     expect((await filters.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(page.getByTestId("ratings-summary")).toHaveText(/^All FBS · Overall · Post-Week \d+ · V5$/);
     await expect(page.getByTestId("ratings-filters-dot")).toHaveCount(0);
+    // The fixture timeline lists latest-first like production, so an older period (last in the list) is what lights the dot.
+    await page.goto("/ratings?period=preseason");
+    await expect(page.getByTestId("ratings-filters-dot")).toHaveCount(1);
+    await page.goto("/ratings");
     // The heading is screen-reader only on phones, and the about disclosure sits after the list.
     expect((await page.getByRole("heading", { level: 1, name: "Team ratings" }).boundingBox())!.width).toBeLessThanOrEqual(1);
     const about = page.getByText("About V5 possession ratings", { exact: true });

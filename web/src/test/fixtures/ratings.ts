@@ -20,10 +20,11 @@ const currentId = `${source}@${currentCutoff.toISOString()}`;
  */
 export const NO_RESUME_PERIOD = "no-resume";
 
+/** Latest first, as `getRatingPeriods` lists them in production. */
 export const ratingPeriodsFixture: PeriodMeta[] = [
-  { id: "preseason", label: "Preseason", shortLabel: "Preseason", description: "Preseason baseline priors before 2026 kickoff." },
-  { id: earlierId, label: "Post-Week 3", shortLabel: "Week 3", description: "Frozen ratings after Week 3 games finalized.", cutoffUtc: earlierCutoff, sourceManifestSha256: source, postWeek: 3 },
   { id: currentId, label: "Post-Week 4", shortLabel: "Week 4", description: "Frozen ratings after Week 4 games finalized (active model state).", cutoffUtc: currentCutoff, sourceManifestSha256: source, postWeek: 4 },
+  { id: earlierId, label: "Post-Week 3", shortLabel: "Week 3", description: "Frozen ratings after Week 3 games finalized.", cutoffUtc: earlierCutoff, sourceManifestSha256: source, postWeek: 3 },
+  { id: "preseason", label: "Preseason", shortLabel: "Preseason", description: "Preseason baseline priors before 2026 kickoff." },
 ];
 
 const teams = [
@@ -109,7 +110,7 @@ const resumeByPeriod: Record<string, Record<string, ResumeFields>> = {
 export function ratingsFixture(requestedPeriod: string) {
   const withResume = requestedPeriod !== NO_RESUME_PERIOD;
   const periodMeta = ratingPeriodsFixture.find((entry) => entry.id === requestedPeriod)
-    ?? ratingPeriodsFixture[2];
+    ?? ratingPeriodsFixture[0];
   const adjustment = periodMeta.id === "preseason" ? -0.4 : periodMeta.postWeek === 3 ? -0.2 : 0;
   const resumeRows = withResume ? resumeByPeriod[periodMeta.id] ?? {} : {};
   const ratings: Rating[] = teams.map((team) => {

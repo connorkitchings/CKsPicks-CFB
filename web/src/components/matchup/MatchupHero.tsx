@@ -11,6 +11,7 @@ import { spreadBetLabel } from "@/lib/betting-format";
 import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/team-routes";
 import { ResultBadge } from "@/components/slate/ResultBadge";
+import { AwaitingTag } from "@/components/slate/AwaitingTag";
 import { ShareButton } from "./ShareButton";
 
 function TeamBlock({
@@ -125,7 +126,7 @@ function Cell({
   );
 }
 
-export function MatchupHero({ matchup }: { matchup: MatchupData }) {
+export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date }) {
   const isFinal = matchup.homeFinalPoints !== null && matchup.awayFinalPoints !== null;
   const venue = venueLine(matchup);
   const teams = [matchup.homeTeam, matchup.awayTeam];
@@ -244,6 +245,11 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
               Final: {matchup.awayFinalPoints}–{matchup.homeFinalPoints}
             </span>
           )}
+          <AwaitingTag
+            game={{ startDate: matchup.startDate, homePoints: matchup.homeFinalPoints, awayPoints: matchup.awayFinalPoints }}
+            now={now}
+            className="mt-2.5"
+          />
         </div>
         </div>
       </Card>
