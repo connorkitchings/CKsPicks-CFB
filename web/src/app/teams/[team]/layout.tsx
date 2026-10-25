@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { resolveTeam } from "@/lib/teams";
+import { resolveTeam } from "@/lib/team-routes";
 
 /**
  * Resolves the team above the route's loading boundary: once `loading.tsx` has streamed its

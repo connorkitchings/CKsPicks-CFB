@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
 import { publicationScope } from "@/lib/publication";
-import { resolveTeam } from "@/lib/teams";
+import { resolveTeam } from "@/lib/team-routes";
 import { getTeamGames, getTeamHistory, getWeeklyRatings, type Rating } from "@/lib/v5";
 import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<{ team: str
 async function loadUnitRows(team: string, week: number): Promise<UnitMatchupRow[] | null> {
   try {
     for (const asOfWeek of week > 0 ? [week, week - 1] : [week]) {
-      const [season, possession] = await Promise.all([getTeamSeasonStats(2026, asOfWeek, [team]), getTeamPossessionStats(2026, asOfWeek, [team])]);
+      const [season, possession] = await Promise.all([getTeamSeasonStats(publicationScope.season, asOfWeek, [team]), getTeamPossessionStats(publicationScope.season, asOfWeek, [team])]);
       const rows = [...season, ...possession];
       if (rows.length > 0) return buildUnitRows(rows, team, team);
     }
@@ -79,14 +79,14 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
   } else {
     try {
       // Rating snapshots store nine teams under legacy names; games use CFBD names.
-      [history, games] = await Promise.all([getTeamHistory(2026, ratingName), getTeamGames(2026, team)]);
+      [history, games] = await Promise.all([getTeamHistory(publicationScope.season, ratingName), getTeamGames(publicationScope.season, team)]);
     } catch (error) {
       console.error("V5 team page query failed", error);
       unavailable = true;
     }
     // The summary, rank history and conference are secondary: a failed read leaves them out instead of hiding the page.
     [current, snapshots, roster, gameStats] = await Promise.all([
-      getWeeklyRatings(2026, "current").then((result) => result.ratings).catch(() => []),
+      getWeeklyRatings(publicationScope.season, "current").then((result) => result.ratings).catch(() => []),
       getV5RatingSnapshots(2026).then((rows) => rows ?? []).catch(() => []),
       getTeamSeasonRoster(2026).then((rows) => rows ?? []).catch(() => []),
       getTeamGameStats(2026).catch(() => null),
@@ -106,7 +106,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
   return (
     <PageShell
       width="slate"
-      header={{ season: 2026, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons,
+      header={{ season: publicationScope.season, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons,
         back: { href: "/ratings", label: "Back to ratings", title: teamAbbr(team) } }}
       mainClassName="space-y-4 py-4 sm:py-8"
     >

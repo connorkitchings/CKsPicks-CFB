@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveTeam, teamHref, TEAM_LOGO_MAP } from "./teams.ts";
+import { resolveTeam, teamHref } from "./team-routes.ts";
+import { TEAM_LOGO_MAP } from "./teams.ts";
 
 test("teamHref encodes accents, ampersands and spaces", () => {
   assert.equal(teamHref("Texas A&M"), "/teams/Texas_A%26M");

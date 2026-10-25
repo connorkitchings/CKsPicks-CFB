@@ -67,3 +67,13 @@ test("predictions query decouples market selections from main select", () => {
   );
   assert.match(getGamesBody, /getMarketSelectionsForRun/);
 });
+
+test("resolveSeasonParam falls back for unallowed or malformed seasons", async () => {
+  const { resolveSeasonParam, isAllowedSeason } = await import("./publication.ts");
+  const allowed = [2026].find(isAllowedSeason)!;
+  assert.equal(resolveSeasonParam(undefined, allowed), allowed);
+  assert.equal(resolveSeasonParam(String(allowed), 1), allowed);
+  assert.equal(resolveSeasonParam("1999", allowed), allowed);
+  assert.equal(resolveSeasonParam("abc", allowed), allowed);
+  assert.equal(resolveSeasonParam("-5", allowed), allowed);
+});

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { RankChip } from "@/components/ui/RankChip";
 import { TeamSection } from "@/components/teams/TeamSection";
+import { UnitDetails } from "@/components/teams/UnitDetails";
 import { rankLabel, rankTitle, type StatRole, type UnitMatchupRow } from "@/lib/team-stats";
 
 /** The headline rows of each unit; every other metric sits behind "Full stats". */
@@ -39,7 +40,7 @@ function Rows({ rows, role }: { rows: readonly UnitMatchupRow[]; role: StatRole 
 }
 
 /**
- * One unit's section: a native `<details>` that starts collapsed on phones, where the summary also
+ * One unit's section: a `<details>` (`UnitDetails`) that starts collapsed on phones, where the summary also
  * carries one headline stat, and is always open (heading only) from `sm:` up.
  */
 function UnitSection({ label, swatch, role, rows, headline, testId }: {
@@ -52,7 +53,7 @@ function UnitSection({ label, swatch, role, rows, headline, testId }: {
 }): ReactNode {
   const summary = headline && sideOf(headline, role);
   return (
-    <details data-testid={testId} className="unit-section group">
+    <UnitDetails data-testid={testId} className="unit-section group">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-0 sm:cursor-default sm:pb-1 [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-1.5"><i className={`inline-block h-2 w-2 rounded-sm ${swatch}`} />{label}</span>
         <span className="flex items-center gap-2 sm:hidden">
@@ -61,7 +62,7 @@ function UnitSection({ label, swatch, role, rows, headline, testId }: {
         </span>
       </summary>
       <Rows rows={rows} role={role} />
-    </details>
+    </UnitDetails>
   );
 }
 

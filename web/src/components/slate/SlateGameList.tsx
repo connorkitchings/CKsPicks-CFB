@@ -1,7 +1,7 @@
 "use client";
 
 import type { Game } from "@/lib/queries";
-import { isFinal } from "@/lib/slate";
+import { isFinal } from "@/lib/team-games";
 import { useIsPhone } from "@/lib/use-is-phone";
 import { MarketGameCard } from "./MarketGameCard";
 import { PredictionGameCard } from "./PredictionGameCard";

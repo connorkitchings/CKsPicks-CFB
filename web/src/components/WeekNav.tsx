@@ -76,16 +76,15 @@ export function WeekNav({
 
   return (
     <nav aria-label="Week navigation" data-card={compact ? undefined : ""} className={clsx(navClass, className)}>
-      <Link
-        href={prev !== null ? hrefFor(prev) : "#"}
-        aria-disabled={prev === null}
-        tabIndex={prev === null ? -1 : undefined}
-        aria-label={`Previous ${noun.toLowerCase()}`}
-        className={clsx(arrow, prev === null && "pointer-events-none opacity-40")}
-      >
-        {/* left arrow */}
-        <span aria-hidden>&larr;</span>
-      </Link>
+      {prev !== null ? (
+        <Link href={hrefFor(prev)} aria-label={`Previous ${noun.toLowerCase()}`} className={arrow}>
+          <span aria-hidden>&larr;</span>
+        </Link>
+      ) : (
+        <span aria-disabled="true" aria-label={`Previous ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
+          <span aria-hidden>&larr;</span>
+        </span>
+      )}
 
       <div className="flex items-center text-sm">
         <label htmlFor={selectId} className="sr-only">
@@ -96,7 +95,7 @@ export function WeekNav({
           value={week}
           onChange={onSelect}
           className={clsx(
-            "rounded-md font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent",
+            "rounded-md font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             chartCompact
               ? "min-h-11 min-w-0 bg-transparent px-1.5 text-sm font-semibold hover:bg-surface-inset sm:min-h-7.5 sm:text-xs"
               : "min-h-11 border border-line bg-surface-card px-2 py-1 text-base sm:min-h-9 sm:text-sm",
@@ -110,15 +109,15 @@ export function WeekNav({
         </select>
       </div>
 
-      <Link
-        href={next !== null ? hrefFor(next) : "#"}
-        aria-disabled={next === null}
-        tabIndex={next === null ? -1 : undefined}
-        aria-label={`Next ${noun.toLowerCase()}`}
-        className={clsx(arrow, next === null && "pointer-events-none opacity-40")}
-      >
-        <span aria-hidden>&rarr;</span>
-      </Link>
+      {next !== null ? (
+        <Link href={hrefFor(next)} aria-label={`Next ${noun.toLowerCase()}`} className={arrow}>
+          <span aria-hidden>&rarr;</span>
+        </Link>
+      ) : (
+        <span aria-disabled="true" aria-label={`Next ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
+          <span aria-hidden>&rarr;</span>
+        </span>
+      )}
     </nav>
   );
 }

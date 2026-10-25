@@ -392,3 +392,13 @@ test("hasGradedPick is true once any spread or total grade exists", () => {
   assert.equal(hasGradedPick([ungraded, game({ spreadResult: "push" })]), true);
   assert.equal(hasGradedPick([game({ totalResult: "loss" })]), true);
 });
+
+test("isRetrospective is true for replay predictions or a retrospective repair only", async () => {
+  const { isRetrospective } = await import("./slate.ts");
+  assert.equal(isRetrospective(false, { evidenceClass: "replay" }), true);
+  assert.equal(isRetrospective(false, { evidenceClass: "live" }), false);
+  assert.equal(isRetrospective(false, { evidenceClass: "pending" }), false);
+  assert.equal(isRetrospective(false, undefined), false);
+  assert.equal(isRetrospective(true, undefined), true);
+  assert.equal(isRetrospective(true, { evidenceClass: "live" }), true);
+});

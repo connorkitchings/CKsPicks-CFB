@@ -8,7 +8,7 @@ test("accepts positive integer segments", () => {
 });
 
 test("rejects zero, negatives, decimals, exponents, text and empty", () => {
-  for (const s of ["0", "-1", "1.5", "1e3", "abc", "", " 1", "0x10"]) assert.equal(parseGameId(s), null, s);
+  for (const s of ["0", "-1", "1.5", "1e3", "abc", "", " 1", "0x10", "+1", "00012", "012"]) assert.equal(parseGameId(s), null, s);
 });
 
 test("rejects ids beyond 32-bit range", () => {

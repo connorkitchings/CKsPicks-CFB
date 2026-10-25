@@ -9,7 +9,7 @@ import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { bookName } from "@/lib/slate";
 import { spreadBetLabel } from "@/lib/betting-format";
 import { teamAbbr } from "@/lib/team-logos";
-import { teamHref } from "@/lib/teams";
+import { teamHref } from "@/lib/team-routes";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { ShareButton } from "./ShareButton";
 

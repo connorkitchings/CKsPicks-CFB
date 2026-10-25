@@ -67,7 +67,7 @@ test.describe("mobile team ratings", () => {
     await expect(list.getByLabel("National rank 3")).toBeVisible();
     await page.getByRole("searchbox", { name: "Search teams" }).fill("no matching team");
     await expect(page.getByRole("status")).toContainText("No teams match");
-    await page.getByRole("button", { name: "Clear search", exact: true }).last().click();
+    await page.getByRole("button", { name: "Clear filters", exact: true }).last().click();
     await expect(list.getByRole("listitem")).toHaveCount(4);
   });
 
@@ -395,20 +395,20 @@ test.describe("résumé columns", () => {
     const texas = await rowCells(page, "Texas");
     await expect(texas("Overall")).toHaveText("+5.50");
     await expect(texas("FBS W-L")).toHaveText("4–0");
-    await expect(texas("SOR")).toHaveText("#2");
+    await expect(texas("SOR")).toContainText("#2");
     await expect(texas("SOR")).toHaveAttribute("title", "SOR 81.2");
-    await expect(texas("SOS Played")).toHaveText("#3");
+    await expect(texas("SOS Played")).toContainText("#3");
     await expect(texas("SOS Played")).toHaveAttribute("title", "SOS Played 52.6");
-    await expect(texas("SOS Remaining")).toHaveText("#3");
+    await expect(texas("SOS Remaining")).toContainText("#3");
     await expect(texas("SOS Remaining")).toHaveAttribute("title", "SOS Remaining 58.4");
-    await expect(texas("SOS Full")).toHaveText("#3");
+    await expect(texas("SOS Full")).toContainText("#3");
     await expect(texas("SOS Full")).toHaveAttribute("title", "SOS Full 56.5");
 
     const ohioState = await rowCells(page, "Ohio State");
     await expect(ohioState("FBS W-L")).toHaveText("3–1");
-    await expect(ohioState("SOR")).toHaveText("#1");
+    await expect(ohioState("SOR")).toContainText("#1");
     await expect(ohioState("SOR")).toHaveAttribute("title", "SOR 93.7");
-    await expect(ohioState("SOS Full")).toHaveText("#4");
+    await expect(ohioState("SOS Full")).toContainText("#4");
 
     // Fewer than 3 completed FBS games: SOR is null and renders as a dash with no score title.
     const southernMiss = await rowCells(page, "Southern Mississippi");
@@ -484,8 +484,8 @@ test.describe("résumé columns", () => {
     const appState = await rowCells(page, "Appalachian State");
     // National overall position #3 and SOR #3 are preserved when filtered to Sun Belt.
     await expect(appState("Rank")).toHaveText("3");
-    await expect(appState("SOR")).toHaveText("#3");
-    await expect(appState("SOS Full")).toHaveText("#2");
+    await expect(appState("SOR")).toContainText("#3");
+    await expect(appState("SOS Full")).toContainText("#2");
 
     await filter.selectOption("all");
     await expect(rows(page)).toHaveCount(4);

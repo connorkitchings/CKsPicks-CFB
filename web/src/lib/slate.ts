@@ -7,6 +7,7 @@ import {
   spreadEdge,
   totalEdge,
 } from "./betting-format.ts";
+import { isFinal } from "./team-games.ts";
 import { phoneTeamName } from "./team-logos.ts";
 
 export type LeanKind = "spread" | "total";
@@ -167,12 +168,16 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
   };
 }
 
-export function hasLean(game: Game): boolean {
-  return leanFor(game, "spread") !== null || leanFor(game, "total") !== null;
+/** A slate is retrospective when it was repaired after the fact or its first prediction is a replay. */
+export function isRetrospective(
+  retrospectiveRepair: boolean,
+  firstPrediction: { evidenceClass?: string | null } | undefined,
+): boolean {
+  return retrospectiveRepair || firstPrediction?.evidenceClass === "replay";
 }
 
-export function isFinal(game: Game): boolean {
-  return game.homePoints !== null && game.awayPoints !== null;
+export function hasLean(game: Game): boolean {
+  return leanFor(game, "spread") !== null || leanFor(game, "total") !== null;
 }
 
 /** "model: wins by 7.6 · best line: DraftKings"; each part appears only when known. */

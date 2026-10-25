@@ -1,5 +1,6 @@
 import type { Game } from "@/lib/queries";
-import { coverMargin, edgeTone, isFinal, leanFor, phoneLean, resultFor } from "@/lib/slate";
+import { isFinal } from "@/lib/team-games";
+import { coverMargin, edgeTone, leanFor, phoneLean, resultFor } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { dayShort, kickoffTime } from "./format";
 import { MatchupButton } from "@/components/MatchupLinks";

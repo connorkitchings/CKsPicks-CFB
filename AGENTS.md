@@ -40,7 +40,7 @@ The durable store is the Cloudflare R2 immutable lake (`CFB_STORAGE_BACKEND=r2`)
 
 Data flow: immutable R2 captures and reconciled Silver inputs, then a hash-pinned revision manifest, then `run_season.py prepare` (measurements, ratings, predictions, grades, verified projections), then Preview rehearsal, then an owner-approved atomic Production release in Neon, then Vercel reads the active release through Drizzle with ISR.
 
-The web copies of `schema.ts` and `teams.ts` in `web/src/lib/` must match `contracts/`; `make contracts-check` verifies this. Migrations run only through `scripts/pipeline/migrate_db.py --database-url <verified target>`; `make migrate-db` is disabled.
+The web copies of `schema.ts` and `teams.ts` in `web/src/lib/` must match `contracts/` exactly (web-only team helpers live in `web/src/lib/team-routes.ts`); `make contracts-check` verifies this. Migrations run only through `scripts/pipeline/migrate_db.py --database-url <verified target>`; `make migrate-db` is disabled.
 
 Site: the 4-tab interface (Games `/`, Ratings `/ratings`, Graphs `/stats`, Model `/model`, plus `/matchup/[gameId]` and `/teams/[team]`) lives on `dev` until it is merged to `main`; `main` still serves the older route set. Matchup pages are on unless `CFB_MATCHUP_ENABLED=0`; `CFB_UI_TEST_MODE=1` serves fixtures. Details in [`web/README.md`](web/README.md).
 

@@ -11,7 +11,8 @@ export interface TeamGameFields {
   awayPoints: number | null;
 }
 
-export const isFinal = (game: TeamGameFields) => game.homePoints !== null && game.awayPoints !== null;
+/** True once both scores are recorded. */
+export const isFinal = (game: { homePoints: number | null; awayPoints: number | null }) => game.homePoints !== null && game.awayPoints !== null;
 
 /**
  * What a team page row says about the game, from `team`'s side: "W 59–45" once final, otherwise

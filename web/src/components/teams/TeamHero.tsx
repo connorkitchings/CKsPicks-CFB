@@ -16,14 +16,19 @@ function WeeklyChange({ change }: { change: NonNullable<TeamSummary["change"]> }
   const tone = spots > 0 ? "bg-win-soft text-win" : spots < 0 ? "bg-loss-soft text-loss" : "bg-surface-inset text-ink-muted";
   return (
     <span data-testid="rating-change" title="Change since the previous week" className={clsx("rounded px-1.5 py-px font-mono text-xs font-medium tabular-nums", tone)}>
-      {spots === 0 ? "no rank change" : `${spots > 0 ? "▲" : "▼"} ${Math.abs(spots)} ${Math.abs(spots) === 1 ? "spot" : "spots"}`} · {ratingText(delta)}
+      {spots === 0 ? "no rank change" : (
+        <>
+          <span aria-hidden>{spots > 0 ? "▲" : "▼"}</span>
+          <span className="sr-only">{spots > 0 ? "up" : "down"}</span> {Math.abs(spots)} {Math.abs(spots) === 1 ? "spot" : "spots"}
+        </>
+      )} · {ratingText(delta)}
     </span>
   );
 }
 
 function StripCell({ label, title, value, rank }: { label: string; title: string; value?: string; rank?: number | null }) {
   return (
-    <div title={title} role="group" aria-label={title} className="min-w-0 bg-surface-card px-3 py-2.5">
+    <div title={title} className="min-w-0 bg-surface-card px-3 py-2.5">
       <dt className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">{label}</dt>
       <dd className="mt-0.5 whitespace-nowrap font-mono text-base font-semibold tabular-nums text-ink sm:text-lg">
         {value ?? rankText(rank)}
@@ -81,7 +86,7 @@ export function TeamHero({ team, conference, summary, nextGame }: {
         </div>
         {rating && summary && (
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1" title="Overall rating">
-            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">Overall</span>
+            <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-ink-muted">Overall</span>
             <span className="font-mono text-3xl font-semibold tabular-nums tracking-tight text-ink">{ratingText(rating.overallRating)}</span>
             <span className="font-semibold tabular-nums text-ink" title="Overall rank">{rankText(summary.overallRank)}</span>
             {summary.change && <WeeklyChange change={summary.change} />}

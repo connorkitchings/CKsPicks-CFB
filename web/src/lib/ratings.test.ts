@@ -37,7 +37,7 @@ test("ratings page includes rank column, methodology explainer, and disambiguate
 
   // Season parameterization and ISR
   assert.match(source, /revalidate\s*=\s*300/);
-  assert.match(source, /requestedSeason\s*=\s*params\.season\s*\?\s*Number\(params\.season\)\s*:\s*2026/);
+  assert.match(source, /season\s*=\s*resolveSeasonParam\(params\.season, publicationScope\.season\)/);
 });
 
 test("ratings page validates sort and direction through parseRatingsSort", () => {

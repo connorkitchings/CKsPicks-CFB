@@ -131,7 +131,7 @@ test.describe("team pages (fixture mode)", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
     const summary = page.getByTestId("team-hero");
-    await expect(summary.getByRole("group", { name: /Offense rating and rank/ })).toBeVisible();
+    await expect(summary.getByTitle("Offense rating and rank")).toBeVisible();
     await expect(summary.getByTestId("rating-change")).toBeVisible();
     await expect(page.getByLabel("Next game")).toContainText(/at\s*Ohio State/);
     for (const name of ["Schedule · lines and results", "Model on this team", "Game log", "Rating trend", "Résumé", "Unit profile"]) await expect(heading(page, name)).toBeVisible();

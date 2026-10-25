@@ -8,7 +8,7 @@ import { parseGameId } from "@/lib/matchup-id";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { publicationScope } from "@/lib/publication";
 import { teamAbbr } from "@/lib/team-logos";
-import { teamHref } from "@/lib/teams";
+import { teamHref } from "@/lib/team-routes";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import { UnitMatchups } from "@/components/matchup/UnitMatchups";
 import { Card } from "@/components/ui/Card";

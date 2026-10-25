@@ -110,14 +110,17 @@ export function TeamHighlightCombobox({
           type="text"
           role="combobox"
           aria-expanded={isOpen}
-          aria-controls={listId}
+          aria-controls={isOpen ? listId : undefined}
           aria-label="Highlight a team"
+          name="team-highlight-search"
+          autoComplete="off"
+          spellCheck={false}
           aria-autocomplete="list"
           aria-haspopup="listbox"
           aria-activedescendant={isOpen && active >= 0 ? `${listId}-${active}` : undefined}
           suppressHydrationWarning
           value={displayValue}
-          placeholder="Highlight a team..."
+          placeholder="Highlight a team…"
           onFocus={() => {
             setIsOpen(true);
             setQuery("");
@@ -146,7 +149,7 @@ export function TeamHighlightCombobox({
               setQuery("");
             }
           }}
-          className="min-h-11 sm:min-h-9 w-full rounded-lg border border-line bg-surface-card pl-3 pr-12 sm:pr-8 py-1.5 text-base sm:text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent"
+          className="min-h-11 sm:min-h-9 w-full rounded-lg border border-line bg-surface-card pl-3 pr-12 sm:pr-8 py-1.5 text-base sm:text-xs text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           data-testid="team-search"
         />
 
@@ -161,13 +164,13 @@ export function TeamHighlightCombobox({
             aria-label="Clear team highlight"
             title="Clear highlight"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <svg aria-hidden className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
         ) : (
           <div className="pointer-events-none absolute right-2.5 text-ink-muted">
-            <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <svg aria-hidden className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </div>

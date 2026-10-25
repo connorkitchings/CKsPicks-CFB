@@ -4,7 +4,7 @@ import {
   getCurrentWeek,
 } from "@/lib/queries";
 import { SlateView } from "@/components/slate/SlateView";
-import { topLeansRecord, type Tally } from "@/lib/slate";
+import { isRetrospective, topLeansRecord, type Tally } from "@/lib/slate";
 import { publicationScope } from "@/lib/publication";
 import {
   isUiTestMode,
@@ -115,15 +115,6 @@ export default async function Home({
   }
   const { season } = target;
 
-  // The season-wide biggest-edges record does not depend on the slate, so it loads alongside it.
-  const edgesInFlight: Promise<Tally | null> | null = publicationMode === "predictions" && !targetError
-    && !isUiTestMode() && season > 0
-    ? getBiggestEdgesRecord(season).catch((err) => {
-      console.error("Biggest edges record query failed", err);
-      return null;
-    })
-    : null;
-
   const data = await loadSlateData({
     season,
     week: target.week,
@@ -139,8 +130,12 @@ export default async function Home({
     if (isUiTestMode()) {
       const fx = await import("@/test/fixtures/slate");
       biggestEdges = topLeansRecord([fx.slateResults().games]);
-    } else {
-      biggestEdges = await edgesInFlight;
+    } else if (season > 0) {
+      // Only after the slate loaded: during an outage this would add a doomed query.
+      biggestEdges = await getBiggestEdgesRecord(season).catch((err) => {
+        console.error("Biggest edges record query failed", err);
+        return null;
+      });
     }
   }
 
@@ -159,7 +154,7 @@ export default async function Home({
       topLeansRecord={biggestEdges}
       systemName={data.systemName}
       runState={firstPrediction?.runState ?? null}
-      retrospective={data.retrospectiveRepair || firstPrediction?.evidenceClass === "replay"}
+      retrospective={isRetrospective(data.retrospectiveRepair, firstPrediction)}
       updatedAt={slateUpdatedAt(games, target.currentUpdatedAt)}
       publicationMode={publicationMode}
       allowedSeasons={publicationScope.allowedSeasons}

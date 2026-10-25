@@ -33,7 +33,7 @@ test("only ratings rows and matchup pages link to team pages (slate cards never 
     "app/matchup/[gameId]/page.tsx",
     "components/matchup/MatchupHero.tsx",
     "components/ratings/RatingsView.tsx",
-    "lib/teams.ts",
+    "lib/team-routes.ts",
   ].sort());
 });
 

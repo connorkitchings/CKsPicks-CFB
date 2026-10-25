@@ -140,7 +140,7 @@ export function ChartFrame({
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-testid="chart-controls">
         <MobileChartSettings finder={highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />} summary={summary} conference={
           <select
-            className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent sm:min-h-9 sm:text-xs"
+            className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-h-9 sm:text-xs"
             value={filter}
             onChange={(event) => onFilterChange(event.target.value)}
             data-testid="conference-filter"
@@ -189,7 +189,7 @@ export function ChartFrame({
             <div className="flex flex-col items-start gap-0.5 sm:items-end">
               {headerControls}
               {credit && (
-                <p className="text-[10.5px] text-ink-muted/80 max-sm:hidden" data-testid="chart-credit">
+                <p className="text-[11px] text-ink-muted max-sm:hidden" data-testid="chart-credit">
                   {credit}
                 </p>
               )}

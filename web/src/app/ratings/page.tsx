@@ -3,7 +3,7 @@ import type { RosterRow } from "@/lib/conferences";
 import { getRatingPeriods, getWeeklyRatings, type PeriodMeta, type Rating, type RatingPeriod } from "@/lib/v5";
 import { ratingsFixture, ratingsRosterFixture } from "@/test/fixtures/ratings";
 import { parseRatingsSort } from "@/lib/sos-rank";
-import { publicationScope } from "@/lib/publication";
+import { publicationScope, resolveSeasonParam } from "@/lib/publication";
 import { Header, Footer } from "@/components/Header";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { Notice } from "@/components/ui/Notice";
@@ -20,8 +20,7 @@ export default async function RatingsPage({ searchParams }: {
   const { sort, dir } = parseRatingsSort(params.sort, params.dir);
   const query = (params.q ?? "").trim().slice(0, 80);
   const conference = (params.conf ?? "all").trim().slice(0, 40) || "all";
-  const requestedSeason = params.season ? Number(params.season) : 2026;
-  const season = Number.isInteger(requestedSeason) && requestedSeason > 0 ? requestedSeason : 2026;
+  const season = resolveSeasonParam(params.season, publicationScope.season);
   const requestedPeriod = params.period ?? params.week ?? "current";
 
   let ratings: Rating[] = [];

@@ -76,12 +76,13 @@ function RankLine({
   );
 }
 
-/** The team name; phones show its abbreviation (the full name stays in the tooltip and for assistive tech off-phone). */
+/** The team name; phones show its abbreviation (the full name stays in the tooltip and as screen-reader text). */
 function TeamName({ name }: { name: string }) {
   return (
     <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">
       <bdi className="max-sm:hidden">{name}</bdi>
-      <abbr title={name} className="no-underline sm:hidden">{teamAbbr(name)}</abbr>
+      <abbr title={name} aria-hidden className="no-underline sm:hidden">{teamAbbr(name)}</abbr>
+      <bdi className="sr-only sm:hidden">{name}</bdi>
     </h3>
   );
 }
@@ -114,7 +115,7 @@ export function UnitMatchupTable({
     <Card padding="sm" className="min-w-0 sm:p-4">
       <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 border-b border-line/60 pb-3 max-sm:items-center max-sm:gap-2 max-sm:pb-2">
         <div className="flex min-w-0 flex-col items-center gap-1 text-center max-sm:flex-row max-sm:flex-wrap max-sm:justify-center max-sm:gap-x-1 max-sm:gap-y-0">
-          <div className="hidden lg:block"><TeamLogo name={offenseTeam} px={44} decorative={false} /></div>
+          <div className="hidden lg:block"><TeamLogo name={offenseTeam} px={44} /></div>
           <TeamName name={offenseTeam} />
           <span className="text-xs font-semibold uppercase tracking-wider text-accent-ink">Offense</span>
           <RankLine label="Model Offense Rank" rank={offenseRank} testId="unit-offense-rank" />
@@ -123,7 +124,7 @@ export function UnitMatchupTable({
           vs
         </span>
         <div className="flex min-w-0 flex-col items-center gap-1 text-center max-sm:flex-row max-sm:flex-wrap max-sm:justify-center max-sm:gap-x-1 max-sm:gap-y-0">
-          <div className="hidden lg:block"><TeamLogo name={defenseTeam} px={44} decorative={false} /></div>
+          <div className="hidden lg:block"><TeamLogo name={defenseTeam} px={44} /></div>
           <TeamName name={defenseTeam} />
           <Eyebrow as="span">Defense</Eyebrow>
           <RankLine label="Model Defense Rank" rank={defenseRank} testId="unit-defense-rank" />

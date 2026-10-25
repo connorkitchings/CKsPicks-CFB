@@ -10,7 +10,7 @@ import type { RosterRow } from "@/lib/conferences";
 import { getV5PerformanceSplit, type Performance } from "@/lib/v5";
 import type { SlateSort } from "@/lib/slate";
 import { selectsV5, V5_INTENDED_UPDATE_MODEL_ID } from "@/lib/run-selection";
-import { publicationScope, isAllowedSeason } from "@/lib/publication";
+import { publicationScope, resolveSeasonParam } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
 
 export type SlateSearchParams = Promise<{
@@ -36,8 +36,7 @@ export function slateSort(params: ResolvedParams): SlateSort {
 }
 
 export function slateSeason(params: ResolvedParams): number {
-  const requested = params.season ? Number(params.season) : publicationScope.season;
-  return isAllowedSeason(requested) ? requested : publicationScope.season;
+  return resolveSeasonParam(params.season, publicationScope.season);
 }
 
 export type SlateData = {

@@ -140,7 +140,7 @@ function ActionButton({ action, testId, outcome, tip, tooltipAlign, disabled, on
       </button>
       <span
         aria-hidden
-        className={`pointer-events-none absolute top-full z-20 mt-1.5 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-surface-card opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 ${TOOLTIP_POSITION[tooltipAlign]}`}
+        className={`pointer-events-none absolute top-full z-20 mt-1.5 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-surface-card opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 ${outcome ? "opacity-100" : ""} ${TOOLTIP_POSITION[tooltipAlign]}`}
         data-testid={`${testId}-tooltip`}
       >
         {tip}
@@ -179,7 +179,7 @@ export function ExportActions({
   disabled?: boolean;
   /** Shown beside the disabled buttons so they are never silently inert. */
   disabledReason?: string;
-  /** Phones: keep the reason for assistive tech (and a hover title) but not as visible text. */
+  /** Phones: show a short visible "Unavailable" (the full reason stays for assistive tech and as a hover title). */
   compactReason?: boolean;
   tooltipAlign?: "left" | "right";
   /** The group ends at the viewport's content edge: every tooltip opens leftward, however many buttons show. */
@@ -293,6 +293,7 @@ export function ExportActions({
       {caps.copy && <ActionButton {...buttonProps("copy")} onClick={() => void run("copy")} />}
       {caps.share && <ActionButton {...buttonProps("share")} onClick={() => (ready ? void shareReady() : void run("share"))} />}
       {disabled && disabledReason && <span className={clsx("text-xs text-ink-muted", compactReason && "max-sm:sr-only")}>{disabledReason}</span>}
+      {disabled && disabledReason && compactReason && <span aria-hidden className="text-xs text-ink-muted sm:hidden">Unavailable</span>}
       {/* Announced only: the buttons show the outcome, and visible text here would reflow the controls row. */}
       <span role="status" aria-live="polite" className="sr-only">
         {status}

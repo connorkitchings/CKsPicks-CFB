@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
 import { Card } from "@/components/ui/Card";
-import { coverMargin, edgeTone, isFinal, leanFor, modelCrossesMarket, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
+import { isFinal } from "@/lib/team-games";
+import { coverMargin, edgeTone, leanFor, modelCrossesMarket, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { phoneTeamName } from "@/lib/team-logos";

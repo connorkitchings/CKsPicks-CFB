@@ -63,6 +63,11 @@ def check_teams_sync() -> list[str]:
                 f"  Value mismatches: "
                 f"{ {k for k in web_map.keys() & canonical_ts.keys() if web_map[k] != canonical_ts[k]} }"
             )
+        if web_teams.read_text() != (CONTRACTS_DIR / "teams.ts").read_text():
+            errors.append(
+                "web/src/lib/teams.ts must be an exact copy of contracts/teams.ts; "
+                "put web-only team helpers in web/src/lib/team-routes.ts"
+            )
 
     return errors
 

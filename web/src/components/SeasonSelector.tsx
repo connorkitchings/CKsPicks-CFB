@@ -35,7 +35,7 @@ export function SeasonSelector({
         id={id}
         value={season}
         onChange={onSelect}
-        className="min-h-11 sm:min-h-9 rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
+        className="min-h-11 sm:min-h-9 rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         {allowedSeasons.map((s) => (
           <option key={s} value={s}>

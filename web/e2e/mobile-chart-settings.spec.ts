@@ -13,7 +13,7 @@ for (const width of [320, 390, 430]) {
     await page.getByRole("button", { name: "Chart settings", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Chart settings", exact: true });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Close", exact: true })).toBeFocused();
+    await expect(dialog.getByRole("heading", { name: "Chart settings" })).toBeFocused();
     await expect(page.locator("body")).toHaveCSS("position", "fixed");
     await dialog.getByTestId("conference-filter").selectOption("SEC");
     await dialog.getByRole("button", { name: "Yards / Success", exact: true }).click();

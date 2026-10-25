@@ -31,7 +31,7 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { SearchField } from "@/components/ui/SearchField";
 import { SummaryLine, summaryText } from "@/components/ui/SummaryLine";
-import { teamHref } from "@/lib/teams";
+import { teamHref } from "@/lib/team-routes";
 
 /** The fields this view renders; the page maps full ratings down to these before they reach the client. */
 export type RatingRow = Pick<
@@ -120,6 +120,11 @@ function cardStats(rating: RatingRow, sort: RatingsSort, sosRanks: Map<string, S
   };
   const swapped = sort === "sos_played" ? "sos" : sort === "offense" || sort === "defense" || sort === "sor" ? sort : null;
   return [cells.offense, cells.defense, cells.sor, cells.sos].map((cell) => (swapped && cell === cells[swapped] ? overall : cell));
+}
+
+/** The raw value behind a rank, for assistive tech; sighted desktop users get it as the cell's title. */
+function RawValue({ text }: { text: string | undefined }) {
+  return text ? <span className="sr-only">, {text}</span> : null;
 }
 
 function RankPill({ rank, cohort }: { rank: number | null | undefined; cohort: number }) {
@@ -337,7 +342,7 @@ export function RatingsView({
       ) : visible.length === 0 ? (
         <Notice tone="empty" className="justify-center p-6 text-center">
           <p>No teams match &ldquo;{query}&rdquo;.</p>
-          <button type="button" onClick={() => { setQuery(""); setConference("all"); }} className="mt-2 min-h-11 rounded-lg px-3 text-sm font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent">Clear search</button>
+          <button type="button" onClick={() => { setQuery(""); setConference("all"); }} className="mt-2 min-h-11 rounded-lg px-3 text-sm font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-accent">Clear filters</button>
         </Notice>
       ) : (
         <>
@@ -365,7 +370,7 @@ export function RatingsView({
             ))}
           </ul>
 
-          <Card padding="none" className="hidden overflow-x-auto sm:block">
+          <Card padding="none" className="relative hidden overflow-x-auto sm:block">
             <table className="w-full text-sm tabular-nums">
               <caption className="sr-only">{season} {periodMeta.label} V5 team ratings, ranked by {sortLabels[sort]}</caption>
               <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
@@ -399,10 +404,10 @@ export function RatingsView({
                         <td key={column} className={clsx("px-2 py-3 text-center font-mono", sortedClass(sort === column))}>{ratingText(rating[scoreFields[column]])}</td>
                       ))}
                       <td className="whitespace-nowrap px-2 py-3 text-center font-mono text-ink-muted">{recordText(rating)}</td>
-                      <td title={valueTitle("SOR", rating.sor)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sor"))}><RankPill rank={rankFor(rating, "sor", sosRanks)} cohort={ratings.length} /></td>
-                      <td title={valueTitle("SOS Played", sos.played)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_played"))}><RankPill rank={teamRanks?.played} cohort={ratings.length} /></td>
-                      <td title={valueTitle("SOS Remaining", sos.remaining)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_remaining"))}><RankPill rank={teamRanks?.remaining} cohort={ratings.length} /></td>
-                      <td title={valueTitle("SOS Full", sos.full)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_full"))}><RankPill rank={teamRanks?.full} cohort={ratings.length} /></td>
+                      <td title={valueTitle("SOR", rating.sor)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sor"))}><RankPill rank={rankFor(rating, "sor", sosRanks)} cohort={ratings.length} /><RawValue text={valueTitle("SOR", rating.sor)} /></td>
+                      <td title={valueTitle("SOS Played", sos.played)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_played"))}><RankPill rank={teamRanks?.played} cohort={ratings.length} /><RawValue text={valueTitle("SOS Played", sos.played)} /></td>
+                      <td title={valueTitle("SOS Remaining", sos.remaining)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_remaining"))}><RankPill rank={teamRanks?.remaining} cohort={ratings.length} /><RawValue text={valueTitle("SOS Remaining", sos.remaining)} /></td>
+                      <td title={valueTitle("SOS Full", sos.full)} className={clsx("whitespace-nowrap px-2 py-3 text-center font-mono", sortedClass(sort === "sos_full"))}><RankPill rank={teamRanks?.full} cohort={ratings.length} /><RawValue text={valueTitle("SOS Full", sos.full)} /></td>
                     </tr>
                   );
                 })}

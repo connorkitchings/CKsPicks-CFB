@@ -20,6 +20,7 @@ import {
   guardRows,
 } from "./row-guard.ts";
 import type { TeamStatRow } from "./team-stats";
+import { cachedOrTolerant, SwallowedReadError } from "./cached-or-tolerant.ts";
 import { biggestEdgesRecord, leanFor, type LeanGradeRow, type Tally } from "./slate.ts";
 
 type BaseGame = {
@@ -363,30 +364,6 @@ function withRecords<
 }
 
 type FrozenLine = { spread: number | null; total: number | null };
-
-/**
- * Optional reads (venues, market selections) degrade to "absent" on failure. A cached loader
- * must never store that degraded result, so it reads strictly, throws this instead, and the
- * public wrapper re-runs the loader uncached in tolerant mode.
- */
-class SwallowedReadError extends Error {
-  constructor(cause: unknown) {
-    super("Optional read failed", { cause });
-  }
-}
-
-async function cachedOrTolerant<A extends unknown[], T>(
-  cached: (...args: A) => Promise<T>,
-  tolerant: (...args: A) => Promise<T>,
-  ...args: A
-): Promise<T> {
-  try {
-    return await cached(...args);
-  } catch (error) {
-    if (!(error instanceof SwallowedReadError)) throw error;
-    return tolerant(...args);
-  }
-}
 
 /**
  * Frozen pre-kickoff snapshot lines from each week's closed non-V5 run, for several weeks

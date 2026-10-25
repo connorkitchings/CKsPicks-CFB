@@ -422,7 +422,6 @@ export function ScatterChart({
       </svg>
       {tip && (
         <div
-          role="status"
           data-testid="chart-tooltip"
           className="pointer-events-none absolute z-10 hide-on-touch-or-small max-w-72 rounded-lg border border-line bg-surface-card px-2.5 py-1.5 text-xs leading-snug text-ink shadow-md"
           style={{

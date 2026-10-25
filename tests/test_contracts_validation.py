@@ -31,6 +31,24 @@ def test_extract_ts_map_includes_values(tmp_path):
     assert contracts_validation.extract_ts_map(path) == {"A": "Alpha", "B": "Beta"}
 
 
+def test_teams_sync_rejects_web_only_additions_outside_the_map(tmp_path, monkeypatch):
+    source = (contracts_validation.CONTRACTS_DIR / "teams.ts").read_text()
+    (tmp_path / "contracts").mkdir()
+    (tmp_path / "contracts" / "teams.ts").write_text(source)
+    (tmp_path / "contracts" / "teams.py").write_text(
+        (contracts_validation.CONTRACTS_DIR / "teams.py").read_text()
+    )
+    mirror = tmp_path / "web" / "src" / "lib"
+    mirror.mkdir(parents=True)
+    (mirror / "teams.ts").write_text(source)
+    monkeypatch.setattr(contracts_validation, "CONTRACTS_DIR", tmp_path / "contracts")
+    monkeypatch.setattr(contracts_validation, "ROOT", tmp_path)
+    assert contracts_validation.check_teams_sync() == []
+
+    (mirror / "teams.ts").write_text(source + "\nexport function extra() {}\n")
+    assert any("exact copy" in e for e in contracts_validation.check_teams_sync())
+
+
 def test_projection_sets_registry_is_in_sync():
     assert contracts_validation.check_projection_sets_sync() == []
 

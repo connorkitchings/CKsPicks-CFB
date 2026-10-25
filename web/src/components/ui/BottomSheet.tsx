@@ -60,6 +60,7 @@ export function useSheet({ enabled, closeOn = [] }: { enabled: boolean; closeOn?
       window.scrollTo({ left: x, top: y, behavior: "instant" });
     };
     sheet.showModal();
+    sheet.querySelector<HTMLElement>(`[id="${CSS.escape(titleId)}"]`)?.focus({ preventScroll: true });
   }
 
   const close = () => dialogRef.current?.close();
@@ -80,8 +81,8 @@ export function BottomSheet({ dialogRef, titleId, onClose, title, children, body
     <dialog ref={dialogRef} aria-labelledby={titleId} className="fixed inset-x-0 bottom-auto m-0 h-dvh max-h-none w-full max-w-none border-0 bg-surface-card p-0 text-ink backdrop:bg-black/50" {...dialogProps}>
       <div className="flex h-full min-h-0 flex-col overscroll-contain px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-line pb-3">
-          <h2 id={titleId} className="text-lg font-bold">{title}</h2>
-          <button type="button" autoFocus onClick={onClose} className="min-h-11 min-w-11 rounded-lg border border-line px-3 font-semibold focus-visible:outline-2 focus-visible:outline-accent">Close</button>
+          <h2 id={titleId} tabIndex={-1} className="text-lg font-bold outline-none">{title}</h2>
+          <button type="button" onClick={onClose} className="min-h-11 min-w-11 rounded-lg border border-line px-3 font-semibold focus-visible:outline-2 focus-visible:outline-accent">Close</button>
         </header>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain py-4" {...bodyProps}>{children}</div>
       </div>

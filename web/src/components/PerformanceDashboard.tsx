@@ -162,6 +162,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
         </div>
         <div className="hidden sm:block">
           <table className="w-full text-left text-sm tabular-nums">
+            <caption className="sr-only">Weekly pick results</caption>
             <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
               <tr>
                 <th scope="col" className="px-3 py-3">Week</th>
@@ -191,7 +192,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
         </div>
       </Card>
 
-      <p className="text-xs text-ink-muted max-sm:hidden">Select any week above to view its full game-by-game results and graded picks on the Games tab.</p>
+      <p className="text-xs text-ink-muted max-sm:hidden">Select a week in the table to view its full game-by-game results and graded picks on the Games tab.</p>
     </div>
   );
 }

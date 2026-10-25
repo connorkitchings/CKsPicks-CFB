@@ -19,6 +19,7 @@ export function RatingsFilterSheet({ mobile, active, children }: { mobile: boole
         type="button"
         aria-label="Filters"
         aria-haspopup="dialog"
+        aria-describedby={active ? `${titleId}-active` : undefined}
         disabled={!mobile}
         onClick={open}
         data-testid="ratings-filters-button"
@@ -30,6 +31,7 @@ export function RatingsFilterSheet({ mobile, active, children }: { mobile: boole
           <circle cx="8" cy="12" r="2" />
           <circle cx="18" cy="18" r="2" />
         </svg>
+        {active && <span id={`${titleId}-active`} className="sr-only">Filters active</span>}
         {active && <span aria-hidden data-testid="ratings-filters-dot" className="absolute right-1.5 top-1.5 size-2.5 rounded-full border-2 border-surface-card bg-accent" />}
       </button>
       {mobile && <BottomSheet dialogRef={dialogRef} titleId={titleId} onClose={close} title="Filters" data-testid="ratings-filters-dialog">{children}</BottomSheet>}

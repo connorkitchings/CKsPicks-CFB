@@ -11,9 +11,9 @@ import {
 import { phoneTeamName } from "@/lib/team-logos";
 import { etDate } from "@/lib/time-et";
 
-const TH = "px-1.5 pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted whitespace-nowrap";
+const TH = "px-1.5 pb-2 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-muted whitespace-nowrap";
 const TD = "whitespace-nowrap border-t border-line px-1.5 py-2";
-const NONE = <span className="text-ink-faint">—</span>;
+const NONE = <span className="text-ink-faint"><span aria-hidden>—</span><span className="sr-only">no data</span></span>;
 
 const BET_TONE: Record<BetResult, string> = { W: "text-win", L: "text-loss", P: "text-ink-muted" };
 
@@ -57,7 +57,7 @@ function ScheduleTable({ games, team, nextId }: { games: readonly TeamGame[]; te
                   <span className="flex items-center gap-2">
                     <span className="w-4 text-xs text-ink-faint">{home ? "vs" : "at"}</span>
                     <TeamLogo name={opponent} px={22} />
-                    <span className={clsx(final || game.gameId === nextId ? "font-medium text-ink" : "opacity-80")}>{phoneTeamName(opponent)}</span>
+                    <span className={clsx(final || game.gameId === nextId ? "font-medium text-ink" : "text-ink-muted")}>{phoneTeamName(opponent)}</span>
                   </span>
                 </td>
                 <td className={clsx(TD, "text-right font-mono")}>{line === null ? NONE : lineText(line)}</td>

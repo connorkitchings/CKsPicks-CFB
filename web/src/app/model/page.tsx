@@ -28,10 +28,10 @@ export default async function ModelPage() {
   const record = process.env.CFB_UI_TEST_MODE === "1"
     ? { status: "ok" as const, value: mobilePerformanceFixture }
     : await loadPerformanceRecord(
-      () => getV5PerformanceDetail(2026),
+      () => getV5PerformanceDetail(publicationScope.season),
       error => console.error("V5 cumulative performance query failed", error),
     );
-  const title = "2026 V5 cumulative record";
+  const title = `${publicationScope.season} V5 cumulative record`;
   return (
     <PageShell
       width="wide"

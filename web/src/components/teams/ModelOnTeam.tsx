@@ -8,9 +8,9 @@ import {
 } from "@/lib/team-games";
 import { phoneTeamName } from "@/lib/team-logos";
 
-const TH = "px-1.5 pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-muted whitespace-nowrap";
+const TH = "px-1.5 pb-2 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-muted whitespace-nowrap";
 const TD = "whitespace-nowrap border-t border-line px-1.5 py-2";
-const NONE = <span className="text-ink-faint">—</span>;
+const NONE = <span className="text-ink-faint"><span aria-hidden>—</span><span className="sr-only">no data</span></span>;
 
 const MARKS: Record<BetResult, { text: string; label: string; tone: string }> = {
   W: { text: "✓", label: "Hit", tone: "text-win" },
@@ -87,7 +87,7 @@ export function ModelOnTeam({ games, team }: { games: readonly TeamGame[]; team:
           </thead>
           <tbody>
             {rows.map((game) => (
-              <tr key={game.gameId} className={clsx(!isFinal(game) && "text-ink-muted opacity-70")}>
+              <tr key={game.gameId} className={clsx(!isFinal(game) && "text-ink-muted")}>
                 <td className={clsx(TD, "font-mono")}>{game.week}</td>
                 <td className={TD}><OpponentCell game={game} team={team} px={22} /></td>
                 <td className={TD}><PickCell pick={modelSpreadPick(game)} game={game} /></td>
@@ -100,7 +100,7 @@ export function ModelOnTeam({ games, team }: { games: readonly TeamGame[]; team:
       </div>
       <ul aria-label="Model picks" className="-mx-3.5 divide-y divide-line sm:hidden">
         {rows.map((game) => (
-          <li key={game.gameId} className={clsx("px-3 py-2.5", !isFinal(game) && "text-ink-muted opacity-70")}>
+          <li key={game.gameId} className={clsx("px-3 py-2.5", !isFinal(game) && "text-ink-muted")}>
             <div className="flex items-center gap-2 text-sm"><div className="min-w-0 flex-1"><OpponentCell game={game} team={team} px={24} /></div><span className="shrink-0 text-xs text-ink-muted">Wk {game.week}</span></div>
             <p className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 pl-8 text-xs text-ink-muted">
               <span>ATS <b className="font-medium text-ink"><PickCell pick={modelSpreadPick(game)} game={game} /></b></span>
