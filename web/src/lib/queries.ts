@@ -20,7 +20,7 @@ import {
   guardRows,
 } from "./row-guard.ts";
 import type { TeamStatRow } from "./team-stats";
-import { cachedOrTolerant, SwallowedReadError } from "./cached-or-tolerant.ts";
+import { cachedOrTolerant, degradedScope, SwallowedReadError } from "./cached-or-tolerant.ts";
 import { biggestEdgesRecord, leanFor, type LeanGradeRow, type Tally } from "./slate.ts";
 
 type BaseGame = {
@@ -910,8 +910,11 @@ async function loadGamesForWeek(season: number, week: number, strict: boolean): 
 const cachedGamesForWeek = releaseCached("getGamesForWeek", (season: number, week: number) =>
   loadGamesForWeek(season, week, true), RUN_STATE_CACHE);
 
-export const getGamesForWeek = (season: number, week: number): Promise<Game[]> =>
-  cachedOrTolerant(cachedGamesForWeek, (s: number, w: number) => loadGamesForWeek(s, w, false), season, week);
+/** Scope of the request-pinned release, so a remembered degraded read never outlives it. */
+const degradedScopeFor = async (season: number) => degradedScope(await getSeasonReleaseContext(season));
+
+export const getGamesForWeek = async (season: number, week: number): Promise<Game[]> =>
+  cachedOrTolerant(await degradedScopeFor(season), cachedGamesForWeek, (s: number, w: number) => loadGamesForWeek(s, w, false), season, week);
 
 /** Schedule + current published market lines without selecting model output. */
 async function loadMarketGamesForWeek(
@@ -971,8 +974,8 @@ async function loadMarketGamesForWeek(
 const cachedMarketGamesForWeek = releaseCached("getMarketGamesForWeek", (season: number, week: number) =>
   loadMarketGamesForWeek(season, week, true), RUN_STATE_CACHE);
 
-export const getMarketGamesForWeek = (season: number, week: number): Promise<MarketGame[]> =>
-  cachedOrTolerant(cachedMarketGamesForWeek, (s: number, w: number) => loadMarketGamesForWeek(s, w, false), season, week);
+export const getMarketGamesForWeek = async (season: number, week: number): Promise<MarketGame[]> =>
+  cachedOrTolerant(await degradedScopeFor(season), cachedMarketGamesForWeek, (s: number, w: number) => loadMarketGamesForWeek(s, w, false), season, week);
 
 function emptyStats(season: number): Stats {
   return {
@@ -1198,5 +1201,5 @@ async function loadBiggestEdgesRecord(season: number, strict: boolean): Promise<
 const cachedBiggestEdgesRecord = releaseCached("getBiggestEdgesRecord", (season: number) =>
   loadBiggestEdgesRecord(season, true), RUN_STATE_CACHE);
 
-export const getBiggestEdgesRecord = cache((season: number): Promise<Tally> =>
-  cachedOrTolerant(cachedBiggestEdgesRecord, (value: number) => loadBiggestEdgesRecord(value, false), season));
+export const getBiggestEdgesRecord = cache(async (season: number): Promise<Tally> =>
+  cachedOrTolerant(await degradedScopeFor(season), cachedBiggestEdgesRecord, (value: number) => loadBiggestEdgesRecord(value, false), season));
