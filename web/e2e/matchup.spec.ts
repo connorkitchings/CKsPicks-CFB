@@ -368,7 +368,7 @@ test.describe("matchup page (fixture mode)", () => {
     expect(fit.text).toContain("Forecast & Lines");
     expect(fit.text).not.toMatch(/Lean|Model minus market/);
 
-    expect(download.suggestedFilename()).toMatch(/^ckspicks-.+-at-.+-2026-week-\d+\.png$/);
+    expect(download.suggestedFilename()).toMatch(/^crest-.+-at-.+-2026-week-\d+\.png$/);
     const meta = await sharp(await download.path()).metadata();
     expect([meta.format, meta.width, meta.height]).toEqual(["png", 2160, 2700]);
     await expect(page.getByRole("status")).toHaveText("Image saved");
@@ -398,7 +398,7 @@ test.describe("matchup page (fixture mode)", () => {
     await page.getByTestId("share-button").click();
     await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
     const [file] = await sharedFiles(page);
-    expect(file.name).toMatch(/^ckspicks-.+-at-.+-2026-week-\d+\.png$/);
+    expect(file.name).toMatch(/^crest-.+-at-.+-2026-week-\d+\.png$/);
     expect(file.type).toBe("image/png");
     expect(file.title).toMatch(/ at /);
     await expect(page.getByTestId("share-card")).toHaveCount(0);

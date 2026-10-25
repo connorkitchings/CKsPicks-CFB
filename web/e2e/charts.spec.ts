@@ -498,7 +498,7 @@ test.describe("team charts", () => {
     await page.getByTestId("chart-share").click();
     await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
     const [file] = await sharedFiles(page);
-    expect(file.name).toMatch(/^ckspicks-.+\.png$/);
+    expect(file.name).toMatch(/^crest-.+\.png$/);
     expect(file.type).toBe("image/png");
     expect(file.title).toBe("Efficiency vs explosiveness");
   });

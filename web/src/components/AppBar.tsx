@@ -7,6 +7,7 @@ import { useIsPhone } from "@/lib/use-is-phone";
 import { SeasonSelector } from "./SeasonSelector";
 import { ThemeToggle } from "./ThemeToggle";
 import { etDateTime } from "@/lib/time-et";
+import { BRAND_NAME, BRAND_SUFFIX } from "@/lib/brand";
 
 /** Pages whose app bar centers the brand: the four tabs. Matchup and team pages keep a back link and their own title. */
 const TAB_TITLES = new Set(["Games", "Ratings", "Graphs", "Model"]);
@@ -72,7 +73,7 @@ export function AppBar({
         )}
         {tab && (
           <Link href="/" className="inline-flex min-h-11 shrink-0 items-center rounded text-base font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent">
-            CK&rsquo;s Picks <span className="text-xs font-normal text-ink-muted">CFB</span>
+            {BRAND_NAME} <span className="text-xs font-normal text-ink-muted">{BRAND_SUFFIX}</span>
           </Link>
         )}
         {/* On the tabs the brand is the title; the name stays for assistive tech and tests. */}

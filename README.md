@@ -1,4 +1,4 @@
-# CKsPicks-CFB
+# Crest CFB
 
 College-football spread and total forecasts from a Python V5 season engine, an immutable Cloudflare R2 lake, Neon Postgres and a Vercel web app.
 

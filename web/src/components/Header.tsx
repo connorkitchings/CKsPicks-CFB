@@ -6,6 +6,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
 import { etDateTime } from "@/lib/time-et";
+import { BRAND_FULL, BRAND_NAME, BRAND_SUFFIX } from "@/lib/brand";
 
 export function Header({
   season,
@@ -46,9 +47,9 @@ export function Header({
       <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-1.5 sm:py-3.5`}>
         <div className="flex items-center justify-between gap-3 max-sm:hidden">
           <Link href="/" className="inline-flex min-h-11 items-center rounded text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent sm:text-xl">
-            CK&rsquo;s Picks
+            {BRAND_NAME}
             <span className="ml-1.5 text-xs font-normal text-ink-muted sm:text-sm">
-              CFB
+              {BRAND_SUFFIX}
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -99,7 +100,7 @@ export function Footer({
       className={`mx-auto mt-12 ${maxW} px-4 pb-8 text-center text-xs leading-relaxed text-ink-muted`}
     >
       <p className="mb-1">
-        Display only &mdash; not betting advice. CK&rsquo;s Picks is a research
+        Display only &mdash; not betting advice. {BRAND_FULL} is a research
         project that shows{" "}
         {publicationMode === "predictions"
           ? "model leans against market lines"

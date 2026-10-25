@@ -6,26 +6,25 @@ import { SiteNav } from "@/components/SiteNav";
 import { HydrationMarker } from "@/components/HydrationMarker";
 import { MatchupLinksProvider } from "@/components/MatchupLinks";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
-
-const siteUrl = "https://ckspicks-cfb.vercel.app";
+import { BRAND_FULL, SITE_URL } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: "CK's Picks · V5 College Football Forecasts",
+  metadataBase: new URL(SITE_URL),
+  title: `${BRAND_FULL} · V5 College Football Forecasts`,
   description:
     "V5 college football forecasts, team ratings, and season performance.",
-  applicationName: "CK's Picks · CFB",
+  applicationName: BRAND_FULL,
   openGraph: {
-    title: "CK's Picks · V5 College Football Forecasts",
+    title: `${BRAND_FULL} · V5 College Football Forecasts`,
     description:
       "V5 college football forecasts, team ratings, and season performance.",
-    url: siteUrl,
-    siteName: "CK's Picks · CFB",
+    url: SITE_URL,
+    siteName: BRAND_FULL,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CK's Picks · V5 College Football Forecasts",
+    title: `${BRAND_FULL} · V5 College Football Forecasts`,
     description:
       "V5 college football forecasts, team ratings, and season performance.",
   },

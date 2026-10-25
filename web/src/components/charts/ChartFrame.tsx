@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { BRAND_FULL, SITE_URL } from "@/lib/brand";
 import { footnoteLines } from "@/lib/chart-config";
 import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
 import { MobileChartSettings } from "./MobileChartSettings";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
+
+const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 
 /**
  * State every chart view shares, owned by `ChartsView` so it survives switching charts:
@@ -58,7 +61,7 @@ export function ExportCard({ title, subtitle, credit, footnote, children }: { ti
       </div>
       <div className="min-h-0 flex-1 px-3">{children}</div>
       <div className="px-5 text-[11px] leading-snug text-ink-muted" style={{ height: EXPORT_SIZE.footer }}>
-        {footnote} ckspicks-cfb.vercel.app
+        {footnote} {BRAND_FULL} · {SITE_HOST}
       </div>
     </div>
   );

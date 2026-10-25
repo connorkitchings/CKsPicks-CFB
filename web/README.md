@@ -1,4 +1,4 @@
-# CK's Picks Web App
+# Crest CFB Web App
 
 Next.js 16 / React 19 / Tailwind v4 application served from Vercel and backed
 by Neon Postgres. The Python pipeline owns football-model generation; this app

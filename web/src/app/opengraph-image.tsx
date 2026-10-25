@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BRAND_FULL, BRAND_MONOGRAM } from "@/lib/brand";
 
 /**
  * Programmatic OpenGraph image. Consumed automatically by Next.js metadata
@@ -6,7 +7,7 @@ import { ImageResponse } from "next/og";
  * No binary asset files required.
  */
 export const runtime = "nodejs";
-export const alt = "CK's Picks · CFB Model Leans";
+export const alt = `${BRAND_FULL} Model Leans`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -44,15 +45,12 @@ export default function OpengraphImage() {
               justifyContent: "center",
               background: "#2563eb",
               borderRadius: 16,
-              fontSize: 44,
+              fontSize: 52,
               fontWeight: 800,
               letterSpacing: -2,
             }}
           >
-            CK
-          </div>
-          <div style={{ fontSize: 28, color: "#93c5fd", fontWeight: 600 }}>
-            CFB
+            {BRAND_MONOGRAM}
           </div>
         </div>
         <div
@@ -64,7 +62,7 @@ export default function OpengraphImage() {
             marginBottom: 20,
           }}
         >
-          CK&rsquo;s Picks
+          {BRAND_FULL}
         </div>
         <div style={{ fontSize: 34, color: "#cbd5e1", maxWidth: 900 }}>
           Weekly model leans for every FBS game.

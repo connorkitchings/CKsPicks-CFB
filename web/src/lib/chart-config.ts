@@ -17,6 +17,7 @@ import {
   type Side,
 } from "./charts.ts";
 import type { GameLogGame, GameLogMetric } from "./charts.ts";
+import { EXPORT_PREFIX } from "./brand.ts";
 
 /**
  * Registry of the team charts: one entry per chart kind with its picker group, labels,
@@ -258,7 +259,7 @@ export function exportFilename(kind: ChartKind, season: number, week: number, si
   const metricText = metric ? `-${metric}` : "";
   const sideText = controls.side ? `-${side}` : "";
   const weekText = controls.week === "week" ? `-week-${week}` : controls.week === "through-week" ? `-through-week-${week}` : "";
-  return `ckspicks-${kind}${metricText}${sideText}-${season}${weekText}.png`;
+  return `${EXPORT_PREFIX}-${kind}${metricText}${sideText}-${season}${weekText}.png`;
 }
 
 export function conferenceLabel(conference: string | null): string {

@@ -79,7 +79,7 @@ test.describe("possession efficiency chart", () => {
         await gotoHydrated(page, "/stats?chart=possession&week=3&team=Alabama");
     let download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
-    expect((await download).suggestedFilename()).toBe("ckspicks-possession-ppp-2026-through-week-3.png");
+    expect((await download).suggestedFilename()).toBe("crest-possession-ppp-2026-through-week-3.png");
     expect(pngSize(await (await download).path())).toEqual({ width: 2000, height: 1125 });
     const report = JSON.parse((await page.getByTestId("chart-export").getAttribute("data-last-export")) ?? "{}");
     expect(report.logos).toBeGreaterThan(0);
@@ -88,7 +88,7 @@ test.describe("possession efficiency chart", () => {
     await page.getByTestId("possession-metric-epa-per-possession").click();
     download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
-    expect((await download).suggestedFilename()).toBe("ckspicks-possession-ppa-per-possession-2026-through-week-3.png");
+    expect((await download).suggestedFilename()).toBe("crest-possession-ppa-per-possession-2026-through-week-3.png");
   });
 
   test("the highlighted team persists across chart switches and windows", async ({ page }) => {

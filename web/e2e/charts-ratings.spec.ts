@@ -91,7 +91,7 @@ test.describe.skip("V5 rating trajectory chart", () => {
         await gotoHydrated(page, "/stats?chart=rating-trajectory&metric=defense&team=Alabama");
     const download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
-    expect((await download).suggestedFilename()).toBe("ckspicks-rating-trajectory-defense-2026.png");
+    expect((await download).suggestedFilename()).toBe("crest-rating-trajectory-defense-2026.png");
     expect(pngSize(await (await download).path())).toEqual({ width: 2000, height: 1125 });
     const report = JSON.parse((await page.getByTestId("chart-export").getAttribute("data-last-export")) ?? "{}");
     expect(report.logos).toBeGreaterThan(0);

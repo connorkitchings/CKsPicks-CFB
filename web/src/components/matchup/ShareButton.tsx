@@ -2,6 +2,7 @@
 
 import { ExportActions } from "@/components/ui/ExportActions";
 import type { MatchupData } from "@/lib/matchup";
+import { EXPORT_PREFIX } from "@/lib/brand";
 import { ShareCard, SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH } from "./ShareCard";
 
 function slug(text: string): string {
@@ -9,7 +10,7 @@ function slug(text: string): string {
 }
 
 export function shareFileName(matchup: Pick<MatchupData, "awayTeam" | "homeTeam" | "season" | "week">): string {
-  return `ckspicks-${slug(matchup.awayTeam)}-at-${slug(matchup.homeTeam)}-${matchup.season}-week-${matchup.week}.png`;
+  return `${EXPORT_PREFIX}-${slug(matchup.awayTeam)}-at-${slug(matchup.homeTeam)}-${matchup.season}-week-${matchup.week}.png`;
 }
 
 const TEST_IDS = {

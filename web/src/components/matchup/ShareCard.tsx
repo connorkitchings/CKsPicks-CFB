@@ -3,6 +3,7 @@ import type { MatchupData } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { spreadBetLabel } from "@/lib/betting-format";
 import { logoSrc, teamInitials } from "@/lib/team-logos";
+import { BRAND_FULL } from "@/lib/brand";
 import {
   groupUnitRows,
   hasMissingValue,
@@ -394,7 +395,7 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", borderBottom: `1px solid ${C.line}`, paddingBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>CK&rsquo;s Picks</span>
+          <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>{BRAND_FULL}</span>
           <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: 1.4, textTransform: "uppercase", color: C.accent }}>
             CFB · Week {matchup.week}
           </span>
