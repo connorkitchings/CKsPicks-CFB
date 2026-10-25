@@ -110,6 +110,6 @@ Risks:
 - **Every deploy starts with an empty cache** (key includes deployment ID).
 - **Vercel's ~2 MB per cache entry limit.** The codec warns above 1.5 MB; split performance detail by week if close.
 - **Bookmarks.** 307 first, 308 after acceptance; `/results?week=N` keeps its exact meaning.
-- **Site domain.** `layout.tsx` uses `ckspicks-cfb.vercel.app` but the runbook checks `c-ks-picks-cfb.vercel.app`; confirm canonical before switching to 308.
+- **Site domain.** Resolved 2026-10-25: the live host is `c-ks-picks-cfb.vercel.app`; `SITE_URL` in `web/src/lib/brand.ts` now uses it (it previously named `ckspicks-cfb.vercel.app`, which returns 404). Confirm it is the canonical domain before switching to 308.
 
 Next action: implement Phase 1 in worktree branch off `dev`. Record amendments here with reason, previous approach, revised approach and impact.

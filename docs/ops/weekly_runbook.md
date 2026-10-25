@@ -283,7 +283,7 @@ Commits are allowed again from here.
 
 **Optional cache warm-up.** The release data cache is keyed by deployment ID, so it is empty after each deploy. To warm it, request `/`, `/ratings` and `/model` once each. The active-release pointer refreshes within about 60 seconds of a new activation; the signed `/api/revalidate` endpoint makes the change visible immediately. The kill switch is `CFB_DATA_CACHE=0`, which bypasses the release-keyed cache.
 
-**TODO:** confirm the canonical domain before the 307 → 308 switch. This runbook uses `c-ks-picks-cfb.vercel.app`, while `web/src/app/layout.tsx` uses `ckspicks-cfb.vercel.app`.
+**TODO:** confirm the canonical domain before the 307 → 308 switch. The live host is `c-ks-picks-cfb.vercel.app`, and `SITE_URL` in `web/src/lib/brand.ts` uses it (2026-10-25).
 
 ---
 

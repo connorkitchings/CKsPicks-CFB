@@ -3,5 +3,5 @@ export const BRAND_NAME = "Crest";
 export const BRAND_SUFFIX = "CFB";
 export const BRAND_FULL = "Crest CFB";
 export const BRAND_MONOGRAM = "C";
-export const SITE_URL = "https://ckspicks-cfb.vercel.app";
+export const SITE_URL = "https://c-ks-picks-cfb.vercel.app";
 export const EXPORT_PREFIX = "crest";
