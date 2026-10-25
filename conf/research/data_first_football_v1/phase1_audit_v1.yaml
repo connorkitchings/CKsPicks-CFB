@@ -13,7 +13,8 @@ maximum_monthly_cost_usd: 15.0
 roots:
   - root_id: v4_config
     kind: local_yaml
-    path: conf/weekly_bets/v4_2026.yaml
+    path: conf/research/data_first_football_v1/historical/v4_2026.yaml
+    expected_sha256: b6a24c22aaf9f5ac1bf25a53a2914f458b3e77992a99d3942648138c2c45f1f1
     required: true
   - root_id: v4_bundle
     kind: json
