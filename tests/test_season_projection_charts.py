@@ -31,7 +31,7 @@ GOLDEN = Path(__file__).with_name("isolation_golden.json")
 # matchup_data_publications embeds np.polyfit floating-point residual which has a 1-bit
 # platform difference between macOS ARM64 and Linux x86_64.
 MACOS_ARM64_MATCHUP_DIGEST = (
-    "db328e2241e270b7558aea808fb41d82efc3ff5c746ef9d7f02e40de3fda4638"
+    "c30b9febb54e57a127f4a10ff122c36c0831a467a067a951ce8718329a2ffdab"
 )
 
 

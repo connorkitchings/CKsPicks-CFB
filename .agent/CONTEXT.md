@@ -16,9 +16,9 @@ CFBD / Odds API → immutable Bronze captures + catalog registry
 → verified serving projections → stage + atomic activate → Neon → Vercel
 ```
 
-`build_season_revision.py` reuses controller ingestion/Silver steps and creates cumulative registered market inputs. `run_season.py prepare` reconstructs completed weeks and forecasts the next slate at its pre-week cutoff; `season_verification_v2` uses frozen checks per recorded projection set (24 for new `charts_v2` candidates). `run_season.py release` stages immutable projections and atomically activates the release after verification/readback, expected-prior-release checks and, for Production, independent Preview rehearsal proof. Active-release context makes Picks, Results, Ratings, Performance and health resolve the same release. Legacy web reads remain only as a fallback when there is no active season release.
+`build_season_revision.py` reuses controller ingestion/Silver steps and creates cumulative registered market inputs. `run_season.py prepare` reconstructs completed weeks and forecasts the next slate at its pre-week cutoff; `season_verification_v2` uses frozen checks per recorded projection set (24 for new `charts_v2` candidates). `run_season.py release` stages immutable projections and atomically activates the release after verification/readback, expected-prior-release checks and, for Production, independent Preview rehearsal proof. Active-release context makes the Games, Ratings, Stats and Model tabs and `/api/health` resolve the same release. Legacy web reads remain only as a fallback when there is no active season release.
 
-Neon `season_releases`, `season_release_policies` and `season_release_*` projection tables are defined by migration `0025`. Earlier `prediction_runs`, `current_week`, `games`, grades and optional matchup tables remain for compatibility. Schema upgrades are append-only under `contracts/migrations/`; `contracts/schema.sql` and `schema.ts` are canonical. Web copies must pass `make contracts-check`.
+Neon `season_releases`, `season_release_policies` and `season_release_*` projection tables are defined by migration `0025`; the latest migration is `0028` (`contracts/migrations/`). Earlier `prediction_runs`, `current_week`, `games`, grades and optional matchup tables remain for compatibility. Schema upgrades are append-only under `contracts/migrations/`; `contracts/schema.sql` and `schema.ts` are canonical. Web copies must pass `make contracts-check`.
 
 ## Operational invariants
 
@@ -36,7 +36,7 @@ V5 uses validated football measurements, primarily upstream opponent adjustment,
 
 Research development windows are 2015–2019 and 2021–2025, excluding 2020 throughout. V4's sealed 2021–2025 chronology is historical and remains unchanged. Training and all target-aware transforms must precede prediction. Point-in-time data loading is mandatory for feature work.
 
-The public 2026 record is one continuous V5 record from Week 0. Forecasts for started/reconstructed games use only pre-cutoff observations and remain visible on Picks. Grading uses the best eligible pre-kickoff quote per game/target under the [record methodology](../docs/modeling/record_methodology.md). Pre-kickoff forecast freezes distinguish prospective provenance; historical point-in-time reconstruction does not become prospective evidence. Betting decisions are deferred; research stays isolated until separately promoted.
+The public 2026 record is one continuous V5 record from Week 0. Forecasts for started/reconstructed games use only pre-cutoff observations and remain visible on Games. Grading uses the best eligible pre-kickoff quote per game/target under the [record methodology](../docs/modeling/record_methodology.md). Pre-kickoff forecast freezes distinguish prospective provenance; historical point-in-time reconstruction does not become prospective evidence. Betting decisions are deferred; research stays isolated until separately promoted.
 
 Maintain `season`, `week`, `game_id` and `team` keys, with consistent `off_*`, `def_*` and `adj_*` naming. See the [measurement catalog](../docs/modeling/measurement_catalog.md) and [rating requirements](../docs/modeling/rating_system_requirements.md).
 
@@ -54,15 +54,16 @@ Maintain `season`, `week`, `game_id` and `team` keys, with consistent `off_*`, `
 | Read-only release resolution and publication rendering | `web/src/lib/season-release-context.ts`, `queries.ts`, `publication.ts` |
 | Keychain environment wrappers | `scripts/ops/` |
 
-Python remains at the root; web owns its npm toolchain in `web/`. Make targets and Nx coexist. V4/Hydra/MLflow, old inference and 6A/6B rebuild code still exist for compatibility pending deferred Phase 3 cleanup; do not infer live operational authority from their presence.
+Python remains at the root; web owns its npm toolchain in `web/`. Use Make for pipeline work and `npm --prefix web run ...` for web work. V4 code was removed on 2026-10-22; V4 survives only as the [retrospective](../docs/modeling/v4_retrospective.md).
 
 ## Validation and workflow
 
-Use [quickstart](../.codex/QUICKSTART.md) and `make help` for commands. Validate changed components, contracts and quality registry, Python/Ruff, web lint/typecheck/tests/build, strict MkDocs and `git diff --check`. CI combines Python-suite coverage with a 60% threshold. Database suites use disposable local clusters, never serving databases.
+Use [quickstart](../.codex/QUICKSTART.md) and `make help` for commands. `make check` mirrors CI (Ruff, contracts, quality registry, pytest, strict MkDocs, web lint/typecheck/tests/build); finish with `git diff --check`. CI combines Python-suite coverage with a 60% threshold. Database suites use disposable local clusters, never serving databases.
 
 Substantial work follows a durable Sol-to-Terra contract in `docs/plans/`; review recent logs before editing, preserve unrelated changes, and leave staging/commits to the owner. Update status only when current release/week state changes. Historical contracts and dated logs are evidence, not operating authority.
 
+## Site and Stats publication
 
-## Charts publication
+The site has four tabs: Games (`/`), Ratings (`/ratings`), Stats (`/stats`) and Model (`/model`), plus matchup (`/matchup/[gameId]`) and team (`/teams/[team]`) detail pages. Old URLs redirect: `/results` and `/matchup` to `/`, `/performance` to `/model`, `/methodology` to `/model/method`, `/charts` to `/stats`.
 
-`CFB_CHARTS_ENABLED=1` is the only opt-in to Charts navigation and `/charts`; unset/invalid values disable it in every environment, including fixtures. The root server layout passes visibility to navigation and the route rejects before data loading. Keep Production off pending owner manual approval and rebuild/redeploy when changing the flag. This allows code integration through normal `dev` → `main` flow while public Charts is withheld; it does not bypass backend chart migrations, fixed projection sets or release gates.
+Graphs (`/stats`) is published with no feature flag; the former `CFB_CHARTS_ENABLED` gate was removed from the code on 2026-10-25. Graphs still depends on the chart projection tables of the active release.

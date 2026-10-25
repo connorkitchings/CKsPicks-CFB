@@ -1,93 +1,32 @@
 # Repository Boundaries
 
-This page is the architectural authority for code ownership, dependency
-direction, and compatibility during the data-first football forecasting
-program. The [production runbook](../ops/production_runbook.md) remains the
-authority for operating the live system. The
-[data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-governs research sequence and evidence policy.
+This page is the architectural authority for code ownership, dependency direction and compatibility. The [weekly runbook](../ops/weekly_runbook.md) is the authority for operating the live system; [Current Status](../status.md) holds live release IDs. V5 Blitzkrieg is the only operational model (see the [V5 status guide](../modeling/v5_status.md)); V4 is historical evidence in the [V4 retrospective](../modeling/v4_retrospective.md), and its training and serving code was removed on 2026-10-22.
 
-## Current production system
+## Ownership
 
-V4 bundle `week0-2026-v4-strict-20260818-r2`, configured by
-`conf/weekly_bets/v4_2026.yaml`, remains the rollback benchmark; V5 is the serving family (see [Current Status](../status.md)). Supported
-weekly commands resolve immutable R2 inputs, generate predictions, publish a
-durable prediction artifact, copy that derived view to Neon, freeze the scored
-artifact identity, and close the week after finalized outcomes. The Next.js
-application in `web/` reads the fail-closed Neon serving view.
-
-Ownership is divided as follows:
-
-| Area | Owner | Responsibility |
+| Area | Location | Responsibility |
 |---|---|---|
-| Reusable Python | `src/cks_picks_cfb/` | Data contracts, features, bundles, inference, ratings, and operations |
-| Production commands | `scripts/pipeline/` and `src/cks_picks_cfb/ops/` | Supported weekly orchestration and publication |
-| Production configuration | `conf/weekly_bets/` and applicable shared `conf/` groups | Frozen runtime and model choices |
-| Durable evidence | Cloudflare R2 | Immutable source captures, datasets, bundles, runs, and reports |
-| Web serving state | Neon Postgres | Derived current predictions, results, and system statistics |
-| Shared schema | `contracts/` | Canonical SQL, TypeScript schema, migrations, and team-name mapping |
-| Web application | `web/` | Read-only product presentation and health interfaces |
+| Season engine | `src/cks_picks_cfb/season/`, `scripts/pipeline/run_season.py`, `scripts/pipeline/build_season_revision.py` | Revision manifests, chronological preparation, grading, verification, serving projections, atomic release and rollback |
+| Weekly data steps | `src/cks_picks_cfb/ops/`, `scripts/pipeline/`, `scripts/data/` | Ingestion, Silver builds, `prepare-week`, team-stats and matchup-data publication, catalog reconciliation and audits |
+| Reusable libraries | `src/cks_picks_cfb/` (`data/`, `features/`, `charts/`, `metrics/`, `ratings/`, `forecast/`, `models/`, `quality/`, `db/`) | Lake and catalog, football measurements, ratings, forecasts, market grading, data-quality registry |
+| Operational configuration | `conf/season/2026/`, `conf/weekly_bets/`, `conf/policy/`, `conf/quality/` | Sealed model manifest, revision manifests, exact score exceptions, week policy, quality policy |
+| Research | `scripts/research/`, `scripts/analysis/`, `src/cks_picks_cfb/ratings_lab/`, `audit/`, `conf/research/` | Isolated research runners, verifiers and configurations |
+| Shared schema | `contracts/` | Canonical SQL and TypeScript schema, append-only migrations (latest 0028), team-name mapping |
+| Web application | `web/` | Read-only product (Games, Ratings, Stats, Model tabs; matchup and team pages; `/api/health`) |
+| Durable evidence | Cloudflare R2 | Immutable captures, datasets, runs and reports; the source of truth |
+| Serving state | Neon Postgres | Derived season releases and projections; catalog metadata |
 
-R2 is the durable source of truth. Neon is a derived serving database. Schema
-and team mapping copies in the web app and publisher are checked against
-`contracts/` before release.
+Schema and team-mapping copies in `web/src/lib/` are checked against `contracts/` by `make contracts-check`. Named benchmark readers (the certified R1 foundation and fixed rating baseline) remain under `scripts/pipeline/` and `src/cks_picks_cfb/ratings/` and are recorded in the manifest below.
 
-## Data-first research system
-
-The new program uses this flow:
+## Data flow
 
 ```text
 audited immutable data → football measurements → opponent adjustment
-→ scoring-efficiency ratings + uncertainty → Ridge margin/total bridge
-→ prior-only non-offense translation offsets → calibrated forecasts
-→ prospective evaluation → timestamped line comparison
+→ ratings + uncertainty → Ridge margin/total bridge → calibrated forecasts
+→ point-in-time evaluation → timestamped line comparison
 ```
 
-New executable research commands live in `scripts/research/`. Reusable logic
-lives in `src/cks_picks_cfb/`, with rating and forecasting components under
-`src/cks_picks_cfb/ratings/` where appropriate. Exploratory notebooks and
-analyses stay out of production code and cannot become production dependencies.
-
-New program configuration lives under
-`conf/research/data_first_football_v1/`. Its artifacts use only
-`artifacts/research/data-first-football-v1/`. The 2015–2019 and 2021–2025
-development corpus, including 2025 as development evidence, applies only to
-this namespace. Existing V4 and named benchmark identities retain their
-original season policies and locations.
-
-**V5 checkpoint (2026-09-22):** V5 ratings successor is distinct from V4 feature
-schema v5, the independent diagnostic. Its historical development and verification
-lane is complete and accepted: all four audit findings are closed. Repair v2 and
-Phase 3 v2 remain historical evidence; R6 is superseded. Contract 07 is
-Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-Implemented for Weeks 0–3 as independently verified replay
-`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
-07 and 08 is next, followed by Contract 09 live readiness, Contract 06's
-six-slate prospective evaluation, and a conditional Phase 7 promotion review.
-The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-is the canonical status page.
-
-Current execution follows the [V5 common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
-The original Phase 4B retained manifest remains prohibited as a forecasting
-parent; September 8 Phase 4A–6 execution contracts are Superseded. Only explicitly
-inherited mathematics carry forward. Version new code/artifacts under
-`artifacts/research/data-first-football-v1/possession-v1/`; no catalog registration
-or production schema changes are authorized.
-
-Measurements record possession and scoring-ledger evidence. Four-pass opponent
-adjustment occurs upstream once. Ratings accumulate that evidence with uncertainty;
-non-offense expectations belong only to translation. The first release is
-bridge-first; volume arithmetic/clock tempo, normalization and expanded model
-families are later challengers. Outcome variance is calibrated from prior
-prediction errors and is distinct from rating variance. Parameter-fitting windows
-may vary while continuous football-state history remains intact.
-
-Research commands may freeze and score isolated shadow artifacts under contracts
-05–06; they cannot publish, freeze, close, migrate, deploy or alter **production**
-state. Live readiness and six-slate evidence are separate from implementation
-completion. Timestamped market quotes are joined after football evaluation only.
-Betting selection, staking, bankroll management and threshold optimization are
-outside this program.
+Operationally, `run_season.py prepare` computes this chain chronologically from a hash-pinned revision manifest and writes verified serving projections; `release` stages them and atomically activates the release in Neon after Preview rehearsal. Measurements record possession and scoring evidence; opponent adjustment happens once, upstream of ratings. Markets are joined only after football evaluation. Betting selection, staking and threshold optimization are outside the program.
 
 ## Dependency direction
 
@@ -101,45 +40,20 @@ production code ──X─> scripts/research/*
 production code ──X─> artifacts/research/data-first-football-v1
 ```
 
-Production commands may depend on reusable library modules. Research commands
-may use the same stable interfaces. Reusable modules cannot import executable
-scripts, and production modules or commands cannot import either research
-command location. A reusable component that could alter V4 behavior must be
-introduced behind a new versioned research interface.
+Commands may depend on library modules. Library modules cannot import executable scripts, and production code cannot import either research location. Research commands may freeze and score isolated shadow artifacts under `artifacts/research/data-first-football-v1/` using configuration from `conf/research/data_first_football_v1/`, but cannot publish, migrate, deploy or alter Production state; promotion needs a separate approved contract. Research development evidence is 2015-2019 and 2021-2025, excluding 2020.
 
-## Compatibility and versioning
+## Compatibility manifest
 
-`conf/repository/compatibility_v1.yaml` records the supported commands,
-required paths, V4 identity, and named benchmark paths. Phase 0 preserves:
+`conf/repository/compatibility_v1.yaml` records the public make targets, required paths (production, contracts, web, research, V5), named benchmark paths and the prohibited import and output prefixes. `tests/test_repository_boundaries.py` enforces it: required paths exist, declared make targets exist, library and production scripts import no research namespaces, and research configs reference no production outputs.
 
-- V4 prediction, routing, publication, artifact loading, and rollback paths.
-- The certified R1 foundation and artifact readers.
-- The fixed rating measurement and team-state baseline.
-- Candidate-v1 shadow evaluation.
-- The completed R2 prior tournament.
-- Direct early-game candidate generation and evaluation.
-
-An invalidated research result remains readable as historical evidence but
-does not remain eligible for model selection. Measurement-definition changes,
-corrected research datasets, and materially changed candidates receive new
-identities. Existing source captures, reports, production configs, and bundle
-references are never rewritten to imply new lineage.
+An invalidated research result stays readable as historical evidence but is not eligible for model selection. Changed measurement definitions, corrected datasets and materially changed candidates receive new identities; existing captures, reports and configs are never rewritten to imply new lineage.
 
 ## Moving or deleting files
 
-An existing command, config, or module can move or be removed only after all
-of these are established:
+A command, config or module may move or be removed only after all of these hold:
 
-1. Static imports, subprocess calls, Make targets, docs, configs, tests, and
-   artifact identity references have been checked.
-2. Production and named benchmark behavior has an equivalent tested path or a
-   compatibility wrapper.
-3. The replacement and pinned recovery commit are recorded in a disposition
-   report.
-4. Contract synchronization, deterministic inference, CLI smoke checks,
-   Python tests, docs validation, and web checks pass.
-5. The active implementation contract explicitly authorizes the change.
-
-Static reference counts alone cannot authorize deletion because orchestration
-and stored artifact identities may resolve paths dynamically. Phase 0 therefore
-classifies existing research and legacy files without moving or deleting them.
+1. Static imports, subprocess calls, make targets, docs, configs, tests and stored artifact identities have been checked; reference counts alone do not authorize deletion because orchestration can resolve paths dynamically.
+2. Nothing in the live V5 graph, `scripts/research/`, `scripts/analysis/` or the research packages imports it.
+3. A replacement or recovery commit is recorded (for V4, see the retrospective).
+4. Contracts, tests, strict docs build and web checks pass (`make check`).
+5. The active implementation contract authorizes the change.

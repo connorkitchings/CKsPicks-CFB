@@ -100,6 +100,12 @@ def _verify_runtime(expected_code_sha: str) -> tuple[Any, str]:
     return storage, target.database_url
 
 
+def check_root_checksum(actual_sha: str, expected_sha: str | None) -> None:
+    """Reject a root document whose bytes differ from its pinned checksum."""
+    if expected_sha and actual_sha != expected_sha:
+        raise ValueError(f"root checksum mismatch: {actual_sha} != {expected_sha}")
+
+
 def _read_json(storage: ReadOnlyStorage, uri: str) -> tuple[dict[str, Any], bytes]:
     payload = storage.read_bytes(uri)
     value = json.loads(payload)
@@ -304,11 +310,7 @@ def resolve_evidence(
                 payload, raw = _read_json(reader, str(spec["uri"]))
                 location = str(spec["uri"])
             actual_sha = sha256(raw)
-            expected_sha = spec.get("expected_sha256")
-            if expected_sha and actual_sha != expected_sha:
-                raise ValueError(
-                    f"root checksum mismatch: {actual_sha} != {expected_sha}"
-                )
+            check_root_checksum(actual_sha, spec.get("expected_sha256"))
             root_versions[root_id] = sorted(
                 walk_document(payload, root_id=root_id, document_uri=location)
             )

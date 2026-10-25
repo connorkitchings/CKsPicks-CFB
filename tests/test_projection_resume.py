@@ -30,9 +30,10 @@ from cks_picks_cfb.season.projection_resume import (
     win_probability,
 )
 from cks_picks_cfb.season.projection_serving import BRIDGE_SHA256
+from tests.season_fixtures import BRIDGE_FIXTURE
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PINNED_BUNDLE = REPO_ROOT / "conf/rebuild/bundle_b2_w5_v1.json"
+PINNED_BUNDLE = BRIDGE_FIXTURE
 
 #: Margin = offense(home) - offense(away); sigma 1, so P(ref wins) = Phi(off_ref - off_opp).
 SYNTHETIC = MarginBridge(

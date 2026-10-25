@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
+import { gotoHydrated, sharedFiles, stubWebShare } from "./helpers";
 
 test.describe("matchup page (fixture mode)", () => {
   test("mismatched publication lineage hides model sections and disables sharing", async ({ page }) => {
@@ -106,6 +107,21 @@ test.describe("matchup page (fixture mode)", () => {
     const rb = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     expect(ra).toEqual(rb);
 
+    // Collapsing a secondary section synchronizes both desktop tables and keeps rows aligned.
+    const sitButton = tables.nth(0).getByRole("button", { name: /Situational \/ down and distance/ });
+    await expect(sitButton).toHaveAttribute("aria-expanded", "true");
+    await sitButton.click();
+    await expect(sitButton).toHaveAttribute("aria-expanded", "false");
+    await expect(tables.nth(1).getByRole("button", { name: /Situational \/ down and distance/ })).toHaveAttribute("aria-expanded", "false");
+    await expect(tables.nth(0).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    await expect(tables.nth(1).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    const raCollapsed = await tables.nth(0).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const rbCollapsed = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    expect(raCollapsed).toEqual(rbCollapsed);
+    await sitButton.click();
+    await expect(sitButton).toHaveAttribute("aria-expanded", "true");
+    await expect(tables.nth(0).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+
     await page.setViewportSize({ width: 390, height: 900 });
     await page.goto("/matchup/1");
     await expect(page.getByRole("table")).toHaveCount(1);
@@ -165,6 +181,8 @@ test.describe("matchup page (fixture mode)", () => {
     const grid = page.getByTestId("forecast-grid");
     await expect(grid.getByText("Spread", { exact: true })).toBeVisible();
     await expect(grid.getByText("Total", { exact: true })).toBeVisible();
+    await expect(grid.getByText("DraftKings", { exact: true })).toBeVisible();
+    await expect(grid.getByText("Bovada", { exact: true })).toBeVisible();
     // Explanations and legends live below the tables, not above them.
     const lastTable = await page.getByRole("table").last().boundingBox();
     const notes = await page.getByTestId("matchup-notes").boundingBox();
@@ -175,9 +193,10 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(noteLines.nth(0)).toHaveText(/^Stats through Week \d+\. FBS opponents only, regulation play, garbage time excluded; raw, not opponent-adjusted\. Defense columns show what that defense allowed\.$/);
     await expect(noteLines.nth(1)).toHaveText(/^Ranks are among \d+ teams; T = tied\.$/);
     await expect(page.getByText("before this game")).toHaveCount(0);
-    // One way back at the bottom (the top already has "Back to Picks").
+    // One way back at the bottom (the top already has "← Week N games").
     await expect(page.getByRole("link", { name: /^Return to Week/ })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /^All Week \d+ matchups$/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^← Week \d+ games$/ })).toHaveAttribute("href", /^\/\?week=\d+$/);
+    await expect(page.getByRole("link", { name: /^All Week \d+ games$/ })).toBeVisible();
 
     await expect(page).toHaveTitle(/ at .* · Matchup/);
   });
@@ -247,7 +266,7 @@ test.describe("matchup page (fixture mode)", () => {
   test("is noindex and unknown games show the not-found page", async ({ page }) => {
     await page.goto("/matchup/1");
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
-    // Unknown ids stream the 404 page (the root loading boundary has already sent 200).
+    // Unknown ids render the 404 page.
     await page.goto("/matchup/987654");
     await expect(page.getByText("This page could not be found")).toBeVisible();
     await expect(page.getByRole("region", { name: "Team stats" })).toHaveCount(0);
@@ -255,27 +274,34 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.getByText("This page could not be found")).toBeVisible();
   });
 
-  test("the /matchup index lists the week's games and links to each breakdown", async ({ page }) => {
-    await page.goto("/matchup");
-    await expect(page.getByRole("heading", { name: "Matchups" })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: "Week", exact: true })).toHaveValue("5");
+  test("unknown and invalid game ids return HTTP 404; known games return 200", async ({ request }) => {
+    expect((await request.get("/matchup/1")).status()).toBe(200);
+    expect((await request.get("/matchup/987654")).status()).toBe(404);
+    expect((await request.get("/matchup/abc")).status()).toBe(404);
+    expect((await request.get("/matchup/0")).status()).toBe(404);
+    expect((await request.get("/matchup/99999999999999999999")).status()).toBe(404);
+  });
+
+  test("the Games week view lists the week's games and links to each breakdown", async ({ page }) => {
+    await page.goto("/?week=5");
+    await expect(page.getByRole("heading", { name: "Week 5", exact: true })).toBeVisible();
+    await expect(page.locator("#week-select")).toHaveValue("5");
     const links = page.locator("a[href^='/matchup/']");
     expect(await links.count()).toBeGreaterThan(3);
     await links.first().click();
     await expect(page).toHaveURL(/\/matchup\/\d+$/);
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
-    await page.getByRole("link", { name: /All Week \d+ matchups/ }).click();
-    await expect(page).toHaveURL(/\/matchup\?week=\d+$/);
+    await page.getByRole("link", { name: /All Week \d+ games/ }).click();
+    await expect(page).toHaveURL(/\/\?week=\d+$/);
   });
 
-  test("the index is noindex and fits a phone", async ({ page }) => {
+  test("the Games week view fits a phone", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto("/matchup");
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    await page.goto("/?week=5");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test("game cards carry a Matchup button that opens the breakdown, and team names are not links", async ({ page }) => {
+  test("game cards carry a Matchup button that opens the breakdown; team names link from ratings and matchup pages but not slate cards", async ({ page }) => {
     await page.goto("/");
     const home = page.getByTestId("matchup-link");
     expect(await home.count()).toBeGreaterThanOrEqual(1);
@@ -285,38 +311,41 @@ test.describe("matchup page (fixture mode)", () => {
     await page.getByTestId("matchup-link").first().click();
     await expect(page).toHaveURL(/\/matchup\/\d+$/);
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
-    // No team name anywhere links to a team page (cards, hero, matchup footer).
-    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+    // The hero names and the matchup footer link to team pages (a name appears in both).
+    await expect(page.locator("main a[href^='/teams/']").first()).toBeVisible();
+    expect(await page.locator("[data-side] a[href^='/teams/']").count()).toBe(2);
+    expect(await page.locator("main a[href^='/teams/']").count()).toBe(4);
+    // Slate cards never link to team pages.
     await page.goto("/");
+    expect(await page.getByTestId("matchup-link").count()).toBeGreaterThanOrEqual(1);
     expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
-    await page.goto("/results");
+    await page.goto("/?week=4");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThanOrEqual(1);
     expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
     await page.goto("/ratings");
-    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+    expect(await page.locator("a[href^='/teams/']").count()).toBeGreaterThan(0);
   });
 
   test("slate cards also carry the Matchup button", async ({ page }) => {
     await page.goto("/");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
-    await page.goto("/results");
+    await page.goto("/?week=4");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
   });
 
   test("no page footer shows a GitHub source link", async ({ page }) => {
-    for (const url of ["/", "/results", "/ratings", "/performance", "/matchup", "/matchup/1"]) {
+    for (const url of ["/", "/?week=4", "/ratings", "/model", "/matchup/1", "/model/method"]) {
       await page.goto(url);
       await expect(page.locator("a[href*='github.com']")).toHaveCount(0);
-      // Ratings and Performance render no footer; the rest must not list a source.
-      if (await page.locator("footer").count()) {
-        await expect(page.locator("footer a")).toHaveCount(0);
-        await expect(page.locator("footer")).not.toContainText(/Source:|github\.com/);
-      }
+      await expect(page.locator("footer")).toHaveCount(1);
+      await expect(page.locator("footer a")).toHaveCount(0);
+      await expect(page.locator("footer")).not.toContainText(/Source:|github\.com/);
     }
   });
 
   test("share: download exports a fixed 1080x1350 card at 2x, and the card fits its canvas", async ({ page }) => {
-    await page.goto("/matchup/1");
+    // The button is in the server HTML; a click before hydration is silently dropped.
+    await gotoHydrated(page, "/matchup/1");
     await expect(page.getByTestId("share-download")).toBeVisible();
     // The card exists only while an image is being made.
     await expect(page.getByTestId("share-card")).toHaveCount(0);
@@ -339,10 +368,39 @@ test.describe("matchup page (fixture mode)", () => {
     expect(fit.text).toContain("Forecast & Lines");
     expect(fit.text).not.toMatch(/Lean|Model minus market/);
 
-    expect(download.suggestedFilename()).toMatch(/^ckspicks-.+-at-.+-2026-week-\d+\.png$/);
+    expect(download.suggestedFilename()).toMatch(/^crest-.+-at-.+-2026-week-\d+\.png$/);
     const meta = await sharp(await download.path()).metadata();
     expect([meta.format, meta.width, meta.height]).toEqual(["png", 2160, 2700]);
     await expect(page.getByRole("status")).toHaveText("Image saved");
+    await expect(page.getByTestId("share-card")).toHaveCount(0);
+  });
+
+  test("export actions match the charts: icon buttons with tooltips, 44px targets on phones, Web Share when supported", async ({ page }) => {
+    await stubWebShare(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/matchup/1");
+    const controls = page.getByTestId("share-controls");
+    const download = controls.getByRole("button", { name: "Download PNG", exact: true });
+    await expect(download).toHaveText("");
+    await expect(controls.getByRole("button", { name: "Share", exact: true })).toBeVisible();
+    for (const button of await controls.getByRole("button").all()) {
+      expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    // The same tooltip-on-focus behaviour as the chart export buttons.
+    const tooltip = page.getByTestId("share-download-tooltip");
+    await expect(tooltip).toHaveCSS("opacity", "0");
+    await download.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    await expect(tooltip).toHaveText("Download PNG");
+    await expect(tooltip).toHaveCSS("opacity", "1");
+    // Share hands the PNG to the browser's share sheet under the matchup's file name and title.
+    await page.getByTestId("share-button").click();
+    await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
+    const [file] = await sharedFiles(page);
+    expect(file.name).toMatch(/^crest-.+-at-.+-2026-week-\d+\.png$/);
+    expect(file.type).toBe("image/png");
+    expect(file.title).toMatch(/ at /);
     await expect(page.getByTestId("share-card")).toHaveCount(0);
   });
 

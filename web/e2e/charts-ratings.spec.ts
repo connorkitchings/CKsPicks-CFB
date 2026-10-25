@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
-import { openTable } from "./helpers";
+import { gotoHydrated, openTable } from "./helpers";
 
 // Fixture: `current` V5 rating snapshots for weeks 0-3 of 16 teams (Wyoming has none);
 // Tulane has no week 2 snapshot, so its line breaks into weeks 0-1 and a lone week-3 dot.
@@ -13,10 +13,10 @@ function pngSize(path: string): { width: number; height: number } {
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
-// Skipped: `rating-trajectory` is hidden from /charts (`ready: false` in src/lib/chart-config.ts).
+// Skipped: `rating-trajectory` is hidden from /stats (`ready: false` in src/lib/chart-config.ts).
 test.describe.skip("V5 rating trajectory chart", () => {
   test("renders every team from Through Week 0 with the weekly FBS mean and no week selector", async ({ page }) => {
-    await page.goto("/charts?chart=rating-trajectory");
+    await page.goto("/stats?chart=rating-trajectory");
     await expect(page.getByRole("heading", { name: "V5 rating trajectory" })).toBeVisible();
     await expect(page.getByTestId("chart-subtitle")).toHaveText("Overall · 2026 · FBS teams · Through Weeks 0–3");
     const chart = page.getByTestId("trajectory-chart");
@@ -44,13 +44,13 @@ test.describe.skip("V5 rating trajectory chart", () => {
   });
 
   test("a URL metric seeds the switcher", async ({ page }) => {
-    await page.goto("/charts?chart=rating-trajectory&metric=offense");
+    await page.goto("/stats?chart=rating-trajectory&metric=offense");
     await expect(page.getByTestId("rating-metric-offense")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText("V5 offense rating", { exact: true })).toBeVisible();
   });
 
   test("the table lists each week's rating ± standard deviation and follows the group filter", async ({ page }) => {
-    await page.goto("/charts?chart=rating-trajectory");
+    await page.goto("/stats?chart=rating-trajectory");
     await openTable(page);
     const table = page.getByTestId("chart-table");
     await expect(table.locator("tbody tr")).toHaveCount(PLOTTED);
@@ -63,7 +63,7 @@ test.describe.skip("V5 rating trajectory chart", () => {
   });
 
   test("lines are keyboard reachable with a rating ± sd and rank tooltip, and Enter highlights", async ({ page }) => {
-    await page.goto("/charts?chart=rating-trajectory");
+    await page.goto("/stats?chart=rating-trajectory");
     const first = page.getByTestId("trajectory-chart").locator("g[data-team]").first();
     const tooltip = page.getByTestId("chart-tooltip");
     await expect(async () => {
@@ -88,11 +88,10 @@ test.describe.skip("V5 rating trajectory chart", () => {
   });
 
   test("PNG export is 2000x1125, named for the metric, with the highlighted logo decoded", async ({ page }) => {
-    await page.goto("/charts?chart=rating-trajectory&metric=defense&team=Alabama");
-    await page.waitForLoadState("networkidle");
+        await gotoHydrated(page, "/stats?chart=rating-trajectory&metric=defense&team=Alabama");
     const download = page.waitForEvent("download");
     await page.getByTestId("chart-download").click();
-    expect((await download).suggestedFilename()).toBe("ckspicks-rating-trajectory-defense-2026.png");
+    expect((await download).suggestedFilename()).toBe("crest-rating-trajectory-defense-2026.png");
     expect(pngSize(await (await download).path())).toEqual({ width: 2000, height: 1125 });
     const report = JSON.parse((await page.getByTestId("chart-export").getAttribute("data-last-export")) ?? "{}");
     expect(report.logos).toBeGreaterThan(0);
@@ -100,7 +99,7 @@ test.describe.skip("V5 rating trajectory chart", () => {
   });
 
   test("the highlighted team persists into and out of the rating trajectory", async ({ page }) => {
-    await page.goto("/charts?chart=trajectory&team=Michigan");
+    await page.goto("/stats?chart=trajectory&team=Michigan");
     const picker = page.getByRole("navigation", { name: "Chart type" });
     await picker.getByRole("link", { name: "V5 ratings", exact: true }).click();
     await expect(page).toHaveURL(/chart=rating-trajectory/);
@@ -118,16 +117,16 @@ test.describe.skip("V5 rating trajectory chart", () => {
   });
 
   test("a failing snapshot query shows the unavailable notice under the picker", async ({ page }) => {
-    await page.goto("/charts?chart=rating-trajectory&fixture=adjusted-error");
+    await page.goto("/stats?chart=rating-trajectory&fixture=adjusted-error");
     await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
     await expect(page.getByTestId("chart-picker")).toBeVisible();
   });
 });
 
-// Skipped: `rating-trajectory` is hidden from /charts (`ready: false` in src/lib/chart-config.ts).
+// Skipped: `rating-trajectory` is hidden from /stats (`ready: false` in src/lib/chart-config.ts).
 test.skip("rating trajectory stays horizontally scrollable with a readable table at 390px", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
-  await page.goto("/charts?chart=rating-trajectory&team=Alabama");
+  await page.goto("/stats?chart=rating-trajectory&team=Alabama");
   const scroll = page.getByTestId("trajectory-scroll");
   await expect(scroll).toBeVisible();
   await expect.poll(() => scroll.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);

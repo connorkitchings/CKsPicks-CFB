@@ -17,9 +17,6 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NX_DAEMON: "false"
-
 jobs:
   lint:
     name: Python lint and contracts
@@ -39,7 +36,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Check formatting
         run: uv run ruff format --check .
@@ -53,6 +50,9 @@ jobs:
       - name: Verify data-quality check registry
         run: PYTHONPATH=src uv run python -m cks_picks_cfb.quality --verify-registry
 
+      - name: Build documentation
+        run: uv run mkdocs build --strict
+
   general:
     name: Python general tests
     runs-on: ubuntu-24.04
@@ -60,12 +60,12 @@ jobs:
     env:
       COVERAGE_FILE: .coverage.general
       CFBD_API_KEY: ci-placeholder
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-        with:
-          # Legacy freeze attestation reads source at a historical commit.
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -78,19 +78,17 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Parallel Python tests
-        # Shared-database resets and threaded rating publication need isolation.
+        # Shared-database resets and threaded rating publication are ignored
+        # here and run in their own jobs; worksteal balances the heavy files.
         run: >-
           PYTHONPATH=src:. uv run pytest tests/ -q -W error
-          -n 4 --dist loadfile
+          -n 4 --dist worksteal
           --ignore=tests/test_data_first_possession_rating_runner.py
-          --ignore=tests/test_rebuild_6b_flow.py
           --ignore=tests/test_migration_integration.py
-          --ignore=tests/test_v5_batch_selection_v2.py
           --ignore=tests/test_publish_matchup_data.py
-          --ignore=tests/test_publish_null_lean_database.py
           --ignore=tests/test_season_release_postgres.py
           --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
           --junitxml=junit-general.xml
@@ -120,6 +118,9 @@ jobs:
     env:
       COVERAGE_FILE: .coverage.ratings
       CFBD_API_KEY: ci-placeholder
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -135,7 +136,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Rating publication tests
         run: >-
@@ -210,7 +211,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Provide PostgreSQL 16 server binaries for the private cluster
         shell: bash
@@ -234,14 +235,12 @@ jobs:
           PY
 
       - name: PostgreSQL integration tests
-        # The first four files reset shared schemas and must run serially.
+        # The first two files reset shared schemas and must run serially.
         # Season-release tests keep their separate, socket-only private cluster.
         run: >-
           PYTHONPATH=src:. uv run pytest
           tests/test_migration_integration.py
-          tests/test_v5_batch_selection_v2.py
           tests/test_publish_matchup_data.py
-          tests/test_publish_null_lean_database.py
           tests/test_season_release_postgres.py
           -q -W error
           --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
@@ -299,7 +298,7 @@ jobs:
           enable-cache: true
 
       - name: Install locked dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --frozen
 
       - name: Download suite coverage
         uses: actions/download-artifact@v8
@@ -331,36 +330,36 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            web/package-lock.json
-
-      - name: Install Nx dependencies
-        run: npm ci
+          cache-dependency-path: web/package-lock.json
 
       - name: Install web dependencies
         run: npm ci --prefix web
 
       - name: Lint
-        run: npx nx run web:lint
+        run: npm --prefix web run lint
 
       - name: Build
-        run: npx nx run web:build
+        run: npm --prefix web run build
 
       - name: Typecheck
-        run: npx nx run web:typecheck
+        run: npm --prefix web run typecheck
 
       - name: Test publication boundary
-        run: npx nx run web:test-publication
+        run: npm --prefix web run test:publication
+
+      - name: Build fixture bundle for browser tests
+        # ISR pages bake build-time env into their HTML, so the browser tests
+        # need their own build with fixture mode on.
+        env:
+          CFB_UI_TEST_MODE: "1"
+          CFB_PUBLICATION_MODE: predictions
+        run: npm --prefix web run build
 
       - name: Install browser test runtime
         run: npm --prefix web exec playwright install --with-deps chromium
 
       - name: Test browser fixtures
         run: npm --prefix web run test:ui
-
-      - name: Test unpublished Charts boundary in a production build
-        run: npm --prefix web run test:charts-gate
 
       - name: Upload browser test failures
         if: failure()
@@ -371,3 +370,43 @@ jobs:
             web/test-results/
             web/playwright-report/
           if-no-files-found: ignore
+
+  python-audit:
+    name: Python dependency audit (non-blocking)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --frozen
+
+      - name: Audit Python dependencies
+        run: uv run --with pip-audit pip-audit
+
+  web-audit:
+    name: Web dependency audit (non-blocking)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Audit web dependencies
+        run: npm --prefix web audit --audit-level=high

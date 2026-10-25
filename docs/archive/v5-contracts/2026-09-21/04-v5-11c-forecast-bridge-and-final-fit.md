@@ -4,7 +4,7 @@
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User authorized the full Contract 11 decomposition on 2026-09-21 ("Let's do it all"); final-fit design (same run, recipe refit, alpha policy, 2025 calibration carry-forward) confirmed by structured decision the same day.
-- **Implementation log:** `session_logs/2026-09-21/08-v5-11c-forecast-bridge-and-final-fit.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-21/08-v5-11c-forecast-bridge-and-final-fit.md`
 - **Commit policy:** Separate commits — schema/pin checkpoint, then evidence checkpoints per phase. User controls Git operations.
 
 ## Goal

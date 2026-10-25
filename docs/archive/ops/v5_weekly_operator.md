@@ -6,7 +6,7 @@
 
 > **Week 6 exception (display-only):** the Week 6 run in Production is display-only with evidence class `pending`. **Never freeze or close Week 6** with this checklist: a post-kickoff freeze would be fabricated and close would mark kicked-off games missed. Week 6 has no freeze receipt, but it **is graded into the unified 2026 record**: once all finals are in (no 24-hour wait, since 2026-10-11) it receives a finals load (`scripts/pipeline/load_game_finals.py`) and a grades-only backfill (`scripts/pipeline/backfill_v5_unconstrained_grades.py --week 6 --grades-only`, Preview then Production, user-run), and it is then superseded in the counted record by its corrected replay at the cutover. Rolling it back needs `scripts/pipeline/rollback_week6_display.py` and the owner login (the pipeline role has no DELETE on `prediction_market_selections`). See the [Week 6 release contract](../../plans/2026-10-09/02-week6-display-production-release.md) and the [record methodology](../../modeling/record_methodology.md).
 
-> **Historical (2026-09-30):** the repaired intended-update release is described in the [exact release packet](../../plans/2026-09-29/v5-intended-update-production-release-packet.md). Original V5 runs remain the rollback set; the p2 Week 5 freeze and close are recorded in status.
+> **Historical (2026-09-30):** the repaired intended-update release is described in the [exact release packet](../plans/2026-09/2026-09-29/v5-intended-update-production-release-packet.md). Original V5 runs remain the rollback set; the p2 Week 5 freeze and close are recorded in status.
 
 For the selected successor, continue from its independently verified rating
 manifest and refitted bundle. Keep the original V5 projector and original

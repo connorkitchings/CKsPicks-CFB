@@ -96,7 +96,7 @@ user/future warnings.
 missing config. It does not create synthetic Gold/schedule/market inputs, mock
 storage/models, perform a successful prediction, validate CSV columns/order, or
 exercise artifact collision behavior. This misses the contract requirement at
-`docs/plans/2026-08-23/modernization-phases-5-8-completion.md:101-108`.
+`docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md:101-108`.
 
 **Remediation:** add one no-network end-to-end CLI golden test with fake storage,
 explicit dataset refs, routed predictions, and a temporary output path.
@@ -131,7 +131,7 @@ Prediction cards render `ResultChip` at `web/src/components/GameRow.tsx:151-160`
 Market cards at `:167-203` render final scores only, while
 `web/src/lib/queries.ts:249-273` deliberately selects no prediction grades.
 This contradicts the plan’s “identically across both modes” requirement at
-`docs/plans/2026-08-23/modernization-phases-5-8-completion.md:83-86`, but is
+`docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md:83-86`, but is
 consistent with the no-model-output market boundary.
 
 **Remediation:** resolve policy before code changes. Under the current
@@ -191,7 +191,7 @@ publication modes and narrow viewports; no live database is needed.
 ## Remediation status — 2026-08-23
 
 The approved completion contract is in progress at
-`docs/plans/2026-08-23/modernization-verified-completion.md`. The historical
+`docs/archive/plans/2026-08/2026-08-23/modernization-verified-completion.md`. The historical
 findings above remain intact.
 
 Completed remediation evidence:

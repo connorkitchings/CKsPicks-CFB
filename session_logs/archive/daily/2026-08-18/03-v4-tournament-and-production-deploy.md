@@ -4,7 +4,7 @@
 
 - **Worked On:** Executed the full V4 tournament (selection → locked 2025 → refit → rehearsal), fixed four latent pipeline bugs, set up production Neon + R2 + Vercel, and published the V4 model to the live site.
 - **Outcome:** V4 is the first model to pass sealed selection and locked-2025 gates. Production site is live at https://c-ks-picks-cfb.vercel.app in fail-closed market mode (8/8 games, 0 high-confidence).
-- **Plan Contract:** `docs/plans/2026-08-18/week0-launch-execution.md` (In Progress — Stages 1–3 complete, Stages 4–5 pending game week)
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md` (In Progress — Stages 1–3 complete, Stages 4–5 pending game week)
 - **Approval / Status:** User authorized the full plan and implementation on 2026-08-18.
 - **Blockers:** Stage 4 (progressive publish + freeze) waits for game week (Aug 25–29). Pick'em needs `CFBD_PREDICTION_TOKEN`.
 - **Next:** Rerun publish-week in production as lines update; freeze before Aug 29 kickoff; flip publication mode to predictions on user approval.
@@ -80,7 +80,7 @@
 - `tests/test_runtime_target.py` — 3 new tests
 - `tests/test_training_policy.py` — 1 new test
 - `conf/weekly_bets/v4_2026.yaml` — V4 launch config (new file)
-- `docs/plans/2026-08-18/week0-launch-execution.md` — status + amendments
+- `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md` — status + amendments
 - `.env` — production R2 credentials (not committed)
 
 ## Commits

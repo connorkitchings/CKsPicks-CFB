@@ -5,7 +5,7 @@
 - **Worked On:** Continued the approved capture-only R1 successor-v2 recapture.
 - **Outcome:** Active immutable run `r1-full-corpus-20260828-929f331` is healthy
   and had reached 2015 plays at close. The R1 parent contract remains In Progress.
-- **Plan Contract:** `docs/plans/2026-08-27/r1-full-corpus-recapture-and-certification.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-27/r1-full-corpus-recapture-and-certification.md`
 - **Approval / Status:** User approved continued implementation and session
   closeout on 2026-08-28.
 - **Blockers:** R2 remains blocked until R1 certification passes.

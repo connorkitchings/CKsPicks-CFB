@@ -4,11 +4,11 @@
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires the dependencies below.
-- **Implementation log:** `session_logs/2026-09-13/04-v5-possession-measurement-certification.md`;
-  `session_logs/2026-09-14/01-v5-possession-independent-verifier.md`;
-  `session_logs/2026-09-15/01-v5-possession-certification-apply-handoff.md`;
-  `session_logs/2026-09-15/04-v5-possession-r6-performance-recovery.md`;
-  `session_logs/2026-09-16/01-v5-possession-r6-certification-closure.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-13/04-v5-possession-measurement-certification.md`;
+  `session_logs/archive/daily/2026-09-14/01-v5-possession-independent-verifier.md`;
+  `session_logs/archive/daily/2026-09-15/01-v5-possession-certification-apply-handoff.md`;
+  `session_logs/archive/daily/2026-09-15/04-v5-possession-r6-performance-recovery.md`;
+  `session_logs/archive/daily/2026-09-16/01-v5-possession-r6-certification-closure.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate

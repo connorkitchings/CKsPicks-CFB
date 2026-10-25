@@ -5,6 +5,9 @@
  * rendered-output assertions.
  */
 
+/** Reference win-rate threshold (52.4%) for judging record accuracy; not a payout or price claim. */
+export const BREAK_EVEN_PCT = 52.4;
+
 export function signedSpread(n: number): string {
   return n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1);
 }
@@ -54,10 +57,10 @@ export function modelSpreadView(
     : { team: awayTeam, line: predictedSpread };
 }
 
-export function spreadLabel(view: SpreadView): string {
+export function spreadLabel(view: SpreadView, teamName: (team: string) => string = (team) => team): string {
   if (view === null) return "—";
   if (view === "PK") return "PK";
-  return `${view.team} ${signedSpread(view.line)}`;
+  return `${teamName(view.team)} ${signedSpread(view.line)}`;
 }
 
 /** Signed difference between the displayed model and market spread numbers. */
@@ -90,9 +93,9 @@ export function spreadBetLabel(
   homeLine: number | null,
 ): string | null {
   if (lean === null || homeLine === null) return null;
-  return lean === "home"
-    ? `${homeTeam} ${signedSpread(homeLine)}`
-    : `${awayTeam} ${signedSpread(-homeLine)}`;
+  const line = lean === "home" ? homeLine : -homeLine;
+  const team = lean === "home" ? homeTeam : awayTeam;
+  return `${team} ${line === 0 ? "PK" : signedSpread(line)}`;
 }
 
 export function totalBetLabel(

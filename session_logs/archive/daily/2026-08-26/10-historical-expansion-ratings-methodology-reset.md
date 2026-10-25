@@ -10,7 +10,7 @@
   lineage, Preview-only historical preparation/certification interfaces,
   sealed tournament contracts, and a fresh v2 prospective policy/manifest.
 - **Plan Contract:**
-  `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`
+  `docs/archive/plans/2026-08/2026-08-26/historical-expansion-ratings-methodology-reset.md`
 - **Approval / Status:** User authorized the exact plan on 2026-08-26;
   governing plan/log were committed separately as `6d09543`. Implementation
   remains In Progress.

@@ -1,5 +1,14 @@
 # Decision Log
 
+This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
+
+## 2026-10-25: Crest CFB wordmark and theme colors
+
+- **Context:** The owner reviewed serif/sans-serif wordmarks and light/dark color comparisons for the Crest rebrand.
+- **Decision:** Retain Crest CFB; select lettering C / Balance and navy pairing B / Navy + crisp white. CREST and CFB share navy `#20344D` in light mode and crisp white `#F8FAFC` in dark mode, with no accent stripe.
+- **Impact:** Design selection only. The owner explicitly deferred implementation; application files and deployments remain unchanged.
+- **Source:** [Wordmark decision and retained references](2026-10-25-crest-wordmark.md), session log `session_logs/2026-10-25/02-crest-wordmark-concepts.md`. No implementation contract is approved by this entry.
+
 ## 2026-10-15: Exact reconciliation and accepted rebuilt market provenance
 
 - **Decision:** require exact scoring-event-to-final reconciliation per team-game. Only explicit `game_id`, `team` and reason exceptions pinned by the revision manifest are permitted; unlisted mismatches and unused exceptions fail preparation and `season_verification_v2`. Malformed-score tags and a season-wide percentage threshold cannot waive the check.
@@ -163,7 +172,7 @@
   passes. Phase 4A–6 remain execution-held; the Phase 4A v2 grid is reaffirmed
   only as carried forward onto the possession definitions. No estimator code,
   V4 change, production change, or data write occurred.
-- **Source**: `docs/plans/2026-09-11/possession-rating-methodology-specification.md`.
+- **Source**: `docs/archive/v5-contracts/2026-09-11/possession-rating-methodology-specification.md`.
 
 ## 2026-09-10: Possession-Based Rating Direction and Phase Sequencing
 
@@ -184,7 +193,7 @@
   execution hold pending replacement or explicit reaffirmation. This does not
   alter Phase 3's sealed mathematics, V4 production, weekly operations, market
   separation, 2020 exclusion, or prospective-evidence requirements.
-- **Source**: `docs/plans/2026-09-10/documentation-alignment-and-next-research-steps.md`.
+- **Source**: `docs/archive/plans/2026-09/2026-09-10/documentation-alignment-and-next-research-steps.md`.
 
 ## 2026-09-03: Canonical Market-Quote Persistence and Opt-In The Odds API Capture
 
@@ -211,7 +220,7 @@
   Snapshot IDs change only for future consensus-less games once books are
   admitted. In-flight pipeline runs started before this change cannot be
   resumed (definition SHA changes); start a new run instead.
-- **Source**: `docs/plans/2026-09-03/market-line-retention.md`.
+- **Source**: `docs/archive/plans/2026-09/2026-09-03/market-line-retention.md`.
 
 ## 2026-08-23: Adopt Rating-Centric Hybrid Architecture for 2026
 
@@ -240,7 +249,7 @@
   with requirements and a simple baseline under later contracts rather than
   choosing a sophisticated method here.
 - **Source**:
-  `docs/plans/2026-08-23/repository-documentation-and-2026-ratings-realignment.md`;
+  `docs/archive/plans/2026-08/2026-08-23/repository-documentation-and-2026-ratings-realignment.md`;
   `docs/modeling/rating_system_requirements.md`.
 
 ## 2026-08-18: Production Deployment and Fail-Closed Publication Gating
@@ -263,7 +272,7 @@
   predicted, 8/8 lined, 0 high-confidence) with a green `/api/health`. No
   model lean can reach the public site without an explicit user-approved
   publication-mode change.
-- **Source**: `docs/plans/2026-08-18/week0-launch-execution.md` (Stage 3,
+- **Source**: `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md` (Stage 3,
   Amendments 2–3); `session_logs/archive/daily/2026-08-18/03-v4-tournament-and-production-deploy.md`.
 
 ## 2026-08-18: V4 Selected as 2026 Launch Model; prior_only_fallback Posture
@@ -286,7 +295,7 @@
   simulation (quarantined legacy lines): +17.9 units (+3.1% ROI). All 8 Week 0
   games route to `game_1` (spread: direct CatBoost; total: prior-quality
   baseline).
-- **Source**: `docs/plans/2026-08-18/week0-launch-execution.md` (Stages 1–2,
+- **Source**: `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md` (Stages 1–2,
   Amendment 3); `session_logs/archive/daily/2026-08-18/03-v4-tournament-and-production-deploy.md`.
 
 ## 2026-08-17: V4 Strict vs. Reconstructed Point-in-Time Feature References
@@ -306,7 +315,7 @@
 - **Impact**: The strict tournament proceeded without waiting on any additive
   family and ultimately shipped `prior_core` only; the reconstructed track
   remains available for research without activation risk.
-- **Source**: `docs/plans/2026-08-17/early-season-v4-modeling.md` (Amendment 1);
+- **Source**: `docs/archive/plans/2026-08/2026-08-17/early-season-v4-modeling.md` (Amendment 1);
   `session_logs/archive/daily/2026-08-17/02-v4-immutable-feature-reference.md`.
 
 ## 2026-08-16: Games 1–3 Prediction-Only Promotion Basis
@@ -324,7 +333,7 @@
 - **Impact**: Established the result-only promotion basis inherited by the V4
   tournament; V3 (`week0-2026-games-ordinal-v3-20260816-r2`) became the
   baseline lineage for V4 selection.
-- **Source**: `docs/plans/2026-08-15/games-1-3-modeling.md` (Amendment
+- **Source**: `docs/archive/plans/2026-08/2026-08-15/games-1-3-modeling.md` (Amendment
   2026-08-16); `session_logs/archive/daily/2026-08-16/01-preview-readiness-repair.md`.
 
 ## 2026-08-09: Preserve Untimestamped Lines as Legacy References and Canonicalize Week 0
@@ -469,9 +478,9 @@
 
 - **Context**: Completed Option A (Documentation & Deployment) from session plan.
 - **Updates Made**:
-  - `docs/experiments/index.md` — All 10 V2 experiments documented with results
+  - `docs/archive/experiments/index.md` — All 10 V2 experiments documented with results
   - `docs/modeling/betting_policy.md` — V2 Champion section with optimal thresholds
-  - `docs/project_org/feature_registry.md` — Feature status corrected (recency_weighted_v1 = champion)
+  - `docs/archive/project_org/feature_registry.md` — Feature status corrected (recency_weighted_v1 = champion)
 - **Current Champions**:
   - **Spread**: Linear + recency_weighted_v1 → +0.52% ROI (7.0 pt threshold → +2.1% ROI)
   - **Totals**: Linear + recency_weighted_v1 → +5.3% ROI (0.5 pt threshold → +6.1% ROI)

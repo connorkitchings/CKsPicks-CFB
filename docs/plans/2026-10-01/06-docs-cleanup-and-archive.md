@@ -18,7 +18,7 @@ Make the documentation tree truthful and navigable without changing behavior.
 5. Fix `file:///Users/...` links, make `mkdocs build --strict` pass, add missing nav entries, refresh stale dates/text.
 
 ## Constraints
-- `tests/test_data_first_documentation_authority.py` pins strings in `docs/modeling/v5_status.md` and reads `docs/plans/2026-09-08/*` and `docs/archive/v5-contracts/**`; those are not edited or moved.
+- `tests/test_data_first_documentation_authority.py` pins strings in `docs/modeling/v5_status.md` and reads `docs/archive/plans/2026-09/2026-09-08/*` and `docs/archive/v5-contracts/**`; those are not edited or moved.
 - Plan files are not moved; only Status lines change.
 
 ## Deleted in step 4 (recoverable from git history)

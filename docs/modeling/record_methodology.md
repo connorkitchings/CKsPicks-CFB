@@ -6,7 +6,7 @@
 
 The public 2026 record is one cumulative V5 record from Week 0, presented as if V5 had been active for the whole season. A selection is the model side against its chosen eligible quote, settled win, loss or push against the certified final. Spread and total records are separate. Every forecast with an eligible line can receive a grade; there is no edge threshold. Missing lines remain ungraded.
 
-Started and reconstructed games stay on Picks without a retrospective label. The point-in-time claim concerns the observations used by the forecast, not when the replay was built. Freeze receipts, original runs and reconstruction provenance remain audit evidence. “Prospective” describes predictions frozen before kickoff only; it does not define a separate public record or a six-slate admission requirement.
+Started and reconstructed games stay on Games without a retrospective label. The point-in-time claim concerns the observations used by the forecast, not when the replay was built. Freeze receipts, original runs and reconstruction provenance remain audit evidence. “Prospective” describes predictions frozen before kickoff only; it does not define a separate public record or a six-slate admission requirement.
 
 ## Admission and verification
 

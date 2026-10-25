@@ -1,8 +1,14 @@
 import Link from "next/link";
 import type { PublicationMode } from "@/lib/publication";
 import { displaySystemName } from "@/lib/publication";
+import { AppBar, type AppBarBack } from "./AppBar";
+import { HydrationMarker } from "./HydrationMarker";
 import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
+import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
+import { etDateTime } from "@/lib/time-et";
+import { BRAND_FULL } from "@/lib/brand";
+import { Wordmark } from "./Wordmark";
 
 export function Header({
   season,
@@ -10,30 +16,47 @@ export function Header({
   updatedAt,
   publicationMode,
   allowedSeasons,
-  wide = false,
-  containerWidth,
+  width = "narrow",
   status,
+  phoneStatus,
+  menuUpdatedAt,
+  back,
+  loading = false,
 }: {
   season: number | null;
   systemName: string | null;
   updatedAt: Date | null;
   publicationMode: PublicationMode;
   allowedSeasons?: readonly number[];
-  /** Wider page container (matchup pages); the nav widens itself by route. */
-  wide?: boolean;
-  containerWidth?: string;
+  width?: PageWidth;
   status?: React.ReactNode;
+  /** Whether `status` shows anything on phones; defaults to whether `status` is set. */
+  phoneStatus?: boolean;
+  /** Publication time for the phone menu when `updatedAt` is withheld from the desktop sub-row. */
+  menuUpdatedAt?: Date | null;
+  /** Phones: the app bar shows this back link and title in place of the section name. */
+  back?: AppBarBack;
+  /**
+   * The loading skeleton's header. A streamed page leaves that skeleton on screen while its own
+   * header waits, disabled, in a hidden container, so only the page's header flags hydration.
+   */
+  loading?: boolean;
 }) {
-  const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
+  const maxW = PAGE_WIDTHS[width];
+  const hasSubrow = Boolean(
+    (publicationMode === "predictions" && systemName) || status || updatedAt,
+  );
+  const systemLabel = publicationMode === "predictions" && systemName ? displaySystemName(systemName) : null;
   return (
-    <header className="border-b border-line bg-surface-card/80 backdrop-blur">
-      <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-2.5 sm:py-3.5`}>
-        <div className="flex items-center justify-between gap-3">
-          <Link href="/" className="inline-flex min-h-11 items-center rounded text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-accent sm:text-xl">
-            CK&rsquo;s Picks
-            <span className="ml-1.5 text-xs font-normal text-ink-muted sm:text-sm">
-              CFB
-            </span>
+    <>
+      {!loading && <HydrationMarker />}
+      {/* Phones: the sticky app bar replaces the brand row and menu controls; only `status` stays on the page. */}
+      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={(menuUpdatedAt ?? updatedAt)?.toISOString() ?? null} back={back} />
+    <header className={`border-b border-line bg-surface-card/80 backdrop-blur${(phoneStatus ?? Boolean(status)) ? "" : " max-sm:hidden"}`}>
+      <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-1.5 sm:py-3.5`}>
+        <div className="flex items-center justify-between gap-3 max-sm:hidden">
+          <Link href="/" className="inline-flex min-h-11 items-center rounded text-wordmark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+            <Wordmark className="h-8 w-auto" />
           </Link>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
@@ -49,46 +72,41 @@ export function Header({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
-          {publicationMode === "predictions" && systemName && (
-            <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-              {displaySystemName(systemName)}
-            </span>
-          )}
-          {status}
-          {updatedAt && (
-            <span>
-              Updated{" "}
-              {updatedAt.toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
-        </div>
+        {hasSubrow && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+            {systemLabel && (
+              <span className="max-sm:hidden inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                {systemLabel}
+              </span>
+            )}
+            {status}
+            {updatedAt && (
+              <span className="max-sm:hidden">
+                Updated {etDateTime(updatedAt)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </header>
+    </>
   );
 }
 
 export function Footer({
   publicationMode,
-  wide = false,
-  containerWidth,
+  width = "narrow",
 }: {
   publicationMode: PublicationMode;
-  wide?: boolean;
-  containerWidth?: string;
+  width?: PageWidth;
 }) {
-  const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
+  const maxW = PAGE_WIDTHS[width];
   return (
     <footer
       className={`mx-auto mt-12 ${maxW} px-4 pb-8 text-center text-xs leading-relaxed text-ink-muted`}
     >
       <p className="mb-1">
-        Display only &mdash; not betting advice. CK&rsquo;s Picks is a research
+        Display only &mdash; not betting advice. {BRAND_FULL} is a research
         project that shows{" "}
         {publicationMode === "predictions"
           ? "model leans against market lines"

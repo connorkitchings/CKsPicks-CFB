@@ -4,7 +4,7 @@
 > [methodology](possession_rating_methodology.md) and
 > [V5 common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
 > The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-> is the canonical status page. V4 remains unchanged; historical sections below
+> is the canonical status page. V5 is now the only operational model ([V5 status](v5_status.md)) and V4 is [historical evidence](v4_retrospective.md); this status line is historical, and the sections below
 > retain their original experiment boundaries and do not authorize execution.
 
 ## Current rating direction (specified 2026-09-11; amended 2026-09-13)
@@ -76,12 +76,12 @@ It is not the active V5 execution queue; use contracts 02–06 above.
 
 The original Phase 1 implementation is retained as research history but is not
 an authorized Phase 2 input. Its corrective contract is
-`docs/plans/2026-08-24/phase1-rating-measurement-remediation.md`; it replaces
+`docs/archive/plans/2026-08/2026-08-24/phase1-rating-measurement-remediation.md`; it replaces
 the prior refs with v2 observations, season-to-date snapshots, and terminal
 snapshots, materialized with bounded season-scoped reads under
-`docs/plans/2026-08-24/phase1-phase2-completion.md`. Phase 2 is implemented
+`docs/archive/plans/2026-08/2026-08-24/phase1-phase2-completion.md`. Phase 2 is implemented
 from that passing handoff under
-`docs/plans/2026-08-24/phase2-minimum-viable-team-state-baseline.md`.
+`docs/archive/plans/2026-08/2026-08-24/phase2-minimum-viable-team-state-baseline.md`.
 
 The Phase 2 baseline (state design ID
 `ddd6033824909620aa381527dba202a06c65155de53403849b59ffcaaae7092d`) blends
@@ -129,7 +129,7 @@ before Phase 3 v3 can inspect historical outcomes. Phase 4 remains blocked.
 Phase 3 v1 is immutable failed research: its two-equation margin/total OLS
 diagnostic had complete paired V4 coverage but failed the frozen calibration
 and total-bias gates. The successor is the separate
-[sealed v2 team-score tournament](../plans/2026-08-25/phase3-score-model-tournament-v2.md),
+[sealed v2 team-score tournament](../archive/plans/2026-08/2026-08-25/phase3-score-model-tournament-v2.md),
 which compares linear and NB2 team-score families on 2022–2024 expanding
 folds and confirms its selected, unchanged family once on 2025. It cannot tune
 v1, relax a gate, freeze a candidate, or begin Phase 4 unless all gates pass.
@@ -139,7 +139,7 @@ gates. The immutable diagnostic is evidence only; no candidate or operational
 shadow artifact exists.
 
 The passing successor is the sealed
-[Phase 3 v3 tournament](../plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
+[Phase 3 v3 tournament](../archive/plans/2026-08/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
 on the true-PPSO Phase 1 v3 and Phase 2 v2 foundation. Linear scores failed
 complete-family selection (non-positive score means); `negative_binomial_scores`
 passed the 2022–2024 sealed selection and the unchanged locked-2025

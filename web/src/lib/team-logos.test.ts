@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { hasLogo, logoId, logoSrc, teamInitials } from "./team-logos.ts";
+import { hasLogo, logoId, logoSrc, phoneTeamName, teamAbbr, teamInitials } from "./team-logos.ts";
+import { TEAM_DISPLAY } from "./team-logos.generated.ts";
 
 test("unknown team has no v2 logo", () => {
   assert.equal(hasLogo("Nowhere State"), false);
@@ -50,4 +51,23 @@ test("teamInitials", () => {
   assert.equal(teamInitials("Ohio State"), "OS");
   assert.equal(teamInitials("Tulane"), "TU");
   assert.equal(teamInitials(""), "?");
+});
+
+test("every FBS team has a short, unique abbreviation", () => {
+  const abbrs = Object.keys(TEAM_DISPLAY).map((team) => teamAbbr(team));
+  for (const abbr of abbrs) assert.match(abbr, /^[A-Z&-]{2,5}$/, abbr);
+  assert.equal(new Set(abbrs).size, abbrs.length);
+});
+
+test("house abbreviations replace CFBD's, including through an alias", () => {
+  assert.equal(teamAbbr("Texas A&M"), "TAMU");
+  assert.equal(teamAbbr("Connecticut"), "UCONN");
+  assert.equal(teamAbbr("Georgia"), "UGA");
+});
+
+test("phones keep short names and abbreviate long ones", () => {
+  assert.equal(phoneTeamName("Georgia"), "Georgia");
+  assert.equal(phoneTeamName("San José State"), "San José State");
+  assert.equal(phoneTeamName("Florida International"), "FIU");
+  assert.equal(phoneTeamName("Southern Mississippi"), "USM");
 });

@@ -8,7 +8,7 @@
   checks and is byte-identical on rerun. The Phase 3 prediction baseline is
   unblocked; Phase 4 remains blocked.
 - **Plan Contract:**
-  `docs/plans/2026-08-25/phase3-structured-margin-total-baseline.md`
+  `docs/archive/plans/2026-08/2026-08-25/phase3-structured-margin-total-baseline.md`
 - **Approval / Status:** The user explicitly directed certification first on
   2026-08-25. Phase 3 remains `In Progress`.
 - **Blockers:** None for the frozen Phase 3 prediction-baseline construction.

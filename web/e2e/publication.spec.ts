@@ -15,52 +15,49 @@ for (const width of [375, 420]) {
     const comparison = page.getByRole("table", { name: "Market and results" });
     await expect(comparison).toBeVisible();
     await expect(comparison.getByRole("columnheader", { name: "Market" })).toBeVisible();
-    // Picks is forward-looking: results belong to the Results tab.
-    await expect(comparison.getByRole("columnheader", { name: "Bet Result" })).toHaveCount(0);
+    // The market fixture game is final, so its card carries the graded Bet Result column.
+    await expect(comparison.getByRole("columnheader", { name: "Bet Result" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "2026 Season Record" })).toHaveCount(0);
     await expect(page.getByRole("table", { name: "Market and model comparison" })).toHaveCount(0);
     await expect(page.getByText("Blitzkrieg")).toHaveCount(0);
-    await page.locator("#week-select").focus();
-    await expect(page.locator("#week-select")).toBeFocused();
+    await page.locator("#week-select-phone").focus();
+    await expect(page.locator("#week-select-phone")).toBeFocused();
     await expect(page.getByText("1 / 3", { exact: true })).toHaveCount(0);
-    await page.locator("#week-select").selectOption("1");
+    await page.locator("#week-select-phone").selectOption("1");
     await expect(page).toHaveURL(/week=1/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
 
-test("market results tab keeps the Bet Result column", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 900 });
-  await page.goto("/results?mode=market");
-
-  const comparison = page.getByRole("table", { name: "Market and results" }).first();
-  await expect(comparison).toBeVisible();
-  await expect(comparison.getByRole("columnheader", { name: "Market" })).toBeVisible();
-  await expect(comparison.getByRole("columnheader", { name: "Bet Result" })).toBeVisible();
-});
-
 test("navigation exposes active tabs", async ({ page }) => {
   await page.goto("/");
 
   const nav = page.getByRole("navigation", { name: "Main navigation" });
-  await expect(nav.getByRole("link", { name: "Picks" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Results" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Games" })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: "Ratings" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Performance" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Method" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Model" })).toBeVisible();
+  for (const retired of ["Picks", "Results", "Performance", "Method"]) {
+    await expect(nav.getByRole("link", { name: retired })).toHaveCount(0);
+  }
 });
 
-test.describe("picks slate (/)", () => {
-  test("shows record, top leans and the full slate", async ({ page }) => {
+test.describe("upcoming week (/)", () => {
+  test("shows the phase, record, top leans and the full slate", async ({ page }) => {
     await page.goto("/");
 
+    await expect(page.getByRole("heading", { name: "Week 5", exact: true })).toBeVisible();
+    await expect(page.getByTestId("week-phase")).toHaveText("Upcoming");
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Biggest edges" })).toBeVisible();
+    // Nothing is graded yet: no highlights, no week record, no result sorts.
+    await expect(page.getByRole("region", { name: "Highlights" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /^Week \d+ record/ })).toHaveCount(0);
+    await expect(page.locator("#slate-sort option[value='worstResult']")).toHaveCount(0);
     await expect(page.getByPlaceholder("Filter by team…")).toBeVisible();
     // Season track record over each scored week's top-5 spread/total leans.
     await expect(shown(page.getByText(/2026: 7–3–0 \(\d+\.\d%\)/))).toBeVisible();
-    // Single-week fixture: no week selector on the slate.
-    await expect(page.locator("#week-select")).toHaveCount(0);
+    // Every week is browsable: the final, upcoming and in-progress fixture weeks.
+    await expect(page.locator("#week-select option")).toHaveText(["Week 4", "Week 5", "Week 6"]);
     // Only one main navigation on the page.
     await expect(page.getByRole("navigation", { name: "Main navigation" })).toHaveCount(1);
   });
@@ -69,7 +66,7 @@ test.describe("picks slate (/)", () => {
     await page.goto("/");
 
     await expect(page.getByText("Blitzkrieg")).toBeVisible();
-    await expect(page.getByText("Frozen before kickoff")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Frozen before kickoff")).toBeVisible();
     await expect(page.getByText(/Run published Sep 29/)).toBeVisible();
     await expect(page.getByText("Retrospective replay", { exact: true })).toHaveCount(0);
   });
@@ -78,7 +75,7 @@ test.describe("picks slate (/)", () => {
     await page.goto("/");
 
     // Edge sits in parentheses after the model's number; no separate "Edge" label.
-    await expect(page.getByText("(+5.1)").first()).toBeVisible();
+    await expect(page.getByText("(5.1)").first()).toBeVisible();
     await expect(page.getByText(/^Edge \d/)).toHaveCount(0);
     // Each bet cell: the pick with its sportsbook, then one line with the model's number and the edge.
     const appState = page.locator("#game-1");
@@ -93,23 +90,25 @@ test.describe("picks slate (/)", () => {
     // A game with no recorded source shows the model's number but no invented book.
     const oklahoma = page.locator("#game-9");
     await expect(oklahoma).toContainText("Oklahoma +4.0");
-    await expect(oklahoma).toContainText(/Model: [+-]?\d/);
+    // The model has Oklahoma winning against a market that favors Texas, so its model line names the team.
+    await expect(oklahoma).toContainText("Model: Oklahoma -2.0");
     await expect(oklahoma.getByText(/DraftKings|FanDuel|Bovada|BetMGM|ESPN Bet|Caesars/)).toHaveCount(0);
     // The per-card edge footnote and the Game details block are gone.
     await expect(page.getByText("The number in parentheses after the model is its edge")).toHaveCount(0);
     await expect(page.getByText("Game details", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/wins by more than|loses by under|total above|total below|best line:/)).toHaveCount(0);
     // The old Market / Model grid is gone from the cards.
-    await expect(page.getByText("Market", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("Model", { exact: true })).toHaveCount(0);
+    await expect(page.locator("main").getByText("Market", { exact: true })).toHaveCount(0);
+    await expect(page.locator("main").getByText("Model", { exact: true })).toHaveCount(0);
   });
 
   test("top of the page shows the season record, centered with no break-even bars", async ({ page }) => {
     await page.goto("/");
 
     const record = page.getByRole("region", { name: "Record" });
-    await expect(record.getByRole("heading", { name: "Season record" })).toBeVisible();
-    await expect(record.getByText("93–103–3")).toBeVisible();
+    await expect(record.getByRole("heading", { name: "Season record before Week 5" })).toBeVisible();
+    await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
+    await expect(record.getByText("93–103–3", { exact: true })).toBeVisible();
     await expect(record.getByText("47.4%")).toBeVisible();
 
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
@@ -132,6 +131,14 @@ test.describe("picks slate (/)", () => {
     await page.getByPlaceholder("Filter by team…").fill("");
     await expect(games).toHaveCount(10);
 
+    const confFilter = page.getByTestId("conference-filter");
+    await expect(confFilter).toBeVisible();
+    await confFilter.selectOption("Sun Belt");
+    await expect(games).toHaveCount(1);
+    await expect(games.first()).toHaveAttribute("id", "game-1");
+    await confFilter.selectOption("all");
+    await expect(games).toHaveCount(10);
+
     await page.getByRole("button", { name: "List", exact: true }).click();
     await expect(page.getByRole("button", { name: "List", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("button", { name: "Grid", exact: true })).toHaveAttribute("aria-pressed", "false");
@@ -146,7 +153,7 @@ test.describe("picks slate (/)", () => {
   });
 });
 
-for (const path of ["/", "/results"]) {
+for (const path of ["/", "/?week=4"]) {
   test(`${path}: no home tag, and every game lists away on top and home on the bottom`, async ({ page }) => {
     await page.goto(path);
 
@@ -194,8 +201,8 @@ test.describe("game location next to the time", () => {
     await expect(shown(page.locator("#game-8").getByText("· Neutral"))).toBeVisible();
   });
 
-  test("results cards show the venue beside the date", async ({ page }) => {
-    await page.goto("/results");
+  test("graded cards show the venue beside the date", async ({ page }) => {
+    await page.goto("/?week=4");
 
     await expect(shown(page.locator("#game-101").getByText("· Ann Arbor, MI"))).toBeVisible();
     await expect(shown(page.locator("#game-107").getByText("· Tallahassee, FL"))).toBeVisible();
@@ -210,32 +217,31 @@ test.describe("game location next to the time", () => {
   });
 });
 
-test.describe("long team names keep the full pick visible on a small phone", () => {
-  test("picks: Appalachian State -2.5 is not truncated at 360px", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto("/");
-    await expect(page.locator("#game-1").getByText("Appalachian State -2.5", { exact: true })).toBeVisible();
-    const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
-      els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
-    );
-    expect(clipped).toEqual([]);
-    expect(await fits(page)).toBe(true);
-  });
+test.describe("long team names shorten to the abbreviation in phone picks", () => {
+  for (const { path, gameId, full, phone } of [
+    { path: "/", gameId: 1, full: "Appalachian State -2.5", phone: "APP -2.5" },
+    { path: "/?week=4", gameId: 108, full: "Southern Mississippi +4.0", phone: "USM +4.0" },
+  ]) {
+    test(`${path}: ${phone} at 360px, ${full} at 1280px`, async ({ page }) => {
+      await page.setViewportSize({ width: 360, height: 800 });
+      await page.goto(path);
+      const card = page.locator(`#game-${gameId}`);
+      await expect(card.getByText(phone, { exact: true }).first()).toBeVisible();
+      await expect(card.getByText(full, { exact: true }).first()).toBeHidden();
+      const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
+        els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
+      );
+      expect(clipped).toEqual([]);
+      expect(await fits(page)).toBe(true);
 
-  test("results: Southern Mississippi +4.0 is not truncated at 360px", async ({ page }) => {
-    await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto("/results");
-    await expect(page.locator("#game-108").getByText("Southern Mississippi +4.0", { exact: true })).toBeVisible();
-    const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
-      els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
-    );
-    expect(clipped).toEqual([]);
-    expect(await fits(page)).toBe(true);
-  });
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await expect(card.getByText(full, { exact: true }).first()).toBeVisible();
+    });
+  }
 });
 
 test("footer carries the team-logo trademark attribution", async ({ page }) => {
-  for (const path of ["/", "/results"]) {
+  for (const path of ["/", "/?week=4"]) {
     await page.goto(path);
     await expect(
       page.getByText("Team names and logos are trademarks of their respective schools and owners, shown for identification only."),
@@ -243,32 +249,36 @@ test("footer carries the team-logo trademark attribution", async ({ page }) => {
   }
 });
 
-test.describe("results slate (/results)", () => {
-  test("shows the week record, highlights and the full slate", async ({ page }) => {
-    await page.goto("/results");
+test.describe("final week (/?week=4)", () => {
+  test("shows the phase, both records, highlights and the full slate", async ({ page }) => {
+    await page.goto("/?week=4");
 
+    await expect(page.getByRole("heading", { name: "Week 4", exact: true })).toBeVisible();
+    await expect(page.getByTestId("week-phase")).toHaveText("Final");
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Week 4 record" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Highlights" })).toBeVisible();
+    // A finished week has no upcoming leans to rank.
+    await expect(page.getByRole("region", { name: "Biggest edges" })).toHaveCount(0);
     await expect(page.getByRole("status")).toHaveText("Showing 9 of 9 games");
-    await expect(page.getByRole("link", { name: "Results" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Games" })).toHaveAttribute("aria-current", "page");
   });
 
   test("status line shows the scored run with a retrospective flag", async ({ page }) => {
-    await page.goto("/results");
+    await page.goto("/?week=4");
 
-    await expect(page.getByText("Scored")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Scored")).toBeVisible();
     await expect(page.getByText("Retrospective replay", { exact: true })).toBeVisible();
   });
 
-  test("weekly record sits beside the season record; result cards show the graded pick and the model's number", async ({ page }) => {
-    await page.goto("/results");
+  test("the week record sits beside the season record; graded cards show the pick and the model's number", async ({ page }) => {
+    await page.goto("/?week=4");
 
     const record = page.getByRole("region", { name: "Record" });
-    // Below md the season block sits behind "Season context"; from md it shows beside the week.
-    if ((page.viewportSize()?.width ?? 1280) < 768) await shown(record.getByText("Season context", { exact: true })).click();
     await expect(shown(record.getByText("this slate · small sample"))).toBeVisible();
     await expect(shown(record.getByText("4–3–1"))).toBeVisible();
+    await expect(record.getByText("93–103–3", { exact: true })).toBeVisible();
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
     await expect(record.getByText(/Live/)).toHaveCount(0);
     const ohioState = page.locator("li[id^='game-']").filter({ hasText: "Ohio State" }).first();
@@ -277,8 +287,8 @@ test.describe("results slate (/results)", () => {
     await expect(ohioState.getByText("Win", { exact: true }).first()).toBeVisible();
   });
 
-  test("team search narrows the results slate and cards show a graded badge", async ({ page }) => {
-    await page.goto("/results");
+  test("team search narrows the slate and cards show a graded badge", async ({ page }) => {
+    await page.goto("/?week=4");
 
     const count = async () => {
       const text = (await page.getByText(/Showing \d+ of 9 games/).innerText()) ?? "";
@@ -294,7 +304,7 @@ test.describe("results slate (/results)", () => {
   });
 
   test("sort by biggest miss, list view and phone width all fit", async ({ page }) => {
-    await page.goto("/results");
+    await page.goto("/?week=4");
     await page.locator("#slate-sort").selectOption("worstResult");
     await page.getByRole("button", { name: "List", exact: true }).click();
     expect(await fits(page)).toBe(true);
@@ -302,6 +312,54 @@ test.describe("results slate (/results)", () => {
     await page.setViewportSize({ width: 390, height: 800 });
     await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeHidden();
     await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "grid");
+    expect(await fits(page)).toBe(true);
+  });
+
+  test("week navigation moves between the final, upcoming and in-progress weeks", async ({ page }) => {
+    await page.goto("/?week=4");
+    await page.locator("#week-select").selectOption("5");
+    await expect(page).toHaveURL(/week=5/);
+    await expect(page.getByTestId("week-phase")).toHaveText("Upcoming");
+    await page.locator("#week-select").selectOption("6");
+    await expect(page.getByTestId("week-phase")).toHaveText("In progress");
+  });
+});
+
+test.describe("in-progress week (/?week=6)", () => {
+  test("shows leans for unplayed games and results for finished ones", async ({ page }) => {
+    await page.goto("/?week=6");
+
+    await expect(page.getByTestId("week-phase")).toHaveText("In progress");
+    await expect(page.getByRole("region", { name: "Biggest edges" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Highlights" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Week 6 record" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Season record before Week 6" })).toBeVisible();
+    await expect(page.locator("li[id^='game-']")).toHaveCount(4);
+
+    // Finished games carry a graded badge and a Final marker; unplayed ones show neither.
+    const finished = page.locator("#game-201");
+    await expect(finished).toContainText("Final");
+    await expect(finished.getByText("Win", { exact: true }).first()).toBeVisible();
+    const upcoming = page.locator("#game-203");
+    await expect(upcoming).not.toContainText("Final");
+    await expect(upcoming.getByText(/^(Win|Loss|Push)$/)).toHaveCount(0);
+    await expect(upcoming).toContainText(/Model: [+-]?\d/);
+  });
+
+  test("the week record counts only the graded games, and result sorts are offered", async ({ page }) => {
+    await page.goto("/?week=6");
+
+    const record = page.getByRole("region", { name: "Record" });
+    // Both finished games covered the spread.
+    await expect(shown(record.getByText("2–0–0"))).toBeVisible();
+    await expect(page.locator("#slate-sort option[value='worstResult']")).toHaveCount(1);
+    await page.locator("#slate-sort").selectOption("bestResult");
+    await expect(page.locator("li[id^='game-']")).toHaveCount(4);
+  });
+
+  test("fits a 390px phone without horizontal scroll", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.goto("/?week=6");
     expect(await fits(page)).toBe(true);
   });
 });

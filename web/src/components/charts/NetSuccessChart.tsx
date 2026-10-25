@@ -1,6 +1,8 @@
 "use client";
 
-import { chartColor, niceTicks, type NetSuccessBar } from "@/lib/charts";
+import { useEffect, useRef, useState } from "react";
+import { chartColor, netSuccessDomain, niceTicks, type NetSuccessBar } from "@/lib/charts";
+import { Card } from "@/components/ui/Card";
 import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import type { MarkerState } from "./ScatterChart";
 import { TeamMark } from "./TeamMark";
@@ -24,37 +26,50 @@ function fillFor(bar: NetSuccessBar): string {
   return chartColor(teamColor(bar.winner), teamAltColor(bar.winner), FALLBACK_TEAM_COLOR);
 }
 
-/** Smallest symmetric half-range covering every bar, with room for the tip logos. */
-function halfRange(bars: readonly NetSuccessBar[]): number {
-  return Math.max(0.05, ...bars.map((b) => Math.abs(b.value))) * 1.18;
-}
-
 export function NetSuccessChart({
   bars,
   stateOf,
   describe,
   orientation = "vertical",
-  width,
-  height,
+  width: requestedWidth,
+  height: requestedHeight,
   interactive = true,
   label,
 }: NetSuccessChartProps) {
-  const ordered = bars.filter((b) => stateOf(b) !== "dim").map((b) => String(b.gameId));
-  const { selected, register, handlers } = useChartSelection(ordered);
-  const half = halfRange(bars);
-  const tipBar = interactive && selected ? bars.find((b) => String(b.gameId) === selected) : undefined;
+  const root = useRef<HTMLDivElement>(null);
+  const [renderedWidth, setRenderedWidth] = useState<number | null>(null);
   const horizontal = orientation === "horizontal";
-
-  const margin = horizontal ? { top: 22, right: 34, bottom: 22, left: 76 } : { top: 10, right: 12, bottom: 78, left: 56 };
+  useEffect(() => {
+    if (!interactive || !horizontal || !root.current) return;
+    const observer = new ResizeObserver(([entry]) => setRenderedWidth(entry.contentRect.width));
+    observer.observe(root.current);
+    return () => observer.disconnect();
+  }, [horizontal, interactive]);
+  // Match the viewBox to CSS pixels for readable text and >=44px row targets.
+  const width = interactive && horizontal ? renderedWidth ?? requestedWidth : requestedWidth;
+  const height = interactive && horizontal ? 56 + 48 * bars.length : requestedHeight;
+  const ordered = bars.filter((b) => stateOf(b) !== "dim").map((b) => String(b.gameId));
+  const { selected, register, handlers, setSelected } = useChartSelection(ordered);
+  const tipBar = interactive && selected ? bars.find((b) => String(b.gameId) === selected) : undefined;
+  const margin = horizontal ? { top: 28, right: 20, bottom: 28, left: 100 } : { top: 10, right: 12, bottom: 78, left: 56 };
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   const span = horizontal ? plot.right - plot.left : plot.bottom - plot.top;
-  const along = (value: number) =>
-    horizontal ? plot.left + ((value + half) / (2 * half)) * span : plot.bottom - ((value + half) / (2 * half)) * span;
   const count = Math.max(1, bars.length);
   const band = (horizontal ? plot.bottom - plot.top : plot.right - plot.left) / count;
   const thick = Math.max(2, Math.min(horizontal ? 18 : 34, band * 0.64));
   const logo = Math.max(10, Math.min(LOGO, horizontal ? band * 0.9 : band * 0.95));
-  const ticks = niceTicks(-half, half, 8);
+  // The winner's logo sits 0.6 logos past the bar tip; the loser's just across zero.
+  const [domainLow, domainHigh] = netSuccessDomain(
+    bars.map((b) => b.value),
+    span,
+    logo * 1.1 + 4,
+    logo + 10,
+  );
+  const along = (value: number) => {
+    const fraction = (value - domainLow) / (domainHigh - domainLow);
+    return horizontal ? plot.left + fraction * span : plot.bottom - fraction * span;
+  };
+  const ticks = niceTicks(domainLow, domainHigh, horizontal && interactive ? 3 : 8);
   const zero = along(0);
   // Dense slates (about 50+ games) read best as upright columns sized to the band.
   const verticalLabels = band < 20;
@@ -76,7 +91,13 @@ export function NetSuccessChart({
   }
 
   return (
-    <div className="relative" data-testid="net-success-chart" data-orientation={orientation}>
+    <div ref={root} className="relative" data-testid="net-success-chart" data-orientation={orientation}>
+      {tipBar && horizontal && interactive && (
+        <Card padding="sm" role="status" data-testid="chart-selected-details" className="sticky top-2 z-10 mb-3 text-sm text-ink">
+          <p>{describe(tipBar)}</p>
+          <button type="button" className="min-h-11 px-3 font-semibold text-accent" onClick={() => setSelected(null)}>Clear selection</button>
+        </Card>
+      )}
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
         <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-card)" stroke="var(--line)" />
         {/* Below zero the winner had the lower success rate. */}
@@ -92,7 +113,7 @@ export function NetSuccessChart({
             {horizontal ? (
               <>
                 <line x1={along(tick)} x2={along(tick)} y1={plot.top} y2={plot.bottom} stroke="var(--line)" strokeWidth={0.6} />
-                <text x={along(tick)} y={plot.top - 8} textAnchor="middle" fontSize={11} fill="var(--ink-muted)">
+                <text x={along(tick)} y={plot.top - 8} textAnchor="middle" fontSize={horizontal && interactive ? 12 : 11} fill="var(--ink-muted)">
                   {(tick * 100).toFixed(0)}
                 </text>
               </>
@@ -117,7 +138,7 @@ export function NetSuccessChart({
           </text>
         )}
         {horizontal && (
-          <text x={(plot.left + plot.right) / 2} y={height - 4} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--ink)">
+          <text x={(plot.left + plot.right) / 2} y={height - 4} textAnchor="middle" fontSize={interactive ? 12 : 11} fontWeight={600} fill="var(--ink)">
             Net success rate (pct)
           </text>
         )}
@@ -159,6 +180,7 @@ export function NetSuccessChart({
                   strokeWidth={2}
                 />
               )}
+              {focusable && horizontal && <rect x={0} y={c - band / 2} width={width} height={band} fill="transparent" data-row-target />}
               {state === "searched" && (
                 <rect
                   x={horizontal ? plot.left : c - band / 2}
@@ -183,7 +205,7 @@ export function NetSuccessChart({
               <TeamMark team={bar.winner} cx={winnerAt.cx} cy={winnerAt.cy} size={logo} />
               <TeamMark team={bar.loser} cx={loserAt.cx} cy={loserAt.cy} size={logo} />
               {horizontal ? (
-                <text x={plot.left - 6} y={c} textAnchor="end" dominantBaseline="central" fontSize={Math.min(11, band * 0.7)} fill="var(--ink)">
+                <text x={plot.left - 6} y={c} textAnchor="end" dominantBaseline="central" fontSize={interactive ? 12 : Math.min(11, band * 0.7)} fill="var(--ink)">
                   {bar.label}
                 </text>
               ) : (
@@ -201,7 +223,7 @@ export function NetSuccessChart({
           );
         })}
       </svg>
-      {tipBar && (
+      {tipBar && !horizontal && (
         <div
           role="status"
           data-testid="chart-tooltip"

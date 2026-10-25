@@ -323,7 +323,7 @@ def main() -> None:
         season_type=args.season_type,
         data_root=args.data_root,
         classification="fbs",
-        only_week=None,  # set via CLI in scripts/cli.py ingest if provided
+        only_week=None,  # set by the caller when a single week is needed
     )
     ingester.workers = max(1, int(args.workers))
     ingester.run()

@@ -4,7 +4,7 @@
 
 - **Worked On:** Implemented the strict/reconstructed V4 feature-reference boundary and feature-prefix tournament provenance.
 - **Outcome:** A strict immutable Preview team reference was created; source-family eligibility, reconstructed isolation, and frozen selected-feature variants are now enforced in code.
-- **Plan Contract:** [Early-Season V4 Modeling and Game-4 Handoff](../../../../docs/plans/2026-08-17/early-season-v4-modeling.md)
+- **Plan Contract:** [Early-Season V4 Modeling and Game-4 Handoff](../../../../docs/archive/plans/2026-08/2026-08-17/early-season-v4-modeling.md)
 - **Approval / Status:** User explicitly authorized the V4 reference plan on 2026-08-17. Contract remains `In Progress` because the Preview tournament could not be executed.
 - **Blocker:** The Codex environment rejected further escalated commands at its usage limit. This blocked V5 Gold assembly and full-suite validation, not source-data validity.
 

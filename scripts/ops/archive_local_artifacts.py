@@ -20,8 +20,8 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[2]
 PREFIX = "artifacts/research/local-artifact-archive-v1"
-MANIFEST = ROOT / "docs/reports/2026-09-27-local-artifact-archive-manifest.json"
-JOURNAL = ROOT / "docs/reports/2026-09-27-local-artifact-prune-journal.jsonl"
+MANIFEST = ROOT / "docs/archive/reports/2026-09-27-local-artifact-archive-manifest.json"
+JOURNAL = ROOT / "docs/archive/reports/2026-09-27-local-artifact-prune-journal.jsonl"
 PART_SIZE = 16 * 1024 * 1024
 CHUNK_SIZE = 1024 * 1024
 TRAINING = (

@@ -62,6 +62,12 @@ export function isAllowedSeason(season: number): boolean {
   return ALLOWED_SEASONS.includes(season);
 }
 
+/** Resolves a `?season=` value to an allowed season, falling back to the publication season. */
+export function resolveSeasonParam(raw: string | undefined, fallback: number): number {
+  const requested = raw ? Number(raw) : fallback;
+  return isAllowedSeason(requested) ? requested : fallback;
+}
+
 export const publicationScope = Object.freeze({
   season: parseSeason(process.env.CFB_PUBLICATION_SEASON),
   // Explicit public selections in Neon govern available weeks. The retired

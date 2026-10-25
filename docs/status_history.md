@@ -34,7 +34,7 @@ above and the latest session log for current-week operations.
   before kickoff. The v4 feature
   chain is intentionally unchanged. The old rebuild is a superseded root-cause
   record; the independent feature-v5 diagnostic resumes under
-  `docs/plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md`.
+  `docs/archive/v5-contracts/2026-09-13/01-v4-feature-v5-diagnostic-closure.md`.
 - 🧭 **Historical ratings evidence:** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
   `tournaments_permitted: true`. The fresh, code-bound Preview admission at
@@ -50,7 +50,7 @@ above and the latest session log for current-week operations.
   constant coaching features, and incorrect roster continuity. The original
   Phase 4B retained manifest is prohibited as a new forecasting parent. Repair
   v2 is independently verified; Phase 3 v2 is certified in Preview under
-  `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
+  `docs/archive/plans/2026-09/2026-09-10/phase3-v2-compact-tournament-state.md` (run
   `phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
   independently verified and idempotently rerun on 2026-09-11).
   It is benchmark evidence. **V5 checkpoint (2026-09-22):** the historical lane
@@ -70,7 +70,7 @@ above and the latest session log for current-week operations.
   `possession-v1-rating-replay-20260922-fcaa571`; the Week 4 07/08 refresh
   and Week 5 live forecast were verified on 2026-09-27.
   [V5 model development is complete and accepted](modeling/v5_status.md).
-  The Week 5 candidate was authorized and published in production (`session_logs/2026-09-27/06.md`).
+  The Week 5 candidate was authorized and published in production (`session_logs/archive/daily/2026-09-27/06.md`).
   Contract 06
   continues prospective monitoring; six slates are not a prelaunch condition.
   Conditional results remain `conditional_historical_results_only`.

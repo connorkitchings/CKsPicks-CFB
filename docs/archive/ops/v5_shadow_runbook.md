@@ -2,7 +2,7 @@
 
 > **Archived 2026-10-15:** historical procedures and evidence only. Current operations use the [weekly operational runbook](../../ops/weekly_runbook.md); live state is in [Current Status](../../status.md).
 
-> **Current policy:** [V5 model development is complete](../../modeling/v5_status.md). The Week 4 refresh below gates a current forecast, not model completion. Contract 06 freezes and outcome reports continue as monitoring; six qualifying slates are not a site cutover prerequisite. The [cutover contract](../../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) requires Preview serving rehearsal and V4 rollback proof before a separate activation decision.
+> **Current policy:** [V5 model development is complete](../../modeling/v5_status.md). The Week 4 refresh below gates a current forecast, not model completion. Contract 06 freezes and outcome reports continue as monitoring; six qualifying slates are not a site cutover prerequisite. The [cutover contract](../plans/2026-09/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) requires Preview serving rehearsal and V4 rollback proof before a separate activation decision.
 
 > **Status:** Active (V5-05C + live adapter, 2026-09-22) · **Environment:**
 > Preview R2 only · **Production authority:** V4 is unchanged; nothing here

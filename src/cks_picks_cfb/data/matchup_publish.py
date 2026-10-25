@@ -181,8 +181,7 @@ SIX_A_STATES_OBSERVATIONS = "states_2026/observations.parquet"
 
 
 def _read_6a_root(storage: Any, run_id: str, root_sha256: str) -> tuple[dict, str]:
-    """The pinned published 6A root manifest, by raw sha256 (mirrors
-    ``rebuild.published.open_pinned_run`` with ``PublishError`` failures)."""
+    """The pinned published 6A root manifest, by raw sha256."""
     uri = f"{SIX_A_NAMESPACE}{run_id}/root-manifest.json"
     raw = storage.read_bytes(uri)
     if _sha(raw) != root_sha256:

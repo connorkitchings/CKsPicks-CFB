@@ -5,7 +5,7 @@
 - **Worked On:** Approved early-season modeling and branch-consolidation contract.
 - **Outcome:** Games 1–3 result-only evaluation is now implemented; historical
   odds remain optional betting research rather than a model-readiness blocker.
-- **Plan Contract:** [Games 1–3 Modeling](../../../../docs/plans/2026-08-15/games-1-3-modeling.md)
+- **Plan Contract:** [Games 1–3 Modeling](../../../../docs/archive/plans/2026-08/2026-08-15/games-1-3-modeling.md)
 - **Approval / Status:** User explicitly authorized implementation on 2026-08-15.
 - **Blockers:** Private v3 prediction generation passed, but full Preview
   preflight is blocked by missing isolated-Neon pipeline/publication tables,
@@ -54,7 +54,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-15/games-1-3-modeling.md` — approved implementation contract.
+- `docs/archive/plans/2026-08/2026-08-15/games-1-3-modeling.md` — approved implementation contract.
 - `session_logs/archive/daily/2026-08-15/05-games-1-3-modeling.md` — implementation log.
 - Core implementation: `src/cks_picks_cfb/{data,features,models}/`,
   `src/cks_picks_cfb/model_bundle_v3.py`, and pipeline/config/contracts/web

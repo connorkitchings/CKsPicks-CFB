@@ -5,7 +5,7 @@
 - **Worked On:** Implementing the approved Preview-only reliability amendment
   for successor R1 CFBD play capture.
 - **Plan Contract:**
-  `docs/plans/2026-08-27/r1-play-capture-reliability-hardening.md`
+  `docs/archive/plans/2026-08/2026-08-27/r1-play-capture-reliability-hardening.md`
 - **Approval / Status:** User explicitly authorized implementation in Codex on
   2026-08-27; implementation is in progress.
 - **Blockers:** Full R1 capture remains paused until the new weekly capture-set

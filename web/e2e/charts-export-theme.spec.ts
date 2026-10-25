@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 for (const theme of ["light", "dark"] as const) {
   test(`PNG keeps the visible Alabama logo variant in ${theme} mode`, async ({ page }, testInfo) => {
     await page.emulateMedia({ colorScheme: theme });
-    await page.goto("/charts?chart=adjusted&week=3&team=Alabama");
+    await page.goto("/stats?chart=adjusted&week=3&team=Alabama");
     await expect(page.getByTestId("scatter-chart")).toBeVisible();
     await page.waitForLoadState("networkidle");
     await page.evaluate(() => {

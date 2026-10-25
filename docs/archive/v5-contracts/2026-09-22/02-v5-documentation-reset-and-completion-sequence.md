@@ -1,12 +1,12 @@
 # V5 Documentation Authority Reset and Completion Sequence
 
-> **Superseded sequencing (2026-09-22):** Tasks 1–2 below document completed work; the six-slate prelaunch and conditional Phase 7 sequence is replaced by the [current V5 completion and cutover contract](../../../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md). The original text remains as a historical execution record.
+> **Superseded sequencing (2026-09-22):** Tasks 1–2 below document completed work; the six-slate prelaunch and conditional Phase 7 sequence is replaced by the [current V5 completion and cutover contract](../../plans/2026-09/2026-09-22/04-v5-authority-simplification-and-site-cutover.md). The original text remains as a historical execution record.
 
 - **Status:** Superseded
 - **Created:** 2026-09-22
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact plan on 2026-09-22.
-- **Implementation log:** `session_logs/2026-09-22/07-v5-documentation-authority-reset-and-08-rating-replay.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-22/07-v5-documentation-authority-reset-and-08-rating-replay.md`
 - **Commit policy:** Separate documentation and certified-evidence checkpoints; user explicitly authorized Git add and commit.
 
 ## Goal
@@ -67,8 +67,8 @@ every stage.
   live-readiness report.
 - Contract 06 emits an evidence ledger, slate reports, a market appendix, and
   a final recommendation.
-- [Contract 08](../../../plans/2026-09-18/08-v5-2026-rating-state-replay.md),
-  [Contract 09](../../../plans/2026-09-18/09-v5-2026-forecast-and-readiness.md), and
+- [Contract 08](../../plans/2026-09/2026-09-18/08-v5-2026-rating-state-replay.md),
+  [Contract 09](../../plans/2026-09/2026-09-18/09-v5-2026-forecast-and-readiness.md), and
   [Contract 06](../../../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md)
   remain authoritative.
 

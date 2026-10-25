@@ -4,7 +4,7 @@
 
 - **Worked On:** Formalized the approved rating-centric implementation roadmap and began the detailed Phase 1 plan.
 - **Outcome:** The active strategic roadmap now uses gated Phases 0–7; the approved parent roadmap is persisted, and the Phase 1 measurement/adjustment contract is approved for a future, separate Terra implementation task.
-- **Plan Contract:** `docs/plans/2026-08-24/rating-centric-successor-high-level-roadmap.md`; approved Phase 1 contract at `docs/plans/2026-08-24/phase1-rating-measurement-foundation.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-24/rating-centric-successor-high-level-roadmap.md`; approved Phase 1 contract at `docs/archive/plans/2026-08/2026-08-24/phase1-rating-measurement-foundation.md`
 - **Approval / Status:** Parent roadmap and Phase 1 documentation contract explicitly approved by the user on 2026-08-24. No Phase 1 implementation has begun.
 - **Blockers:** None for documentation finalization. Runtime work remains intentionally deferred.
 - **Next:** Open a fresh Terra task with the exact Phase 1 contract when implementation is authorized.
@@ -30,8 +30,8 @@
 ## Files Modified
 
 - `docs/planning/roadmap.md` — formalized Phase 0–7 sequence, execution protocol, and contract queue.
-- `docs/plans/2026-08-24/rating-centric-successor-high-level-roadmap.md` — approved high-level governance contract.
-- `docs/plans/2026-08-24/phase1-rating-measurement-foundation.md` — Approved Phase 1 implementation contract; no implementation executed.
+- `docs/archive/plans/2026-08/2026-08-24/rating-centric-successor-high-level-roadmap.md` — approved high-level governance contract.
+- `docs/archive/plans/2026-08/2026-08-24/phase1-rating-measurement-foundation.md` — Approved Phase 1 implementation contract; no implementation executed.
 - `docs/modeling/measurement_catalog.md` — frozen Phase 1 measurement policy and Phase 2 handoff rule.
 - `docs/modeling/rating_system_requirements.md` — Phase 1 planning boundary and research-isolation requirements.
 - `session_logs/archive/daily/2026-08-24/01-rating-successor-roadmap-and-phase1-planning.md` — planning handoff.

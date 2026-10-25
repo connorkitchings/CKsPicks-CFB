@@ -9,7 +9,7 @@
   omissions and data conflicts remain blocking. The fresh run completed all
   source capture but stopped at missing executable byplay-schema registration.
 - **Plan Contract:**
-  `docs/plans/2026-08-28/r1-manifest-declared-play-coverage-remediation.md`
+  `docs/archive/plans/2026-08/2026-08-28/r1-manifest-declared-play-coverage-remediation.md`
 - **Approval / Status:** User approved implementation in Codex on 2026-08-28;
   contract remains `In Progress` until the fresh R1 run and exact rerun finish.
 - **Blockers:** `byplay/byplay_v1` has no executable schema registration. R2

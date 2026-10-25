@@ -8,7 +8,7 @@
   sets, run a side-effect-free preflight, materialize authenticated state and
   prediction artifacts, score stabilized outcomes, and audit a single
   six-slate lane. No live 2026 evidence was created.
-- **Plan Contract:** `docs/plans/2026-08-26/phase5-protected-prospective-evidence.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-26/phase5-protected-prospective-evidence.md`
 - **Approval / Status:** User explicitly authorized implementation on
   2026-08-26. Contract remains `In Progress` while the six-slate evidence lane
   is collected.

@@ -4,9 +4,15 @@ import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Header";
 import { MatchupHero } from "@/components/matchup/MatchupHero";
 import { getMatchupData } from "@/lib/matchup";
+import { parseGameId } from "@/lib/matchup-id";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
+import { pageNow, type SlateSearchParams } from "@/lib/slate-page";
 import { publicationScope } from "@/lib/publication";
+import { teamAbbr } from "@/lib/team-logos";
+import { teamHref } from "@/lib/team-routes";
+import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import { UnitMatchups } from "@/components/matchup/UnitMatchups";
+import { Card } from "@/components/ui/Card";
 
 // Revalidate every 5 minutes (ISR)
 export const revalidate = 300;
@@ -18,24 +24,23 @@ export async function generateMetadata({
 }: {
   params: Promise<{ gameId: string }>;
 }): Promise<Metadata> {
-  const id = Number((await params).gameId);
-  if (!isMatchupEnabled() || !Number.isInteger(id) || id <= 0) return noindex;
+  const id = parseGameId((await params).gameId);
+  if (!isMatchupEnabled() || id === null) return noindex;
   const matchup = await getMatchupData(id).catch(() => null);
   return matchup ? { ...noindex, title: `${matchup.awayTeam} at ${matchup.homeTeam} · Matchup` } : noindex;
 }
 
 export default async function MatchupPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ gameId: string }>;
+  searchParams: SlateSearchParams;
 }) {
   if (!isMatchupEnabled()) notFound();
   const { gameId } = await params;
-  const parsedGameId = Number(gameId);
-
-  if (!Number.isInteger(parsedGameId) || parsedGameId <= 0) {
-    notFound();
-  }
+  const parsedGameId = parseGameId(gameId);
+  if (parsedGameId === null) notFound();
 
   // A database failure surfaces as an error page; only a genuinely unknown or
   // unpublished game is a 404.
@@ -50,19 +55,25 @@ export default async function MatchupPage({
         updatedAt={matchup.updatedAt}
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
-        wide
+        width="wide"
+        back={{
+          href: `/?week=${matchup.week}`,
+          label: `Week ${matchup.week} games`,
+          // Abbreviated so it fits beside the back and menu buttons; the page's h1 carries the full names.
+          title: `${teamAbbr(matchup.awayTeam)} at ${teamAbbr(matchup.homeTeam)}`,
+        }}
       />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
+      <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-5xl flex-1 px-4 sm:space-y-6 sm:py-6 ${PHONE_PAGE_RHYTHM}`}>
         {/* Hero Section */}
-        <MatchupHero matchup={matchup} />
+        <MatchupHero matchup={matchup} now={pageNow(await searchParams)} />
 
         {matchup.lineageStatus !== "ready" ? (
-          <section aria-label="Team stats" role="status" className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted shadow-sm">
+          <Card as="section" role="status" aria-label="Team stats" padding="none" className="p-6 text-sm text-ink-muted">
             {matchup.lineageStatus === "updating"
               ? "Matchup data is updating. Model-derived ratings and statistics are temporarily hidden."
               : "Matchup data provenance is unavailable. Model-derived ratings and statistics are hidden."}
-          </section>
+          </Card>
         ) : matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
             <UnitMatchups
@@ -92,27 +103,38 @@ export default async function MatchupPage({
             </section>
           </section>
         ) : (
-          <section
+          <Card
+            as="section"
             aria-label="Team stats"
-            className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted shadow-sm"
+            padding="none"
+            className="p-6 text-sm text-ink-muted"
           >
             {matchup.statsUnavailable
               ? "Team stats are temporarily unavailable."
               : "Team stats are not published for this game yet."}
-          </section>
+          </Card>
         )}
 
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href={`/matchup?week=${matchup.week}`}
+            href={`/?week=${matchup.week}`}
             className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent-ink"
           >
-            All Week {matchup.week} matchups
+            All Week {matchup.week} games
           </Link>
+          {[matchup.awayTeam, matchup.homeTeam].map((team) => (
+            <Link
+              key={team}
+              href={teamHref(team)}
+              className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-2 text-sm font-medium text-ink hover:border-accent hover:text-accent-ink"
+            >
+              {team} team page
+            </Link>
+          ))}
         </div>
       </main>
 
-      <Footer publicationMode={publicationScope.mode} wide />
+      <Footer publicationMode={publicationScope.mode} width="wide" />
     </div>
   );
 }

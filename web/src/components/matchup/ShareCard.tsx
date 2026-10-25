@@ -1,7 +1,9 @@
 import { forwardRef, type CSSProperties } from "react";
 import type { MatchupData } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
+import { spreadBetLabel } from "@/lib/betting-format";
 import { logoSrc, teamInitials } from "@/lib/team-logos";
+import { BRAND_FULL } from "@/lib/brand";
 import {
   groupUnitRows,
   hasMissingValue,
@@ -160,11 +162,18 @@ function Forecast({ matchup }: { matchup: MatchupData }) {
     color: C.faint,
     textAlign: "center",
   };
-  const betSpread = matchup.spreadLean
-    ? matchup.spreadLean === "home"
-      ? matchup.homeTeam
-      : matchup.awayTeam
-    : null;
+  const betSpread =
+    spreadBetLabel(
+      matchup.homeTeam,
+      matchup.awayTeam,
+      matchup.spreadLean,
+      matchup.marketSpreadLine,
+    ) ??
+    (matchup.spreadLean
+      ? matchup.spreadLean === "home"
+        ? matchup.homeTeam
+        : matchup.awayTeam
+      : null);
   return (
     <div
       style={{
@@ -386,13 +395,13 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", borderBottom: `1px solid ${C.line}`, paddingBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>CK&rsquo;s Picks</span>
+          <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>{BRAND_FULL}</span>
           <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: 1.4, textTransform: "uppercase", color: C.accent }}>
-            CFB · Week {matchup.week}
+            Week {matchup.week}
           </span>
         </div>
         <div style={{ fontSize: 16, color: C.muted }}>
-          {formatKickoff(matchup.startDate, "America/New_York")}
+          {formatKickoff(matchup.startDate)}
           {venue ? ` · ${venue}` : ""}
         </div>
       </div>

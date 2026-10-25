@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
+import { BRAND_MONOGRAM } from "@/lib/brand";
 
 /**
- * Programmatic favicon: "CK" monogram on a brand-blue field.
+ * Programmatic favicon: the brand monogram on a brand-blue field.
  * Consumed automatically by Next.js metadata conventions (served at /icon).
  */
 export const runtime = "nodejs";
@@ -20,13 +21,13 @@ export default function Icon() {
           justifyContent: "center",
           background: "#2563eb",
           color: "#ffffff",
-          fontSize: 18,
+          fontSize: 20,
           fontWeight: 800,
           letterSpacing: -1,
           fontFamily: "sans-serif",
         }}
       >
-        CK
+        {BRAND_MONOGRAM}
       </div>
     ),
     { ...size },

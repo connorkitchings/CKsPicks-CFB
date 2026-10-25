@@ -1,12 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CHART_REGISTRY, chartSubtitle, exportFilename, groupLabel, type ScatterConfig } from "@/lib/chart-config";
 import { domainFor, matchesConference, type ChartKind, type ScatterData, type ScatterPoint, type Side } from "@/lib/charts";
+import { chartSummary } from "@/components/ui/SummaryLine";
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, HighlightStatus, type SharedChartProps } from "./ChartFrame";
 import { ScatterChart } from "./ScatterChart";
+import { useIsPhone } from "@/lib/use-is-phone";
 
 const SCATTER_VIEW = { width: 1000, height: 640 };
+/** Phone portrait view: the viewBox follows the container width (1:1 scale, so text is true size) in a tall aspect. */
+const MOBILE_FALLBACK_WIDTH = 360;
+const MOBILE_ASPECT = 1.45;
+const mobileView = (width: number) => ({ width, height: Math.round(width * MOBILE_ASPECT) });
 
 export type ScatterViewProps = {
   shared: SharedChartProps;
@@ -22,11 +28,20 @@ export type ScatterViewProps = {
   /** Replaces the registry sentence when it depends on the metric. */
   description?: string;
   /** Note under the figure, e.g. the defense inversion. */
-  figureNote?: string;
 };
 
 /** A team scatter in the shared frame: national geometry, conference filter, highlight and export. */
-export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, figureNote, description }: ScatterViewProps) {
+export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, description }: ScatterViewProps) {
+  const mobile = useIsPhone();
+  const [fitNode, setFitNode] = useState<HTMLDivElement | null>(null);
+  const [fitWidth, setFitWidth] = useState(MOBILE_FALLBACK_WIDTH);
+  useEffect(() => {
+    if (!mobile || !fitNode) return;
+    const observer = new ResizeObserver(([entry]) => setFitWidth(Math.round(entry.contentRect.width) || MOBILE_FALLBACK_WIDTH));
+    observer.observe(fitNode);
+    return () => observer.disconnect();
+  }, [mobile, fitNode]);
+  const [detailsContainer, setDetailsContainer] = useState<HTMLDivElement | null>(null);
   const { season, week, roster, filter, highlight, onHighlight } = shared;
   const title = CHART_REGISTRY[kind].title;
   const subtitle = chartSubtitle(kind, season, week, side);
@@ -45,19 +60,23 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       xDomain={xDomain}
       yDomain={yDomain}
       onToggleHighlight={onHighlight}
+      highlight={highlight}
       average={data.average}
       invertX={data.invertX}
       invertY={data.invertY}
       xLabel={config.xLabel}
       yLabel={config.yLabel}
+      shortYLabel={config.shortYLabel}
       width={view.width}
       height={view.height}
       cornerCaptions={config.captions}
+      averageNames={config.averageNames}
       stateOf={(p) => (p.team === highlight ? "searched" : "active")}
       describe={describe}
       formatX={config.tickX}
       formatY={config.tickY}
       interactive={interactive}
+      detailsContainer={interactive ? detailsContainer : undefined}
       label={`${title}. ${subtitle}`}
     />
   );
@@ -76,6 +95,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       subtitle={subtitle}
       description={description ?? CHART_REGISTRY[kind].description}
       controls={controls}
+      summary={chartSummary({ side: CHART_REGISTRY[kind].controls.side ? side : null, week: { n: week, through: CHART_REGISTRY[kind].controls.week === "through-week" }, filter, metric: config.metricLabel })}
       highlightTeams={eligibleRoster}
       exportSpec={{
         filename: exportFilename(kind, season, week, side, exportMetric),
@@ -91,11 +111,17 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       hasData={points.length > 0}
       figure={
         <>
-          <p className="mb-2 text-xs text-ink-muted lg:hidden">Scroll chart horizontally to see every team.</p>
-          <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team scatter chart, horizontally scrollable" tabIndex={0} data-testid="scatter-scroll">
-            <div className="min-w-[760px] lg:min-w-0">{chart(SCATTER_VIEW, true)}</div>
-          </div>
-          {figureNote && <p className="mt-1 text-center text-[11px] text-ink-faint">{figureNote}</p>}
+          {mobile ? (
+            <div ref={setFitNode} data-testid="scatter-fit">{chart(mobileView(fitWidth), true)}</div>
+          ) : (
+            <>
+              <p className="mb-2 text-xs text-ink-muted lg:hidden">Scroll chart horizontally to see every team.</p>
+              <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team scatter chart, horizontally scrollable" tabIndex={0} data-testid="scatter-scroll">
+                <div className="min-w-[760px] lg:min-w-0">{chart(SCATTER_VIEW, true)}</div>
+              </div>
+            </>
+          )}
+          <div ref={setDetailsContainer} />
         </>
       }
       unavailable={unavailable}

@@ -1,6 +1,7 @@
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import type { Game } from "@/lib/queries";
-import { topResults, type GradedLean } from "@/lib/slate";
+import { phoneLean, topResults, type GradedLean } from "@/lib/slate";
+import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 
@@ -20,7 +21,7 @@ function Column({ title, rows, empty }: { title: string; rows: GradedLean[]; emp
               >
                 <ResultBadge grade={r.grade} />
                 <LeanMarker lean={r} />
-                <span className="min-w-0 truncate font-semibold text-ink">{r.pick}</span>
+                <span className="min-w-0 truncate font-semibold text-ink"><PhoneSwap full={r.pick} phone={phoneLean(r).pick} /></span>
                 <span className="shrink-0 text-xs tabular-nums text-ink-muted">({r.edge.toFixed(1)})</span>
                 <span className="hidden min-w-0 truncate text-xs text-ink-muted sm:inline">
                   {r.game.awayTeam} @ {r.game.homeTeam}
@@ -41,7 +42,7 @@ function Column({ title, rows, empty }: { title: string; rows: GradedLean[]; emp
 export function ResultHighlights({ games }: { games: Game[] }) {
   return (
     <section aria-label="Highlights">
-      <ResponsiveDisclosure className="rounded-xl border border-line bg-surface-card" title="Highlights" heading="Highlights">
+      <ResponsiveDisclosure title="Highlights" heading="Highlights">
         <div className="grid gap-4 md:grid-cols-2">
           <Column title="Best calls (largest edge that won)" rows={topResults(games, "win", 3)} empty="No wins graded." />
           <Column title="Biggest misses (largest edge that lost)" rows={topResults(games, "loss", 3)} empty="No losses graded." />

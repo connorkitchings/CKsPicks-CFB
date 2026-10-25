@@ -4,7 +4,7 @@
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, and explicitly authorized 10b execution.
-- **Implementation log:** `session_logs/2026-09-18/09-v5-10b-historical-audit.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-18/09-v5-10b-historical-audit.md`
 - **Commit policy:** Separate evidence and report checkpoints; user controls Git operations.
 
 ## Goal

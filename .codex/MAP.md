@@ -6,11 +6,10 @@ Use [current status](../docs/status.md) for live release/week state and the [wee
 
 | Path | Purpose |
 |---|---|
-| `AGENTS.md`, `CLAUDE.md` | Assistant instructions and redirect |
+| `AGENTS.md`, `CLAUDE.md` | Assistant instructions and pointer to them |
 | `.agent/CONTEXT.md`, `.agent/skills/CATALOG.md` | Architecture and session workflows |
 | `.codex/QUICKSTART.md` | Current command interfaces and guardrails |
-| `Makefile`, `pyproject.toml`, `uv.lock` | Pipeline tasks, Python dependencies and lock |
-| `package.json`, `nx.json`, `project.json`, `web/project.json` | Retained Nx toolchain, pending Phase 3 cleanup |
+| `Makefile`, `pyproject.toml`, `uv.lock` | Pipeline tasks (`make help`, `make check`), Python dependencies and lock |
 | `web/package.json` | Isolated Next.js npm toolchain |
 | `mkdocs.yml` | Documentation navigation |
 
@@ -41,20 +40,20 @@ Use `make season-revision`, `season-prepare`, `season-release` and `season-rollb
 | `scripts/research/`, `scripts/analysis/`, `conf/research/` | Research/analysis commands and configurations |
 | `conf/repository/compatibility_v1.yaml` | Machine-readable ownership and compatibility manifest |
 
-V4 training (`train.py`, `models/`, `model_bundle*.py`, Hydra config groups), old `ops/` publication/inference, and `rebuild/` 6A/6B tooling remain pending deferred Phase 3 cleanup. They are historical compatibility code, not current weekly commands. Research code stays.
+V4 code was removed on 2026-10-22; see the [V4 retrospective](../docs/modeling/v4_retrospective.md). Research code stays.
 
 ## Shared contracts and web
 
 | Path | Purpose |
 |---|---|
 | `contracts/schema.sql`, `schema.ts` | Canonical schema snapshot and Drizzle contract |
-| `contracts/migrations/` | Append-only upgrades through `0025_season_releases.sql` |
+| `contracts/migrations/` | Append-only upgrades through `0028_team_resume.sql` |
 | `contracts/teams.py`, `teams.ts`, `validation.py` | Shared team mappings and sync validation |
 | `src/cks_picks_cfb/db/migrations.py`, `scripts/pipeline/migrate_db.py` | Verified-target migration mechanism |
 | `web/src/lib/schema.ts`, `teams.ts` | Synchronized contract copies |
 | `web/src/lib/season-release-context.ts`, `season-release-query.ts` | Active season release resolution and projections |
 | `web/src/lib/publication.ts`, `queries.ts` | Publication policy and legacy read fallback |
-| `web/src/app/`, `components/` | Public routes and UI; health at `api/health/route.ts` |
+| `web/src/app/`, `components/` | Routes: Games `(games)`, `ratings`, `stats`, `model`, `matchup/[gameId]`, `teams/[team]`; health at `api/health/route.ts` |
 | `web/README.md`, `web/playwright.config.ts` | Local development, flags and fixture UI verification |
 
 ## Documentation and checks
@@ -67,7 +66,7 @@ V4 training (`train.py`, `models/`, `model_bundle*.py`, Hydra config groups), ol
 | `docs/data/validation.md`, `docs/architecture/` | Data checks and architecture |
 | `docs/modeling/v5_status.md`, `record_methodology.md`, `v4_retrospective.md` | Accepted model, public record policy and historical V4 |
 | `docs/planning/`, `docs/plans/index.md`, `docs/decisions/` | Strategy, implementation contracts and decisions |
-| `docs/archive/ops/` | Superseded runbooks; old paths retain redirect stubs |
+| `docs/archive/`, `docs/archive.md` | Superseded runbooks, V4-era process, experiments, reports and research; indexed in `docs/archive.md` |
 | `tests/`, `web/src/**/*.test.ts` | Python and web behavioral tests |
 | `session_logs/` | Dated execution evidence |
 

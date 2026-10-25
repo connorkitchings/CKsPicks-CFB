@@ -5,27 +5,25 @@ import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
 import { MatchupLinksProvider } from "@/components/MatchupLinks";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
-import { isChartsEnabled } from "@/lib/charts-gate";
-
-const siteUrl = "https://ckspicks-cfb.vercel.app";
+import { BRAND_FULL, SITE_URL } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: "CK's Picks · V5 College Football Forecasts",
+  metadataBase: new URL(SITE_URL),
+  title: `${BRAND_FULL} · V5 College Football Forecasts`,
   description:
     "V5 college football forecasts, team ratings, and season performance.",
-  applicationName: "CK's Picks · CFB",
+  applicationName: BRAND_FULL,
   openGraph: {
-    title: "CK's Picks · V5 College Football Forecasts",
+    title: `${BRAND_FULL} · V5 College Football Forecasts`,
     description:
       "V5 college football forecasts, team ratings, and season performance.",
-    url: siteUrl,
-    siteName: "CK's Picks · CFB",
+    url: SITE_URL,
+    siteName: BRAND_FULL,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CK's Picks · V5 College Football Forecasts",
+    title: `${BRAND_FULL} · V5 College Football Forecasts`,
     description:
       "V5 college football forecasts, team ratings, and season performance.",
   },
@@ -34,17 +32,13 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
 };
 
 /**
  * Pre-paint theme init: must run before React hydration to avoid a flash.
- * Reads localStorage.theme; defaults to system (honors prefers-color-scheme).
+ * Reads localStorage.theme and creates the theme-color meta (matching --surface-page; ThemeToggle keeps it current). It is not a JSX tag because React would duplicate it on hydration. Defaults to system (honors prefers-color-scheme).
  */
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);var m=document.querySelector('meta[name=theme-color]');if(!m){m=document.createElement('meta');m.name='theme-color';document.head.appendChild(m);}m.content=d?'#000000':'#fafafa';}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -55,15 +49,17 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
       className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased scroll-smooth`}
     >
       <head>
+        <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] sm:pb-0">
         <MatchupLinksProvider enabled={isMatchupEnabled()}>
           <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface-card focus:px-3 focus:py-3 focus:text-sm focus:font-medium focus:text-ink focus:shadow-lg">Skip to main content</a>
-          <SiteNav chartsEnabled={isChartsEnabled()} />
+          <SiteNav />
           {children}
         </MatchupLinksProvider>
       </body>

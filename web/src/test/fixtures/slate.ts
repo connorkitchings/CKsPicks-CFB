@@ -1,12 +1,37 @@
+import type { RosterRow } from "@/lib/charts";
 import type { Game, PredictionGame } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
 import { coverMargin, gradeFromMargin } from "@/lib/slate";
 
+export const slateRosterFixture: RosterRow[] = [
+  { team: "Alabama", conference: "SEC" },
+  { team: "App State", conference: "Sun Belt" },
+  { team: "Clemson", conference: "ACC" },
+  { team: "Florida State", conference: "ACC" },
+  { team: "Georgia", conference: "SEC" },
+  { team: "LSU", conference: "SEC" },
+  { team: "Miami", conference: "ACC" },
+  { team: "Michigan", conference: "Big Ten" },
+  { team: "Notre Dame", conference: "FBS Independents" },
+  { team: "Ohio State", conference: "Big Ten" },
+  { team: "Oklahoma", conference: "SEC" },
+  { team: "Oregon", conference: "Big Ten" },
+  { team: "Penn State", conference: "Big Ten" },
+  { team: "Southern Miss", conference: "Sun Belt" },
+  { team: "Tennessee", conference: "SEC" },
+  { team: "Texas", conference: "SEC" },
+  { team: "USC", conference: "Big Ten" },
+  { team: "Utah", conference: "Big 12" },
+  { team: "Washington", conference: "Big Ten" },
+  { team: "Western Kentucky", conference: "Conference USA" },
+  { team: "Wisconsin", conference: "Big Ten" },
+];
+
 /**
- * Sample slate for the Picks page (only loaded when CFB_UI_TEST_MODE=1).
+ * Sample slate for the Games page (only loaded when CFB_UI_TEST_MODE=1).
  * Covers: strong/weak leans, home and away spread leans, over and under, a
- * high-confidence star, a no-lean game, a missing total line, and one
- * finished game.
+ * high-confidence star, a no-lean game, a missing total line, and an
+ * unplayed week (no finished game, so the week reads as upcoming).
  */
 const published = new Date("2026-09-29T23:24:00Z");
 
@@ -30,7 +55,7 @@ type Spec = {
 };
 
 const specs: Spec[] = [
-  { id: 1, start: "2026-10-01T22:00:00Z", away: "Western Kentucky", home: "Appalachian State", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1, src: ["draftkings", "Bovada"], where: ["Boone", "NC", false] },
+  { id: 1, start: "2026-10-01T04:00:00Z", away: "Western Kentucky", home: "Appalachian State", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1, src: ["draftkings", "Bovada"], where: ["Boone", "NC", false] },
   { id: 2, start: "2026-10-01T23:30:00Z", away: "Wisconsin", home: "Washington", awayRecord: "2-1", homeRecord: "1-2", homeLine: 3, total: 46.5, predSpread: -2.6, predTotal: 46.9, src: [null, null] },
   { id: 3, start: "2026-10-02T23:00:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 70.2, hc: true, src: ["fanduel", "draftkings"], where: ["Los Angeles", "CA", false] },
   { id: 4, start: "2026-10-03T16:00:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: 1.5, total: 52.5, predSpread: 0.4, predTotal: 51.8, src: ["BetMGM", null], where: ["Tuscaloosa", "AL", false] },
@@ -39,7 +64,7 @@ const specs: Spec[] = [
   { id: 7, start: "2026-10-03T23:30:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: null, predSpread: 5.0, predTotal: 58.3, src: [null, null], where: ["Knoxville", "TN", false] },
   { id: 8, start: "2026-10-03T23:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 54.9, src: ["betmgm", null], where: ["Orlando", "FL", true] },
   { id: 9, start: "2026-10-04T00:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: 2.0, predTotal: 50.0, src: [null, null], where: ["Norman", "OK", false] },
-  { id: 10, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-0", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.4, final: [24, 17], src: ["draftkings", "draftkings"], where: ["Ann Arbor", "MI", false] },
+  { id: 10, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-0", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.4, src: ["draftkings", "draftkings"], where: ["Ann Arbor", "MI", false] },
 ];
 
 /** Minimum model-vs-market gap (points) that produces a lean. */
@@ -131,6 +156,22 @@ export function protoResultGames(): Game[] {
   }));
 }
 
+/** Week 6 (in progress): two finished games with grades and two still to play. */
+const partialSpecs: Spec[] = [
+  { id: 201, start: "2026-10-10T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "4-0", homeRecord: "3-1", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.9, final: [24, 17], where: ["Ann Arbor", "MI", false] },
+  { id: 202, start: "2026-10-10T19:30:00Z", away: "Georgia", home: "Alabama", awayRecord: "4-0", homeRecord: "4-0", homeLine: -2.5, total: 52.5, predSpread: 6.9, predTotal: 47.2, final: [20, 27], where: ["Tuscaloosa", "AL", false] },
+  { id: 203, start: "2026-10-10T23:30:00Z", away: "Oregon", home: "USC", awayRecord: "4-0", homeRecord: "3-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 66.3, where: ["Los Angeles", "CA", false] },
+  { id: 204, start: "2026-10-11T00:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "4-0", homeRecord: "3-1", homeLine: 4, total: 50.5, predSpread: 2.0, predTotal: 56.0, where: ["Norman", "OK", false] },
+];
+
+export function protoPartialGames(): Game[] {
+  return build(partialSpecs, 6, "frozen", "live").map((g) => ({
+    ...g,
+    spreadResult: gradeFromMargin(coverMargin(g, "spread")),
+    totalResult: gradeFromMargin(coverMargin(g, "total")),
+  }));
+}
+
 export const protoPerformance: Performance[] = [
   { classification: "all", games: 215, evaluated: 215, marginMae: 14.5, totalMae: 13.4, marginCoverage95: 0.95, totalCoverage95: 0.95, spread: { win: 93, loss: 103, push: 3 }, total: { win: 82, loss: 77, push: 0 } },
   { classification: "replay", games: 215, evaluated: 215, marginMae: 14.5, totalMae: 13.4, marginCoverage95: 0.95, totalCoverage95: 0.95, spread: { win: 93, loss: 103, push: 3 }, total: { win: 82, loss: 77, push: 0 } },
@@ -144,7 +185,7 @@ export function slatePicks(): {
   games: Game[];
   performance: Performance[];
 } {
-  return { week: 5, weeks: [5], games: protoGames(), performance: protoPerformance };
+  return { week: 5, weeks: [4, 5, 6], games: protoGames(), performance: protoPerformance };
 }
 
 /** Test-mode bundle for the production Results page: Week 4, scored. */
@@ -154,5 +195,15 @@ export function slateResults(): {
   games: Game[];
   performance: Performance[];
 } {
-  return { week: 4, weeks: [4], games: protoResultGames(), performance: protoPerformance };
+  return { week: 4, weeks: [4, 5, 6], games: protoResultGames(), performance: protoPerformance };
+}
+
+/** Test-mode bundle for a partly graded Week 6: two games final, two to play. */
+export function slatePartial(): {
+  week: number;
+  weeks: number[];
+  games: Game[];
+  performance: Performance[];
+} {
+  return { week: 6, weeks: [4, 5, 6], games: protoPartialGames(), performance: protoPerformance };
 }

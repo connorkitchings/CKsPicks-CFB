@@ -9,12 +9,11 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts src/lib/run-selection.test.ts src/lib/betting-format.test.ts src/lib/ratings.test.ts src/lib/sos-rank.test.ts src/lib/default-view-selection.test.ts src/lib/performance.test.ts src/lib/row-guard.test.ts src/lib/matchup-visibility.test.ts src/lib/matchup-lineage.test.ts src/lib/matchup-rating-query.test.ts src/lib/slate.test.ts src/lib/team-logos.test.ts src/lib/team-stats.test.ts src/lib/matchup-gate.test.ts src/lib/charts-gate.test.ts src/lib/selection-overlay.test.ts src/lib/db-result.test.ts src/lib/matchup-index.test.ts src/lib/tie-sql.test.ts scripts/team-logos-lib.test.mjs src/lib/prospective-provenance.test.ts src/lib/performance-sections.test.ts src/lib/display-only.test.ts src/lib/results-weeks.test.ts src/lib/season-release.test.ts src/lib/team-resume.test.ts src/lib/charts.test.ts src/lib/chart-config.test.ts src/lib/chart-trajectory.test.ts src/lib/chart-gamelog.test.ts src/lib/chart-ratings-possession.test.ts src/app/api/health/route.test.ts src/components/ui/SegmentedControl.test.ts",
+    "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts src/lib/cached-or-tolerant.test.ts src/lib/share-image.test.ts src/lib/run-selection.test.ts src/lib/betting-format.test.ts src/lib/ratings.test.ts src/lib/sos-rank.test.ts src/lib/ratings-default-view.test.ts src/lib/default-view-selection.test.ts src/lib/performance.test.ts src/lib/row-guard.test.ts src/lib/matchup-visibility.test.ts src/lib/matchup-lineage.test.ts src/lib/matchup-rating-query.test.ts src/lib/slate.test.ts src/lib/team-logos.test.ts src/lib/team-stats.test.ts src/lib/matchup-gate.test.ts src/lib/matchup-id.test.ts src/lib/rank-color.test.ts src/lib/selection-overlay.test.ts src/lib/db-result.test.ts src/lib/tie-sql.test.ts scripts/team-logos-lib.test.mjs src/lib/performance-sections.test.ts src/lib/display-only.test.ts src/lib/time-et.test.ts src/lib/results-weeks.test.ts src/lib/season-release.test.ts src/lib/release-cache.test.ts src/lib/performance-split.test.ts src/lib/team-resume.test.ts src/lib/charts.test.ts src/lib/scatter-selection.test.ts src/lib/chart-config.test.ts src/lib/chart-trajectory.test.ts src/lib/chart-gamelog.test.ts src/lib/chart-ratings-possession.test.ts src/app/api/health/route.test.ts src/components/ui/SegmentedControl.test.ts src/lib/page-width.test.ts src/lib/team-routes.test.ts src/lib/team-games.test.ts src/lib/team-rank-history.test.ts src/lib/team-summary.test.ts src/lib/team-game-log.test.ts",
     "test:logos": "node --test scripts/team-logos-lib.test.mjs",
     "logos:build": "node --env-file=../.env scripts/build-team-logos.mjs",
     "test:ui": "NO_COLOR= FORCE_COLOR= playwright test",
-    "db:studio": "drizzle-kit studio",
-    "test:charts-gate": "CFB_CHARTS_ENABLED=0 CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions npm run build && NO_COLOR= FORCE_COLOR= playwright test --config=playwright.charts-gate.config.ts"
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -23,7 +22,7 @@
     "drizzle-orm": "^0.45.2",
     "geist": "^1.7.2",
     "html-to-image": "^1.11.13",
-    "next": "16.2.10",
+    "next": "16.4.2",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -35,8 +34,8 @@
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.2.10",
-    "sharp": "^0.34.5",
+    "eslint-config-next": "16.4.2",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

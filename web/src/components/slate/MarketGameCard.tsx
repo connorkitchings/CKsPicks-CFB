@@ -1,13 +1,18 @@
 import { clsx } from "clsx";
 import TeamLogo from "@/components/TeamLogo";
+import { Card } from "@/components/ui/Card";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { PhoneSwap } from "@/components/ui/PhoneSwap";
+import { phoneTeamName } from "@/lib/team-logos";
 import { BetTable } from "../BetTable";
+import { AwaitingTag } from "./AwaitingTag";
 import type { Game } from "@/lib/queries";
 
 import {
   marketSpreadView,
   spreadLabel,
 } from "@/lib/betting-format";
+import { etWeekdayDateKickoff } from "@/lib/time-et";
 
 function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
   if (result === null) {
@@ -36,9 +41,11 @@ function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
 export function MarketGameCard({
   game,
   showBetResult = true,
+  now,
 }: {
   game: Extract<Game, { publicationMode: "market" }>;
   showBetResult?: boolean;
+  now: Date;
 }) {
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
   const marketSpread = marketSpreadView(
@@ -48,14 +55,15 @@ export function MarketGameCard({
   );
 
   return (
-    <li id={`game-${game.gameId}`} className="scroll-mt-12 rounded-xl border border-line bg-surface-card p-4 shadow-sm">
+    <Card as="li" id={`game-${game.gameId}`} className="scroll-mt-12 max-sm:scroll-mt-0">
       <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
-        <span>{formatKickoff(game.startDate)}</span>
+        <span>{etWeekdayDateKickoff(game.startDate)}</span>
         {hasResults && (
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Final
           </span>
         )}
+        <AwaitingTag game={game} now={now} />
         <span className="ml-auto">
           <MatchupButton gameId={game.gameId} />
         </span>
@@ -91,7 +99,7 @@ export function MarketGameCard({
           {
             label: "Spread",
             cells: [
-              spreadLabel(marketSpread),
+              <PhoneSwap key="spread" full={spreadLabel(marketSpread)} phone={spreadLabel(marketSpread, phoneTeamName)} />,
               ...(showBetResult
                 ? [<ResultCell key="result" result={game.spreadResult} />]
                 : []),
@@ -110,24 +118,8 @@ export function MarketGameCard({
           },
         ]}
       />
-    </li>
+    </Card>
   );
-}
-
-function formatKickoff(startDate: Date): string {
-  // Node and Safari use different date/time joining words; assemble named parts
-  // so hydration preserves one Eastern-time timestamp on every browser.
-  const parts = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/New_York",
-    timeZoneName: "short",
-  }).formatToParts(startDate);
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((entry) => entry.type === type)?.value ?? "";
-  return `${part("weekday")}, ${part("month")} ${part("day")}, ${part("hour")}:${part("minute")} ${part("dayPeriod")} ${part("timeZoneName")}`;
 }
 
 function TeamLine({

@@ -4,7 +4,7 @@
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User explicitly authorized implementation of this exact plan path on 2026-09-17 ("Use the repository-local implement-plan skill and implement the approved contract at: docs/plans/2026-09-17/04-v5-05a-readiness-and-replay.md ... This request explicitly authorizes implementation.").
-- **Implementation log:** `session_logs/2026-09-17/10-v5-05a-readiness-and-replay.md`, `session_logs/2026-09-17/11-v5-05a-certification.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-17/10-v5-05a-readiness-and-replay.md`, `session_logs/archive/daily/2026-09-17/11-v5-05a-certification.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
 
 ## Goal

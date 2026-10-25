@@ -1,7 +1,6 @@
 # Data-First Football Forecasting Roadmap
 
-> **Status:** Approved 2026-09-05; corrective replacement 2026-09-08; V5 package approved 2026-09-13
-> **Production authority:** V4 remains unchanged
+> **Status: historical research record.** Approved 2026-09-05; corrective replacement 2026-09-08; V5 package approved 2026-09-13; model development complete and accepted (see the [V5 status guide](../modeling/v5_status.md)). Statements below that V4 serves or remains unchanged describe the time they were written: V5 is now the only operational model and V4 is [historical evidence](../modeling/v4_retrospective.md). Live state is in [Current Status](../status.md).
 > **Research namespace:** `artifacts/research/data-first-football-v1/`
 
 ## Purpose
@@ -21,7 +20,7 @@ identities when a shared change could affect production.
 
 The [current V5 status guide](../modeling/v5_status.md) is the concise authority for model completion, certified lineage, results, and remaining operational work. V5 historical model development is complete and accepted; V4 still serves the public site. The Week 4 refresh of 07/08 remains a current-input gate for Contract 09, not an unfinished modeling milestone. Code for live forecasts, shadow readiness, and prospective reporting is ready; no operational 09 apply or qualifying slate exists yet.
 
-The [verified cutover contract](../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) replaces the older six-slate prelaunch sequence. A current independently verified forecast, Preview serving rehearsal, V4 rollback proof, and a separate activation decision precede site replacement. Contract 06 keeps prospective freezes and outcome reports as monitoring after launch; 2026 outcomes never refit the frozen V5 identity. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Detailed dated sections below preserve research history and should not override this current checkpoint.
+The [verified cutover contract](../archive/plans/2026-09/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) replaces the older six-slate prelaunch sequence. A current independently verified forecast, Preview serving rehearsal, V4 rollback proof, and a separate activation decision precede site replacement. Contract 06 keeps prospective freezes and outcome reports as monitoring after launch; 2026 outcomes never refit the frozen V5 identity. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Detailed dated sections below preserve research history and should not override this current checkpoint.
 
 ## Governing boundaries
 
@@ -62,7 +61,7 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | Order | Contract | Status and dependency |
 | --- | --- | --- |
 | 00 | [Documentation alignment and methodology amendment](../archive/v5-contracts/2026-09-13/00-v5-documentation-and-methodology-alignment.md) | Implemented 2026-09-13 — documentation and authority tests aligned; no research execution. |
-| 01 | [V4 feature-v5 diagnostic closure](../archive/v5-contracts/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Implemented 2026-09-22 — pooled W1+W2 shadow spread 38.46% (35-56-1, 91 graded) < 45% → cause not confirmed; predictions value-identical to official on all 100 W0–W2 games. Report: `docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`. |
+| 01 | [V4 feature-v5 diagnostic closure](../archive/v5-contracts/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Implemented 2026-09-22 — pooled W1+W2 shadow spread 38.46% (35-56-1, 91 graded) < 45% → cause not confirmed; predictions value-identical to official on all 100 W0–W2 games. Report: `docs/archive/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`. |
 | 02 | [Possession measurement certification](../archive/v5-contracts/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 is retained historical evidence, subject to the full 10 audit. |
 | 03 | [Possession rating estimation](../archive/v5-contracts/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — retained historical rating artifact, subject to the full 10 audit. |
 | 04 | [Forecast bridge and fitting-window selection](../archive/v5-contracts/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Implemented (resolved 2026-09-21) — 04A remains implemented; 04B's verification gap closed by the 11B/11C/11D re-derivation and independent verification on the r9 line. |
@@ -72,7 +71,7 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | 11A | [Conditional forecast verification](../archive/v5-contracts/2026-09-19/11a-v5-conditional-forecast-verification.md) | Implemented 2026-09-19 — Preview run `conditional-v1-20260919-9265314-11a` independently reconstructed the frozen artifact, published signed evidence, passed independent re-read, and was idempotent. Its only permitted use is `conditional_historical_results_only`; it does not restore eligibility. |
 | 12A | [Conditional historical scorecard](../archive/v5-contracts/2026-09-19/12a-v5-conditional-historical-scorecard.md) | Implemented 2026-09-21 — Preview run `conditional-v1-20260921-scorecard` (manifest SHA `0f4fbf33`): reported V5-only conditional results and context under `conditional_historical_results_only`. |
 | 11 | [Forecast verification closure](../archive/v5-contracts/2026-09-18/11-v5-forecast-verification-closure.md) | Implemented 2026-09-21 via the 11B/11C/11D decomposition — signed verification (`4cfe5ef8...`) closes Finding 002; targeted `final_fit_existence` pass closes Finding 004. |
-| 12 | [Historical results and readiness review](../archive/v5-contracts/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Implemented 2026-09-21 (Amendment 2) — execution complete under [06-v5-12](../archive/v5-contracts/2026-09-21/06-v5-12-historical-results-and-readiness-review.md). Preview run `readiness-v1-20260921-scorecard` (manifest SHA `a8351fb3...`): 7,318 rows, zero exclusions. Recommendation `accepted_for_prospective_evaluation` issued in research report. **User explicitly accepted the recommendation on 2026-09-22** (report `docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`; scorecard manifest `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`). |
+| 12 | [Historical results and readiness review](../archive/v5-contracts/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Implemented 2026-09-21 (Amendment 2) — execution complete under [06-v5-12](../archive/v5-contracts/2026-09-21/06-v5-12-historical-results-and-readiness-review.md). Preview run `readiness-v1-20260921-scorecard` (manifest SHA `a8351fb3...`): 7,318 rows, zero exclusions. Recommendation `accepted_for_prospective_evaluation` issued in research report. **User explicitly accepted the recommendation on 2026-09-22** (report `docs/archive/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`; scorecard manifest `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`). |
 
 Contract 01 neither blocks nor selects the ratings model. Each implementation
 task names one exact contract and verifies its entry gate. Approval does not
@@ -86,7 +85,7 @@ original context and is not prospective evidence.
 **Repair v2, Phase 3 v2, the R6 possession measurements, possession ratings, and the
 forecast bridge are independently certified in Preview.** The recorded September 11 apply
 `phase3-v2-compact-state-20260910-r2` passed preflight, independent verification, and an
-idempotent rerun under the [Phase 3 compact-state contract](../plans/2026-09-10/phase3-v2-compact-tournament-state.md).
+idempotent rerun under the [Phase 3 compact-state contract](../archive/plans/2026-09/2026-09-10/phase3-v2-compact-tournament-state.md).
 Its selected `quality_core_epa_split` is historical reconstructed benchmark evidence, not
 the definition or automatic parent of possession ratings. The R6 possession manifest
 `possession-v1-measurements-20260915-18fb0aa-r6` passed preflight (910.150s), apply
@@ -141,7 +140,7 @@ substantive data findings. Four findings published to the Preview audit prefix w
 `prohibited_until_closed`; (002) Forecast outputs not reconstructed — Contract 11 scope,
 `historical_evidence_only`; (003) 81 score-ledger excess keys — `prohibited_until_closed`;
 (004) No through-2025 final forecast fit (`max_training_season=2024`) —
-`historical_evidence_only`. Report: `docs/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`.
+`historical_evidence_only`. Report: `docs/archive/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`.
 **2026-09-22: Contract 12 accepted; 07–09 re-reviewed; 2026 extension
 authorized.** The user explicitly accepted the
 `accepted_for_prospective_evaluation` recommendation on 2026-09-22, and
@@ -210,7 +209,7 @@ See the operating runbooks for current weekly actions.
 
 ## Retained and superseded evidence
 
-The [September 8 review](../plans/2026-09-08/transformation-review-and-authority-reset.md#review-evidence-and-dispositions)
+The [September 8 review](../archive/plans/2026-09/2026-09-08/transformation-review-and-authority-reset.md#review-evidence-and-dispositions)
 retains the authoritative findings: same-game Phase 4B leakage, constant coaching,
 incorrect roster continuity, and 32 omitted completed schedule games. Repair v2
 and the corrected Phase 3 v2 benchmark addressed the repaired lineage/population.
@@ -228,7 +227,7 @@ R2, direct early-game, and candidate-v1 results keep their exact audit dispositi
 
 | Phase/evidence | Immutable identity and code binding | Timing and permitted use | Activation |
 | --- | --- | --- | --- |
-| Phase 0 alignment | [Implemented contract](../plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md) and its compatibility baseline | Repository boundary and V4-regression protection; no model input | Not applicable |
+| Phase 0 alignment | [Implemented contract](../archive/plans/2026-09/2026-09-05/00-repository-architecture-and-documentation-alignment.md) and its compatibility baseline | Repository boundary and V4-regression protection; no model input | Not applicable |
 | Corrected Phase 1 audit v3 | `artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3/` | Preserves the exact unsupported/correction-required dispositions of historical results | Research evidence only |
 | Phase 2d audit | `phase1/2026-09-06T2358Z-phase2d-recertification-v2/audit-v5.json` — SHA `0fd8a32a13ce64a261fa8a0179cdaa1de1cb93e428e362d50ad0aa9970c7761f`, code `285422026816bc933279a69e997021847b4bfb31` | Certifies core lineage, omissions, coverage, and timing for measurement construction | False |
 | Phase 2d automation admission | `phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/automation-admission.json` — SHA `7a46adfaff0bcb89b86f244c586d93085557ba3119699da81824ffa4e83f5518`, code `285422026816bc933279a69e997021847b4bfb31` | Enables only the verified Preview capture workflow; it is not a model artifact | False |

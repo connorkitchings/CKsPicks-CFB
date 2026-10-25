@@ -1,25 +1,31 @@
-import { PageHeading } from "@/components/ui/PageHeading";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Notice";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
 import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
 import { TopLeans } from "@/components/slate/TopLeans";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
-import { PicksSlate } from "@/components/slate/PicksSlate";
-import { ResultsSlate } from "@/components/slate/ResultsSlate";
+import { SlateList } from "@/components/slate/SlateList";
 import { WeekNav } from "@/components/WeekNav";
-import { weekRecord, type Tally } from "@/lib/slate";
+import { hasGradedPick, weekPhase, weekRecord, weekStatus, type SlateSort, type Tally, type WeekStatus } from "@/lib/slate";
+import type { RosterRow } from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
+import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 
 export interface SlateViewProps {
-  mode: "picks" | "results";
   season: number;
   week: number;
   weeks: number[];
   basePath?: string;
   games: Game[];
+  roster?: RosterRow[];
+  /** Season record before the week. */
   performance?: Performance[];
-  /** Season track record over each scored week's top leans (Picks only). */
+  /** The week's own record and accuracy; empty until a game is graded. */
+  weekPerformance?: Performance[];
+  /** Season track record over each scored week's top leans. */
   topLeansRecord?: Tally | null;
   systemName?: string | null;
   runState?: string | null;
@@ -31,24 +37,35 @@ export interface SlateViewProps {
   retrospectiveRepair?: boolean;
   /** Notice for a display-only run; null when the run is an ordinary one. */
   displayOnlyNotice?: string | null;
-  initialSort?: "kickoff" | "spreadEdge" | "totalEdge";
+  initialSort?: SlateSort;
   emptyMessage?: string;
+  /** The clock for awaiting-result states; passed down so server and browser render the same text. */
+  now: Date;
 }
 
+const STATUS_LABEL: Record<WeekStatus, string> = {
+  upcoming: "Upcoming",
+  "in-progress": "In progress",
+  awaiting: "Awaiting results",
+  final: "Final",
+};
+
 /**
- * Layout shell for the weekly slate views (Picks `/` and Results `/results`).
- * Standardizes header, skip links, model record, status line, week
- * navigation, and the lean-sentence slate, with the fail-closed market-mode
- * card path for games without predictions.
+ * Layout shell for the Games week view (`/`). One view covers every phase of a
+ * week: leans before kickoff, graded picks after, both while a week is in
+ * progress. Standardizes header, model record, status line, week navigation and
+ * the slate, with the fail-closed market-mode card path for games without
+ * predictions.
  */
 export function SlateView({
-  mode,
   season,
   week,
   weeks,
   basePath = "/",
   games,
+  roster = [],
   performance = [],
+  weekPerformance = [],
   topLeansRecord = null,
   systemName = null,
   runState = null,
@@ -60,9 +77,13 @@ export function SlateView({
   displayOnlyNotice = null,
   initialSort = "kickoff",
   emptyMessage,
+  now,
 }: SlateViewProps) {
   const predictionsVisible = games.some((g) => g.publicationMode === "predictions");
-  const showBetResult = mode === "results";
+  const phase = weekPhase(games);
+  const status = weekStatus(games, now);
+  const graded = hasGradedPick(games);
+  const showRecord = publicationMode === "predictions" && (performance.length > 0 || graded);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -70,9 +91,11 @@ export function SlateView({
         season={season > 0 ? season : null}
         systemName={systemName}
         updatedAt={null}
+        menuUpdatedAt={updatedAt}
+        phoneStatus={retrospective}
         publicationMode={publicationMode}
         allowedSeasons={allowedSeasons}
-        containerWidth="max-w-6xl"
+        width="slate"
         status={
           <SlateStatusRow
             runState={runState}
@@ -82,34 +105,59 @@ export function SlateView({
         }
       />
 
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:space-y-4 sm:py-6">
+      <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-6xl flex-1 px-4 sm:space-y-4 sm:py-6 ${PHONE_PAGE_RHYTHM}`}>
         {dbError && (
-          <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
-            {dbError}
-          </div>
+          <Notice tone="warn">{dbError}</Notice>
         )}
 
         {!dbError && season <= 0 && (
-          <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
+          <Notice tone="empty">
             {emptyMessage ??
               "No active week has been published yet. Complete the Week 0 publication workflow to load the approved schedule and market data."}
-          </div>
+          </Notice>
         )}
 
         {!dbError && season > 0 && (
           <>
-            <PageHeading title={mode === "picks" ? `Week ${week} picks` : `Week ${week} results`} actions={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact /> : undefined} />
-            {publicationMode === "predictions" && performance.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                {/* Phones: the heading is read aloud only; the summary line below is the visible label. */}
+                <h1 className="text-lg font-bold tracking-tight text-ink max-sm:sr-only sm:text-xl">{`Week ${week}`}</h1>
+                {/* With the record card, phones read this line inside the card's summary instead. */}
+                <p className={`text-xs text-ink-muted sm:mt-1 sm:text-sm${showRecord ? " max-sm:sr-only" : ""}`}>
+                  <span className="sm:hidden">Week {week} · </span>
+                  <span
+                    data-testid="week-phase"
+                    data-phase={phase}
+                    data-status={status}
+                    className="font-semibold sm:inline-flex sm:items-center sm:rounded-full sm:border sm:border-line sm:bg-surface-inset sm:px-2 sm:py-0.5 sm:text-xs"
+                  >
+                    {STATUS_LABEL[status]}
+                  </span>
+                  <span className="sm:hidden"> · {games.length} {games.length === 1 ? "game" : "games"}</span>
+                </p>
+              </div>
+              {weeks.length > 1 && <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact className="max-sm:hidden" />}
+            </div>
+            {showRecord && (
               <ModelRecord
+                phoneHeader={(
+                  <>
+                    Week {week} · <span className="font-semibold">{STATUS_LABEL[status]}</span>
+                    {" · "}{games.length} {games.length === 1 ? "game" : "games"}
+                  </>
+                )}
                 performance={performance}
-                week={mode === "results" ? { number: week, ...weekRecord(games) } : undefined}
+                weekNumber={week}
+                week={graded ? weekRecord(games) : undefined}
+                weekPerformance={graded ? weekPerformance : undefined}
               />
             )}
-
 
             {displayOnlyNotice && (
               <p
                 role="note"
+                data-card=""
                 data-testid="display-only-notice"
                 className="rounded-xl border border-line bg-surface-card px-4 py-3 text-sm text-ink-muted"
               >
@@ -117,67 +165,57 @@ export function SlateView({
               </p>
             )}
 
-            {mode === "picks" && predictionsVisible && <TopLeans games={games} record={topLeansRecord} season={season} />}
-            {mode === "results" && predictionsVisible && <ResultHighlights games={games} />}
-
-
-
-
 
             {games.length === 0 ? (
-              mode === "picks" ? (
-                <div className="rounded-2xl border border-line bg-surface-card p-8 sm:p-12 text-center shadow-xs">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-accent-line/40 bg-accent-soft text-accent-ink shadow-2xs">
-                    <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <h2 className="mt-5 text-xl font-bold tracking-tight text-ink sm:text-2xl">
-                    Week {week} Picks Dropping Soon
-                  </h2>
-                  <p className="mx-auto mt-2.5 max-w-lg text-sm text-ink-muted leading-relaxed sm:text-base">
-                    Blitzkrieg V5 model predictions and top leans will be posted as betting lines open across sportsbooks ahead of kickoff.
-                  </p>
-                  <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-                    <a
-                      href={`/results?week=${week > 0 ? week - 1 : 0}`}
-                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-accent-ink shadow-xs transition hover:opacity-90 active:scale-[0.98]"
-                    >
-                      View Week {week > 0 ? week - 1 : 0} Results & Graded Picks →
-                    </a>
-                    <a
-                      href="/performance"
-                      className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface-inset px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-surface-card active:scale-[0.98]"
-                    >
-                      Performance Dashboard
-                    </a>
-                  </div>
+              <Card padding="none" className="p-8 text-center sm:p-12">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-accent-line/40 bg-accent-soft text-accent-ink shadow-2xs">
+                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-              ) : (
-                <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-muted">
-                  {emptyMessage ?? `No games loaded for ${season} week ${week}.`}
+                <h2 className="mt-5 text-xl font-bold tracking-tight text-ink sm:text-2xl">
+                  Week {week} Games Dropping Soon
+                </h2>
+                <p className="mx-auto mt-2.5 max-w-lg text-sm text-ink-muted leading-relaxed sm:text-base">
+                  {emptyMessage ?? "Blitzkrieg V5 model predictions and top leans will be posted as betting lines open across sportsbooks ahead of kickoff."}
+                </p>
+                <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                  {week > 0 && (
+                    <Link
+                      href={`/?week=${week - 1}`}
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent-solid px-4 py-2.5 text-xs font-semibold text-on-accent-solid shadow-xs transition hover:opacity-90 active:scale-[0.98]"
+                    >
+                      View Week {week - 1} games →
+                    </Link>
+                  )}
+                  <Link
+                    href="/model"
+                    className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface-inset px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-surface-card active:scale-[0.98]"
+                  >
+                    Model record
+                  </Link>
                 </div>
-              )
-            ) : mode === "picks" ? (
-              <PicksSlate
-                games={games}
-                showBetResult={showBetResult}
-                initialSort={initialSort}
-              />
+              </Card>
             ) : (
-              <ResultsSlate
+              <SlateList
                 games={games}
-                showBetResult={showBetResult}
-                initialSort={
-                  initialSort === "kickoff" ? "kickoff" : "bestEdge"
-                }
+                roster={roster}
+                initialSort={initialSort}
+                now={now}
+                weekNav={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact selectId="week-select-phone" /> : undefined}
+                extras={predictionsVisible ? (
+                  <div className="space-y-2 sm:space-y-4">
+                    {phase !== "final" && <TopLeans games={games} record={topLeansRecord} season={season} />}
+                    {phase !== "upcoming" && <ResultHighlights games={games} />}
+                  </div>
+                ) : undefined}
               />
             )}
           </>
         )}
       </main>
 
-      <Footer publicationMode={publicationMode} containerWidth="max-w-6xl" />
+      <Footer publicationMode={publicationMode} width="slate" />
     </div>
   );
 }

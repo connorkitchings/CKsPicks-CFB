@@ -1,11 +1,15 @@
 import clsx from "clsx";
 import { Fragment } from "react";
 import TeamLogo from "@/components/TeamLogo";
+import { Card } from "@/components/ui/Card";
+import { teamAbbr } from "@/lib/team-logos";
+import { RankChip } from "@/components/ui/RankChip";
+import { Eyebrow } from "@/components/ui/SectionHeading";
 import {
-  getRankBadgeClass,
   groupUnitRows,
   rankLabel,
   rankTitle,
+  type MetricSection,
   type UnitMatchupRow,
 } from "@/lib/team-stats";
 
@@ -41,16 +45,12 @@ function RankBadge({
   tied: boolean;
 }) {
   return (
-    <span
-      className={clsx(
-        "inline-flex h-5 min-w-5 items-center justify-center whitespace-nowrap rounded px-1 text-xs tabular-nums",
-        getRankBadgeClass(rank, cohort),
-        rank === null && "!text-ink-muted",
-      )}
+    <RankChip
+      rank={rank}
+      total={cohort ?? undefined}
+      label={rankLabel(rank, tied)}
       title={rankTitle(rank, tied, cohort)}
-    >
-      {rankLabel(rank, tied)}
-    </span>
+    />
   );
 }
 
@@ -68,16 +68,28 @@ function RankLine({
   return (
     <div
       data-testid={testId}
-      className="mt-0.5 text-center text-xs leading-snug text-ink-muted"
+      className="mt-0.5 text-center text-xs leading-snug text-ink-muted max-sm:mt-0"
     >
-      {label} <span className="font-mono">#{rank ?? "—"}</span>
+      {/* Phones show the chip alone, inline in the header; the label stays for assistive tech and the chip's tooltip. */}
+      <span className="max-sm:sr-only">{label}</span> <RankChip rank={rank} title={label} />
     </div>
+  );
+}
+
+/** The team name; phones show its abbreviation (the full name stays in the tooltip and as screen-reader text). */
+function TeamName({ name }: { name: string }) {
+  return (
+    <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">
+      <bdi className="max-sm:hidden">{name}</bdi>
+      <abbr title={name} aria-hidden className="no-underline sm:hidden">{teamAbbr(name)}</abbr>
+      <bdi className="sr-only sm:hidden">{name}</bdi>
+    </h3>
   );
 }
 
 /**
  * One team's offense against the other team's defense, with national ranks in
- * tier colors. (Per-row edge calculation lives in team-stats.ts but is not
+ * the shared rank color scale. (Per-row edge calculation lives in team-stats.ts but is not
  * drawn for now.)
  */
 export function UnitMatchupTable({
@@ -86,6 +98,8 @@ export function UnitMatchupTable({
   rows,
   offenseRank,
   defenseRank,
+  collapsedSections,
+  onToggleSection,
 }: {
   offenseTeam: string;
   defenseTeam: string;
@@ -94,23 +108,25 @@ export function UnitMatchupTable({
   offenseRank?: number | null;
   /** The defense team's model defense rank. */
   defenseRank?: number | null;
+  collapsedSections?: ReadonlySet<MetricSection>;
+  onToggleSection?: (section: MetricSection) => void;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-line bg-surface-card p-3 shadow-sm sm:p-4">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 border-b border-line/60 pb-3">
-        <div className="flex min-w-0 flex-col items-center gap-1 text-center">
-          <div className="hidden lg:block"><TeamLogo name={offenseTeam} px={44} decorative={false} /></div>
-          <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{offenseTeam}</h3>
+    <Card padding="sm" className="min-w-0 sm:p-4">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 border-b border-line/60 pb-3 max-sm:items-center max-sm:gap-2 max-sm:pb-2">
+        <div className="flex min-w-0 flex-col items-center gap-1 text-center max-sm:flex-row max-sm:flex-wrap max-sm:justify-center max-sm:gap-x-1 max-sm:gap-y-0">
+          <div className="hidden lg:block"><TeamLogo name={offenseTeam} px={44} /></div>
+          <TeamName name={offenseTeam} />
           <span className="text-xs font-semibold uppercase tracking-wider text-accent-ink">Offense</span>
           <RankLine label="Model Offense Rank" rank={offenseRank} testId="unit-offense-rank" />
         </div>
-        <span className="mt-4 shrink-0 rounded-full border border-line/60 bg-surface-inset px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-ink-muted">
+        <span className="mt-4 shrink-0 rounded-full max-sm:mt-0 border border-line/60 bg-surface-inset px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-ink-muted">
           vs
         </span>
-        <div className="flex min-w-0 flex-col items-center gap-1 text-center">
-          <div className="hidden lg:block"><TeamLogo name={defenseTeam} px={44} decorative={false} /></div>
-          <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{defenseTeam}</h3>
-          <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Defense</span>
+        <div className="flex min-w-0 flex-col items-center gap-1 text-center max-sm:flex-row max-sm:flex-wrap max-sm:justify-center max-sm:gap-x-1 max-sm:gap-y-0">
+          <div className="hidden lg:block"><TeamLogo name={defenseTeam} px={44} /></div>
+          <TeamName name={defenseTeam} />
+          <Eyebrow as="span">Defense</Eyebrow>
           <RankLine label="Model Defense Rank" rank={defenseRank} testId="unit-defense-rank" />
         </div>
       </div>
@@ -134,46 +150,62 @@ export function UnitMatchupTable({
             </th>
             <th scope="col" className="py-2 text-center font-semibold">Metric</th>
             <th scope="col" className="py-2 text-right font-medium sm:pr-2">
-              <span className="flex items-center justify-between gap-1">
+              <span className="flex items-center justify-between gap-1 max-sm:justify-end">
                 <span aria-hidden className="hidden sm:inline">Rank</span>
                 <span>Defense<span className="sr-only"> ({defenseTeam}), value and rank</span></span>
               </span>
             </th>
           </tr>
         </thead>
-        {groupUnitRows(rows).map((group) => (
-          <tbody key={group.section} className="divide-y divide-line/60">
-            <tr className={SECTION_H}>
-              <th
-                scope="rowgroup"
-                colSpan={3}
-                className="pt-3 text-center align-bottom text-xs font-semibold uppercase tracking-wider text-ink-muted"
-              >
-                {group.label}
-              </th>
-            </tr>
-            {group.rows.map((row) => (
-              <tr key={row.key} className={clsx(ROW_H, "transition-colors hover:bg-surface-inset/50")}>
-                <td className="sm:pl-2">
-                  <div className="flex flex-col items-start justify-between gap-1 sm:flex-row sm:items-center">
-                    <span data-value="offense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.offenseValue}</span>
-                    <RankBadge rank={row.offenseRank} cohort={row.offenseCohort} tied={row.offenseTied} />
-                  </div>
-                </td>
-                <td className="break-words px-1 text-center text-sm font-medium leading-tight text-ink">
-                  <Label text={row.name} />
-                </td>
-                <td className="sm:pr-2">
-                  <div className="flex flex-col items-end justify-between gap-1 sm:flex-row-reverse sm:items-center">
-                    <span data-value="defense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.defenseValue}</span>
-                    <RankBadge rank={row.defenseRank} cohort={row.defenseCohort} tied={row.defenseTied} />
-                  </div>
-                </td>
+        {groupUnitRows(rows).map((group) => {
+          const collapsible = group.section !== "possession" && Boolean(onToggleSection);
+          const isCollapsed = collapsible && Boolean(collapsedSections?.has(group.section));
+          return (
+            <tbody key={group.section} className="divide-y divide-line/60">
+              <tr className={SECTION_H}>
+                <th
+                  scope="rowgroup"
+                  colSpan={3}
+                  className="pt-3 text-center align-bottom text-xs font-semibold uppercase tracking-wider text-ink-muted"
+                >
+                  {collapsible ? (
+                    <button
+                      type="button"
+                      aria-expanded={!isCollapsed}
+                      onClick={() => onToggleSection?.(group.section)}
+                      className="inline-flex items-center justify-center gap-1 rounded px-1.5 py-0.5 max-sm:min-h-11 max-sm:px-3 text-xs font-semibold uppercase tracking-wider text-ink-muted hover:bg-surface-inset hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <span>{group.label}</span>
+                      <span aria-hidden="true" className="text-[10px] leading-none">{isCollapsed ? "▸" : "▾"}</span>
+                    </button>
+                  ) : (
+                    group.label
+                  )}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        ))}
+              {!isCollapsed && group.rows.map((row) => (
+                <tr key={row.key} className={clsx(ROW_H, "transition-colors hover:bg-surface-inset/50")}>
+                  <td className="sm:pl-2">
+                    <div className="flex flex-col items-start justify-between gap-1 sm:flex-row sm:items-center">
+                      <span data-value="offense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.offenseValue}</span>
+                      <RankBadge rank={row.offenseRank} cohort={row.offenseCohort} tied={row.offenseTied} />
+                    </div>
+                  </td>
+                  <td className="break-words px-1 text-center text-sm font-medium leading-tight text-ink">
+                    <Label text={row.name} />
+                  </td>
+                  <td className="sm:pr-2">
+                    <div className="flex flex-col items-end justify-between gap-1 sm:flex-row-reverse sm:items-center">
+                      <span data-value="defense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.defenseValue}</span>
+                      <RankBadge rank={row.defenseRank} cohort={row.defenseCohort} tied={row.defenseTied} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          );
+        })}
       </table>
-    </div>
+    </Card>
   );
 }

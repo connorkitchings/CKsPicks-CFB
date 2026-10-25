@@ -43,11 +43,11 @@ export function SlateStatusRow({
 }) {
   if (!runState && !retrospective && !publishedAt) return null;
   return (
-    <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+    <div className="flex items-center gap-2 max-sm:min-w-0 max-sm:max-w-full sm:flex-wrap">
       {runState && (
         <span
           className={clsx(
-            "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium tracking-wide shadow-2xs",
+            "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium tracking-wide shadow-2xs max-sm:hidden",
             STATE_STYLES[runState]?.pill ?? "border-line bg-surface-inset text-ink-muted",
           )}
         >
@@ -62,15 +62,15 @@ export function SlateStatusRow({
         </span>
       )}
       {retrospective && (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-warn-line/60 bg-warn-soft/70 px-2 py-0.5 text-xs font-medium text-warn shadow-2xs">
+        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-warn-line/60 bg-warn-soft/70 px-2 py-0.5 text-xs font-medium text-warn shadow-2xs">
           <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden="true" />
           Retrospective replay
         </span>
       )}
       {publishedAt && (
-        <span className="basis-full text-xs text-ink-muted sm:basis-auto sm:text-xs sm:flex sm:items-center sm:gap-1.5">
-          <span className="hidden sm:inline text-line-strong" aria-hidden="true">·</span>
-          <span>Run published {stamp(publishedAt)}</span>
+        <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-muted max-sm:hidden">
+          <span className="text-line-strong" aria-hidden="true">·</span>
+          <span className="truncate">Run published {stamp(publishedAt)}</span>
         </span>
       )}
     </div>

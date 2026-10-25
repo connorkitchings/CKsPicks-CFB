@@ -7,7 +7,7 @@
 - **Outcome:** All documentation updated to reflect the current state (Week 0 games
   played, Week 1 active, R1 in-flight). Week 1 operations plan created with exact
   commands. No code changes; doc-only fast path.
-- **Plan Contract:** `docs/plans/2026-08-31/week1-operations.md` (fast-path creation)
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-31/week1-operations.md` (fast-path creation)
 - **Approval / Status:** User approved implementation plan on 2026-08-31.
 - **Blockers:** Week 0 freeze + close must happen before Week 1 prepare-week.
   All commands require user execution from terminal.
@@ -31,8 +31,8 @@
 - Reviewed: git log (20+ commits since Aug 26), all 4 Aug-28 session logs, production
   health endpoint, freeze/close script logic, key planning docs.
 - Updated: AGENTS.md, production_runbook.md, weekly_pipeline.md, roadmap.md,
-  QUICKSTART.md, docs/plans/index.md, docs/plans/2026-08-18/week0-launch-execution.md.
-- Created: `docs/plans/2026-08-31/week1-operations.md` with exact commands for
+  QUICKSTART.md, docs/plans/index.md, docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md.
+- Created: `docs/archive/plans/2026-08/2026-08-31/week1-operations.md` with exact commands for
   freeze→close→prepare→publish→freeze sequence.
 
 ## Files Modified
@@ -45,10 +45,10 @@
 - `docs/planning/roadmap.md` — Last-updated bumped; milestones table updated with
   Week 0 close and Week 1 active window; R1 run ID recorded.
 - `.codex/QUICKSTART.md` — Publication weeks example and weekly alias updated.
-- `docs/plans/2026-08-18/week0-launch-execution.md` — Stage 4/5 checkboxes checked;
+- `docs/archive/plans/2026-08/2026-08-18/week0-launch-execution.md` — Stage 4/5 checkboxes checked;
   Amendment 6 (retroactive freeze policy) added; plan marked Implemented.
 - `docs/plans/index.md` — Week 1 ops plan entry added.
-- `docs/plans/2026-08-31/week1-operations.md` — NEW. Week 1 execution plan.
+- `docs/archive/plans/2026-08/2026-08-31/week1-operations.md` — NEW. Week 1 execution plan.
 
 ## Validation
 
@@ -65,7 +65,7 @@
 
 - **Resume at:** User runs `make freeze-week YEAR=2026 WEEK=0 ENV=production`
   from terminal, then `make close-week YEAR=2026 WEEK=0 AS_OF=2026-08-31T12:00:00Z ENV=production`.
-  Then Stage B (prepare-week) per `docs/plans/2026-08-31/week1-operations.md`.
+  Then Stage B (prepare-week) per `docs/archive/plans/2026-08/2026-08-31/week1-operations.md`.
 - **Watch out for:** (1) `ingest-week WEEK=0` must complete before `prepare-week WEEK=1`
   so Gold has Week 0 results; (2) Vercel `CFB_PUBLICATION_WEEKS` must be updated
   to `0,1` in the Vercel dashboard (not just .env) for the production site to

@@ -126,7 +126,7 @@ Week 5: 0 of 56 games lack a spread or total in the selected run (`2026w5-v5repa
 | Silver games (`w4_games.parquet`, 761 rows, lake games version `31a337df...`) | 138 | All rows FBS vs FBS (classification fbs both sides). |
 | Bronze plays (`bronze_plays_2026_parsed.parquet`, offense/defense, 58,379 plays) | 233 | 138 FBS + 95 FCS opponents. |
 | Neon `games` (season 2026, weeks 0-5) | 138 | Same names as Silver. |
-| Priors frame | 138 teams x 2 roles = 276 rows | Located: source lock `docs/plans/2026-09-29/v5-repair-2026-source-lock.json` -> `research_source_import.replay_parents.rating_uri` -> `output_refs.priors` = `lake/gold/dataset=possession_rating_prior/version=3f45825e9ce5f5fe586cafde/partitioned-manifest.json` (276 rows, content sha `703ee308...`). Copy: `g4_priors_276.parquet`. |
+| Priors frame | 138 teams x 2 roles = 276 rows | Located: source lock `docs/archive/plans/2026-09/2026-09-29/v5-repair-2026-source-lock.json` -> `research_source_import.replay_parents.rating_uri` -> `output_refs.priors` = `lake/gold/dataset=possession_rating_prior/version=3f45825e9ce5f5fe586cafde/partitioned-manifest.json` (276 rows, content sha `703ee308...`). Copy: `g4_priors_276.parquet`. |
 | Neon `v5_rating_snapshots` | 138 distinct teams, 802 rows (w0-w4: 138 teams each, w5: 112) | Stores legacy names. |
 | `web/src/lib/rating-names.ts` | n/a | Uses `TEAM_LOGO_MAP` from `web/src/lib/teams.ts` (13 entries). Parsed and compared: identical to `contracts/teams.py` `TEAM_LOGO_MAP`; `preseason_features.canonical_team` uses the same dict (one-directional: CFBD name to stored name). |
 

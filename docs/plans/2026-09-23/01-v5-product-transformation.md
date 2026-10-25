@@ -2,7 +2,7 @@
 
 - **Status:** In Progress
 - **Approval source:** User requested implementation of the full proposed plan and confirmed “proceed” in this task on 2026-09-23.
-- **Implementation log:** `session_logs/2026-09-23/01-v5-product-transformation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-23/01-v5-product-transformation.md`
 - **Commit policy:** Reviewable milestone commits proposed; Git operations remain user-controlled.
 
 ## Goal and acceptance
@@ -26,7 +26,7 @@ No 2026 outcome fitting, retroactive claim of live evidence, V4 public aggregate
 
 ## 2026-09-24 replay rehearsal checkpoint
 
-The [replay and Preview rehearsal](../2026-09-24/01-v5-replay-preview-rehearsal.md) is Implemented. Immutable Weeks 0–3 replay `v5-replay-20260924-cb2252a` (157 games, 314 rows, zero gaps) is pinned in `conf/weekly_bets/v5_replay_2026.yaml`. Preview Week 0 run `2026w0-cb2252a0w0v5` is published, scored, and explicitly selected; populated Preview serving rendered V5, a legacy fallback, true V4-strict rollback, and V5 restoration with measured sub-minute reselections. Two corrections were recorded under that contract: binding proof ran functionally post-deploy (Sensitive Preview DB value is undecryptable), and the rollback drill targeted the true V4 run after the named run proved to be V2-preview lineage. V4 still serves production; no production writes occurred. Week 4 07/08 refresh remains the next dependency.
+The [replay and Preview rehearsal](../../archive/plans/2026-09/2026-09-24/01-v5-replay-preview-rehearsal.md) is Implemented. Immutable Weeks 0–3 replay `v5-replay-20260924-cb2252a` (157 games, 314 rows, zero gaps) is pinned in `conf/weekly_bets/v5_replay_2026.yaml`. Preview Week 0 run `2026w0-cb2252a0w0v5` is published, scored, and explicitly selected; populated Preview serving rendered V5, a legacy fallback, true V4-strict rollback, and V5 restoration with measured sub-minute reselections. Two corrections were recorded under that contract: binding proof ran functionally post-deploy (Sensitive Preview DB value is undecryptable), and the rollback drill targeted the true V4 run after the named run proved to be V2-preview lineage. V4 still serves production; no production writes occurred. Week 4 07/08 refresh remains the next dependency.
 
 ## 2026-09-24 implementation checkpoint
 
@@ -42,4 +42,4 @@ The historical feature loader now reads the bounded certified population, scorin
 
 Retrospective replay reconstruction passed a real 157-game, zero-gap dry run for Weeks 0–3, with 314 target rows and separate `replay` timing. Its immutable apply requires a reviewed preflight and a clean committed code SHA, so no replay artifact or public selection has been written from this dirty worktree. The V5 rating projection published 452 version-bound snapshots to Preview. Migration 0013 and Preview release policy were applied; the V4 active public run was unchanged. Local fixture browser checks passed for populated forecasts, ratings, team detail, and performance. These are interface checks, not populated Preview serving proof.
 
-The resumable operator now has separate rating projection, replay publication, and replay scoring commands. Production scoring retains its legacy query until migration 0013 reaches production. The scheduled V5 workflow, refreshed Week 4 07/08 parents, Contract 09 live artifact, and exact activation packet remain open. The durable replay, Preview public selection/rollback rehearsal, and V5 restoration completed under the [2026-09-24 rehearsal contract](../2026-09-24/01-v5-replay-preview-rehearsal.md). Production activation and V4 retirement are not authorized by this checkpoint.
+The resumable operator now has separate rating projection, replay publication, and replay scoring commands. Production scoring retains its legacy query until migration 0013 reaches production. The scheduled V5 workflow, refreshed Week 4 07/08 parents, Contract 09 live artifact, and exact activation packet remain open. The durable replay, Preview public selection/rollback rehearsal, and V5 restoration completed under the [2026-09-24 rehearsal contract](../../archive/plans/2026-09/2026-09-24/01-v5-replay-preview-rehearsal.md). Production activation and V4 retirement are not authorized by this checkpoint.

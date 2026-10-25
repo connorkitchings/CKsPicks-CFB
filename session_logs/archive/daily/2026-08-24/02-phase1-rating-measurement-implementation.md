@@ -9,7 +9,7 @@
   Preview artifacts are complete; V4 and all production behavior are
   unchanged. Worktree holds planning docs and implementation separable for
   two user-controlled commits.
-- **Plan Contract:** `docs/plans/2026-08-24/phase1-rating-measurement-foundation.md` (now `Implemented`, with Implementation Record + 3 mechanical amendments appended)
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-24/phase1-rating-measurement-foundation.md` (now `Implemented`, with Implementation Record + 3 mechanical amendments appended)
 - **Approval / Status:** User authorized Terra execution in-session on 2026-08-24 with "implement first, commit later" commit handling.
 - **Blockers:** None.
 - **Next:** Phase 2 (minimum viable team-state baseline) requires a fresh Sol contract and Terra task; Week 0 production operations take precedence on game week.
@@ -40,7 +40,7 @@
 - `src/cks_picks_cfb/data/schema_contracts.py` — registered both rating datasets (gold).
 - `tests/ratings/{conftest,helpers,test_contracts,test_observations,test_snapshots,test_cli}.py` — 49 tests.
 - `docs/modeling/measurement_catalog.md`, `docs/modeling/rating_system_requirements.md` — final Phase 1 disposition.
-- `docs/plans/2026-08-24/phase1-rating-measurement-foundation.md` — status → Implemented, amendments + implementation record.
+- `docs/archive/plans/2026-08/2026-08-24/phase1-rating-measurement-foundation.md` — status → Implemented, amendments + implementation record.
 
 ## Validation
 

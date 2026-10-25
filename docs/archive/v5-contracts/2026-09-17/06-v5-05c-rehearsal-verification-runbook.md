@@ -4,7 +4,7 @@
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved the Draft contract as-is on 2026-09-18, after 05B certification and its documentation commit (`edea961`).
-- **Implementation log:** `session_logs/2026-09-18/02-v5-05c-rehearsal-verification-runbook.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-18/02-v5-05c-rehearsal-verification-runbook.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
 - **Certified rehearsal run:** `shadow-v1-20260918-6dc87e0-05c` (code checkpoint
   `6dc87e0`; preflight 431.6s; apply; independent verify; idempotent

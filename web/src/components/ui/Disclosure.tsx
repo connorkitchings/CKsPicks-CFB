@@ -16,7 +16,7 @@ export function Disclosure({
   open?: boolean;
 }) {
   return (
-    <details open={open} className={clsx("group rounded-xl border border-line bg-surface-card", className)}>
+    <details open={open} data-card="" className={clsx("group rounded-xl border border-line bg-surface-card shadow-2xs", className)}>
       <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 sm:min-h-9 sm:py-2 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
         {title}
       </summary>

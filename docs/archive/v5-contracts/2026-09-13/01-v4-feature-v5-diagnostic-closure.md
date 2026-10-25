@@ -4,7 +4,7 @@
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User explicitly selected separate diagnostic closure and approved the full package on 2026-09-13 with “Implement the proposed plan.” Execution authorized 2026-09-22 ("Use the repository-local implement-plan skill and implement the approved contract…").
-- **Implementation log:** `session_logs/2026-09-22/02-v4-feature-v5-diagnostic-closure.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-22/02-v4-feature-v5-diagnostic-closure.md`
 - **Commit policy:** Separate diagnostic evidence/documentation checkpoint; user executes Git.
 
 ## Goal and current state
@@ -111,7 +111,7 @@ artifact/code differences must be explained rather than treated as feature gains
 on 91 graded (38.46%) < 45% → **cause not confirmed**; shadow ≡ official on all
 100 games (drift 0.0), refuting the feature mismatch as the cause of the 2026
 spread underperformance. Full record, tables, and reproduction:
-[`docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`](../../../research/2026-09-22-v4-feature-v5-diagnostic-closure.md).
+[`docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`](../../research/2026-09-22-v4-feature-v5-diagnostic-closure.md).
 
 Use the common amendment process. Production repair or activation is a separate
 future contract regardless of this diagnostic's result. This task never selects

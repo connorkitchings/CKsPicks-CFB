@@ -61,7 +61,7 @@ Delegate code work in an isolated worktree based on the reconciled `dev` HEAD. T
 
 ### 4. Week 7 candidate and Preview rehearsal
 
-1. Follow the full [weekly operator checklist](../../ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist) as applicable to display-only publication. Reconcile the fresh complete FBS schedule and spread/total source coverage; retain capture time, missing IDs, next refresh and exact gates.
+1. Follow the full [weekly operator checklist](../../archive/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist) as applicable to display-only publication. Reconcile the fresh complete FBS schedule and spread/total source coverage; retain capture time, missing IDs, next refresh and exact gates.
 2. Choose timezone-aware `live_as_of` after capture. Calculate omitted IDs strictly from kickoff at or before that cutoff. The earlier handoff's two started games and 57 remaining games are historical context, not a fixed expected population; require equality to the fresh schedule-derived set.
 3. Build forecasts, serving artifacts, verify and package using the corrected Week 7 rating and existing display-only interfaces. Require exact live `current_teams` hash bindings and replay provenance preservation.
 4. Export Preview before-state; authorize with split decision flags; seed exactly the FBS slate; publish required missing venues, ratings and as-of-7 stats with readback. Require historical stats scopes unchanged; inspect and verify legitimate new as-of-7 rows rather than requiring a zero-difference result for a previously absent scope.

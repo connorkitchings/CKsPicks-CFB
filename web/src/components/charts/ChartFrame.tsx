@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import clsx from "clsx";
+import { BRAND_FULL, SITE_URL } from "@/lib/brand";
+import { footnoteLines } from "@/lib/chart-config";
 import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
 import { ChartExportButton } from "./ChartExportButton";
+import { MobileChartSettings } from "./MobileChartSettings";
 import { TeamHighlightCombobox } from "./TeamHighlightCombobox";
+
+const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 
 /**
  * State every chart view shares, owned by `ChartsView` so it survives switching charts:
@@ -25,7 +29,7 @@ export type SharedChartProps = {
 };
 
 // Exports are captured at 2x: 1000 x 562.5 CSS px is a 2000 x 1125 px PNG.
-export const EXPORT_SIZE = { width: 1000, height: 562.5, header: 70, footer: 50 };
+export const EXPORT_SIZE = { width: 1000, height: 562.5, header: 70, footer: 86 };
 /** Height left for the chart inside an export card. */
 export const EXPORT_CHART_HEIGHT = EXPORT_SIZE.height - EXPORT_SIZE.header - EXPORT_SIZE.footer;
 
@@ -57,7 +61,7 @@ export function ExportCard({ title, subtitle, credit, footnote, children }: { ti
       </div>
       <div className="min-h-0 flex-1 px-3">{children}</div>
       <div className="px-5 text-[11px] leading-snug text-ink-muted" style={{ height: EXPORT_SIZE.footer }}>
-        {footnote} ckspicks-cfb.vercel.app
+        {footnote} {BRAND_FULL} · {SITE_HOST}
       </div>
     </div>
   );
@@ -88,6 +92,8 @@ export type ChartFrameProps = {
   highlightTeams?: readonly RosterRow[];
   /** The chart's own settings (metric or sort toggle), after the page's side and week settings. */
   controls?: ReactNode;
+  /** The phone summary row, built with `chartSummary`. */
+  summary: string;
   /** PNG export of `card`, offered while the chart has data. */
   exportSpec: { filename: string; width: number; height: number; card: ReactNode };
   /** A compact line between the header hairline and the figure (highlight status, summaries). */
@@ -114,6 +120,7 @@ export function ChartFrame({
   headerControls,
   highlightTeams,
   controls,
+  summary,
   exportSpec,
   status,
   hasData,
@@ -131,67 +138,65 @@ export function ChartFrame({
     <section className="space-y-3" aria-label={title}>
       {/* One row of every setting: filter, highlight, side, week, metric/sort; display and export at the right end. */}
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-testid="chart-controls">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
-          {/* On phones the filter and highlight share the first line half and half. */}
-          <div className={clsx("gap-2.5", highlightTeams ? "grid w-full grid-cols-2 sm:flex sm:w-auto" : "flex")}>
-            <select
-              className="min-h-9 min-w-0 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
-              value={filter}
-              onChange={(event) => onFilterChange(event.target.value)}
-              data-testid="conference-filter"
-              aria-label="Filter by conference"
-            >
-              <option value="all">All FBS</option>
-              <option value="p4">Power Four + Notre Dame</option>
-              {conferenceOptions(roster).map((conference) => (
-                <option key={conference} value={conference}>
-                  {conference}
-                </option>
-              ))}
-            </select>
-            {highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />}
-          </div>
+        <MobileChartSettings finder={highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />} summary={summary} conference={
+          <select
+            className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-h-9 sm:text-xs"
+            value={filter}
+            onChange={(event) => onFilterChange(event.target.value)}
+            data-testid="conference-filter"
+            aria-label="Filter by conference"
+          >
+            <option value="all">All FBS</option>
+            <option value="p4">Power Four + Notre Dame</option>
+            {conferenceOptions(roster).map((conference) => <option key={conference} value={conference}>{conference}</option>)}
+          </select>
+        }>
           {settings}
           {controls}
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto" role="group" aria-label="Chart display and export">
+        </MobileChartSettings>
+        <div className="order-2 ml-auto flex flex-wrap items-center gap-2" role="group" aria-label="Chart display and export">
           {table && (
             <button
               type="button"
               aria-pressed={asTable}
               onClick={() => setAsTable((current) => !current)}
-              className="min-h-9 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
+              className="min-h-11 rounded-lg border border-line bg-surface-card px-3 py-1.5 sm:min-h-9 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
               data-testid="table-toggle"
             >
               {asTable ? "Show chart" : "Show as table"}
             </button>
           )}
           {hasData && (
-            <ChartExportButton filename={exportSpec.filename} width={exportSpec.width} height={exportSpec.height}>
+            <ChartExportButton filename={exportSpec.filename} shareTitle={title} width={exportSpec.width} height={exportSpec.height} contentKey={[summary, subtitle, filter, highlight ?? ""].join("|")}>
               {exportSpec.card}
             </ChartExportButton>
           )}
         </div>
       </div>
 
-      {/* One card: header (title, meta, credit, header controls), hairline, status, then the chart or table. */}
-      <div className="rounded-xl border border-line bg-surface-card shadow-2xs">
-        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 sm:px-4">
-          <div className="min-w-0">
+      {/* One card: header (title, meta, header controls with the credit beneath), hairline, status, then the chart or table. */}
+      <div data-card="" className="rounded-xl border border-line bg-surface-card shadow-2xs">
+        {/* Phones: the pinned dropdown already names the chart, so the title is screen-reader only, and the description and credit move to "About this chart" under the card. */}
+        <header className={headerControls ? "flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 sm:px-4" : "flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 px-3 py-3 max-sm:sr-only sm:px-4"}>
+          <div className="min-w-0 max-sm:sr-only">
             <h2 className="text-lg font-bold leading-tight tracking-tight text-ink sm:text-xl">{title}</h2>
             {description && <p className="mt-1 text-xs text-ink-muted sm:text-[13px]" data-testid="chart-description">{description}</p>}
             <p className={description ? "sr-only" : "mt-1 text-xs text-ink-muted sm:text-[13px]"} data-testid="chart-subtitle">
               <SubtitleText subtitle={subtitle} />
             </p>
-            {credit && (
-              <p className="mt-0.5 text-[10.5px] text-ink-muted/80" data-testid="chart-credit">
-                {credit}
-              </p>
-            )}
           </div>
-          {headerControls}
+          {(headerControls || credit) && (
+            <div className="flex flex-col items-start gap-0.5 sm:items-end">
+              {headerControls}
+              {credit && (
+                <p className="text-[11px] text-ink-muted max-sm:hidden" data-testid="chart-credit">
+                  {credit}
+                </p>
+              )}
+            </div>
+          )}
         </header>
-        <div className="border-t border-line">
+        <div className={headerControls ? "border-t border-line" : "border-t border-line max-sm:border-t-0"}>
           {/* HighlightStatus renders nothing without a highlight; :empty drops this padding with it. */}
           <div className="px-3 pt-2 empty:hidden sm:px-4">{status}</div>
           {!hasData ? (
@@ -208,20 +213,30 @@ export function ChartFrame({
         </div>
       </div>
 
+      {(description || credit) && (
+        <details className="rounded-xl border border-line bg-surface-card px-3 text-xs text-ink-muted shadow-2xs sm:hidden" data-testid="chart-about">
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">About this chart</summary>
+          {description && <p className="pb-2">{description}</p>}
+          {credit && <p className="pb-3">{credit}</p>}
+        </details>
+      )}
+
       {notCharted.length > 0 && (
         <p className="text-xs text-ink-muted" data-testid="not-charted">
           Not charted ({notCharted.length}): {notCharted.map((n) => `game ${n.gameId} (${n.reason})`).join(", ")}.
         </p>
       )}
       {unavailable.length > 0 && (
-        <details className="rounded-xl border border-line bg-surface-card px-3 py-2 text-xs text-ink-muted" data-testid="unavailable-teams">
-          <summary className="cursor-pointer font-semibold text-ink">Not plotted ({unavailable.length} teams)</summary>
+        <details data-card="" className="rounded-xl border border-line bg-surface-card px-3 py-2 text-xs text-ink-muted shadow-2xs" data-testid="unavailable-teams">
+          <summary className="cursor-pointer font-semibold text-ink max-sm:min-h-11 max-sm:py-3">Not plotted ({unavailable.length} teams)</summary>
           <p className="mt-1.5 leading-relaxed">
             {unavailable.join(", ")}. These teams have no eligible FBS games or no valid observations for this chart yet.
           </p>
         </details>
       )}
-      <p className="text-[11px] leading-relaxed text-ink-faint">{footnote}</p>
+      <div className="text-[11px] leading-relaxed text-ink-faint" data-testid="chart-footnote">
+        {footnoteLines(footnote).map((line) => <p key={line}>{line}</p>)}
+      </div>
     </section>
   );
 }

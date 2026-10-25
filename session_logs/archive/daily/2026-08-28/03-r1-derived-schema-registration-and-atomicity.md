@@ -7,7 +7,7 @@
 - **Outcome:** Added the missing derived v1 contracts and builder preflight;
   local validation passes and the fresh R1 recapture is next.
 - **Plan Contract:**
-  `docs/plans/2026-08-28/r1-derived-schema-registration-and-atomicity.md`
+  `docs/archive/plans/2026-08/2026-08-28/r1-derived-schema-registration-and-atomicity.md`
 - **Approval / Status:** User approved the exact remediation in Codex on
   2026-08-28; contract is `In Progress`.
 - **Blockers:** None beyond the identified implementation and subsequent R1

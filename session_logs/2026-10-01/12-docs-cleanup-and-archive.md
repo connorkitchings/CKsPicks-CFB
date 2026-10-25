@@ -9,7 +9,7 @@
 - **Next:** Approve contract 04 (production-boundary refactor); optional CI hardening (add `mkdocs build --strict` and a schema-vs-migrations check to CI).
 
 ## Context and Decisions
-- Plan files were **not moved**: `tests/test_data_first_documentation_authority.py` pins strings in `docs/modeling/v5_status.md` and reads `docs/plans/2026-09-08/*` and `docs/archive/v5-contracts/**`.
+- Plan files were **not moved**: `tests/test_data_first_documentation_authority.py` pins strings in `docs/modeling/v5_status.md` and reads `docs/archive/plans/2026-09/2026-09-08/*` and `docs/archive/v5-contracts/**`.
 - Contract close-outs are judgment calls from each contract's definition of done and the logs. Each file's status line records its prior status; revert any you disagree with.
 - `.opencode/` and the V2 artifacts were tracked, so they remain in git history.
 

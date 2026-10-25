@@ -4,7 +4,7 @@
 - **Created:** 2026-09-22
 - **Planner:** Sol
 - **Approval source:** User approved this plan and its sequencing decisions in the 2026-09-22 planning session ("proceed"): (1) Contract 12 historical readiness review accepted 2026-09-22; (2) Contract 01 executes first; (3) due weekly V4 ops (Week 3 close, Week 4 prepare/publish/freeze) fold in as the Contract 07 entry-gate prerequisite; (4) first Contract 06 slate target is Week 5 (~Thu Oct 1 first kickoff), not Week 4.
-- **Implementation log:** `session_logs/2026-09-22/03-v5-acceptance-and-07-09-rereview.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-22/03-v5-acceptance-and-07-09-rereview.md`
 - **Commit policy:** Separate plan commit; user executes Git.
 
 ## Goal
@@ -99,9 +99,9 @@ be resolved from the cited certified records (session logs 2026-09-21
 
 ## Affected Components and Contracts
 
-- `docs/plans/2026-09-18/07-v5-2026-repair-and-measurement-extension.md` [MODIFY]
-- `docs/plans/2026-09-18/08-v5-2026-rating-state-replay.md` [MODIFY]
-- `docs/plans/2026-09-18/09-v5-2026-forecast-and-readiness.md` [MODIFY]
+- `docs/archive/plans/2026-09/2026-09-18/07-v5-2026-repair-and-measurement-extension.md` [MODIFY]
+- `docs/archive/plans/2026-09/2026-09-18/08-v5-2026-rating-state-replay.md` [MODIFY]
+- `docs/archive/plans/2026-09/2026-09-18/09-v5-2026-forecast-and-readiness.md` [MODIFY]
 - `docs/plans/index.md` [MODIFY: Contract 12 acceptance; 07/08/09 re-reviewed rows]
 - `docs/planning/data-first-football-forecasting-roadmap.md` [MODIFY: current checkpoint]
 - `AGENTS.md` [MODIFY: 2026 season execution status checkpoint]
@@ -143,7 +143,7 @@ be resolved from the cited certified records (session logs 2026-09-21
 
 **Files:**
 
-- `docs/plans/2026-09-18/07-v5-2026-repair-and-measurement-extension.md`
+- `docs/archive/plans/2026-09/2026-09-18/07-v5-2026-repair-and-measurement-extension.md`
 
 **Changes (Amendment 1 — re-reviewed lineage and lifted deferral):**
 
@@ -174,7 +174,7 @@ be resolved from the cited certified records (session logs 2026-09-21
 
 **Files:**
 
-- `docs/plans/2026-09-18/08-v5-2026-rating-state-replay.md`
+- `docs/archive/plans/2026-09/2026-09-18/08-v5-2026-rating-state-replay.md`
 
 **Changes (Amendment 1 — re-reviewed lineage and lifted deferral):**
 
@@ -200,7 +200,7 @@ be resolved from the cited certified records (session logs 2026-09-21
 
 **Files:**
 
-- `docs/plans/2026-09-18/09-v5-2026-forecast-and-readiness.md`
+- `docs/archive/plans/2026-09/2026-09-18/09-v5-2026-forecast-and-readiness.md`
 
 **Changes (Amendment 1 — re-reviewed lineage, final-fit application, lifted deferral):**
 

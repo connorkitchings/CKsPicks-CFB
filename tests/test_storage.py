@@ -14,7 +14,6 @@ from cks_picks_cfb.data.storage import (
     StorageSettings,
     get_storage,
 )
-from cks_picks_cfb.utils.local_storage import LocalStorage as LegacyLocalStorage
 
 
 class TestLocalStorage:
@@ -193,16 +192,6 @@ def test_read_only_source_disables_mutating_legacy_index_error_path(tmp_path):
     source = ReadOnlyStorage(LocalStorage(str(tmp_path)))
     with pytest.raises(StorageError, match="read_index is disabled"):
         source.read_index("raw/games", {"year": 2025})
-
-
-class TestLegacyLocalStorage:
-    """Test backward-compatible LocalStorage shim guardrails."""
-
-    def test_missing_data_root_fails_loudly(self, monkeypatch):
-        monkeypatch.delenv("CFB_MODEL_DATA_ROOT", raising=False)
-
-        with pytest.raises(StorageError, match="CFB_MODEL_DATA_ROOT must be set"):
-            LegacyLocalStorage()
 
 
 # R2/S3 tests would require mocking boto3 or integration tests with actual cloud resources

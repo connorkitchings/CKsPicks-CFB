@@ -8,7 +8,7 @@
   materialization remains intentionally blocked until this exact code and
   configuration are committed, as required by the Phase 3 contract.
 - **Plan Contract:**
-  `docs/plans/2026-08-25/phase3-structured-margin-total-baseline.md`
+  `docs/archive/plans/2026-08/2026-08-25/phase3-structured-margin-total-baseline.md`
 - **Approval / Status:** User authorized implementation on 2026-08-25; Phase
   3 remains `In Progress` pending immutable Preview evaluation.
 - **Blockers:** Required pre-materialization commit.

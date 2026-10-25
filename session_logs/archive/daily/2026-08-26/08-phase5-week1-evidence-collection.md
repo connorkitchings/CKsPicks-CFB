@@ -9,7 +9,7 @@
   Week 0 games have not yet produced CFBD play data. The shared R2 bucket and
   credentials are intentional; immutable namespaces and distinct Neon branches
   provide the repository's environment separation.
-- **Plan Contract:** `docs/plans/2026-08-26/phase5-protected-prospective-evidence.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-26/phase5-protected-prospective-evidence.md`
   (Task 7 remains In Progress).
 - **Approval / Status:** The user authorized the Week 1 sequence in Codex on
   2026-08-26. Execution stopped at the fail-closed prerequisite; no

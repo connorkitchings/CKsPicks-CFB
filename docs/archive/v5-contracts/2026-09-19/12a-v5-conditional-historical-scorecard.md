@@ -4,8 +4,8 @@
 - **Created:** 2026-09-19
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact Contract 12A plan with "PLEASE IMPLEMENT THIS PLAN" on 2026-09-19.
-- **Planning log:** `session_logs/2026-09-19/03-v5-12a-conditional-historical-scorecard-planning.md`
-- **Implementation log:** `session_logs/2026-09-21/01-v5-12a-conditional-historical-scorecard.md`
+- **Planning log:** `session_logs/archive/daily/2026-09-19/03-v5-12a-conditional-historical-scorecard-planning.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-21/01-v5-12a-conditional-historical-scorecard.md`
 - **Commit policy:** Separate scorecard-code and Preview-evidence/report checkpoints; user controls Git operations.
 
 ## Goal and entry gate

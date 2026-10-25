@@ -17,7 +17,7 @@ test("prediction output requires the exact opt-in value", () => {
 
 test("market query projects settled grades but excludes model-only columns", () => {
   const source = readFileSync(new URL("./queries.ts", import.meta.url), "utf8");
-  const marketQueryStart = source.indexOf("export async function getMarketGamesForWeek");
+  const marketQueryStart = source.indexOf("async function loadMarketGamesForWeek");
   const marketQueryEnd = source.indexOf("function emptyStats", marketQueryStart);
   assert.notEqual(marketQueryStart, -1, "market query must exist");
   assert.notEqual(marketQueryEnd, -1, "market query boundary must exist");
@@ -57,8 +57,8 @@ test("total lean follows predicted total versus the line", () => {
 
 test("predictions query decouples market selections from main select", () => {
   const source = readFileSync(new URL("./queries.ts", import.meta.url), "utf8");
-  const getGamesStart = source.indexOf("export async function getGamesForWeek");
-  const getMarketStart = source.indexOf("export async function getMarketGamesForWeek", getGamesStart);
+  const getGamesStart = source.indexOf("async function loadGamesForWeek");
+  const getMarketStart = source.indexOf("async function loadMarketGamesForWeek", getGamesStart);
   const getGamesBody = source.slice(getGamesStart, getMarketStart);
   assert.doesNotMatch(
     getGamesBody,
@@ -66,4 +66,14 @@ test("predictions query decouples market selections from main select", () => {
     "predictions main query must not contain inline SQL subqueries on prediction_market_selections"
   );
   assert.match(getGamesBody, /getMarketSelectionsForRun/);
+});
+
+test("resolveSeasonParam falls back for unallowed or malformed seasons", async () => {
+  const { resolveSeasonParam, isAllowedSeason } = await import("./publication.ts");
+  const allowed = [2026].find(isAllowedSeason)!;
+  assert.equal(resolveSeasonParam(undefined, allowed), allowed);
+  assert.equal(resolveSeasonParam(String(allowed), 1), allowed);
+  assert.equal(resolveSeasonParam("1999", allowed), allowed);
+  assert.equal(resolveSeasonParam("abc", allowed), allowed);
+  assert.equal(resolveSeasonParam("-5", allowed), allowed);
 });

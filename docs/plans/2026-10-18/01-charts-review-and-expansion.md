@@ -1,6 +1,6 @@
 # Charts review and expansion: 3 → 6 charts (Revision 3)
 
-**Status:** Complete as released: Charts ships hidden behind `CFB_CHARTS_ENABLED` (live `/charts` returns 404). Deep visual verification is deferred until Charts is slated to be un-hidden; that, and any Production un-hide, is a separate owner-gated decision. Migrations 0027/0028 and the `charts_v2` projections are applied and serving. Owner controls commits, merges, migrations, Preview rehearsal and Production.
+**Status:** Implemented — published as the Graphs tab (`/stats`) with the 2026-10-25 release and no feature flag; the gate and the `/charts` 404 are gone and `/charts` now redirects to `/stats`. The real-data visual review is recorded in the 2026-10-25 review log (`session_logs/2026-10-25/01-final-site-review.md`); the remaining pre-publication items are tracked as superseded in [Charts pre-publication verification](../2026-10-20/03-charts-pre-publication.md). Earlier record: Migrations 0027/0028 and the `charts_v2` projections are applied and serving.
 
 - **Created:** 2026-10-18
 - **Approval source:** Owner's explicit “PLEASE IMPLEMENT THIS PLAN” request for the completion plan in the recovery chat on 2026-10-18, naming this saved Revision 3 contract and existing worktree.

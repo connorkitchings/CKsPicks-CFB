@@ -1,6 +1,5 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { CHART_REGISTRY, chartSubtitle, exportFilename, groupLabel } from "@/lib/chart-config";
 import {
   filterNetSuccessBars,
@@ -9,19 +8,13 @@ import {
   type NetSuccessBar,
   type NotCharted,
 } from "@/lib/charts";
+import { chartSummary } from "@/components/ui/SummaryLine";
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
 import { NetSuccessChart } from "./NetSuccessChart";
+import { useIsPhone } from "@/lib/use-is-phone";
 
 // The net-success width max(1000, 70 + 15 n) exports at 2x as max(2000, 140 + 30 n) px.
 const netSuccessWidth = (games: number) => Math.max(1000, 70 + 15 * games);
-
-const subscribeNarrow = (callback: () => void) => {
-  const query = window.matchMedia("(max-width: 639px)");
-  query.addEventListener("change", callback);
-  return () => query.removeEventListener("change", callback);
-};
-const isNarrow = () => window.matchMedia("(max-width: 639px)").matches;
-const serverWide = () => false;
 
 function describeBar(b: NetSuccessBar): string {
   return `${b.winner} beat ${b.loser} ${b.winnerPoints}-${b.loserPoints}: offensive success rate ${formatPercent(b.winnerSuccessRate)} to ${formatPercent(b.loserSuccessRate)}, winner's success-rate ${b.value >= 0 ? "advantage" : "disadvantage"} ${Math.abs(b.value * 100).toFixed(1)} percentage points`;
@@ -29,7 +22,7 @@ function describeBar(b: NetSuccessBar): string {
 
 /** One bar per game of the week: the winner's success-rate edge, in team colors. No team finder. */
 export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedChartProps; bars: NetSuccessBar[]; notCharted: NotCharted[] }) {
-  const narrow = useSyncExternalStore(subscribeNarrow, isNarrow, serverWide);
+  const narrow = useIsPhone();
   const { season, week, roster, filter } = shared;
   const { title, credit, footnote } = CHART_REGISTRY["net-success"];
   const subtitle = chartSubtitle("net-success", season, week, "offense");
@@ -45,6 +38,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
       shared={shared}
       title={title}
       subtitle={subtitle}
+      summary={chartSummary({ week: { n: week, through: false }, filter })}
       description={CHART_REGISTRY["net-success"].description}
       credit={credit}
       exportSpec={{
@@ -70,7 +64,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
           describe={describeBar}
           orientation={narrow ? "horizontal" : "vertical"}
           width={narrow ? 420 : netSuccessWidth(shown.length)}
-          height={narrow ? 56 + 36 * shown.length : 640}
+          height={narrow ? 56 + 48 * shown.length : 640}
           label={label}
         />
       }

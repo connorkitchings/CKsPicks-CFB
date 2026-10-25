@@ -43,5 +43,5 @@
 
 ## Handoff Notes
 
-- **Resume at:** Session complete; create the next substantial plan under `docs/plans/2026-08-15/` or a later date folder.
+- **Resume at:** Session complete; create the next substantial plan under `docs/archive/plans/2026-08/2026-08-15/` or a later date folder.
 - **Watch out for:** Preserve unrelated existing worktree changes; do not require the external SSD for documentation-only sessions.

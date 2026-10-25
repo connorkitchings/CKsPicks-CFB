@@ -6,7 +6,7 @@
   unblock R1 comparison evidence.
 - **Outcome:** Approved implementation contract created.
 - **Plan Contract:**
-  `docs/plans/2026-08-27/r1-legacy-comparison-evidence-restoration.md`
+  `docs/archive/plans/2026-08/2026-08-27/r1-legacy-comparison-evidence-restoration.md`
 - **Approval / Status:** User explicitly approved the narrow Preview-only
   restoration in Codex on 2026-08-27.
 - **Blockers:** None for the restoration; R1 recapture remains gated on its

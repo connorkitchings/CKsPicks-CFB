@@ -2,6 +2,7 @@ import { cache } from "react";
 import { and, eq, inArray } from "drizzle-orm";
 import { schema } from "./db.ts";
 import { getSeasonDb } from "./season-release";
+import { releaseCached } from "./release-cache.ts";
 import { getRatingsAsOf } from "./v5.ts";
 import { ratingName } from "./rating-names.ts";
 import { matchupRatingQuery, renderedRatingSource } from "./matchup-rating-query.ts";
@@ -63,6 +64,7 @@ export interface MatchupData {
   publicationMode: "predictions" | "market";
   // Odds & Model
   marketSpread: string;
+  marketSpreadLine: number | null;
   modelSpread: string;
   marketTotal: number | null;
   modelTotal: number | null;
@@ -108,6 +110,51 @@ async function getMatchupStatRows(season: number, week: number, teams: string[])
   }
 }
 
+// Release-scoped lookups, cached per release. Their keys are real runs, teams and manifests
+// (never the URL's game id), so arbitrary request paths cannot create cache entries. The
+// stat-provenance lookups throw on failure: the caller turns that into "lookup unavailable"
+// and a failure is never cached.
+const getRunRatingManifest = releaseCached("getMatchupRunRatingManifest", async (season: number, runId: string) => {
+  const db = await getSeasonDb(season);
+  const rows = await db.select({ ratingManifestSha256: schema.predictionRuns.ratingManifestSha256 })
+    .from(schema.predictionRuns).where(eq(schema.predictionRuns.runId, runId)).limit(1);
+  return rows[0]?.ratingManifestSha256 ?? null;
+});
+
+const getRatingProvenance = releaseCached("getMatchupRatingProvenance", async (
+  season: number, kickoffMs: number, teams: string[], sourceManifestSha256: string,
+) => {
+  const db = await getSeasonDb(season);
+  const rows = await matchupRatingQuery(db, season, new Date(kickoffMs), teams, sourceManifestSha256);
+  return rows.map(({ team, sourceManifestSha256: sha }) => ({ team, sourceManifestSha256: sha }));
+});
+
+const getStatProvenance = releaseCached("getMatchupStatProvenance", async (season: number, week: number, teams: string[]) => {
+  const db = await getSeasonDb(season);
+  return db.selectDistinct({
+    team: schema.teamPossessionStats.team,
+    ratingManifestSha256: schema.teamPossessionStats.ratingManifestSha256,
+    measurementManifestSha256: schema.teamPossessionStats.measurementManifestSha256,
+  }).from(schema.teamPossessionStats).where(and(
+    eq(schema.teamPossessionStats.season, season),
+    eq(schema.teamPossessionStats.asOfWeek, week),
+    inArray(schema.teamPossessionStats.team, teams),
+  ));
+});
+
+const getPublishedMeasurement = releaseCached("getMatchupPublishedMeasurement", async (
+  season: number, ratingManifestSha256: string, measurementManifestSha256: string,
+) => {
+  const db = await getSeasonDb(season);
+  const published = await db.select({ measurementManifestSha256: schema.matchupDataPublications.measurementManifestSha256 })
+    .from(schema.matchupDataPublications).where(and(
+      eq(schema.matchupDataPublications.season, season),
+      eq(schema.matchupDataPublications.ratingManifestSha256, ratingManifestSha256),
+      eq(schema.matchupDataPublications.measurementManifestSha256, measurementManifestSha256),
+    )).limit(1);
+  return published[0]?.measurementManifestSha256 ?? null;
+});
+
 /**
  * Fetch and construct authentic matchup breakdown for a specific gameId.
  * Never produces synthetic or mocked statistical metrics. Model fields follow
@@ -144,20 +191,35 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
   const awayFinalPoints = view.awayPoints;
 
   const selectedRunId = game.publicationMode === "predictions" ? game.runId : null;
-  const selectedRun = selectedRunId
-    ? await db.select({ ratingManifestSha256: schema.predictionRuns.ratingManifestSha256 })
-      .from(schema.predictionRuns).where(eq(schema.predictionRuns.runId, selectedRunId)).limit(1)
-    : [];
-  const forecastRatingManifestSha256 = selectedRun[0]?.ratingManifestSha256 ?? null;
-
-  // Ratings known before kickoff, matching the pre-game stats snapshot (never
-  // post-game ratings that already include this result).
-  const ratings = await getRatingsAsOf(season, game.startDate.getTime());
   const ratingTeams = [ratingName(game.homeTeam), ratingName(game.awayTeam)];
+  const teams = [game.homeTeam, game.awayTeam];
+
+  // Independent lookups run together. Ratings are those known before kickoff, matching the
+  // pre-game stats snapshot (never post-game ratings that already include this result).
+  const [forecastRatingManifestSha256, ratings, statRows, statProvenance] = await Promise.all([
+    selectedRunId ? getRunRatingManifest(season, selectedRunId) : Promise.resolve(null),
+    getRatingsAsOf(season, game.startDate.getTime()),
+    getMatchupStatRows(season, week, teams),
+    getStatProvenance(season, week, teams).then((rows) => ({ rows, unavailable: false }), () => ({ rows: [], unavailable: true })),
+  ]);
+  const statProvenanceRows = statProvenance.rows;
+  let lineageLookupUnavailable = statProvenance.unavailable;
+
+  const statRatingManifests = new Set(statProvenanceRows.map((row) => row.ratingManifestSha256));
+  const statMeasurementManifests = new Set(statProvenanceRows.map((row) => row.measurementManifestSha256));
+  const statRatingManifestSha256 = statRatingManifests.size === 1 ? [...statRatingManifests][0] : null;
+  const statMeasurementManifestSha256 = statMeasurementManifests.size === 1 ? [...statMeasurementManifests][0] : null;
+
   const renderedSource = renderedRatingSource(ratings, ratingTeams);
-  const ratingProvenanceRows = renderedSource
-    ? await matchupRatingQuery(db, season, game.startDate, ratingTeams, renderedSource)
-    : [];
+  const [ratingProvenanceRows, publishedMeasurementManifestSha256] = await Promise.all([
+    renderedSource ? getRatingProvenance(season, game.startDate.getTime(), ratingTeams, renderedSource) : Promise.resolve([]),
+    statRatingManifestSha256 && statMeasurementManifestSha256 && !lineageLookupUnavailable
+      ? getPublishedMeasurement(season, statRatingManifestSha256, statMeasurementManifestSha256).catch(() => {
+        lineageLookupUnavailable = true;
+        return null;
+      })
+      : Promise.resolve(null),
+  ]);
   const latestRatingManifestByTeam = new Map<string, string>();
   for (const row of ratingProvenanceRows) {
     if (!latestRatingManifestByTeam.has(row.team)) latestRatingManifestByTeam.set(row.team, row.sourceManifestSha256);
@@ -197,44 +259,6 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
   const marketView = marketSpreadView(game.homeTeam, game.awayTeam, view.marketSpreadLine);
   const modelView = modelSpreadView(game.homeTeam, game.awayTeam, view.predictedSpread);
 
-  const statRows = await getMatchupStatRows(season, week, [game.homeTeam, game.awayTeam]);
-  let statProvenanceRows: {
-    team: string;
-    ratingManifestSha256: string;
-    measurementManifestSha256: string;
-  }[] = [];
-  let publishedMeasurementManifestSha256: string | null = null;
-  let lineageLookupUnavailable = false;
-  try {
-    statProvenanceRows = await db.selectDistinct({
-      team: schema.teamPossessionStats.team,
-      ratingManifestSha256: schema.teamPossessionStats.ratingManifestSha256,
-      measurementManifestSha256: schema.teamPossessionStats.measurementManifestSha256,
-    }).from(schema.teamPossessionStats).where(and(
-      eq(schema.teamPossessionStats.season, season),
-      eq(schema.teamPossessionStats.asOfWeek, week),
-      inArray(schema.teamPossessionStats.team, [game.homeTeam, game.awayTeam]),
-    ));
-  } catch {
-    lineageLookupUnavailable = true;
-  }
-  const statRatingManifests = new Set(statProvenanceRows.map((row) => row.ratingManifestSha256));
-  const statMeasurementManifests = new Set(statProvenanceRows.map((row) => row.measurementManifestSha256));
-  const statRatingManifestSha256 = statRatingManifests.size === 1 ? [...statRatingManifests][0] : null;
-  const statMeasurementManifestSha256 = statMeasurementManifests.size === 1 ? [...statMeasurementManifests][0] : null;
-  if (statRatingManifestSha256 && statMeasurementManifestSha256 && !lineageLookupUnavailable) {
-    try {
-      const published = await db.select({ measurementManifestSha256: schema.matchupDataPublications.measurementManifestSha256 })
-        .from(schema.matchupDataPublications).where(and(
-          eq(schema.matchupDataPublications.season, season),
-          eq(schema.matchupDataPublications.ratingManifestSha256, statRatingManifestSha256),
-          eq(schema.matchupDataPublications.measurementManifestSha256, statMeasurementManifestSha256),
-        )).limit(1);
-      publishedMeasurementManifestSha256 = published[0]?.measurementManifestSha256 ?? null;
-    } catch {
-      lineageLookupUnavailable = true;
-    }
-  }
   const lineage = matchupLineage({
     forecastRunId: view.publicationMode === "predictions" ? selectedRunId : null,
     forecastRatingManifestSha256,
@@ -264,6 +288,7 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     modelId: view.modelId,
     publicationMode: view.publicationMode,
     marketSpread: spreadLabel(marketView),
+    marketSpreadLine: view.marketSpreadLine,
     modelSpread: spreadLabel(modelView),
     marketTotal: view.marketTotal,
     modelTotal: view.predictedTotal,

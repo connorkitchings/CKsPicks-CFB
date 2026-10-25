@@ -24,7 +24,7 @@
 - `tests/test_score_envelope_r1.py`: 10 tests.
 
 ## Next (not started)
-1. Baseline reproduction of the served artifacts (byte or canonical record hash) for the full served lineage: needs the exact measurement and rating manifest ids from `docs/plans/2026-09-29/v5-repair-2026-source-lock.json` and the repair manifest's per-season Silver refs.
+1. Baseline reproduction of the served artifacts (byte or canonical record hash) for the full served lineage: needs the exact measurement and rating manifest ids from `docs/archive/plans/2026-09/2026-09-29/v5-repair-2026-source-lock.json` and the repair manifest's per-season Silver refs.
 2. Historical baseline-versus-R1 diff for 2015-2019 and 2021-2025 from the pinned Silver byplay and game outcomes (read-only on Preview R2; compute-heavy), plus null-PPA exposure by season, metric and team-game.
 3. Report changed groups, games and CFBD request count; wait for the user's go-ahead before any CFBD request.
 4. Corroboration, go/no-go, signed sizing receipt (the signing and any R2 publication are user-run).

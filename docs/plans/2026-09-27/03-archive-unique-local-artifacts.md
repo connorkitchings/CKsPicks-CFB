@@ -3,7 +3,7 @@
 - **Status:** In Progress
 - **Created:** 2026-09-27
 - **Approval source:** User explicitly requested implementation of this plan on 2026-09-27
-- **Implementation log:** `session_logs/2026-09-27/08-archive-unique-local-artifacts.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-27/08-archive-unique-local-artifacts.md`
 - **Commit policy:** User controls Git operations
 
 ## Goal
@@ -31,4 +31,4 @@ Test successful and failure paths, including identical object, collision, incomp
 
 ## Amendments and blockers
 
-The backup and independent verification stages completed on 2026-09-27. The configured Preview R2 key returned `AccessDenied` for the read-only lifecycle configuration request. No current administrator/dashboard rule record was available. The lifecycle proof and eight-file prune tasks remain open; no local file was removed. See the [execution report](../../reports/2026-09-27-local-artifact-archive.md).
+The backup and independent verification stages completed on 2026-09-27. The configured Preview R2 key returned `AccessDenied` for the read-only lifecycle configuration request. No current administrator/dashboard rule record was available. The lifecycle proof and eight-file prune tasks remain open; no local file was removed. See the [execution report](../../archive/reports/2026-09-27-local-artifact-archive.md).

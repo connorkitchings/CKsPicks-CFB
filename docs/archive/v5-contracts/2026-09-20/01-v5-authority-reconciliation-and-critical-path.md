@@ -4,7 +4,7 @@
 - **Created:** 2026-09-20
 - **Planner:** Sol
 - **Approval source:** User approved the proposed documentation and planning package with “go” on 2026-09-20.
-- **Implementation log:** `session_logs/2026-09-20/02-v5-authority-reconciliation-and-critical-path.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-20/02-v5-authority-reconciliation-and-critical-path.md`
 - **Commit policy:** Separate documentation/contract commit; user controls Git operations.
 
 ## Goal

@@ -6,7 +6,7 @@
   snapshot policy.
 - **Outcome:** Production now serves the reviewed active run in `predictions`
   mode. The first public timing snapshot is immutable and recorded below.
-- **Plan Contract:** `docs/plans/2026-08-21/week0-predictions-reveal.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-21/week0-predictions-reveal.md`
 - **Approval / Status:** User explicitly approved implementation on 2026-08-21;
   contract implemented.
 - **Blockers:** None. Final Week 0 freeze remains a pre-kickoff operation.

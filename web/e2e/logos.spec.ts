@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 const built = fs.existsSync(path.join(process.cwd(), "public", "logos", "v2", "manifest.json"));
 
 // The pages that ship: logos render at 16-80 px on all of them.
-const PAGES = ["/", "/results", "/matchup/1", "/charts"];
+const PAGES = ["/", "/?week=4", "/matchup/1", "/stats"];
 
 test.describe("team logos", () => {
   test("every rendered logo loads and is never a broken image", async ({ page }) => {
@@ -17,6 +17,15 @@ test.describe("team logos", () => {
       );
       expect(broken, url).toBe(0);
     }
+  });
+
+  test("logos load lazily, except the matchup hero's", async ({ page }) => {
+    await page.goto("/");
+    const eager = await page.locator("img[data-logo]:not([loading=lazy])").count();
+    expect(eager).toBe(0);
+    await page.goto("/matchup/1");
+    const priority = await page.locator("img[data-logo][fetchpriority=high]").count();
+    expect(priority).toBeGreaterThan(0);
   });
 
   test("logos are sharp: natural width is at least 2x the displayed width", async ({ page }) => {
@@ -57,10 +66,10 @@ test.describe("team logos", () => {
     }
   });
 
-  test("Tennessee stays orange in dark Picks, Results, chart markers and PNG capture", async ({ page }) => {
+  test("Tennessee stays orange in dark Games, chart markers and PNG capture", async ({ page }) => {
     test.skip(!built, "v2 logo set not built yet");
     await page.emulateMedia({ colorScheme: "dark" });
-    for (const url of ["/", "/results"]) {
+    for (const url of ["/", "/?week=4"]) {
       await page.goto(url);
       const tennessee = page.locator('img[data-logo][src$="/2633.webp"]:visible');
       await expect(tennessee.first()).toBeVisible();
@@ -70,7 +79,7 @@ test.describe("team logos", () => {
       await expect(page.locator('img[data-logo][src$="/dark/130.webp"]:visible').first()).toBeVisible();
     }
 
-    await page.goto("/charts?chart=efficiency&week=2&fixture=slate");
+    await page.goto("/stats?chart=efficiency&week=2&fixture=slate");
     for (const [team, id] of [
       ["Tennessee", 2633], ["Clemson", 228], ["Sam Houston", 2534], ["Texas", 251],
       ["North Texas", 249], ["Buffalo", 2084], ["Utah", 254],
@@ -115,7 +124,7 @@ test.describe("team logos", () => {
 
   test("the matchup hero logo follows its responsive size classes", async ({ page }) => {
     await page.goto("/matchup/1");
-    for (const [viewportWidth, logoWidth] of [[390, 48], [1280, 64]] as const) {
+    for (const [viewportWidth, logoWidth] of [[390, 40], [1280, 64]] as const) {
       await page.setViewportSize({ width: viewportWidth, height: 800 });
       const widths = await page.locator("[data-side] img[data-logo]:visible")
         .evaluateAll((images) => images.map((img) => img.clientWidth));

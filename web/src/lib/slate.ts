@@ -1,14 +1,15 @@
 import type { Game, PredictionGame } from "./queries.ts";
 import {
+  BREAK_EVEN_PCT,
   marketSpreadView,
   modelSpreadView,
   signedSpread,
   spreadEdge,
   totalEdge,
 } from "./betting-format.ts";
-
-/** Reference win-rate threshold (52.4%) for judging record accuracy; not a payout or price claim. */
-export const BREAK_EVEN_PCT = 52.4;
+import { isFinal } from "./team-games.ts";
+import { phoneTeamName } from "./team-logos.ts";
+import { isTimeTbd, nextEtDayStart } from "./time-et.ts";
 
 export type LeanKind = "spread" | "total";
 
@@ -168,12 +169,16 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
   };
 }
 
-export function hasLean(game: Game): boolean {
-  return leanFor(game, "spread") !== null || leanFor(game, "total") !== null;
+/** A slate is retrospective when it was repaired after the fact or its first prediction is a replay. */
+export function isRetrospective(
+  retrospectiveRepair: boolean,
+  firstPrediction: { evidenceClass?: string | null } | undefined,
+): boolean {
+  return retrospectiveRepair || firstPrediction?.evidenceClass === "replay";
 }
 
-export function isFinal(game: Game): boolean {
-  return game.homePoints !== null && game.awayPoints !== null;
+export function hasLean(game: Game): boolean {
+  return leanFor(game, "spread") !== null || leanFor(game, "total") !== null;
 }
 
 /** "model: wins by 7.6 · best line: DraftKings"; each part appears only when known. */
@@ -183,6 +188,28 @@ export function leanDetail(lean: Lean): string | null {
     lean.source ? `best line: ${lean.source}` : null,
   ].filter((p): p is string => p !== null);
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/**
+ * True when the model makes the other team the favorite than the market does, e.g. the pick is
+ * "Georgia +3.5" but the model has Georgia winning. Only then does the bare model number need a team.
+ */
+export function modelCrossesMarket(lean: Lean): boolean {
+  if (lean.kind !== "spread") return false;
+  const line = lean.pick.match(/([+-]\d+(?:\.\d+)?)$/);
+  const margin = lean.model?.match(/by\s+(-?\d+(?:\.\d+)?)$/);
+  if (!line || !margin) return false;
+  const modelMargin = Number(margin[1]);
+  if (Math.abs(modelMargin) < 0.05) return false;
+  return modelMargin > 0 !== Number(line[1]) < 0;
+}
+
+/** The lean as phones show it: a long team name in the pick and model text becomes its abbreviation. */
+export function phoneLean(lean: Lean): Lean {
+  if (lean.team === null) return lean;
+  const short = phoneTeamName(lean.team);
+  if (short === lean.team) return lean;
+  return { ...lean, pick: lean.pick.replace(lean.team, short), model: lean.model?.replace(lean.team, short) ?? null };
 }
 
 export type TopLean = Lean & { game: PredictionGame };
@@ -285,6 +312,11 @@ export function weekRecord(games: Game[]): { spread: Tally; total: Tally } {
     }
   }
   return out;
+}
+
+/** True when at least one spread or total in the slate carries a recorded grade. */
+export function hasGradedPick(games: Game[]): boolean {
+  return games.some((g) => resultFor(g, "spread") !== null || resultFor(g, "total") !== null);
 }
 
 /** One graded lean, reduced to what ranking needs. */
@@ -406,6 +438,60 @@ export function sortResults(games: Game[], sort: ResultSort): Game[] {
     if (sb === null) return -1;
     return (sort === "bestResult" ? sb - sa : sa - sb) || byKickoff(a, b);
   });
+}
+
+export type WeekPhase = "upcoming" | "in-progress" | "final";
+
+/** Where a week stands: no game finished, every game finished, or some of each. An empty week is upcoming. */
+export function weekPhase(games: Game[]): WeekPhase {
+  const finished = games.filter(isFinal).length;
+  if (finished === 0) return "upcoming";
+  return finished === games.length ? "final" : "in-progress";
+}
+
+export type GameState = "final" | "awaiting" | "upcoming";
+
+type Timed = { startDate: Date; homePoints: number | null; awayPoints: number | null };
+
+/**
+ * Final once scored; otherwise awaiting a result when kickoff has passed, else upcoming. A Time-TBD
+ * placeholder (midnight Eastern) has not really kicked off at midnight, so it counts as passed only once
+ * its Eastern day is over.
+ */
+export function gameState(game: Timed, now: Date): GameState {
+  if (isFinal(game)) return "final";
+  const passedAt = isTimeTbd(game.startDate) ? nextEtDayStart(game.startDate) : game.startDate;
+  return now.getTime() >= passedAt.getTime() ? "awaiting" : "upcoming";
+}
+
+export type WeekStatus = "upcoming" | "in-progress" | "awaiting" | "final";
+
+/**
+ * Where a week stands on the clock: all scored is final; nothing scored and nothing kicked off is upcoming;
+ * nothing scored and every game awaiting a result is awaiting; anything else is in progress. An empty week is upcoming.
+ */
+export function weekStatus(games: Timed[], now: Date): WeekStatus {
+  const states = games.map((game) => gameState(game, now));
+  if (states.length > 0 && states.every((state) => state === "final")) return "final";
+  if (states.every((state) => state === "upcoming")) return "upcoming";
+  return states.every((state) => state === "awaiting") ? "awaiting" : "in-progress";
+}
+
+export type SlateSort = "kickoff" | "bestEdge" | "spreadEdge" | "totalEdge" | "bestResult" | "worstResult";
+
+const EDGE_SORTS: readonly SlateSort[] = ["kickoff", "bestEdge", "spreadEdge", "totalEdge"];
+const RESULT_SORTS: readonly SlateSort[] = ["bestResult", "worstResult"];
+
+/** Sorts offered for a week; result sorts need at least one finished game. */
+export function slateSorts(phase: WeekPhase): readonly SlateSort[] {
+  return phase === "upcoming" ? EDGE_SORTS : [...EDGE_SORTS, ...RESULT_SORTS];
+}
+
+/** Sorts the slate; a sort the phase does not offer falls back to kickoff order. */
+export function sortSlate(games: Game[], sort: SlateSort, phase: WeekPhase): Game[] {
+  const allowed = slateSorts(phase).includes(sort) ? sort : "kickoff";
+  if (allowed === "bestResult" || allowed === "worstResult") return sortResults(games, allowed);
+  return sortGames(games, allowed);
 }
 
 /** Season-level comparison window: the bar spans +/- this many points of win rate. */

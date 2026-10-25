@@ -38,14 +38,15 @@ function buttonClasses(markup: string): string[] {
   return [...markup.matchAll(/<button[^>]*class="([^"]*)"/g)].map((match) => match[1]);
 }
 
-test("compact segments never wrap and keep the 30px Charts height", () => {
+test("compact segments wrap on phones with 44px targets and keep desktop 30px height", () => {
   const classes = buttonClasses(renderToStaticMarkup(compact()));
   assert.equal(classes.length, 2);
   for (const className of classes) {
     const tokens = className.split(" ");
-    assert.ok(tokens.includes("whitespace-nowrap"));
-    assert.ok(tokens.includes("min-h-7.5"));
-    assert.ok(!tokens.includes("min-h-11"), "compact segments skip the phone touch-target height");
+    assert.ok(tokens.includes("whitespace-normal"));
+    assert.ok(tokens.includes("sm:whitespace-nowrap"));
+    assert.ok(tokens.includes("sm:min-h-7.5"));
+    assert.ok(tokens.includes("min-h-11"));
     assert.ok(!tokens.some((token) => token === "break-words" || token === "flex-1"));
   }
 });

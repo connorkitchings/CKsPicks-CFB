@@ -29,7 +29,7 @@ ineligible for leans, grades, ROI, and model selection.
   prospective-only metric):** cumulative 2026 V5 ATS win % from Week 0 onward vs the
   52.4% break-even at -110, reported separately for spreads and totals, with strictly
   point-in-time inputs ([record methodology](record_methodology.md)). Units/ROI shown
-  on `/performance` are display/evaluation only; they do not imply staking or
+  on `/model` are display/evaluation only; they do not imply staking or
   wagering guidance.
 - Market evaluation of future candidates begins only after football-model
   quality succeeds under the [evaluation policy](evaluation.md).

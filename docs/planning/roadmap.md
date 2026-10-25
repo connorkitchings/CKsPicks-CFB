@@ -1,13 +1,6 @@
 # 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-09-22
-> **Rollback benchmark:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (V5 is the serving family; see [Current Status](../status.md))
-
-> **Authority note (2026-09-05):** This page remains the current V4 operations
-> authority and historical record of the R1/R2 successor work. The pending R3/R4
-> sequence and unfinished research portion are superseded by the
-> [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
-> Completed artifacts remain immutable evidence subject to its Phase 1 audit.
+> **Status: historical.** Last updated 2026-09-22; this is the record of the 2026 V4-to-V5 transition and the R1/R2 successor work, not current guidance. V5 is the only operational model: see [Current Status](../status.md), the [V5 status guide](../modeling/v5_status.md) and the [weekly runbook](../ops/weekly_runbook.md). V4 is documented in the [retrospective](../modeling/v4_retrospective.md); rollback now reactivates a prior verified V5 release. Research direction is in the [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 
 > **Current V5 checkpoint (2026-09-22):** [V5 model development is complete and accepted](../modeling/v5_status.md). V5 serves the public site (V4 is the rollback). Week 4 finals and refreshed 07/08 parents gate a current forecast; verified Preview serving and rollback proof precede a separate activation decision. Six slates of the cumulative 2026 record are monitoring, not a prelaunch requirement.
 
@@ -38,8 +31,7 @@ See the
   selection, locked-2025 anti-regression check, and 2021–2025 refit remain its
   authoritative lineage.
 - Production runs use immutable R2 artifacts, Neon run state, and fail-closed
-  publication. The [weekly pipeline](../ops/weekly_pipeline.md) and
-  [production runbook](../ops/production_runbook.md) govern operations.
+  publication. The [weekly runbook](../ops/weekly_runbook.md) governs operations.
 - Market quotes are timestamped decision inputs after prediction; they never
   enter football-model inputs or selection.
 
@@ -116,23 +108,23 @@ These entries retain their dated findings and former lifecycle states. Use the
 [data-first roadmap](data-first-football-forecasting-roadmap.md) for current
 contracts; historical approvals below do not authorize execution.
 
-- [Approved high-level roadmap](../plans/2026-08-24/rating-centric-successor-high-level-roadmap.md)
+- [Approved high-level roadmap](../archive/plans/2026-08/2026-08-24/rating-centric-successor-high-level-roadmap.md)
   — sequencing and governance authority; not a single Terra implementation task.
-- [Phase 1 measurement foundation](../plans/2026-08-24/phase1-rating-measurement-foundation.md)
+- [Phase 1 measurement foundation](../archive/plans/2026-08/2026-08-24/phase1-rating-measurement-foundation.md)
   — Approved documentation and planning contract. Its seven-measurement
   catalog, four-iteration adjustment, temporal-status policy, and Preview-only
   registration policy are frozen; implementation remains a separate Terra task.
-- [Phase 2 minimum viable team-state baseline](../plans/2026-08-24/phase2-minimum-viable-team-state-baseline.md)
+- [Phase 2 minimum viable team-state baseline](../archive/plans/2026-08/2026-08-24/phase2-minimum-viable-team-state-baseline.md)
   — Implemented 2026-08-25 from the bounded Phase 1 v2 handoff
-  ([completion contract](../plans/2026-08-24/phase1-phase2-completion.md));
+  ([completion contract](../archive/plans/2026-08/2026-08-24/phase1-phase2-completion.md));
   Preview state artifacts pass all audit gates with byte-identical reruns.
-- [Phase 3 score-model tournament v2](../plans/2026-08-25/phase3-score-model-tournament-v2.md)
+- [Phase 3 score-model tournament v2](../archive/plans/2026-08/2026-08-25/phase3-score-model-tournament-v2.md)
   — In Progress. v1 is immutable failed research. v2 completed its sealed
   linear-versus-NB2 selection after one mechanical bounded-fit correction, but
   neither complete family passed every frozen gate. Only the immutable
   diagnostic exists; no candidate froze, locked-2025 confirmation ran, or
   Phase 4 work may begin.
-- [True-PPSO Phase 1/2 remediation and Phase 3 v3](../plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
+- [True-PPSO Phase 1/2 remediation and Phase 3 v3](../archive/plans/2026-08/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
   — Implemented 2026-08-26. Phase 1 v3 is certified, Phase 2 v2 passed its
   representative location gates and byte-identical rerun, and the sealed v3
   tournament froze `negative_binomial_scores` as candidate v1 (locked-2025:
@@ -141,8 +133,8 @@ contracts; historical approvals below do not authorize execution.
   Preview-only all-2025 rehearsal passed all 15 weeks and byte-identical rerun
   (summary SHA-256 `b755b585…`); no production interface changed. Phase 5
   protected-evidence tooling is amended into the O2 diagnostic lane under
-  [its operations contract](../plans/2026-08-26/phase5-protected-prospective-evidence.md).
-- [Historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md)
+  [its operations contract](../archive/plans/2026-08/2026-08-26/phase5-protected-prospective-evidence.md).
+- [Historical expansion and ratings methodology reset](../archive/plans/2026-08/2026-08-26/historical-expansion-ratings-methodology-reset.md)
   — **Superseded after completed R1/R2 evidence.** Historical R1–R4 research contract: 2015–2019 plus
   2021–2025, universal 2020 exclusion, staged methodology tournament, and a
   future candidate-v2 evidence lane. The remediated R1 run
@@ -155,7 +147,7 @@ contracts; historical approvals below do not authorize execution.
   `r2-prior-20260904-4c6e610` (winner `continuity_ridge_alpha_0_1` via the
   0.5% simplicity tie; all gates passed; reconstructed and
   activation-ineligible — see the
-  [cross-report memo](../research/2026-09-04-early-week-context-cross-report.md)).
+  [cross-report memo](../archive/research/2026-09-04-early-week-context-cross-report.md)).
   Its completed R1/R2 evidence remains available for audit. The data-first
   program now requires the 2026-09-08 corrective sequence; prior
   engineering completion does not establish predictive eligibility.

@@ -7,7 +7,7 @@
   canonical-artifact, state carryover, and production-V4-read boundaries. The
   full-2025 Preview rehearsal and byte-identical rerun passed; no production
   surface was written.
-- **Plan Contract:** `docs/plans/2026-08-26/phase4-shadow-operations.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-26/phase4-shadow-operations.md`
 - **Approval / Status:** User authorized the corrected contract; `Implemented`.
 - **Blockers:** None.
 - **Next:** Draft and approve the separate Phase 5 Week 1 operations contract;

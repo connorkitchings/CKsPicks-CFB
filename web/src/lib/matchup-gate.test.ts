@@ -24,12 +24,17 @@ function sourceFiles(dir: URL): URL[] {
   });
 }
 
-test("no page or component links to a team page (team pages are not ready)", () => {
+test("only ratings rows and matchup pages link to team pages (slate cards never do)", () => {
   const offenders = sourceFiles(new URL("../", import.meta.url))
-    .filter((url) => !url.pathname.includes("/app/teams/"))
-    .filter((url) => /["'`]\/teams\/|href=\{`\/teams/.test(readFileSync(url, "utf8")))
-    .map((url) => url.pathname.split("/src/")[1]);
-  assert.deepEqual(offenders, []);
+    .filter((url) => /["'`]\/teams\/|href=\{`\/teams|teamHref/.test(readFileSync(url, "utf8")))
+    .map((url) => url.pathname.split("/src/")[1])
+    .sort();
+  assert.deepEqual(offenders, [
+    "app/matchup/[gameId]/page.tsx",
+    "components/matchup/MatchupHero.tsx",
+    "components/ratings/RatingsView.tsx",
+    "lib/team-routes.ts",
+  ].sort());
 });
 
 test("the root layout provides the matchup gate to client cards", () => {

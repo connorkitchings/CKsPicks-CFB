@@ -77,17 +77,6 @@ def test_data_first_research_roots_exist():
     assert (ROOT / manifest["research"]["config_root"]).is_dir()
 
 
-def test_production_configs_do_not_reference_data_first_artifacts():
-    manifest = _manifest()
-    namespace = manifest["research"]["artifact_namespace"]
-    violations = [
-        path
-        for path in manifest["production_configs"]
-        if namespace in (ROOT / path).read_text()
-    ]
-    assert violations == []
-
-
 def test_data_first_configs_do_not_reference_production_outputs():
     manifest = _manifest()
     config_root = ROOT / manifest["research"]["config_root"]
@@ -101,3 +90,35 @@ def test_data_first_configs_do_not_reference_production_outputs():
             if prefix in content:
                 violations.append(f"{path.relative_to(ROOT)} references {prefix}")
     assert violations == []
+
+
+GUIDANCE_FILES = (
+    "AGENTS.md",
+    "README.md",
+    ".agent/CONTEXT.md",
+    ".codex/QUICKSTART.md",
+    ".codex/MAP.md",
+    "docs/architecture/repository_boundaries.md",
+)
+
+
+def test_manifest_does_not_name_v4_as_the_production_model():
+    manifest = _manifest()
+    assert "production_model" not in manifest["baseline"]
+
+
+def test_guidance_does_not_describe_removed_tooling_as_present():
+    removed = ("nx.json", "conf/weekly_bets/v4_2026.yaml", "conf/model/", "mlflow_mcp")
+    violations = [
+        f"{name} mentions {token}"
+        for name in GUIDANCE_FILES
+        for token in removed
+        if token in (ROOT / name).read_text()
+    ]
+    assert violations == []
+
+
+def test_claude_md_only_points_to_agents_md():
+    text = (ROOT / "CLAUDE.md").read_text()
+    assert "AGENTS.md" in text
+    assert len(text.splitlines()) <= 5

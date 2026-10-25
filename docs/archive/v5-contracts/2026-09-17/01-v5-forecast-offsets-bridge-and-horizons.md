@@ -4,7 +4,7 @@
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved this execution decomposition on 2026-09-17, authorizing 04A execution.
-- **Implementation log:** `session_logs/2026-09-17/02-v5-forecast-offsets-and-horizons.md`; hardening/preflight in `session_logs/2026-09-17/04-v5-04a-hardening-and-preflight.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-17/02-v5-forecast-offsets-and-horizons.md`; hardening/preflight in `session_logs/archive/daily/2026-09-17/04-v5-04a-hardening-and-preflight.md`.
 - **Commit policy:** Separate code checkpoint; user executes Git before any Preview run identity is selected.
 
 ## Goal

@@ -4,7 +4,7 @@
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires verified forecast parents.
-- **Implementation log:** `session_logs/2026-09-17/09-v5-05-execution-decomposition-planning.md`, `session_logs/2026-09-17/10-v5-05a-readiness-and-replay.md`, `session_logs/2026-09-17/12-v5-05b-freeze-score-ledger.md`, `session_logs/2026-09-18/02-v5-05c-rehearsal-verification-runbook.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-17/09-v5-05-execution-decomposition-planning.md`, `session_logs/archive/daily/2026-09-17/10-v5-05a-readiness-and-replay.md`, `session_logs/archive/daily/2026-09-17/12-v5-05b-freeze-score-ledger.md`, `session_logs/archive/daily/2026-09-18/02-v5-05c-rehearsal-verification-runbook.md`.
 - **Commit policy:** Separate code and rehearsal/readiness checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate

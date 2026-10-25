@@ -3,7 +3,7 @@
 ## TL;DR
 - **Worked On:** R2 between-season prior tournament — all 4 tasks from the approved plan
 - **Outcome:** Complete implementation; 628+2 skipped tests pass; lint clean
-- **Plan Contract:** `docs/plans/2026-08-27/r2-redesigned-offseason-prior-tournament.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-27/r2-redesigned-offseason-prior-tournament.md`
 - **Approval / Status:** Approved by user (2026-08-31); now `Implemented`
 - **Blockers:** None
 - **Next:** Run R2 against live Preview R2 artifacts using `build_r2_prior_tournament.py`; proceed to R3 after winner confirmed
@@ -30,7 +30,7 @@
 ## Files Modified
 - `conf/ratings/successor_v2_tournaments.yaml` — version bump v1→v2
 - `src/cks_picks_cfb/ratings/successor_tournaments.py` — version constant bump
-- `docs/plans/2026-08-27/r2-redesigned-offseason-prior-tournament.md` — status → Implemented
+- `docs/archive/plans/2026-08/2026-08-27/r2-redesigned-offseason-prior-tournament.md` — status → Implemented
 
 ## Files Created
 - `src/cks_picks_cfb/ratings/priors.py` — R2 prior estimators

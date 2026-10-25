@@ -3,14 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { PAGE_WIDTHS, pageWidthFor } from "@/lib/page-width";
 
 const items = [
-  ["Picks", "/"],
-  ["Results", "/results"],
+  ["Games", "/"],
   ["Ratings", "/ratings"],
-  ["Charts", "/charts"],
-  ["Performance", "/performance"],
+  ["Graphs", "/stats"],
+  ["Model", "/model"],
 ] as const;
+
+/** Extra path prefixes that keep a tab highlighted (detail pages that belong to it). */
+const alsoActive: Record<string, readonly string[]> = {
+  "/": ["/matchup"],
+  "/ratings": ["/teams"],
+};
+
+function isTabActive(href: string, pathname: string): boolean {
+  const prefixes = [href, ...(alsoActive[href] ?? [])];
+  return prefixes.some((prefix) =>
+    prefix === "/" ? pathname === "/" : pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 function NavIcon({ href, active }: { href: string; active: boolean }) {
   const strokeWidth = active ? 2.25 : 1.75;
@@ -32,23 +45,6 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
           />
         </svg>
       );
-    case "/results":
-      return (
-        <svg
-          aria-hidden="true"
-          className="h-5 w-5 sm:hidden"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      );
     case "/ratings":
       return (
         <svg
@@ -66,7 +62,7 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
           />
         </svg>
       );
-    case "/charts":
+    case "/stats":
       return (
         <svg
           aria-hidden="true"
@@ -87,7 +83,7 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
           <circle cx="18" cy="6.75" r="0.9" fill="currentColor" />
         </svg>
       );
-    case "/performance":
+    case "/model":
       return (
         <svg
           aria-hidden="true"
@@ -109,14 +105,11 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
   }
 }
 
-export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) {
+export function SiteNav() {
   const pathname = usePathname();
-  const visibleItems = chartsEnabled ? items : items.filter(([, href]) => href !== "/charts");
 
   // Align navigation container with page content widths on desktop.
-  const isSlate = pathname === "/" || pathname.startsWith("/results") || (chartsEnabled && pathname.startsWith("/charts"));
-  const wide = pathname.startsWith("/matchup");
-  const containerClass = isSlate ? "sm:max-w-6xl" : wide ? "sm:max-w-5xl" : "sm:max-w-4xl";
+  const containerClass = PAGE_WIDTHS[pageWidthFor(pathname)];
 
   return (
     <nav
@@ -125,13 +118,12 @@ export function SiteNav({ chartsEnabled = false }: { chartsEnabled?: boolean }) 
     >
       <div
         className={clsx(
-          "mx-auto grid h-14 items-stretch px-2 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
-          chartsEnabled ? "grid-cols-5" : "grid-cols-4",
+          "mx-auto grid h-14 items-stretch px-2 grid-cols-4 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
           containerClass,
         )}
       >
-        {visibleItems.map(([label, href]) => {
-          const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+        {items.map(([label, href]) => {
+          const isActive = isTabActive(href, pathname);
           return (
             <Link
               key={href}

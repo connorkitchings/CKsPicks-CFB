@@ -94,8 +94,9 @@ test("game log: the explosive rate reads joined yardage", () => {
   // Week 2 has unequal exposures (10/10/20/10), so the average must be pooled.
   assert.equal(log.games[1].average.offense, 5 / 50);
   assert.equal(log.games[1].average.defense, 5 / 50);
-  assert.deepEqual(log.season.offense, { value: 4 / 20, rank: 1, ranked: 4 });
-  assert.deepEqual(log.season.defense, { value: 2 / 20, rank: 2, ranked: 4 });
+  // The season FBS average pools both weeks: 10 explosive plays over 90.
+  assert.deepEqual(log.season.offense, { value: 4 / 20, rank: 1, ranked: 4, average: 10 / 90 });
+  assert.deepEqual(log.season.defense, { value: 2 / 20, rank: 2, ranked: 4, average: 10 / 90 });
 });
 
 test("game log header: season to date through the latest week with Efficiency's values and competition ranks", () => {
@@ -111,6 +112,8 @@ test("game log header: season to date through the latest week with Efficiency's 
           value: efficiency.points.find((p) => p.team === team)![axis],
           rank: ranks.get(team)![axis],
           ranked: 4,
+          // The same pooled FBS average the Efficiency chart draws as its dashed line.
+          average: efficiency.average![axis],
         }, `${team} ${metric} ${side}`);
       }
     }
@@ -128,7 +131,8 @@ test("game log header: season to date through the latest week with Efficiency's 
 test("game log header: a team without games is unranked and an empty release has no window", () => {
   const log = teamGameLog([...roster, { team: "Echo", conference: "West" }], rows, "Echo", "success");
   assert.deepEqual(log.games, []);
-  assert.deepEqual(log.season.offense, { value: null, rank: null, ranked: 4 });
+  // Even a team with no games gets the FBS average, 41 successful plays over 90.
+  assert.deepEqual(log.season.offense, { value: null, rank: null, ranked: 4, average: 41 / 90 });
   assert.equal(teamGameLog(roster, [], "Alpha", "ppa").throughWeek, null);
 });
 

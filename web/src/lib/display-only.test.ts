@@ -9,14 +9,15 @@ test("only an explicit true marks a run display-only", () => {
   }
 });
 
-test("the notice names the week and the UTC generation date", () => {
+test("the notice names the week and the Eastern generation date", () => {
   assert.equal(
     displayOnlyNotice(6, new Date("2026-10-08T23:30:00Z")),
     "Week 6 picks were generated on October 8, 2026 and cover only games that had not started. " +
       "They are not part of the prospective record.",
   );
-  // A time just after midnight UTC is the next day, whatever the viewer's zone.
-  assert.match(displayOnlyNotice(6, new Date("2026-10-09T00:30:00Z")), /October 9, 2026/);
+  // Just after midnight UTC is still the previous evening in Eastern time.
+  assert.match(displayOnlyNotice(6, new Date("2026-10-09T00:30:00Z")), /October 8, 2026/);
+  assert.match(displayOnlyNotice(6, new Date("2026-10-09T04:30:00Z")), /October 9, 2026/);
 });
 
 test("an invalid date is refused rather than shown as Invalid Date", () => {

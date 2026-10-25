@@ -3,8 +3,8 @@
 ## TL;DR
 
 - **Worked On:** Investigated repository state, web app architecture, test coverage infrastructure, and contract validation tools to create the implementation contract for Modernization Phases 5–8.
-- **Outcome:** Produced and saved the approved decision-complete contract at `docs/plans/2026-08-23/modernization-phases-5-8-completion.md`.
-- **Plan Contract:** [`docs/plans/2026-08-23/modernization-phases-5-8-completion.md`](../../../../docs/plans/2026-08-23/modernization-phases-5-8-completion.md)
+- **Outcome:** Produced and saved the approved decision-complete contract at `docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`.
+- **Plan Contract:** [`docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`](../../../../docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md)
 - **Approval / Status:** User approved plan on 2026-08-23; contract is `Approved`.
 - **Blockers:** None.
 - **Next:** Launch a fresh Terra implementation task using the approved contract prompt.
@@ -19,7 +19,7 @@
 
 ## Work Completed
 
-- Created approved implementation contract: `docs/plans/2026-08-23/modernization-phases-5-8-completion.md`.
+- Created approved implementation contract: `docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`.
 - Performed documentation-only validation checks (`git diff --check` and `uv run mkdocs build --quiet`).
 
 ## Validation
@@ -29,12 +29,12 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-23/modernization-phases-5-8-completion.md` - New approved implementation contract
+- `docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md` - New approved implementation contract
 - `session_logs/archive/daily/2026-08-23/01-modernization-phases-5-8-plan.md` - Planning session log
 
 ## Handoff Notes
 
-- **Resume at:** Start a fresh Terra implementation session with the authorized contract path `docs/plans/2026-08-23/modernization-phases-5-8-completion.md`.
+- **Resume at:** Start a fresh Terra implementation session with the authorized contract path `docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`.
 - **Watch out for:** Preserve all uncommitted worktree changes from the 2026-08-22 Phase 1–5 modernization work. Do not modify V4 model weights, 2025 locked test results, or R2 storage paths.
 
 **tags:** ["modernization", "plan", "sol", "phases-5-8"]

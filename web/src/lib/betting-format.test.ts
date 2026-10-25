@@ -84,6 +84,9 @@ test("spread bet takes the home line as-is but flips it for the away side", () =
   assert.equal(spreadBetLabel(HOME, AWAY, "away", -7), "Alabama +7.0");
   // Home dog +3.5: backing Georgia means getting +3.5.
   assert.equal(spreadBetLabel(HOME, AWAY, "home", 3.5), "Georgia +3.5");
+  // Pick'em line: shows PK instead of +0.0 or -0.0.
+  assert.equal(spreadBetLabel(HOME, AWAY, "home", 0), "Georgia PK");
+  assert.equal(spreadBetLabel(HOME, AWAY, "away", 0), "Alabama PK");
   assert.equal(spreadBetLabel(HOME, AWAY, null, -7), null);
   assert.equal(spreadBetLabel(HOME, AWAY, "home", null), null);
 });

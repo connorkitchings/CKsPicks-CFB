@@ -21,7 +21,11 @@ from cks_picks_cfb.data.storage import get_storage
 
 ROOT = Path(__file__).resolve().parents[2]
 REPORT_PATH = (
-    ROOT / "docs" / "research" / "2026-09-21-v5-foundation-blocker-diagnosis-report.md"
+    ROOT
+    / "docs"
+    / "archive"
+    / "research"
+    / "2026-09-21-v5-foundation-blocker-diagnosis-report.md"
 )
 
 
@@ -38,7 +42,7 @@ def _parser() -> argparse.ArgumentParser:
     # report: render and write formal diagnosis report
     subparsers.add_parser(
         "report",
-        help="Write diagnosis report to docs/research/.",
+        help="Write diagnosis report to docs/archive/research/.",
     )
 
     return parser

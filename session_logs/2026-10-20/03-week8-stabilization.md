@@ -25,6 +25,14 @@ Follows the Week 8 line refresh ([log](02-week8-line-refresh.md)). Done in a det
 - Web: `lint`, `typecheck`, `test:publication` (268 pass), `build`, `test:ui` (152 pass, 9 skipped), `test:charts-gate` (12 pass).
 - Local run against production data: Results Week 7 is 26–32–1 spread and 32–27–0 total with no season block; Biggest edges is 45–35–0.
 
+## Real-data check of the conference filter (Preview data, `make web-local`)
+
+- **Roster:** 138 teams, none without a conference. Every team in the 56 Week 8 games, in all season games and in the 138 current ratings resolves to a conference, including through the `TEAM_LOGO_MAP` aliases (Appalachian State/App State, Southern Miss(issippi), UConn/Connecticut, Miami and Miami (OH)). The release's `games` table holds only FBS teams, so FCS opponents never appear and cannot show up under a conference.
+- **Games per conference (a game counts when either team matches):** a Playwright run against the live Preview data selected conferences on `/` and got SEC 6, Big Ten 6, Sun Belt 6, FBS Independents 1 and Power Four + Notre Dame 27 of 56, matching an independent count from the database; `/results?week=7` with Pac-12 gave 3 of 59. The dropdown now says "Shows games where either team is in the conference".
+- **Ratings:** with `?conf=SEC`, 16 teams show their national ranks (2, 4, 5 … 70, 71). Tier colors follow the national cohort (`ratings.length`), so the rank-70 and rank-71 teams are not styled as elite.
+- **Added cost:** the roster read takes about 80 ms from a laptop, runs in parallel with the two existing reads and is covered by the 5-minute page cache. A failed roster read now logs an error instead of hiding the filter silently.
+- Not measured: a before/after time to first byte on Vercel. Local `next dev` timings are not comparable with the ~2.1 s baseline.
+
 ## Open items
 
 - `uv run mkdocs build --strict` fails on a link that predates this work: `docs/planning/weekly-operations-process-review.md` links into `session_logs/`, which is outside the docs tree. CI does not run mkdocs. Not changed here.

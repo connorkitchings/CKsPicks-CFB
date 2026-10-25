@@ -39,7 +39,7 @@ python -m cks_picks_cfb.ops audit-data
 
 All commands require an explicit preview or production environment. Preview is
 the default rollout target; production promotion completed 2026-08-18 under the
-[Week 0 launch contract](../plans/2026-08-18/week0-launch-execution.md) and
+[Week 0 launch contract](../archive/plans/2026-08/2026-08-18/week0-launch-execution.md) and
 remains a separately validated operation for future changes.
 
 ## Historical bootstrap
@@ -52,10 +52,6 @@ error handler can quarantine into the source bucket.
 ```bash
 make inventory-source
 make import-history
-
-# Adding locked 2025 baseline predictions requires the frozen design identity.
-make build-baselines YEAR=2026 ENV=preview AS_OF=<timestamp> \
-  CORE_REF_URI=<uri> OUTPUT_REF_URI=<uri> FROZEN_DESIGN_SHA=<sha>
 ```
 
 Native Bronze objects retain provider `cfbd`; transformed partitions are

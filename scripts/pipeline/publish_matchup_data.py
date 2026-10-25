@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 from cks_picks_cfb.data import matchup_publish as mp
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
-from cks_picks_cfb.ops.v5_release import assert_v5_database_environment
+from cks_picks_cfb.season.database_role import assert_v5_database_environment
 from contracts.teams import TEAM_LOGO_MAP
 
 URL_ENV = {"preview": "PREVIEW_DATABASE_URL", "production": "DATABASE_URL"}

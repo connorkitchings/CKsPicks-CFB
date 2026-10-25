@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { CHART_REGISTRY, chartSubtitle, conferenceLabel, exportFilename, groupLabel } from "@/lib/chart-config";
 import { domainFor, matchesConference, type TrajectorySeries } from "@/lib/charts";
+import { chartSummary } from "@/components/ui/SummaryLine";
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, HighlightStatus, type SharedChartProps } from "./ChartFrame";
 import { ChartTable, type TableColumn } from "./ChartTable";
 import { TrajectoryChart, type TrajectoryChartData } from "./TrajectoryChart";
@@ -103,6 +104,7 @@ export function TrajectoryPanel<S extends TrajectorySeries>({
       shared={shared}
       title={title}
       subtitle={subtitle}
+      summary={chartSummary({ filter, metric: metric.label })}
       controls={metricControl}
       highlightTeams={eligibleRoster}
       exportSpec={{

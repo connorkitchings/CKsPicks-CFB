@@ -6,7 +6,7 @@
 - **Certified:** 2026-09-17
 - **Planner:** Codex planning task
 - **Approval source:** User approved this execution decomposition on 2026-09-16.
-- **Implementation log:** `session_logs/2026-09-16/05-v5-rating-artifact-certification.md`.
+- **Implementation log:** `session_logs/archive/daily/2026-09-16/05-v5-rating-artifact-certification.md`.
 - **Commit policy:** Separate materializer/verifier code commit and certified-evidence documentation commit; user executes Git.
 
 ## Certification Evidence

@@ -12,7 +12,7 @@ Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the 
 
 ### V5 weekly operations & ratings publication
 
-The [product transformation contract](../../plans/2026-09-23/01-v5-product-transformation.md) and [ratings publication contract](../../plans/2026-09-26/03-v5-ratings-publication-and-navigation.md) govern active V5 operations.
+The [product transformation contract](../../plans/2026-09-23/01-v5-product-transformation.md) and [ratings publication contract](../plans/2026-09/2026-09-26/03-v5-ratings-publication-and-navigation.md) govern active V5 operations.
 
 Weekly boundary: `close-week (N-1)` → verified ratings refresh and
 `project-v5-ratings` → `prepare-week (N)` → `readiness` → reviewed publication.

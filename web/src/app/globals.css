@@ -20,18 +20,23 @@
  *   edge-*      magnitude signal for model-versus-market comparisons
  */
 :root {
+  color-scheme: light;
   --surface-page: #fafafa; /* zinc-50 */
   --surface-card: #ffffff;
+  --surface-elevated: #ffffff;
   --surface-inset: #f4f4f5; /* zinc-100 — chips, hover fills */
   --line: #e4e4e7; /* zinc-200 */
   --line-strong: #d4d4d8; /* zinc-300 */
+  --wordmark: #20344d; /* navy; the Crest CFB wordmark only */
   --ink: #18181b; /* zinc-900 */
   --ink-muted: #52525b; /* zinc-600 */
-  --ink-faint: #a1a1aa; /* zinc-400 */
+  --ink-faint: #6e6e77; /* 4.5:1 or better on every light surface */
   --accent: #2563eb; /* blue-600 */
   --accent-ink: #1d4ed8; /* blue-700 */
   --accent-soft: #eff6ff; /* blue-50 */
   --accent-line: #bfdbfe; /* blue-200 */
+  --accent-solid: #1d4ed8; /* blue-700: filled button background */
+  --on-accent-solid: #ffffff; /* text on --accent-solid (6.7:1) */
   --win: #047857; /* emerald-700 */
   --win-soft: #ecfdf5; /* emerald-50 */
   --win-line: #a7f3d0; /* emerald-200 */
@@ -44,21 +49,33 @@
   --edge-low: #71717a; /* zinc-500 */
   --edge-medium: #b45309; /* amber-700 */
   --edge-high: #15803d; /* green-700 */
+  /* Rank scale (rank 1 -> last): green -> amber -> red. Own token set, not the win/loss results
+     hues. Chip text is --ink over a 38% tint; contrast of --ink on that tint (card / inset / page)
+     at rank 1, 69, 138 (stop colors at full strength; in between the mix stays within these):
+     light 11.46/10.70/11.11, 11.65/10.88/11.29, 9.54/8.87/9.23 (all >= 7). */
+  --rank-good: #16a34a; /* green-600 */
+  --rank-mid: #d97706; /* amber-600 */
+  --rank-bad: #dc2626; /* red-600 */
 }
 
 html.dark {
+  color-scheme: dark;
   --surface-page: #000000;
   --surface-card: #09090b; /* zinc-950 */
+  --surface-elevated: #1c1917; /* stone-900 — elevated controls */
   --surface-inset: #18181b; /* zinc-900 */
   --line: #27272a; /* zinc-800 */
   --line-strong: #3f3f46; /* zinc-700 */
+  --wordmark: #f8fafc;
   --ink: #f4f4f5; /* zinc-100 */
   --ink-muted: #a1a1aa; /* zinc-400 */
-  --ink-faint: #52525b; /* zinc-600 */
+  --ink-faint: #85858f; /* 4.5:1 or better on every dark surface */
   --accent: #3b82f6; /* blue-500 */
   --accent-ink: #93c5fd; /* blue-300 */
   --accent-soft: #172554; /* blue-950 */
   --accent-line: #1e3a8a; /* blue-900 */
+  --accent-solid: #2563eb; /* blue-600 */
+  --on-accent-solid: #ffffff; /* 5.2:1 */
   --win: #34d399; /* emerald-400 */
   --win-soft: #022c22; /* emerald-950 */
   --win-line: #064e3b; /* emerald-900 */
@@ -71,14 +88,42 @@ html.dark {
   --edge-low: #a1a1aa; /* zinc-400 */
   --edge-medium: #facc15; /* yellow-400 */
   --edge-high: #4ade80; /* green-400 */
+  /* Same hues as light, lighter stops. Contrast of --ink on the 38% tint (card / inset / page):
+     dark 7.40/6.42/8.05, 7.19/6.24/7.83, 9.47/8.24/10.28 (rank 1, 69, 138; all >= 4.5). */
+  --rank-good: #4ade80; /* green-400 */
+  --rank-mid: #fbbf24; /* amber-400 */
+  --rank-bad: #f87171; /* red-400 */
+}
+
+/*
+ * Rank chip (components/ui/RankChip). `--rank-t` (0 = green ... 1 = red, set inline from
+ * rankColorMix, already eased) drives a two-stage mix with no branching: good -> mid over t 0..0.5, then
+ * mid -> bad over t 0.5..1. Text stays --ink so contrast never depends on the hue.
+ */
+.rank-chip {
+  --rank-color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--rank-mid) calc(clamp(0, var(--rank-t) * 2, 1) * 100%), var(--rank-good)),
+    var(--rank-bad) calc(clamp(0, var(--rank-t) * 2 - 1, 1) * 100%)
+  );
+  background: color-mix(in oklab, var(--rank-color) 38%, transparent);
+  border: 1px solid color-mix(in oklab, var(--rank-color) 75%, transparent);
+  color: var(--ink);
+}
+.rank-chip[data-rank-none] {
+  background: var(--surface-inset);
+  border-color: var(--line);
+  color: var(--ink-muted);
 }
 
 @theme inline {
   --color-surface-page: var(--surface-page);
   --color-surface-card: var(--surface-card);
+  --color-surface-elevated: var(--surface-elevated);
   --color-surface-inset: var(--surface-inset);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
+  --color-wordmark: var(--wordmark);
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
@@ -86,6 +131,8 @@ html.dark {
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-accent-line: var(--accent-line);
+  --color-accent-solid: var(--accent-solid);
+  --color-on-accent-solid: var(--on-accent-solid);
   --color-win: var(--win);
   --color-win-soft: var(--win-soft);
   --color-win-line: var(--win-line);
@@ -103,13 +150,36 @@ html.dark {
 }
 
 html {
+  color-scheme: light;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Phone app bar height (components/AppBar.tsx): pinned bars stick below it. */
+:root { --app-bar-h: 0px; }
+@media (max-width: 639px) {
+  :root { --app-bar-h: calc(3rem + env(safe-area-inset-top)); }
+  html { scroll-padding-top: var(--app-bar-h); }
+  /* Anchor jumps also clear a pinned bar (about 3.5rem: 44px control plus padding). */
+  html:has([data-mobile-sticky-bar]) { scroll-padding-top: calc(var(--app-bar-h) + 3.5rem); }
+  /* Games: the pinned bar is two rows (105px) and the sticky day header sits under it (about 25px). */
+  html:has([data-testid="slate-bar"]) { scroll-padding-top: calc(var(--app-bar-h) + 8.5rem); }
+}
+
 body {
+  overscroll-behavior-y: none;
   background: var(--surface-page);
   color: var(--ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 /* Eliminate 300ms touch delay on mobile interactions */
@@ -121,7 +191,7 @@ select {
 }
 
 /* Refined dark mode card elevation: top-lit hairline glow */
-html.dark .rounded-xl.bg-surface-card {
+html.dark [data-card] {
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -143,5 +213,75 @@ html.dark .rounded-xl.bg-surface-card {
 :focus-visible { outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto !important; }
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0s !important; transition-delay: 0s !important; }
+}
+
+/*
+ * Press feedback on phones: every enabled link, button, disclosure summary and tab dims while it is
+ * pressed, and shrinks slightly when motion is allowed. One rule, so cards, nav items, menu and filter
+ * buttons all respond alike; `prefers-reduced-motion: reduce` keeps only the instant dimming (no
+ * movement, no transition). From 640px up nothing changes. Lives in the base layer so a component's own
+ * utility classes (a `transition-colors`, an explicit opacity) take precedence.
+ */
+@layer base {
+  @media (max-width: 639px) {
+    :where(a[href], button, summary, [role="tab"], [role="button"]):not(:disabled, [aria-disabled="true"]):active {
+      opacity: 0.7;
+    }
+  }
+  @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
+    :where(a[href], button, summary, [role="tab"], [role="button"]):not(:disabled, [aria-disabled="true"]) {
+      transition: opacity 90ms ease-out, transform 90ms ease-out;
+    }
+    :where(a[href], button, summary, [role="tab"], [role="button"]):not(:disabled, [aria-disabled="true"]):active {
+      transform: scale(0.985);
+    }
+  }
+}
+
+/* ResponsiveDisclosure: one <details>. Phones collapse it behind the summary; from `sm:` up the
+   content is forced open and the summary hidden. Browsers without ::details-content keep the
+   summary visible on desktop, so the content stays reachable. */
+@supports selector(::details-content) {
+  @media (min-width: 40rem) {
+    .responsive-disclosure::details-content {
+      content-visibility: visible;
+    }
+    .responsive-disclosure > summary {
+      display: none;
+    }
+  }
+}
+
+/* Team page unit sections: collapsible on phones; from `sm:` up the content is forced open and the
+   summary stays as a static heading (no pointer, no caret or headline stat). */
+@supports selector(::details-content) {
+  @media (min-width: 40rem) {
+    .unit-section::details-content {
+      content-visibility: visible;
+    }
+    .unit-section > summary {
+      pointer-events: none;
+    }
+  }
+}
+
+/* Show details panel on small viewports OR coarse-pointer devices OR landscape phones */
+.show-on-touch-or-small {
+  display: block;
+}
+@media (min-width: 640px) and (pointer: fine) and (min-height: 501px) {
+  .show-on-touch-or-small {
+    display: none !important;
+  }
+}
+
+/* Show floating tooltip ONLY on fine-pointer desktop viewports (not on touch or landscape phones) */
+.hide-on-touch-or-small {
+  display: none !important;
+}
+@media (min-width: 640px) and (pointer: fine) and (min-height: 501px) {
+  .hide-on-touch-or-small {
+    display: block !important;
+  }
 }

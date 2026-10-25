@@ -62,18 +62,18 @@ test.describe("desktop layout at 1280px", () => {
     await expect(biggestEdges.locator("summary").filter({ visible: true })).toHaveCount(0);
 
     const record = page.getByRole("region", { name: "Record", exact: true });
-    await expect(visibleHeading(page, "Season record")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Season record before Week \d+$/ }).filter({ visible: true })).toBeVisible();
     await expect(record).toBeVisible();
   });
 
-  test("results shows Result Highlights without a click", async ({ page }) => {
-    await page.goto("/results");
+  test("a final week shows Result Highlights without a click", async ({ page }) => {
+    await page.goto("/?week=4");
     await expect(visibleHeading(page, "Highlights")).toBeVisible();
     await expect(page.locator("summary").filter({ visible: true, hasText: "Highlights" })).toHaveCount(0);
   });
 
-  test("performance Pick target control is compact and one line per option", async ({ page }) => {
-    await page.goto("/performance");
+  test("model Pick target control is compact and one line per option", async ({ page }) => {
+    await page.goto("/model");
     const target = page.getByRole("group", { name: "Pick target" }).filter({ visible: true });
     await expect(target).toBeVisible();
     await expectCompactSegments(target);
@@ -150,4 +150,63 @@ test.describe("desktop layout at 1280px", () => {
     await expectCompactSegments(selector);
     await expectMaxHeight(selector);
   });
+
+  test("all routes render one header with theme toggle, one footer, and aligned SiteNav container widths", async ({ page }) => {
+    const routes = [
+      { path: "/", maxWidth: 1152 }, // max-w-6xl
+      { path: "/stats", maxWidth: 1152 },
+      { path: "/ratings", maxWidth: 1024 }, // max-w-5xl
+      { path: "/model", maxWidth: 1024 },
+      { path: "/model/method", maxWidth: 1024 },
+      { path: "/matchup/1", maxWidth: 1024 },
+      { path: "/teams/Alabama", maxWidth: 1152 }, // max-w-6xl
+    ];
+
+    for (const route of routes) {
+      await page.goto(route.path);
+      if (route.path === "/") {
+        const ttfbMs = await page.evaluate(() => {
+          const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+          return nav ? nav.responseStart - nav.requestStart : 0;
+        });
+        expect(ttfbMs, "/ TTFB ms vs ~2.1s baseline").toBeLessThan(2100);
+      }
+      await expect(page.getByRole("banner"), `${route.path} header`).toHaveCount(1);
+      await expect(page.getByRole("contentinfo"), `${route.path} footer`).toHaveCount(1);
+      await expect(page.getByRole("navigation", { name: "Main navigation" }), `${route.path} nav`).toHaveCount(1);
+
+      const navInnerWidth = await page
+        .getByRole("navigation", { name: "Main navigation" })
+        .locator(":scope > div")
+        .evaluate((el) => parseFloat(getComputedStyle(el).maxWidth));
+      expect(navInnerWidth, `${route.path} SiteNav max-width`).toBe(route.maxWidth);
+    }
+
+    // Verify color-scheme and bg-surface-elevated token resolution in light and dark modes on /matchup/1.
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/matchup/1");
+    const allMatchupsLink = page.getByRole("link", { name: /^All Week \d+ games$/ });
+    await expect(allMatchupsLink).toBeVisible();
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
+    await expect(allMatchupsLink).toHaveCSS("background-color", "rgb(255, 255, 255)");
+
+    await page.evaluate(() => document.documentElement.classList.add("dark"));
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+    await expect(allMatchupsLink).toHaveCSS("background-color", "rgb(28, 25, 23)");
+  });
+});
+
+test("method page keeps the tab bar at page width and caps each card to the reading column at desktop", async ({ page }) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto("/model/method");
+  const tabsBox = await page.getByRole("navigation", { name: "Model sections" }).boundingBox();
+  expect(tabsBox, "model tab bar").not.toBeNull();
+  const cards = page.locator("#main-content section[aria-labelledby]");
+  const cardCount = await cards.count();
+  expect(cardCount, "method page section cards").toBeGreaterThanOrEqual(9);
+  for (let index = 0; index < cardCount; index += 1) {
+    const box = await cards.nth(index).boundingBox();
+    expect(box!.width, `method card ${index} width`).toBeLessThanOrEqual(800);
+    expect(tabsBox!.width, `tab bar wider than card ${index}`).toBeGreaterThan(box!.width);
+  }
 });

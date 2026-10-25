@@ -8,7 +8,7 @@
   coverage but fails frozen uncertainty calibration (margin) and bias /
   standardized-mean (total) gates. No model, prediction, or candidate-manifest
   artifact was published.
-- **Plan Contract:** [Phase 3 structured margin and total baseline](../../../../docs/plans/2026-08-25/phase3-structured-margin-total-baseline.md)
+- **Plan Contract:** [Phase 3 structured margin and total baseline](../../../../docs/archive/plans/2026-08/2026-08-25/phase3-structured-margin-total-baseline.md)
 - **Approval / Status:** User explicitly authorized the commit and completion
   attempt on 2026-08-25; the contract remains `In Progress`.
 - **Blockers:** The pre-registered historical gates failed. Phase 4 is blocked

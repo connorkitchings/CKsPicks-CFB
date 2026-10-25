@@ -9,7 +9,7 @@
   `2026w0-a0edb9e72cb1` is frozen with 8/8 games predicted and lined;
   `current_week.active_run_id` set. Comparison shows 2 spread-lean and 7
   total-lean changes v2→v3 (0 high-confidence eligible either way).
-- **Plan Contract:** `docs/plans/2026-08-16/preview-readiness-repair.md`
+- **Plan Contract:** `docs/archive/plans/2026-08/2026-08-16/preview-readiness-repair.md`
   (status now `Implemented`)
 - **Approval / Status:** User approved scope (v2 active + private v3
   rehearsal; attempt talent re-capture with fallback).
@@ -63,7 +63,7 @@
 - v3 spread route label: `game_1` (all 8 games, week 0)
 
 ## Files Modified
-- `docs/plans/2026-08-16/preview-readiness-repair.md` - Status → `Implemented`;
+- `docs/archive/plans/2026-08/2026-08-16/preview-readiness-repair.md` - Status → `Implemented`;
   DoD checkboxes marked.
 - `session_logs/archive/daily/2026-08-16/01-preview-readiness-repair.md` - Added
   implementation record (this section).

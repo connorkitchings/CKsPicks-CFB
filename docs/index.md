@@ -14,12 +14,17 @@ The [weekly runbook](ops/weekly_runbook.md) is the sole operational guide: build
 - [Weekly runbook](ops/weekly_runbook.md) — environments, revision/prepare/release and rollback.
 - [Repository boundaries](architecture/repository_boundaries.md) — dependency direction and compatibility rules.
 - [Data platform](architecture/data_platform_2026.md) — immutable source lineage and derived serving data.
+- [Football data architecture blueprint](planning/data_architecture_blueprint.md) — approved strategic guidance for deferred measurement and pipeline improvements; not implementation authorization.
 - [Rating requirements](modeling/rating_system_requirements.md) and [measurement catalog](modeling/measurement_catalog.md) — football meaning, provenance and eligibility.
 - [Ratings laboratory](research/ratings-lab-v1.md) and [research capture](ops/data_first_capture.md) — isolated research workflows.
 - [Research roadmap](planning/data-first-football-forecasting-roadmap.md) and [2026 roadmap](planning/roadmap.md) — research direction and historical execution record.
 - [Evaluation policy](modeling/evaluation.md) — chronology and evidence boundaries.
 - [Implementation contracts](plans/index.md) — task authorization and lifecycle.
 - [Decision log](decisions/decision_log.md) — architectural and publication decisions.
+
+## Data documentation
+
+The data authority is the immutable Bronze/Silver/Gold platform with strict point-in-time provenance: the [data platform](architecture/data_platform_2026.md), [point-in-time pipeline](architecture/cfbd_point_in_time_pipeline.md), [historical data inventory](data/historical_data_inventory.md) and [ingestion guide](data/ingestion_guide.md). Rating work uses the [measurement catalog](modeling/measurement_catalog.md) for football meaning, exposure, provenance and eligibility. [Known data issues](data/known_issues.md) lists open and resolved data-quality issues. Historical provider and transformed-schema prose lives in the [documentation archive](archive.md), not as current schema authority.
 
 Markets never inform football measurements, ratings or prediction selection. They enter after forecasting for line comparison and grading. Research requires separate promotion before changing serving behavior; betting decisions are deferred.
 

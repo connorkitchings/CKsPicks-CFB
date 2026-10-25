@@ -2,9 +2,9 @@
 
 ## TL;DR
 
-- **Worked On:** Completed execution of Modernization Phases 5 through 8 per approved plan [`docs/plans/2026-08-23/modernization-phases-5-8-completion.md`](../../../../docs/plans/2026-08-23/modernization-phases-5-8-completion.md).
+- **Worked On:** Completed execution of Modernization Phases 5 through 8 per approved plan [`docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`](../../../../docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md).
 - **Outcome:** Verified Phase 5 inference/ops refactoring, enhanced web UX (multi-week routing, settled scores/badges, loading skeleton alignment), suppressed CatBoost/sklearn warning spam, added `generate_weekly_bets.py` CLI smoke tests, configured `pytest-cov`, and expanded `contracts/validation.py` to cover Python schema contracts.
-- **Plan Contract:** [`docs/plans/2026-08-23/modernization-phases-5-8-completion.md`](../../../../docs/plans/2026-08-23/modernization-phases-5-8-completion.md)
+- **Plan Contract:** [`docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`](../../../../docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md)
 - **Approval / Status:** User authorized implementation; plan status updated to `Implemented`.
 - **Blockers:** None.
 - **Next:** User may review and commit the completed modernization work.
@@ -45,7 +45,7 @@
 - `pyproject.toml`
 - `contracts/validation.py`
 - `docs/planning/2026_codebase_modernization_and_refactoring_plan.md`
-- `docs/plans/2026-08-23/modernization-phases-5-8-completion.md`
+- `docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`
 - `session_logs/archive/daily/2026-08-23/02-modernization-phases-5-8-completion.md`
 
 ## Handoff Notes

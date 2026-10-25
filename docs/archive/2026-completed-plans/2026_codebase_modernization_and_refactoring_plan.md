@@ -197,7 +197,7 @@ tracked Phase 7 work and do not affect the passing suite.
 
 ## Phase 8: Modernization Completion & Worktree Hygiene (✅ Complete — 2026-08-23)
 
-* ✅ Executed approved implementation contract `docs/plans/2026-08-23/modernization-phases-5-8-completion.md`.
+* ✅ Executed approved implementation contract `docs/archive/plans/2026-08/2026-08-23/modernization-phases-5-8-completion.md`.
 * ✅ Full suite validation: **381 tests passed, 2 skipped**; Ruff linting & formatting passed; contracts validation passed; MkDocs build passed; Next.js web build passed.
 
 ---

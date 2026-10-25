@@ -1,8 +1,9 @@
 import { V5_RECORD_EVIDENCE } from "./run-selection";
-import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lte, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db as legacyDb, schema } from "./db";
 import { getSeasonDb, getSeasonReleaseContext } from "./season-release";
+import { releaseCached, RUN_STATE_CACHE } from "./release-cache.ts";
 import { TEAM_RESUME_PROJECTION } from "./season-release-query.ts";
 import { existsFrom, rowsOf } from "./db-result.ts";
 import {
@@ -14,6 +15,7 @@ import {
   TEAM_RESUME_COLUMNS,
   type TeamResumeRow,
 } from "./team-resume.ts";
+import { splitPerformanceByWeek, type Performance, type PerformanceRow } from "./performance-split.ts";
 import { withGameNameAliases } from "./rating-names.ts";
 import { PERFORMANCE_DETAIL_SPEC, RATING_SPEC, guardRows } from "./row-guard.ts";
 import {
@@ -31,7 +33,7 @@ import {
   type ResumePeriodFacts,
 } from "./rating-periods.ts";
 
-export type { PeriodMeta, Rating, RatingPeriod };
+export type { PeriodMeta, Rating, RatingPeriod, Performance };
 export {
   defaultPeriodForRows,
   formatCutoffLabel,
@@ -39,7 +41,7 @@ export {
   PRESEASON_META,
 };
 
-const getSelectedRatingSource = cache(async (season: number): Promise<string | null> => {
+const getSelectedRatingSource = cache(releaseCached("getSelectedRatingSource", async (season: number): Promise<string | null> => {
   const db = await getSeasonDb(season);
   const rows = await db.select({ sha: schema.predictionRuns.ratingManifestSha256 })
     .from(schema.siteWeekSelections)
@@ -50,9 +52,9 @@ const getSelectedRatingSource = cache(async (season: number): Promise<string | n
     ))
     .orderBy(desc(schema.siteWeekSelections.week)).limit(1);
   return rows[0]?.sha ?? null;
-});
+}, RUN_STATE_CACHE));
 
-export const getCurrentRatings = cache(async (season: number): Promise<Rating[]> => {
+export const getCurrentRatings = cache(releaseCached("getCurrentRatings", async (season: number): Promise<Rating[]> => {
   const db = await getSeasonDb(season);
   const sourceSha = await getSelectedRatingSource(season);
   if (!sourceSha) return [];
@@ -84,7 +86,7 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
   const byTeam = new Map<string, Rating>();
   for (const row of rows) if (!byTeam.has(row.team)) byTeam.set(row.team, row);
   return [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
-});
+}, RUN_STATE_CACHE));
 
 /**
  * Ratings known before a game kicked off: the latest frozen generation at or
@@ -119,7 +121,7 @@ export const getTeamRankMap = cache(async (season: number): Promise<Map<string, 
  * projections appear here with no code change, and past generations can
  * never drift: each one is served from its own frozen rows.
  */
-export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta[]> => {
+export const getRatingPeriods = cache(releaseCached("getRatingPeriods", async (season: number): Promise<PeriodMeta[]> => {
   const db = await getSeasonDb(season);
   const sourceSha = await getSelectedRatingSource(season);
   if (!sourceSha) return [PRESEASON_META];
@@ -142,7 +144,7 @@ export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta
     } satisfies PeriodMeta;
   });
   return [...periods, PRESEASON_META];
-});
+}, RUN_STATE_CACHE));
 
 const RATING_SELECT = {
   team: schema.v5RatingSnapshots.team,
@@ -201,30 +203,30 @@ async function selectResumeRows(
 }
 
 /** Résumé rows for one period of the active release; null when there are none to read. */
-const readTeamResume = cache(async (season: number, periodId: string): Promise<TeamResumeRow[] | null> => {
+const readTeamResume = cache(releaseCached("readTeamResume", async (season: number, periodId: string): Promise<TeamResumeRow[] | null> => {
   const rows = await selectResumeRows(season, TEAM_RESUME_COLUMNS, periodId);
   return rows?.map(mapTeamResumeRow) ?? null;
-});
+}));
 
 /**
  * Period labels' résumé facts for every generation of the active release. Cached per
  * request, so the period list and the selected period share one read. Empty when there is
  * no release or no projection, which makes every label a date label.
  */
-const readResumePeriodFacts = cache(async (season: number): Promise<ReadonlyMap<string, ResumePeriodFacts>> => {
+const readResumePeriodFacts = cache(releaseCached("readResumePeriodFacts", async (season: number): Promise<ReadonlyMap<string, ResumePeriodFacts>> => {
   const rows = await selectResumeRows(season, RESUME_PERIOD_COLUMNS, null);
   return resumeFactsByPeriod((rows ?? []).map(mapResumePeriodRow));
-});
+}));
 
 async function withTeamResume(season: number, periodId: string, ratings: Rating[]): Promise<Rating[]> {
   if (ratings.length === 0) return ratings;
   return joinTeamResume(ratings, periodId, await readTeamResume(season, periodId));
 }
 
-export const getWeeklyRatings = cache(async (
+async function loadWeeklyRatings(
   season: number,
   targetPeriod?: string | null
-): Promise<{ ratings: Rating[]; period: RatingPeriod; periodMeta: PeriodMeta }> => {
+): Promise<{ ratings: Rating[]; period: RatingPeriod; periodMeta: PeriodMeta }> {
   const db = await getSeasonDb(season);
   const periods = await getRatingPeriods(season);
   const generations = periods.filter((p) => p.cutoffUtc !== undefined);
@@ -298,7 +300,7 @@ export const getWeeklyRatings = cache(async (
     const week = Number(weekMatch[1]);
     const pinned = generations.find((p) => p.postWeek === week);
     if (pinned?.cutoffUtc) {
-      const resolved = await getWeeklyRatings(season, pinned.id);
+      const resolved = await loadWeeklyRatings(season, pinned.id);
       return resolved;
     }
   }
@@ -310,9 +312,27 @@ export const getWeeklyRatings = cache(async (
   const ratings = await getCurrentRatings(season);
   const periodMeta = defaultPeriodForRows(ratings, await readResumePeriodFacts(season));
   return { ratings: await withTeamResume(season, periodMeta.id, ratings), period: periodMeta.id, periodMeta };
+}
+
+type WeeklyRatings = Awaited<ReturnType<typeof loadWeeklyRatings>>;
+const cachedWeeklyRatings = releaseCached("getWeeklyRatings", (season: number, targetPeriod: string | null): Promise<WeeklyRatings> =>
+  loadWeeklyRatings(season, targetPeriod), RUN_STATE_CACHE);
+
+/**
+ * Only the release's own periods (plus the default and preseason tabs) are cached, so
+ * arbitrary `?period=` strings cannot create cache entries.
+ */
+export const getWeeklyRatings = cache(async (
+  season: number,
+  targetPeriod?: string | null,
+): Promise<WeeklyRatings> => {
+  const known = !targetPeriod || ["current", "preseason", "pre"].includes(targetPeriod)
+    || (await getRatingPeriods(season)).some((period) => period.id === targetPeriod);
+  return known ? cachedWeeklyRatings(season, targetPeriod ?? null) : loadWeeklyRatings(season, targetPeriod);
 });
 
-export const getTeamHistory = cache(async (season: number, team: string): Promise<Rating[]> => {
+/** `team` must be the rating name from `resolveTeam`, which bounds the cache keys to known schools. */
+export const getTeamHistory = cache(releaseCached("getTeamHistory", async (season: number, team: string): Promise<Rating[]> => {
   const db = await getSeasonDb(season);
   const sourceSha = await getSelectedRatingSource(season);
   if (!sourceSha) return [];
@@ -336,15 +356,19 @@ export const getTeamHistory = cache(async (season: number, team: string): Promis
     ))
     .orderBy(asc(schema.v5RatingSnapshots.cutoffUtc));
   return rows;
-});
+}, RUN_STATE_CACHE));
 
-export const getTeamGames = cache(async (season: number, team: string) => {
+/** `team` must be the game name from `resolveTeam`, which bounds the cache keys to known schools. */
+export const getTeamGames = cache(releaseCached("getTeamGames", async (season: number, team: string) => {
   const db = await getSeasonDb(season);
   return db.select({
+    gameId: schema.games.gameId,
     week: schema.games.week,
     startDate: schema.games.startDate,
     homeTeam: schema.games.homeTeam,
     awayTeam: schema.games.awayTeam,
+    homeTeamSpreadLine: schema.games.homeTeamSpreadLine,
+    totalLine: schema.games.totalLine,
     predictedMargin: schema.predictions.predictedSpread,
     predictedTotal: schema.predictions.predictedTotal,
     homePoints: schema.gameResults.homePoints,
@@ -370,89 +394,13 @@ export const getTeamGames = cache(async (season: number, team: string) => {
       or(eq(schema.games.homeTeam, team), eq(schema.games.awayTeam, team)),
     ))
     .orderBy(asc(schema.games.startDate));
-});
+}, RUN_STATE_CACHE));
 
-type PerformanceRow = {
-  evidenceClass: "replay" | "live" | "pending";
-  predictedMargin: number | null;
-  predictedTotal: number | null;
-  marginStdDev: number | null;
-  totalStdDev: number | null;
-  homePoints: number | null;
-  awayPoints: number | null;
-  spreadResult: "win" | "loss" | "push" | null;
-  totalResult: "win" | "loss" | "push" | null;
-};
-
-export type Performance = {
-  classification: "replay" | "live" | "all";
-  games: number;
-  evaluated: number;
-  marginMae: number | null;
-  totalMae: number | null;
-  marginCoverage95: number | null;
-  totalCoverage95: number | null;
-  spread: { win: number; loss: number; push: number };
-  total: { win: number; loss: number; push: number };
-};
-
-function summarize(rows: PerformanceRow[], classification: Performance["classification"]): Performance {
-  let marginError = 0;
-  let totalError = 0;
-  let marginN = 0;
-  let totalN = 0;
-  let marginInside = 0;
-  let totalInside = 0;
-  let marginIntervals = 0;
-  let totalIntervals = 0;
-  const spread = { win: 0, loss: 0, push: 0 };
-  const total = { win: 0, loss: 0, push: 0 };
-  for (const row of rows) {
-    if (row.homePoints !== null && row.awayPoints !== null) {
-      const actualMargin = row.homePoints - row.awayPoints;
-      const actualTotal = row.homePoints + row.awayPoints;
-      if (row.predictedMargin !== null) {
-        const error = Math.abs(row.predictedMargin - actualMargin);
-        marginError += error;
-        marginN += 1;
-        if (row.marginStdDev !== null) {
-          marginIntervals += 1;
-          if (error <= 1.959963984540054 * row.marginStdDev) marginInside += 1;
-        }
-      }
-      if (row.predictedTotal !== null) {
-        const error = Math.abs(row.predictedTotal - actualTotal);
-        totalError += error;
-        totalN += 1;
-        if (row.totalStdDev !== null) {
-          totalIntervals += 1;
-          if (error <= 1.959963984540054 * row.totalStdDev) totalInside += 1;
-        }
-      }
-    }
-    if (row.spreadResult) spread[row.spreadResult] += 1;
-    if (row.totalResult) total[row.totalResult] += 1;
-  }
-  return {
-    classification,
-    games: rows.filter((row) => row.homePoints !== null && row.awayPoints !== null).length,
-    evaluated: marginN,
-    marginMae: marginN ? marginError / marginN : null,
-    totalMae: totalN ? totalError / totalN : null,
-    marginCoverage95: marginIntervals ? marginInside / marginIntervals : null,
-    totalCoverage95: totalIntervals ? totalInside / totalIntervals : null,
-    spread, total,
-  };
-}
-
-/** Season-to-date before `beforeWeek`, exactly `week`, or (both omitted) the whole season. */
-export const getV5Performance = cache(async (
-  season: number,
-  beforeWeek?: number,
-  week?: number,
-): Promise<Performance[]> => {
+/** Selected-run graded rows with their selected week, up to and including `week`. */
+async function selectPerformanceRows(season: number, week: number): Promise<Array<PerformanceRow & { week: number }>> {
   const db = await getSeasonDb(season);
   const rows = await db.select({
+    week: schema.siteWeekSelections.week,
     evidenceClass: schema.predictionRuns.evidenceClass,
     predictedMargin: schema.predictions.predictedSpread,
     predictedTotal: schema.predictions.predictedTotal,
@@ -476,16 +424,22 @@ export const getV5Performance = cache(async (
     .where(and(
       eq(schema.siteWeekSelections.season, season),
       inArray(schema.predictionRuns.evidenceClass, [...V5_RECORD_EVIDENCE]),
-      beforeWeek === undefined ? undefined : lt(schema.siteWeekSelections.week, beforeWeek),
-      week === undefined ? undefined : eq(schema.siteWeekSelections.week, week),
+      lte(schema.siteWeekSelections.week, week),
     ));
-  const typed = rows as PerformanceRow[];
-  return [
-    summarize(typed, "all"),
-    summarize(typed.filter((row) => row.evidenceClass === "replay"), "replay"),
-    summarize(typed.filter((row) => row.evidenceClass === "live"), "live"),
-  ];
-});
+  return rows as Array<PerformanceRow & { week: number }>;
+}
+
+/**
+ * Season-to-date before `week` and exactly `week` in one query, for the slate pages that
+ * need only one half each and share the cached result.
+ */
+export const getV5PerformanceSplit = cache(releaseCached("getV5PerformanceSplit", async (
+  season: number,
+  week: number,
+): Promise<{ before: Performance[]; week: Performance[] }> => {
+  const rows = await selectPerformanceRows(season, week);
+  return splitPerformanceByWeek(rows, week);
+}, RUN_STATE_CACHE));
 
 export interface BetRecord {
   win: number;
@@ -658,7 +612,7 @@ function summarizeDetail(
   };
 }
 
-export const getV5PerformanceDetail = cache(async (
+export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetail", async (
   season: number,
 ): Promise<PerformanceDetail> => {
   const db = await getSeasonDb(season);
@@ -764,4 +718,4 @@ export const getV5PerformanceDetail = cache(async (
     gradedGames,
     weeks,
   };
-});
+}, RUN_STATE_CACHE));

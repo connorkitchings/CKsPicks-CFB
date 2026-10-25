@@ -4,7 +4,7 @@
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, explicitly authorized 10a implementation, and on 2026-09-18 approved the 10a-reclosure plan (Amendment 2) with four corrections.
-- **Implementation log:** `session_logs/2026-09-18/06-v5-10a-audit-harness.md` (code checkpoint `bdf3ba7`; post-commit preflight rerun confirms byte-identical evidence under the committed SHA)
+- **Implementation log:** `session_logs/archive/daily/2026-09-18/06-v5-10a-audit-harness.md` (code checkpoint `bdf3ba7`; post-commit preflight rerun confirms byte-identical evidence under the committed SHA)
 - **Commit policy:** Separate code checkpoint; user controls Git operations.
 
 ## Goal

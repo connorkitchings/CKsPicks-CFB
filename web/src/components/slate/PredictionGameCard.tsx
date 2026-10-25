@@ -1,10 +1,15 @@
 import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
-import { coverMargin, edgeTone, isFinal, leanFor, resultFor, venueLabel, type Lean } from "@/lib/slate";
+import { Card } from "@/components/ui/Card";
+import { isFinal } from "@/lib/team-games";
+import { coverMargin, edgeTone, leanFor, modelCrossesMarket, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
+import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { phoneTeamName } from "@/lib/team-logos";
 import { kickoffTime, dayShort } from "./format";
 import { TeamPair } from "./TeamPair";
 import { ResultBadge, coverText } from "./ResultBadge";
+import { AwaitingTag } from "./AwaitingTag";
 
 function modelNumber(lean: Lean): string {
   if (lean.kind === "total") return lean.model ?? "—";
@@ -26,17 +31,24 @@ function BetCell({ game, kind, results }: {
   const missingLine = kind === "spread" ? game.homeTeamSpreadLine === null : game.totalLine === null;
   return (
     <div className="min-w-0 px-3 py-2.5">
-      <div className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-ink-muted">
-        <span>{kind === "spread" ? "Spread" : "Total"}</span>
-        {grade ? <ResultBadge grade={grade} /> : results && <span>Ungraded</span>}
+      <div className="mb-1 flex items-center justify-between gap-1.5 text-xs font-medium text-ink-muted">
+        <span className="uppercase tracking-wider">{kind === "spread" ? "Spread" : "Total"}</span>
+        {grade ? <ResultBadge grade={grade} /> : results ? <span>Ungraded</span> : lean?.source ? <span className="truncate text-ink-muted">{lean.source}</span> : null}
       </div>
       {lean ? <>
-        <p data-pick className={clsx("break-words text-sm font-semibold", results ? "text-ink" : "text-accent-ink")}>{lean.pick}</p>
-        <p className="mt-1 flex flex-wrap gap-x-1 text-sm tabular-nums text-ink-muted">
-          <span>Model: <span className="font-medium text-ink">{modelNumber(lean)}</span></span>
-          <span className={clsx("font-medium", edgeTone(lean.edge, kind))}>(+{lean.edge.toFixed(1)})</span>
+        <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></p>
+        <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums text-ink-muted">
+          <span>
+            Model:{" "}
+            <span className="font-medium text-ink">
+              {lean.team && modelCrossesMarket(lean)
+                ? <PhoneSwap full={`${lean.team} ${modelNumber(lean)}`} phone={`${phoneTeamName(lean.team)} ${modelNumber(lean)}`} />
+                : modelNumber(lean)}
+            </span>
+          </span>
+          <span className={clsx("font-semibold", edgeTone(lean.edge, kind))}>({lean.edge.toFixed(1)})</span>
         </p>
-        {(lean.source || cover) && (
+        {results && (lean.source || cover) && (
           <p className="mt-0.5 text-xs text-ink-muted">
             {[lean.source, cover].filter(Boolean).join(" · ")}
           </p>
@@ -47,9 +59,10 @@ function BetCell({ game, kind, results }: {
 }
 
 /** A shared card shell; Results adds winner emphasis and grading content. */
-export function PredictionGameCard({ game, results = false }: {
+export function PredictionGameCard({ game, results = false, now }: {
   game: PredictionGame;
   results?: boolean;
+  now: Date;
 }) {
   const final = isFinal(game);
   const awayWon = (game.awayPoints ?? 0) > (game.homePoints ?? 0);
@@ -57,14 +70,15 @@ export function PredictionGameCard({ game, results = false }: {
   const where = venueLabel(game.venueCity, game.venueState);
   const winner = results && final ? (awayWon ? "away" : homeWon ? "home" : null) : null;
   return (
-    <li id={`game-${game.gameId}`} className="scroll-mt-12 overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm">
+    <Card as="li" id={`game-${game.gameId}`} padding="none" className="scroll-mt-12 max-sm:scroll-mt-0 overflow-hidden">
       <div className="px-3 pb-3 pt-2">
         <div className="mb-1 flex items-center justify-between gap-2 text-xs text-ink-muted">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium tabular-nums">{results ? dayShort(game.startDate) : `${kickoffTime(game.startDate)} ET`}</span>
+            <span className="font-medium tabular-nums">{results ? dayShort(game.startDate) : kickoffTime(game.startDate)}</span>
             {where && <span>· {where}</span>}
             {game.neutralSite && <span>· Neutral site</span>}
             {final && <span className="rounded bg-surface-inset px-1.5 py-0.5 text-xs font-semibold">Final</span>}
+            <AwaitingTag game={game} now={now} />
             {game.highConfidence && <span className="text-sm text-accent-ink" aria-label="High confidence lean" title="High confidence lean">★</span>}
           </div>
           <MatchupButton gameId={game.gameId} />
@@ -75,6 +89,6 @@ export function PredictionGameCard({ game, results = false }: {
         <BetCell game={game} kind="spread" results={results} />
         <BetCell game={game} kind="total" results={results} />
       </div>
-    </li>
+    </Card>
   );
 }

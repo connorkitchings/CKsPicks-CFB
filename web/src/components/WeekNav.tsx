@@ -8,7 +8,7 @@ import { segmentedGroupClass } from "./ui/SegmentedControl";
 /**
  * Prev / next / dropdown navigator over the available weeks for the active
  * season. Selecting or arrowing swaps the `?season=&week=` query params,
- * which the server component in app/page.tsx reads to fetch the right slice.
+ * which the server component in app/(games)/page.tsx reads to fetch the right slice.
  *
  * Client navigation keeps URLs shareable while preserving chart selections;
  * the server reads each URL window and ISR caches each combination.
@@ -20,6 +20,8 @@ export function WeekNav({
   basePath = "/",
   labelMode = "week",
   compact = false,
+  selectId = "week-select",
+  className,
 }: {
   season: number;
   week: number;
@@ -29,8 +31,11 @@ export function WeekNav({
   labelMode?: "week" | "through-week";
   /** Fits the navigator into a page toolbar without changing its URL behavior. */
   compact?: boolean;
+  /** Distinct id when a page mounts a second navigator (the phone copy). */
+  selectId?: string;
+  className?: string;
 }) {
-  const chartCompact = compact && basePath.startsWith("/charts");
+  const chartCompact = compact && basePath.startsWith("/stats");
   const noun = labelMode === "through-week" ? "Through Week" : "Week";
   const router = useRouter();
   const params = useSearchParams();
@@ -51,14 +56,14 @@ export function WeekNav({
 
   function onSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const w = Number(e.target.value);
-    if (Number.isFinite(w)) router.push(hrefFor(w));
+    if (Number.isFinite(w)) router.push(hrefFor(w), { scroll: false });
   }
 
   const arrow = clsx(
     "inline-flex items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
     // Chart settings: borderless arrows inside one bordered group, sized like the chart toggles.
     // Other compact toolbars: borderless 44px phone targets that shrink to 36px from `sm:`.
-    chartCompact && "h-7.5 w-7.5 shrink-0 text-sm hover:text-ink",
+    chartCompact && "h-11 w-11 shrink-0 text-sm hover:text-ink sm:h-7.5 sm:w-7.5",
     compact && !chartCompact && "h-11 w-11 shrink-0 text-base sm:h-9 sm:w-9",
     !compact && "h-11 w-11 shrink-0 border border-line bg-surface-card text-base",
   );
@@ -70,30 +75,29 @@ export function WeekNav({
       : "flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm";
 
   return (
-    <nav aria-label="Week navigation" className={navClass}>
-      <Link
-        href={prev !== null ? hrefFor(prev) : "#"}
-        aria-disabled={prev === null}
-        tabIndex={prev === null ? -1 : undefined}
-        aria-label={`Previous ${noun.toLowerCase()}`}
-        className={clsx(arrow, prev === null && "pointer-events-none opacity-40")}
-      >
-        {/* left arrow */}
-        <span aria-hidden>&larr;</span>
-      </Link>
+    <nav aria-label="Week navigation" data-card={compact ? undefined : ""} className={clsx(navClass, className)}>
+      {prev !== null ? (
+        <Link href={hrefFor(prev)} aria-label={`Previous ${noun.toLowerCase()}`} className={arrow}>
+          <span aria-hidden>&larr;</span>
+        </Link>
+      ) : (
+        <span aria-disabled="true" aria-label={`Previous ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
+          <span aria-hidden>&larr;</span>
+        </span>
+      )}
 
       <div className="flex items-center text-sm">
-        <label htmlFor="week-select" className="sr-only">
+        <label htmlFor={selectId} className="sr-only">
           {noun}
         </label>
         <select
-          id="week-select"
+          id={selectId}
           value={week}
           onChange={onSelect}
           className={clsx(
-            "rounded-md font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent",
+            "rounded-md font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             chartCompact
-              ? "min-h-7.5 bg-transparent px-1.5 text-xs font-semibold hover:bg-surface-inset"
+              ? "min-h-11 min-w-0 bg-transparent px-1.5 text-sm font-semibold hover:bg-surface-inset sm:min-h-7.5 sm:text-xs"
               : "min-h-11 border border-line bg-surface-card px-2 py-1 text-base sm:min-h-9 sm:text-sm",
           )}
         >
@@ -105,15 +109,15 @@ export function WeekNav({
         </select>
       </div>
 
-      <Link
-        href={next !== null ? hrefFor(next) : "#"}
-        aria-disabled={next === null}
-        tabIndex={next === null ? -1 : undefined}
-        aria-label={`Next ${noun.toLowerCase()}`}
-        className={clsx(arrow, next === null && "pointer-events-none opacity-40")}
-      >
-        <span aria-hidden>&rarr;</span>
-      </Link>
+      {next !== null ? (
+        <Link href={hrefFor(next)} aria-label={`Next ${noun.toLowerCase()}`} className={arrow}>
+          <span aria-hidden>&rarr;</span>
+        </Link>
+      ) : (
+        <span aria-disabled="true" aria-label={`Next ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
+          <span aria-hidden>&rarr;</span>
+        </span>
+      )}
     </nav>
   );
 }

@@ -4,7 +4,7 @@
 - **Created:** 2026-09-19
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized Contract 11A with “Let's go to 11A” on 2026-09-19.
-- **Implementation log:** `session_logs/2026-09-19/02-v5-11a-conditional-forecast-verification.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-19/02-v5-11a-conditional-forecast-verification.md`
 - **Commit policy:** Separate verifier-code and Preview-evidence checkpoints; user controls Git operations.
 
 ## Goal and entry gate

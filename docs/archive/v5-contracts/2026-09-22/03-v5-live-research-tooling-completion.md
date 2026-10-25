@@ -4,7 +4,7 @@
 - **Created:** 2026-09-22
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this plan with “PLEASE IMPLEMENT THIS PLAN” and “proceed” on 2026-09-22.
-- **Implementation log:** `session_logs/2026-09-22/11-v5-live-research-tooling-completion.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-22/11-v5-live-research-tooling-completion.md`
 - **Commit policy:** May be committed with implementation; user executes Git operations manually.
 
 ## Goal
@@ -82,7 +82,7 @@ pre-kickoff freeze and prospective weekly cadence.
 
 ## Affected Components and Contracts
 
-- [Contract 09](../../../plans/2026-09-18/09-v5-2026-forecast-and-readiness.md): amendment
+- [Contract 09](../../plans/2026-09/2026-09-18/09-v5-2026-forecast-and-readiness.md): amendment
   for the live prediction interface, exact parent roles, and future execution
   gate.
 - `src/cks_picks_cfb/data/` and `src/cks_picks_cfb/forecast/`: live forecast

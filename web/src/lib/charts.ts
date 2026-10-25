@@ -1,4 +1,16 @@
 import { teamAbbr } from "./team-logos.ts";
+export {
+  P4_CONFERENCES,
+  P4_INDEPENDENTS,
+  buildConferenceMap,
+  conferenceOptions,
+  isP4,
+  matchesConference,
+  matchesTeamConference,
+  type ConferenceFilter,
+  type RosterRow,
+} from "./conferences.ts";
+import { matchesConference, type ConferenceFilter, type RosterRow } from "./conferences.ts";
 
 /**
  * Pure transforms for the weekly team charts. Inputs are the rows of the release's
@@ -19,7 +31,6 @@ export type ChartKind =
 export type Side = "offense" | "defense";
 export type EfficiencyMetric = "ppa" | "explosive_rate" | "yards_per_success";
 
-export type RosterRow = { team: string; conference: string | null };
 
 export type TeamGameRow = {
   week: number;
@@ -87,9 +98,6 @@ export type AdjustedRow = {
   cohortSize: number;
 };
 
-/** Power Four conferences; Notre Dame is included by name (it has no conference). */
-export const P4_CONFERENCES = ["ACC", "Big Ten", "Big 12", "SEC"] as const;
-export const P4_INDEPENDENTS = ["Notre Dame"] as const;
 export const FIRST_SCATTER_THROUGH_WEEK = 2;
 
 // ---------------------------------------------------------------------------
@@ -577,27 +585,6 @@ export function ratingTrajectorySeries(roster: readonly RosterRow[], rows: reado
 // Filters
 // ---------------------------------------------------------------------------
 
-/** "all", "p4" (Power Four plus Notre Dame) or a conference name from the roster. */
-export type ConferenceFilter = string;
-
-export function isP4(team: string, conference: string | null): boolean {
-  return (
-    (conference !== null && (P4_CONFERENCES as readonly string[]).includes(conference)) ||
-    (P4_INDEPENDENTS as readonly string[]).includes(team)
-  );
-}
-
-export function matchesConference(filter: ConferenceFilter, team: string, conference: string | null): boolean {
-  if (filter === "all") return true;
-  if (filter === "p4") return isP4(team, conference);
-  return conference === filter;
-}
-
-/** Conferences present in the published roster, ascending. */
-export function conferenceOptions(roster: readonly RosterRow[]): string[] {
-  return [...new Set(roster.flatMap((r) => (r.conference ? [r.conference] : [])))].sort();
-}
-
 /** Case-insensitive match on the team name or its abbreviation. */
 export function matchesSearch(query: string, team: string): boolean {
   const q = query.trim().toLowerCase();
@@ -653,7 +640,7 @@ export type GameLogGame = {
 };
 
 /** A season-to-date value with its national competition rank among `ranked` roster teams. */
-export type GameLogSeason = { value: number | null; rank: number | null; ranked: number };
+export type GameLogSeason = { value: number | null; rank: number | null; ranked: number; /** Pooled FBS average of the same window, for reference. */ average: number | null };
 
 export type TeamGameLog = {
   team: string;
@@ -714,12 +701,12 @@ export function teamGameLog(roster: readonly RosterRow[], rows: readonly TeamGam
   const weeks = netSuccessWeeks(rows);
   const throughWeek = weeks.length ? weeks[weeks.length - 1] : null;
   const seasonFor = (side: Side): GameLogSeason => {
-    if (throughWeek === null) return { value: null, rank: null, ranked: 0 };
+    if (throughWeek === null) return { value: null, rank: null, ranked: 0, average: null };
     const data = efficiencyPoints(roster, rows, throughWeek, side, metric === "success" ? "ppa" : metric);
     const axis = metric === "success" ? "x" : "y";
     const point = data.points.find((p) => p.team === team);
     const rank = scatterRanks(data).get(team);
-    return { value: point ? point[axis] : null, rank: rank ? rank[axis] : null, ranked: data.points.length };
+    return { value: point ? point[axis] : null, rank: rank ? rank[axis] : null, ranked: data.points.length, average: data.average ? data.average[axis] : null };
   };
   return { team, metric, games, throughWeek, season: { offense: seasonFor("offense"), defense: seasonFor("defense") } };
 }
@@ -764,6 +751,91 @@ export function niceTicks(min: number, max: number, count = 6): number[] {
     ticks.push(Number(value.toFixed(10)));
   }
   return ticks;
+}
+
+/**
+ * The value window of each game-log panel, fitted to that panel's own bars and dashed
+ * averages (zero always included). Rates, which never go below zero, start at zero; a
+ * signed metric (PPA) gets headroom at both ends for the value labels. The chart draws
+ * both windows at one pixels-per-unit scale (heights proportional to each window's span),
+ * so a bar's length means the same amount in either panel.
+ */
+export function gameLogDomains(log: TeamGameLog, headroom = 0.14): Record<Side, Domain> {
+  const windowFor = (side: Side): Domain => {
+    const values = log.games.flatMap((game) => [game[side], game.average[side]]).filter((v): v is number => v !== null);
+    const low = Math.min(0, ...values);
+    const high = Math.max(0, ...values);
+    if (high === low) return [0, 1];
+    const margin = (high - low) * headroom;
+    return [low < 0 ? low - margin : 0, high + margin];
+  };
+  return { offense: windowFor("offense"), defense: windowFor("defense") };
+}
+
+/**
+ * Axis domain for the net-success bars, sized to the values shown rather than mirrored
+ * around zero: it spans the lowest and highest bar plus the pixel room the logos need
+ * (`tipPx` beyond a bar's tip for the winner, `crossPx` across zero for the loser), so a
+ * slate whose bars are mostly positive does not reserve an equally tall negative half.
+ * Returns the [low, high] value range mapped onto `spanPx` pixels.
+ */
+export function netSuccessDomain(
+  values: readonly number[],
+  spanPx: number,
+  tipPx: number,
+  crossPx: number,
+): Domain {
+  if (!values.length) return [-0.05, 0.05];
+  const hasUp = values.some((v) => v >= 0);
+  const hasDown = values.some((v) => v < 0);
+  const high = Math.max(0, ...values);
+  const low = Math.min(0, ...values);
+  const padHigh = hasUp ? tipPx : crossPx;
+  const padLow = hasDown ? tipPx : crossPx;
+  const range = Math.max(high - low, 0.01);
+  const plotPx = spanPx - padHigh - padLow;
+  if (plotPx <= 0) return [low - range * 0.1, high + range * 0.1];
+  const perPx = range / plotPx;
+  return [low - padLow * perPx, high + padHigh * perPx];
+}
+
+/**
+ * Baseline `y` for a bar's value label. Outside the tip by default, on the side away from
+ * the zero line (a bar that rises from zero gets its label above the tip, one that hangs
+ * gets it below, whichever panel it is in); when the dashed average line would run through
+ * that spot, the label goes just inside the tip instead, if the bar is tall enough.
+ */
+export function valueLabelY(tipY: number, zeroY: number, averageY: number | null, clearance = 11): number {
+  const up = tipY < zeroY;
+  const outside = up ? tipY - 6 : tipY + 13;
+  const inside = up ? tipY + 14 : tipY - 5;
+  const touchesAverage = (y: number) => averageY !== null && averageY > y - clearance + 1 && averageY < y + 4;
+  if (!touchesAverage(outside)) return outside;
+  return Math.abs(tipY - zeroY) >= 22 && !touchesAverage(inside) ? inside : outside;
+}
+
+export type Box = { x: number; y: number; w: number; h: number };
+
+const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/**
+ * Index of the candidate box that covers the fewest obstacles (the first one wins a tie, so
+ * candidates are listed in order of preference). A candidate outside `bounds` never wins
+ * over one inside it.
+ */
+export function leastCrowdedSpot(candidates: readonly Box[], obstacles: readonly Box[], bounds: Box): number {
+  let best = -1;
+  let bestScore = Infinity;
+  candidates.forEach((candidate, index) => {
+    const inside = candidate.x >= bounds.x && candidate.y >= bounds.y
+      && candidate.x + candidate.w <= bounds.x + bounds.w && candidate.y + candidate.h <= bounds.y + bounds.h;
+    const score = (inside ? 0 : 1000) + obstacles.filter((box) => overlaps(candidate, box)).length;
+    if (score < bestScore) {
+      best = index;
+      bestScore = score;
+    }
+  });
+  return best;
 }
 
 /** Padded [min, max] of `values` (a fixed fallback when empty or constant). */

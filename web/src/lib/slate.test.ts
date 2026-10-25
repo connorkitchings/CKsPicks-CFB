@@ -5,10 +5,18 @@ import {
   biggestEdgesRecord,
   edgeTier,
   edgeTone,
+  gameState,
+  hasGradedPick,
   hasLean,
   leanFor,
   leanGradeRows,
+  modelCrossesMarket,
+  phoneLean,
   sortGames,
+  sortSlate,
+  slateSorts,
+  weekPhase,
+  weekStatus,
   topLeans,
   resultFor,
   topLeansRecord,
@@ -87,6 +95,28 @@ test("leanFor labels the pick side with a positive edge", () => {
   assert.equal(away?.pick, "Away +3.5");
   assert.equal(away?.edge, 4.2);
   assert.equal(leanFor(game({ totalLean: "under" }), "total")?.pick, "Under 50.5");
+});
+
+test("phoneLean abbreviates a long leaned team in the pick and model text only", () => {
+  const long = leanFor(game({ homeTeam: "Florida International", awayTeam: "Georgia" }), "spread")!;
+  const phone = phoneLean(long);
+  assert.equal(phone.pick, "FIU -3.5");
+  assert.equal(phone.model, "FIU by 6.5");
+  assert.equal(phone.team, "Florida International");
+  const short = leanFor(game({ homeTeam: "Georgia", awayTeam: "Florida International" }), "spread")!;
+  assert.equal(phoneLean(short), short);
+  const total = leanFor(game({ homeTeam: "Florida International" }), "total")!;
+  assert.equal(phoneLean(total), total);
+});
+
+test("modelCrossesMarket is true only when the model flips the favorite", () => {
+  // Home -3.5 market, model has home by 6.5: same favorite.
+  assert.equal(modelCrossesMarket(leanFor(game({}), "spread")!), false);
+  // Away +3.5 pick, model says home wins by 6.5 so away loses: the model agrees the home team is favored.
+  assert.equal(modelCrossesMarket(leanFor(game({ spreadLean: "away" }), "spread")!), false);
+  // Away +3.5 pick, model has the away team winning by 2: favorite flips.
+  assert.equal(modelCrossesMarket(leanFor(game({ spreadLean: "away", predictedSpread: -2 }), "spread")!), true);
+  assert.equal(modelCrossesMarket(leanFor(game({}), "total")!), false);
 });
 
 test("no lean when the lean or the line is missing, and for market games", () => {
@@ -329,3 +359,92 @@ test("venueLabel formats City, ST and degrades gracefully", () => {
   assert.equal(venueLabel(undefined, undefined), "");
 });
 
+
+test("weekPhase is upcoming with no finished game or no games, final when all are, else in-progress", () => {
+  const open = game({ gameId: 1 });
+  const done = game({ gameId: 2, homePoints: 31, awayPoints: 24 });
+  assert.equal(weekPhase([]), "upcoming");
+  assert.equal(weekPhase([open, open]), "upcoming");
+  assert.equal(weekPhase([done, open]), "in-progress");
+  assert.equal(weekPhase([done, done]), "final");
+});
+
+test("sortSlate offers result sorts only once a game has finished", () => {
+  assert.equal(slateSorts("upcoming").includes("worstResult"), false);
+  assert.equal(slateSorts("final").includes("worstResult"), true);
+  const early = game({ gameId: 1, startDate: new Date("2026-10-03T12:00:00Z"), edgeSpread: 1, edgeTotal: 1 });
+  const late = game({ gameId: 2, startDate: new Date("2026-10-03T20:00:00Z"), edgeSpread: 5, edgeTotal: 1 });
+  // An upcoming week ignores a result sort and keeps kickoff order.
+  assert.deepEqual(sortSlate([late, early], "worstResult", "upcoming").map((g) => g.gameId), [1, 2]);
+  assert.deepEqual(sortSlate([early, late], "bestEdge", "upcoming").map((g) => g.gameId), [2, 1]);
+  const win = game({ gameId: 3, homePoints: 40, awayPoints: 10, totalLean: null });
+  const loss = game({ gameId: 4, homePoints: 10, awayPoints: 40, totalLean: null });
+  assert.deepEqual(sortSlate([loss, win], "bestResult", "final").map((g) => g.gameId), [3, 4]);
+  assert.deepEqual(sortSlate([win, loss], "worstResult", "in-progress").map((g) => g.gameId), [4, 3]);
+});
+
+test("hasGradedPick is false for final games without a recorded grade", () => {
+  const ungradedFinal = game({ homePoints: 30, awayPoints: 20 });
+  assert.equal(hasGradedPick([ungradedFinal]), false);
+  assert.equal(hasGradedPick([]), false);
+});
+
+test("hasGradedPick is true once any spread or total grade exists", () => {
+  const ungraded = game({ homePoints: 30, awayPoints: 20 });
+  assert.equal(hasGradedPick([ungraded, game({ spreadResult: "push" })]), true);
+  assert.equal(hasGradedPick([game({ totalResult: "loss" })]), true);
+});
+
+test("isRetrospective is true for replay predictions or a retrospective repair only", async () => {
+  const { isRetrospective } = await import("./slate.ts");
+  assert.equal(isRetrospective(false, { evidenceClass: "replay" }), true);
+  assert.equal(isRetrospective(false, { evidenceClass: "live" }), false);
+  assert.equal(isRetrospective(false, { evidenceClass: "pending" }), false);
+  assert.equal(isRetrospective(false, undefined), false);
+  assert.equal(isRetrospective(true, undefined), true);
+  assert.equal(isRetrospective(true, { evidenceClass: "live" }), true);
+});
+
+const kickoff = new Date("2026-10-24T19:00:00Z"); // 3:00 PM EDT
+const placeholder = new Date("2026-10-24T04:00:00Z"); // Time TBD on Oct 24 (midnight EDT)
+const at = (iso: string) => new Date(iso);
+const scored = { homePoints: 24, awayPoints: 17 };
+
+test("gameState: a scored game is final whatever the clock says", () => {
+  assert.equal(gameState(game({ startDate: kickoff, ...scored }), at("2026-10-24T00:00:00Z")), "final");
+});
+
+test("gameState: a timed game is upcoming until kickoff and awaiting after", () => {
+  const g = game({ startDate: kickoff });
+  assert.equal(gameState(g, at("2026-10-24T18:59:59Z")), "upcoming");
+  assert.equal(gameState(g, kickoff), "awaiting");
+  assert.equal(gameState(g, at("2026-10-25T12:00:00Z")), "awaiting");
+});
+
+test("gameState: a Time TBD game is awaiting only once its Eastern day has ended", () => {
+  const g = game({ startDate: placeholder });
+  assert.equal(gameState(g, at("2026-10-24T04:00:00Z")), "upcoming"); // placeholder midnight
+  assert.equal(gameState(g, at("2026-10-25T03:59:59Z")), "upcoming"); // 11:59 PM that evening
+  assert.equal(gameState(g, at("2026-10-25T04:00:00Z")), "awaiting"); // next Eastern day
+});
+
+test("weekStatus: no kickoff yet is upcoming, and so is an empty week", () => {
+  assert.equal(weekStatus([game({ startDate: kickoff }), game({ gameId: 2, startDate: placeholder })], at("2026-10-23T12:00:00Z")), "upcoming");
+  assert.equal(weekStatus([], at("2026-10-23T12:00:00Z")), "upcoming");
+});
+
+test("weekStatus: unscored games that have all kicked off are awaiting", () => {
+  const games = [game({ startDate: kickoff }), game({ gameId: 2, startDate: placeholder })];
+  assert.equal(weekStatus(games, at("2026-10-25T12:00:00Z")), "awaiting");
+});
+
+test("weekStatus: a mix of states is in progress", () => {
+  const now = at("2026-10-24T20:00:00Z");
+  assert.equal(weekStatus([game({ startDate: kickoff }), game({ gameId: 2, startDate: new Date("2026-10-25T00:00:00Z") })], now), "in-progress"); // one awaiting, one upcoming
+  assert.equal(weekStatus([game({ startDate: kickoff, ...scored }), game({ gameId: 2, startDate: kickoff })], now), "in-progress"); // one final, one awaiting
+  assert.equal(weekStatus([game({ startDate: kickoff, ...scored }), game({ gameId: 2, startDate: new Date("2026-10-25T00:00:00Z") })], now), "in-progress"); // one final, one upcoming
+});
+
+test("weekStatus: every game scored is final", () => {
+  assert.equal(weekStatus([game({ startDate: kickoff, ...scored }), game({ gameId: 2, startDate: kickoff, ...scored })], at("2026-10-26T12:00:00Z")), "final");
+});

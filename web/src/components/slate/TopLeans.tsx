@@ -2,6 +2,7 @@
 
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Eyebrow } from "@/components/ui/SectionHeading";
 import { useState } from "react";
 import clsx from "clsx";
 import type { Game } from "@/lib/queries";
@@ -23,9 +24,9 @@ function Column({
   const rows = topLeans(games, kind, 5);
   return (
     <div className={clsx("min-w-0 rounded-lg border border-line/60 bg-surface-inset/50 p-2 sm:p-3", className)}>
-      <h3 className="mb-1.5 hidden text-center text-xs font-semibold uppercase tracking-wider text-ink-muted sm:mb-2 sm:block">
+      <Eyebrow as="h3" className="mb-1.5 hidden text-center sm:mb-2 sm:block">
         {title}
-      </h3>
+      </Eyebrow>
       {rows.length === 0 ? (
         <p className="py-2 text-center text-xs text-ink-muted">No leans yet.</p>
       ) : (
@@ -92,7 +93,6 @@ export function TopLeans({
   return (
     <section aria-label="Biggest edges">
       <ResponsiveDisclosure
-        className="rounded-xl border border-line bg-surface-card"
         title={title}
         heading={title}
       >

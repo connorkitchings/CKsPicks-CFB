@@ -4,7 +4,7 @@
 - **Created:** 2026-09-20
 - **Planner:** Sol
 - **Approval source:** User explicitly approved during the 2026-09-20 planning session with "Approve Contract 02 now — both lanes are ready to go."
-- **Implementation log:** `session_logs/2026-09-21/02-v5-foundation-blocker-diagnosis.md`
+- **Implementation log:** `session_logs/archive/daily/2026-09-21/02-v5-foundation-blocker-diagnosis.md`
 - **Commit policy:** Separate diagnostic-code/report checkpoint; user controls Git operations.
 
 ## Goal

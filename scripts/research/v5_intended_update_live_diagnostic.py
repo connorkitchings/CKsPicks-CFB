@@ -171,7 +171,9 @@ if __name__ == "__main__":
     parser.add_argument("--local-cache", type=Path)
     parser.add_argument(
         "--audit",
-        default=Path("docs/research/2026-09-28-current-v5-ratings-evidence.json"),
+        default=Path(
+            "docs/archive/research/2026-09-28-current-v5-ratings-evidence.json"
+        ),
         type=Path,
     )
     parser.add_argument("--local-output", required=True, type=Path)

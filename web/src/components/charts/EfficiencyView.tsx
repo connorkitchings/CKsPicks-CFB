@@ -1,26 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { EFFICIENCY_METRICS, EXPLOSIVENESS_METRICS, describeEfficiencyPoint, efficiencyConfig } from "@/lib/chart-config";
-import { efficiencyPoints, type EfficiencyMetric, type Side, type TeamGameRow } from "@/lib/charts";
+import type { EfficiencyMetric, ScatterData, Side } from "@/lib/charts";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import type { SharedChartProps } from "./ChartFrame";
 import { ScatterView } from "./ScatterView";
 
+/** Per-metric points for the page's week and side, aggregated on the server (not the game rows). */
+export type EfficiencyData = Partial<Record<EfficiencyMetric, ScatterData>>;
+
 export type EfficiencyViewProps = {
   shared: SharedChartProps;
   side: Side;
-  rows: TeamGameRow[];
+  data: EfficiencyData;
   initialMetric: EfficiencyMetric;
   /** The release serves yardage (`charts_v2`): offer the 20+ rate / yards-per-success toggle. */
   explosiveness: boolean;
 };
 
 /** Cumulative success rate against PPA/play, or an explosiveness metric when yardage is served. */
-export function EfficiencyView({ shared, side, rows, initialMetric, explosiveness }: EfficiencyViewProps) {
+export function EfficiencyView({ shared, side, data: byMetric, initialMetric, explosiveness }: EfficiencyViewProps) {
   const [metric, setMetric] = useState<EfficiencyMetric>(explosiveness ? initialMetric : "ppa");
-  const { roster, week } = shared;
-  const data = useMemo(() => efficiencyPoints(roster, rows, week, side, metric), [roster, rows, week, side, metric]);
+  const data = byMetric[metric] ?? byMetric.ppa!;
 
   return (
     <ScatterView
@@ -41,7 +43,6 @@ export function EfficiencyView({ shared, side, rows, initialMetric, explosivenes
           testId="efficiency-metric-switcher"
         />
       )}
-      figureNote={side === "defense" ? "Axes are inverted: up and right is better defense." : undefined}
     />
   );
 }

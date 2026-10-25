@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-for (const path of ["/", "/results"]) {
+// Upcoming week, then a final week whose graded cards and highlights share the page.
+for (const path of ["/", "/?week=4"]) {
   test(`${path}: the first complete phone card fits above navigation`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(path);
@@ -8,17 +9,26 @@ for (const path of ["/", "/results"]) {
     await expect(card).toBeVisible();
     await expect(page.locator("details[open]")).toHaveCount(0);
     await expect(page.getByRole("group", { name: "Layout" })).toBeHidden();
-    const cardBox = await card.boundingBox();
-    const navigationBox = await page.getByRole("navigation", { name: "Main navigation" }).boundingBox();
-    expect(cardBox).not.toBeNull();
-    expect(navigationBox).not.toBeNull();
-    expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(navigationBox!.y);
+    // A graded week stacks the season and week records above the slate, so only the
+    // upcoming week promises a complete first card above the navigation.
+    if (path === "/") {
+      const cardBox = await card.boundingBox();
+      const navigationBox = await page.getByRole("navigation", { name: "Main navigation" }).boundingBox();
+      expect(cardBox).not.toBeNull();
+      expect(navigationBox).not.toBeNull();
+      expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(navigationBox!.y);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await expect(card.locator("[data-pick]")).toHaveCount(2);
-    await expect(card.getByRole("link", { name: "Matchup" })).toBeVisible();
+    const link = card.getByRole("link", { name: "Matchup" });
+    await expect(link).toBeVisible();
+    // A quiet text link on phones (no border or fill), with a full-size tap target.
+    await expect(link).toHaveCSS("border-top-color", "rgba(0, 0, 0, 0)");
+    expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 
   test(`${path}: the first phone card clears a 34px home-indicator safe area`, async ({ page }) => {
+    test.skip(path !== "/", "A graded week stacks two records above the slate, so only the upcoming week promises a first card above the navigation.");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(path);
     await expect(page.locator("li[id^='game-']").first()).toBeVisible();
@@ -78,12 +88,17 @@ test("collapsed biggest edges preserve every game anchor and selected category",
   expect(await shownAnchors()).toEqual(["#game-3", "#game-9", "#game-1", "#game-8", "#game-5"]);
   await biggestEdges.getByRole("button", { name: "Totals", exact: true }).click();
   await expect(biggestEdges.getByRole("button", { name: "Totals", exact: true })).toHaveAttribute("aria-pressed", "true");
-  // Four eligible total leans after switching category.
-  expect(await shownAnchors()).toEqual(["#game-3", "#game-6", "#game-5", "#game-1"]);
+  // Five eligible total leans after switching category.
+  expect(await shownAnchors()).toEqual(["#game-3", "#game-6", "#game-5", "#game-1", "#game-10"]);
   const firstAnchor = biggestEdges.locator("a[href^='#game-']").filter({ visible: true }).first();
   const target = await firstAnchor.getAttribute("href");
   await firstAnchor.click();
   expect(new URL(page.url()).hash).toBe(target);
+  // The card lands just under the pinned bars (app bar 48 + slate bar 105 + day header 25 = 178px),
+  // not hidden beneath them and not a second scroll margin lower.
+  await expect.poll(async () => (await page.locator(target!).boundingBox())!.y).toBeLessThan(230);
+  const [bar, card] = [await page.getByTestId("slate-bar").boundingBox(), await page.locator(target!).boundingBox()];
+  expect(card!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height + 24);
 });
 
 
@@ -93,11 +108,12 @@ test("biggest edges and highlights are open inline on desktop without a click", 
   const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
   await expect(biggestEdges.getByRole("heading", { name: "Biggest edges" })).toBeVisible();
   await expect(biggestEdges.getByRole("button", { name: "Totals", exact: true })).toBeHidden();
-  await expect(biggestEdges.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(9);
-  await page.goto("/results");
+  await expect(biggestEdges.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
+  await page.goto("/?week=4");
   await expect(page.getByRole("region", { name: "Highlights" }).getByRole("heading", { name: "Highlights" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Highlights" }).locator("details")).toHaveCount(1);
-  await expect(page.getByRole("region", { name: "Highlights" }).locator("details").filter({ visible: true })).toHaveCount(0);
+  // One copy of the content: the summary is hidden on desktop and the content is forced open.
+  await expect(page.getByRole("region", { name: "Highlights" }).locator("summary")).toBeHidden();
 });
 
 test("search waits for hydration before accepting the first filter", async ({ page }) => {
@@ -133,20 +149,35 @@ test("market timestamps hydrate without replacing the slate", async ({ page }) =
   await page.goto("/?mode=market");
   await expect(page.getByRole("searchbox", { name: "Filter by team" })).toBeEditable();
   await expect(page.getByRole("table", { name: "Market and results" })).toBeVisible();
-  await expect(page.getByText("Sat, Aug 29, 3:30 PM EDT", { exact: true })).toBeVisible();
+  await expect(page.getByText("Sat, Aug 29, 3:30 PM ET", { exact: true })).toBeVisible();
   expect(hydrationErrors).toEqual([]);
 });
 
-test("results record is the single week, with accuracy on wider screens and a link to the season audit", async ({ page }) => {
+test("a graded week shows the week record beside the season record, with accuracy on wider screens", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/results");
+  await page.goto("/?week=4");
   const record = page.getByRole("region", { name: "Record" });
+  // Phones show one compact line; it opens the full card.
+  await expect(record.getByRole("heading", { name: "Season record before Week 4" })).toBeHidden();
+  await record.getByTestId("record-summary").click();
+  await expect(record.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
   await expect(record.getByRole("heading", { name: /^Week \d+ record/ })).toBeVisible();
-  await expect(record.getByText("Season context", { exact: true })).toHaveCount(0);
-  await expect(record.getByRole("heading", { name: "Season", exact: true })).toHaveCount(0);
-  await expect(record.getByRole("link", { name: "Season record and audit" })).toHaveAttribute("href", "/performance");
-  // The accuracy line is dropped on phones so the first game card still clears the navigation.
+  await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
+  // The accuracy line is dropped on phones to keep the slate close to the top.
   await expect(record.getByTestId("week-accuracy")).toBeHidden();
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(record.getByTestId("week-accuracy")).toContainText("95% interval coverage");
+});
+
+test("an upcoming week has no week record, and an in-progress week keeps phone cards inside the viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("region", { name: "Record" }).getByRole("heading", { name: /^Week \d+ record/ })).toHaveCount(0);
+  await page.goto("/?week=6");
+  await expect(page.getByTestId("week-phase")).toHaveText("In progress");
+  await expect(page.locator("li[id^='game-']")).toHaveCount(4);
+  await expect(page.locator("details[open]")).toHaveCount(0);
+  await page.getByTestId("record-summary").click();
+  await expect(page.getByRole("region", { name: "Record" }).getByRole("heading", { name: "Week 6 record" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });

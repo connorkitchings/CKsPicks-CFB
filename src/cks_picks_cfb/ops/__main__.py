@@ -2482,19 +2482,9 @@ def parse_args() -> argparse.Namespace:
         "fetch-source",
         "build-silver",
         "build-team-game",
-        "build-features",
-        "build-baselines",
-        "assemble-model-ready",
         "prepare-week",
-        "readiness",
-        "publish-week",
-        "publish-replay-week",
         "project-v5-ratings",
         "publish-matchup-data",
-        "score-replay-week",
-        "freeze-week",
-        "close-week",
-        "replay-season",
         "reconcile",
         "audit-data",
     ):
@@ -2504,14 +2494,10 @@ def parse_args() -> argparse.Namespace:
             "inventory-source",
             "import-history",
             "hydrate-history",
-            "replay-season",
             "reconcile",
             "audit-data",
             "build-silver",
             "build-team-game",
-            "build-features",
-            "build-baselines",
-            "assemble-model-ready",
             "fetch-source",
             "project-v5-ratings",
             "publish-matchup-data",
@@ -2521,31 +2507,12 @@ def parse_args() -> argparse.Namespace:
         }:
             sub.add_argument("--week", type=int, required=True)
         if command in {
-            "readiness",
-            "publish-week",
-            "publish-replay-week",
             "build-silver",
             "build-team-game",
-            "build-features",
-            "build-baselines",
-            "assemble-model-ready",
             "prepare-week",
             "prepare-rating-history",
-            "close-week",
         }:
             sub.add_argument("--as-of", required=True)
-        if command in {"readiness", "publish-week", "publish-replay-week"}:
-            sub.add_argument(
-                "--config",
-                default=(
-                    "conf/weekly_bets/v5_replay_2026.yaml"
-                    if command == "publish-replay-week"
-                    else "conf/weekly_bets/v2_champion.yaml"
-                ),
-                help="Weekly model configuration used by preflight and publication.",
-            )
-        if command == "publish-week":
-            sub.add_argument("--prepared-gold-ref-uri")
         if command == "project-v5-ratings":
             sub.add_argument("--rating-manifest-uri", required=True)
         if command == "publish-matchup-data":
@@ -2556,28 +2523,11 @@ def parse_args() -> argparse.Namespace:
                 "--expect-payload-sha",
                 help="Abort unless the built payload hash matches (production uses Preview's)",
             )
-        if command == "score-replay-week":
-            sub.add_argument("--run-id", required=True)
-            sub.add_argument("--outcomes-ref-uri", required=True)
         sub.add_argument(
             "--environment", choices=("preview", "production"), required=True
         )
         sub.add_argument("--pipeline-run-id")
         sub.add_argument("--crash-after-step", help=argparse.SUPPRESS)
-        if command == "freeze-week":
-            sub.add_argument("--waiver")
-            sub.add_argument("--decision-ref")
-        if command == "close-week":
-            sub.add_argument(
-                "--cancellation-waiver",
-                action="append",
-                default=[],
-                metavar="GAME_ID:REASON",
-            )
-            sub.add_argument(
-                "--outcomes-ref-uri",
-                help="Exact certified Silver game_outcomes DatasetRef to score without a new capture.",
-            )
         if command == "fetch-source":
             sub.add_argument("--entity", required=True)
             sub.add_argument("--week", type=int)
@@ -2638,23 +2588,6 @@ def parse_args() -> argparse.Namespace:
             sub.add_argument("--weather-ref-uri")
             sub.add_argument("--game-stats-ref-uri")
             sub.add_argument("--corrections-ref-uri", required=True)
-            sub.add_argument("--output-ref-uri", required=True)
-        if command == "build-features":
-            sub.add_argument("--matchups-ref-uri", required=True)
-            sub.add_argument("--schedule-ref-uri", required=True)
-            sub.add_argument("--baselines-ref-uri")
-            sub.add_argument("--output-ref-uri", required=True)
-        if command == "build-baselines":
-            sub.add_argument("--core-ref-uri", required=True)
-            sub.add_argument("--output-ref-uri", required=True)
-            sub.add_argument("--include-locked-2025", action="store_true")
-            sub.add_argument("--frozen-design-sha")
-        if command == "assemble-model-ready":
-            sub.add_argument("--core-ref-uri", required=True)
-            sub.add_argument("--baselines-ref-uri", required=True)
-            sub.add_argument("--markets-ref-uri")
-            sub.add_argument("--preseason-features-ref-uri")
-            sub.add_argument("--feature-track", choices=("strict", "reconstructed"))
             sub.add_argument("--output-ref-uri", required=True)
     return parser.parse_args()
 

@@ -1,12 +1,23 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const fits = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+/** Opens the phone Filters sheet once hydration has enabled its button. */
+const openFilters = async (page: Page) => {
+  const button = page.getByRole("button", { name: "Filters", exact: true });
+  await expect(button).toBeEnabled();
+  await button.click();
+  await expect(page.getByRole("dialog", { name: "Filters", exact: true })).toBeVisible();
+};
+const closeFilters = async (page: Page) => {
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+};
 const phoneSort = (page: Page) => page.getByLabel("Sort by", { exact: true });
 const sortHeader = (page: Page, label: string) => page.getByRole("columnheader", { name: `Sort by ${label}`, exact: true });
 const sortButton = (page: Page, label: string) => page.getByRole("button", { name: `Sort by ${label}`, exact: true });
 const SORT_LABELS = ["Overall", "Offense", "Defense", "SOR", "SOS Played", "SOS Remaining", "SOS Full"];
 
-// Returns a locator for one team's cell by column header name. The `#` cell is a td and the
+// Returns a locator for one team's cell by column header name. The `Rank` cell is a td and the
 // team is a th row header, so `td, th` in DOM order lines up with `thead th` indices.
 const rowCells = async (page: Page, team: string) => {
   const row = page.getByRole("table").locator("tbody tr", { hasText: team });
@@ -25,6 +36,7 @@ test.describe("mobile team ratings", () => {
 
   test("the sort select lists every sortable column", async ({ page }) => {
     await page.goto("/ratings");
+    await openFilters(page);
     await expect(phoneSort(page).locator("option")).toHaveText(SORT_LABELS);
     await expect(page.getByRole("group", { name: "Rating category" })).toHaveCount(0);
     await expect(page.getByRole("group", { name: "Résumé sort" })).toHaveCount(0);
@@ -33,6 +45,7 @@ test.describe("mobile team ratings", () => {
   test("each sort promotes its own value and preserves national rank when filtered", async ({ page }) => {
     await page.goto("/ratings");
     const list = page.getByRole("list", { name: "Team ratings list" });
+    await openFilters(page);
     // Each case selects a value different from the current one; a same-value select is not a user action.
     const cases = [
       { option: "Offense", team: "Ohio State", primary: "Offense+4.80" },
@@ -48,40 +61,96 @@ test.describe("mobile team ratings", () => {
       await expect(first.getByTestId("primary-rating")).toHaveText(entry.primary);
     }
     await phoneSort(page).selectOption({ label: "Offense" });
+    await closeFilters(page);
     await page.getByRole("searchbox", { name: "Search teams" }).fill("Appalachian State");
     await expect(list.getByRole("listitem")).toHaveCount(1);
     await expect(list.getByLabel("National rank 3")).toBeVisible();
     await page.getByRole("searchbox", { name: "Search teams" }).fill("no matching team");
     await expect(page.getByRole("status")).toContainText("No teams match");
-    await page.getByRole("button", { name: "Clear search", exact: true }).last().click();
+    await page.getByRole("button", { name: "Clear filters", exact: true }).last().click();
     await expect(list.getByRole("listitem")).toHaveCount(4);
   });
 
-  test("phone cards show FBS W-L, SOR rank and SOS ranks without WAA or raw SOS values", async ({ page }) => {
+  test("phone cards link team names to team pages with 44px targets", async ({ page }) => {
+    await page.goto("/ratings");
+    const link = page.getByRole("list", { name: "Team ratings list" }).getByRole("link", { name: /^Appalachian State/ });
+    await expect(link).toHaveAttribute("href", "/teams/Appalachian_State");
+    expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await link.click();
+    await expect(page).toHaveURL(/\/teams\/Appalachian_State$/);
+    await expect(page.getByRole("heading", { level: 1, name: "App State" })).toBeVisible();
+  });
+
+  test("phone cards show the record, SOR rank and played SOS rank without WAA or raw SOS values", async ({ page }) => {
     await page.goto("/ratings?period=current");
     const texas = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
-    await expect(texas).toContainText("FBS W-L 4–0");
-    await expect(texas).toContainText("SOR #2");
-    // Current period Played, Remaining and Full ranks for Texas are each third of four.
-    await expect(texas).toContainText("SOS #3 / #3 / #3 (Played / Remaining / Full)");
+    await expect(texas).toContainText("4–0");
+    await expect(texas.getByRole("group", { name: "Strength of record rank" })).toContainText("#2");
+    // Current period played-SOS rank for Texas is third of four.
+    await expect(texas.getByRole("group", { name: "Strength of schedule played" })).toContainText("#3");
+    await expect(texas).not.toContainText("remaining");
     await expect(texas).not.toContainText("WAA");
     await expect(texas).not.toContainText("±");
     await expect(texas).not.toContainText("81.2");
     await expect(texas).not.toContainText("56.5");
   });
 
+  for (const width of [390, 320]) {
+    test(`phone card stats sit on one line without overflow at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/ratings");
+      const card = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
+      const stats = card.getByRole("group");
+      await expect(stats).toHaveCount(4);
+      await expect(card.locator("dt")).toHaveText(["OFF", "DEF", "SOR", "SOS"]);
+      const tops = await stats.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+      expect(new Set(tops).size).toBe(1);
+      for (const dd of await card.locator("dd").all()) {
+        const lines = await dd.evaluate((el) => el.getClientRects().length);
+        expect(lines).toBe(1);
+      }
+      expect(await fits(page)).toBe(true);
+    });
+
+    test(`phone card stat grid is centered in the card at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/ratings");
+      const card = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first();
+      const cardBox = await card.boundingBox();
+      const cells = await card.getByRole("group").evaluateAll((els) => els.map((el) => {
+        const r = el.getBoundingClientRect();
+        const label = el.querySelector("dt")!.getBoundingClientRect();
+        const value = el.querySelector("dd")!.getBoundingClientRect();
+        return { center: r.left + r.width / 2, width: r.width, labelCenter: label.left + label.width / 2, valueCenter: value.left + value.width / 2 };
+      }));
+      const cardCenter = cardBox!.x + cardBox!.width / 2;
+      expect(Math.abs((cells[0].center + cells[3].center) / 2 - cardCenter)).toBeLessThan(3);
+      expect(Math.abs((cells[1].center + cells[2].center) / 2 - cardCenter)).toBeLessThan(3);
+      for (const cell of cells) {
+        expect(Math.abs(cell.width - cells[0].width)).toBeLessThan(1);
+        expect(Math.abs(cell.labelCenter - cell.center)).toBeLessThan(2);
+        expect(Math.abs(cell.valueCenter - cell.center)).toBeLessThan(2);
+      }
+    });
+  }
+
   test("period changes preserve live search and sort and update frozen values", async ({ page }) => {
     await page.goto("/ratings?season=2026");
     await page.getByRole("searchbox", { name: "Search teams" }).fill("Texas");
+    await openFilters(page);
     await phoneSort(page).selectOption({ label: "Offense" });
     await page.getByLabel("Rating period", { exact: true }).selectOption({ label: "Post-Week 3" });
     await expect(page).toHaveURL(/sort=offense/);
     await expect(page).toHaveURL(/q=Texas/);
     await expect(page).toHaveURL(/season=2026/);
     await expect(page.getByRole("searchbox", { name: "Search teams" })).toHaveValue("Texas");
+    await expect(page.getByTestId("ratings-summary")).toHaveText("All FBS · Offense · Post-Week 3 · V5");
+    await openFilters(page);
     await expect(phoneSort(page)).toHaveValue("offense");
+    await closeFilters(page);
     await expect(page.getByTestId("primary-rating")).toHaveText("Offense+3.20");
-    await expect(page.getByText(/Evidence cutoff: Sep 22, 2026/)).toBeVisible();
+    await expect(page.getByText(/Evidence cutoff: Sep 22, 2026, 10:58 AM ET\./)).toBeVisible();
+    await openFilters(page);
     await page.getByLabel("Rating period", { exact: true }).selectOption({ label: "Preseason" });
     await expect(page.getByTestId("primary-rating")).toHaveText("Offense+3.00");
     await expect(page.getByText("Preseason baseline priors before 2026 kickoff.", { exact: true })).toBeVisible();
@@ -89,8 +158,11 @@ test.describe("mobile team ratings", () => {
 
   test("phone search, sort and period controls are at least 44px tall", async ({ page }) => {
     await page.goto("/ratings");
+    await openFilters(page);
     for (const control of [
       page.getByRole("searchbox", { name: "Search teams" }),
+      page.getByRole("button", { name: "Filters", exact: true }),
+      page.getByLabel("Filter by conference", { exact: true }),
       phoneSort(page),
       page.getByLabel("Rating period", { exact: true }),
     ]) {
@@ -99,19 +171,82 @@ test.describe("mobile team ratings", () => {
     }
   });
 
+  test("compact phone header: first team row up top, pinned bar, Filters sheet above it, footnote after the list", async ({ page }) => {
+    await page.goto("/ratings");
+    const bar = page.getByTestId("ratings-bar");
+    const filters = page.getByRole("button", { name: "Filters", exact: true });
+    await expect(filters).toBeEnabled();
+    expect((await filters.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(page.getByTestId("ratings-summary")).toHaveText(/^All FBS · Overall · Post-Week \d+ · V5$/);
+    await expect(page.getByTestId("ratings-filters-dot")).toHaveCount(0);
+    // The fixture timeline lists latest-first like production, so an older period (last in the list) is what lights the dot.
+    await page.goto("/ratings?period=preseason");
+    await expect(page.getByTestId("ratings-filters-dot")).toHaveCount(1);
+    await page.goto("/ratings");
+    // The heading is screen-reader only on phones, and the about disclosure sits after the list.
+    expect((await page.getByRole("heading", { level: 1, name: "Team ratings" }).boundingBox())!.width).toBeLessThanOrEqual(1);
+    const about = page.getByText("About V5 possession ratings", { exact: true });
+    expect((await about.boundingBox())!.y).toBeGreaterThan((await page.getByRole("list", { name: "Team ratings list" }).boundingBox())!.y);
+    await expect(page.getByText(/Frozen ratings|Latest frozen/).first()).toBeHidden();
+    const list = page.getByRole("list", { name: "Team ratings list" });
+    const firstTop = (await list.getByRole("listitem").first().boundingBox())!.y;
+    console.log(`first team row top: ${Math.round(firstTop)}px`);
+    expect(firstTop).toBeLessThan(335);
+    // The footnote follows the list on phones.
+    const note = page.getByText(/SOS ranks schedule difficulty/);
+    expect((await note.boundingBox())!.y).toBeGreaterThan((await list.boundingBox())!.y + (await list.boundingBox())!.height - 1);
+    // The bar pins just below the app bar while the page scrolls.
+    await page.mouse.wheel(0, 800);
+    const appBar = page.getByTestId("app-bar");
+    await expect.poll(async () => Math.abs((await bar.boundingBox())!.y - (await appBar.boundingBox())!.height)).toBeLessThanOrEqual(1);
+    expect(await bar.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
+    // The sheet sits above the bar with the three controls; Sort applies immediately and focus returns on close.
+    await filters.click();
+    const dialog = page.getByRole("dialog", { name: "Filters", exact: true });
+    await expect(dialog).toBeVisible();
+    expect(await page.evaluate(() => {
+      const rect = document.querySelector("dialog[open]")!.getBoundingClientRect();
+      return document.elementFromPoint(rect.x + rect.width / 2, rect.y + 10)?.closest("dialog") !== null;
+    })).toBe(true);
+    await expect(dialog.getByLabel("Rating period", { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel("Filter by conference", { exact: true })).toBeVisible();
+    await dialog.getByLabel("Sort by", { exact: true }).selectOption({ label: "Offense" });
+    await expect(list.getByRole("listitem").first()).toContainText("Ohio State");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(filters).toBeFocused();
+    await expect(page.getByTestId("ratings-summary")).toHaveText(/^All FBS · Offense · Post-Week \d+ · V5$/);
+    await expect(page.getByTestId("ratings-filters-dot")).toBeVisible();
+  });
+
+  test("320px keeps the sticky bar inside the viewport and the first card up top", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto("/ratings");
+    expect((await page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem").first().boundingBox())!.y).toBeLessThan(335);
+    await expect(page.getByRole("button", { name: "Filters", exact: true })).toBeEnabled();
+    expect(await fits(page)).toBe(true);
+    const box = (await page.getByTestId("ratings-bar").boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  });
+
   for (const width of [320, 360, 390, 430, 639, 640, 768, 1024, 1280]) {
     test(`loaded ratings and period controls fit ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await page.goto("/ratings");
       await expect(page.getByRole("heading", { name: "Team ratings" })).toBeVisible();
       if (width < 640) {
-        await expect(page.getByLabel("Rating period", { exact: true })).toBeVisible();
-        await expect(phoneSort(page)).toBeVisible();
+        await expect(page.getByRole("button", { name: "Filters", exact: true })).toBeVisible();
+        // The controls live in the closed Filters sheet.
+        await expect(page.getByLabel("Rating period", { exact: true })).toBeHidden();
+        await expect(phoneSort(page)).toBeHidden();
         await expect(page.getByRole("navigation", { name: "Ratings timeline" })).toBeHidden();
         await expect(page.getByRole("list", { name: "Team ratings list" })).toContainText("Southern Mississippi");
       } else {
-        await expect(page.getByLabel("Rating period", { exact: true })).toBeHidden();
-        await expect(phoneSort(page)).toBeHidden();
+        await expect(page.getByLabel("Rating period", { exact: true })).toHaveCount(0);
+        await expect(phoneSort(page)).toHaveCount(0);
+        await expect(page.getByRole("button", { name: "Filters", exact: true })).toBeHidden();
+        await expect(page.getByLabel("Filter by conference", { exact: true })).toBeVisible();
         await expect(page.getByRole("navigation", { name: "Ratings timeline" })).toBeVisible();
         await expect(page.getByRole("table")).toContainText("Southern Mississippi");
       }
@@ -179,7 +314,7 @@ test.describe("résumé columns", () => {
     const headers = page.getByRole("table").locator("thead th");
     // Sortable headers carry a direction arrow in their text on the active column, so match by prefix.
     await expect(headers).toHaveText([
-      /^#$/, /^Team$/, /^Overall/, /^Offense/, /^Defense/, /^FBS W-L$/, /^SOR/, /^SOS Played/, /^SOS Remaining/, /^SOS Full/,
+      /^Rank$/, /^Team$/, /^Overall/, /^Offense/, /^Defense/, /^FBS W-L$/, /^SOR/, /^SOS Played/, /^SOS Remaining/, /^SOS Full/,
     ]);
     await expect(page.getByRole("columnheader", { name: "WAA", exact: true })).toHaveCount(0);
     await expect(page.getByRole("columnheader", { name: "Overall uncertainty" })).toHaveCount(0);
@@ -189,7 +324,9 @@ test.describe("résumé columns", () => {
     for (const label of ["SOS Played", "SOS Remaining", "SOS Full"]) {
       await expect(sortHeader(page, label)).toHaveAttribute("title", "Schedule difficulty rank among FBS teams (1 is hardest), measured against an average FBS team.");
     }
-    await expect(page.getByRole("link", { name: "elite", exact: true })).toHaveAttribute("href", "/methodology#elite-reference");
+    await expect(page.getByRole("link", { name: "elite", exact: true })).toHaveAttribute("href", "/model/method#elite-reference");
+    // Team names link to team pages in the desktop table.
+    await expect(page.getByRole("table").getByRole("link", { name: "Texas", exact: true })).toHaveAttribute("href", "/teams/Texas");
     await expect(page.getByText("SOS ranks schedule difficulty for an average FBS team (1 is hardest).")).toBeVisible();
     await expect(page.getByRole("group", { name: "Rating category" })).toHaveCount(0);
     await expect(page.getByRole("group", { name: "Résumé sort" })).toHaveCount(0);
@@ -262,20 +399,20 @@ test.describe("résumé columns", () => {
     const texas = await rowCells(page, "Texas");
     await expect(texas("Overall")).toHaveText("+5.50");
     await expect(texas("FBS W-L")).toHaveText("4–0");
-    await expect(texas("SOR")).toHaveText("#2");
+    await expect(texas("SOR")).toContainText("#2");
     await expect(texas("SOR")).toHaveAttribute("title", "SOR 81.2");
-    await expect(texas("SOS Played")).toHaveText("#3");
+    await expect(texas("SOS Played")).toContainText("#3");
     await expect(texas("SOS Played")).toHaveAttribute("title", "SOS Played 52.6");
-    await expect(texas("SOS Remaining")).toHaveText("#3");
+    await expect(texas("SOS Remaining")).toContainText("#3");
     await expect(texas("SOS Remaining")).toHaveAttribute("title", "SOS Remaining 58.4");
-    await expect(texas("SOS Full")).toHaveText("#3");
+    await expect(texas("SOS Full")).toContainText("#3");
     await expect(texas("SOS Full")).toHaveAttribute("title", "SOS Full 56.5");
 
     const ohioState = await rowCells(page, "Ohio State");
     await expect(ohioState("FBS W-L")).toHaveText("3–1");
-    await expect(ohioState("SOR")).toHaveText("#1");
+    await expect(ohioState("SOR")).toContainText("#1");
     await expect(ohioState("SOR")).toHaveAttribute("title", "SOR 93.7");
-    await expect(ohioState("SOS Full")).toHaveText("#4");
+    await expect(ohioState("SOS Full")).toContainText("#4");
 
     // Fewer than 3 completed FBS games: SOR is null and renders as a dash with no score title.
     const southernMiss = await rowCells(page, "Southern Mississippi");
@@ -336,6 +473,27 @@ test.describe("résumé columns", () => {
     await expectSortState(sortHeader(page, "Overall"), "descending");
     await expect(rows(page).nth(0)).toContainText("Texas");
   });
+
+  test("conference filter narrows rows while preserving national rank and rank-tier badges", async ({ page }) => {
+    await page.goto("/ratings");
+    await expect(rows(page).first().locator("[data-rank-chip]").first()).toBeVisible();
+    const filter = page.getByTestId("conference-filter");
+    await expect(filter).toBeVisible();
+
+    await filter.selectOption("Sun Belt");
+    await expect(rows(page)).toHaveCount(2);
+    await expect(rows(page).nth(0)).toContainText("Appalachian State");
+    await expect(rows(page).nth(1)).toContainText("Southern Mississippi");
+
+    const appState = await rowCells(page, "Appalachian State");
+    // National overall position #3 and SOR #3 are preserved when filtered to Sun Belt.
+    await expect(appState("Rank")).toHaveText("3");
+    await expect(appState("SOR")).toContainText("#3");
+    await expect(appState("SOS Full")).toContainText("#2");
+
+    await filter.selectOption("all");
+    await expect(rows(page)).toHaveCount(4);
+  });
 });
 
 test.describe("release without résumé rows", () => {
@@ -369,4 +527,83 @@ test.describe("release without résumé rows", () => {
     await expect(page.getByText("SOS ranks schedule difficulty")).toBeHidden();
     expect(problems).toEqual([]);
   });
+});
+
+test.describe("rank color scale", () => {
+  // Computed colors may be oklab/srgb strings; rasterize one pixel to compare plain sRGB channels.
+  const rgb = (page: Page, value: string) => page.evaluate((css) => {
+    const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, 1, 1);
+    ctx.fillStyle = css;
+    ctx.fillRect(0, 0, 1, 1);
+    return Array.from(ctx.getImageData(0, 0, 1, 1).data.slice(0, 3));
+  }, value);
+
+  // The SOR chip in a row. The first column's position chip is neutral, so the scale is read from SOR.
+  const sorChip = async (page: Page) => {
+    const headers = (await page.getByRole("table").locator("thead th").allTextContents()).map((text) => text.replace(/[↑↓]/g, "").trim());
+    const index = headers.indexOf("SOR");
+    if (index < 0) throw new Error('No table column named "SOR"');
+    return (row: Locator) => row.locator("td, th").nth(index).locator("[data-rank-chip]");
+  };
+
+  test("the first-column position chip is neutral while SOR chips stay on the scale", async ({ page }) => {
+    await page.goto("/ratings?sort=sor");
+    const bodyRows = page.getByRole("table").locator("tbody tr");
+    await expect(bodyRows.first()).toBeVisible();
+    const background = (chip: Locator) => chip.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const position = (row: Locator) => row.locator("td").first().locator("[data-rank-chip]");
+    const sor = await sorChip(page);
+
+    await expect(position(bodyRows.first())).toHaveAttribute("data-rank-none", "");
+    await expect(position(bodyRows.first())).toHaveText("1");
+    expect(await background(position(bodyRows.first()))).toBe(await background(position(bodyRows.last())));
+    expect(await background(sor(bodyRows.first()))).not.toBe(await background(sor(bodyRows.nth(2))));
+  });
+
+  for (const scheme of ["light", "dark"] as const) {
+    test(`rank 1 is greener than the last ranked SOR in ${scheme} mode, with the rank as the chip text`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      // Sorted by SOR, rank 1 comes first. Southern Mississippi has no SOR (its chip is neutral), so the
+      // last scored chip is the third row, Appalachian State at SOR #3.
+      await page.goto("/ratings?sort=sor");
+      const bodyRows = page.getByRole("table").locator("tbody tr");
+      await expect(bodyRows.first()).toBeVisible();
+      const sor = await sorChip(page);
+      const first = sor(bodyRows.first());
+      const last = sor(bodyRows.nth(2));
+      await expect(first).toHaveText("#1");
+      await expect(last).toHaveText("#3");
+
+      const style = (chip: Locator) => chip.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { background: s.backgroundColor, border: s.borderTopColor, color: s.color };
+      });
+      const [best, worst] = [await style(first), await style(last)];
+      expect(best.background).not.toBe(worst.background);
+      const [bestR, bestG] = await rgb(page, best.background);
+      const [worstR, worstG] = await rgb(page, worst.background);
+      expect(bestG - bestR).toBeGreaterThan(worstG - worstR);
+      expect(await rgb(page, best.border)).not.toEqual(await rgb(page, worst.border));
+      // The fixture has few teams, so force the scale midpoint (what rank 69 of 138 emits) on a copy of
+      // a chip: it is amber (red and green clearly above blue), distinct from both ends.
+      const midBackground = await first.evaluate((el) => {
+        const copy = el.cloneNode(true) as HTMLElement;
+        copy.style.setProperty("--rank-t", "0.5");
+        el.parentElement!.appendChild(copy);
+        const background = getComputedStyle(copy).backgroundColor;
+        copy.remove();
+        return background;
+      });
+      const [midR, midG, midB] = await rgb(page, midBackground);
+      expect(midR - midB).toBeGreaterThan(30);
+      expect(midG - midB).toBeGreaterThan(30);
+      expect(midR).toBeGreaterThan(bestR);
+      expect(midG).toBeGreaterThan(worstG);
+      // Text stays the ink color on every chip: the hue never carries the text.
+      expect(best.color).toBe(worst.color);
+      expect(best.color).toBe(await page.locator("body").evaluate((el) => getComputedStyle(el).color));
+    });
+  }
 });

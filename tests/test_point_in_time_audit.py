@@ -282,14 +282,3 @@ def test_malformed_inputs_raise_instead_of_passing():
 
 def test_the_receipt_is_deterministic():
     assert _audit() == copy.deepcopy(_audit())
-
-
-def test_the_replay_chain_audit_covers_any_declared_last_week():
-    from scripts.pipeline.audit_corrected_replay_chain import check_lock_weeks
-
-    lock = {"market_sources": {str(w): {} for w in range(7)}}
-    check_lock_weeks(lock, 6)
-    with pytest.raises(ValueError, match="Weeks 0–5"):
-        check_lock_weeks(lock, 5)
-    with pytest.raises(ValueError, match="Weeks 0–6"):
-        check_lock_weeks({"market_sources": {str(w): {} for w in range(6)}}, 6)

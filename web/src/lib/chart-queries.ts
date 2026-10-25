@@ -2,6 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { cache } from "react";
 import { schema } from "./db";
 import { guardRows, type RowSpec } from "./row-guard.ts";
+import { releaseCached } from "./release-cache.ts";
 import { getChartsDb } from "./season-release";
 import { explosivenessAvailable } from "./season-release-context.ts";
 import type { AdjustedRow, PossessionRow, RatingSnapshotRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "./charts.ts";
@@ -14,6 +15,7 @@ import type { AdjustedRow, PossessionRow, RatingSnapshotRow, RosterRow, TeamGame
 // the request-pinned, release-scoped database with the release's chart relations; with
 // no active release, or one staged without them, the result is `null` and the live
 // tables are never read. Errors propagate so the page can show an unavailable state.
+// Every loader reads release chart tables only, so each is cached per release (release-cache.ts).
 // ---------------------------------------------------------------------------
 
 const ROSTER_SPEC: RowSpec = {
@@ -66,17 +68,17 @@ const ADJUSTED_SPEC: RowSpec = {
 };
 
 /** Published FBS roster (team and conference), or null when charts are not available. */
-export const getTeamSeasonRoster = cache(async (season: number): Promise<RosterRow[] | null> => {
+export const getTeamSeasonRoster = cache(releaseCached("getTeamSeasonRoster", async (season: number): Promise<RosterRow[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts) return null;
   const t = schema.teamSeasonRoster;
   const rows = await charts.db.select({ team: t.team, conference: t.conference }).from(t)
     .where(eq(t.season, season)).orderBy(asc(t.team));
   return guardRows("team_season_roster", rows, ROSTER_SPEC);
-});
+}));
 
 /** Every team-game row of the release (about 1.5k rows by season end). */
-export const getTeamGameStats = cache(async (season: number): Promise<TeamGameRow[] | null> => {
+export const getTeamGameStats = cache(releaseCached("getTeamGameStats", async (season: number): Promise<TeamGameRow[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts) return null;
   const t = schema.teamGameStats;
@@ -90,10 +92,10 @@ export const getTeamGameStats = cache(async (season: number): Promise<TeamGameRo
   }).from(t).where(eq(t.season, season)).orderBy(asc(t.week), asc(t.gameId), asc(t.team));
   guardRows("team_game_stats", rows, GAME_STATS_SPEC);
   return rows as TeamGameRow[];
-});
+}));
 
 /** Yardage counts per team-game, or null unless the release serves `charts_v2`. */
-export const getTeamGameYardage = cache(async (season: number): Promise<TeamGameYardageRow[] | null> => {
+export const getTeamGameYardage = cache(releaseCached("getTeamGameYardage", async (season: number): Promise<TeamGameYardageRow[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts || !explosivenessAvailable(charts.chartSet)) return null;
   const t = schema.teamGameYardage;
@@ -105,20 +107,20 @@ export const getTeamGameYardage = cache(async (season: number): Promise<TeamGame
     defSuccessYardsN: t.defSuccessYardsN, defSuccessYardsSum: t.defSuccessYardsSum,
   }).from(t).where(eq(t.season, season)).orderBy(asc(t.gameId), asc(t.team));
   return guardRows("team_game_yardage", rows, YARDAGE_SPEC);
-});
+}));
 
 /** `as_of_week` windows stored in the release, ascending. */
-export const getTeamAdjustedWeeks = cache(async (season: number): Promise<number[] | null> => {
+export const getTeamAdjustedWeeks = cache(releaseCached("getTeamAdjustedWeeks", async (season: number): Promise<number[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts) return null;
   const t = schema.teamAdjustedEpa;
   const rows = await charts.db.selectDistinct({ asOfWeek: t.asOfWeek }).from(t)
     .where(eq(t.season, season)).orderBy(asc(t.asOfWeek));
   return rows.map((row) => row.asOfWeek);
-});
+}));
 
 /** Adjusted EPA/play rows of one stored window. */
-export const getTeamAdjustedEpa = cache(async (season: number, asOfWeek: number): Promise<AdjustedRow[] | null> => {
+export const getTeamAdjustedEpa = cache(releaseCached("getTeamAdjustedEpa", async (season: number, asOfWeek: number): Promise<AdjustedRow[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts) return null;
   const t = schema.teamAdjustedEpa;
@@ -130,7 +132,7 @@ export const getTeamAdjustedEpa = cache(async (season: number, asOfWeek: number)
   }).from(t).where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek))).orderBy(asc(t.team), asc(t.role));
   guardRows("team_adjusted_epa", rows, ADJUSTED_SPEC);
   return rows as AdjustedRow[];
-});
+}));
 
 const RATING_SNAPSHOT_SPEC: RowSpec = {
   week: { kind: "int" },
@@ -149,7 +151,7 @@ const nonNegativeVariances = (row: Record<string, unknown>) =>
  * `current`-class V5 rating snapshots of every roster team for every stored week (the
  * rating after that week's games; about 1.1k rows by Week 7), by week then team.
  */
-export const getV5RatingSnapshots = cache(async (season: number): Promise<RatingSnapshotRow[] | null> => {
+export const getV5RatingSnapshots = cache(releaseCached("getV5RatingSnapshots", async (season: number): Promise<RatingSnapshotRow[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts) return null;
   const t = schema.v5RatingSnapshots;
@@ -164,7 +166,7 @@ export const getV5RatingSnapshots = cache(async (season: number): Promise<Rating
     .where(and(eq(t.season, season), eq(t.snapshotClass, "current")))
     .orderBy(asc(t.week), asc(t.team));
   return guardRows("v5_rating_snapshots", rows, RATING_SNAPSHOT_SPEC, [nonNegativeVariances]);
-});
+}));
 
 const OPTIONAL_NUMBER = { kind: "number", nullable: true } as const;
 const OPTIONAL_INT = { kind: "int", nullable: true } as const;
@@ -183,17 +185,17 @@ const POSSESSION_SPEC: RowSpec = {
 };
 
 /** `as_of_week` windows of `team_possession_adjusted` stored in the release, ascending. */
-export const getTeamPossessionWeeks = cache(async (season: number): Promise<number[] | null> => {
+export const getTeamPossessionWeeks = cache(releaseCached("getTeamPossessionWeeks", async (season: number): Promise<number[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts) return null;
   const t = schema.teamPossessionAdjusted;
   const rows = await charts.db.selectDistinct({ asOfWeek: t.asOfWeek }).from(t)
     .where(eq(t.season, season)).orderBy(asc(t.asOfWeek));
   return rows.map((row) => row.asOfWeek);
-});
+}));
 
 /** Opponent-adjusted possession rows (both roles and measurements) of one stored window. */
-export const getTeamPossessionAdjusted = cache(async (season: number, asOfWeek: number): Promise<PossessionRow[] | null> => {
+export const getTeamPossessionAdjusted = cache(releaseCached("getTeamPossessionAdjusted", async (season: number, asOfWeek: number): Promise<PossessionRow[] | null> => {
   const charts = await getChartsDb(season);
   if (!charts) return null;
   const t = schema.teamPossessionAdjusted;
@@ -205,4 +207,4 @@ export const getTeamPossessionAdjusted = cache(async (season: number, asOfWeek: 
     .orderBy(asc(t.team), asc(t.role), asc(t.measurementId));
   guardRows("team_possession_adjusted", rows, POSSESSION_SPEC);
   return rows as PossessionRow[];
-});
+}));

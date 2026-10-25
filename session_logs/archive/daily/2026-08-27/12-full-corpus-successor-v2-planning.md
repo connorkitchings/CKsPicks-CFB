@@ -9,7 +9,7 @@
   R1, R2, R3, and R4; amended the governing plan; superseded the narrower R1
   reliability contract while preserving its reusable implementation.
 - **Plan Contracts:**
-  `docs/plans/2026-08-27/r1-full-corpus-recapture-and-certification.md`,
+  `docs/archive/plans/2026-08/2026-08-27/r1-full-corpus-recapture-and-certification.md`,
   `r2-redesigned-offseason-prior-tournament.md`,
   `r3-mixed-state-update-tournament.md`, and
   `r4-structured-predictor-and-candidate-v2-freeze.md`.
@@ -49,12 +49,12 @@
 
 ## Files Modified
 
-- `docs/plans/2026-08-27/r1-full-corpus-recapture-and-certification.md`
-- `docs/plans/2026-08-27/r2-redesigned-offseason-prior-tournament.md`
-- `docs/plans/2026-08-27/r3-mixed-state-update-tournament.md`
-- `docs/plans/2026-08-27/r4-structured-predictor-and-candidate-v2-freeze.md`
-- `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`
-- `docs/plans/2026-08-27/r1-play-capture-reliability-hardening.md`
+- `docs/archive/plans/2026-08/2026-08-27/r1-full-corpus-recapture-and-certification.md`
+- `docs/archive/plans/2026-08/2026-08-27/r2-redesigned-offseason-prior-tournament.md`
+- `docs/archive/plans/2026-08/2026-08-27/r3-mixed-state-update-tournament.md`
+- `docs/archive/plans/2026-08/2026-08-27/r4-structured-predictor-and-candidate-v2-freeze.md`
+- `docs/archive/plans/2026-08/2026-08-26/historical-expansion-ratings-methodology-reset.md`
+- `docs/archive/plans/2026-08/2026-08-27/r1-play-capture-reliability-hardening.md`
 - `docs/plans/index.md`
 - `session_logs/archive/daily/2026-08-27/12-full-corpus-successor-v2-planning.md`
 
@@ -84,7 +84,7 @@ Copy-ready Terra handoff:
 ```text
 Use the repository-local implement-plan skill and implement the approved contract at:
 
-docs/plans/2026-08-27/r1-full-corpus-recapture-and-certification.md
+docs/archive/plans/2026-08/2026-08-27/r1-full-corpus-recapture-and-certification.md
 
 Treat it as authoritative. Preserve its architectural decisions, run its validation,
 and stop for any material conflict. This request explicitly authorizes implementation.

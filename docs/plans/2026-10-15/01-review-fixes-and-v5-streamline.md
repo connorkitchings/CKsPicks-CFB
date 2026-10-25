@@ -1,6 +1,6 @@
 # Review Weeks 6–7 work, fix pre-Week-8 blockers, streamline to V5-only
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-10-15
 - **Approval source:** Owner approved the plan in chat on 2026-10-15.
 - **Implementation log:** session_logs/2026-10-15/02-review-fixes-implementation.md
@@ -137,3 +137,7 @@ Phase 2 documentation is complete locally and ready for the owner commit. The V4
 Validation: full Python suite 3,227 passed and 33 skipped; expanded serial database suite 147 passed with zero skips in UTC client sessions; web lint/typecheck/publication tests/build, Ruff format/lint, contracts, the 32-check quality registry, strict MkDocs and diff checks pass. The first expanded database run exposed a preexisting non-UTC timestamp serialization limitation in the legacy publisher (146 passed, 1 failed); fresh cluster `PGTZ=UTC` retry matches CI and passes. The implementation log records the limitation and environment correction without changing legacy runtime code. The two untracked exclusions remain unchanged; Week 8 revision dry run is still blocked by Week 7 finals/controller inputs and was not claimed as passed.
 
 Proposed Phase 2 commit: `docs(season): consolidate V5 operations and preserve V4 history`. No commit, staging, push or stash was performed. Resume with owner review/commit; Phase 3 requires its import-graph and combined-coverage checks before any deletion.
+
+## 2026-10-22 Phase 3 closure
+
+Phase 3 was carried out by [2026-10-22/01-repo-consolidation](../2026-10-22/01-repo-consolidation.md) and merged into `dev` on 2026-10-22, which completes this contract. The serving-parity check was run afterward on 2026-10-22 and passed: the normalized `serving_projections` payload for the active Week 8 release is byte-identical to a fresh `prepare` on pruned `dev` with equal row counts (see [2026-10-22/02](../2026-10-22/02-parity-and-rebuild-retirement.md)). Caveat: Week 8 Preview execution is tracked by the season-operations contract, not here.
