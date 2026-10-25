@@ -9,16 +9,18 @@ Review of the four-tab site on Production data (read-only), served locally from 
 
 ## Review status
 
+Columns: owner reviews dark (desktop 1440, phone 390); assistant reviews light, 1280 and 320. "ok" = looked at, no open defect. Real-device checks on the Vercel Preview were waived by the owner.
+
 | Page | 1440 dark | 1440 light | 1280 light | 390 dark | 390 light | 320 |
 |------|-----------|------------|------------|----------|-----------|-----|
-| Games `/` | in review | open | open | open | open | open |
-| Matchup | open | open | open | open | open | open |
-| Ratings | open | open | open | open | open | open |
-| Team pages | open | open | open | open | open | open |
-| Graphs `/stats` | open | open | open | open | open | open |
-| Model, Method | open | open | open | open | open | open |
-| Edges (404, redirects) | open | open | open | open | open | open |
-| Brand (favicon, OG, exports) | open | open | open | open | open | open |
+| Games `/` | accepted (owner) | ok | ok | accepted (owner) | ok | ok |
+| Matchup | reviewed (owner), no changes | ok | ok | reviewed (owner), no changes | ok | ok |
+| Ratings | reviewed (owner), no changes | ok | ok | reviewed (owner), no changes | ok | ok |
+| Team pages | reviewed (owner), no changes | ok | ok | reviewed (owner), no changes | ok | ok |
+| Graphs `/stats` | reviewed (owner), no changes | ok | ok | reviewed (owner), no changes | ok | ok |
+| Model, Method | reviewed (owner), no changes | ok | ok | reviewed (owner), no changes | ok | ok |
+| Edges (404, redirects) | accepted (assistant checks, owner agreed) | ok | ok | reviewed (owner), no changes | ok | ok |
+| Brand (favicon, OG, exports) | n/a | ok | n/a | n/a | n/a | n/a |
 
 ## Findings
 
@@ -38,7 +40,9 @@ Review of the four-tab site on Production data (read-only), served locally from 
 | 12 | Graphs `/stats` | 1440 | light | `charts/*` | None of the five shipped charts offers a table view; only the rating-trajectory chart (not shipped) does. The plan expected one. Exports for all five work in both themes with the `crest-` filename and "Crest CFB" footer. | none | informational |
 | 13 | 404 pages (invalid game, unknown team) | 1440 | light | console | React logs "Encountered a script tag while rendering React component" (the theme script) on `notFound()` pages. No visible effect. | Look at it after publication. | deferred |
 | 14 | Brand | n/a | n/a | `og.png`, `icon.png` | OpenGraph image and favicon say "Crest CFB" and "C". Wordmark weight renders regular, not bold (the font bundled for image generation has one weight); the 32px favicon "C" is thin. | none | informational |
-| 15 | Graphs, phone settings sheet | 390, 320 | light | `phone/graphs-settings-*-light.png` | Controls in the Chart settings sheet have unrelated widths (select, segmented controls, week stepper), left-aligned. Usable; looks unfinished. | Optional: make the controls full width. | deferred, owner to decide |
+| 15 | Graphs, phone settings sheet | 390, 320 | light | `phone/graphs-settings-*-light.png` | Controls in the Chart settings sheet have unrelated widths (select, segmented controls, week stepper), left-aligned. Usable; looks unfinished. | Optional: make the controls full width. | owner: leave as is; deferred past publication |
+| 16 | Matchup (MTSU at FIU) | 1440 | dark | owner screenshot | In the narrow forecast card, long team names wrap: "Florida / International -10.0" in the Market, Model and Model Bet rows. Readable; phone layouts already use short names. | Optional: use the short team name in the card. | deferred, owner to decide |
+| 17 | Team page schedule (Notre Dame) | 1440 | dark | owner screenshot | A bye week is a gap in the Wk column (7 then 9) with no "Bye" row. Correct, but a reader may think a game is missing. | Optional: add a "Bye" row. | deferred, owner to decide |
 
 ## Open checks for this page
 - Earlier scored week (final scores and result tags), filters, List view, sort options.
