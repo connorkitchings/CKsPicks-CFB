@@ -1,6 +1,6 @@
 # Contract: Mobile app-feel pass across Games, Ratings, Stats and Model
 
-- **Status:** In Progress (code complete and automated checks pass; real iPhone and Android acceptance is outstanding)
+- **Status:** Implemented (2026-10-25: the owner waived real iPhone and Android acceptance and accepted the desktop and phone review in dark theme; light theme and the 1280 and 320 widths were covered by automated captures; log `session_logs/2026-10-25/01-final-site-review.md`)
 - **Created:** 2026-10-23
 - **Approval source:** Owner approved the plan in the 2026-10-23 session and asked for it to be implemented. Decisions: browser only (no manifest, service worker or install prompt), a compact app bar on phones, and commit the Stats and Ratings work first.
 - **Implementation log:** `session_logs/2026-10-23/03-mobile-app-feel.md` (written at the end of each implementation session).
@@ -9,7 +9,7 @@
 
 ## Goal and acceptance
 
-On phones (below 640px) most of the first screen is header, not data. Give all four tabs the app-like treatment already applied to Stats and Ratings: a compact app bar, one pinned control row, a summary line, primary data within about 300px of the top, and long explanations in disclosures. Desktop layouts do not change. Complete means the measured assertions below pass on every page and the owner has checked real iPhone and Android devices.
+On phones (below 640px) most of the first screen is header, not data. Give all four tabs the app-like treatment already applied to Stats and Ratings: a compact app bar, one pinned control row, a summary line, primary data within about 300px of the top, and long explanations in disclosures. Desktop layouts do not change. Complete means the measured assertions below pass on every page and the owner has reviewed the phone layouts (real-device checks were waived on 2026-10-25).
 
 ## Findings (phones)
 
@@ -52,7 +52,7 @@ Manifest, installability, service worker, offline mode, push notifications, nati
 
 1. Per phase: `npm --prefix web run lint`, `typecheck`, `test:publication`, a fresh fixture build (`CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions npm --prefix web run build`), then `CI=1 npm --prefix web run test:ui`. Flake gate (`--repeat-each=20 --retries=0`) on changed specs.
 2. New measured assertions at 390x844 and 320x568 on every page: the first data item's top is under about 330px, the pinned bar stays at top after an 800px scroll, sheets open above it and return focus on close, no horizontal overflow.
-3. Owner check on production data (`make web-local ENV=production`) in a phone-sized window and on a real iPhone and Android device before closing the contract.
+3. Owner check on production data (`make web-local ENV=production`) in a phone-sized window before closing the contract (real iPhone and Android checks were waived by the owner on 2026-10-25).
 4. CI per-job timings compared against run `39993143753`; the browser job stays under about 3 minutes.
 
 ## Amendments

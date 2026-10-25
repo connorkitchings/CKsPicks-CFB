@@ -1,6 +1,6 @@
 # Contract A: Mobile chart page
 
-- **Status:** In Progress
+- **Status:** Implemented (2026-10-25: published with the `dev` to `main` release; the owner waived real iPhone Safari and Android Chrome acceptance and accepted the phone review recorded in `session_logs/2026-10-25/01-final-site-review.md`)
 - **Created:** 2026-10-21
 - **Planner:** Sol
 - **Approval source:** Owner explicitly authorized implementation of this exact Draft path in the 2026-10-21 user message: "Use implement-plan to implement Contract A only"; B and C remain outside authorization.

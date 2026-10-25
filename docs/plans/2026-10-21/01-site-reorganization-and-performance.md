@@ -1,6 +1,6 @@
 # Site reorganization, design consistency and performance (web)
 
-- **Status:** In Progress (implemented on `dev`; acceptance pending)
+- **Status:** Implemented (published to Production with the `dev` to `main` release of 2026-10-25; review log `session_logs/2026-10-25/01-final-site-review.md`)
 - **Created:** 2026-10-21
 - **Planner:** Sol
 - **Approval source:** Owner approval of the plan in the 2026-10-21 planning session

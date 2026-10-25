@@ -1,6 +1,6 @@
 # Charts pre-publication verification
 
-- **Status:** Draft
+- **Status:** Superseded and Implemented (2026-10-25: Graphs was published without a feature flag and the `CFB_CHARTS_ENABLED` gate was removed from the code. The real-data review log is `session_logs/2026-10-25/01-final-site-review.md`; it covers the visual review in item 1, but records no Preview deployment acceptance, no failure-state checks, no request measurements and no rehearsed rollback (items 2 to 5), and its earlier-week check was still listed open.)
 - **Created:** 2026-10-20
 - **Planner:** Sol
 - **Approval source:** Pending (owner approval of this contract; publication itself needs a separate owner decision)
@@ -81,7 +81,7 @@ Write the publication procedure in `docs/ops/weekly_runbook.md` (new "Publishing
 
 Rehearse steps 1 to 3 on Preview before the decision.
 
-The procedure, the rollback and a Preview rehearsal checklist are written in the "Publishing Stats (Charts)" section of [`docs/ops/weekly_runbook.md`](../../ops/weekly_runbook.md). Charts is now served at `/stats` (flag unchanged); the section supersedes the step list above.
+The procedure, the rollback and a Preview rehearsal checklist are written in the "Publishing Graphs (Charts)" section of [`docs/ops/weekly_runbook.md`](../../ops/weekly_runbook.md). Charts is now served at `/stats` (flag unchanged); the section supersedes the step list above.
 
 ### 7. Weekly releases while Charts is unpublished
 

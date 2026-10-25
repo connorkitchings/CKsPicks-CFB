@@ -11,7 +11,7 @@ make help
 make web-local ENV=preview
 ```
 
-`make web-local ENV=production` reads Production for local inspection; it does not activate a release. `CFB_UI_TEST_MODE=1 npm --prefix web run dev` serves fixtures without a database. Stats (`/stats`) is off by default: use `CFB_CHARTS_ENABLED=1 make web-local ENV=preview` for review; Production stays unset/`0` pending owner approval, and a changed value requires rebuilding/redeploying. The UI flag does not bypass chart migration/staging requirements. The 4-tab site (Games / Ratings / Stats / Model) lives on `dev` until merged to `main`. Matchup pages are public by default; `CFB_MATCHUP_ENABLED=0` is an emergency opt-out.
+`make web-local ENV=production` reads Production for local inspection; it does not activate a release. `CFB_UI_TEST_MODE=1 npm --prefix web run dev` serves fixtures without a database. Graphs (`/stats`) is published with no feature flag. The 4-tab site is Games / Ratings / Graphs / Model. Matchup pages are public by default; `CFB_MATCHUP_ENABLED=0` is an emergency opt-out.
 
 For R2 operations set `CFB_STORAGE_BACKEND=r2` and use the intended environment wrapper. `with_preview_env.sh` injects Preview catalog credentials and `CFB_ARTIFACT_ENV=preview`; Production pipeline and owner wrappers have distinct roles. Verify presence without printing credentials. For the local backend require `CFB_STORAGE_BACKEND=local`, `CFB_MODEL_DATA_ROOT` and a mounted external drive. Never create or read repository-local `./data/`.
 

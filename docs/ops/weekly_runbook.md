@@ -37,7 +37,7 @@
 - **Chart foundation (Migration 0026).** The `team_season_roster`, `team_game_stats` and `team_adjusted_epa` tables were introduced by `contracts/migrations/0026_team_chart_tables.sql` as the frozen `charts_v1` set. Migration 0026 remains a prerequisite for 0027. Retained `charts_v1` releases keep their recorded set and, when Charts publication is enabled, show release-backed success/PPA charts; `core_v1` releases show the unavailable-chart notice. Neither needs the yardage relation for readback or existing-chart queries. The pinned `teams` input must carry each team's `conference` (CFBD teams data). **New staging uses `charts_v2`, as described below.**
 - **Yardage table (Migration 0027) and the `charts_v2` projection set.** Staging now requires the `charts_v2` set, which adds `team_game_yardage` (explosiveness counts), and refuses `core_v1` and `charts_v1` candidates. **Apply `contracts/migrations/0027_team_game_yardage.sql` to Preview, as the owner/migrator, before the first `charts_v2` staging there, and to Production before the first `charts_v2` staging there, even if the Charts UI is disabled.** Without it staging fails with `projection schema missing: team_game_yardage`. Prepare adds the `chart_yardage_recomputed` check, which recomputes the table from the pinned byplay input. Staging reads nothing new from storage: it checks the table's structure and requires that check's recorded evidence to match the candidate payload and the revision's pinned byplay SHA-256. `make season-release` passes the prepared revision manifest to staging for this. Retained `core_v1` and `charts_v1` releases stay readable, activatable and rollback-able with or without 0027, and the web app shows explosiveness only for a `charts_v2` release.
 - **Object storage:** `CFB_ARTIFACT_ENV` selects the R2 credential set (`CFB_R2_PREVIEW_*` for `preview`, `CFB_R2_*` otherwise). Both sets currently name the same bucket, `cks-picks-cfb-preview`; immutable artifacts are checksummed and environment-neutral, and environment separation is by Neon branch. Any command run *without* a wrapper defaults to `CFB_ARTIFACT_ENV=production`, so every data command below runs under a wrapper.
-- **Charts publication gate:** `CFB_CHARTS_ENABLED` must be the exact string `1` to show the Stats tab or serve `/stats` (formerly `/charts`; `/charts…` redirects to `/stats…`). With the flag off, `/stats` returns HTTP 404 and the phone bar shows three tabs instead of four. Keep Production unset or `0` pending the owner's manual approval. Explicitly enable local/Preview review, for example `CFB_CHARTS_ENABLED=1 make web-local ENV=preview`; fixture mode is not an override. Rebuild/redeploy after changing this setting. Code integration and required chart-table migrations do not grant public Charts approval. With the gate off, normal `dev` → `main` releases may include Charts code after integration/validation and separately approved migration decisions; no charts-free branch is required by UI publication alone.
+- **Graphs (`/stats`):** published with no feature flag since the `dev` to `main` release of 2026-10-25; the former `CFB_CHARTS_ENABLED` gate was removed from the code. `/charts…` redirects to `/stats…`. Graphs reads the chart projection tables of the active release, so a release without them shows the unavailable state.
 - **Vercel:** the [site](https://c-ks-picks-cfb.vercel.app) (Root Directory `web/`) deploys from `main` and reads Production through `cks_prod_web`. `dev` is the working branch.
 - **Run locally against an environment:** `make web-local ENV=preview` (or `ENV=production`).
 
@@ -269,14 +269,14 @@ Commits are allowed again from here.
    - `https://c-ks-picks-cfb.vercel.app/`
    - `https://c-ks-picks-cfb.vercel.app/ratings`
    - `https://c-ks-picks-cfb.vercel.app/model`
-   - `https://c-ks-picks-cfb.vercel.app/stats` (expect 404 while `CFB_CHARTS_ENABLED` is unset in Production)
+   - `https://c-ks-picks-cfb.vercel.app/stats` (expect 200)
    - `https://c-ks-picks-cfb.vercel.app/api/health`
 3. Check the redirects below. Each returns 307 for now; switch to 308 only after owner acceptance (see the canonical-domain TODO). Query strings are preserved.
    - `/results?…` → `/?…`
    - `/matchup` → `/`
    - `/performance` → `/model`
    - `/methodology` → `/model/method`
-   - `/charts…` → `/stats…` (404 while the Charts flag is off)
+   - `/charts…` → `/stats…` 
 
    Check one with: `curl -sI "https://c-ks-picks-cfb.vercel.app/results?probe=1" | grep -i -E "^(HTTP|location)"`
 4. Update [`docs/status.md`](../status.md) with the active release ID, week state, and scoreboard.
@@ -287,38 +287,9 @@ Commits are allowed again from here.
 
 ---
 
-## Publishing Stats (Charts)
+## Publishing Graphs (Charts)
 
-Stats lives at `/stats` and is gated by `CFB_CHARTS_ENABLED`. Only the exact value `1` enables it. While it is unset, `/stats` and `/charts` return 404 and navigation shows three items (Games, Ratings, Model). Publishing changes an environment variable only: no data, release or pipeline change is involved. Both steps are owner actions in the Vercel project settings.
-
-### Publication procedure
-
-1. **Preview first.** The owner sets `CFB_CHARTS_ENABLED=1` in the Vercel **Preview** environment only, redeploys the Preview, and reviews it.
-2. **Production.** After the owner records acceptance, the owner sets `CFB_CHARTS_ENABLED=1` in the Vercel **Production** environment and redeploys.
-3. **Verify** against the deployment you changed (Preview URL or `https://c-ks-picks-cfb.vercel.app`):
-   - `/stats` returns 200 and the navigation shows four items (Games, Ratings, Stats, Model).
-   - `/charts?x=1` redirects to `/stats?x=1` (`curl -sI "<base>/charts?x=1" | grep -i -E "^(HTTP|location)"`).
-   - `/api/health` returns 200.
-   - `/`, `/ratings`, `/model` and `/model/method` load.
-4. **Rollback.** Unset the variable (or set it to `0`) and redeploy. `/stats` and `/charts` then both return 404 and navigation returns to three items. No data or release change is needed.
-
-### Cold requests after a deploy
-
-The release data cache is keyed by deployment ID, so the first requests after any deploy, including the redeploy in steps 1, 2 and 4, are cold and slower. Optional warm-up: request `/`, `/ratings`, `/model` and `/stats` once each.
-
-### Preview rehearsal
-
-Run steps 1 to 4 on Preview before the publication decision. Record the outcome in the Stats implementation log (`session_logs/2026-10-21/04-stats-publication-implementation-log.md`).
-
-- [ ] `CFB_CHARTS_ENABLED=1` set in Preview only (Production unchanged) and the Preview redeployed
-- [ ] `/stats` returns 200 and navigation shows four items
-- [ ] `/charts?x=1` redirects to `/stats?x=1`
-- [ ] `/api/health` returns 200
-- [ ] `/`, `/ratings`, `/model` and `/model/method` load
-- [ ] Rollback rehearsed: variable unset and Preview redeployed; `/stats` and `/charts` return 404 and navigation shows three items
-- [ ] Variable set again on Preview if review continues
-
----
+Graphs (`/stats`, formerly Charts and Stats) was published on 2026-10-25 with no feature flag, so there is no publication or rollback procedure to run. Publication needs no data, release or pipeline change. If Graphs must be withdrawn, that is a code change on `dev` released to `main`. The flag-based procedure and its Preview rehearsal checklist are retained in the git history of this file.
 
 ## Rollback Procedure
 

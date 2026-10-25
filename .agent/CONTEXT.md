@@ -64,6 +64,6 @@ Substantial work follows a durable Sol-to-Terra contract in `docs/plans/`; revie
 
 ## Site and Stats publication
 
-The site has four tabs: Games (`/`), Ratings (`/ratings`), Stats (`/stats`) and Model (`/model`), plus matchup (`/matchup/[gameId]`) and team (`/teams/[team]`) detail pages. This layout lives on `dev` until it is merged to `main`. Old URLs redirect: `/results` and `/matchup` to `/`, `/performance` to `/model`, `/methodology` to `/model/method`, `/charts` to `/stats`.
+The site has four tabs: Games (`/`), Ratings (`/ratings`), Stats (`/stats`) and Model (`/model`), plus matchup (`/matchup/[gameId]`) and team (`/teams/[team]`) detail pages. Old URLs redirect: `/results` and `/matchup` to `/`, `/performance` to `/model`, `/methodology` to `/model/method`, `/charts` to `/stats`.
 
-`CFB_CHARTS_ENABLED=1` is the only opt-in to the Stats tab and `/stats`; unset or invalid values return HTTP 404 in every environment, including fixtures, and `web/src/proxy.ts` enforces this before data loads. Keep Production off pending owner manual approval and rebuild/redeploy when changing the flag. The flag does not bypass backend chart migrations, fixed projection sets or release gates.
+Graphs (`/stats`) is published with no feature flag; the former `CFB_CHARTS_ENABLED` gate was removed from the code on 2026-10-25. Graphs still depends on the chart projection tables of the active release.

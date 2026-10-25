@@ -6,7 +6,7 @@ only renders the active immutable season release under the configured publicatio
 
 ## Current boundary
 
-V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves the Games, Ratings, Graphs and Model tabs and `/api/health` to the same atomic release. The four-tab layout lives on `dev` until it is merged to `main`. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
+V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves the Games, Ratings, Graphs and Model tabs and `/api/health` to the same atomic release. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
 
 Current release IDs and week state belong in [`docs/status.md`](../docs/status.md). Follow the [weekly runbook](../docs/ops/weekly_runbook.md) for revision, prepare, Preview rehearsal, owner-approved Production release and rollback.
 
