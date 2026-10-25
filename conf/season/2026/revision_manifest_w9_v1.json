@@ -66,6 +66,6 @@
   },
   "score_reconciliation_exceptions": {
     "uri": "conf/season/2026/score_reconciliation_exceptions.json",
-    "sha256": "081f9d0f78a22d56883285da6009b272de86e6d38b6a739f4cab0fd99957da4d"
+    "sha256": "a9c7541e2db0b1769ba0aa514d2ab226b74ba7aa7cf49785a578a00366d39237"
   }
 }
