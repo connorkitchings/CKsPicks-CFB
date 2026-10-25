@@ -55,7 +55,7 @@ type Spec = {
 };
 
 const specs: Spec[] = [
-  { id: 1, start: "2026-10-01T22:00:00Z", away: "Western Kentucky", home: "Appalachian State", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1, src: ["draftkings", "Bovada"], where: ["Boone", "NC", false] },
+  { id: 1, start: "2026-10-01T04:00:00Z", away: "Western Kentucky", home: "Appalachian State", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1, src: ["draftkings", "Bovada"], where: ["Boone", "NC", false] },
   { id: 2, start: "2026-10-01T23:30:00Z", away: "Wisconsin", home: "Washington", awayRecord: "2-1", homeRecord: "1-2", homeLine: 3, total: 46.5, predSpread: -2.6, predTotal: 46.9, src: [null, null] },
   { id: 3, start: "2026-10-02T23:00:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 70.2, hc: true, src: ["fanduel", "draftkings"], where: ["Los Angeles", "CA", false] },
   { id: 4, start: "2026-10-03T16:00:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: 1.5, total: 52.5, predSpread: 0.4, predTotal: 51.8, src: ["BetMGM", null], where: ["Tuscaloosa", "AL", false] },

@@ -1,8 +1,8 @@
 import type { MatchupData } from "./matchup.ts";
-import { etWeekdayDateTime } from "./time-et.ts";
+import { etWeekdayDateKickoff } from "./time-et.ts";
 
-/** "Thu, Oct 1, 8:00 PM ET" */
-export const formatKickoff = etWeekdayDateTime;
+/** "Thu, Oct 1, 8:00 PM ET", or "Thu, Oct 1, time TBD" for a placeholder kickoff. */
+export const formatKickoff = etWeekdayDateKickoff;
 
 /** "Las Cruces, NM", "Neutral site · Dublin", or null when no location is known. */
 export function venueLine(

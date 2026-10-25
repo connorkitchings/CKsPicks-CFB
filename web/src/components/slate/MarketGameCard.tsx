@@ -5,13 +5,14 @@ import { MatchupButton } from "@/components/MatchupLinks";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { phoneTeamName } from "@/lib/team-logos";
 import { BetTable } from "../BetTable";
+import { AwaitingTag } from "./AwaitingTag";
 import type { Game } from "@/lib/queries";
 
 import {
   marketSpreadView,
   spreadLabel,
 } from "@/lib/betting-format";
-import { etWeekdayDateTime } from "@/lib/time-et";
+import { etWeekdayDateKickoff } from "@/lib/time-et";
 
 function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
   if (result === null) {
@@ -40,9 +41,11 @@ function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
 export function MarketGameCard({
   game,
   showBetResult = true,
+  now,
 }: {
   game: Extract<Game, { publicationMode: "market" }>;
   showBetResult?: boolean;
+  now: Date;
 }) {
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
   const marketSpread = marketSpreadView(
@@ -54,12 +57,13 @@ export function MarketGameCard({
   return (
     <Card as="li" id={`game-${game.gameId}`} className="scroll-mt-12 max-sm:scroll-mt-0">
       <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
-        <span>{etWeekdayDateTime(game.startDate)}</span>
+        <span>{etWeekdayDateKickoff(game.startDate)}</span>
         {hasResults && (
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Final
           </span>
         )}
+        <AwaitingTag game={game} now={now} />
         <span className="ml-auto">
           <MatchupButton gameId={game.gameId} />
         </span>

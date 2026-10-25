@@ -9,6 +9,7 @@ import { phoneTeamName } from "@/lib/team-logos";
 import { kickoffTime, dayShort } from "./format";
 import { TeamPair } from "./TeamPair";
 import { ResultBadge, coverText } from "./ResultBadge";
+import { AwaitingTag } from "./AwaitingTag";
 
 function modelNumber(lean: Lean): string {
   if (lean.kind === "total") return lean.model ?? "—";
@@ -58,9 +59,10 @@ function BetCell({ game, kind, results }: {
 }
 
 /** A shared card shell; Results adds winner emphasis and grading content. */
-export function PredictionGameCard({ game, results = false }: {
+export function PredictionGameCard({ game, results = false, now }: {
   game: PredictionGame;
   results?: boolean;
+  now: Date;
 }) {
   const final = isFinal(game);
   const awayWon = (game.awayPoints ?? 0) > (game.homePoints ?? 0);
@@ -76,6 +78,7 @@ export function PredictionGameCard({ game, results = false }: {
             {where && <span>· {where}</span>}
             {game.neutralSite && <span>· Neutral site</span>}
             {final && <span className="rounded bg-surface-inset px-1.5 py-0.5 text-xs font-semibold">Final</span>}
+            <AwaitingTag game={game} now={now} />
             {game.highConfidence && <span className="text-sm text-accent-ink" aria-label="High confidence lean" title="High confidence lean">★</span>}
           </div>
           <MatchupButton gameId={game.gameId} />

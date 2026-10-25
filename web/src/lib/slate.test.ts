@@ -5,6 +5,7 @@ import {
   biggestEdgesRecord,
   edgeTier,
   edgeTone,
+  gameState,
   hasGradedPick,
   hasLean,
   leanFor,
@@ -15,6 +16,7 @@ import {
   sortSlate,
   slateSorts,
   weekPhase,
+  weekStatus,
   topLeans,
   resultFor,
   topLeansRecord,
@@ -401,4 +403,48 @@ test("isRetrospective is true for replay predictions or a retrospective repair o
   assert.equal(isRetrospective(false, undefined), false);
   assert.equal(isRetrospective(true, undefined), true);
   assert.equal(isRetrospective(true, { evidenceClass: "live" }), true);
+});
+
+const kickoff = new Date("2026-10-24T19:00:00Z"); // 3:00 PM EDT
+const placeholder = new Date("2026-10-24T04:00:00Z"); // Time TBD on Oct 24 (midnight EDT)
+const at = (iso: string) => new Date(iso);
+const scored = { homePoints: 24, awayPoints: 17 };
+
+test("gameState: a scored game is final whatever the clock says", () => {
+  assert.equal(gameState(game({ startDate: kickoff, ...scored }), at("2026-10-24T00:00:00Z")), "final");
+});
+
+test("gameState: a timed game is upcoming until kickoff and awaiting after", () => {
+  const g = game({ startDate: kickoff });
+  assert.equal(gameState(g, at("2026-10-24T18:59:59Z")), "upcoming");
+  assert.equal(gameState(g, kickoff), "awaiting");
+  assert.equal(gameState(g, at("2026-10-25T12:00:00Z")), "awaiting");
+});
+
+test("gameState: a Time TBD game is awaiting only once its Eastern day has ended", () => {
+  const g = game({ startDate: placeholder });
+  assert.equal(gameState(g, at("2026-10-24T04:00:00Z")), "upcoming"); // placeholder midnight
+  assert.equal(gameState(g, at("2026-10-25T03:59:59Z")), "upcoming"); // 11:59 PM that evening
+  assert.equal(gameState(g, at("2026-10-25T04:00:00Z")), "awaiting"); // next Eastern day
+});
+
+test("weekStatus: no kickoff yet is upcoming, and so is an empty week", () => {
+  assert.equal(weekStatus([game({ startDate: kickoff }), game({ gameId: 2, startDate: placeholder })], at("2026-10-23T12:00:00Z")), "upcoming");
+  assert.equal(weekStatus([], at("2026-10-23T12:00:00Z")), "upcoming");
+});
+
+test("weekStatus: unscored games that have all kicked off are awaiting", () => {
+  const games = [game({ startDate: kickoff }), game({ gameId: 2, startDate: placeholder })];
+  assert.equal(weekStatus(games, at("2026-10-25T12:00:00Z")), "awaiting");
+});
+
+test("weekStatus: a mix of states is in progress", () => {
+  const now = at("2026-10-24T20:00:00Z");
+  assert.equal(weekStatus([game({ startDate: kickoff }), game({ gameId: 2, startDate: new Date("2026-10-25T00:00:00Z") })], now), "in-progress"); // one awaiting, one upcoming
+  assert.equal(weekStatus([game({ startDate: kickoff, ...scored }), game({ gameId: 2, startDate: kickoff })], now), "in-progress"); // one final, one awaiting
+  assert.equal(weekStatus([game({ startDate: kickoff, ...scored }), game({ gameId: 2, startDate: new Date("2026-10-25T00:00:00Z") })], now), "in-progress"); // one final, one upcoming
+});
+
+test("weekStatus: every game scored is final", () => {
+  assert.equal(weekStatus([game({ startDate: kickoff, ...scored }), game({ gameId: 2, startDate: kickoff, ...scored })], at("2026-10-26T12:00:00Z")), "final");
 });

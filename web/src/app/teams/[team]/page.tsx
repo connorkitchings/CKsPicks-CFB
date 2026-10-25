@@ -27,6 +27,7 @@ import { GameLogChart } from "@/components/teams/GameLogChart";
 import { ModelOnTeam } from "@/components/teams/ModelOnTeam";
 import { TeamSchedule } from "@/components/teams/TeamSchedule";
 import { TeamSection } from "@/components/teams/TeamSection";
+import { pageNow } from "@/lib/slate-page";
 import { gameLogBars } from "@/lib/team-game-log";
 import { isFinal } from "@/lib/team-games";
 import type { RatingSnapshotRow, RosterRow, TeamGameRow } from "@/lib/charts";
@@ -115,7 +116,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : (
         <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-start">
           <div className="min-w-0 space-y-4">
-            <TeamSchedule games={games} team={team} />
+            <TeamSchedule games={games} team={team} now={pageNow()} />
             <ModelOnTeam games={games} team={team} />
             {gameStats === null ? (
               <TeamSection id="team-game-log" title="Game log"><Notice tone="empty">The game log is not available right now.</Notice></TeamSection>

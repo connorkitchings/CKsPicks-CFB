@@ -74,3 +74,33 @@ export function etDateYearTime(d: Date): string {
 export function etWeekdayDateTime(d: Date): string {
   return `${etWeekdayDate(d)}, ${etTime(d)}`;
 }
+
+/**
+ * True when the Eastern wall clock reads exactly 00:00. The data source sends a placeholder at
+ * midnight Eastern for games whose kickoff time is not announced yet (a real 12:30 AM game is not one).
+ */
+export function isTimeTbd(d: Date): boolean {
+  const p = parts(d, { hour: "numeric", minute: "2-digit", hourCycle: "h23" });
+  return Number(p.hour) % 24 === 0 && p.minute === "00" && d.getTime() % 60_000 === 0;
+}
+
+/** "Time TBD" for a placeholder, else "7:30 PM ET". */
+export function etKickoff(d: Date): string {
+  return isTimeTbd(d) ? "Time TBD" : etTime(d);
+}
+
+/** "Sat, Oct 24, time TBD" for a placeholder, else "Sat, Oct 24, 7:30 PM ET". */
+export function etWeekdayDateKickoff(d: Date): string {
+  return isTimeTbd(d) ? `${etWeekdayDate(d)}, time TBD` : etWeekdayDateTime(d);
+}
+
+/** Midnight Eastern that ends the Eastern calendar day containing `d`. */
+export function nextEtDayStart(d: Date): Date {
+  const day = (t: number) => etDateYear(new Date(t));
+  const hour = 3_600_000;
+  const today = day(d.getTime());
+  // Eastern offsets are whole hours, so midnight falls on an hour boundary.
+  let t = Math.floor(d.getTime() / hour) * hour + hour;
+  while (day(t) === today) t += hour;
+  return new Date(t);
+}

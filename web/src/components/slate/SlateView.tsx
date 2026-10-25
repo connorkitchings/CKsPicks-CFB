@@ -8,7 +8,7 @@ import { TopLeans } from "@/components/slate/TopLeans";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
 import { SlateList } from "@/components/slate/SlateList";
 import { WeekNav } from "@/components/WeekNav";
-import { hasGradedPick, weekPhase, weekRecord, type SlateSort, type Tally, type WeekPhase } from "@/lib/slate";
+import { hasGradedPick, weekPhase, weekRecord, weekStatus, type SlateSort, type Tally, type WeekStatus } from "@/lib/slate";
 import type { RosterRow } from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
@@ -39,11 +39,14 @@ export interface SlateViewProps {
   displayOnlyNotice?: string | null;
   initialSort?: SlateSort;
   emptyMessage?: string;
+  /** The clock for awaiting-result states; passed down so server and browser render the same text. */
+  now: Date;
 }
 
-const PHASE_LABEL: Record<WeekPhase, string> = {
+const STATUS_LABEL: Record<WeekStatus, string> = {
   upcoming: "Upcoming",
   "in-progress": "In progress",
+  awaiting: "Awaiting results",
   final: "Final",
 };
 
@@ -74,9 +77,11 @@ export function SlateView({
   displayOnlyNotice = null,
   initialSort = "kickoff",
   emptyMessage,
+  now,
 }: SlateViewProps) {
   const predictionsVisible = games.some((g) => g.publicationMode === "predictions");
   const phase = weekPhase(games);
+  const status = weekStatus(games, now);
   const graded = hasGradedPick(games);
   const showRecord = publicationMode === "predictions" && (performance.length > 0 || graded);
 
@@ -124,9 +129,10 @@ export function SlateView({
                   <span
                     data-testid="week-phase"
                     data-phase={phase}
+                    data-status={status}
                     className="font-semibold sm:inline-flex sm:items-center sm:rounded-full sm:border sm:border-line sm:bg-surface-inset sm:px-2 sm:py-0.5 sm:text-xs"
                   >
-                    {PHASE_LABEL[phase]}
+                    {STATUS_LABEL[status]}
                   </span>
                   <span className="sm:hidden"> · {games.length} {games.length === 1 ? "game" : "games"}</span>
                 </p>
@@ -137,7 +143,7 @@ export function SlateView({
               <ModelRecord
                 phoneHeader={(
                   <>
-                    Week {week} · <span className="font-semibold">{PHASE_LABEL[phase]}</span>
+                    Week {week} · <span className="font-semibold">{STATUS_LABEL[status]}</span>
                     {" · "}{games.length} {games.length === 1 ? "game" : "games"}
                   </>
                 )}
@@ -195,6 +201,7 @@ export function SlateView({
                 games={games}
                 roster={roster}
                 initialSort={initialSort}
+                now={now}
                 weekNav={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact selectId="week-select-phone" /> : undefined}
                 extras={predictionsVisible ? (
                   <div className="space-y-2 sm:space-y-4">

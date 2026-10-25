@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import TeamLogo from "@/components/TeamLogo";
 import { Notice } from "@/components/ui/Notice";
+import { AwaitingTag } from "@/components/slate/AwaitingTag";
 import { MatchupCellLink, MatchupRowLink } from "@/components/teams/MatchupRowLink";
 import { TeamGameRow, type TeamGame } from "@/components/teams/TeamGameRow";
 import { TeamSection } from "@/components/teams/TeamSection";
@@ -8,6 +9,7 @@ import {
   atsResult, isFinal, lineForTeam, lineText, overUnderResult, recordText, teamRecords, winPercent,
   type BetResult,
 } from "@/lib/team-games";
+import { gameState } from "@/lib/slate";
 import { phoneTeamName } from "@/lib/team-logos";
 import { etDate } from "@/lib/time-et";
 
@@ -29,7 +31,7 @@ function Outcome({ game, team }: { game: TeamGame; team: string }) {
   );
 }
 
-function ScheduleTable({ games, team, nextId }: { games: readonly TeamGame[]; team: string; nextId: number | undefined }) {
+function ScheduleTable({ games, team, now, nextId }: { games: readonly TeamGame[]; team: string; now: Date; nextId: number | undefined }) {
   return (
     <div className="overflow-x-auto max-sm:hidden">
       <table aria-label="Lines and results" className="w-full text-sm tabular-nums">
@@ -62,7 +64,7 @@ function ScheduleTable({ games, team, nextId }: { games: readonly TeamGame[]; te
                 </td>
                 <td className={clsx(TD, "text-right font-mono")}>{line === null ? NONE : lineText(line)}</td>
                 <td className={clsx(TD, "text-right font-mono")}>{game.totalLine === null ? NONE : game.totalLine.toFixed(1)}</td>
-                <td className={TD}>{final ? <Outcome game={game} team={team} /> : NONE}</td>
+                <td className={TD}>{final ? <Outcome game={game} team={team} /> : gameState(game, now) === "awaiting" ? <AwaitingTag game={game} now={now} /> : NONE}</td>
                 <td className={TD}>{ats ? <span className={clsx("font-semibold", BET_TONE[ats])}>{ats}</span> : NONE}</td>
                 <td className={TD}>{ou ?? NONE}</td>
                 <td className={clsx(TD, "text-right text-xs")}><MatchupCellLink gameId={game.gameId} /></td>
@@ -96,18 +98,19 @@ function RecordLine({ games, team }: { games: readonly TeamGame[]; team: string 
 
 /**
  * The schedule as a market-only lines-and-results table from `sm:` up and a two-line list on phones,
- * with the ATS and over/under records and cover rates underneath. The first unplayed game is highlighted.
+ * with the ATS and over/under records and cover rates underneath. The first unplayed game is highlighted;
+ * a game past kickoff with no score yet is tagged "Awaiting result".
  */
-export function TeamSchedule({ games, team }: { games: readonly TeamGame[]; team: string }) {
+export function TeamSchedule({ games, team, now }: { games: readonly TeamGame[]; team: string; now: Date }) {
   const nextId = games.find((game) => !isFinal(game))?.gameId;
   return (
     <TeamSection id="team-games" title="Schedule · lines and results">
       {games.length === 0 ? <Notice tone="empty">No selected V5 forecasts are available yet.</Notice> : <>
-        <ScheduleTable games={games} team={team} nextId={nextId} />
+        <ScheduleTable games={games} team={team} now={now} nextId={nextId} />
         <ul aria-label="Schedule" className="-mx-3.5 divide-y divide-line sm:hidden">
           {games.map((game) => (
             <li key={game.gameId} className={clsx(game.gameId === nextId && "bg-accent-soft")}>
-              <MatchupRowLink gameId={game.gameId}><TeamGameRow game={game} team={team} next={game.gameId === nextId} /></MatchupRowLink>
+              <MatchupRowLink gameId={game.gameId}><TeamGameRow game={game} team={team} now={now} next={game.gameId === nextId} /></MatchupRowLink>
             </li>
           ))}
         </ul>

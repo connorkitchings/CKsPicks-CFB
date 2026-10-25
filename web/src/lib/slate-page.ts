@@ -18,11 +18,25 @@ export type SlateSearchParams = Promise<{
   week?: string;
   mode?: string;
   sort?: string;
+  now?: string;
 }>;
 type ResolvedParams = Awaited<SlateSearchParams>;
 
 
 export const isUiTestMode = () => process.env.CFB_UI_TEST_MODE === "1";
+
+/** The UI-test clock: before every fixture kickoff, so fixture games read exactly as scored or upcoming. */
+export const UI_TEST_NOW = new Date("2026-08-01T12:00:00Z");
+
+/**
+ * The page clock. Under the UI test harness it is `UI_TEST_NOW`, or the `?now=` ISO timestamp when valid;
+ * anywhere else it is the real time and `?now=` is ignored.
+ */
+export function pageNow(params?: ResolvedParams): Date {
+  if (!isUiTestMode()) return new Date();
+  const override = params?.now ? new Date(params.now) : null;
+  return override && !Number.isNaN(override.getTime()) ? override : UI_TEST_NOW;
+}
 
 /** The `?mode=` override is honored only under the UI test harness. */
 export function slatePublicationMode(params: ResolvedParams): "predictions" | "market" {

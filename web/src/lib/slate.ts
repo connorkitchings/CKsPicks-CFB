@@ -9,6 +9,7 @@ import {
 } from "./betting-format.ts";
 import { isFinal } from "./team-games.ts";
 import { phoneTeamName } from "./team-logos.ts";
+import { isTimeTbd, nextEtDayStart } from "./time-et.ts";
 
 export type LeanKind = "spread" | "total";
 
@@ -446,6 +447,34 @@ export function weekPhase(games: Game[]): WeekPhase {
   const finished = games.filter(isFinal).length;
   if (finished === 0) return "upcoming";
   return finished === games.length ? "final" : "in-progress";
+}
+
+export type GameState = "final" | "awaiting" | "upcoming";
+
+type Timed = { startDate: Date; homePoints: number | null; awayPoints: number | null };
+
+/**
+ * Final once scored; otherwise awaiting a result when kickoff has passed, else upcoming. A Time-TBD
+ * placeholder (midnight Eastern) has not really kicked off at midnight, so it counts as passed only once
+ * its Eastern day is over.
+ */
+export function gameState(game: Timed, now: Date): GameState {
+  if (isFinal(game)) return "final";
+  const passedAt = isTimeTbd(game.startDate) ? nextEtDayStart(game.startDate) : game.startDate;
+  return now.getTime() >= passedAt.getTime() ? "awaiting" : "upcoming";
+}
+
+export type WeekStatus = "upcoming" | "in-progress" | "awaiting" | "final";
+
+/**
+ * Where a week stands on the clock: all scored is final; nothing scored and nothing kicked off is upcoming;
+ * nothing scored and every game awaiting a result is awaiting; anything else is in progress. An empty week is upcoming.
+ */
+export function weekStatus(games: Timed[], now: Date): WeekStatus {
+  const states = games.map((game) => gameState(game, now));
+  if (states.length > 0 && states.every((state) => state === "final")) return "final";
+  if (states.every((state) => state === "upcoming")) return "upcoming";
+  return states.every((state) => state === "awaiting") ? "awaiting" : "in-progress";
 }
 
 export type SlateSort = "kickoff" | "bestEdge" | "spreadEdge" | "totalEdge" | "bestResult" | "worstResult";

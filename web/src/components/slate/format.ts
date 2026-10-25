@@ -1,9 +1,9 @@
-import { etDateTime, etLongWeekdayDate, etTime, etWeekdayDate } from "@/lib/time-et";
+import { etDateTime, etKickoff, etLongWeekdayDate, etWeekdayDate } from "@/lib/time-et";
 
 /** Slate-facing names for the shared Eastern-time formatters. */
 
-/** "7:30 PM ET" */
-export const kickoffTime = etTime;
+/** "7:30 PM ET", or "Time TBD" for a placeholder kickoff. */
+export const kickoffTime = etKickoff;
 
 /** "Saturday, Oct 24" */
 export const dayLabel = etLongWeekdayDate;

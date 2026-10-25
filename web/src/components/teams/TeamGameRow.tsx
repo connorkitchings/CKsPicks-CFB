@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import TeamLogo from "@/components/TeamLogo";
+import { AwaitingTag } from "@/components/slate/AwaitingTag";
 import { dayShort } from "@/components/slate/format";
 import {
   atsResult, gameResultText, isFinal, lineForTeam, lineText, overUnderResult,
@@ -26,9 +27,9 @@ function detailParts(game: TeamGame, team: string): [label: string, value: strin
 /**
  * One schedule line from `team`'s side: opponent, week and date, the score once final, and a
  * second line with the market line and bet results (or the line and total before kickoff).
- * Upcoming games are dimmed unless they are the team's `next` game.
+ * A kicked-off game with no score yet is tagged "Awaiting result". Upcoming games are dimmed unless they are the team's `next` game.
  */
-export function TeamGameRow({ game, team, next = false }: { game: TeamGame; team: string; next?: boolean }) {
+export function TeamGameRow({ game, team, now, next = false }: { game: TeamGame; team: string; now: Date; next?: boolean }) {
   const home = game.homeTeam === team;
   const opponent = home ? game.awayTeam : game.homeTeam;
   const final = isFinal(game);
@@ -42,7 +43,7 @@ export function TeamGameRow({ game, team, next = false }: { game: TeamGame; team
           <p className={clsx("truncate text-sm font-semibold", final || next ? "text-ink" : "text-ink-muted")}><span className="font-normal text-ink-muted">{home ? "vs" : "at"}</span> {phoneTeamName(opponent)}</p>
           <p className="text-xs text-ink-muted">Wk {game.week} · {dayShort(game.startDate)}</p>
         </div>
-        {result && <p className="shrink-0 font-mono text-sm font-semibold tabular-nums text-ink">{result}</p>}
+        {result ? <p className="shrink-0 font-mono text-sm font-semibold tabular-nums text-ink">{result}</p> : <AwaitingTag game={game} now={now} className="shrink-0" />}
       </div>
       {details.length > 0 && (
         <p className="mt-1 pl-8 text-xs text-ink-muted">

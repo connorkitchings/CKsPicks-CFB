@@ -9,6 +9,7 @@ import { publicationScope } from "@/lib/publication";
 import {
   isUiTestMode,
   loadSlateData,
+  pageNow,
   slateSort,
   slatePublicationMode,
   slateSeason,
@@ -162,6 +163,7 @@ export default async function Home({
       retrospectiveRepair={data.retrospectiveRepair}
       displayOnlyNotice={data.displayOnlyText}
       initialSort={slateSort(params)}
+      now={pageNow(params)}
     />
   );
 }

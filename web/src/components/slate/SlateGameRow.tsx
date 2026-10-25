@@ -10,6 +10,7 @@ import { LeanMarker } from "./LeanMarker";
 import { LeanPill } from "./LeanPill";
 import { coverText, ResultBadge } from "./ResultBadge";
 import { TeamPair } from "./TeamPair";
+import { AwaitingTag } from "./AwaitingTag";
 
 function GradedCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
   const lean = leanFor(game, kind);
@@ -35,10 +36,10 @@ function LeanCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
 }
 
 /** Dense one-line-per-game layout; finished games show the graded pick, others the lean. */
-export function SlateGameRow({ game }: { game: Game }) {
+export function SlateGameRow({ game, now }: { game: Game; now: Date }) {
   const final = isFinal(game);
   if (game.publicationMode === "market") {
-    return <MarketGameCard game={game} showBetResult={final} />;
+    return <MarketGameCard game={game} showBetResult={final} now={now} />;
   }
   const homeWon = (game.homePoints ?? 0) > (game.awayPoints ?? 0);
   const awayWon = (game.awayPoints ?? 0) > (game.homePoints ?? 0);
@@ -54,6 +55,7 @@ export function SlateGameRow({ game }: { game: Game }) {
           {final ? dayShort(game.startDate) : kickoffTime(game.startDate)}
           {game.highConfidence && <span className="ml-1.5 text-accent" title="High confidence lean">★</span>}
         </div>
+        <AwaitingTag game={game} now={now} className="mt-1" />
         <WhereLine game={game} />
         <div className="mt-1">
           <MatchupButton gameId={game.gameId} />

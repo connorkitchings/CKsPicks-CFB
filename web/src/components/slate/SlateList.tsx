@@ -35,6 +35,7 @@ export function SlateList({
   initialSort = "kickoff",
   weekNav,
   extras,
+  now,
 }: {
   games: Game[];
   roster?: RosterRow[];
@@ -47,6 +48,8 @@ export function SlateList({
    * directly under the pinned bar, before the first day group, on phones, by flex `order`.
    */
   extras?: ReactNode;
+  /** The clock for awaiting-result tags. */
+  now: Date;
 }) {
   const [query, setQuery] = useState("");
   const [conference, setConference] = useState<ConferenceFilter>("all");
@@ -113,11 +116,11 @@ export function SlateList({
                 · {group.games.length} {group.games.length === 1 ? "game" : "games"}
               </span>
             </Eyebrow>
-            <SlateGameList games={group.games} view={view} />
+            <SlateGameList games={group.games} view={view} now={now} />
           </section>
         ))
       ) : (
-        <div className="order-1"><SlateGameList games={visible} view={view} /></div>
+        <div className="order-1"><SlateGameList games={visible} view={view} now={now} /></div>
       )}
     </div>
   );
