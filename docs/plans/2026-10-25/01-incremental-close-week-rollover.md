@@ -1,6 +1,6 @@
 # Incremental close-week rollover (narrow amendment) and Week 8→9 advance
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-10-25
 - **Planner:** Sol
 - **Approval source:** Owner approved the presented plan in session on 2026-10-25 (narrow-amendment path C; Odds API Week 9 capture authorized at ~2 credits; Preview-only, no Production activation and no `dev`→`main` merge).
