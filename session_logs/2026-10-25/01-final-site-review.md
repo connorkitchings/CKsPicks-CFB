@@ -2,6 +2,11 @@
 
 Review of the four-tab site on Production data (read-only), served locally from `dev` at `5e49fddb` on `http://127.0.0.1:3200`. A page closes only on the owner's "accept".
 
+## Who reviews what
+
+- Owner: desktop dark and phone dark, by hand in the browser, on the page set and interactions in the plan.
+- Assistant: light theme, the 1280 desktop width and the 320 phone width, by Playwright full-page captures against the local server (Production data, read-only), each image looked at before reporting. Both also run the plan's interaction checks that need no human (filters, sorts, exports, redirects).
+
 ## Review status
 
 | Page | 1440 dark | 1440 light | 1280 light | 390 dark | 390 light | 320 |
