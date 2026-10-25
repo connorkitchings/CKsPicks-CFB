@@ -191,9 +191,27 @@ promote-silver:
 SEASON_OUTPUT := artifacts/season/2026/preview
 SEASON_ENV := CFB_STORAGE_BACKEND=r2 PYTHONPATH=src:.
 
-season-revision:
+# Normal weekly close/open (incremental): fetches only the completed week's
+# observations, carries the certified earlier-week captures, and gates the
+# completed-week history against the previous manifest. PREVIOUS_MANIFEST
+# defaults to revision_manifest_w<WEEK-1>_v1.json.
+season-close-week:
 	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(PRE_WEEK_CUTOFF)" ] || [ -z "$(RUN_ID)" ]; then \
-		echo "Usage: make season-revision WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
+		echo "Usage: make season-close-week WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [PREVIOUS_MANIFEST=<certified manifest>] [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
+	fi
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/build_season_revision.py --season 2026 --week $(WEEK) --environment preview --incremental --as-of $(AS_OF) --pre-week-cutoff $(PRE_WEEK_CUTOFF) --pipeline-run-id $(RUN_ID) $(if $(PREVIOUS_MANIFEST),--previous-manifest $(PREVIOUS_MANIFEST),) $(if $(DRY),--dry-run,)
+
+# Full-history repair vehicle: re-ingests every completed week (Weeks 0..WEEK-1)
+# and is NOT the weekly rollover. Requires an explicit ack; the normal weekly
+# path is season-close-week.
+season-revision:
+	@if [ "$(FULL_HISTORY)" != "1" ]; then \
+		echo "season-revision re-ingests every completed week and is reserved for explicitly approved history repairs." >&2; \
+		echo "For the normal weekly rollover use: make season-close-week WEEK=<upcoming week> AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=<pre-week cutoff> RUN_ID=<fresh id>" >&2; \
+		echo "To run the full-history path deliberately, set FULL_HISTORY=1." >&2; exit 1; \
+	fi
+	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(PRE_WEEK_CUTOFF)" ] || [ -z "$(RUN_ID)" ]; then \
+		echo "Usage: make season-revision FULL_HISTORY=1 WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
 	fi
 	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/build_season_revision.py --season 2026 --week $(WEEK) --environment preview --as-of $(AS_OF) --pre-week-cutoff $(PRE_WEEK_CUTOFF) --pipeline-run-id $(RUN_ID) $(if $(DRY),--dry-run,)
 

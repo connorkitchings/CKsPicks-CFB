@@ -800,20 +800,40 @@ def _silver_from_ingestion_step(
     games_ref_uri: str | None = None,
     week_policy_ref_uri: str | None = None,
     ingestion_run_keys: list[str] | None = None,
+    extra_capture_ids: Sequence[str] | None = None,
 ) -> PipelineStep:
-    """Materialize one immutable Silver ref from this run's captured source rows."""
+    """Materialize one immutable Silver ref from this run's captured source rows.
+
+    ``extra_capture_ids`` carries certified Bronze captures from earlier weeks
+    into the build (the incremental rollover reuses history instead of
+    re-fetching it); they are part of the step definition so a changed carry
+    set is a different step and never silently resumed.
+    """
+    carried = list(dict.fromkeys(extra_capture_ids or ()))
 
     def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
         if ingestion_run_keys:
             run_ids = [f"{context.pipeline_run_id}:{k}" for k in ingestion_run_keys]
         else:
             run_ids = [f"{context.pipeline_run_id}:{entity}"]
+        if carried:
+            where = "WHERE ingestion_run_id = ANY(%s) OR capture_id = ANY(%s) "
+            params: tuple[Any, ...] = (run_ids, carried)
+        else:
+            where = "WHERE ingestion_run_id = ANY(%s) "
+            params = (run_ids,)
         with psycopg.connect(conn_url) as conn:
             rows = conn.execute(
                 "SELECT capture_id FROM catalog.source_captures "
-                "WHERE ingestion_run_id = ANY(%s) ORDER BY captured_at, capture_id",
-                (run_ids,),
+                f"{where}ORDER BY captured_at, capture_id",
+                params,
             ).fetchall()
+        found = {str(row[0]) for row in rows}
+        missing = sorted(set(carried) - found)
+        if missing:
+            raise RuntimeError(
+                f"Carried captures missing from the catalog for {entity}: {missing}"
+            )
         if not rows:
             raise RuntimeError(f"No captures available for {entity} Silver build")
         argv = _python(
@@ -852,15 +872,18 @@ def _silver_from_ingestion_step(
     ) -> bool:
         return bool(outputs) and get_storage().exists(output_ref_uri)
 
+    definition: dict[str, Any] = {
+        "dataset": dataset,
+        "entity": entity,
+        "output_ref_uri": output_ref_uri,
+        "as_of": as_of,
+    }
+    if carried:
+        definition["extra_capture_ids"] = carried
     return PipelineStep(
         name,
         action,
-        definition={
-            "dataset": dataset,
-            "entity": entity,
-            "output_ref_uri": output_ref_uri,
-            "as_of": as_of,
-        },
+        definition=definition,
         resume_validator=resume_validator,
     )
 
@@ -1362,6 +1385,7 @@ def build_steps(
     conn_url: str,
     waiver: str | None = None,
     options: argparse.Namespace | None = None,
+    advance: Mapping[str, Any] | None = None,
 ) -> list[PipelineStep]:
     year = context.season
     week = context.week
@@ -1724,6 +1748,154 @@ def build_steps(
                 ]
             )
         return [subprocess_step("assemble_model_ready", argv)]
+    if context.command == "advance-week":
+        # Incremental week close/open: fetch only the completed week's
+        # observations. Certified earlier-week Bronze captures are carried into
+        # the Silver builds (advance["carried_captures"]) and the completed-week
+        # schedule and finals are compared against the previous certified
+        # revision (the stop gate) before anything derives from them. No week
+        # below N-1 is fetched.
+        assert week is not None and as_of is not None
+        assert advance is not None
+        completed_week = week - 1
+        if completed_week < 0:
+            raise ValueError("advance-week requires at least one completed week")
+        carried = advance["carried_captures"]
+        gate = advance["gate"]
+        root = f"artifacts/{environment}/pipeline-runs/{context.pipeline_run_id}"
+        refs = {
+            "policy": f"{root}/schedule_week_policy_ref.json",
+            "games": f"{root}/games_ref.json",
+            "outcomes": f"{root}/game_outcomes_ref.json",
+            "plays": f"{root}/plays_ref.json",
+            "stats": f"{root}/team_game_stats_ref.json",
+        }
+        inventory = (
+            f"artifacts/quality/request_inventories/{environment}/"
+            f"{context.pipeline_run_id}/week_{completed_week}.json"
+        )
+        steps: list[PipelineStep] = [
+            _fetch_source_step(
+                name="ingest_schedule",
+                argv=_python(
+                    "scripts/data/ingest_season.py",
+                    "--year",
+                    year,
+                    "--entities",
+                    "games",
+                ),
+                conn_url=conn_url,
+                entity="games",
+            ),
+            subprocess_step(
+                f"request_inventory_week_{completed_week}",
+                _python(
+                    "scripts/data/build_expected_request_inventory.py",
+                    "--raw-schedule-uri",
+                    f"raw/games/year={year}/part-0.parquet",
+                    "--policy",
+                    f"conf/policy/canonical_week_{year}_v1.yaml",
+                    "--season",
+                    year,
+                    "--canonical-week",
+                    completed_week,
+                    "--environment",
+                    environment,
+                    "--output",
+                    inventory,
+                ),
+            ),
+        ]
+        for entity in ("plays", "game_stats"):
+            steps.append(
+                _fetch_source_step(
+                    name=f"ingest_{entity}_week_{completed_week}",
+                    argv=_python(
+                        "scripts/data/ingest_week.py",
+                        "--year",
+                        year,
+                        "--week",
+                        completed_week,
+                        "--entities",
+                        entity,
+                        "--request-inventory",
+                        inventory,
+                    ),
+                    conn_url=conn_url,
+                    entity=entity,
+                    ingestion_run_key=f"{entity}:week_{completed_week}",
+                )
+            )
+        steps.extend(
+            [
+                _week_policy_from_ingestion_step(
+                    conn_url=conn_url, output_ref_uri=refs["policy"], as_of=as_of
+                ),
+                _silver_from_ingestion_step(
+                    name="build_games",
+                    dataset="games",
+                    entity="games",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["games"],
+                    as_of=as_of,
+                    environment=environment,
+                    week_policy_ref_uri=refs["policy"],
+                ),
+                _silver_from_ingestion_step(
+                    name="build_outcomes",
+                    dataset="game_outcomes",
+                    entity="games",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["outcomes"],
+                    as_of=as_of,
+                    environment=environment,
+                    games_ref_uri=refs["games"],
+                ),
+                subprocess_step(
+                    "verify_completed_week_stability",
+                    _python(
+                        "scripts/pipeline/verify_completed_week_stability.py",
+                        "--new-games-ref",
+                        refs["games"],
+                        "--new-outcomes-ref",
+                        refs["outcomes"],
+                        "--previous-games",
+                        json.dumps(gate["previous_games"], sort_keys=True),
+                        "--previous-outcomes",
+                        json.dumps(gate["previous_outcomes"], sort_keys=True),
+                        "--through-week",
+                        completed_week - 1,
+                        "--environment",
+                        environment,
+                    ),
+                ),
+                _silver_from_ingestion_step(
+                    name="build_plays",
+                    dataset="plays",
+                    entity="plays",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["plays"],
+                    as_of=as_of,
+                    environment=environment,
+                    games_ref_uri=refs["games"],
+                    ingestion_run_keys=[f"plays:week_{completed_week}"],
+                    extra_capture_ids=carried["plays"],
+                ),
+                _silver_from_ingestion_step(
+                    name="build_team_game_stats",
+                    dataset="team_game_stats",
+                    entity="game_stats",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["stats"],
+                    as_of=as_of,
+                    environment=environment,
+                    games_ref_uri=refs["games"],
+                    ingestion_run_keys=[f"game_stats:week_{completed_week}"],
+                    extra_capture_ids=carried["team_game_stats"],
+                ),
+            ]
+        )
+        return steps
     if context.command == "prepare-week":
         assert week is not None and as_of is not None
         root = f"artifacts/{environment}/pipeline-runs/{context.pipeline_run_id}"
