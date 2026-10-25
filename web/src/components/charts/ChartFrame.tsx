@@ -167,7 +167,7 @@ export function ChartFrame({
             </button>
           )}
           {hasData && (
-            <ChartExportButton filename={exportSpec.filename} shareTitle={title} width={exportSpec.width} height={exportSpec.height}>
+            <ChartExportButton filename={exportSpec.filename} shareTitle={title} width={exportSpec.width} height={exportSpec.height} contentKey={[summary, subtitle, filter, highlight ?? ""].join("|")}>
               {exportSpec.card}
             </ChartExportButton>
           )}

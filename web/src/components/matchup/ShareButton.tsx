@@ -33,6 +33,7 @@ export function ShareButton({ matchup, disabled = false }: { matchup: MatchupDat
       width={SHARE_CARD_WIDTH}
       height={SHARE_CARD_HEIGHT}
       backgroundColor="#0b0b0d"
+      contentKey={JSON.stringify(matchup)}
       disabled={disabled}
       disabledReason="Sharing unavailable until matchup data lineage is verified"
       compactReason

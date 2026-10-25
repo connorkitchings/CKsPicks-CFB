@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { isShareCancellation, reusablePreparedImage, type PreparedShareImage, type ShareImageIdentity } from "@/lib/share-image";
 
 type Action = "download" | "copy" | "share";
 type Outcome = "done" | "failed";
@@ -86,6 +87,14 @@ function saveBlob(blob: Blob, filename: string) {
 const subscribeNever = () => () => {};
 const serverFalse = () => false;
 const canCopyImages = () => typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write);
+/** The page theme decides which logo and `dark:` variants the card is drawn with. */
+const subscribeTheme = (onChange: () => void) => {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+};
+const currentTheme = (): "light" | "dark" => (document.documentElement.classList.contains("dark") ? "dark" : "light");
+const serverTheme = (): "light" | "dark" => "light";
 const canShareFiles = () =>
   typeof navigator.canShare === "function" &&
   navigator.canShare({ files: [new File([""], "probe.png", { type: "image/png" })] });
@@ -105,6 +114,10 @@ const ICON_PATHS: Record<Action | Outcome, string> = {
 const LABELS: Record<Action, string> = { download: "Download PNG", copy: "Copy image", share: "Share" };
 /** Tooltips open toward the inside of the button group, so they never push past the viewport edge. */
 const TOOLTIP_POSITION = { left: "left-0", center: "left-1/2 -translate-x-1/2", right: "right-0" } as const;
+
+/** Announced (not a failure) when the inputs changed under a running export; the user taps again. */
+const STALE_TEXT = "The chart changed. Tap again.";
+const READY_TEXT = "Image ready: tap Share again";
 
 /** How long a finished export keeps its outcome icon and tooltip text. */
 const FEEDBACK_MS = 2500;
@@ -162,6 +175,7 @@ export function ExportActions({
   width,
   height,
   backgroundColor,
+  contentKey = "",
   disabled = false,
   disabledReason,
   compactReason = false,
@@ -176,6 +190,8 @@ export function ExportActions({
   height: number;
   /** Image background; defaults to the card's computed background. */
   backgroundColor?: string;
+  /** Fingerprint of what the card shows beyond the filename and title (filters, highlight, metric...); a change discards a prepared image. */
+  contentKey?: string;
   disabled?: boolean;
   /** Shown beside the disabled buttons so they are never silently inert. */
   disabledReason?: string;
@@ -192,8 +208,15 @@ export function ExportActions({
   const [report, setReport] = useState<ExportReport | null>(null);
   /** The finished export whose outcome its button shows for `FEEDBACK_MS`. */
   const [feedback, setFeedback] = useState<{ action: Action; outcome: Outcome } | null>(null);
-  /** An image kept for a second tap, for browsers that only share inside a fresh gesture. */
-  const [ready, setReady] = useState<File | null>(null);
+  /** An image kept for a second tap, for browsers that only share inside a fresh gesture, with what it was made from. */
+  const [ready, setReady] = useState<PreparedShareImage<File> | null>(null);
+  const theme = useSyncExternalStore(subscribeTheme, currentTheme, serverTheme);
+  const identity: ShareImageIdentity = { contentKey, filename, title: shareTitle, width, height, background: backgroundColor ?? "", theme };
+  const identityKey = JSON.stringify(identity);
+  const identityRef = useRef(identity);
+  /** Bumped whenever the inputs change; a render or share started under an older value is obsolete. */
+  const generation = useRef(0);
+  const jobGeneration = useRef(0);
   const caps = {
     copy: useSyncExternalStore(subscribeNever, canCopyImages, serverFalse),
     share: useSyncExternalStore(subscribeNever, canShareFiles, serverFalse),
@@ -203,11 +226,18 @@ export function ExportActions({
   const rendered = useRef<Deferred<Blob> | null>(null);
 
   useEffect(() => {
+    identityRef.current = JSON.parse(identityKey) as ShareImageIdentity;
+    generation.current += 1;
+  }, [identityKey]);
+
+  useEffect(() => {
     const done = pending.current;
     if (!job || !cardRef.current || !done || rendered.current === done) return; // strict mode runs effects twice
     rendered.current = done;
+    const started = jobGeneration.current;
     renderPng(cardRef.current, width, height, backgroundColor)
       .then(({ blob, report: made }) => {
+        if (started !== generation.current) return done.reject(new Error("The inputs changed while the image was rendering"));
         setReport(made);
         done.resolve(blob);
       })
@@ -225,10 +255,18 @@ export function ExportActions({
     setFeedback(outcome === "failed" || text ? { action, outcome } : null);
   };
 
+  /** The inputs changed under a running export: nothing was saved or shared; say so without an outcome icon. */
+  const discard = () => {
+    setStatus(STALE_TEXT);
+    setFeedback(null);
+  };
+
   async function run(action: Action) {
     if (job) return;
     const render = deferred<Blob>();
     pending.current = render;
+    const started = generation.current;
+    jobGeneration.current = started;
     setStatus("Creating image…");
     setFeedback(null);
     setJob(action);
@@ -245,38 +283,56 @@ export function ExportActions({
         finish(action, "done", "Image saved");
         return;
       }
-      const file = new File([blob], filename, { type: "image/png" });
+      if (started !== generation.current) throw new Error("obsolete");
+      const made = identityRef.current;
+      const file = new File([blob], made.filename, { type: "image/png" });
       try {
-        await navigator.share({ files: [file], title: shareTitle });
+        await navigator.share({ files: [file], title: made.title });
         finish(action, "done", "");
       } catch (error) {
-        if ((error as Error).name === "AbortError") {
+        if (isShareCancellation(error)) {
           finish(action, "done", "");
+        } else if (started === generation.current) {
+          setReady({ identity: made, file });
+          finish(action, "done", READY_TEXT);
         } else {
-          setReady(file);
-          finish(action, "done", "Image ready: tap Share again");
+          discard();
         }
       }
     } catch {
-      finish(action, "failed", "Could not create the image");
+      // An obsolete render is dropped, never saved or shared: the next tap prepares an image from the current inputs.
+      if (started !== generation.current) discard();
+      else finish(action, "failed", "Could not create the image");
     } finally {
       setJob(null);
-      pending.current = null;
+      if (pending.current === render) pending.current = null;
     }
   }
 
-  async function shareReady() {
-    if (!ready) return;
+  async function shareReady(file: File) {
+    setReady(null);
     try {
-      await navigator.share({ files: [ready], title: shareTitle });
+      await navigator.share({ files: [file], title: identityRef.current.title });
       finish("share", "done", "");
-    } catch {
-      saveBlob(ready, filename);
+    } catch (error) {
+      if (isShareCancellation(error)) {
+        finish("share", "done", "");
+        return;
+      }
+      saveBlob(file, file.name);
       finish("download", "done", "Image saved");
     }
-    setReady(null);
   }
 
+  function onShare() {
+    const usable = reusablePreparedImage(ready, identityRef.current);
+    if (usable) return void shareReady(usable);
+    if (ready) setReady(null); // outdated: prepare a new image from the current inputs
+    void run("share");
+  }
+
+  // A kept image belongs to the inputs it was made from: once they change, its "tap Share again" text is withdrawn too.
+  const shownStatus = status === READY_TEXT && !reusablePreparedImage(ready, identity) ? "" : status;
   const busy = disabled || job !== null;
   const visible: Action[] = ["download", ...(caps.copy ? (["copy"] as const) : []), ...(caps.share ? (["share"] as const) : [])];
   const buttonProps = (action: Action) => {
@@ -284,19 +340,19 @@ export function ExportActions({
     const index = visible.indexOf(action);
     // A lone button follows the caller's choice; otherwise first opens left, last right, middle centered.
     const align = atRightEdge ? "right" : visible.length === 1 ? tooltipAlign : index === 0 ? "left" : index === visible.length - 1 ? "right" : "center";
-    return { action, testId: testIds[action], outcome, tip: outcome && status ? status : LABELS[action], tooltipAlign: align, disabled: busy } as const;
+    return { action, testId: testIds[action], outcome, tip: outcome && shownStatus ? shownStatus : LABELS[action], tooltipAlign: align, disabled: busy } as const;
   };
 
   return (
     <div className="flex flex-wrap items-center gap-1.5" title={disabled && compactReason ? disabledReason : undefined} data-testid={testIds.container} data-last-export={report ? JSON.stringify(report) : undefined}>
       <ActionButton {...buttonProps("download")} onClick={() => void run("download")} />
       {caps.copy && <ActionButton {...buttonProps("copy")} onClick={() => void run("copy")} />}
-      {caps.share && <ActionButton {...buttonProps("share")} onClick={() => (ready ? void shareReady() : void run("share"))} />}
+      {caps.share && <ActionButton {...buttonProps("share")} onClick={onShare} />}
       {disabled && disabledReason && <span className={clsx("text-xs text-ink-muted", compactReason && "max-sm:sr-only")}>{disabledReason}</span>}
       {disabled && disabledReason && compactReason && <span aria-hidden className="text-xs text-ink-muted sm:hidden">Unavailable</span>}
       {/* Announced only: the buttons show the outcome, and visible text here would reflow the controls row. */}
       <span role="status" aria-live="polite" className="sr-only">
-        {status}
+        {shownStatus}
       </span>
       {job && (
         <div aria-hidden style={{ position: "fixed", left: -100000, top: 0, pointerEvents: "none" }}>

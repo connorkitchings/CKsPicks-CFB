@@ -22,16 +22,19 @@ export function ChartExportButton({
   shareTitle,
   width,
   height,
+  contentKey,
   children,
 }: {
   filename: string;
   shareTitle: string;
   width: number;
   height: number;
+  /** Fingerprint of the chart's current view (filter, highlight, metric, week, side); see `ExportActions`. */
+  contentKey: string;
   children: ReactNode;
 }) {
   return (
-    <ExportActions filename={filename} shareTitle={shareTitle} width={width} height={height} testIds={TEST_IDS}>
+    <ExportActions filename={filename} shareTitle={shareTitle} width={width} height={height} contentKey={contentKey} testIds={TEST_IDS}>
       {children}
     </ExportActions>
   );
