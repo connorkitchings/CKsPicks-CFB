@@ -26,6 +26,16 @@ def _assignments(path: Path) -> list[tuple[str, str]]:
     ]
 
 
+def _documented(path: Path) -> set[str]:
+    """Names the example documents: active assignments and commented-out optional ones."""
+    commented = re.compile(r"^#\s*([A-Z][A-Z0-9_]*)=")
+    names = {name for name, _ in _assignments(path)}
+    for line in path.read_text().splitlines():
+        if match := commented.match(line):
+            names.add(match.group(1))
+    return names
+
+
 def _tracked_sources() -> str:
     files = subprocess.run(
         ["git", "ls-files", "src", "scripts", "web", "tests", "Makefile", ".github"],
@@ -55,7 +65,7 @@ def test_example_has_no_stale_names(path: Path) -> None:
     sources = _tracked_sources()
     stale = [
         name
-        for name, _ in _assignments(path)
+        for name in sorted(_documented(path))
         if not DYNAMIC_R2.fullmatch(name) and name not in sources
     ]
     assert stale == []
@@ -68,7 +78,7 @@ def test_dynamic_r2_prefixes_still_exist() -> None:
 
 
 def test_every_cfb_variable_read_in_src_is_documented() -> None:
-    documented = {name for name, _ in _assignments(ROOT / ".env.example")}
+    documented = _documented(ROOT / ".env.example")
     read: set[str] = set()
     for path in (ROOT / "src").rglob("*.py"):
         read |= set(

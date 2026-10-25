@@ -5,7 +5,7 @@ Read [`docs/status.md`](../docs/status.md) for the active release and week state
 ## Setup and development
 
 ```bash
-uv sync --extra dev
+uv sync --group dev
 npm --prefix web install
 make help
 make web-local ENV=preview
