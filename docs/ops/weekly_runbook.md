@@ -122,6 +122,8 @@ Check that every completed FBS game has a score, the required play/drive streams
 
 **1d. Refresh the score-reconciliation exceptions.** Prepare requires exact per-team-game score reconciliation. `conf/season/2026/score_reconciliation_exceptions.json` lists the only allowed mismatches as `game_id`, `team` and `reason`. An unlisted mismatch fails, and so does an **unused** exception, for example a game whose play-by-play was repaired. The manifest pins the file by SHA-256 under `score_reconciliation_exceptions`, and prepare fails with `input checksum changed` if the file differs. The builder only copies the previous manifest's entry, and the Week 7 manifest has none. So after each week's finals:
 
+> **Known limitation (owner-accepted 2026-10-25).** The file is edited in place each week, so only the newest revision's pin matches it. An earlier revision (Week 7 and the Week 8 revisions `w8_v1` to `w8_v3`) can no longer be re-prepared from its manifest: prepare fails with `input checksum changed`. Releases already prepared and activated are stored and unaffected, and rollback reuses the stored release without re-reading the manifest. A mismatch here means the play-by-play feed is incomplete for a team-game (for example Ole Miss at Texas, Week 8: the feed summed to 3 of 27 points); the final score is correct, and the model marks the affected sides' scoring measurements missing instead of using the partial total. Keeping a per-revision exceptions file would remove the limitation and needs builder support; it is not implemented.
+
 1. Edit the file to list exactly the team-games that do not reconcile through `<COMPLETED_WEEK>`. Add the new week's mismatches and remove any repaired game.
 2. Pin it in the new manifest:
    ```bash
