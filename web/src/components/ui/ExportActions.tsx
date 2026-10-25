@@ -217,6 +217,8 @@ export function ExportActions({
   /** Bumped whenever the inputs change; a render or share started under an older value is obsolete. */
   const generation = useRef(0);
   const jobGeneration = useRef(0);
+  /** False once the component has left the page: no export may save, share, copy or update state after that. */
+  const mounted = useRef(false);
   const caps = {
     copy: useSyncExternalStore(subscribeNever, canCopyImages, serverFalse),
     share: useSyncExternalStore(subscribeNever, canShareFiles, serverFalse),
@@ -224,6 +226,15 @@ export function ExportActions({
   const cardRef = useRef<HTMLDivElement>(null);
   const pending = useRef<Deferred<Blob> | null>(null);
   const rendered = useRef<Deferred<Blob> | null>(null);
+
+  // Setup sets the flag again, so React strict mode's mount/unmount/mount ends mounted; cleanup also obsoletes any running export.
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      generation.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     identityRef.current = JSON.parse(identityKey) as ShareImageIdentity;
@@ -237,6 +248,7 @@ export function ExportActions({
     const started = jobGeneration.current;
     renderPng(cardRef.current, width, height, backgroundColor)
       .then(({ blob, report: made }) => {
+        if (!mounted.current) return done.reject(new Error("The export was left before the image finished"));
         if (started !== generation.current) return done.reject(new Error("The inputs changed while the image was rendering"));
         setReport(made);
         done.resolve(blob);
@@ -274,22 +286,25 @@ export function ExportActions({
       if (action === "copy") {
         // Created inside the click so Safari keeps the user gesture; the image resolves later.
         await navigator.clipboard.write([new ClipboardItem({ "image/png": render.promise })]);
+        if (!mounted.current) return;
         finish(action, "done", "Image copied");
         return;
       }
       const blob = await render.promise;
+      if (!mounted.current) return;
+      if (started !== generation.current) throw new Error("obsolete");
       if (action === "download") {
         saveBlob(blob, filename);
         finish(action, "done", "Image saved");
         return;
       }
-      if (started !== generation.current) throw new Error("obsolete");
       const made = identityRef.current;
       const file = new File([blob], made.filename, { type: "image/png" });
       try {
         await navigator.share({ files: [file], title: made.title });
-        finish(action, "done", "");
+        if (mounted.current) finish(action, "done", "");
       } catch (error) {
+        if (!mounted.current) return;
         if (isShareCancellation(error)) {
           finish(action, "done", "");
         } else if (started === generation.current) {
@@ -300,11 +315,12 @@ export function ExportActions({
         }
       }
     } catch {
+      if (!mounted.current) return;
       // An obsolete render is dropped, never saved or shared: the next tap prepares an image from the current inputs.
       if (started !== generation.current) discard();
       else finish(action, "failed", "Could not create the image");
     } finally {
-      setJob(null);
+      if (mounted.current) setJob(null);
       if (pending.current === render) pending.current = null;
     }
   }
@@ -313,8 +329,9 @@ export function ExportActions({
     setReady(null);
     try {
       await navigator.share({ files: [file], title: identityRef.current.title });
-      finish("share", "done", "");
+      if (mounted.current) finish("share", "done", "");
     } catch (error) {
+      if (!mounted.current) return;
       if (isShareCancellation(error)) {
         finish("share", "done", "");
         return;
