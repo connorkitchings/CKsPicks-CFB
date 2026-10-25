@@ -10,6 +10,7 @@ Contracts whose status is In Progress, Draft or Approved (newest first).
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [Pre-merge fixes and Crest release completion](2026-10-25/01-pre-merge-fixes-and-crest-release.md) | Six review fixes plus the open-licence wordmark regeneration, then the `dev` to `main` publication | In Progress; validated in a worktree, wordmark lettering awaits owner review; deployment pending |
 | [Repository consolidation, pruning and production hardening](2026-10-22/01-repo-consolidation.md) | Delete V4/legacy code, consolidate agent guidance and docs, archive closed plans and logs, harden CI and environment variables | Approved October 22; one commit per group on `connorkitchings/repo-consolidation`, merge into `dev` after owner review. Nothing goes to `main` or Production. Log: `session_logs/2026-10-22/02-repo-consolidation.md`. |
 | [Serving-parity check and `rebuild/` retirement](2026-10-22/02-parity-and-rebuild-retirement.md) | Prove pruned `dev` reproduces the served projections; remove the 6A/6B rebuild package | Implemented October 22; log `session_logs/2026-10-22/03-parity-and-rebuild-retirement.md`. |
 | [Mobile charts B: inspector](2026-10-21/04-mobile-charts-b-inspector.md) | Shared state, native-dialog SVG inspector, button zoom and native scrolling | Draft; blocked on A acceptance and separate owner authorization. |
