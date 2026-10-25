@@ -24,10 +24,9 @@ from cks_picks_cfb.data.silver import SILVER_CONTRACTS
 from cks_picks_cfb.data.storage import get_storage
 
 
-def _ref_from_file(path: str) -> DatasetRef:
-    """A controller ref JSON file holding a full DatasetRef."""
-    with open(path) as handle:
-        return DatasetRef(**json.load(handle))
+def _ref_from_key(storage, key: str) -> DatasetRef:
+    """A controller ref JSON object in storage holding a full DatasetRef."""
+    return DatasetRef(**json.loads(storage.read_bytes(key).decode()))
 
 
 def _ref_from_input(dataset: str, entry: dict[str, Any]) -> DatasetRef:
@@ -117,11 +116,11 @@ def main() -> None:
     args = parser.parse_args()
     storage = get_storage(environment=args.environment)
     problems = compare_completed_weeks(
-        read_dataset(storage, _ref_from_file(args.new_games_ref)),
+        read_dataset(storage, _ref_from_key(storage, args.new_games_ref)),
         read_dataset(
             storage, _ref_from_input("games", json.loads(args.previous_games))
         ),
-        read_dataset(storage, _ref_from_file(args.new_outcomes_ref)),
+        read_dataset(storage, _ref_from_key(storage, args.new_outcomes_ref)),
         read_dataset(
             storage,
             _ref_from_input("game_outcomes", json.loads(args.previous_outcomes)),
