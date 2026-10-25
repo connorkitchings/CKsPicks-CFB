@@ -6,7 +6,7 @@ import { MatchupCellLink, MatchupRowLink } from "@/components/teams/MatchupRowLi
 import { TeamGameRow, type TeamGame } from "@/components/teams/TeamGameRow";
 import { TeamSection } from "@/components/teams/TeamSection";
 import {
-  atsResult, isFinal, lineForTeam, lineText, overUnderResult, recordText, teamRecords, winPercent,
+  atsResult, isFinal, lineForTeam, lineText, nextUpcomingGame, overUnderResult, recordText, teamRecords, winPercent,
   type BetResult,
 } from "@/lib/team-games";
 import { gameState } from "@/lib/slate";
@@ -102,7 +102,7 @@ function RecordLine({ games, team }: { games: readonly TeamGame[]; team: string 
  * a game past kickoff with no score yet is tagged "Awaiting result".
  */
 export function TeamSchedule({ games, team, now }: { games: readonly TeamGame[]; team: string; now: Date }) {
-  const nextId = games.find((game) => !isFinal(game))?.gameId;
+  const nextId = nextUpcomingGame(games, now)?.gameId;
   return (
     <TeamSection id="team-games" title="Schedule · lines and results">
       {games.length === 0 ? <Notice tone="empty">No selected V5 forecasts are available yet.</Notice> : <>

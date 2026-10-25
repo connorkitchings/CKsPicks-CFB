@@ -1,5 +1,6 @@
 import { homeSpreadFromMargin, homeSpreadText, marketSpreadView, signedSpread, spreadBetLabel, spreadLabel, totalBetLabel } from "./betting-format.ts";
 import { deriveSpreadView, deriveTotalView } from "./publication.ts";
+import { gameState } from "./slate.ts";
 import { phoneTeamName } from "./team-logos.ts";
 
 export interface TeamGameFields {
@@ -13,6 +14,15 @@ export interface TeamGameFields {
 
 /** True once both scores are recorded. */
 export const isFinal = (game: { homePoints: number | null; awayPoints: number | null }) => game.homePoints !== null && game.awayPoints !== null;
+
+/**
+ * The team's next game: the first, in schedule order, whose kickoff has not passed at `now`. A game that kicked
+ * off without a score ("awaiting") is skipped, as is a Time-TBD placeholder once its Eastern day is over.
+ * Null when nothing is left to play.
+ */
+export function nextUpcomingGame<T extends { startDate: Date; homePoints: number | null; awayPoints: number | null }>(games: readonly T[], now: Date): T | null {
+  return games.find((game) => gameState(game, now) === "upcoming") ?? null;
+}
 
 /**
  * What a team page row says about the game, from `team`'s side: "W 59–45" once final, otherwise

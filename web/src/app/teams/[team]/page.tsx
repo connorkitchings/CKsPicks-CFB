@@ -27,9 +27,9 @@ import { GameLogChart } from "@/components/teams/GameLogChart";
 import { ModelOnTeam } from "@/components/teams/ModelOnTeam";
 import { TeamSchedule } from "@/components/teams/TeamSchedule";
 import { TeamSection } from "@/components/teams/TeamSection";
-import { pageNow } from "@/lib/slate-page";
+import { pageNow, isUiTestMode, type SlateSearchParams } from "@/lib/slate-page";
 import { gameLogBars } from "@/lib/team-game-log";
-import { isFinal } from "@/lib/team-games";
+import { isFinal, nextUpcomingGame } from "@/lib/team-games";
 import type { RatingSnapshotRow, RosterRow, TeamGameRow } from "@/lib/charts";
 
 export const revalidate = 300;
@@ -57,7 +57,7 @@ async function loadUnitRows(team: string, week: number): Promise<UnitMatchupRow[
   }
 }
 
-export default async function TeamPage({ params }: { params: Promise<{ team: string }> }) {
+export default async function TeamPage({ params, searchParams }: { params: Promise<{ team: string }>; searchParams: SlateSearchParams }) {
   const resolved = resolveTeam((await params).team);
   if (!resolved) notFound();
   const { gameName: team, ratingName } = resolved;
@@ -93,7 +93,9 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       getTeamGameStats(2026).catch(() => null),
     ]);
   }
-  const nextGame = games.find((game) => !isFinal(game)) ?? null;
+  // `?now=` is a UI-test override; reading search params only there keeps the page statically revalidated in production.
+  const now = pageNow(isUiTestMode() ? await searchParams : undefined);
+  const nextGame = nextUpcomingGame(games, now);
   // Stats snapshots cover games completed before a week's slate: the week after the last played game, so a bye
   // before the next game does not ask for a snapshot that is not published yet.
   const played = games.filter(isFinal);
@@ -116,7 +118,7 @@ export default async function TeamPage({ params }: { params: Promise<{ team: str
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : (
         <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-start">
           <div className="min-w-0 space-y-4">
-            <TeamSchedule games={games} team={team} now={pageNow()} />
+            <TeamSchedule games={games} team={team} now={now} />
             <ModelOnTeam games={games} team={team} />
             {gameStats === null ? (
               <TeamSection id="team-game-log" title="Game log"><Notice tone="empty">The game log is not available right now.</Notice></TeamSection>

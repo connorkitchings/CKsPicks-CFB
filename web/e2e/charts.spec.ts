@@ -59,7 +59,7 @@ async function exportPng(page: Page): Promise<{ file: string; report: { logos: n
 test.describe("team charts", () => {
   test("net success bars render one bar per game with logos and score labels", async ({ page }) => {
     await page.goto("/stats");
-    await expect(page.getByRole("heading", { name: "Team charts" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Team graphs" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
     await expect(page.getByTestId("chart-description")).toHaveText("Each game's winner minus loser success rate, in percentage points.");
     // The metric definition sits under the chart, not in the subtitle.
@@ -322,7 +322,7 @@ test.describe("team charts", () => {
       expect(response?.status()).toBe(200);
       const nav = page.getByRole("navigation", { name: "Main navigation" });
       await expect(nav.getByRole("link")).toHaveText(["Games", "Ratings", "Graphs", "Model"]);
-      await expect(page.getByRole("heading", { name: "Team charts", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Team graphs", exact: true })).toBeVisible();
       await expect(page.getByTestId("chart-picker")).toHaveCount(0);
     }
   });
@@ -397,7 +397,7 @@ test.describe("team charts", () => {
     await expect
       .poll(async () => {
         const navBox = await nav.locator("> div").boundingBox();
-        const mainBox = await page.locator("main", { has: page.getByRole("heading", { name: "Team charts" }) }).boundingBox();
+        const mainBox = await page.locator("main", { has: page.getByRole("heading", { name: "Team graphs" }) }).boundingBox();
         return Math.abs((navBox?.width ?? 0) - (mainBox?.width ?? 0));
       })
       .toBeLessThanOrEqual(2);

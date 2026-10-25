@@ -127,6 +127,17 @@ test.describe("team pages (fixture mode)", () => {
     });
   }
 
+  test("the next-game card skips a game that kicked off without a score", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    // Texas's week 4 game (Sep 26) is past and unscored; week 5 (Oct 3) is still ahead.
+    await gotoHydrated(page, "/teams/Texas?now=2026-09-30T12:00:00Z");
+    await expect(page.getByLabel("Next game")).toContainText(/vs\s*Rice/);
+    await expect(page.getByLabel("Next game")).not.toContainText("Ohio State");
+    // Once every remaining game has passed, the card is hidden.
+    await gotoHydrated(page, "/teams/Texas?now=2026-10-20T12:00:00Z");
+    await expect(page.getByLabel("Next game")).toHaveCount(0);
+  });
+
   test("every module is present for a team with games", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");

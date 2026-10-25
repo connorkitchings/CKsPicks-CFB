@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  atsResult, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
+  atsResult, nextUpcomingGame, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
   modelTotalPick, modelWinnerName, overUnderResult, recordText, teamRecords, winPercent,
   type TeamGameFields, type TeamGameLines,
 } from "./team-games.ts";
@@ -173,4 +173,33 @@ test("forecastLine is the model line without the total", () => {
 test("recordText shows pushes only when there are some", () => {
   assert.equal(recordText(2, 3), "2–3");
   assert.equal(recordText(2, 3, 1), "2–3–1");
+});
+
+const timed = (id: number, startDate: string, scored = false) => ({ id, startDate: new Date(startDate), homePoints: scored ? 20 : null, awayPoints: scored ? 10 : null });
+const nextId = (games: ReturnType<typeof timed>[], now: string) => nextUpcomingGame(games, new Date(now))?.id ?? null;
+
+test("nextUpcomingGame picks the first game that has not kicked off", () => {
+  const games = [timed(1, "2026-09-05T23:00:00Z", true), timed(2, "2026-09-12T23:00:00Z"), timed(3, "2026-09-19T23:00:00Z")];
+  assert.equal(nextId(games, "2026-09-08T12:00:00Z"), 2);
+});
+
+test("nextUpcomingGame skips an unscored game whose kickoff has passed", () => {
+  const games = [timed(1, "2026-09-05T23:00:00Z", true), timed(2, "2026-09-12T23:00:00Z"), timed(3, "2026-09-19T23:00:00Z")];
+  assert.equal(nextId(games, "2026-09-14T12:00:00Z"), 3);
+});
+
+test("nextUpcomingGame keeps a Time TBD placeholder until its Eastern day ends", () => {
+  const games = [timed(1, "2026-10-03T04:00:00Z"), timed(2, "2026-10-10T23:00:00Z")]; // midnight ET on Oct 3 (EDT)
+  assert.equal(nextId(games, "2026-10-03T20:00:00Z"), 1);
+  assert.equal(nextId(games, "2026-10-04T05:00:00Z"), 2);
+});
+
+test("nextUpcomingGame handles bye weeks between games", () => {
+  const games = [timed(1, "2026-09-05T23:00:00Z", true), timed(2, "2026-09-26T23:00:00Z")];
+  assert.equal(nextId(games, "2026-09-15T12:00:00Z"), 2);
+});
+
+test("nextUpcomingGame is null when nothing is left to play", () => {
+  assert.equal(nextId([timed(1, "2026-09-05T23:00:00Z", true), timed(2, "2026-09-12T23:00:00Z")], "2026-09-20T12:00:00Z"), null);
+  assert.equal(nextId([], "2026-09-20T12:00:00Z"), null);
 });

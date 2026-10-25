@@ -5,7 +5,7 @@ test("Graphs is reachable from the main navigation and keeps the selected side w
   await page.goto("/ratings");
   await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link")).toHaveText(["Games", "Ratings", "Graphs", "Model"]);
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Graphs", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Team charts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Team graphs" })).toBeVisible();
   await page.getByTestId("chart-select").selectOption({ label: "Efficiency vs explosiveness" });
   await expect(page).toHaveURL(/chart=efficiency/);
   await page.getByRole("button", { name: "Chart settings", exact: true }).click();

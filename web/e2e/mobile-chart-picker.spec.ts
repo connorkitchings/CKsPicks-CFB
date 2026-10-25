@@ -61,8 +61,8 @@ test.describe("phone chart picker", () => {
       await expect(settings).toBeVisible();
       expect((await settings.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       // The old heading is screen-reader only on phones.
-      await expect(page.getByRole("heading", { level: 1, name: "Team charts" })).toBeAttached();
-      expect((await page.getByRole("heading", { level: 1, name: "Team charts" }).boundingBox())!.width).toBeLessThanOrEqual(1);
+      await expect(page.getByRole("heading", { level: 1, name: "Team graphs" })).toBeAttached();
+      expect((await page.getByRole("heading", { level: 1, name: "Team graphs" }).boundingBox())!.width).toBeLessThanOrEqual(1);
 
       const summary = page.getByTestId("chart-settings-summary");
       await expect(summary).toHaveText(/Week \d+ · /);

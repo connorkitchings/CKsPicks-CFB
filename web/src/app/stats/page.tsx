@@ -347,7 +347,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
       <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-6xl flex-1 px-4 sm:py-4 ${PHONE_PAGE_RHYTHM}`}>
         {/* Phones drop the visible heading (the sticky bar names the chart) but keep it for assistive tech. */}
         <div className="max-sm:sr-only">
-          <PageHeading title="Team charts">
+          <PageHeading title="Team graphs">
             {season}
             <span className="text-ink-faint"> · </span>
             {CHART_REGISTRY[kind].population}
