@@ -26,10 +26,11 @@ The owner preferred this pairing over the pale blue-gray dark-mode option. Earli
 The repository-relative prototype files are:
 
 - `design/crest-wordmarks/crest-c.svg`: selected vector geometry, using paths and `currentColor`.
-- `design/crest-wordmarks/navy.html`: reviewed light/dark desktop and phone specimens.
-- `design/crest-wordmarks/navy-comparison.svg`: compact comparison; the selected pair is B.
+- `design/crest-wordmarks/navy.html`: light/dark desktop and phone specimens (the selected pair is B); it now embeds the regenerated outlines from `crest-c.svg`.
 
-The selected SVG's SHA-256 is `b0d06ae0fd956b4e182962cf61c101a97d645d58c726b63d55dacd8d96b57a76`.
+The SVG originally selected by the owner (superseded original, SHA-256 `b0d06ae0fd956b4e182962cf61c101a97d645d58c726b63d55dacd8d96b57a76`) was outlined from Charter Bold and Arial Bold, which are proprietary. It was removed from the tree on 2026-10-25 and remains only in git history of the dev branch.
+
+**Font-source cleanup (2026-10-25):** to clear licensing, `crest-c.svg` was regenerated with the same arrangement (CREST at 66 units, CFB at 30 units, shared baseline, CFB to the right) from Arimo Bold (SIL Open Font License 1.1) for CFB and Bitstream Charter Bold (CTAN distribution with an explicit permissive licence) for CREST. The current `crest-c.svg` SHA-256 is `cfef1f48ac6c9fbd78ad7f1c8d099c244d67d4912a1535d0fad01f651661a4d6`, with `viewBox="-2.96 7.3 411.42 77.69"` (previously `-3 8 408.48 77`). Sources, checksums, licence notices, and the reproducible generator (`design/crest-wordmarks/build-wordmark.py --check`) are in `design/crest-wordmarks/PROVENANCE.md`. The `navy.html` specimens were regenerated from the new outlines.
 
 The prototypes use 66 vector units for the CREST cap height and 30 for CFB, with a shared baseline. Desktop and phone specimens were shown at 32px and 26px overall SVG height respectively. Those display sizes are review references; final integration must verify fit and legibility within the existing header and phone app bar.
 
@@ -37,7 +38,7 @@ The prototypes use 66 vector units for the CREST cap height and 30 for CFB, with
 
 No application integration, deployment, or production change is authorized by this documentation request. The prototype remains separate from the application. Before implementing, obtain the owner's instruction to proceed and preserve this selected appearance.
 
-Future integration should use the same scalable vector geometry in the desktop header and phone app bar, with theme-aware foreground colors and an accessible name of “Crest CFB.” Preserve existing home-link behavior and visible keyboard focus. Confirm production use rights for the font-derived asset before shipping; the studies contain outlines rather than bundled font files, and do not themselves establish licensing clearance.
+Future integration should use the same scalable vector geometry in the desktop header and phone app bar, with theme-aware foreground colors and an accessible name of “Crest CFB.” Preserve existing home-link behavior and visible keyboard focus. Licensing and provenance of the font-derived outlines are documented in `design/crest-wordmarks/PROVENANCE.md`; no font files are bundled. Deployment has not happened; the app integration remains pending the usual release process.
 
 Verify both themes at desktop and phone sizes, including a 320px viewport, for contrast, clipping, baseline alignment, CFB legibility, and theme changes without a font-loading shift. Prototype browser inspection is complete; actual application and real-device acceptance remain pending. Favicon, social images, exports, broader typography, and other brand surfaces need a separately defined scope.
 
