@@ -184,11 +184,11 @@ Use this to refresh the upcoming week's spreads and totals before kickoff withou
    Pass `--entities betting_lines`: the default is `plays,betting_lines`. No schedule, plays or historical weeks are fetched. Note the time of the last capture.
 2. **Build the revision.** Set `CUTOFF` to the last capture plus about five minutes. The builder reads stored captures (it never queries a provider), refuses to overwrite its target and registers the new quotes version:
    ```bash
-   make season-market-revision FROM=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N>.json \
+   make season-market-revision WEEK=<NEXT_WEEK> FROM=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N>.json \
      TO=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N+1>.json \
      REVISION_ID=season-2026-w<NEXT_WEEK>-preview-r<N+1> CUTOFF=<ISO-8601 UTC>
    # = ... uv run python -m scripts.pipeline.build_market_revision --from-manifest ... --to-manifest ... \
-   #       --revision-id ... --cutoff ...
+   #       --revision-id ... --cutoff ... --target-week <NEXT_WEEK>
    ```
    Run it as a module; invoking the file directly fails with `No module named 'scripts'`. Check 100% spread and total coverage for the upcoming week in the new quotes.
 3. **Commit the manifest** with `git add` of that one path, so the tree is clean.

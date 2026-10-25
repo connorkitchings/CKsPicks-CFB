@@ -35,7 +35,7 @@ help:
 	@echo ""
 	@echo "Weekly season release (docs/ops/weekly_runbook.md; WEEK = upcoming week):"
 	@echo "  make season-revision WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
-	@echo "  make season-market-revision FROM=... TO=... REVISION_ID=... CUTOFF=...  - Market-only mid-week line refresh manifest"
+	@echo "  make season-market-revision WEEK=<upcoming> FROM=... TO=... REVISION_ID=... CUTOFF=...  - Market-only mid-week line refresh manifest"
 	@echo "  make season-prepare WEEK=8 AS_OF=... [MANIFEST=...] [RECONSTRUCT=1]  - Prepare the candidate from a clean committed tree"
 	@echo "  make season-release ENV=preview|production RELEASE_ID=season-2026-... PROJECTION_SHA=... EXPECTED_PREVIOUS=...|INITIAL=1"
 	@echo "  make season-rollback RELEASE_ID=... EXPECTED_PREVIOUS=... DECISION_REF=... OWNER_AUTHORIZED=1  - Production, owner credential"
@@ -219,10 +219,10 @@ season-revision:
 # the quotes, the target week's pre-week cutoff and the revision identity. Reads
 # stored captures; never calls a provider.
 season-market-revision:
-	@if [ -z "$(FROM)" ] || [ -z "$(TO)" ] || [ -z "$(REVISION_ID)" ] || [ -z "$(CUTOFF)" ]; then \
-		echo "Usage: make season-market-revision FROM=<certified revision manifest> TO=<new manifest path> REVISION_ID=<id> CUTOFF=<ISO-8601 UTC, last capture + ~5 min>" >&2; exit 1; \
+	@if [ -z "$(WEEK)" ] || [ -z "$(FROM)" ] || [ -z "$(TO)" ] || [ -z "$(REVISION_ID)" ] || [ -z "$(CUTOFF)" ]; then \
+		echo "Usage: make season-market-revision WEEK=<upcoming week> FROM=<certified revision manifest> TO=<new manifest path> REVISION_ID=<id> CUTOFF=<ISO-8601 UTC, last capture + ~5 min>" >&2; exit 1; \
 	fi
-	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python -m scripts.pipeline.build_market_revision --from-manifest $(FROM) --to-manifest $(TO) --revision-id $(REVISION_ID) --cutoff $(CUTOFF)
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python -m scripts.pipeline.build_market_revision --from-manifest $(FROM) --to-manifest $(TO) --revision-id $(REVISION_ID) --cutoff $(CUTOFF) --target-week $(WEEK)
 
 # MANIFEST defaults to the week's first revision (revision_manifest_w<WEEK>_v1.json);
 # pass MANIFEST= for a later one, such as a market-only line refresh.
