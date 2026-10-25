@@ -37,6 +37,7 @@ export function PageShell({
         {...header}
         publicationMode={publicationMode}
         width={width}
+        loading={Boolean(mainProps["aria-busy"])}
       />
       <main
         {...mainProps}

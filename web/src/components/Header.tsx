@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { PublicationMode } from "@/lib/publication";
 import { displaySystemName } from "@/lib/publication";
 import { AppBar, type AppBarBack } from "./AppBar";
+import { HydrationMarker } from "./HydrationMarker";
 import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
@@ -19,6 +20,7 @@ export function Header({
   phoneStatus,
   menuUpdatedAt,
   back,
+  loading = false,
 }: {
   season: number | null;
   systemName: string | null;
@@ -33,6 +35,11 @@ export function Header({
   menuUpdatedAt?: Date | null;
   /** Phones: the app bar shows this back link and title in place of the section name. */
   back?: AppBarBack;
+  /**
+   * The loading skeleton's header. A streamed page leaves that skeleton on screen while its own
+   * header waits, disabled, in a hidden container, so only the page's header flags hydration.
+   */
+  loading?: boolean;
 }) {
   const maxW = PAGE_WIDTHS[width];
   const hasSubrow = Boolean(
@@ -41,6 +48,7 @@ export function Header({
   const systemLabel = publicationMode === "predictions" && systemName ? displaySystemName(systemName) : null;
   return (
     <>
+      {!loading && <HydrationMarker />}
       {/* Phones: the sticky app bar replaces the brand row and menu controls; only `status` stays on the page. */}
       <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={(menuUpdatedAt ?? updatedAt)?.toISOString() ?? null} back={back} />
     <header className={`border-b border-line bg-surface-card/80 backdrop-blur${(phoneStatus ?? Boolean(status)) ? "" : " max-sm:hidden"}`}>
