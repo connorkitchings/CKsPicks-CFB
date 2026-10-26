@@ -105,7 +105,7 @@ def find_mismatches(
 
 
 def _points(value: float) -> str:
-    return str(int(value))
+    return "n/a" if value != value else str(int(value))
 
 
 def plan_refresh(

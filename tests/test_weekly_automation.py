@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -162,6 +164,10 @@ class Harness:
         self.clock = NOW
         self.week_games = week_games
         self.preview_active = preview_active or "preview-season-2026-old"
+        self.preview_week = 9
+        # preview release id -> "same" (active, same bytes) | "other" (other bytes)
+        self.existing: dict[str, str] = {}
+        self.prepares = 0
 
     def now(self):
         return self.clock
@@ -173,12 +179,15 @@ class Harness:
         argv = list(map(str, argv))
         self.calls.append((argv, env))
         if "prepare" in argv:
-            out = self.root / wa.SEASON_OUTPUT / "season-2026-new"
+            self.prepares += 1
+            rid = self.release_id()
+            out = self.root / wa.SEASON_OUTPUT / rid
             out.mkdir(parents=True, exist_ok=True)
-            (out / "run-manifest.json").write_text(
+            path = out / "run-manifest.json"
+            path.write_text(
                 json.dumps(
                     {
-                        "release_id": "season-2026-new",
+                        "release_id": rid,
                         "output_refs": {
                             "serving_projections": {
                                 "sha256": "a" * 64,
@@ -188,9 +197,22 @@ class Harness:
                     }
                 )
             )
+            os.utime(path, (self.prepares, self.prepares))
         return 0, "abc123\n" if "rev-parse" in argv else ""
 
+    def release_id(self):
+        return "season-2026-new" + ("" if self.prepares <= 1 else str(self.prepares))
+
     def query(self, role, sql, params):
+        if "run_manifest_sha256 FROM season_releases" in sql:
+            kind = self.existing.get(params[0])
+            if kind is None:
+                return []
+            path = self.root / wa.SEASON_OUTPUT / params[0][len("preview-") :]
+            same = hashlib.sha256((path / "run-manifest.json").read_bytes()).hexdigest()
+            return [("active", same if kind == "same" else "f" * 64)]
+        if role == "preview" and "active_week FROM" in sql:
+            return [(self.preview_week,)]
         if "active_week FROM" in sql:
             return [("production-season-2026-old", 9)]
         if "count(*)" in sql and "season_release_games" in sql:
@@ -208,7 +230,10 @@ class Harness:
 
     def health(self):
         return {
-            "activeRelease": {"releaseId": "production-season-2026-new", "week": 10}
+            "activeRelease": {
+                "releaseId": f"production-{self.release_id()}",
+                "week": 10,
+            }
         }
 
     def controller(self, mode="close-week", **kw):
@@ -281,24 +306,53 @@ def test_skip_production_leaves_production_untouched(harness):
     assert not any(PROD_URL in env.values() for _, env in harness.calls)
 
 
-def test_already_released_preview_skips_parity_and_preview_release(
-    tmp_path, monkeypatch
-):
-    monkeypatch.chdir(tmp_path)
-    conf = tmp_path / wa.CONF
-    conf.mkdir(parents=True)
-    (conf / "revision_manifest_w10_v1.json").write_text(
-        json.dumps({"pre_week_cutoffs": {"10": wa.iso_z(NOW - timedelta(hours=1))}})
+def _releases(h):
+    return [
+        a[a.index("--environment") + 1]
+        for a, _ in h.calls
+        if "release" in a and "--environment" in a
+    ]
+
+
+def _commits(h):
+    return [a for a, _ in h.calls if a[:2] == ["git", "commit"]]
+
+
+def test_preview_active_with_same_id_and_same_bytes_skips_preview_release(harness):
+    harness.preview_active = "preview-season-2026-new"
+    harness.existing["preview-season-2026-new"] = "same"
+    assert harness.controller().run() == 0
+    assert _releases(harness) == ["production"]
+    assert _commits(harness) == []
+    assert "scripts/pipeline/check_release_parity.py" not in harness.scripts()
+
+
+def test_same_id_with_different_bytes_commits_empty_and_reprepares(harness):
+    harness.preview_active = "preview-season-2026-new"
+    harness.existing["preview-season-2026-new"] = "other"
+    harness.preview_week = 10
+    assert harness.controller().run() == 0
+    assert harness.prepares == 2
+    commits = _commits(harness)
+    assert len(commits) == 1 and "--allow-empty" in commits[0]
+    assert "retry the Week 10 release" in commits[0][-1]
+    assert _releases(harness) == ["preview", "production"]
+    parity = next(
+        a for a, _ in harness.calls if "scripts/pipeline/check_release_parity.py" in a
     )
-    h = Harness(
-        tmp_path,
-        {9: games(PAST), 10: games(FUTURE)},
-        preview_active="preview-season-2026-new",
+    assert parity[parity.index("--mode") + 1] == "market-refresh"
+    releases = [a for a, _ in harness.calls if "release" in a and "--run-manifest" in a]
+    assert all("season-2026-new2" in a[a.index("--run-manifest") + 1] for a in releases)
+
+
+def test_second_collision_stops_before_any_release(harness):
+    harness.existing.update(
+        {"preview-season-2026-new": "other", "preview-season-2026-new2": "other"}
     )
-    assert h.controller().run() == 0
-    assert "scripts/pipeline/check_release_parity.py" not in h.scripts()
-    releases = [a for a, _ in h.calls if "release" in a and "--environment" in a]
-    assert [a[a.index("--environment") + 1] for a in releases] == ["production"]
+    assert harness.controller().run() == 1
+    assert harness.prepares == 2
+    assert len(_commits(harness)) == 1
+    assert _releases(harness) == []
 
 
 def test_missing_final_stops_before_any_provider_call(harness):
