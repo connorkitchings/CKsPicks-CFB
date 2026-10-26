@@ -86,7 +86,7 @@ gh workflow run weekly-season-update.yml -f mode=plan-only
 gh workflow run weekly-season-update.yml -f mode=close-week -f skip_production=true
 ```
 
-**Disable.** Set the repository variable `CFB_WEEKLY_AUTOMATION_ENABLED` to anything other than `true` (or delete it); the job is then skipped. In-flight runs are not cancelled, and the `weekly-season-update` concurrency group queues overlapping runs.
+**Disable.** Set the repository variable `CFB_WEEKLY_AUTOMATION_ENABLED` to anything other than `true` (or delete it); scheduled runs are then skipped. A manual `workflow_dispatch` still runs, so rehearsals work before the schedule is enabled. In-flight runs are not cancelled, and the `weekly-season-update` concurrency group queues overlapping runs.
 
 ```bash
 gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body false

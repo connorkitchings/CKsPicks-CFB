@@ -26,7 +26,8 @@ concurrency:
 
 jobs:
   update:
-    if: vars.CFB_WEEKLY_AUTOMATION_ENABLED == 'true'
+    # The variable gates only the schedule; a manual dispatch is an explicit owner action.
+    if: github.event_name == 'workflow_dispatch' || vars.CFB_WEEKLY_AUTOMATION_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: season-production
