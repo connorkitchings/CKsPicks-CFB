@@ -492,6 +492,8 @@ class Controller:
             self.summary.update(
                 {"active_production_release": release_id, "active_week": active_week}
             )
+            if self.mode == "plan-only":
+                self.check_roles()
             decision = self.detect(started, release_id, active_week)
             self.summary["decision"] = decision.__dict__
             self.log(f"decision: {decision.action} - {decision.reason}")
@@ -500,7 +502,6 @@ class Controller:
             if decision.action == "stop":
                 raise StopRunError(decision.reason)
             if self.mode == "plan-only":
-                self.check_roles()
                 self.plan_cutoffs(decision)
                 self.summary["result"] = "planned"
                 return 0
