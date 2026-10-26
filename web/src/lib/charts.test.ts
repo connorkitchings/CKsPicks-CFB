@@ -33,6 +33,17 @@ import {
   type RosterRow,
   type TeamGameRow,
   type TeamGameYardageRow,
+  downsScatterPoints,
+  downsThroughWeeks,
+  finishingDrivesScatterPoints,
+  finishingDrivesThroughWeeks,
+  resumeQualityScatterPoints,
+  marketBoardPoints,
+  marketBoardWeeks,
+  type TeamSeasonStatRow,
+  type TeamResumeChartRow,
+  type SlateMarketGameRow,
+  type RatingSnapshotRow,
 } from "./charts.ts";
 import { teamAbbr, teamAltColor, teamColor, FALLBACK_TEAM_COLOR } from "./team-logos.ts";
 
@@ -518,4 +529,173 @@ test("gameLogDomains survives n/a games and an empty log", () => {
   assert.deepEqual(offense, [0, 1]);
   assert.ok(defense[1] > 0.3);
   assert.deepEqual(gameLogDomains(logOf([], [])), { offense: [0, 1], defense: [0, 1] });
+});
+
+function statRow(partial: Partial<TeamSeasonStatRow> & Pick<TeamSeasonStatRow, "team" | "metric" | "role" | "value">): TeamSeasonStatRow {
+  return {
+    season: 2026,
+    asOfWeek: 9,
+    n: 100,
+    games: 8,
+    rank: 1,
+    cohortSize: 134,
+    ...partial,
+  };
+}
+
+test("downs scatter: early down EPA vs 3rd/4th down conv rate, offense vs defense inversion, and missing metrics", () => {
+  const rows: TeamSeasonStatRow[] = [
+    statRow({ team: "Alabama", role: "offense", metric: "early_down_epa", value: 0.25, asOfWeek: 9 }),
+    statRow({ team: "Alabama", role: "offense", metric: "conv_rate_3rd_4th", value: 0.50, asOfWeek: 9 }),
+    statRow({ team: "Michigan", role: "offense", metric: "early_down_epa", value: 0.10, asOfWeek: 9 }),
+    statRow({ team: "Michigan", role: "offense", metric: "conv_rate_3rd_4th", value: 0.40, asOfWeek: 9 }),
+    statRow({ team: "Tulane", role: "offense", metric: "early_down_epa", value: 0.05, asOfWeek: 9 }), // missing conv_rate
+    statRow({ team: "Alabama", role: "defense", metric: "early_down_epa", value: -0.15, asOfWeek: 9 }),
+    statRow({ team: "Alabama", role: "defense", metric: "conv_rate_3rd_4th", value: 0.30, asOfWeek: 9 }),
+  ];
+
+  assert.deepEqual(downsThroughWeeks(rows), [9]);
+
+  const off = downsScatterPoints(roster, rows, "offense");
+  assert.equal(off.points.length, 2);
+  assert.deepEqual(off.points.map((p) => p.team), ["Alabama", "Michigan"]);
+  const bama = off.points.find((p) => p.team === "Alabama")!;
+  assert.equal(bama.x, 0.25);
+  assert.equal(bama.y, 0.50);
+  assert.deepEqual([off.invertX, off.invertY], [false, false]);
+  assert.ok(off.unavailable.includes("Tulane"));
+  assert.ok(off.unavailable.includes("Notre Dame"));
+
+  const def = downsScatterPoints(roster, rows, "defense");
+  assert.equal(def.points.length, 1);
+  assert.equal(def.points[0].team, "Alabama");
+  assert.deepEqual([def.invertX, def.invertY], [true, true]);
+});
+
+test("finishing drives scatter: scoring opp rate vs pts/opp, role separation, and weighted average", () => {
+  const rows: TeamSeasonStatRow[] = [
+    statRow({ team: "Alabama", role: "offense", metric: "scoring_opp_rate", value: 0.45, n: 80 }),
+    statRow({ team: "Alabama", role: "offense", metric: "pts_per_scoring_opp", value: 4.8, n: 80 }),
+    statRow({ team: "Michigan", role: "offense", metric: "scoring_opp_rate", value: 0.35, n: 60 }),
+    statRow({ team: "Michigan", role: "offense", metric: "pts_per_scoring_opp", value: 3.5, n: 60 }),
+    statRow({ team: "Alabama", role: "defense", metric: "scoring_opp_rate", value: 0.25, n: 70 }),
+    statRow({ team: "Alabama", role: "defense", metric: "pts_per_scoring_opp", value: 2.8, n: 70 }),
+  ];
+
+  assert.deepEqual(finishingDrivesThroughWeeks(rows), [9]);
+
+  const off = finishingDrivesScatterPoints(roster, rows, "offense");
+  assert.equal(off.points.length, 2);
+  const bama = off.points.find((p) => p.team === "Alabama")!;
+  assert.equal(bama.x, 0.45);
+  assert.equal(bama.y, 4.8);
+  assert.deepEqual([off.invertX, off.invertY], [false, false]);
+
+  const def = finishingDrivesScatterPoints(roster, rows, "defense");
+  assert.equal(def.points.length, 1);
+  assert.deepEqual([def.invertX, def.invertY], [true, true]);
+});
+
+test("resume quality scatter: joins rating and SOR, handles missing teams or null SOR", () => {
+  const ratings: RatingSnapshotRow[] = [
+    { week: 9, team: "Alabama", overallRating: 25.5, overallVariance: 1, offenseRating: 40, offenseVariance: 1, defenseRating: 15, defenseVariance: 1 },
+    { week: 9, team: "Michigan", overallRating: 20.0, overallVariance: 1, offenseRating: 35, offenseVariance: 1, defenseRating: 15, defenseVariance: 1 },
+    { week: 9, team: "Tulane", overallRating: 8.0, overallVariance: 1, offenseRating: 28, offenseVariance: 1, defenseRating: 20, defenseVariance: 1 },
+  ];
+  const resumes: TeamResumeChartRow[] = [
+    { periodId: "p1", postWeek: 9, team: "Alabama", overallRank: 1, completedGames: 8, scheduledGames: 12, wins: 8, losses: 0, sor: 0.95, sorRank: 1, sosPlayedElite: 1 },
+    { periodId: "p1", postWeek: 9, team: "Michigan", overallRank: 2, completedGames: 8, scheduledGames: 12, wins: 7, losses: 1, sor: 0.85, sorRank: 3, sosPlayedElite: 2 },
+    { periodId: "p1", postWeek: 9, team: "Tulane", overallRank: 25, completedGames: 8, scheduledGames: 12, wins: 6, losses: 2, sor: null, sorRank: null, sosPlayedElite: null },
+  ];
+
+  const data = resumeQualityScatterPoints(roster, ratings, resumes);
+  assert.equal(data.points.length, 2);
+  assert.deepEqual(data.points.map((p) => p.team), ["Alabama", "Michigan"]);
+  const bama = data.points.find((p) => p.team === "Alabama")!;
+  assert.equal(bama.x, 25.5);
+  assert.equal(bama.y, 1);
+  assert.ok(data.unavailable.includes("Tulane"), "null SOR rank is unavailable");
+  assert.ok(data.unavailable.includes("Notre Dame"), "missing team is unavailable");
+  assert.deepEqual([data.invertX, data.invertY], [false, true]);
+});
+
+test("slate market board: consensus coordinates, spread sign inversion, high-edge flagging, and missing line handling", () => {
+  const games: SlateMarketGameRow[] = [
+    {
+      gameId: 101,
+      season: 2026,
+      week: 9,
+      startDate: new Date("2026-10-31T16:00:00Z"),
+      homeTeam: "Alabama",
+      awayTeam: "Michigan",
+      homeTeamSpreadLine: -7.0, // Market: Bama -7
+      predictedSpread: 10.5,    // Model: Bama wins by 10.5 -> home spread is -10.5
+      totalLine: 54.5,
+      predictedTotal: 51.0,
+      edgeSpread: 3.5,
+      edgeTotal: 3.5,
+      spreadLean: "home",
+      totalLean: "under",
+    },
+    {
+      gameId: 102,
+      season: 2026,
+      week: 9,
+      startDate: new Date("2026-10-31T19:30:00Z"),
+      homeTeam: "Tulane",
+      awayTeam: "Notre Dame",
+      homeTeamSpreadLine: 3.5,  // Market: Tulane +3.5
+      predictedSpread: -2.0,    // Model: ND wins by 2 -> Tulane spread is +2.0
+      totalLine: 45.0,
+      predictedTotal: 46.0,
+      edgeSpread: 1.5,
+      edgeTotal: 1.0,
+      spreadLean: "home",
+      totalLean: "over",
+    },
+    {
+      gameId: 103,
+      season: 2026,
+      week: 9,
+      startDate: new Date("2026-10-31T20:00:00Z"),
+      homeTeam: "Idle State",
+      awayTeam: "Georgia",
+      homeTeamSpreadLine: null,
+      predictedSpread: null,
+      totalLine: null,
+      predictedTotal: null,
+      edgeSpread: null,
+      edgeTotal: null,
+      spreadLean: null,
+      totalLean: null,
+    },
+  ];
+
+  assert.deepEqual(marketBoardWeeks(games), [9]);
+
+  const spreads = marketBoardPoints(games, "spread");
+  assert.equal(spreads.points.length, 2);
+  const g101Spread = spreads.points.find((p) => p.gameId === 101)!;
+  assert.equal(g101Spread.marketLine, -7.0);
+  assert.equal(g101Spread.modelLine, -10.5, "predictedSpread home margin (+10.5) inverted to home spread (-10.5)");
+  assert.equal(g101Spread.edge, 3.5);
+  assert.equal(g101Spread.highEdge, true, "edge >= 3.0 flags highEdge");
+  assert.equal(g101Spread.x, -7.0);
+  assert.equal(g101Spread.y, -10.5);
+
+  const g102Spread = spreads.points.find((p) => p.gameId === 102)!;
+  assert.equal(g102Spread.marketLine, 3.5);
+  assert.equal(g102Spread.modelLine, 2.0);
+  assert.equal(g102Spread.highEdge, false);
+
+  assert.equal(spreads.unavailable.length, 1);
+  assert.equal(spreads.unavailable[0].homeTeam, "Idle State");
+
+  const totals = marketBoardPoints(games, "total");
+  assert.equal(totals.points.length, 2);
+  const g101Total = totals.points.find((p) => p.gameId === 101)!;
+  assert.equal(g101Total.marketLine, 54.5);
+  assert.equal(g101Total.modelLine, 51.0);
+  assert.equal(g101Total.highEdge, true);
+  assert.equal(totals.unavailable.length, 1);
 });

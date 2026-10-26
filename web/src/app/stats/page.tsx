@@ -17,7 +17,10 @@ import {
   type RatingSnapshotRow,
   type RosterRow,
   type Side,
+  type SlateMarketGameRow,
   type TeamGameRow,
+  type TeamResumeChartRow,
+  type TeamSeasonStatRow,
 } from "@/lib/charts";
 import {
   CHART_REGISTRY,
@@ -25,6 +28,7 @@ import {
   parseChartKind,
   parseEfficiencyMetric,
   parseGameLogMetric,
+  parseMarketBoardMetric,
   parsePossessionMetric,
   parseRatingMetric,
   parseSide,
@@ -34,13 +38,18 @@ import {
 import { publicationScope } from "@/lib/publication";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import {
+  getSlateMarketComparison,
+  getSlateMarketWeeks,
   getTeamAdjustedEpa,
   getTeamAdjustedWeeks,
   getTeamGameStats,
   getTeamGameYardage,
   getTeamPossessionAdjusted,
   getTeamPossessionWeeks,
+  getTeamResume,
   getTeamSeasonRoster,
+  getTeamSeasonStatsSnapshot,
+  getTeamSeasonStatsWeeks,
   getV5RatingSnapshots,
 } from "@/lib/chart-queries";
 import {
@@ -51,7 +60,12 @@ import {
   chartsPossessionWeeksFixture,
   chartsRatingSnapshotsFixture,
   chartsRosterFixture,
+  chartsSeasonStatsFixture,
+  chartsSeasonStatsWeeksFixture,
   chartsSlateFixture,
+  chartsSlateMarketGamesFixture,
+  chartsSlateMarketWeeksFixture,
+  chartsTeamResumeFixture,
   chartsYardageFixture,
 } from "@/test/fixtures/charts";
 import { ChartLink } from "@/components/charts/ChartLink";
@@ -82,10 +96,24 @@ type Loaded =
       possessionFor: (asOfWeek: number) => Promise<PossessionRow[]>;
       /** `current` V5 rating snapshots of every stored week. */
       ratingSnapshots: () => Promise<RatingSnapshotRow[]>;
+      seasonStatsWeeks: number[];
+      seasonStatsFor: (asOfWeek: number) => Promise<TeamSeasonStatRow[]>;
+      teamResume: (week?: number) => Promise<TeamResumeChartRow[]>;
+      slateWeeks: number[];
+      slateGamesFor: (week: number) => Promise<SlateMarketGameRow[]>;
     };
 
 /** Fixture releases without possession windows or rating snapshots. */
-const NO_V5_ROWS = { possessionWeeks: [], possessionFor: async () => [], ratingSnapshots: async () => [] };
+const NO_V5_ROWS = {
+  possessionWeeks: [],
+  possessionFor: async () => [],
+  ratingSnapshots: async () => [],
+  seasonStatsWeeks: [],
+  seasonStatsFor: async () => [],
+  teamResume: async (_week?: number) => [],
+  slateWeeks: [],
+  slateGamesFor: async () => [],
+};
 
 async function load(season: number, fixture: string | undefined): Promise<Loaded> {
   if (process.env.CFB_UI_TEST_MODE === "1") {
@@ -116,15 +144,31 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
         if (fixture === "adjusted-error") throw new Error("rating snapshots failed");
         return chartsRatingSnapshotsFixture();
       },
+      seasonStatsWeeks: chartsSeasonStatsWeeksFixture,
+      seasonStatsFor: async (asOfWeek) => {
+        if (fixture === "adjusted-error") throw new Error("season stats window failed");
+        return chartsSeasonStatsFixture(asOfWeek);
+      },
+      teamResume: async (_w?: number) => {
+        if (fixture === "adjusted-error") throw new Error("team resume failed");
+        return chartsTeamResumeFixture();
+      },
+      slateWeeks: chartsSlateMarketWeeksFixture,
+      slateGamesFor: async (week) => {
+        if (fixture === "adjusted-error") throw new Error("slate games failed");
+        return chartsSlateMarketGamesFixture(week);
+      },
     };
   }
   try {
-    const [roster, rows, yardage, adjustedWeeks, possessionWeeks] = await Promise.all([
+    const [roster, rows, yardage, adjustedWeeks, possessionWeeks, seasonStatsWeeks, slateWeeks] = await Promise.all([
       getTeamSeasonRoster(season),
       getTeamGameStats(season),
       getTeamGameYardage(season),
       getTeamAdjustedWeeks(season),
       getTeamPossessionWeeks(season),
+      getTeamSeasonStatsWeeks(season),
+      getSlateMarketWeeks(season),
     ]);
     // Null: no active release, or one staged before the chart projections existed.
     if (!roster || !rows || !adjustedWeeks || !possessionWeeks) return { state: "unsupported" };
@@ -139,6 +183,11 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
       possessionWeeks,
       possessionFor: async (asOfWeek) => (await getTeamPossessionAdjusted(season, asOfWeek)) ?? [],
       ratingSnapshots: async () => (await getV5RatingSnapshots(season)) ?? [],
+      seasonStatsWeeks: seasonStatsWeeks ?? [],
+      seasonStatsFor: async (asOfWeek) => (await getTeamSeasonStatsSnapshot(season, asOfWeek)) ?? [],
+      teamResume: async (w?: number) => (await getTeamResume(season, w)) ?? [],
+      slateWeeks: slateWeeks ?? [],
+      slateGamesFor: async (week) => (await getSlateMarketComparison(season, week)) ?? [],
     };
   } catch (error) {
     console.error("Team charts query failed", error);
@@ -171,7 +220,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
   } else if (loaded.state === "unavailable") {
     body = notice("Charts are temporarily unavailable.");
   } else {
-    const { roster, rows, explosiveness, adjustedWeeks, possessionWeeks } = loaded;
+    const { roster, rows, explosiveness, adjustedWeeks, possessionWeeks, seasonStatsWeeks, slateWeeks } = loaded;
     const weeksFor = (target: ChartKind): number[] => {
       switch (target) {
         case "net-success":
@@ -182,6 +231,13 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
           return adjustedThroughWeeks(adjustedWeeks);
         case "possession":
           return adjustedThroughWeeks(possessionWeeks);
+        case "downs":
+        case "finishing-drives":
+          return adjustedThroughWeeks(seasonStatsWeeks);
+        case "resume-quality":
+          return adjustedThroughWeeks(seasonStatsWeeks.length ? seasonStatsWeeks : adjustedWeeks);
+        case "market-board":
+          return slateWeeks;
         default:
           return [];
       }
@@ -327,6 +383,50 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         } else {
           body = notice("Charts are temporarily unavailable.");
         }
+      } else if (kind === "downs") {
+        let statRows: TeamSeasonStatRow[] | null = null;
+        try {
+          statRows = await loaded.seasonStatsFor(week + 1);
+        } catch (error) {
+          console.error("Team charts downs query failed", error);
+        }
+        body = statRows
+          ? view(week, { kind, rows: statRows, side }, weekNav)
+          : notice("Charts are temporarily unavailable.");
+      } else if (kind === "finishing-drives") {
+        let statRows: TeamSeasonStatRow[] | null = null;
+        try {
+          statRows = await loaded.seasonStatsFor(week + 1);
+        } catch (error) {
+          console.error("Team charts finishing-drives query failed", error);
+        }
+        body = statRows
+          ? view(week, { kind, rows: statRows, side }, weekNav)
+          : notice("Charts are temporarily unavailable.");
+      } else if (kind === "resume-quality") {
+        let ratingRows: RatingSnapshotRow[] | null = null;
+        let resumeRows: TeamResumeChartRow[] | null = null;
+        try {
+          [ratingRows, resumeRows] = await Promise.all([
+            loaded.ratingSnapshots(),
+            loaded.teamResume(week),
+          ]);
+        } catch (error) {
+          console.error("Team charts resume-quality query failed", error);
+        }
+        body = ratingRows && resumeRows
+          ? view(week, { kind, ratings: ratingRows.filter((r) => r.week === week), resumeRows }, weekNav)
+          : notice("Charts are temporarily unavailable.");
+      } else if (kind === "market-board") {
+        let slateGames: SlateMarketGameRow[] | null = null;
+        try {
+          slateGames = await loaded.slateGamesFor(week);
+        } catch (error) {
+          console.error("Team charts market-board query failed", error);
+        }
+        body = slateGames
+          ? view(week, { kind, games: slateGames, initialMetric: parseMarketBoardMetric(params.metric) }, weekNav)
+          : notice("Charts are temporarily unavailable.");
       } else {
         // Registered kinds that are not `ready` never parse from the URL.
         body = notice("This chart is not available yet.");

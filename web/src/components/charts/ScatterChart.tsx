@@ -461,7 +461,13 @@ function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, po
   labelScale?: number;
 }): { x: LabelSpot; y: LabelSpot } {
   const bounds: Box = { x: plot.left, y: plot.top, w: plot.right - plot.left, h: plot.bottom - plot.top };
-  const obstacles: Box[] = points.map((p) => ({ x: sx(p.x) - BASE_SIZE / 2, y: sy(p.y) - BASE_SIZE / 2, w: BASE_SIZE, h: BASE_SIZE }));
+  const LOGO_PAD = 4;
+  const obstacles: Box[] = points.map((p) => ({
+    x: sx(p.x) - BASE_SIZE / 2 - LOGO_PAD,
+    y: sy(p.y) - BASE_SIZE / 2 - LOGO_PAD,
+    w: BASE_SIZE + LOGO_PAD * 2,
+    h: BASE_SIZE + LOGO_PAD * 2,
+  }));
   if (cornerNames) {
     const lineHeight = 18 * labelScale;
     const box = (text: string, left: boolean, top: boolean): Box => {
@@ -490,7 +496,7 @@ function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, po
   const lineX = sx(average.x);
   const textX = `${names.x} ${formatX(average.x)}`;
   const height = plot.bottom - plot.top;
-  const verticalSpots: LabelSpot[] = [0.0, 1.0, 0.3, 0.7].flatMap((fraction) => {
+  const verticalSpots: LabelSpot[] = [0.0, 1.0, 0.15, 0.85, 0.3, 0.7].flatMap((fraction) => {
     const baseline = fraction === 0 ? plot.top + 14 * labelScale : fraction === 1 ? plot.bottom - 8 : plot.top + height * fraction;
     return [
       { text: textX, x: lineX + 6, baseline, anchor: "start" as const },
@@ -506,8 +512,10 @@ function placeAverageLabels({ average, names, formatX, formatY, sx, sy, plot, po
   const horizontalSpots: LabelSpot[] = [
     { x: plot.right - 6, anchor: "end" as const },
     { x: plot.left + 6, anchor: "start" as const },
-    { x: plot.left + width * 0.7, anchor: "end" as const },
-    { x: plot.left + width * 0.3, anchor: "start" as const },
+    { x: plot.left + width * 0.8, anchor: "end" as const },
+    { x: plot.left + width * 0.2, anchor: "start" as const },
+    { x: plot.left + width * 0.65, anchor: "end" as const },
+    { x: plot.left + width * 0.35, anchor: "start" as const },
   ].flatMap((spot) => [
     { text: textY, ...spot, baseline: lineY - 6 },
     { text: textY, ...spot, baseline: lineY + 14 * labelScale },

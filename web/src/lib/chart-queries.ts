@@ -1,11 +1,23 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { cache } from "react";
-import { schema } from "./db";
+import { db as legacyDb, schema } from "./db";
 import { guardRows, type RowSpec } from "./row-guard.ts";
 import { releaseCached } from "./release-cache.ts";
-import { getChartsDb } from "./season-release";
+import { getChartsDb, getSeasonReleaseContext } from "./season-release";
 import { explosivenessAvailable } from "./season-release-context.ts";
-import type { AdjustedRow, PossessionRow, RatingSnapshotRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "./charts.ts";
+import { TEAM_RESUME_PROJECTION } from "./season-release-query.ts";
+import { existsFrom, rowsOf } from "./db-result.ts";
+import type {
+  AdjustedRow,
+  PossessionRow,
+  RatingSnapshotRow,
+  RosterRow,
+  SlateMarketGameRow,
+  TeamGameRow,
+  TeamGameYardageRow,
+  TeamResumeChartRow,
+  TeamSeasonStatRow,
+} from "./charts.ts";
 
 
 // ---------------------------------------------------------------------------
@@ -152,10 +164,28 @@ const nonNegativeVariances = (row: Record<string, unknown>) =>
  * rating after that week's games; about 1.1k rows by Week 7), by week then team.
  */
 export const getV5RatingSnapshots = cache(releaseCached("getV5RatingSnapshots", async (season: number): Promise<RatingSnapshotRow[] | null> => {
+  const context = await getSeasonReleaseContext(season);
   const charts = await getChartsDb(season);
   if (!charts) return null;
-  const t = schema.v5RatingSnapshots;
   const r = schema.teamSeasonRoster;
+
+  if (context) {
+    const sr = schema.seasonReleaseV5RatingSnapshots;
+    const rows = await charts.db.select({
+      week: sr.week, team: sr.team,
+      offenseRating: sr.offenseRating, offenseVariance: sr.offenseVariance,
+      defenseRating: sr.defenseRating, defenseVariance: sr.defenseVariance,
+      overallRating: sr.overallRating, overallVariance: sr.overallVariance,
+    }).from(sr)
+      .innerJoin(r, and(eq(r.season, sr.season), eq(r.team, sr.team)))
+      .where(and(eq(sr.releaseId, context.releaseId), eq(sr.season, season), eq(sr.snapshotClass, "current")))
+      .orderBy(asc(sr.week), asc(sr.team));
+    if (rows.length > 0) {
+      return guardRows("season_release_v5_rating_snapshots", rows, RATING_SNAPSHOT_SPEC, [nonNegativeVariances]) as RatingSnapshotRow[];
+    }
+  }
+
+  const t = schema.v5RatingSnapshots;
   const rows = await charts.db.select({
     week: t.week, team: t.team,
     offenseRating: t.offenseRating, offenseVariance: t.offenseVariance,
@@ -207,4 +237,142 @@ export const getTeamPossessionAdjusted = cache(releaseCached("getTeamPossessionA
     .orderBy(asc(t.team), asc(t.role), asc(t.measurementId));
   guardRows("team_possession_adjusted", rows, POSSESSION_SPEC);
   return rows as PossessionRow[];
+}));
+
+const SEASON_STAT_SPEC: RowSpec = {
+  season: { kind: "int" },
+  asOfWeek: { kind: "int" },
+  team: { kind: "string" },
+  role: { kind: { enum: ["offense", "defense"] } },
+  metric: { kind: "string" },
+  value: { kind: "number", nullable: true },
+  n: { kind: "int" },
+  games: { kind: "int" },
+  rank: { kind: "int", nullable: true },
+  cohortSize: { kind: "int", nullable: true },
+};
+
+/** Stored as_of_week windows of team_season_stats in the release, ascending. */
+export const getTeamSeasonStatsWeeks = cache(releaseCached("getTeamSeasonStatsWeeks", async (season: number): Promise<number[] | null> => {
+  const charts = await getChartsDb(season);
+  if (!charts) return null;
+  const t = schema.teamSeasonStats;
+  const rows = await charts.db.selectDistinct({ asOfWeek: t.asOfWeek }).from(t)
+    .where(eq(t.season, season)).orderBy(asc(t.asOfWeek));
+  return rows.map((r) => r.asOfWeek);
+}));
+
+/** All team season stats for a given week. */
+export const getTeamSeasonStatsSnapshot = cache(releaseCached("getTeamSeasonStatsSnapshot", async (season: number, asOfWeek: number): Promise<TeamSeasonStatRow[] | null> => {
+  const charts = await getChartsDb(season);
+  if (!charts) return null;
+  const t = schema.teamSeasonStats;
+  const rows = await charts.db.select({
+    season: t.season, asOfWeek: t.asOfWeek, team: t.team, role: t.role,
+    metric: t.metric, value: t.value, n: t.n, games: t.games,
+    rank: t.rank, cohortSize: t.cohortSize,
+  }).from(t).where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek)))
+    .orderBy(asc(t.team), asc(t.role), asc(t.metric));
+  guardRows("team_season_stats", rows, SEASON_STAT_SPEC);
+  return rows as TeamSeasonStatRow[];
+}));
+
+export const getTeamSeasonStats = getTeamSeasonStatsSnapshot;
+
+const RESUME_CHART_SPEC: RowSpec = {
+  periodId: { kind: "string" },
+  postWeek: { kind: "int", nullable: true },
+  team: { kind: "string" },
+  overallRank: { kind: "int" },
+  completedGames: { kind: "int" },
+  scheduledGames: { kind: "int" },
+  wins: { kind: "int" },
+  losses: { kind: "int" },
+  sor: { kind: "number", nullable: true },
+  sorRank: { kind: "int", nullable: true },
+  sosPlayedElite: { kind: "number", nullable: true },
+};
+
+/** Résumé and strength-of-record rows of the active release, optionally for a specific post-week. */
+export const getTeamResume = cache(releaseCached("getTeamResume", async (season: number, postWeek?: number): Promise<TeamResumeChartRow[] | null> => {
+  const context = await getSeasonReleaseContext(season);
+  if (!context) return null;
+  const present = await legacyDb.execute(
+    sql`SELECT to_regclass(${`public.${TEAM_RESUME_PROJECTION}`}) IS NOT NULL AS exists`,
+  );
+  if (!existsFrom(present)) return null;
+  const result = await legacyDb.execute(sql`
+    SELECT period_id AS "periodId", post_week AS "postWeek", team, overall_rank AS "overallRank",
+           completed_games AS "completedGames", scheduled_games AS "scheduledGames",
+           wins, losses, sor, sor_rank AS "sorRank", sos_played_elite AS "sosPlayedElite"
+    FROM ${sql.identifier(TEAM_RESUME_PROJECTION)}
+    WHERE release_id = ${context.releaseId}
+    ${postWeek !== undefined ? sql`
+      AND post_week = ${postWeek}
+      AND period_id = (
+        SELECT period_id FROM ${sql.identifier(TEAM_RESUME_PROJECTION)}
+        WHERE release_id = ${context.releaseId} AND post_week = ${postWeek}
+        ORDER BY cutoff_utc DESC LIMIT 1
+      )` : sql`
+      AND period_id = (
+        SELECT period_id FROM ${sql.identifier(TEAM_RESUME_PROJECTION)}
+        WHERE release_id = ${context.releaseId} AND post_week IS NOT NULL
+        ORDER BY post_week DESC, cutoff_utc DESC LIMIT 1
+      )`}
+    ORDER BY overall_rank ASC, team ASC
+  `);
+  const rows = rowsOf(result);
+  return guardRows("season_release_team_resume", rows, RESUME_CHART_SPEC) as TeamResumeChartRow[];
+}));
+
+const SLATE_MARKET_SPEC: RowSpec = {
+  gameId: { kind: "int" },
+  season: { kind: "int" },
+  week: { kind: "int" },
+  startDate: { kind: "date" },
+  homeTeam: { kind: "string" },
+  awayTeam: { kind: "string" },
+  homeTeamSpreadLine: { kind: "number", nullable: true },
+  totalLine: { kind: "number", nullable: true },
+  predictedSpread: { kind: "number", nullable: true },
+  predictedTotal: { kind: "number", nullable: true },
+  edgeSpread: { kind: "number", nullable: true },
+  edgeTotal: { kind: "number", nullable: true },
+  spreadLean: { kind: { enum: ["home", "away"] }, nullable: true },
+  totalLean: { kind: { enum: ["over", "under"] }, nullable: true },
+};
+
+/** Weeks containing games in the release. */
+export const getSlateMarketWeeks = cache(releaseCached("getSlateMarketWeeks", async (season: number): Promise<number[] | null> => {
+  const charts = await getChartsDb(season);
+  if (!charts) return null;
+  const g = schema.games;
+  const rows = await charts.db.selectDistinct({ week: g.week }).from(g)
+    .where(eq(g.season, season)).orderBy(asc(g.week));
+  return rows.map((r) => r.week);
+}));
+
+/** Market line vs model prediction rows for a slate week. */
+export const getSlateMarketComparison = cache(releaseCached("getSlateMarketComparison", async (season: number, week: number): Promise<SlateMarketGameRow[] | null> => {
+  const charts = await getChartsDb(season);
+  if (!charts) return null;
+  const g = schema.games;
+  const rows = await charts.db.select({
+    gameId: g.gameId,
+    season: g.season,
+    week: g.week,
+    startDate: g.startDate,
+    homeTeam: g.homeTeam,
+    awayTeam: g.awayTeam,
+    homeTeamSpreadLine: g.homeTeamSpreadLine,
+    totalLine: g.totalLine,
+    predictedSpread: g.predictedSpread,
+    predictedTotal: g.predictedTotal,
+    edgeSpread: g.edgeSpread,
+    edgeTotal: g.edgeTotal,
+    spreadLean: g.spreadLean,
+    totalLean: g.totalLean,
+  }).from(g).where(and(eq(g.season, season), eq(g.week, week))).orderBy(asc(g.startDate), asc(g.gameId));
+  guardRows("games", rows, SLATE_MARKET_SPEC);
+  return rows as SlateMarketGameRow[];
 }));

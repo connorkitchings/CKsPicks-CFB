@@ -10,6 +10,7 @@ import {
   type ConferenceFilter,
   type EfficiencyMetric,
   type GameLogMetric,
+  type MarketBoardMetric,
   type NetSuccessBar,
   type NotCharted,
   type PossessionMetric,
@@ -18,15 +19,22 @@ import {
   type RatingSnapshotRow,
   type RosterRow,
   type Side,
+  type SlateMarketGameRow,
   type TeamGameRow,
+  type TeamResumeChartRow,
+  type TeamSeasonStatRow,
 } from "@/lib/charts";
 import { AdjustedView } from "./AdjustedView";
 import type { SharedChartProps } from "./ChartFrame";
+import { DownsView } from "./DownsView";
 import { EfficiencyView, type EfficiencyData } from "./EfficiencyView";
+import { FinishingDrivesView } from "./FinishingDrivesView";
 import { GameLogView } from "./GameLogView";
+import { MarketBoardView } from "./MarketBoardView";
 import { NetSuccessView } from "./NetSuccessView";
 import { PossessionView } from "./PossessionView";
 import { RatingTrajectoryView } from "./RatingTrajectoryView";
+import { ResumeQualityView } from "./ResumeQualityView";
 
 /** The data of one chart view; a new chart adds its variant here and its case below. */
 export type ChartPayload =
@@ -35,7 +43,11 @@ export type ChartPayload =
   | { kind: "adjusted"; scatter: AdjustedScatter }
   | { kind: "rating-trajectory"; rows: RatingSnapshotRow[]; initialMetric: RatingMetric }
   | { kind: "possession"; rows: PossessionRow[]; initialMetric: PossessionMetric }
-  | { kind: "game-log"; rows: TeamGameRow[]; adjusted: AdjustedRow[]; initialMetric: GameLogMetric; explosiveness: boolean };
+  | { kind: "game-log"; rows: TeamGameRow[]; adjusted: AdjustedRow[]; initialMetric: GameLogMetric; explosiveness: boolean }
+  | { kind: "downs"; rows: TeamSeasonStatRow[]; side: Side }
+  | { kind: "finishing-drives"; rows: TeamSeasonStatRow[]; side: Side }
+  | { kind: "resume-quality"; ratings: RatingSnapshotRow[]; resumeRows: TeamResumeChartRow[] }
+  | { kind: "market-board"; games: SlateMarketGameRow[]; initialMetric: MarketBoardMetric };
 
 export type ChartsViewProps = {
   season: number;
@@ -94,5 +106,13 @@ function renderView(chart: ChartPayload, shared: SharedChartProps) {
       return <PossessionView shared={shared} rows={chart.rows} initialMetric={chart.initialMetric} />;
     case "game-log":
       return <GameLogView key={chart.explosiveness ? "charts_v2" : "charts_v1"} shared={shared} rows={chart.rows} adjusted={chart.adjusted} initialMetric={chart.initialMetric} explosiveness={chart.explosiveness} />;
+    case "downs":
+      return <DownsView shared={shared} rows={chart.rows} side={chart.side} />;
+    case "finishing-drives":
+      return <FinishingDrivesView shared={shared} rows={chart.rows} side={chart.side} />;
+    case "resume-quality":
+      return <ResumeQualityView shared={shared} ratings={chart.ratings} resumeRows={chart.resumeRows} />;
+    case "market-board":
+      return <MarketBoardView shared={shared} games={chart.games} initialMetric={chart.initialMetric} />;
   }
 }
