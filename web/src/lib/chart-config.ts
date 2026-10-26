@@ -175,7 +175,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     population: "FBS teams",
     controls: { side: false, week: "through-week", team: true },
     footnote: resumeQualityFootnote(),
-    ready: true,
+    ready: false,
   },
   "market-board": {
     group: "games",
@@ -185,7 +185,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     population: "Weekly slate",
     controls: { side: false, week: "week", team: false },
     footnote: marketBoardFootnote(),
-    ready: true,
+    ready: false,
   },
 };
 
@@ -679,40 +679,40 @@ export function describeDownsPoint(point: ScatterPoint, side: Side): string {
 }
 
 export function finishingDrivesFootnote(): string {
-  return "Scoring opportunity rate (share of drives reaching the opponent 40-yard line) against points scored per scoring opportunity, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are play-weighted FBS averages.";
+  return "Scoring opportunity rate (Eckel rate: share of drives reaching the opponent 40-yard line) against points scored per scoring opportunity, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are play-weighted FBS averages.";
 }
 
 export function finishingDrivesConfig(side: Side): ScatterConfig {
   const isOffense = side === "offense";
   return {
-    xLabel: isOffense ? "Scoring Opp. Rate (Drives to Opp 40)" : "Scoring Opp. Rate Allowed",
-    yLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opp.",
-    shortYLabel: isOffense ? "Pts/Scoring Opp" : "Pts Allowed/Scoring Opp",
+    xLabel: isOffense ? "Scoring Opportunity Rate (Drives to Opponent 40)" : "Scoring Opportunity Rate Allowed",
+    yLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
+    shortYLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
     tickX: percentTick,
     tickY: (v) => v.toFixed(2),
     metricLabel: "",
     captions: {
-      topLeft: isOffense ? "Fewer opps / Higher points per opp" : "More opps allowed / Fewer points allowed per opp",
-      topRight: isOffense ? "Lethal Finishers" : "Brick Wall Red-Zone",
-      bottomLeft: isOffense ? "Empty Drives" : "Red Carpet",
-      bottomRight: isOffense ? "Stall at the 30" : "Field-Goal Benders",
+      topLeft: isOffense ? "Fewer opportunities / Higher points per opportunity" : "More opportunities allowed / Fewer points allowed per opportunity",
+      topRight: isOffense ? "Elite Finishers" : "Lockdown Defense",
+      bottomLeft: isOffense ? "Struggling Finishers" : "Generous Defense",
+      bottomRight: isOffense ? "Drive Stallers / FG Settlers" : "Red-Zone Wall",
       names: isOffense
         ? {
-            topLeft: "Opportunistic / Big-Play",
-            topRight: "Lethal Finishers",
-            bottomLeft: "Empty Drives",
-            bottomRight: "Stall at the 30",
+            topLeft: "Low Volume, High TD Rate",
+            topRight: "Elite Finishers",
+            bottomLeft: "Struggling Finishers",
+            bottomRight: "Drive Stallers / FG Settlers",
           }
         : {
-            topLeft: "Few Trips Allowed",
-            topRight: "Brick Wall Red-Zone",
-            bottomLeft: "Red Carpet",
-            bottomRight: "Field-Goal Benders",
+            topLeft: "Bend-Don't-Break",
+            topRight: "Lockdown Defense",
+            bottomLeft: "Generous Defense",
+            bottomRight: "Red-Zone Wall",
           },
     },
     averageNames: {
-      x: isOffense ? "Avg opp rate" : "Avg opp rate allowed",
-      y: isOffense ? "Avg pts/opp" : "Avg pts/opp allowed",
+      x: isOffense ? "Avg scoring opportunity rate" : "Avg scoring opportunity rate allowed",
+      y: isOffense ? "Avg points per scoring opportunity" : "Avg points allowed per scoring opportunity",
     },
     footnote: finishingDrivesFootnote(),
   };
@@ -721,42 +721,43 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
 export function describeFinishingDrivesPoint(point: ScatterPoint, side: Side): string {
   const head = `${point.team} (${conferenceLabel(point.conference)})`;
   const isOffense = side === "offense";
-  return `${head}: ${isOffense ? "Scoring opp rate" : "Scoring opp rate allowed"} ${formatPercent(point.x)}, ${isOffense ? "pts/opp" : "pts allowed/opp"} ${point.y.toFixed(2)}`;
+  return `${head}: ${isOffense ? "Scoring opportunity rate" : "Scoring opportunity rate allowed"} ${formatPercent(point.x)}, ${isOffense ? "points per scoring opportunity" : "points allowed per scoring opportunity"} ${point.y.toFixed(2)}`;
 }
 
 export function resumeQualityFootnote(): string {
-  return "V5 model rating dominance (overall rating on the rating scale) against Strength of Record (SOR). Dashed lines are FBS means; quadrant names are relative to them.";
+  return "V5 model rating dominance (points per possession above average) against Strength of Record (SOR) Rank (1 to 134, where #1 is national best). Up and right is better. Dashed lines are FBS averages.";
 }
 
 export const RESUME_QUALITY_CONFIG: ScatterConfig = {
-  xLabel: "V5 Overall Rating Dominance",
-  yLabel: "Strength of Record (SOR)",
-  shortYLabel: "SOR",
-  tickX: (v) => v.toFixed(1),
-  tickY: (v) => v.toFixed(2),
+  xLabel: "V5 Overall Rating (Points Above Average)",
+  yLabel: "Strength of Record (SOR) Rank",
+  shortYLabel: "SOR Rank",
+  tickX: (v) => (v >= 0 ? `+${v.toFixed(1)}` : v.toFixed(1)),
+  tickY: (v) => `#${Math.round(v)}`,
   metricLabel: "",
   captions: {
-    topLeft: "Lower rating / Higher SOR",
+    topLeft: "Lower rating / Top resume rank",
     topRight: "Championship Contenders",
     bottomLeft: "Rebuilding",
-    bottomRight: "Unlucky Giants",
+    bottomRight: "Unlucky / Untested Giants",
     names: {
-      topLeft: "Smoke & Mirrors / Overachievers",
+      topLeft: "Resume Overachievers",
       topRight: "Championship Contenders",
       bottomLeft: "Rebuilding",
-      bottomRight: "Unlucky Giants",
+      bottomRight: "Unlucky / Untested Giants",
     },
   },
   averageNames: {
-    x: "Avg V5 rating",
-    y: "Avg SOR",
+    x: "Avg rating",
+    y: "Median SOR rank",
   },
   footnote: resumeQualityFootnote(),
 };
 
 export function describeResumePoint(point: ScatterPoint): string {
   const head = `${point.team} (${conferenceLabel(point.conference)})`;
-  return `${head}: V5 Rating ${point.x.toFixed(2)}, Strength of Record (SOR) ${point.y.toFixed(2)}`;
+  const ratingStr = point.x >= 0 ? `+${point.x.toFixed(2)}` : point.x.toFixed(2);
+  return `${head}: V5 Rating ${ratingStr}, Strength of Record #${Math.round(point.y)}`;
 }
 
 export function marketBoardFootnote(): string {

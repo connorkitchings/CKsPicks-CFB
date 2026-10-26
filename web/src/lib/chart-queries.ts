@@ -164,10 +164,28 @@ const nonNegativeVariances = (row: Record<string, unknown>) =>
  * rating after that week's games; about 1.1k rows by Week 7), by week then team.
  */
 export const getV5RatingSnapshots = cache(releaseCached("getV5RatingSnapshots", async (season: number): Promise<RatingSnapshotRow[] | null> => {
+  const context = await getSeasonReleaseContext(season);
   const charts = await getChartsDb(season);
   if (!charts) return null;
-  const t = schema.v5RatingSnapshots;
   const r = schema.teamSeasonRoster;
+
+  if (context) {
+    const sr = schema.seasonReleaseV5RatingSnapshots;
+    const rows = await charts.db.select({
+      week: sr.week, team: sr.team,
+      offenseRating: sr.offenseRating, offenseVariance: sr.offenseVariance,
+      defenseRating: sr.defenseRating, defenseVariance: sr.defenseVariance,
+      overallRating: sr.overallRating, overallVariance: sr.overallVariance,
+    }).from(sr)
+      .innerJoin(r, and(eq(r.season, sr.season), eq(r.team, sr.team)))
+      .where(and(eq(sr.releaseId, context.releaseId), eq(sr.season, season), eq(sr.snapshotClass, "current")))
+      .orderBy(asc(sr.week), asc(sr.team));
+    if (rows.length > 0) {
+      return guardRows("season_release_v5_rating_snapshots", rows, RATING_SNAPSHOT_SPEC, [nonNegativeVariances]) as RatingSnapshotRow[];
+    }
+  }
+
+  const t = schema.v5RatingSnapshots;
   const rows = await charts.db.select({
     week: t.week, team: t.team,
     offenseRating: t.offenseRating, offenseVariance: t.offenseVariance,
@@ -275,8 +293,8 @@ const RESUME_CHART_SPEC: RowSpec = {
   sosPlayedElite: { kind: "number", nullable: true },
 };
 
-/** Résumé and strength-of-record rows of the active release. */
-export const getTeamResume = cache(releaseCached("getTeamResume", async (season: number, periodId?: string): Promise<TeamResumeChartRow[] | null> => {
+/** Résumé and strength-of-record rows of the active release, optionally for a specific post-week. */
+export const getTeamResume = cache(releaseCached("getTeamResume", async (season: number, postWeek?: number): Promise<TeamResumeChartRow[] | null> => {
   const context = await getSeasonReleaseContext(season);
   if (!context) return null;
   const present = await legacyDb.execute(
@@ -289,7 +307,18 @@ export const getTeamResume = cache(releaseCached("getTeamResume", async (season:
            wins, losses, sor, sor_rank AS "sorRank", sos_played_elite AS "sosPlayedElite"
     FROM ${sql.identifier(TEAM_RESUME_PROJECTION)}
     WHERE release_id = ${context.releaseId}
-    ${periodId ? sql`AND period_id = ${periodId}` : sql``}
+    ${postWeek !== undefined ? sql`
+      AND post_week = ${postWeek}
+      AND period_id = (
+        SELECT period_id FROM ${sql.identifier(TEAM_RESUME_PROJECTION)}
+        WHERE release_id = ${context.releaseId} AND post_week = ${postWeek}
+        ORDER BY cutoff_utc DESC LIMIT 1
+      )` : sql`
+      AND period_id = (
+        SELECT period_id FROM ${sql.identifier(TEAM_RESUME_PROJECTION)}
+        WHERE release_id = ${context.releaseId} AND post_week IS NOT NULL
+        ORDER BY post_week DESC, cutoff_utc DESC LIMIT 1
+      )`}
     ORDER BY overall_rank ASC, team ASC
   `);
   const rows = rowsOf(result);

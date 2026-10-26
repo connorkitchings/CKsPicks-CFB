@@ -98,7 +98,7 @@ type Loaded =
       ratingSnapshots: () => Promise<RatingSnapshotRow[]>;
       seasonStatsWeeks: number[];
       seasonStatsFor: (asOfWeek: number) => Promise<TeamSeasonStatRow[]>;
-      teamResume: () => Promise<TeamResumeChartRow[]>;
+      teamResume: (week?: number) => Promise<TeamResumeChartRow[]>;
       slateWeeks: number[];
       slateGamesFor: (week: number) => Promise<SlateMarketGameRow[]>;
     };
@@ -110,7 +110,7 @@ const NO_V5_ROWS = {
   ratingSnapshots: async () => [],
   seasonStatsWeeks: [],
   seasonStatsFor: async () => [],
-  teamResume: async () => [],
+  teamResume: async (_week?: number) => [],
   slateWeeks: [],
   slateGamesFor: async () => [],
 };
@@ -149,7 +149,7 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
         if (fixture === "adjusted-error") throw new Error("season stats window failed");
         return chartsSeasonStatsFixture(asOfWeek);
       },
-      teamResume: async () => {
+      teamResume: async (_w?: number) => {
         if (fixture === "adjusted-error") throw new Error("team resume failed");
         return chartsTeamResumeFixture();
       },
@@ -185,7 +185,7 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
       ratingSnapshots: async () => (await getV5RatingSnapshots(season)) ?? [],
       seasonStatsWeeks: seasonStatsWeeks ?? [],
       seasonStatsFor: async (asOfWeek) => (await getTeamSeasonStatsSnapshot(season, asOfWeek)) ?? [],
-      teamResume: async () => (await getTeamResume(season)) ?? [],
+      teamResume: async (w?: number) => (await getTeamResume(season, w)) ?? [],
       slateWeeks: slateWeeks ?? [],
       slateGamesFor: async (week) => (await getSlateMarketComparison(season, week)) ?? [],
     };
@@ -409,7 +409,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         try {
           [ratingRows, resumeRows] = await Promise.all([
             loaded.ratingSnapshots(),
-            loaded.teamResume(),
+            loaded.teamResume(week),
           ]);
         } catch (error) {
           console.error("Team charts resume-quality query failed", error);

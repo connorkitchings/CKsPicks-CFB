@@ -1127,18 +1127,19 @@ export function resumeQualityScatterPoints(
   for (const [team, r] of rosterByTeam) {
     const rating = ratingsByTeam.get(team);
     const resume = resumeByTeam.get(team);
+    const rank = resume?.sorRank ?? null;
     if (
       rating &&
       Number.isFinite(rating.overallRating) &&
       resume &&
-      resume.sor !== null &&
-      Number.isFinite(resume.sor)
+      rank !== null &&
+      Number.isFinite(rank)
     ) {
       points.push({
         team,
         conference: r.conference,
         x: rating.overallRating,
-        y: resume.sor,
+        y: rank,
         n: resume.completedGames,
       });
     } else {
@@ -1159,7 +1160,7 @@ export function resumeQualityScatterPoints(
     average,
     unavailable,
     invertX: false,
-    invertY: false,
+    invertY: true,
   };
 }
 

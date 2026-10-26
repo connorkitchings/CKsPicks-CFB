@@ -90,22 +90,22 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
   assert.equal(parseChartKind("game-log"), "game-log");
   assert.equal(parseChartKind("downs"), "downs");
   assert.equal(parseChartKind("finishing-drives"), "finishing-drives");
-  assert.equal(parseChartKind("resume-quality"), "resume-quality");
-  assert.equal(parseChartKind("market-board"), "market-board");
-  // Hidden from the page by owner decision on 2026-10-18; their view is retained.
+  // Hidden from public picker: rating-trajectory, market-board, and resume-quality (retained for research/internal).
   assert.equal(CHART_REGISTRY["rating-trajectory"].ready, false);
   assert.equal(parseChartKind("rating-trajectory"), "net-success");
+  assert.equal(CHART_REGISTRY["market-board"].ready, false);
+  assert.equal(parseChartKind("market-board"), "net-success");
+  assert.equal(CHART_REGISTRY["resume-quality"].ready, false);
+  assert.equal(parseChartKind("resume-quality"), "net-success");
   // Removed kinds fall back to the default chart like any unknown name.
   for (const removed of ["schedule", "trajectory"]) assert.equal(parseChartKind(removed), "net-success", removed);
   assert.deepEqual(pickerGroups().flatMap((group) => group.kinds.map((kind) => CHART_REGISTRY[kind].tabLabel)), [
     "Net success rate",
-    "Slate market board",
     "Efficiency vs explosiveness",
     "Adjusted PPA/play",
     "Possession efficiency",
     "Situational downs",
     "Finishing drives",
-    "Resume vs dominance",
     "Game log",
   ]);
   assert.equal(parseChartKind("bogus"), "net-success");
@@ -216,21 +216,25 @@ test("advanced visualization suite configs and formatters", () => {
   assert.equal(downsDef.captions.names.bottomRight, "Bend-Don't-Break");
 
   const finishingOff = finishingDrivesConfig("offense");
-  assert.equal(finishingOff.captions.names.topRight, "Lethal Finishers");
-  assert.equal(finishingOff.captions.names.bottomRight, "Stall at the 30");
+  assert.equal(finishingOff.xLabel, "Scoring Opportunity Rate (Drives to Opponent 40)");
+  assert.equal(finishingOff.yLabel, "Points per Scoring Opportunity");
+  assert.equal(finishingOff.captions.names.topRight, "Elite Finishers");
+  assert.equal(finishingOff.captions.names.bottomRight, "Drive Stallers / FG Settlers");
 
   const finishingDef = finishingDrivesConfig("defense");
-  assert.equal(finishingDef.captions.names.topRight, "Brick Wall Red-Zone");
+  assert.equal(finishingDef.xLabel, "Scoring Opportunity Rate Allowed");
+  assert.equal(finishingDef.yLabel, "Points Allowed per Scoring Opportunity");
+  assert.equal(finishingDef.captions.names.topRight, "Lockdown Defense");
 
   assert.equal(RESUME_QUALITY_CONFIG.captions.names.topRight, "Championship Contenders");
-  assert.equal(RESUME_QUALITY_CONFIG.captions.names.bottomRight, "Unlucky Giants");
+  assert.equal(RESUME_QUALITY_CONFIG.captions.names.bottomRight, "Unlucky / Untested Giants");
 
   assert.equal(parseMarketBoardMetric("total"), "total");
   assert.equal(parseMarketBoardMetric("spread"), "spread");
   assert.equal(parseMarketBoardMetric(null), "spread");
 
-  const pt = { team: "Georgia", conference: "SEC", x: 0.25, y: 0.45, n: 100 };
-  assert.match(describeDownsPoint(pt, "offense"), /Georgia \(SEC\): Early-down EPA \+0.250, 3rd\/4th down conv 45.0%/);
-  assert.match(describeFinishingDrivesPoint(pt, "offense"), /Georgia \(SEC\): Scoring opp rate 25.0%, pts\/opp 0.45/);
-  assert.match(describeResumePoint(pt), /Georgia \(SEC\): V5 Rating 0.25, Strength of Record \(SOR\) 0.45/);
+  const pt = { team: "Georgia", conference: "SEC", x: 0.25, y: 45, n: 100 };
+  assert.match(describeDownsPoint({ ...pt, y: 0.45 }, "offense"), /Georgia \(SEC\): Early-down EPA \+0.250, 3rd\/4th down conv 45.0%/);
+  assert.match(describeFinishingDrivesPoint({ ...pt, x: 0.25, y: 4.5 }, "offense"), /Georgia \(SEC\): Scoring opportunity rate 25.0%, points per scoring opportunity 4.50/);
+  assert.match(describeResumePoint(pt), /Georgia \(SEC\): V5 Rating \+0.25, Strength of Record #45/);
 });

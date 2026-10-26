@@ -48,6 +48,23 @@
 - [`docs/plans/2026-10-26/02-advanced-visualization-suite.md`](../../docs/plans/2026-10-26/02-advanced-visualization-suite.md) — Updated status to Implemented.
 - [`docs/plans/index.md`](../../docs/plans/index.md) — Updated index entry.
 
+## Follow-up Refinements (User Review)
+
+- **Chart Visibility (`ready: false`):**
+  - **Slate Market Board (`market-board`):** Marked `ready: false` in `CHART_REGISTRY`. Retained in the codebase for upcoming modeling research, but excluded from public tab navigation and picker groups.
+  - **Resume vs Dominance (`resume-quality`):** Marked `ready: false` in `CHART_REGISTRY`. Excluded from public navigation tabs per user request.
+- **Finishing Drives Clarifications (`finishing-drives`):**
+  - Clarified footnote to explicitly state Eckel rate ("Scoring opportunity rate (Eckel rate: share of drives reaching the opponent 40-yard line)...").
+  - Wrote out full unabbreviated axis labels and tooltips:
+    - $x$-axis: "Scoring Opportunity Rate (Drives to Opponent 40)" / "Scoring Opportunity Rate Allowed"
+    - $y$-axis: "Points per Scoring Opportunity" / "Points Allowed per Scoring Opportunity"
+    - Tooltip: "Scoring opportunity rate" / "points per scoring opportunity"
+  - Replaced confusing quadrant names with clear football terminology:
+    - Top Right: "Elite Finishers" / "Lockdown Defense"
+    - Bottom Right: "Drive Stallers / FG Settlers" / "Red-Zone Wall"
+    - Top Left: "Low Volume, High TD Rate" / "Bend-Don't-Break"
+    - Bottom Left: "Struggling Finishers" / "Generous Defense"
+
 ## Validation
 
 - [x] `npm --prefix web run lint` — 0 errors, 0 warnings
@@ -59,7 +76,7 @@
 
 ## Amendments and Blockers
 
-- None. Implementation fully adhered to the approved contract architecture.
+- None. Refinements followed the established `ready: false` pattern used for non-public charts.
 
 ## Handoff Notes
 

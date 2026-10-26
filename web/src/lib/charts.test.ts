@@ -613,10 +613,10 @@ test("resume quality scatter: joins rating and SOR, handles missing teams or nul
   assert.deepEqual(data.points.map((p) => p.team), ["Alabama", "Michigan"]);
   const bama = data.points.find((p) => p.team === "Alabama")!;
   assert.equal(bama.x, 25.5);
-  assert.equal(bama.y, 0.95);
-  assert.ok(data.unavailable.includes("Tulane"), "null SOR is unavailable");
+  assert.equal(bama.y, 1);
+  assert.ok(data.unavailable.includes("Tulane"), "null SOR rank is unavailable");
   assert.ok(data.unavailable.includes("Notre Dame"), "missing team is unavailable");
-  assert.deepEqual([data.invertX, data.invertY], [false, false]);
+  assert.deepEqual([data.invertX, data.invertY], [false, true]);
 });
 
 test("slate market board: consensus coordinates, spread sign inversion, high-edge flagging, and missing line handling", () => {
