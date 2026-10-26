@@ -19,8 +19,12 @@ high-confidence columns of ``games``/``predictions`` and the rows of the market
 tables (quotes, snapshots, selections) of that week's games.
 
 Identity columns never count as differences: run ids embedded in any string
-(``season-<year>-<hex>``), source run ids, manifest hashes/URIs and audit stamps
-(``created_at``, ``graded_at``, ...). In both modes the upcoming week must be 100%
+(``season-<year>-<hex>``), hex digests of 12+ characters in any string or row key
+(model versions, ``source_versions``, hash-prefixed resume periods, publication
+ids), source run ids, manifest hashes/URIs and audit stamps (``created_at``,
+``graded_at``, ...). In ``market-refresh`` the ``cutoff_utc`` of the upcoming
+week's rows may also differ (the refresh moves that cutoff); completed weeks'
+cutoffs must match. In both modes the upcoming week must be 100%
 predicted; lined-game coverage is reported but never blocks.
 
 The report holds only table names, counts, game ids and column names, so it is
@@ -87,6 +91,9 @@ MARKET_TABLES = frozenset(
 REQUIRED_TABLES = ("games", "predictions", "prediction_grades", "v5_rating_snapshots")
 
 _RUN_ID = re.compile(r"season-\d{4}-[0-9a-f]{16,}")
+#: Hex digests (model versions, source/manifest hashes, hash-prefixed keys). Needs
+#: a digit and a letter so plain numbers and ordinary words never match.
+_HASH = re.compile(r"(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{12,}")
 _TIMESTAMP = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}")
 
 Row = dict[str, Any]
@@ -132,7 +139,12 @@ def _timestamp(value: datetime) -> str:
 
 
 def normalize_value(value: Any) -> Any:
-    """A comparable form: run ids masked, timestamps in UTC, numbers as floats."""
+    """A comparable form: run ids and hashes masked, UTC timestamps, float numbers.
+
+    Masking applies to row keys as well as values, so rows whose key embeds a
+    release-specific hash (``<hash>@<period>``, ``<year>:<kind>:<hash>:<hash>``)
+    still pair up between releases.
+    """
     if isinstance(value, bool) or value is None:
         return value
     if isinstance(value, Decimal):
@@ -147,7 +159,7 @@ def normalize_value(value: Any) -> Any:
                 return _timestamp(datetime.fromisoformat(value.replace("Z", "+00:00")))
             except ValueError:
                 pass
-        return _RUN_ID.sub("<run>", value)
+        return _HASH.sub("<hash>", _RUN_ID.sub("<run>", value))
     if isinstance(value, (list, tuple)):
         return [normalize_value(item) for item in value]
     if isinstance(value, dict):
@@ -281,6 +293,14 @@ def _check_market_refresh(
     def in_upcoming(table: str, row: Row) -> bool:
         return weeks.get(_row_game(table, row, snapshot_games)) == upcoming
 
+    def upcoming_row(table: str, row: Row) -> bool:
+        week = row.get("week", row.get("as_of_week"))
+        if week is None:
+            week = row.get("as_of_week")
+        if week is not None:
+            return int(week) == upcoming
+        return in_upcoming(table, row)
+
     for table in sorted(previous.keys() & candidate.keys()):
         old, new = previous[table], candidate[table]
         report.compared[table] = len(old)
@@ -300,7 +320,16 @@ def _check_market_refresh(
                     ignore=MARKET_COLUMNS if upcoming_rows else frozenset(),
                 )
         else:
-            report.failures += compare_rows(table, old, new)
+            # ``cutoff_utc`` legitimately moves to the refresh time for the
+            # upcoming week's pregame rows (its quotes are newer); every other
+            # week's cutoff, and every value column, must still match.
+            for upcoming_rows in (False, True):
+                report.failures += compare_rows(
+                    table,
+                    [r for r in old if upcoming_row(table, r) == upcoming_rows],
+                    [r for r in new if upcoming_row(table, r) == upcoming_rows],
+                    ignore=frozenset({"cutoff_utc"}) if upcoming_rows else frozenset(),
+                )
 
 
 def _check_upcoming_coverage(
