@@ -6,6 +6,7 @@ import {
   type ChartKind,
   type ConferenceFilter,
   type EfficiencyMetric,
+  type MarketBoardMetric,
   type PossessionMetric,
   type PossessionRow,
   type PossessionScatter,
@@ -144,6 +145,46 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     population: FBS_GAMES,
     controls: { side: false, week: null, team: true },
     footnote: `${GAME_LOG_NOTE} ${SUCCESS_RATE_DEFINITION}`,
+    ready: true,
+  },
+  downs: {
+    group: "teams",
+    tabLabel: "Situational downs",
+    title: "Situational downs",
+    description: "Early down EPA against 3rd and 4th down conversion rate.",
+    population: FBS_GAMES,
+    controls: { side: true, week: "through-week", team: true },
+    footnote: downsFootnote(),
+    ready: true,
+  },
+  "finishing-drives": {
+    group: "teams",
+    tabLabel: "Finishing drives",
+    title: "Finishing drives",
+    description: "Scoring opportunities per drive against points per scoring opportunity.",
+    population: FBS_GAMES,
+    controls: { side: true, week: "through-week", team: true },
+    footnote: finishingDrivesFootnote(),
+    ready: true,
+  },
+  "resume-quality": {
+    group: "teams",
+    tabLabel: "Resume vs dominance",
+    title: "Resume vs dominance",
+    description: "V5 model rating dominance against strength of record (SOR).",
+    population: "FBS teams",
+    controls: { side: false, week: "through-week", team: true },
+    footnote: resumeQualityFootnote(),
+    ready: true,
+  },
+  "market-board": {
+    group: "games",
+    tabLabel: "Slate market board",
+    title: "Slate market board",
+    description: "Market betting line against V5 model forecast across the weekly slate.",
+    population: "Weekly slate",
+    controls: { side: false, week: "week", team: false },
+    footnote: marketBoardFootnote(),
     ready: true,
   },
 };
@@ -585,4 +626,143 @@ export function describeGameLogGame(team: string, game: GameLogGame, metric: Gam
   const side = (name: string, own: number | null, average: number | null) =>
     `${name} ${own === null ? "n/a" : value(own)}${average === null ? "" : ` (FBS week average ${value(average)})`}`;
   return `Week ${game.week}: ${team} ${where} ${game.opponent}${site}, ${game.result}. ${label}: ${side("offense", game.offense, game.average.offense)}; ${side("defense allowed", game.defense, game.average.defense)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Situational downs, Finishing drives, Resume quality, and Market board
+// ---------------------------------------------------------------------------
+
+export function downsFootnote(): string {
+  return "Cumulative early down EPA/play (1st & 2nd down) and 3rd/4th down conversion rate on eligible plays, regulation play only, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are play-weighted FBS averages.";
+}
+
+export function downsConfig(side: Side): ScatterConfig {
+  const isOffense = side === "offense";
+  return {
+    xLabel: isOffense ? "Early Down PPA/play (1st & 2nd)" : "Early Down PPA/play Allowed",
+    yLabel: isOffense ? "3rd & 4th Down Conv. Rate" : "3rd & 4th Down Conv. Rate Allowed",
+    shortYLabel: isOffense ? "3rd/4th Conv Rate" : "3rd/4th Conv Allowed",
+    tickX: formatEpaTick,
+    tickY: percentTick,
+    metricLabel: "",
+    captions: {
+      topLeft: isOffense ? "Lower early EPA / Higher conversion" : "Higher early EPA allowed / Lower conversion allowed",
+      topRight: isOffense ? "High early EPA / High conversion" : "Suffocating defense",
+      bottomLeft: isOffense ? "Struggling on early and late downs" : "Vulnerable on early and late downs",
+      bottomRight: isOffense ? "High early EPA / Low conversion" : "Bend, don't break",
+      names: isOffense
+        ? {
+            topLeft: "Cardiac / Big-Play",
+            topRight: "Unstoppable Engine",
+            bottomLeft: "Struggling",
+            bottomRight: "On-Schedule Only",
+          }
+        : {
+            topLeft: "Late-Down Erasers",
+            topRight: "Suffocating Defense",
+            bottomLeft: "Vulnerable",
+            bottomRight: "Bend-Don't-Break",
+          },
+    },
+    averageNames: {
+      x: isOffense ? "Avg early EPA" : "Avg early EPA allowed",
+      y: isOffense ? "Avg conv rate" : "Avg conv rate allowed",
+    },
+    footnote: downsFootnote(),
+  };
+}
+
+export function describeDownsPoint(point: ScatterPoint, side: Side): string {
+  const head = `${point.team} (${conferenceLabel(point.conference)})`;
+  const isOffense = side === "offense";
+  return `${head}: ${isOffense ? "Early-down EPA" : "Early-down EPA allowed"} ${formatEpa(point.x)}, ${isOffense ? "3rd/4th down conv" : "3rd/4th conv allowed"} ${formatPercent(point.y)}`;
+}
+
+export function finishingDrivesFootnote(): string {
+  return "Scoring opportunity rate (share of drives reaching the opponent 40-yard line) against points scored per scoring opportunity, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are play-weighted FBS averages.";
+}
+
+export function finishingDrivesConfig(side: Side): ScatterConfig {
+  const isOffense = side === "offense";
+  return {
+    xLabel: isOffense ? "Scoring Opp. Rate (Drives to Opp 40)" : "Scoring Opp. Rate Allowed",
+    yLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opp.",
+    shortYLabel: isOffense ? "Pts/Scoring Opp" : "Pts Allowed/Scoring Opp",
+    tickX: percentTick,
+    tickY: (v) => v.toFixed(2),
+    metricLabel: "",
+    captions: {
+      topLeft: isOffense ? "Fewer opps / Higher points per opp" : "More opps allowed / Fewer points allowed per opp",
+      topRight: isOffense ? "Lethal Finishers" : "Brick Wall Red-Zone",
+      bottomLeft: isOffense ? "Empty Drives" : "Red Carpet",
+      bottomRight: isOffense ? "Stall at the 30" : "Field-Goal Benders",
+      names: isOffense
+        ? {
+            topLeft: "Opportunistic / Big-Play",
+            topRight: "Lethal Finishers",
+            bottomLeft: "Empty Drives",
+            bottomRight: "Stall at the 30",
+          }
+        : {
+            topLeft: "Few Trips Allowed",
+            topRight: "Brick Wall Red-Zone",
+            bottomLeft: "Red Carpet",
+            bottomRight: "Field-Goal Benders",
+          },
+    },
+    averageNames: {
+      x: isOffense ? "Avg opp rate" : "Avg opp rate allowed",
+      y: isOffense ? "Avg pts/opp" : "Avg pts/opp allowed",
+    },
+    footnote: finishingDrivesFootnote(),
+  };
+}
+
+export function describeFinishingDrivesPoint(point: ScatterPoint, side: Side): string {
+  const head = `${point.team} (${conferenceLabel(point.conference)})`;
+  const isOffense = side === "offense";
+  return `${head}: ${isOffense ? "Scoring opp rate" : "Scoring opp rate allowed"} ${formatPercent(point.x)}, ${isOffense ? "pts/opp" : "pts allowed/opp"} ${point.y.toFixed(2)}`;
+}
+
+export function resumeQualityFootnote(): string {
+  return "V5 model rating dominance (overall rating on the rating scale) against Strength of Record (SOR). Dashed lines are FBS means; quadrant names are relative to them.";
+}
+
+export const RESUME_QUALITY_CONFIG: ScatterConfig = {
+  xLabel: "V5 Overall Rating Dominance",
+  yLabel: "Strength of Record (SOR)",
+  shortYLabel: "SOR",
+  tickX: (v) => v.toFixed(1),
+  tickY: (v) => v.toFixed(2),
+  metricLabel: "",
+  captions: {
+    topLeft: "Lower rating / Higher SOR",
+    topRight: "Championship Contenders",
+    bottomLeft: "Rebuilding",
+    bottomRight: "Unlucky Giants",
+    names: {
+      topLeft: "Smoke & Mirrors / Overachievers",
+      topRight: "Championship Contenders",
+      bottomLeft: "Rebuilding",
+      bottomRight: "Unlucky Giants",
+    },
+  },
+  averageNames: {
+    x: "Avg V5 rating",
+    y: "Avg SOR",
+  },
+  footnote: resumeQualityFootnote(),
+};
+
+export function describeResumePoint(point: ScatterPoint): string {
+  const head = `${point.team} (${conferenceLabel(point.conference)})`;
+  return `${head}: V5 Rating ${point.x.toFixed(2)}, Strength of Record (SOR) ${point.y.toFixed(2)}`;
+}
+
+export function marketBoardFootnote(): string {
+  return "Weekly market betting consensus against V5 model predictions. The diagonal dashed line represents the consensus line (market = model). Dots highlighted with an edge badge indicate actionable edges of 3.0 or more points.";
+}
+
+export function parseMarketBoardMetric(raw: RawParam): MarketBoardMetric {
+  return raw === "total" ? "total" : "spread";
 }

@@ -1,4 +1,14 @@
-import type { AdjustedRow, PossessionRow, RatingSnapshotRow, RosterRow, TeamGameRow, TeamGameYardageRow } from "@/lib/charts";
+import type {
+  AdjustedRow,
+  PossessionRow,
+  RatingSnapshotRow,
+  RosterRow,
+  SlateMarketGameRow,
+  TeamGameRow,
+  TeamGameYardageRow,
+  TeamResumeChartRow,
+  TeamSeasonStatRow,
+} from "@/lib/charts";
 import { LOGO_IDS } from "@/lib/team-logos.generated";
 
 /**
@@ -232,4 +242,88 @@ export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[]
   }
   rows.push(...later);
   return { roster: names.map((team) => ({ team, conference: "Fixture" })), rows, yardage: buildYardage(rows, 70) };
+}
+
+export const chartsSeasonStatsWeeksFixture = [3, 4];
+
+export function chartsSeasonStatsFixture(asOfWeek: number): TeamSeasonStatRow[] {
+  const random = lcg(100 + asOfWeek);
+  const rows: TeamSeasonStatRow[] = [];
+  const metrics = ["early_down_epa", "conv_rate_3rd_4th", "scoring_opp_rate", "pts_per_scoring_opp"];
+
+  for (const team of PLAYING) {
+    for (const role of ["offense", "defense"] as const) {
+      for (const metric of metrics) {
+        let value = 0;
+        if (metric === "early_down_epa") {
+          value = Number((random() * 0.4 - 0.2).toFixed(3));
+        } else if (metric === "conv_rate_3rd_4th") {
+          value = Number((0.3 + random() * 0.25).toFixed(3));
+        } else if (metric === "scoring_opp_rate") {
+          value = Number((0.35 + random() * 0.3).toFixed(3));
+        } else if (metric === "pts_per_scoring_opp") {
+          value = Number((3.0 + random() * 2.5).toFixed(2));
+        }
+        rows.push({
+          season: 2026,
+          asOfWeek,
+          team,
+          role,
+          metric,
+          value,
+          n: 60 + Math.floor(random() * 40),
+          games: asOfWeek,
+          rank: null,
+          cohortSize: PLAYING.length,
+        });
+      }
+    }
+  }
+  return rows;
+}
+
+export function chartsTeamResumeFixture(): TeamResumeChartRow[] {
+  const random = lcg(555);
+  return PLAYING.map((team, idx) => ({
+    periodId: "p-fixture",
+    postWeek: 4,
+    team,
+    overallRank: idx + 1,
+    completedGames: 4,
+    scheduledGames: 12,
+    wins: 4 - (idx % 3),
+    losses: idx % 3,
+    sor: Number((10 - idx * 0.8 + (random() - 0.5) * 2).toFixed(2)),
+    sorRank: idx + 1,
+    sosPlayedElite: Number((0.4 + random() * 0.4).toFixed(3)),
+  }));
+}
+
+export const chartsSlateMarketWeeksFixture = [0, 1, 2, 3];
+
+export function chartsSlateMarketGamesFixture(week: number): SlateMarketGameRow[] {
+  const random = lcg(888 + week);
+  const pairs = pairings(week);
+  return pairs.map(([home, away], i) => {
+    const spread = Number((-14 + random() * 28).toFixed(1));
+    const edgeSpread = Number((random() * 6).toFixed(1));
+    const total = Number((42 + random() * 24).toFixed(1));
+    const edgeTotal = Number((random() * 6).toFixed(1));
+    return {
+      gameId: 8000 + week * 100 + i,
+      season: 2026,
+      week,
+      startDate: new Date("2026-10-24T19:30:00Z"),
+      homeTeam: home,
+      awayTeam: away,
+      homeTeamSpreadLine: spread,
+      totalLine: total,
+      predictedSpread: Number((-spread + (random() < 0.5 ? edgeSpread : -edgeSpread)).toFixed(1)),
+      predictedTotal: Number((total + (random() < 0.5 ? edgeTotal : -edgeTotal)).toFixed(1)),
+      edgeSpread,
+      edgeTotal,
+      spreadLean: random() < 0.5 ? "home" : "away",
+      totalLean: random() < 0.5 ? "over" : "under",
+    };
+  });
 }

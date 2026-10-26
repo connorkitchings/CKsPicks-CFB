@@ -1,4 +1,5 @@
 import { teamAbbr } from "./team-logos.ts";
+import { homeSpreadFromMargin } from "./betting-format.ts";
 export {
   P4_CONFERENCES,
   P4_INDEPENDENTS,
@@ -27,7 +28,11 @@ export type ChartKind =
   | "adjusted"
   | "rating-trajectory"
   | "possession"
-  | "game-log";
+  | "game-log"
+  | "downs"
+  | "finishing-drives"
+  | "resume-quality"
+  | "market-board";
 export type Side = "offense" | "defense";
 export type EfficiencyMetric = "ppa" | "explosive_rate" | "yards_per_success";
 
@@ -883,4 +888,345 @@ export function formatPercent(value: number): string {
 export function formatEpa(value: number): string {
   const text = value.toFixed(3);
   return value > 0 ? `+${text}` : text;
+}
+
+// ---------------------------------------------------------------------------
+// Advanced Visualization Suite: Downs, Finishing Drives, Resume, Market Board
+// ---------------------------------------------------------------------------
+
+export type TeamSeasonStatRow = {
+  season: number;
+  asOfWeek: number;
+  team: string;
+  role: Side;
+  metric: string;
+  value: number | null;
+  n: number;
+  games: number;
+  rank: number | null;
+  cohortSize: number | null;
+};
+
+export type TeamResumeChartRow = {
+  periodId: string;
+  postWeek: number | null;
+  team: string;
+  overallRank: number;
+  completedGames: number;
+  scheduledGames: number;
+  wins: number;
+  losses: number;
+  sor: number | null;
+  sorRank: number | null;
+  sosPlayedElite: number | null;
+};
+
+export type SlateMarketGameRow = {
+  gameId: number;
+  season: number;
+  week: number;
+  startDate: Date;
+  homeTeam: string;
+  awayTeam: string;
+  homeTeamSpreadLine: number | null;
+  totalLine: number | null;
+  predictedSpread: number | null;
+  predictedTotal: number | null;
+  edgeSpread: number | null;
+  edgeTotal: number | null;
+  spreadLean: "home" | "away" | null;
+  totalLean: "over" | "under" | null;
+};
+
+export type DownsScatterPoint = ScatterPoint & {
+  earlyDownEpa: number;
+  convRate3rd4th: number;
+};
+
+export type FinishingDrivesScatterPoint = ScatterPoint & {
+  scoringOppRate: number;
+  ptsPerScoringOpp: number;
+};
+
+export type ResumeScatterPoint = ScatterPoint & {
+  overallRating: number;
+  sor: number;
+  sorRank: number | null;
+  wins: number;
+  losses: number;
+};
+
+export type MarketBoardMetric = "spread" | "total";
+
+export type MarketBoardPoint = {
+  gameId: number;
+  homeTeam: string;
+  awayTeam: string;
+  startDate: Date;
+  marketLine: number;
+  modelLine: number;
+  edge: number;
+  lean: string | null;
+  highEdge: boolean;
+  x: number;
+  y: number;
+};
+
+export type MarketBoardData = {
+  points: MarketBoardPoint[];
+  unavailable: { homeTeam: string; awayTeam: string; reason: string }[];
+  metric: MarketBoardMetric;
+};
+
+export function downsThroughWeeks(rows: readonly TeamSeasonStatRow[]): number[] {
+  const weeks = new Set<number>();
+  for (const r of rows) {
+    if (r.metric === "early_down_epa" || r.metric === "conv_rate_3rd_4th") {
+      weeks.add(r.asOfWeek);
+    }
+  }
+  return [...weeks].sort((a, b) => a - b);
+}
+
+export function downsScatterPoints(
+  roster: readonly RosterRow[],
+  statsRows: readonly TeamSeasonStatRow[],
+  side: Side,
+): ScatterData {
+  const points: ScatterPoint[] = [];
+  const unavailable: string[] = [];
+
+  const byTeamMap = new Map<string, { epa?: number; conv?: number; n: number }>();
+  for (const r of statsRows) {
+    if (r.role !== side || r.value === null || !Number.isFinite(r.value)) continue;
+    const entry = byTeamMap.get(r.team) ?? { n: 0 };
+    if (r.metric === "early_down_epa") {
+      entry.epa = r.value;
+      entry.n = Math.max(entry.n, r.n);
+    } else if (r.metric === "conv_rate_3rd_4th") {
+      entry.conv = r.value;
+      entry.n = Math.max(entry.n, r.n);
+    }
+    byTeamMap.set(r.team, entry);
+  }
+
+  const rosterByTeam = new Map(roster.map((r) => [r.team, r]));
+  for (const [team, r] of rosterByTeam) {
+    const entry = byTeamMap.get(team);
+    if (entry && entry.epa !== undefined && entry.conv !== undefined) {
+      points.push({
+        team,
+        conference: r.conference,
+        x: entry.epa,
+        y: entry.conv,
+        n: entry.n,
+      });
+    } else {
+      unavailable.push(team);
+    }
+  }
+  points.sort(byTeam);
+
+  let average: { x: number; y: number } | null = null;
+  if (points.length > 0) {
+    const totalN = points.reduce((s, p) => s + (p.n > 0 ? p.n : 1), 0);
+    const avgX = points.reduce((s, p) => s + p.x * (p.n > 0 ? p.n : 1), 0) / totalN;
+    const avgY = points.reduce((s, p) => s + p.y * (p.n > 0 ? p.n : 1), 0) / totalN;
+    average = { x: avgX, y: avgY };
+  }
+
+  const isDefense = side === "defense";
+  return {
+    points,
+    average,
+    unavailable,
+    invertX: isDefense,
+    invertY: isDefense,
+  };
+}
+
+export function finishingDrivesThroughWeeks(rows: readonly TeamSeasonStatRow[]): number[] {
+  const weeks = new Set<number>();
+  for (const r of rows) {
+    if (r.metric === "scoring_opp_rate" || r.metric === "pts_per_scoring_opp") {
+      weeks.add(r.asOfWeek);
+    }
+  }
+  return [...weeks].sort((a, b) => a - b);
+}
+
+export function finishingDrivesScatterPoints(
+  roster: readonly RosterRow[],
+  statsRows: readonly TeamSeasonStatRow[],
+  side: Side,
+): ScatterData {
+  const points: ScatterPoint[] = [];
+  const unavailable: string[] = [];
+
+  const byTeamMap = new Map<string, { oppRate?: number; ptsPerOpp?: number; n: number }>();
+  for (const r of statsRows) {
+    if (r.role !== side || r.value === null || !Number.isFinite(r.value)) continue;
+    const entry = byTeamMap.get(r.team) ?? { n: 0 };
+    if (r.metric === "scoring_opp_rate") {
+      entry.oppRate = r.value;
+      entry.n = Math.max(entry.n, r.n);
+    } else if (r.metric === "pts_per_scoring_opp") {
+      entry.ptsPerOpp = r.value;
+      entry.n = Math.max(entry.n, r.n);
+    }
+    byTeamMap.set(r.team, entry);
+  }
+
+  const rosterByTeam = new Map(roster.map((r) => [r.team, r]));
+  for (const [team, r] of rosterByTeam) {
+    const entry = byTeamMap.get(team);
+    if (entry && entry.oppRate !== undefined && entry.ptsPerOpp !== undefined) {
+      points.push({
+        team,
+        conference: r.conference,
+        x: entry.oppRate,
+        y: entry.ptsPerOpp,
+        n: entry.n,
+      });
+    } else {
+      unavailable.push(team);
+    }
+  }
+  points.sort(byTeam);
+
+  let average: { x: number; y: number } | null = null;
+  if (points.length > 0) {
+    const totalN = points.reduce((s, p) => s + (p.n > 0 ? p.n : 1), 0);
+    const avgX = points.reduce((s, p) => s + p.x * (p.n > 0 ? p.n : 1), 0) / totalN;
+    const avgY = points.reduce((s, p) => s + p.y * (p.n > 0 ? p.n : 1), 0) / totalN;
+    average = { x: avgX, y: avgY };
+  }
+
+  const isDefense = side === "defense";
+  return {
+    points,
+    average,
+    unavailable,
+    invertX: isDefense,
+    invertY: isDefense,
+  };
+}
+
+export function resumeQualityScatterPoints(
+  roster: readonly RosterRow[],
+  ratingRows: readonly RatingSnapshotRow[],
+  resumeRows: readonly TeamResumeChartRow[],
+): ScatterData {
+  const points: ScatterPoint[] = [];
+  const unavailable: string[] = [];
+
+  const ratingsByTeam = new Map(ratingRows.map((r) => [r.team, r]));
+  const resumeByTeam = new Map(resumeRows.map((r) => [r.team, r]));
+  const rosterByTeam = new Map(roster.map((r) => [r.team, r]));
+
+  for (const [team, r] of rosterByTeam) {
+    const rating = ratingsByTeam.get(team);
+    const resume = resumeByTeam.get(team);
+    if (
+      rating &&
+      Number.isFinite(rating.overallRating) &&
+      resume &&
+      resume.sor !== null &&
+      Number.isFinite(resume.sor)
+    ) {
+      points.push({
+        team,
+        conference: r.conference,
+        x: rating.overallRating,
+        y: resume.sor,
+        n: resume.completedGames,
+      });
+    } else {
+      unavailable.push(team);
+    }
+  }
+  points.sort(byTeam);
+
+  let average: { x: number; y: number } | null = null;
+  if (points.length > 0) {
+    const avgX = points.reduce((s, p) => s + p.x, 0) / points.length;
+    const avgY = points.reduce((s, p) => s + p.y, 0) / points.length;
+    average = { x: avgX, y: avgY };
+  }
+
+  return {
+    points,
+    average,
+    unavailable,
+    invertX: false,
+    invertY: false,
+  };
+}
+
+export function marketBoardWeeks(games: readonly SlateMarketGameRow[]): number[] {
+  const weeks = new Set<number>();
+  for (const g of games) {
+    weeks.add(g.week);
+  }
+  return [...weeks].sort((a, b) => a - b);
+}
+
+export function marketBoardPoints(
+  games: readonly SlateMarketGameRow[],
+  metric: MarketBoardMetric,
+): MarketBoardData {
+  const points: MarketBoardPoint[] = [];
+  const unavailable: { homeTeam: string; awayTeam: string; reason: string }[] = [];
+
+  for (const g of games) {
+    if (metric === "spread") {
+      const market = g.homeTeamSpreadLine;
+      const model = homeSpreadFromMargin(g.predictedSpread);
+      if (market === null || model === null || !Number.isFinite(market) || !Number.isFinite(model)) {
+        unavailable.push({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, reason: "Missing spread line or model projection" });
+        continue;
+      }
+      const edge = g.edgeSpread ?? Math.abs(model - market);
+      points.push({
+        gameId: g.gameId,
+        homeTeam: g.homeTeam,
+        awayTeam: g.awayTeam,
+        startDate: g.startDate,
+        marketLine: market,
+        modelLine: model,
+        edge,
+        lean: g.spreadLean,
+        highEdge: Math.abs(edge) >= 3.0,
+        x: market,
+        y: model,
+      });
+    } else {
+      const market = g.totalLine;
+      const model = g.predictedTotal;
+      if (market === null || model === null || !Number.isFinite(market) || !Number.isFinite(model)) {
+        unavailable.push({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, reason: "Missing total line or model projection" });
+        continue;
+      }
+      const edge = g.edgeTotal ?? Math.abs(model - market);
+      points.push({
+        gameId: g.gameId,
+        homeTeam: g.homeTeam,
+        awayTeam: g.awayTeam,
+        startDate: g.startDate,
+        marketLine: market,
+        modelLine: model,
+        edge,
+        lean: g.totalLean,
+        highEdge: Math.abs(edge) >= 3.0,
+        x: market,
+        y: model,
+      });
+    }
+  }
+
+  return {
+    points,
+    unavailable,
+    metric,
+  };
 }

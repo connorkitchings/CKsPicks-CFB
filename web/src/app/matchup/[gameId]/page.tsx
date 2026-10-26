@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Header";
 import { MatchupHero } from "@/components/matchup/MatchupHero";
+import { TaleOfTheTape } from "@/components/matchup/TaleOfTheTape";
 import { getMatchupData } from "@/lib/matchup";
 import { parseGameId } from "@/lib/matchup-id";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
@@ -76,6 +77,14 @@ export default async function MatchupPage({
           </Card>
         ) : matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
+            <TaleOfTheTape
+              awayTeam={matchup.awayTeam}
+              homeTeam={matchup.homeTeam}
+              awayOffVsHomeDef={matchup.stats.awayOffVsHomeDef}
+              homeOffVsAwayDef={matchup.stats.homeOffVsAwayDef}
+              awayRating={matchup.awayRating}
+              homeRating={matchup.homeRating}
+            />
             <UnitMatchups
               away={{
                 offenseTeam: matchup.awayTeam,

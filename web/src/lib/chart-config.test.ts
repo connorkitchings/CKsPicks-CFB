@@ -10,14 +10,21 @@ import {
   chartHref,
   chartSubtitle,
   describeAdjustedPoint,
+  describeDownsPoint,
+  describeFinishingDrivesPoint,
+  describeResumePoint,
+  downsConfig,
   efficiencyConfig,
   exportFilename,
+  finishingDrivesConfig,
   formatEpaTick,
   parseChartKind,
   parseEfficiencyMetric,
+  parseMarketBoardMetric,
   parseTeamParam,
   pickerGroups,
   readyKinds,
+  RESUME_QUALITY_CONFIG,
   withTeamParam,
 } from "./chart-config.ts";
 import type { AdjustedRow, ChartKind } from "./charts.ts";
@@ -61,19 +68,45 @@ test("team param editing keeps every other param", () => {
 });
 
 test("registry: every kind is registered; only ready kinds parse and appear in the picker", () => {
-  const kinds: ChartKind[] = ["net-success", "efficiency", "adjusted", "rating-trajectory", "possession", "game-log"];
+  const kinds: ChartKind[] = [
+    "net-success",
+    "market-board",
+    "efficiency",
+    "adjusted",
+    "rating-trajectory",
+    "possession",
+    "downs",
+    "finishing-drives",
+    "resume-quality",
+    "game-log",
+  ];
   assert.deepEqual(Object.keys(CHART_REGISTRY).sort(), [...kinds].sort());
-  assert.deepEqual(kinds.map((kind) => CHART_REGISTRY[kind].group), ["games", "teams", "teams", "teams", "teams", "one-team"]);
+  assert.deepEqual(
+    kinds.map((kind) => CHART_REGISTRY[kind].group),
+    ["games", "games", "teams", "teams", "teams", "teams", "teams", "teams", "teams", "one-team"],
+  );
   assert.equal(parseChartKind("adjusted"), "adjusted");
   assert.equal(parseChartKind("possession"), "possession");
   assert.equal(parseChartKind("game-log"), "game-log");
+  assert.equal(parseChartKind("downs"), "downs");
+  assert.equal(parseChartKind("finishing-drives"), "finishing-drives");
+  assert.equal(parseChartKind("resume-quality"), "resume-quality");
+  assert.equal(parseChartKind("market-board"), "market-board");
   // Hidden from the page by owner decision on 2026-10-18; their view is retained.
   assert.equal(CHART_REGISTRY["rating-trajectory"].ready, false);
   assert.equal(parseChartKind("rating-trajectory"), "net-success");
   // Removed kinds fall back to the default chart like any unknown name.
   for (const removed of ["schedule", "trajectory"]) assert.equal(parseChartKind(removed), "net-success", removed);
   assert.deepEqual(pickerGroups().flatMap((group) => group.kinds.map((kind) => CHART_REGISTRY[kind].tabLabel)), [
-    "Net success rate", "Efficiency vs explosiveness", "Adjusted PPA/play", "Possession efficiency", "Game log",
+    "Net success rate",
+    "Slate market board",
+    "Efficiency vs explosiveness",
+    "Adjusted PPA/play",
+    "Possession efficiency",
+    "Situational downs",
+    "Finishing drives",
+    "Resume vs dominance",
+    "Game log",
   ]);
   assert.equal(parseChartKind("bogus"), "net-success");
   assert.equal(parseChartKind(undefined), "net-success");
@@ -81,7 +114,6 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
   for (const kind of kinds.filter((k) => !CHART_REGISTRY[k].ready)) assert.equal(parseChartKind(kind), "net-success", kind);
   const groups = pickerGroups();
   assert.ok(groups.every((group) => group.kinds.length > 0 && group.kinds.every((kind) => CHART_REGISTRY[kind].ready)));
-  assert.deepEqual(groups.flatMap((group) => group.kinds), kinds.filter((kind) => CHART_REGISTRY[kind].ready));
   assert.equal(groups[0].label, "Games");
 });
 
@@ -171,4 +203,34 @@ test("the game log footnote defines the selected metric and leaves scope notes t
     assert.ok(!gameLogFootnote(metric).includes("axis inverted"), metric);
   }
   assert.equal(CHART_REGISTRY["game-log"].footnote, gameLogFootnote("success"));
+});
+
+test("advanced visualization suite configs and formatters", () => {
+  const downsOff = downsConfig("offense");
+  assert.equal(downsOff.xLabel, "Early Down PPA/play (1st & 2nd)");
+  assert.equal(downsOff.captions.names.topRight, "Unstoppable Engine");
+  assert.equal(downsOff.captions.names.bottomRight, "On-Schedule Only");
+
+  const downsDef = downsConfig("defense");
+  assert.equal(downsDef.captions.names.topRight, "Suffocating Defense");
+  assert.equal(downsDef.captions.names.bottomRight, "Bend-Don't-Break");
+
+  const finishingOff = finishingDrivesConfig("offense");
+  assert.equal(finishingOff.captions.names.topRight, "Lethal Finishers");
+  assert.equal(finishingOff.captions.names.bottomRight, "Stall at the 30");
+
+  const finishingDef = finishingDrivesConfig("defense");
+  assert.equal(finishingDef.captions.names.topRight, "Brick Wall Red-Zone");
+
+  assert.equal(RESUME_QUALITY_CONFIG.captions.names.topRight, "Championship Contenders");
+  assert.equal(RESUME_QUALITY_CONFIG.captions.names.bottomRight, "Unlucky Giants");
+
+  assert.equal(parseMarketBoardMetric("total"), "total");
+  assert.equal(parseMarketBoardMetric("spread"), "spread");
+  assert.equal(parseMarketBoardMetric(null), "spread");
+
+  const pt = { team: "Georgia", conference: "SEC", x: 0.25, y: 0.45, n: 100 };
+  assert.match(describeDownsPoint(pt, "offense"), /Georgia \(SEC\): Early-down EPA \+0.250, 3rd\/4th down conv 45.0%/);
+  assert.match(describeFinishingDrivesPoint(pt, "offense"), /Georgia \(SEC\): Scoring opp rate 25.0%, pts\/opp 0.45/);
+  assert.match(describeResumePoint(pt), /Georgia \(SEC\): V5 Rating 0.25, Strength of Record \(SOR\) 0.45/);
 });
