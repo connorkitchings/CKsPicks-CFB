@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Sequence
+from unittest import mock
 
 SEASON = 2026
 FINAL_REGULAR_WEEK = 15
@@ -340,9 +341,13 @@ def default_deps(secrets: dict[str, str]) -> Deps:
         from cks_picks_cfb.season.inputs import frame
 
         manifest = json.loads(manifest_path.read_text())
-        store = get_storage(environment="preview")
-        schedule = frame(store, manifest["inputs"]["schedule"])
-        quotes = frame(store, manifest["inputs"]["market_quotes"])
+        # In-process storage read: scope the Preview storage env to this call.
+        with mock.patch.dict(
+            os.environ, child_env("preview", secrets, dict(os.environ))
+        ):
+            store = get_storage(environment="preview")
+            schedule = frame(store, manifest["inputs"]["schedule"])
+            quotes = frame(store, manifest["inputs"]["market_quotes"])
         ids = set(schedule.loc[schedule.week == week, "game_id"])
         q = quotes[quotes.game_id.isin(ids)]
         both = q.groupby("game_id").agg(s=("spread", "count"), t=("total", "count"))
