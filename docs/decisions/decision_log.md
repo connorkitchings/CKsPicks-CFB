@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-10-26: Automatic Production activation and unattended weekly update
+
+- **Context:** Each weekly close and line refresh needed an owner at a terminal for capture, build, prepare, Preview and Production release, and the runbook said "Production activation is an owner decision". The Week 9 rollover showed the steps are mechanical and gated by checks that already exist.
+- **Decision:** the owner decided on 2026-10-26 that (1) Production activation is fully automatic when every gate passes: completed-week stop gate and cutoff check, `season_verification_v2` on prepare, parity against the active Preview release, Preview release and independent Preview proof; (2) score-reconciliation exceptions are added automatically only when the final score equals the sum of the quarter line scores for that team-game, and any other mismatch stops the run; (3) the update runs Sunday 12:00 ET (close week) and Monday 12:00 ET (market-only line refresh) in the GitHub Actions workflow `weekly-season-update.yml`; (4) notifications come from GitHub only.
+- **Impact:** the workflow may activate a Production release without a human. Rollback stays owner-only (owner/migrator credential, `--owner-authorized`, decision reference) and automation never rolls back. The workflow is off until the owner sets `CFB_WEEKLY_AUTOMATION_ENABLED=true` after a Preview rehearsal, and the Production credential lives only in the `season-production` GitHub environment. Manual Production release still needs the Preview proof.
+- **Source:** [contract](../plans/2026-10-26/01-weekly-update-automation.md), [weekly runbook](../ops/weekly_runbook.md#automated-weekly-update), session log `session_logs/2026-10-26/01-weekly-update-automation.md`.
+
 ## 2026-10-25: Crest CFB wordmark and theme colors
 
 - **Context:** The owner reviewed serif/sans-serif wordmarks and light/dark color comparisons for the Crest rebrand.

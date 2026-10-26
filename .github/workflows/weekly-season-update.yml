@@ -1,0 +1,81 @@
+name: Weekly season update
+
+on:
+  schedule:
+    - cron: "7 17 * * 0" # Sunday: close the completed week
+    - cron: "7 17 * * 1" # Monday: market-only line refresh
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Controller mode
+        type: choice
+        options: [close-week, market-refresh, plan-only]
+        default: plan-only
+      force:
+        description: Refresh even when the active week is fully lined
+        type: boolean
+        default: false
+      skip_production:
+        description: Release to Preview only
+        type: boolean
+        default: false
+
+concurrency:
+  group: weekly-season-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: vars.CFB_WEEKLY_AUTOMATION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: season-production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: dev
+          fetch-depth: 0
+      - name: Set git identity
+        run: |
+          git config user.name "ckspicks-weekly-automation"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Run controller
+        env:
+          # Secrets are exposed to this step only; the controller builds each
+          # child process environment explicitly.
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          CFB_R2_PREVIEW_BUCKET: ${{ secrets.CFB_R2_PREVIEW_BUCKET }}
+          CFB_R2_PREVIEW_ACCOUNT_ID: ${{ secrets.CFB_R2_PREVIEW_ACCOUNT_ID }}
+          CFB_R2_PREVIEW_ACCESS_KEY: ${{ secrets.CFB_R2_PREVIEW_ACCESS_KEY }}
+          CFB_R2_PREVIEW_SECRET_KEY: ${{ secrets.CFB_R2_PREVIEW_SECRET_KEY }}
+          PREVIEW_DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+          PRODUCTION_PIPELINE_DATABASE_URL: ${{ secrets.PRODUCTION_PIPELINE_DATABASE_URL }}
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          MODE: ${{ inputs.mode || (github.event.schedule == '7 17 * * 0' && 'close-week' || 'market-refresh') }}
+          FORCE: ${{ inputs.force && '--force' || '' }}
+          SKIP_PRODUCTION: ${{ inputs.skip_production && '--skip-production' || '' }}
+        run: >-
+          uv run --frozen python scripts/ops/weekly_automation.py
+          --mode "$MODE" $FORCE $SKIP_PRODUCTION
+      - name: Step summary
+        if: always()
+        run: |
+          f=artifacts/season/2026/weekly-automation/summary.md
+          if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Upload receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-season-update-${{ github.run_id }}
+          path: artifacts/season/2026/weekly-automation/
+          if-no-files-found: ignore
+          retention-days: 30

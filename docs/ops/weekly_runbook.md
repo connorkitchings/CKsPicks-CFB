@@ -11,7 +11,7 @@
 1. **Chronological Season Engine (`run_season.py`)**:
    - Reconstructs the 2026 season from Week 0 through completed weeks using pre-week observations only.
    - Computes point-in-time ratings, predictions, lines, edges, and grades.
-   - Enforces the recorded projection set's strict verification rules (`season_verification_v2`; 24 checks for new `charts_v2` candidates).
+   - Enforces the recorded projection set's strict verification rules (`season_verification_v2`; 32 checks for new `resume_v1` candidates, which include the `charts_v2` checks).
 2. **Fixed-Schema Atomic Releases (Migration 0025)**:
    - Staging is completely isolated from live serving.
    - Activation checks owner policy, expected prior release, candidate verification, and readback hash consistency.
@@ -50,6 +50,71 @@
 **Weekly-process boundary (implemented 2026-10-25):** the normal week close/open is `make season-close-week` (builder `--incremental`, controller command `advance-week`). It fetches only the season schedule refresh, the request inventory plus plays and game statistics for the completed week, and the market captures you run explicitly; certified earlier-week Bronze captures are carried into the Silver builds, and the completed-week schedule and finals are gated against the previous certified revision — any difference stops the run and names the affected games. The full-history path (`make season-revision`, behind `FULL_HISTORY=1`) re-ingests Weeks 0..N−1 and is reserved for explicitly approved history repairs until the budgeted repair mode is implemented. Promotion must never query a provider (unchanged). See [the process-review brief](../planning/weekly-operations-process-review.md) and the [2026-10-25 contract](../plans/2026-10-25/01-incremental-close-week-rollover.md).
 
 The October 19 promotion mistakenly started the full-history path. It was stopped during Week 3; no partial refresh output was selected or activated. The successful release reused the certified football input hashes. Preserve the receipts as evidence; do not rerun the cancelled controller or silently broaden future provider requests.
+
+## Automated weekly update
+
+Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actions workflow `.github/workflows/weekly-season-update.yml`, driven by `scripts/ops/weekly_automation.py`. The controller runs the same commands as the `make season-*` targets (it mirrors the wrappers without `zsh` or the macOS Keychain, taking credentials from the job environment), in one job, because the run manifest stores absolute candidate paths and release re-hashes the candidate from local disk.
+
+**Schedule (both at 17:07 UTC, which is 13:07 ET in daylight time and 12:07 ET in standard time):**
+
+- Sunday: close the completed week and open the next (the full cadence below: capture, build, score exceptions, prepare, parity, Preview release, Production release, live health probe).
+- Monday: market-only line refresh for the active week, only when the active release has fewer than 100% of games lined. It stops without releasing when coverage did not improve.
+
+**Gates (any failure stops the run before the next step; nothing further is activated):**
+
+- Week detection reads the active Production release. It stops when the upcoming week's first kickoff has passed, when the season is past its final regular week, or when any completed-week game lacks a final score (a human is needed).
+- The revision builder's stop gate (completed-week schedule and finals unchanged) and its check that completed-week cutoffs match the previous certified manifest.
+- Score-reconciliation exceptions are added automatically only when the final score equals the sum of the quarter line scores for that team-game; otherwise the run stops and names the games. An earlier-week exception changing or becoming unused also stops the run.
+- Prepare passes every `season_verification_v2` check.
+- Parity against the active Preview release. For the close: completed-week predictions, variances, grades and earlier rating snapshots are identical within 1e-9. For the refresh: ratings, predictions, features and all grades are identical, and only the upcoming week's line, edge, lean and pending-pick columns differ. The upcoming week must be 100% predicted; line coverage is reported but does not block.
+- Preview release with `--expected-previous-release-id` read from the database, then Production release with the independent Preview proof, then a probe of the live `/api/health` until it reports the new release.
+
+**Commits.** The job commits the revision manifest and the exceptions file and pushes to `dev` before it prepares, then makes no further commit (prepare needs a clean tree and release needs `HEAD` equal to the prepared commit). Pushes made with `GITHUB_TOKEN` do not trigger `ci.yml`, so the workflow runs its own gates and does not rely on CI for that commit.
+
+**Public output.** The repository is public, so logs and artifacts carry only IDs, hashes and counts. The uploaded receipt artifact holds small reports, the run manifest and a summary JSON.
+
+**Resume.** If `conf/season/2026/revision_manifest_w<NEXT_WEEK>_v1.json` already exists on `dev`, the controller skips capture and build and resumes at prepare.
+
+**Run it by hand.** In GitHub open Actions, choose "Weekly season update", then Run workflow, or use the CLI. Inputs:
+
+- `mode`: `close-week`, `market-refresh` or `plan-only`. `plan-only` detects the week, checks that secrets and database roles are present and read-only, and computes cutoffs; it makes no provider call and no write.
+- `force`: run even when the week gate would skip (for example a refresh with full line coverage).
+- `skip_production`: stop after the Preview release, for a rehearsal.
+
+```bash
+gh workflow run weekly-season-update.yml -f mode=plan-only
+gh workflow run weekly-season-update.yml -f mode=close-week -f skip_production=true
+```
+
+**Disable.** Set the repository variable `CFB_WEEKLY_AUTOMATION_ENABLED` to anything other than `true` (or delete it); the job is then skipped. In-flight runs are not cancelled, and the `weekly-season-update` concurrency group queues overlapping runs.
+
+```bash
+gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body false
+```
+
+**Roll back.** Automation never rolls back. Disable it first, then follow the owner-only [Rollback Procedure](#rollback-procedure) to reactivate the prior verified release. Preview rollback is not supported; release a new candidate instead.
+
+**Owner one-time setup.**
+
+1. In the repository settings create the GitHub environment `season-production`. Set its deployment branch policy to selected branches `main` and `dev` (scheduled runs evaluate against `refs/heads/main`; manual runs on `dev` need `dev`).
+2. Add the Production pipeline credential to that environment, piping from the Keychain so it never reaches shell history:
+   ```bash
+   security find-generic-password -s 'ckspicks-cfb/production/pipeline-url' -a cks_prod_pipeline -w | gh secret set PRODUCTION_PIPELINE_DATABASE_URL --env season-production
+   ```
+3. Add the Odds API key to the same environment from the local `.env`:
+   ```bash
+   grep '^THE_ODDS_API_KEY=' .env | cut -d= -f2- | gh secret set THE_ODDS_API_KEY --env season-production
+   ```
+4. Confirm the repository-level secrets also used by the pregame capture workflow exist: `CFBD_API_KEY`, `CFB_R2_PREVIEW_*` and `PREVIEW_DATABASE_URL`.
+5. Release `dev` to `main` (merge commit; see Step 4) so the schedule is active, then run `plan-only` and a `close-week` rehearsal with `skip_production=true`.
+6. Set `CFB_WEEKLY_AUTOMATION_ENABLED=true` only after the rehearsal passes:
+   ```bash
+   gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body true
+   ```
+
+Everything below is the manual procedure the automation mirrors; use it when the automation is disabled or stops.
+
+---
 
 ## Weekly Cadence (Step-by-Step)
 
@@ -156,7 +221,7 @@ make season-prepare WEEK=<NEXT_WEEK> AS_OF="$PRE_WEEK_CUTOFF"   # add MANIFEST=<
 
 The runner will:
 - Recompute measurements, ratings, predictions, and grades.
-- Execute the full versioned verification suite (24 checks for `charts_v2`).
+- Execute the full versioned verification suite (32 checks for `resume_v1`).
 - Output the candidate artifact under `artifacts/season/2026/preview/<RELEASE_ID>/`.
 - Print the candidate manifest including `release_id` and the `serving_projections` SHA-256.
 
@@ -258,7 +323,7 @@ make season-release ENV=production RELEASE_ID=<RELEASE_ID> \
 #       --projection-payload-sha256 <PROJECTION_PAYLOAD_SHA256>
 ```
 
-Production activation is an owner decision.
+Production activation is automatic when the [automated weekly update](#automated-weekly-update) passes every gate (owner decision, 2026-10-26; [decision log](../decisions/decision_log.md)). A manual Production release follows the commands above and needs the Preview proof; **rollback stays owner-only** (see [Rollback Procedure](#rollback-procedure)).
 
 ---
 
@@ -266,11 +331,12 @@ Production activation is an owner decision.
 
 Commits are allowed again from here.
 
-1. Fast-forward merge `dev` into `main` and push to trigger Vercel deployment:
+1. Release `dev` to `main` through a pull request merged with a **merge commit**, not a squash and not a fast-forward. `main` no longer fast-forwards from `dev` since the squash merge of PR #9, and another squash would diverge the branches again. The merge triggers the Vercel deployment:
    ```bash
-   git checkout main && git merge dev --ff-only && git push origin main
-   git checkout dev
+   gh pr create --base main --head dev --title "chore(release): release dev to main"
+   gh pr merge <PR_NUMBER> --merge
    ```
+   Scheduled workflows run only from the default branch (`main`), so changes to `.github/workflows/weekly-season-update.yml` take effect only after this release.
 2. Verify live production URLs:
    - `https://c-ks-picks-cfb.vercel.app/`
    - `https://c-ks-picks-cfb.vercel.app/ratings`
