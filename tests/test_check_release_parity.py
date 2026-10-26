@@ -423,3 +423,63 @@ def test_hash_mask_leaves_plain_numbers_and_words_alone():
     assert parity.normalize_value("123456789012") == "123456789012"
     assert parity.normalize_value("defaced-cafe") == "defaced-cafe"
     assert parity.normalize_value("v5:" + "0a" * 6) == "v5:<hash>"
+
+
+def resume_pair(old_ranks, new_ranks, new_sor=None):
+    """Four teams in one period: B, C, D tie at the bottom (0.0 vs 1.1e-14)."""
+    sors = {"A": 50.0, "B": 0.0, "C": 1.1e-14, "D": 0.0}
+
+    def table(ranks, sor_override=None):
+        return {
+            "team_resume": [
+                {
+                    "period_id": "p1",
+                    "team": team,
+                    "sor": (sor_override or {}).get(team, sors[team]),
+                    "sor_rank": ranks[team],
+                }
+                for team in sors
+            ]
+        }
+
+    return table(old_ranks), table(new_ranks, new_sor)
+
+
+def resume_failures(old, new):
+    old_all, new_all = release(OLD_RUN), release(NEW_RUN)
+    old_all.update(old)
+    new_all.update(new)
+    return run(old_all, new_all, mode="market-refresh").failures
+
+
+def test_sor_rank_may_permute_inside_a_tied_sor_group():
+    old, new = resume_pair(
+        {"A": 1, "C": 2, "B": 3, "D": 4}, {"A": 1, "B": 2, "D": 3, "C": 4}
+    )
+
+    assert not [f for f in resume_failures(old, new) if f.startswith("team_resume")]
+
+
+def test_sor_rank_change_outside_the_tied_group_still_fails():
+    old, new = resume_pair(
+        {"A": 1, "C": 2, "B": 3, "D": 4}, {"A": 2, "B": 1, "D": 3, "C": 4}
+    )
+
+    failures = resume_failures(old, new)
+
+    assert any("team_resume" in f and "sor_rank" in f for f in failures)
+
+
+def test_sor_rank_change_without_a_tie_fails_and_sor_stays_strict():
+    old, new = resume_pair(
+        {"A": 1, "C": 2, "B": 3, "D": 4},
+        {"A": 1, "C": 2, "B": 3, "D": 4},
+        new_sor={"A": 50.5},
+    )
+    assert any("team_resume" in f and "sor" in f for f in resume_failures(old, new))
+
+    old, new = resume_pair(
+        {"A": 1, "C": 2, "B": 3, "D": 4}, {"A": 1, "C": 2, "B": 3, "D": 4}
+    )
+    new["team_resume"][0]["sor_rank"] = 2
+    assert any("sor_rank" in f for f in resume_failures(old, new))

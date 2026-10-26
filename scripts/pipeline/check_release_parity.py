@@ -27,6 +27,10 @@ week's rows may also differ (the refresh moves that cutoff); completed weeks'
 cutoffs must match. In both modes the upcoming week must be 100%
 predicted; lined-game coverage is reported but never blocks.
 
+``team_resume.sor_rank`` may permute only among teams whose ``sor`` values tie
+within 1e-9 (platform rounding decides their order), and only inside that tied
+group's span of ranks; ``sor`` itself is always compared.
+
 The report holds only table names, counts, game ids and column names, so it is
 safe to print in public CI logs.
 """
@@ -201,6 +205,41 @@ def _label(table: str, key: tuple) -> str:
     return f"{table} {'/'.join(map(str, parts))}"
 
 
+def _within(value: Any, span: tuple[float, float]) -> bool:
+    return isinstance(value, float) and span[0] <= value <= span[1]
+
+
+def _tied_rank_spans(old: dict[tuple, Row]) -> dict[tuple, tuple[float, float]]:
+    """Rank span of each ``team_resume`` row's group of tied ``sor`` values.
+
+    Within a period, teams whose ``sor`` values chain within ``TOLERANCE`` of each
+    other (exactly equal, or equal up to platform rounding such as a clamped 0.0
+    next to 1.1e-14) are tied. Their relative order is decided by rounding noise,
+    so ``sor_rank`` may permute inside the group's span of previous ranks, and
+    nowhere else.
+    """
+    by_period: dict[Any, list[tuple[float, float, tuple]]] = {}
+    for key, row in old.items():
+        sor, rank = (
+            normalize_value(row.get("sor")),
+            normalize_value(row.get("sor_rank")),
+        )
+        if isinstance(sor, float) and isinstance(rank, float):
+            by_period.setdefault(key[0], []).append((sor, rank, key))
+    spans: dict[tuple, tuple[float, float]] = {}
+    for rows in by_period.values():
+        rows.sort(key=lambda item: -item[0])
+        group: list[tuple[float, float, tuple]] = []
+        for item in [*rows, None]:
+            if group and (item is None or group[-1][0] - item[0] > TOLERANCE):
+                span = (min(r[1] for r in group), max(r[1] for r in group))
+                spans.update({r[2]: span for r in group})
+                group = []
+            if item is not None:
+                group.append(item)
+    return spans
+
+
 def compare_rows(
     table: str,
     previous: list[Row],
@@ -219,6 +258,7 @@ def compare_rows(
         f"{_label(table, key)}: new in the candidate"
         for key in sorted(new.keys() - old.keys(), key=str)
     ]
+    tied = _tied_rank_spans(old) if table == "team_resume" else {}
     for key in sorted(old.keys() & new.keys(), key=str):
         columns = (old[key].keys() | new[key].keys()) - ignore
         changed = sorted(
@@ -228,6 +268,11 @@ def compare_rows(
             and not values_equal(
                 normalize_value(old[key].get(column)),
                 normalize_value(new[key].get(column)),
+            )
+            and not (
+                column == "sor_rank"
+                and key in tied
+                and _within(normalize_value(new[key].get(column)), tied[key])
             )
         )
         if changed:
