@@ -706,7 +706,7 @@ class Controller:
         active_lined, _ = self.production_coverage(release_id, week)
         new_lined = self.deps.lined_in_manifest(new_path, week)
         self.summary["market_coverage"] = {"active": active_lined, "new": new_lined}
-        if not lined_improved(new_lined, active_lined):
+        if not self.force and not lined_improved(new_lined, active_lined):
             new_path.unlink(missing_ok=True)
             raise SkipRunError(
                 f"line coverage did not improve ({new_lined} vs {active_lined})"
