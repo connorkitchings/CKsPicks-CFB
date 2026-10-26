@@ -22,6 +22,7 @@ output is shown (redacted, tail only) only when a step fails.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -32,6 +33,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Sequence
+from unittest import mock
 
 SEASON = 2026
 FINAL_REGULAR_WEEK = 15
@@ -340,9 +342,13 @@ def default_deps(secrets: dict[str, str]) -> Deps:
         from cks_picks_cfb.season.inputs import frame
 
         manifest = json.loads(manifest_path.read_text())
-        store = get_storage(environment="preview")
-        schedule = frame(store, manifest["inputs"]["schedule"])
-        quotes = frame(store, manifest["inputs"]["market_quotes"])
+        # In-process storage read: scope the Preview storage env to this call.
+        with mock.patch.dict(
+            os.environ, child_env("preview", secrets, dict(os.environ))
+        ):
+            store = get_storage(environment="preview")
+            schedule = frame(store, manifest["inputs"]["schedule"])
+            quotes = frame(store, manifest["inputs"]["market_quotes"])
         ids = set(schedule.loc[schedule.week == week, "game_id"])
         q = quotes[quotes.game_id.isin(ids)]
         both = q.groupby("game_id").agg(s=("spread", "count"), t=("total", "count"))
@@ -427,6 +433,38 @@ class Controller:
         )
         return rows[0][0] if rows else None
 
+    def preview_active_week(self) -> int | None:
+        rows = self.deps.query(
+            "preview",
+            "SELECT active_week FROM season_releases "
+            "WHERE environment = 'preview' AND season = %s AND status = 'active'",
+            (SEASON,),
+        )
+        return int(rows[0][0]) if rows else None
+
+    def preview_candidate_state(self, release_id: str, run_manifest_sha: str) -> str:
+        """``absent``, ``verified`` (this exact candidate is active) or ``collision``.
+
+        The release id derives from the code commit, so a rerun at the same HEAD
+        reuses it, yet every prepare yields different payload bytes. Production
+        demands a verified Preview activation of the same bytes, so only an
+        active row with the same run-manifest hash (which pins the payload sha)
+        counts; any other row under this id cannot be re-staged.
+        """
+        rows = self.deps.query(
+            "preview",
+            "SELECT status, run_manifest_sha256 FROM season_releases "
+            "WHERE release_id = %s",
+            (f"preview-{release_id}",),
+        )
+        if not rows:
+            return "absent"
+        return (
+            "verified"
+            if tuple(rows[0]) == ("active", run_manifest_sha)
+            else "collision"
+        )
+
     def production_coverage(self, release_id: str, week: int) -> tuple[int, int]:
         rows = self.deps.query(
             "production",
@@ -478,6 +516,10 @@ class Controller:
             "production_login": prod[0],
             "production_season_releases_select": bool(prod[1]),
         }
+        if prev[0] != "cks_preview_pipeline":
+            raise StopRunError(
+                "the Preview secret is not the cks_preview_pipeline login"
+            )
         if not (prev[1] and prev[2] and prod[1]):
             raise StopRunError("database role grants are insufficient")
 
@@ -492,6 +534,8 @@ class Controller:
             self.summary.update(
                 {"active_production_release": release_id, "active_week": active_week}
             )
+            if self.mode == "plan-only":
+                self.check_roles()
             decision = self.detect(started, release_id, active_week)
             self.summary["decision"] = decision.__dict__
             self.log(f"decision: {decision.action} - {decision.reason}")
@@ -500,7 +544,6 @@ class Controller:
             if decision.action == "stop":
                 raise StopRunError(decision.reason)
             if self.mode == "plan-only":
-                self.check_roles()
                 self.plan_cutoffs(decision)
                 self.summary["result"] = "planned"
                 return 0
@@ -651,6 +694,9 @@ class Controller:
         rel = [str(p) for p in paths]
         self.git("add", "--", *rel)
         self.git("commit", "-m", message)
+        self.push_clean()
+
+    def push_clean(self) -> None:
         self.git("push", "origin", "HEAD:dev")
         if self.git("status", "--porcelain").strip():
             raise StopRunError("working tree is dirty after commit")
@@ -670,8 +716,6 @@ class Controller:
         top = max(versions)
         top_path = versions[top]
         live_sha = self.active_manifest_sha(release_id)
-        import hashlib
-
         top_sha = hashlib.sha256(top_path.read_bytes()).hexdigest()
         if live_sha != top_sha:
             self.log(f"{top_path.name} is committed but not live; resuming at prepare")
@@ -700,7 +744,7 @@ class Controller:
         active_lined, _ = self.production_coverage(release_id, week)
         new_lined = self.deps.lined_in_manifest(new_path, week)
         self.summary["market_coverage"] = {"active": active_lined, "new": new_lined}
-        if not lined_improved(new_lined, active_lined):
+        if not self.force and not lined_improved(new_lined, active_lined):
             new_path.unlink(missing_ok=True)
             raise SkipRunError(
                 f"line coverage did not improve ({new_lined} vs {active_lined})"
@@ -723,28 +767,41 @@ class Controller:
             )
         if wait.total_seconds() > 0:
             self.deps.sleep(wait.total_seconds() + 5)
-        self.step(
-            "prepare candidate",
-            self.py(
-                "scripts/pipeline/run_season.py", "prepare",
-                "--model-manifest", MODEL_MANIFEST,
-                "--revision-manifest", manifest,
-                "--through-week", nxt - 1, "--next-week", nxt,
-                "--as-of", iso_z(as_of), "--output", SEASON_OUTPUT,
-                "--environment", "preview",
-            ),
-            "preview",
-            timeout=2400,
-        )  # fmt: skip
-        candidate = self.read_candidate()
-        self.summary["candidate"] = candidate
+        candidate = self.prepare(manifest, nxt, as_of)
+        production_active = self.active_release("production")
+        if production_active == f"production-{candidate['release_id']}":
+            raise SkipRunError("candidate is already active in Production")
+        state = self.preview_candidate_state(
+            candidate["release_id"], candidate["run_manifest_sha256"]
+        )
+        if state == "collision":
+            self.log(
+                "Preview already holds this release id with different bytes; "
+                "committing an empty retry commit for a fresh candidate"
+            )
+            self.git(
+                "commit", "--allow-empty", "-m",
+                f"chore(season): retry the Week {nxt} release with a fresh candidate",
+            )  # fmt: skip
+            self.push_clean()
+            self.summary["retried_with_fresh_candidate"] = True
+            candidate = self.prepare(manifest, nxt, as_of)
+            state = self.preview_candidate_state(
+                candidate["release_id"], candidate["run_manifest_sha256"]
+            )
+            if state == "collision":
+                raise StopRunError(
+                    "the retried candidate also collides with an existing Preview "
+                    "release; resolve manually"
+                )
         release_id, sha = candidate["release_id"], candidate["projection_sha256"]
         run_manifest = candidate["run_manifest"]
         preview_active = self.active_release("preview")
-        production_active = self.active_release("production")
-        if production_active == f"production-{release_id}":
-            raise SkipRunError("candidate is already active in Production")
-        if preview_active != f"preview-{release_id}":
+        if state != "verified":
+            # An active Preview already on the upcoming week (an earlier run
+            # whose Production release failed) is a same-week republish.
+            if parity_mode == "close-week" and self.preview_active_week() == nxt:
+                parity_mode = "market-refresh"
             self.step(
                 "check release parity",
                 self.py(
@@ -771,6 +828,24 @@ class Controller:
             "production",
         )
         self.probe_health(release_id, nxt)
+
+    def prepare(self, manifest: Path, nxt: int, as_of: datetime) -> dict[str, str]:
+        self.step(
+            "prepare candidate",
+            self.py(
+                "scripts/pipeline/run_season.py", "prepare",
+                "--model-manifest", MODEL_MANIFEST,
+                "--revision-manifest", manifest,
+                "--through-week", nxt - 1, "--next-week", nxt,
+                "--as-of", iso_z(as_of), "--output", SEASON_OUTPUT,
+                "--environment", "preview",
+            ),
+            "preview",
+            timeout=2400,
+        )  # fmt: skip
+        candidate = self.read_candidate()
+        self.summary["candidate"] = candidate
+        return candidate
 
     def release_args(
         self, environment: str, expected: str | None, run_manifest: str, sha: str
@@ -799,6 +874,7 @@ class Controller:
             "release_id": data["release_id"],
             "projection_sha256": ref["sha256"],
             "run_manifest": str(path),
+            "run_manifest_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             "candidate_dir": str(Path(ref["uri"]).parent),
         }
 
