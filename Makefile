@@ -1,4 +1,4 @@
-.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-revision season-market-revision season-prepare season-release season-rollback
+.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-close-week season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -34,8 +34,8 @@ help:
 	@echo "  make audit-data YEAR=2026 ENV=preview - Audit Gold training data and lineage"
 	@echo ""
 	@echo "Weekly season release (docs/ops/weekly_runbook.md; WEEK = upcoming week):"
-	@echo "  make season-revision WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
-	@echo "  make season-market-revision FROM=... TO=... REVISION_ID=... CUTOFF=...  - Market-only mid-week line refresh manifest"
+	@echo "  make season-close-week WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
+	@echo "  make season-market-revision WEEK=<upcoming> FROM=... TO=... REVISION_ID=... CUTOFF=...  - Market-only mid-week line refresh manifest"
 	@echo "  make season-prepare WEEK=8 AS_OF=... [MANIFEST=...] [RECONSTRUCT=1]  - Prepare the candidate from a clean committed tree"
 	@echo "  make season-release ENV=preview|production RELEASE_ID=season-2026-... PROJECTION_SHA=... EXPECTED_PREVIOUS=...|INITIAL=1"
 	@echo "  make season-rollback RELEASE_ID=... EXPECTED_PREVIOUS=... DECISION_REF=... OWNER_AUTHORIZED=1  - Production, owner credential"
@@ -191,9 +191,27 @@ promote-silver:
 SEASON_OUTPUT := artifacts/season/2026/preview
 SEASON_ENV := CFB_STORAGE_BACKEND=r2 PYTHONPATH=src:.
 
-season-revision:
+# Normal weekly close/open (incremental): fetches only the completed week's
+# observations, carries the certified earlier-week captures, and gates the
+# completed-week history against the previous manifest. PREVIOUS_MANIFEST
+# defaults to the highest-versioned revision_manifest_w<WEEK-1>_v<k>.json.
+season-close-week:
 	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(PRE_WEEK_CUTOFF)" ] || [ -z "$(RUN_ID)" ]; then \
-		echo "Usage: make season-revision WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
+		echo "Usage: make season-close-week WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [PREVIOUS_MANIFEST=<certified manifest; default: highest-versioned week WEEK-1 manifest>] [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
+	fi
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/build_season_revision.py --season 2026 --week $(WEEK) --environment preview --incremental --as-of $(AS_OF) --pre-week-cutoff $(PRE_WEEK_CUTOFF) --pipeline-run-id $(RUN_ID) $(if $(PREVIOUS_MANIFEST),--previous-manifest $(PREVIOUS_MANIFEST),) $(if $(DRY),--dry-run,)
+
+# Full-history repair vehicle: re-ingests every completed week (Weeks 0..WEEK-1)
+# and is NOT the weekly rollover. Requires an explicit ack; the normal weekly
+# path is season-close-week.
+season-revision:
+	@if [ "$(FULL_HISTORY)" != "1" ]; then \
+		echo "season-revision re-ingests every completed week and is reserved for explicitly approved history repairs." >&2; \
+		echo "For the normal weekly rollover use: make season-close-week WEEK=<upcoming week> AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=<pre-week cutoff> RUN_ID=<fresh id>" >&2; \
+		echo "To run the full-history path deliberately, set FULL_HISTORY=1." >&2; exit 1; \
+	fi
+	@if [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(PRE_WEEK_CUTOFF)" ] || [ -z "$(RUN_ID)" ]; then \
+		echo "Usage: make season-revision FULL_HISTORY=1 WEEK=<upcoming week> AS_OF=<completed-week post-week cutoff> PRE_WEEK_CUTOFF=<upcoming-week pre-week cutoff> RUN_ID=<fresh pipeline run id> [DRY=1 re-checks an existing RUN_ID]" >&2; exit 1; \
 	fi
 	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/build_season_revision.py --season 2026 --week $(WEEK) --environment preview --as-of $(AS_OF) --pre-week-cutoff $(PRE_WEEK_CUTOFF) --pipeline-run-id $(RUN_ID) $(if $(DRY),--dry-run,)
 
@@ -201,10 +219,10 @@ season-revision:
 # the quotes, the target week's pre-week cutoff and the revision identity. Reads
 # stored captures; never calls a provider.
 season-market-revision:
-	@if [ -z "$(FROM)" ] || [ -z "$(TO)" ] || [ -z "$(REVISION_ID)" ] || [ -z "$(CUTOFF)" ]; then \
-		echo "Usage: make season-market-revision FROM=<certified revision manifest> TO=<new manifest path> REVISION_ID=<id> CUTOFF=<ISO-8601 UTC, last capture + ~5 min>" >&2; exit 1; \
+	@if [ -z "$(WEEK)" ] || [ -z "$(FROM)" ] || [ -z "$(TO)" ] || [ -z "$(REVISION_ID)" ] || [ -z "$(CUTOFF)" ]; then \
+		echo "Usage: make season-market-revision WEEK=<upcoming week> FROM=<certified revision manifest> TO=<new manifest path> REVISION_ID=<id> CUTOFF=<ISO-8601 UTC, last capture + ~5 min>" >&2; exit 1; \
 	fi
-	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python -m scripts.pipeline.build_market_revision --from-manifest $(FROM) --to-manifest $(TO) --revision-id $(REVISION_ID) --cutoff $(CUTOFF)
+	$(SEASON_ENV) zsh scripts/ops/with_preview_env.sh uv run python -m scripts.pipeline.build_market_revision --from-manifest $(FROM) --to-manifest $(TO) --revision-id $(REVISION_ID) --cutoff $(CUTOFF) --target-week $(WEEK)
 
 # MANIFEST defaults to the week's first revision (revision_manifest_w<WEEK>_v1.json);
 # pass MANIFEST= for a later one, such as a market-only line refresh.

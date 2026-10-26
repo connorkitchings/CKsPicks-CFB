@@ -1,16 +1,34 @@
 #!/usr/bin/env python3
 """Build the weekly season revision manifest from registered Preview captures.
 
-For ``--week N`` (the week to forecast) the completed history is Weeks 0..N-1:
+For ``--week N`` (the week to forecast) the completed history is Weeks 0..N-1.
+Two paths refresh the completed-week Silver under ``--pipeline-run-id``:
 
-1. Refresh Silver ``games``, ``game_outcomes``, ``plays`` and ``team_game_stats``
-   through the ops controller's ``prepare-week`` source and Silver steps (the
-   ``fetch-source``/``build-silver`` machinery) under ``--pipeline-run-id``.
+- ``--incremental`` (the normal weekly path, ``make season-close-week``): the
+  controller's ``advance-week`` steps fetch only the completed week N-1, carry
+  the certified Weeks 0..N-2 Bronze captures behind ``--previous-manifest``
+  (default: the highest-versioned ``revision_manifest_w<N-1>_v<k>.json``), and
+  stop if the completed-week schedule or finals differ from that manifest.
+- Without ``--incremental`` (the full-history repair path, ``make
+  season-revision FULL_HISTORY=1``): the ``prepare-week`` steps re-ingest every
+  completed week 0..N-1.
+
+Then, on either path:
+
+1. Silver ``games``, ``game_outcomes``, ``plays`` and ``team_game_stats`` are
+   refreshed as above (the ``fetch-source``/``build-silver`` machinery).
 2. Derive ``byplay``, ``drives`` and ``source_reconciliation`` from those parents.
 3. Build one content-addressed cumulative ``market_quotes`` version from every
    registered season CFBD betting-lines and The Odds API capture.
 4. Write ``conf/season/<season>/revision_manifest_w<N>_v1.json``. ``observations``
    and ``scoring_events`` are omitted: ``season.inputs`` recomputes them.
+
+Completed-week cutoffs are carried from ``--previous-manifest`` and must equal
+those of the highest-versioned certified manifest of week N-1 (pre-week cutoffs
+of Weeks 0..N-1, post-week cutoffs of Weeks 0..N-2); the build refuses before
+fetching anything otherwise. A known-stale carried cutoff is fixed explicitly
+with ``--correct-cutoff WEEK:pre|post=<ISO timestamp>`` (repeatable); only the
+corrected keys may then differ from the certified manifest.
 
 ``--dry-run`` fetches nothing: it reads the existing Silver refs of
 ``--pipeline-run-id``, builds the derived and market versions in a temporary
@@ -24,6 +42,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -112,9 +131,21 @@ def _ref_from_input(dataset: str, entry: dict) -> DatasetRef:
 
 
 def refresh_controller_silver(
-    conn_url: str, *, season: int, week: int, as_of: str, run_id: str
+    conn_url: str,
+    *,
+    season: int,
+    week: int,
+    as_of: str,
+    run_id: str,
+    advance: dict | None = None,
 ) -> None:
-    """Fetch Weeks 0..week-1 and rebuild their Silver via the ops controller."""
+    """Fetch the completed weeks' observations and rebuild their Silver.
+
+    With ``advance`` (incremental mode) the controller command is
+    ``advance-week``: only week ``week - 1`` is fetched, certified earlier-week
+    captures are carried into the Silver builds, and the completed-week history
+    is gated against the previous certified revision.
+    """
     from cks_picks_cfb.ops.__main__ import build_steps
     from cks_picks_cfb.ops.state_machine import (
         PostgresStateStore,
@@ -127,19 +158,67 @@ def refresh_controller_silver(
     os.environ["CFB_ARTIFACT_ENV"] = "preview"
     os.environ["CFB_RUNTIME_TARGET_RESOLVED"] = "preview"
     context = new_context(
-        command="prepare-week",
+        command="advance-week" if advance is not None else "prepare-week",
         environment="preview",
         season=season,
         week=week,
         as_of=as_of,
         pipeline_run_id=run_id,
     )
-    steps = build_steps(context, conn_url=conn_url)
+    steps = build_steps(context, conn_url=conn_url, advance=advance)
     steps = steps[: [step.name for step in steps].index(LAST_CONTROLLER_STEP) + 1]
     with PostgresStateStore(conn_url) as store:
         StateMachine(store, notifier=WebhookFailureNotifier.from_env()).run(
             context, steps
         )
+
+
+def carried_capture_ids(storage, previous: dict) -> dict[str, list[str]]:
+    """Certified Weeks 0..N-2 Bronze capture IDs behind the previous manifest.
+
+    Recovered from the certified ``byplay`` manifest's parent version IDs; each
+    version ID resolves by reading the candidate dataset's sealed manifest,
+    because ``parent_versions`` records IDs without dataset names. These are the
+    captures the incremental rollover reuses instead of re-fetching history.
+    """
+    byplay_uri = previous["inputs"]["byplay"]["uri"]
+    manifest_uri = byplay_uri.rsplit("/", 1)[0] + "/manifest.json"
+    byplay = json.loads(storage.read_bytes(manifest_uri).decode())
+    parent_versions = byplay["parent_versions"]
+    if not parent_versions:
+        raise LookupError(
+            f"Certified byplay manifest {byplay_uri} lists no parent versions; "
+            "the incremental rollover cannot recover the certified history"
+        )
+    resolved: dict[str, list[str]] = {}
+    for dataset in ("plays", "team_game_stats"):
+        manifest = None
+        for version_id in parent_versions:
+            candidate = (
+                f"lake/silver/dataset={dataset}/version={version_id}/manifest.json"
+            )
+            if not storage.exists(candidate):
+                continue
+            loaded = json.loads(storage.read_bytes(candidate).decode())
+            if (
+                loaded.get("dataset") == dataset
+                and loaded.get("version_id") == version_id
+            ):
+                manifest = loaded
+                break
+        if manifest is None:
+            raise LookupError(
+                f"Certified byplay manifest {byplay_uri} has no resolvable "
+                f"{dataset} parent version"
+            )
+        capture_ids = manifest.get("source_capture_ids") or []
+        if not capture_ids:
+            raise LookupError(
+                f"Certified {dataset} version {manifest.get('version_id')} lists "
+                "no source captures; the incremental rollover cannot carry history"
+            )
+        resolved[dataset] = [str(capture_id) for capture_id in capture_ids]
+    return resolved
 
 
 def controller_refs(storage, run_id: str) -> dict[str, DatasetRef]:
@@ -220,11 +299,34 @@ def build_market_quotes(source, sink, *, captures, games: pd.DataFrame, code_sha
     )
 
 
+def require_completed_weeks(frames: dict[str, pd.DataFrame], through_week: int) -> None:
+    """Every completed week 0..``through_week`` must be in plays and team stats.
+
+    Guards the incremental carry: a certified week whose captures were silently
+    dropped would otherwise vanish from history without any other signal.
+    """
+    for dataset in ("plays", "team_game_stats"):
+        present = set(frames[dataset]["week"].dropna().astype(int))
+        for week in range(through_week + 1):
+            if week not in present:
+                raise LookupError(
+                    f"Built {dataset} Silver has no rows for completed week {week}; "
+                    "the carried captures do not cover the certified history"
+                )
+
+
 def build_derived(
-    source, sink, *, parents: dict[str, DatasetRef], as_of: datetime, code_sha: str
+    source,
+    sink,
+    *,
+    parents: dict[str, DatasetRef],
+    as_of: datetime,
+    code_sha: str,
+    through_week: int,
 ):
     """Derive byplay, drives and source reconciliation from pinned Silver parents."""
     frames = {name: read_dataset(source, parents[name]) for name in DERIVED_PARENTS}
+    require_completed_weeks(frames, through_week)
     games = frames["games"].rename(columns={"kickoff_utc": "start_date"})
     byplay, drives, team_game, _ = build_preaggregation_pipeline(
         frames["plays"],
@@ -277,6 +379,81 @@ def build_derived(
     return built
 
 
+CutoffCorrections = dict[tuple[str, str], datetime]
+
+
+def parse_cutoff_correction(value: str) -> tuple[tuple[str, str], datetime]:
+    """Parse ``WEEK:pre|post=<ISO timestamp>`` into ``((kind, week), instant)``."""
+    match = re.fullmatch(r"(\d+):(pre|post)=(.+)", value)
+    if match is None:
+        raise ValueError(f"--correct-cutoff must be WEEK:pre|post=<ISO>, got {value!r}")
+    return (match.group(2), str(int(match.group(1)))), _utc(match.group(3))
+
+
+def revision_cutoffs(
+    previous: dict,
+    *,
+    week: int,
+    as_of: datetime,
+    pre_week_cutoff: datetime,
+    corrections: CutoffCorrections | None = None,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Pre- and post-week cutoffs of the Week ``week`` revision.
+
+    Carried from ``previous``, then any explicit corrections, then this week's
+    own pre-week cutoff and the completed week's post-week cutoff.
+    """
+    pre = dict(previous["pre_week_cutoffs"])
+    post = dict(previous.get("post_week_cutoffs", {}))
+    for (kind, key), instant in (corrections or {}).items():
+        carried = pre if kind == "pre" else post
+        if key not in carried:
+            raise ValueError(
+                f"--correct-cutoff {key}:{kind}: the previous manifest has no "
+                f"{kind}-week cutoff for week {key}"
+            )
+        carried[key] = _iso(instant)
+    pre[str(week)] = _iso(pre_week_cutoff)
+    post[str(week - 1)] = _iso(as_of)
+    return pre, post
+
+
+def check_completed_week_cutoffs(
+    pre: dict[str, str],
+    post: dict[str, str],
+    certified: dict,
+    *,
+    week: int,
+    corrections: CutoffCorrections | None = None,
+) -> None:
+    """Refuse when a completed week's cutoff differs from the certified manifest.
+
+    Completed weeks: pre-week cutoffs of Weeks 0..``week``-1 and post-week
+    cutoffs of Weeks 0..``week``-2. Explicitly corrected keys are exempt.
+    """
+    problems = []
+    for kind, new, old, last in (
+        ("pre", pre, certified["pre_week_cutoffs"], week - 1),
+        ("post", post, certified.get("post_week_cutoffs", {}), week - 2),
+    ):
+        for key, expected in sorted(old.items(), key=lambda item: int(item[0])):
+            if int(key) > last or (kind, key) in (corrections or {}):
+                continue
+            if new.get(key) != expected:
+                problems.append(
+                    f"{kind}_week_cutoffs[{key}] is {new.get(key)} but the "
+                    f"certified manifest has {expected}"
+                )
+    if problems:
+        raise ValueError(
+            "Completed-week cutoffs differ from the certified manifest "
+            f"(revision_id {certified.get('revision_id')}): "
+            + "; ".join(problems)
+            + ". Rebuild from the highest certified manifest, or pass "
+            "--correct-cutoff WEEK:pre|post=<ISO> to correct a stale cutoff."
+        )
+
+
 def revision_manifest(
     previous: dict,
     *,
@@ -285,21 +462,23 @@ def revision_manifest(
     pre_week_cutoff: datetime,
     captured_at: datetime,
     refs: dict[str, DatasetRef],
+    corrections: CutoffCorrections | None = None,
 ) -> dict:
     """The Week ``week`` revision: fresh Silver inputs, carried venues and teams."""
+    pre, post = revision_cutoffs(
+        previous,
+        week=week,
+        as_of=as_of,
+        pre_week_cutoff=pre_week_cutoff,
+        corrections=corrections,
+    )
     manifest = {
         "schema_version": "season_revision_v1",
         "season": previous["season"],
         "revision_id": f"season-{previous['season']}-w{week}-preview-r1",
         "captured_at": _iso(captured_at),
-        "pre_week_cutoffs": {
-            **previous["pre_week_cutoffs"],
-            str(week): _iso(pre_week_cutoff),
-        },
-        "post_week_cutoffs": {
-            **previous.get("post_week_cutoffs", {}),
-            str(week - 1): _iso(as_of),
-        },
+        "pre_week_cutoffs": pre,
+        "post_week_cutoffs": post,
         "inputs": {
             "schedule": _input(refs["games"]),
             "finals": _input(refs["game_outcomes"]),
@@ -331,12 +510,20 @@ def build_revision(
     run_id: str,
     now: datetime,
     code_sha: str,
+    corrections: CutoffCorrections | None = None,
 ) -> tuple[dict, list[tuple[DatasetRef, object]]]:
     """Compute every input into ``sink``; returns the manifest and new versions."""
     season = previous["season"]
     refs = controller_refs(source, run_id)
     refs["teams"] = _ref_from_input("teams", previous["inputs"]["teams"])
-    derived = build_derived(source, sink, parents=refs, as_of=as_of, code_sha=code_sha)
+    derived = build_derived(
+        source,
+        sink,
+        parents=refs,
+        as_of=as_of,
+        code_sha=code_sha,
+        through_week=week - 1,
+    )
     captures = market_captures(
         conn_url, season_market_capture_ids(conn_url, season, now)
     )
@@ -359,6 +546,7 @@ def build_revision(
         pre_week_cutoff=pre_week_cutoff,
         captured_at=latest_capture_time(conn_url, capture_ids),
         refs=refs,
+        corrections=corrections,
     )
     return manifest, list(built.values())
 
@@ -386,8 +574,34 @@ def parse_args() -> argparse.Namespace:
         help="Ops controller run that captures and builds the completed-week Silver.",
     )
     parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help=(
+            "Normal week close/open: fetch only the completed week's observations, "
+            "carry the certified earlier-week captures, and gate the completed-week "
+            "history against the previous manifest. The default full-history path "
+            "re-ingests every completed week and is a repair vehicle."
+        ),
+    )
+    parser.add_argument(
         "--previous-manifest",
-        help="Defaults to conf/season/<season>/revision_manifest_w<N-1>_v1.json.",
+        help=(
+            "Defaults to the highest-versioned conf/season/<season>/"
+            "revision_manifest_w<N-1>_v<k>.json with --incremental, else "
+            "revision_manifest_w<N-1>_v1.json."
+        ),
+    )
+    parser.add_argument(
+        "--correct-cutoff",
+        action="append",
+        default=[],
+        metavar="WEEK:pre|post=ISO",
+        help=(
+            "Override one carried completed-week cutoff, e.g. "
+            "8:pre=2026-10-20T14:39:00Z. Repeatable. Without it, the build "
+            "refuses when any completed-week cutoff differs from the highest "
+            "certified manifest of the completed week."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -400,13 +614,36 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
+def latest_previous_manifest(conf: Path, completed_week: int) -> Path:
+    """The highest-versioned ``revision_manifest_w<completed_week>_v<k>.json``."""
+    pattern = re.compile(rf"revision_manifest_w{completed_week}_v(\d+)\.json")
+    versions = {
+        int(match.group(1)): path
+        for path in conf.glob(f"revision_manifest_w{completed_week}_v*.json")
+        if (match := pattern.fullmatch(path.name))
+    }
+    if not versions:
+        raise FileNotFoundError(
+            f"No revision_manifest_w{completed_week}_v<k>.json in {conf}; "
+            "pass --previous-manifest explicitly"
+        )
+    return versions[max(versions)]
+
+
 def main() -> None:
     load_dotenv()
     args = parse_args()
     conf = Path(f"conf/season/{args.season}")
-    previous_path = Path(
-        args.previous_manifest or conf / f"revision_manifest_w{args.week - 1}_v1.json"
-    )
+    if args.previous_manifest:
+        previous_path = Path(args.previous_manifest)
+    elif args.incremental:
+        previous_path = latest_previous_manifest(conf, args.week - 1)
+        print(
+            f"Previous manifest: {previous_path} (highest version of week "
+            f"{args.week - 1}; pass --previous-manifest to override)"
+        )
+    else:
+        previous_path = conf / f"revision_manifest_w{args.week - 1}_v1.json"
     output = Path(args.output or conf / f"revision_manifest_w{args.week}_v1.json")
     if not args.dry_run and output.exists():
         raise SystemExit(f"Refusing to overwrite {output}")
@@ -414,8 +651,50 @@ def main() -> None:
     if previous.get("season") != args.season:
         raise SystemExit(f"{previous_path} is not a {args.season} revision")
     as_of, pre_week_cutoff = _utc(args.as_of), _utc(args.pre_week_cutoff)
+    try:
+        corrections = dict(parse_cutoff_correction(v) for v in args.correct_cutoff)
+        pre, post = revision_cutoffs(
+            previous,
+            week=args.week,
+            as_of=as_of,
+            pre_week_cutoff=pre_week_cutoff,
+            corrections=corrections,
+        )
+        try:
+            certified = json.loads(
+                latest_previous_manifest(conf, args.week - 1).read_text()
+            )
+        except FileNotFoundError:
+            certified = None
+        if certified is not None:
+            check_completed_week_cutoffs(
+                pre, post, certified, week=args.week, corrections=corrections
+            )
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     conn_url = resolve_runtime_target(args.environment).database_url
     source = get_storage(environment=args.environment)
+    advance = None
+    if args.incremental:
+        advance = {
+            "carried_captures": carried_capture_ids(source, previous),
+            "gate": {
+                "previous_games": previous["inputs"]["schedule"],
+                "previous_outcomes": previous["inputs"]["finals"],
+                "through_week": args.week - 2,
+            },
+        }
+        print(
+            "Incremental rollover: carrying "
+            f"{len(advance['carried_captures']['plays'])} plays and "
+            f"{len(advance['carried_captures']['team_game_stats'])} team_game_stats "
+            f"certified captures; fetching only week {args.week - 1} observations."
+        )
+        if args.dry_run:
+            print(
+                "Stop gate NOT evaluated in dry-run: completed-week history was "
+                "not compared against the previous manifest."
+            )
     if not args.dry_run:
         refresh_controller_silver(
             conn_url,
@@ -423,6 +702,7 @@ def main() -> None:
             week=args.week,
             as_of=_iso(as_of),
             run_id=args.pipeline_run_id,
+            advance=advance,
         )
     with tempfile.TemporaryDirectory(prefix="season-revision-") as scratch:
         sink = LocalStorage(scratch) if args.dry_run else source
@@ -437,6 +717,7 @@ def main() -> None:
             run_id=args.pipeline_run_id,
             now=datetime.now(timezone.utc),
             code_sha=_code_sha(),
+            corrections=corrections,
         )
     payload = json.dumps(manifest, indent=2) + "\n"
     if args.dry_run:

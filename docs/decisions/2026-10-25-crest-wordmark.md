@@ -1,7 +1,7 @@
 # Crest CFB wordmark decision
 
 **Date:** 2026-10-25  
-**Status:** Accepted and integrated on `dev` (header and phone app bar); Production deployment pending.
+**Status:** Accepted and integrated (header and phone app bar); deployed to Production 2026-10-25 in merge commit `86c16f66`.
 
 **Authority:** The owner selected lettering C, then navy color option B, then instructed that it be implemented; the owner reviewed the regenerated open-font lettering and accepted it.
 
@@ -41,6 +41,6 @@ Integrated on `dev` on 2026-10-25 as `web/src/components/Wordmark.tsx`, used by 
 
 Verified both themes at 1440, 1280, 390 and 320 pixels for fit, clipping, contrast, baseline alignment, CFB legibility, a live theme switch without a layout change, accessible name, home navigation and keyboard focus, with browser tests (`web/e2e/wordmark.spec.ts`) and by inspecting screenshots. Real-device acceptance was not performed. Favicon, social images, exports, broader typography, and other brand surfaces keep their earlier look and need a separately defined scope.
 
-**Deployment:** pending. Nothing has been deployed to Production; that happens when the owner merges `dev` into `main`.
+**Deployment:** live on Production since 2026-10-25 (merge commit `86c16f66`); the rendered wordmark was checked on the live site in both themes at desktop and phone widths.
 
 Session evidence: `session_logs/2026-10-25/02-crest-wordmark-concepts.md` (repository file outside the published documentation site).

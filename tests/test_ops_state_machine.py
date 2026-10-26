@@ -802,3 +802,98 @@ def test_publish_matchup_data_cli_takes_no_week_and_requires_manifests(monkeypat
     )
     with pytest.raises(SystemExit):
         parse_args()
+
+
+def _advance_spec() -> dict:
+    sha = "a" * 64
+    return {
+        "carried_captures": {
+            "plays": ["cap-play-0", "cap-play-1"],
+            "team_game_stats": ["cap-stat-0"],
+        },
+        "gate": {
+            "previous_games": {
+                "uri": "lake/silver/dataset=games/version=old/data.parquet",
+                "sha256": sha,
+            },
+            "previous_outcomes": {
+                "uri": "lake/silver/dataset=game_outcomes/version=old/data.parquet",
+                "sha256": sha,
+            },
+            "through_week": 7,
+        },
+    }
+
+
+def test_advance_week_plan_fetches_only_the_completed_week():
+    context = new_context(
+        command="advance-week",
+        environment="preview",
+        season=2026,
+        week=9,
+        as_of="2026-10-25T21:00:00Z",
+        pipeline_run_id="w9-incremental",
+    )
+    steps = build_steps(
+        context, conn_url="postgresql://unused", advance=_advance_spec()
+    )
+    names = [step.name for step in steps]
+    assert names == [
+        "ingest_schedule",
+        "request_inventory_week_8",
+        "ingest_plays_week_8",
+        "ingest_game_stats_week_8",
+        "build_week_policy",
+        "build_games",
+        "build_outcomes",
+        "verify_completed_week_stability",
+        "build_plays",
+        "build_team_game_stats",
+    ]
+    for step in steps:
+        argv = step.definition.get("argv", [])
+        joined = " ".join(str(part) for part in argv)
+        if step.name.startswith("ingest_") and "week" in step.name:
+            assert "--week 8" in joined
+            assert "--week 0" not in joined and "--week 7" not in joined
+    gate = next(
+        step for step in steps if step.name == "verify_completed_week_stability"
+    )
+    gate_argv = gate.definition["argv"]
+    assert gate_argv[gate_argv.index("--through-week") + 1] == "7"
+    plays = next(step for step in steps if step.name == "build_plays")
+    assert plays.definition["extra_capture_ids"] == ["cap-play-0", "cap-play-1"]
+    stats = next(step for step in steps if step.name == "build_team_game_stats")
+    assert stats.definition["extra_capture_ids"] == ["cap-stat-0"]
+    assert (
+        "extra_capture_ids"
+        not in next(step for step in steps if step.name == "build_games").definition
+    )
+
+
+def test_advance_week_requires_a_completed_week_and_a_spec():
+    with pytest.raises(ValueError, match="requires at least one completed week"):
+        build_steps(
+            new_context(
+                command="advance-week",
+                environment="preview",
+                season=2026,
+                week=0,
+                as_of="2026-08-24T12:00:00Z",
+                pipeline_run_id="w0-incremental",
+            ),
+            conn_url="postgresql://unused",
+            advance=_advance_spec(),
+        )
+    with pytest.raises(AssertionError):
+        build_steps(
+            new_context(
+                command="advance-week",
+                environment="preview",
+                season=2026,
+                week=9,
+                as_of="2026-10-25T21:00:00Z",
+                pipeline_run_id="w9-incremental",
+            ),
+            conn_url="postgresql://unused",
+        )

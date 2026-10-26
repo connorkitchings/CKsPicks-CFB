@@ -11,7 +11,7 @@
 1. **Chronological Season Engine (`run_season.py`)**:
    - Reconstructs the 2026 season from Week 0 through completed weeks using pre-week observations only.
    - Computes point-in-time ratings, predictions, lines, edges, and grades.
-   - Enforces the recorded projection set's strict verification rules (`season_verification_v2`; 24 checks for new `charts_v2` candidates).
+   - Enforces the recorded projection set's strict verification rules (`season_verification_v2`; 32 checks for new `resume_v1` candidates, which include the `charts_v2` checks).
 2. **Fixed-Schema Atomic Releases (Migration 0025)**:
    - Staging is completely isolated from live serving.
    - Activation checks owner policy, expected prior release, candidate verification, and readback hash consistency.
@@ -47,9 +47,74 @@
 
 **Owner rule, 2026-10-19:** Moving an accepted release from Preview to Production must never query CFBD or another upstream provider. Promotion verifies the retained candidate, pinned inputs, independent Preview proof and Production readback. It does not capture new lines, refresh schedules, or re-ingest historical plays/game statistics. If code or schema compatibility requires a new candidate, rebuild it from the certified immutable inputs; do not equate recomputation with source re-ingestion. A source/market refresh is a separate weekly operation or explicitly scoped repair, not an implicit promotion prerequisite.
 
-**Weekly-process defect under review:** the current `build_season_revision.py` controller re-ingests Weeks 0 through the completed week. Repeatedly querying already-certified historical weeks during a normal rollover is not the intended process. Do not run this full-history path for routine weekly advancement until the incremental process is reviewed and approved. The intended boundary is to ingest the newly completed week's required observations and authorized upcoming-week market inputs, reuse certified historical parents, and request historical data only for an explicitly identified repair or missing input. No incremental replacement has been implemented or certified yet. See [the process-review brief](../planning/weekly-operations-process-review.md).
+**Weekly-process boundary (implemented 2026-10-25):** the normal week close/open is `make season-close-week` (builder `--incremental`, controller command `advance-week`). It fetches only the season schedule refresh, the request inventory plus plays and game statistics for the completed week, and the market captures you run explicitly; certified earlier-week Bronze captures are carried into the Silver builds, and the completed-week schedule and finals are gated against the previous certified revision — any difference stops the run and names the affected games. The full-history path (`make season-revision`, behind `FULL_HISTORY=1`) re-ingests Weeks 0..N−1 and is reserved for explicitly approved history repairs until the budgeted repair mode is implemented. Promotion must never query a provider (unchanged). See [the process-review brief](../planning/weekly-operations-process-review.md) and the [2026-10-25 contract](../plans/2026-10-25/01-incremental-close-week-rollover.md).
 
 The October 19 promotion mistakenly started the full-history path. It was stopped during Week 3; no partial refresh output was selected or activated. The successful release reused the certified football input hashes. Preserve the receipts as evidence; do not rerun the cancelled controller or silently broaden future provider requests.
+
+## Automated weekly update
+
+Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actions workflow `.github/workflows/weekly-season-update.yml`, driven by `scripts/ops/weekly_automation.py`. The controller runs the same commands as the `make season-*` targets (it mirrors the wrappers without `zsh` or the macOS Keychain, taking credentials from the job environment), in one job, because the run manifest stores absolute candidate paths and release re-hashes the candidate from local disk.
+
+**Schedule (both at 17:07 UTC, which is 13:07 ET in daylight time and 12:07 ET in standard time):**
+
+- Sunday: close the completed week and open the next (the full cadence below: capture, build, score exceptions, prepare, parity, Preview release, Production release, live health probe).
+- Monday: market-only line refresh for the active week, only when the active release has fewer than 100% of games lined. It stops without releasing when coverage did not improve.
+
+**Gates (any failure stops the run before the next step; nothing further is activated):**
+
+- Week detection reads the active Production release. It stops when the upcoming week's first kickoff has passed, when the season is past its final regular week, or when any completed-week game lacks a final score (a human is needed).
+- The revision builder's stop gate (completed-week schedule and finals unchanged) and its check that completed-week cutoffs match the previous certified manifest.
+- Score-reconciliation exceptions are added automatically only when the final score equals the sum of the quarter line scores for that team-game; otherwise the run stops and names the games. An earlier-week exception changing or becoming unused also stops the run.
+- Prepare passes every `season_verification_v2` check.
+- Parity against the active Preview release. For the close: completed-week predictions, variances, grades and earlier rating snapshots are identical within 1e-9. For the refresh: ratings, predictions, features and all grades are identical, and only the upcoming week's line, edge, lean and pending-pick columns differ. The upcoming week must be 100% predicted; line coverage is reported but does not block.
+- Preview release with `--expected-previous-release-id` read from the database, then Production release with the independent Preview proof, then a probe of the live `/api/health` until it reports the new release.
+
+**Commits.** The job commits the revision manifest and the exceptions file and pushes to `dev` before it prepares, then makes no further commit (prepare needs a clean tree and release needs `HEAD` equal to the prepared commit). Pushes made with `GITHUB_TOKEN` do not trigger `ci.yml`, so the workflow runs its own gates and does not rely on CI for that commit.
+
+**Public output.** The repository is public, so logs and artifacts carry only IDs, hashes and counts. The uploaded receipt artifact holds small reports, the run manifest and a summary JSON.
+
+**Resume.** If `conf/season/2026/revision_manifest_w<NEXT_WEEK>_v1.json` already exists on `dev`, the controller skips capture and build and resumes at prepare.
+
+**Run it by hand.** In GitHub open Actions, choose "Weekly season update", then Run workflow, or use the CLI. Inputs:
+
+- `mode`: `close-week`, `market-refresh` or `plan-only`. `plan-only` detects the week, checks that secrets and database roles are present and read-only, and computes cutoffs; it makes no provider call and no write.
+- `force`: run even when the week gate would skip (for example a refresh with full line coverage).
+- `skip_production`: stop after the Preview release, for a rehearsal.
+
+```bash
+gh workflow run weekly-season-update.yml -f mode=plan-only
+gh workflow run weekly-season-update.yml -f mode=close-week -f skip_production=true
+```
+
+**Disable.** Set the repository variable `CFB_WEEKLY_AUTOMATION_ENABLED` to anything other than `true` (or delete it); the job is then skipped. In-flight runs are not cancelled, and the `weekly-season-update` concurrency group queues overlapping runs.
+
+```bash
+gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body false
+```
+
+**Roll back.** Automation never rolls back. Disable it first, then follow the owner-only [Rollback Procedure](#rollback-procedure) to reactivate the prior verified release. Preview rollback is not supported; release a new candidate instead.
+
+**Owner one-time setup.**
+
+1. In the repository settings create the GitHub environment `season-production`. Set its deployment branch policy to selected branches `main` and `dev` (scheduled runs evaluate against `refs/heads/main`; manual runs on `dev` need `dev`).
+2. Add the Production pipeline credential to that environment, piping from the Keychain so it never reaches shell history:
+   ```bash
+   security find-generic-password -s 'ckspicks-cfb/production/pipeline-url' -a cks_prod_pipeline -w | gh secret set PRODUCTION_PIPELINE_DATABASE_URL --env season-production
+   ```
+3. Add the Odds API key to the same environment from the local `.env`:
+   ```bash
+   grep '^THE_ODDS_API_KEY=' .env | cut -d= -f2- | gh secret set THE_ODDS_API_KEY --env season-production
+   ```
+4. Confirm the repository-level secrets also used by the pregame capture workflow exist: `CFBD_API_KEY`, `CFB_R2_PREVIEW_*` and `PREVIEW_DATABASE_URL`.
+5. Release `dev` to `main` (merge commit; see Step 4) so the schedule is active, then run `plan-only` and a `close-week` rehearsal with `skip_production=true`.
+6. Set `CFB_WEEKLY_AUTOMATION_ENABLED=true` only after the rehearsal passes:
+   ```bash
+   gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body true
+   ```
+
+Everything below is the manual procedure the automation mirrors; use it when the automation is disabled or stops.
+
+---
 
 ## Weekly Cadence (Step-by-Step)
 
@@ -88,35 +153,41 @@ CFB_STORAGE_BACKEND=r2 PYTHONPATH=.:src zsh scripts/ops/with_preview_env.sh \
 
 The Odds API script must run under the wrapper. Without it, storage falls back to the Production credential set and the capture is registered through whatever `DATABASE_URL` is in `.env`. Betting lines alone need no `--request-inventory`.
 
-Do not run `ingest_season.py --entities games`, `build_expected_request_inventory.py` or `ingest_week.py --entities plays` by hand. The builder's controller run does all three for Weeks 0 to `<COMPLETED_WEEK>`; see 1c.
+Do not run `ingest_season.py --entities games`, `build_expected_request_inventory.py` or `ingest_week.py --entities plays` by hand. The builder's controller run does the schedule refresh plus the completed week's inventory, plays and game statistics (incremental path, 1c) — or all weeks 0 to `<COMPLETED_WEEK>` on the full-history repair path.
 
-**1c. Legacy full-history revision builder — execution paused for normal rollovers.** The following describes the current implementation, not an approved incremental weekly procedure. Do not run it for a Preview-to-Production promotion or routine weekly advancement; first resolve the process-review gate above. An explicitly authorized historical repair must identify its source-request scope before execution.
+**1c. Build the revision incrementally — the normal weekly path.** `make season-close-week WEEK=<NEXT_WEEK> …` runs `build_season_revision.py --incremental`, which:
 
-`build_season_revision.py` currently does the following:
+1. Picks the previous manifest — by default the highest-versioned `conf/season/2026/revision_manifest_w<COMPLETED_WEEK>_v<k>.json` (the builder prints which file and why; override with `PREVIOUS_MANIFEST=<path>`) — and resolves the certified carry set from it: the `byplay` manifest's parent version IDs resolve to the certified `plays` and `team_game_stats` versions, whose `source_capture_ids` are the retained Bronze captures.
+2. Runs the controller's `advance-week` steps: the season schedule refresh, then `request_inventory_week_<COMPLETED_WEEK>`, `ingest_plays_week_<COMPLETED_WEEK>` and `ingest_game_stats_week_<COMPLETED_WEEK>` — the completed week only.
+3. Builds Silver `games` and `game_outcomes` from the fresh capture, runs the stop gate (`verify_completed_week_stability`: completed weeks 0..N−2 must equal the previous certified schedule and finals; any difference stops the run and names the games — route them to an approved repair, never a silent rewrite), then builds `plays` and `team_game_stats` from the union of the carried captures and the new week's captures.
+4. Derives `byplay`, `drives` and `source_reconciliation` from that Silver, builds one content-addressed cumulative `market_quotes` version from every registered capture, and writes `conf/season/2026/revision_manifest_w<NEXT_WEEK>_v1.json`.
 
-1. Runs the ops controller's `prepare-week` steps under `RUN_ID`, up to `build_team_game_stats`. That means: re-ingest the raw schedule, build a request inventory for each completed week, ingest `plays` and `game_stats` with `--request-inventory`, and build Silver `games`, `game_outcomes`, `plays` and `team_game_stats`.
-2. Derives `byplay`, `drives` and `source_reconciliation` from that Silver.
-3. Builds one content-addressed cumulative `market_quotes` version.
-4. Writes `conf/season/2026/revision_manifest_w<NEXT_WEEK>_v1.json`.
-
-`venues`, `teams` and `score_reconciliation_exceptions` are copied unchanged from `revision_manifest_w<COMPLETED_WEEK>_v1.json`.
+`venues`, `teams` and `score_reconciliation_exceptions` are copied unchanged from the previous manifest.
 
 ```bash
-make season-revision WEEK=<NEXT_WEEK> AS_OF="$POST_WEEK_CUTOFF" \
+make season-close-week WEEK=<NEXT_WEEK> AS_OF="$POST_WEEK_CUTOFF" \
   PRE_WEEK_CUTOFF="$PRE_WEEK_CUTOFF" RUN_ID="$RUN_ID"
 # = CFB_STORAGE_BACKEND=r2 PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh \
 #     uv run python scripts/pipeline/build_season_revision.py \
-#       --season 2026 --week <NEXT_WEEK> --environment preview \
+#       --season 2026 --week <NEXT_WEEK> --environment preview --incremental \
 #       --as-of "$POST_WEEK_CUTOFF" --pre-week-cutoff "$PRE_WEEK_CUTOFF" \
 #       --pipeline-run-id "$RUN_ID"
 ```
 
-- **It refuses to overwrite** an existing `revision_manifest_w<NEXT_WEEK>_v1.json`. Delete any stale or template file for that week first, such as the hand-made Week 8 template that still carries Week 7 input hashes.
+- **It refuses to overwrite** an existing `revision_manifest_w<NEXT_WEEK>_v1.json`. Delete any stale or template file for that week first.
 - **`DRY=1` (`--dry-run`) re-checks an existing run; it cannot preview a new one.** It fetches nothing and reads the Silver refs that `RUN_ID` already wrote under `artifacts/preview/pipeline-runs/<RUN_ID>/`, so it fails for a run ID that has not completed. It builds the derived and market versions in a temporary directory and prints the manifest. It uploads, registers and writes nothing, and ignores the overwrite rule.
+- **Dry-run does not evaluate the stop gate.** The builder prints an explicit `Stop gate NOT evaluated in dry-run` line; a dry run is not evidence that completed-week history is unchanged.
+- **Stop gate:** if the gate reports a changed completed-week game, stop. The affected history needs an explicitly approved repair; do not delete the manifest and retry silently.
 
 Check that every completed FBS game has a score, the required play/drive streams and reconciled totals. The `source_reconciliation` build fails on blocking conflicts.
 
+#### History repair (full-history path; not the weekly rollover)
+
+`make season-revision FULL_HISTORY=1 …` runs the same builder without `--incremental`: the controller's `prepare-week` steps re-ingest the raw schedule and, for **every** completed week 0 to N−1, the request inventory, `plays` and `game_stats`, before rebuilding all Silver. This re-queries already-certified history and must only run with an explicit owner-approved repair scope identifying the affected weeks, games and reason. A budgeted, scoped repair mode remains deferred to the [incremental-ingestion contract](../plans/2026-10-20/02-incremental-weekly-ingestion.md).
+
 **1d. Refresh the score-reconciliation exceptions.** Prepare requires exact per-team-game score reconciliation. `conf/season/2026/score_reconciliation_exceptions.json` lists the only allowed mismatches as `game_id`, `team` and `reason`. An unlisted mismatch fails, and so does an **unused** exception, for example a game whose play-by-play was repaired. The manifest pins the file by SHA-256 under `score_reconciliation_exceptions`, and prepare fails with `input checksum changed` if the file differs. The builder only copies the previous manifest's entry, and the Week 7 manifest has none. So after each week's finals:
+
+> **Known limitation (owner-accepted 2026-10-25).** The file is edited in place each week, so only the newest revision's pin matches it. An earlier revision (Week 7 and the Week 8 revisions `w8_v1` to `w8_v3`) can no longer be re-prepared from its manifest: prepare fails with `input checksum changed`. Releases already prepared and activated are stored and unaffected, and rollback reuses the stored release without re-reading the manifest. A mismatch here means the play-by-play feed is incomplete for a team-game (for example Ole Miss at Texas, Week 8: the feed summed to 3 of 27 points); the final score is correct, and the model marks the affected sides' scoring measurements missing instead of using the partial total. Keeping a per-revision exceptions file would remove the limitation and needs builder support; it is not implemented.
 
 1. Edit the file to list exactly the team-games that do not reconcile through `<COMPLETED_WEEK>`. Add the new week's mismatches and remove any repaired game.
 2. Pin it in the new manifest:
@@ -150,7 +221,7 @@ make season-prepare WEEK=<NEXT_WEEK> AS_OF="$PRE_WEEK_CUTOFF"   # add MANIFEST=<
 
 The runner will:
 - Recompute measurements, ratings, predictions, and grades.
-- Execute the full versioned verification suite (24 checks for `charts_v2`).
+- Execute the full versioned verification suite (32 checks for `resume_v1`).
 - Output the candidate artifact under `artifacts/season/2026/preview/<RELEASE_ID>/`.
 - Print the candidate manifest including `release_id` and the `serving_projections` SHA-256.
 
@@ -178,11 +249,11 @@ Use this to refresh the upcoming week's spreads and totals before kickoff withou
    Pass `--entities betting_lines`: the default is `plays,betting_lines`. No schedule, plays or historical weeks are fetched. Note the time of the last capture.
 2. **Build the revision.** Set `CUTOFF` to the last capture plus about five minutes. The builder reads stored captures (it never queries a provider), refuses to overwrite its target and registers the new quotes version:
    ```bash
-   make season-market-revision FROM=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N>.json \
+   make season-market-revision WEEK=<NEXT_WEEK> FROM=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N>.json \
      TO=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N+1>.json \
      REVISION_ID=season-2026-w<NEXT_WEEK>-preview-r<N+1> CUTOFF=<ISO-8601 UTC>
    # = ... uv run python -m scripts.pipeline.build_market_revision --from-manifest ... --to-manifest ... \
-   #       --revision-id ... --cutoff ...
+   #       --revision-id ... --cutoff ... --target-week <NEXT_WEEK>
    ```
    Run it as a module; invoking the file directly fails with `No module named 'scripts'`. Check 100% spread and total coverage for the upcoming week in the new quotes.
 3. **Commit the manifest** with `git add` of that one path, so the tree is clean.
@@ -252,7 +323,7 @@ make season-release ENV=production RELEASE_ID=<RELEASE_ID> \
 #       --projection-payload-sha256 <PROJECTION_PAYLOAD_SHA256>
 ```
 
-Production activation is an owner decision.
+Production activation is automatic when the [automated weekly update](#automated-weekly-update) passes every gate (owner decision, 2026-10-26; [decision log](../decisions/decision_log.md)). A manual Production release follows the commands above and needs the Preview proof; **rollback stays owner-only** (see [Rollback Procedure](#rollback-procedure)).
 
 ---
 
@@ -260,11 +331,12 @@ Production activation is an owner decision.
 
 Commits are allowed again from here.
 
-1. Fast-forward merge `dev` into `main` and push to trigger Vercel deployment:
+1. Release `dev` to `main` through a pull request merged with a **merge commit**, not a squash and not a fast-forward. `main` no longer fast-forwards from `dev` since the squash merge of PR #9, and another squash would diverge the branches again. The merge triggers the Vercel deployment:
    ```bash
-   git checkout main && git merge dev --ff-only && git push origin main
-   git checkout dev
+   gh pr create --base main --head dev --title "chore(release): release dev to main"
+   gh pr merge <PR_NUMBER> --merge
    ```
+   Scheduled workflows run only from the default branch (`main`), so changes to `.github/workflows/weekly-season-update.yml` take effect only after this release.
 2. Verify live production URLs:
    - `https://c-ks-picks-cfb.vercel.app/`
    - `https://c-ks-picks-cfb.vercel.app/ratings`

@@ -1,5 +1,7 @@
 # Weekly close/open and promotion process review
 
+**Status (2026-10-25): implemented and verified.** The normal close/open path is `make season-close-week` (builder `--incremental`, controller `advance-week`), certified on the Week 8→9 rollover (Preview release `preview-season-2026-7a59b8a92d0f7a85ca0a377b`; Production unchanged). `make season-revision` now refuses without `FULL_HISTORY=1`. Repair mode and promotion test harness remain deferred per the [2026-10-25 contract](../plans/2026-10-25/01-incremental-close-week-rollover.md). The analysis below is retained as the design record.
+
 - **Status:** Review requested by owner on 2026-10-19; investigation and implementation deferred at owner-requested session close.
 - **Incident:** Production session log `session_logs/2026-10-19/01-production-release-preflight.md` (outside the docs tree, so not linked).
 - **Operational authority:** [Weekly runbook](../ops/weekly_runbook.md).

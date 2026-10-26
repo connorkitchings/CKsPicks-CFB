@@ -11,6 +11,7 @@ research:
 
 public_make_targets:
   - prepare-week
+  - season-close-week
   - season-revision
   - season-prepare
   - season-release

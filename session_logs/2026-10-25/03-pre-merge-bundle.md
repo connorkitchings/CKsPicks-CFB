@@ -3,11 +3,11 @@
 ## TL;DR
 
 - **Worked On:** Six review fixes and the wordmark font-source cleanup, delivered as one bundle on top of `dev` at `2f16a808`, ahead of publishing release pull request #9.
-- **Outcome:** All seven items are implemented and validated. The bundle is committed to `dev` as separate commits. Deployment to Production has not happened.
+- **Outcome:** All seven items and the export lifecycle follow-up are implemented, validated and deployed to Production in merge commit `86c16f66` (2026-10-25).
 - **Plan Contract:** [`docs/plans/2026-10-25/01-pre-merge-fixes-and-crest-release.md`](../../docs/plans/2026-10-25/01-pre-merge-fixes-and-crest-release.md)
 - **Approval / Status:** Bundle defined by the owner on 2026-10-25. The owner accepted the visual difference in the regenerated "CFB" lettering and authorized getting everything onto `dev`. Merging `dev` into `main` remains with the owner.
 - **Blockers:** None.
-- **Next:** Owner merges release pull request #9; then the live checks and the status-page deployment record (merge commit, deployment ID, readback).
+- **Next:** Week 9 weekly release (separate runbook work); until Week 8 scores are ingested the site shows Week 8 as awaiting results.
 
 **tags:** ["web", "cache", "share", "env", "audit-evidence", "wordmark", "licensing"]
 
@@ -47,7 +47,16 @@ An independent review of the bundle at `b648fc1f` found that an export still ren
 
 ## Deployment Status
 
-Pending. Nothing in this bundle has been deployed. After the owner merges `dev` into `main` and Vercel reports Ready, run the live checks listed in the contract and record the merge commit, deployment ID and readback evidence in `docs/status.md`.
+Done. Release pull request #9 was squash-merged into `main` as `86c16f6694354e941a1e109f41d30d9d708bb5a8` at 19:56Z on 2026-10-25, and Vercel deployed it (GitHub deployment `7318365306`, Ready). Live readback on `https://c-ks-picks-cfb.vercel.app`:
+
+- `/api/health` reports the unchanged active release `production-season-2026-125158328e025fb89c96ce0d` (Week 8, run `season-2026-125158328e025fb89c96ce0d:w8` published, 56 of 56 predicted and lined, data as of 2026-10-20T14:39:00Z); no data or release changed.
+- 200: `/`, `/ratings`, `/stats`, `/model`, `/model/method`, one matchup page, one team page, `/icon`, `/opengraph-image`.
+- 307 with query strings preserved: `/results`, `/matchup`, `/performance`, `/methodology`, `/charts`, `/charts/x`.
+- 404: an unknown matchup ID, a zero-padded matchup ID, an unknown page and `/favicon.ico` (removed on purpose).
+- Brand: page title and Open Graph tags read "Crest CFB" with `og:url` on the live host; the wordmark renders at 169 by 32 pixels on desktop and 138 by 26 on phones, navy `rgb(32, 52, 77)` in light and white `rgb(248, 250, 252)` in dark; the four tabs navigate correctly; a chart export downloads as `crest-efficiency-offense-2026-through-week-3.png` with a footer naming the live host; no horizontal overflow and no console errors in either theme at 1440 and 390 pixels.
+- Not done: real-device checks (waived by the owner), a rollback drill.
+
+The Week 8 games show "Awaiting results" because Week 8 scores have not been ingested; that is the Week 9 weekly release.
 
 ## Files Modified
 

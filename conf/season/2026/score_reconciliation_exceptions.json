@@ -213,5 +213,15 @@
     "game_id": 401871049,
     "team": "New Mexico State",
     "reason": "Week 5 scoring events sum to 6, final is 34; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401856732,
+    "team": "Ole Miss",
+    "reason": "Week 8 scoring events sum to 3, final is 27; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401866449,
+    "team": "Eastern Michigan",
+    "reason": "Week 8 scoring events sum to 0, final is 20; play-by-play score stream flagged score_regression_or_nonintegral"
   }
 ]

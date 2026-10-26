@@ -1,6 +1,6 @@
 # Contract: Pre-merge fixes and Crest release completion
 
-- **Status:** Implemented and integrated on `dev`; the owner accepted the regenerated wordmark lettering. Production deployment pending (release pull request #9 not yet merged).
+- **Status:** Implemented and deployed. The owner accepted the regenerated wordmark lettering; release pull request #9 was squash-merged to `main` as `86c16f66` on 2026-10-25 and the live checks passed.
 - **Created:** 2026-10-25
 - **Approval source:** Owner supplied the bundle definition in the 2026-10-25 session.
 - **Implementation log:** `session_logs/2026-10-25/03-pre-merge-bundle.md`
@@ -33,6 +33,6 @@ Deliver six review fixes and the wordmark font-source cleanup as one bundle on t
 - `make check`, the fixture browser suite, a final code review and `git diff --check` pass.
 - The development-tool dependency advisory (`esbuild` through `drizzle-kit`, non-blocking in CI) is recorded separately and not silenced by a forced downgrade.
 
-## Deployment (pending)
+## Deployment (done 2026-10-25)
 
-After the owner merges `dev` into `main` and Vercel reports Ready: verify HTTP 200 for Games, Ratings, Graphs, Model, Method, one matchup, one team page and `/api/health`; verify HTTP 307 with preserved query parameters for the legacy Results, Performance, Methodology, Charts and matchup-index URLs; confirm health reports the expected active release; inspect desktop and phone screenshots; then record the merge commit, deployment and readback evidence in [Current Status](../../status.md). Rollback is a revert of the merge commit or Vercel's deployment rollback; no data rollback belongs to this bundle.
+Release pull request #9 was squash-merged into `main` as `86c16f6694354e941a1e109f41d30d9d708bb5a8` and Vercel deployed it (GitHub deployment `7318365306`). Live checks on `https://c-ks-picks-cfb.vercel.app` passed: HTTP 200 for Games, Ratings, Graphs, Model, Method, one matchup, one team page and `/api/health`; HTTP 307 with preserved query parameters for the legacy Results, Performance, Methodology, Charts and matchup-index URLs; health reports the unchanged active release; desktop and phone screenshots, wordmark colors, tab navigation and a chart export were inspected. The readback and details are recorded in [Current Status](../../status.md). Rollback, if needed, is a revert of the merge commit or Vercel's deployment rollback; no data rollback belongs to this bundle.

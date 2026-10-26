@@ -22,17 +22,17 @@ For R2 operations set `CFB_STORAGE_BACKEND=r2` and use the intended environment 
 Follow the complete [weekly runbook](../docs/ops/weekly_runbook.md), including line capture, cutoff choice, exact score exceptions, Preview readback and owner activation. The commands below show the interfaces, not a ready-to-run current-week release:
 
 ```bash
-make season-revision WEEK=<NEXT_WEEK> AS_OF=<POST_WEEK_CUTOFF> PRE_WEEK_CUTOFF=<PRE_WEEK_CUTOFF> RUN_ID=<FRESH_RUN_ID>
+make season-close-week WEEK=<NEXT_WEEK> AS_OF=<POST_WEEK_CUTOFF> PRE_WEEK_CUTOFF=<PRE_WEEK_CUTOFF> RUN_ID=<FRESH_RUN_ID>
 # Owner commits reviewed revision manifest and score exceptions before prepare.
 make season-prepare WEEK=<NEXT_WEEK> AS_OF=<PRE_WEEK_CUTOFF> [MANIFEST=<REVISION_MANIFEST>]  # default: revision_manifest_w<NEXT_WEEK>_v1.json
 # Mid-week line refresh (market-only; see the runbook's "Mid-week line refresh"):
-make season-market-revision FROM=<CERTIFIED_MANIFEST> TO=<NEW_MANIFEST> REVISION_ID=<ID> CUTOFF=<ISO_UTC>
+make season-market-revision WEEK=<NEXT_WEEK> FROM=<CERTIFIED_MANIFEST> TO=<NEW_MANIFEST> REVISION_ID=<ID> CUTOFF=<ISO_UTC>
 make season-release ENV=preview RELEASE_ID=<RELEASE_ID> PROJECTION_SHA=<SHA256> EXPECTED_PREVIOUS=<ACTIVE_PREVIEW_RELEASE_ID>
-# Production activation requires owner approval and independent Preview proof.
+# Production activation needs independent Preview proof; the weekly automation does it when every gate passes.
 make season-release ENV=production RELEASE_ID=<RELEASE_ID> PROJECTION_SHA=<SHA256> EXPECTED_PREVIOUS=<ACTIVE_PRODUCTION_RELEASE_ID>
 ```
 
-`WEEK` names the upcoming week. The revision builder refreshes completed-week controller inputs and unions registered market captures; `DRY=1` only rechecks an existing completed controller run and fetches nothing. It refuses to overwrite an existing manifest. Refresh and hash-pin exact per-game/team score exceptions; unlisted mismatches and unused exceptions fail.
+`WEEK` names the upcoming week. `season-close-week` is the normal incremental rollover: it fetches only the completed week's observations, carries the certified earlier-week captures, and gates completed-week history against the previous manifest. `make season-revision` re-ingests every completed week and refuses to run without `FULL_HISTORY=1`; it is a repair vehicle, not the weekly path. The revision builder refreshes completed-week controller inputs and unions registered market captures; `DRY=1` only rechecks an existing completed controller run and fetches nothing. It refuses to overwrite an existing manifest. Refresh and hash-pin exact per-game/team score exceptions; unlisted mismatches and unused exceptions fail.
 
 Prepare requires a clean committed tree. Do not commit between prepare and the last release; candidates pin the code commit. Use `RECONSTRUCT=1` only for the runbook's reconstruction case after the pre-week cutoff. Forecasts use pre-cutoff observations even when started/reconstructed games remain visible on Games; grading selects eligible pre-kickoff quotes. The local folder uses `season-2026-...`; the database prefixes `preview-` or `production-`. Release and rollback accept bare IDs or matching environment prefixes and refuse mismatches.
 
