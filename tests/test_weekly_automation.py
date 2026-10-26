@@ -307,20 +307,30 @@ def test_missing_final_stops_before_any_provider_call(harness):
     assert harness.calls == []
 
 
-def test_plan_only_makes_no_calls_or_writes(harness, monkeypatch):
+def _with_preview_login(harness, login):
     harness.query_orig = harness.query
 
     def query(role, sql, params):
         if "has_table_privilege" in sql:
             return (
-                [("cks_pipeline_login", True, True)][:1]
+                [(login, True, True)]
                 if role == "preview"
                 else [("cks_prod_pipeline", True)]
             )
         return harness.query_orig(role, sql, params)
 
     harness.query = query
+
+
+def test_plan_only_makes_no_calls_or_writes(harness):
+    _with_preview_login(harness, "cks_preview_pipeline")
     assert harness.controller(mode="plan-only").run() == 0
+    assert harness.calls == []
+
+
+def test_plan_only_stops_when_preview_secret_is_not_the_pipeline_login(harness):
+    _with_preview_login(harness, "neondb_owner")
+    assert harness.controller(mode="plan-only").run() == 1
     assert harness.calls == []
 
 

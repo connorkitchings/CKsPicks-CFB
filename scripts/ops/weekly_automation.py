@@ -483,6 +483,10 @@ class Controller:
             "production_login": prod[0],
             "production_season_releases_select": bool(prod[1]),
         }
+        if prev[0] != "cks_preview_pipeline":
+            raise StopRunError(
+                "the Preview secret is not the cks_preview_pipeline login"
+            )
         if not (prev[1] and prev[2] and prod[1]):
             raise StopRunError("database role grants are insufficient")
 

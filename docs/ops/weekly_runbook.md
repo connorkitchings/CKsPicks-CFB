@@ -105,7 +105,11 @@ gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body false
    ```bash
    grep '^THE_ODDS_API_KEY=' .env | cut -d= -f2- | gh secret set THE_ODDS_API_KEY --env season-production
    ```
-4. Confirm the repository-level secrets also used by the pregame capture workflow exist: `CFBD_API_KEY`, `CFB_R2_PREVIEW_*` and `PREVIEW_DATABASE_URL`.
+4. Confirm the repository-level secrets also used by the pregame capture workflow exist: `CFBD_API_KEY`, `CFB_R2_PREVIEW_*`. The repo-level `PREVIEW_DATABASE_URL` logs in as the Neon owner, which V5 releases refuse, so the workflow instead reads the `season-production` environment secret `PREVIEW_PIPELINE_DATABASE_URL` (the `cks_preview_pipeline` login):
+
+   ```bash
+   security find-generic-password -s 'ckspicks-cfb/preview-2026/pipeline-url' -a cks_preview_pipeline -w | gh secret set PREVIEW_PIPELINE_DATABASE_URL --env season-production
+   ```
 5. Release `dev` to `main` (merge commit; see Step 4) so the schedule is active, then run `plan-only` and a `close-week` rehearsal with `skip_production=true`.
 6. Set `CFB_WEEKLY_AUTOMATION_ENABLED=true` only after the rehearsal passes:
    ```bash

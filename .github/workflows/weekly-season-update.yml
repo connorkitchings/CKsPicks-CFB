@@ -58,7 +58,9 @@ jobs:
           CFB_R2_PREVIEW_ACCOUNT_ID: ${{ secrets.CFB_R2_PREVIEW_ACCOUNT_ID }}
           CFB_R2_PREVIEW_ACCESS_KEY: ${{ secrets.CFB_R2_PREVIEW_ACCESS_KEY }}
           CFB_R2_PREVIEW_SECRET_KEY: ${{ secrets.CFB_R2_PREVIEW_SECRET_KEY }}
-          PREVIEW_DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+          # The restricted cks_preview_pipeline login (the repo-level PREVIEW_DATABASE_URL
+          # logs in as the Neon owner, which V5 releases refuse).
+          PREVIEW_DATABASE_URL: ${{ secrets.PREVIEW_PIPELINE_DATABASE_URL }}
           PRODUCTION_PIPELINE_DATABASE_URL: ${{ secrets.PRODUCTION_PIPELINE_DATABASE_URL }}
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
           MODE: ${{ inputs.mode || (github.event.schedule == '7 17 * * 0' && 'close-week' || 'market-refresh') }}
