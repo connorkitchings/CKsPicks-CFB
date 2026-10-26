@@ -26,9 +26,9 @@ make season-close-week WEEK=<NEXT_WEEK> AS_OF=<POST_WEEK_CUTOFF> PRE_WEEK_CUTOFF
 # Owner commits reviewed revision manifest and score exceptions before prepare.
 make season-prepare WEEK=<NEXT_WEEK> AS_OF=<PRE_WEEK_CUTOFF> [MANIFEST=<REVISION_MANIFEST>]  # default: revision_manifest_w<NEXT_WEEK>_v1.json
 # Mid-week line refresh (market-only; see the runbook's "Mid-week line refresh"):
-make season-market-revision FROM=<CERTIFIED_MANIFEST> TO=<NEW_MANIFEST> REVISION_ID=<ID> CUTOFF=<ISO_UTC>
+make season-market-revision WEEK=<NEXT_WEEK> FROM=<CERTIFIED_MANIFEST> TO=<NEW_MANIFEST> REVISION_ID=<ID> CUTOFF=<ISO_UTC>
 make season-release ENV=preview RELEASE_ID=<RELEASE_ID> PROJECTION_SHA=<SHA256> EXPECTED_PREVIOUS=<ACTIVE_PREVIEW_RELEASE_ID>
-# Production activation requires owner approval and independent Preview proof.
+# Production activation needs independent Preview proof; the weekly automation does it when every gate passes.
 make season-release ENV=production RELEASE_ID=<RELEASE_ID> PROJECTION_SHA=<SHA256> EXPECTED_PREVIOUS=<ACTIVE_PRODUCTION_RELEASE_ID>
 ```
 

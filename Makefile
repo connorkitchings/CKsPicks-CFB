@@ -34,7 +34,7 @@ help:
 	@echo "  make audit-data YEAR=2026 ENV=preview - Audit Gold training data and lineage"
 	@echo ""
 	@echo "Weekly season release (docs/ops/weekly_runbook.md; WEEK = upcoming week):"
-	@echo "  make season-revision WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
+	@echo "  make season-close-week WEEK=8 AS_OF=<post-week cutoff> PRE_WEEK_CUTOFF=... RUN_ID=... [DRY=1]  - Build conf/season/2026/revision_manifest_w<WEEK>_v1.json (Preview)"
 	@echo "  make season-market-revision WEEK=<upcoming> FROM=... TO=... REVISION_ID=... CUTOFF=...  - Market-only mid-week line refresh manifest"
 	@echo "  make season-prepare WEEK=8 AS_OF=... [MANIFEST=...] [RECONSTRUCT=1]  - Prepare the candidate from a clean committed tree"
 	@echo "  make season-release ENV=preview|production RELEASE_ID=season-2026-... PROJECTION_SHA=... EXPECTED_PREVIOUS=...|INITIAL=1"

@@ -23,6 +23,13 @@ Then, on either path:
 4. Write ``conf/season/<season>/revision_manifest_w<N>_v1.json``. ``observations``
    and ``scoring_events`` are omitted: ``season.inputs`` recomputes them.
 
+Completed-week cutoffs are carried from ``--previous-manifest`` and must equal
+those of the highest-versioned certified manifest of week N-1 (pre-week cutoffs
+of Weeks 0..N-1, post-week cutoffs of Weeks 0..N-2); the build refuses before
+fetching anything otherwise. A known-stale carried cutoff is fixed explicitly
+with ``--correct-cutoff WEEK:pre|post=<ISO timestamp>`` (repeatable); only the
+corrected keys may then differ from the certified manifest.
+
 ``--dry-run`` fetches nothing: it reads the existing Silver refs of
 ``--pipeline-run-id``, builds the derived and market versions in a temporary
 directory, validates and prints the manifest, and uploads, registers and
@@ -372,6 +379,81 @@ def build_derived(
     return built
 
 
+CutoffCorrections = dict[tuple[str, str], datetime]
+
+
+def parse_cutoff_correction(value: str) -> tuple[tuple[str, str], datetime]:
+    """Parse ``WEEK:pre|post=<ISO timestamp>`` into ``((kind, week), instant)``."""
+    match = re.fullmatch(r"(\d+):(pre|post)=(.+)", value)
+    if match is None:
+        raise ValueError(f"--correct-cutoff must be WEEK:pre|post=<ISO>, got {value!r}")
+    return (match.group(2), str(int(match.group(1)))), _utc(match.group(3))
+
+
+def revision_cutoffs(
+    previous: dict,
+    *,
+    week: int,
+    as_of: datetime,
+    pre_week_cutoff: datetime,
+    corrections: CutoffCorrections | None = None,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Pre- and post-week cutoffs of the Week ``week`` revision.
+
+    Carried from ``previous``, then any explicit corrections, then this week's
+    own pre-week cutoff and the completed week's post-week cutoff.
+    """
+    pre = dict(previous["pre_week_cutoffs"])
+    post = dict(previous.get("post_week_cutoffs", {}))
+    for (kind, key), instant in (corrections or {}).items():
+        carried = pre if kind == "pre" else post
+        if key not in carried:
+            raise ValueError(
+                f"--correct-cutoff {key}:{kind}: the previous manifest has no "
+                f"{kind}-week cutoff for week {key}"
+            )
+        carried[key] = _iso(instant)
+    pre[str(week)] = _iso(pre_week_cutoff)
+    post[str(week - 1)] = _iso(as_of)
+    return pre, post
+
+
+def check_completed_week_cutoffs(
+    pre: dict[str, str],
+    post: dict[str, str],
+    certified: dict,
+    *,
+    week: int,
+    corrections: CutoffCorrections | None = None,
+) -> None:
+    """Refuse when a completed week's cutoff differs from the certified manifest.
+
+    Completed weeks: pre-week cutoffs of Weeks 0..``week``-1 and post-week
+    cutoffs of Weeks 0..``week``-2. Explicitly corrected keys are exempt.
+    """
+    problems = []
+    for kind, new, old, last in (
+        ("pre", pre, certified["pre_week_cutoffs"], week - 1),
+        ("post", post, certified.get("post_week_cutoffs", {}), week - 2),
+    ):
+        for key, expected in sorted(old.items(), key=lambda item: int(item[0])):
+            if int(key) > last or (kind, key) in (corrections or {}):
+                continue
+            if new.get(key) != expected:
+                problems.append(
+                    f"{kind}_week_cutoffs[{key}] is {new.get(key)} but the "
+                    f"certified manifest has {expected}"
+                )
+    if problems:
+        raise ValueError(
+            "Completed-week cutoffs differ from the certified manifest "
+            f"(revision_id {certified.get('revision_id')}): "
+            + "; ".join(problems)
+            + ". Rebuild from the highest certified manifest, or pass "
+            "--correct-cutoff WEEK:pre|post=<ISO> to correct a stale cutoff."
+        )
+
+
 def revision_manifest(
     previous: dict,
     *,
@@ -380,21 +462,23 @@ def revision_manifest(
     pre_week_cutoff: datetime,
     captured_at: datetime,
     refs: dict[str, DatasetRef],
+    corrections: CutoffCorrections | None = None,
 ) -> dict:
     """The Week ``week`` revision: fresh Silver inputs, carried venues and teams."""
+    pre, post = revision_cutoffs(
+        previous,
+        week=week,
+        as_of=as_of,
+        pre_week_cutoff=pre_week_cutoff,
+        corrections=corrections,
+    )
     manifest = {
         "schema_version": "season_revision_v1",
         "season": previous["season"],
         "revision_id": f"season-{previous['season']}-w{week}-preview-r1",
         "captured_at": _iso(captured_at),
-        "pre_week_cutoffs": {
-            **previous["pre_week_cutoffs"],
-            str(week): _iso(pre_week_cutoff),
-        },
-        "post_week_cutoffs": {
-            **previous.get("post_week_cutoffs", {}),
-            str(week - 1): _iso(as_of),
-        },
+        "pre_week_cutoffs": pre,
+        "post_week_cutoffs": post,
         "inputs": {
             "schedule": _input(refs["games"]),
             "finals": _input(refs["game_outcomes"]),
@@ -426,6 +510,7 @@ def build_revision(
     run_id: str,
     now: datetime,
     code_sha: str,
+    corrections: CutoffCorrections | None = None,
 ) -> tuple[dict, list[tuple[DatasetRef, object]]]:
     """Compute every input into ``sink``; returns the manifest and new versions."""
     season = previous["season"]
@@ -461,6 +546,7 @@ def build_revision(
         pre_week_cutoff=pre_week_cutoff,
         captured_at=latest_capture_time(conn_url, capture_ids),
         refs=refs,
+        corrections=corrections,
     )
     return manifest, list(built.values())
 
@@ -503,6 +589,18 @@ def parse_args() -> argparse.Namespace:
             "Defaults to the highest-versioned conf/season/<season>/"
             "revision_manifest_w<N-1>_v<k>.json with --incremental, else "
             "revision_manifest_w<N-1>_v1.json."
+        ),
+    )
+    parser.add_argument(
+        "--correct-cutoff",
+        action="append",
+        default=[],
+        metavar="WEEK:pre|post=ISO",
+        help=(
+            "Override one carried completed-week cutoff, e.g. "
+            "8:pre=2026-10-20T14:39:00Z. Repeatable. Without it, the build "
+            "refuses when any completed-week cutoff differs from the highest "
+            "certified manifest of the completed week."
         ),
     )
     parser.add_argument(
@@ -553,6 +651,27 @@ def main() -> None:
     if previous.get("season") != args.season:
         raise SystemExit(f"{previous_path} is not a {args.season} revision")
     as_of, pre_week_cutoff = _utc(args.as_of), _utc(args.pre_week_cutoff)
+    try:
+        corrections = dict(parse_cutoff_correction(v) for v in args.correct_cutoff)
+        pre, post = revision_cutoffs(
+            previous,
+            week=args.week,
+            as_of=as_of,
+            pre_week_cutoff=pre_week_cutoff,
+            corrections=corrections,
+        )
+        try:
+            certified = json.loads(
+                latest_previous_manifest(conf, args.week - 1).read_text()
+            )
+        except FileNotFoundError:
+            certified = None
+        if certified is not None:
+            check_completed_week_cutoffs(
+                pre, post, certified, week=args.week, corrections=corrections
+            )
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     conn_url = resolve_runtime_target(args.environment).database_url
     source = get_storage(environment=args.environment)
     advance = None
@@ -598,6 +717,7 @@ def main() -> None:
             run_id=args.pipeline_run_id,
             now=datetime.now(timezone.utc),
             code_sha=_code_sha(),
+            corrections=corrections,
         )
     payload = json.dumps(manifest, indent=2) + "\n"
     if args.dry_run:
