@@ -711,8 +711,8 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
           },
     },
     averageNames: {
-      x: isOffense ? "Avg scoring opportunity rate" : "Avg scoring opportunity rate allowed",
-      y: isOffense ? "Avg points per scoring opportunity" : "Avg points allowed per scoring opportunity",
+      x: "Avg opp rate",
+      y: "Avg pts/opp",
     },
     footnote: finishingDrivesFootnote(),
   };

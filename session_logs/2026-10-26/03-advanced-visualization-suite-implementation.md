@@ -64,6 +64,7 @@
     - Bottom Right: "Drive Stallers / FG Settlers" / "Red-Zone Wall"
     - Top Left: "Low Volume, High TD Rate" / "Bend-Don't-Break"
     - Bottom Left: "Struggling Finishers" / "Generous Defense"
+  - In-chart dashed average line labels streamlined to `"Avg opp rate"` and `"Avg pts/opp"` with 4px obstacle padding and expanded candidate spots in `placeAverageLabels` to eliminate logo overlap.
 
 ## Validation
 
