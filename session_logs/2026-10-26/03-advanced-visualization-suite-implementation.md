@@ -3,9 +3,9 @@
 ## TL;DR
 
 - **Worked On:** Implemented the approved Sol-to-Terra contract [`docs/plans/2026-10-26/02-advanced-visualization-suite.md`](../../docs/plans/2026-10-26/02-advanced-visualization-suite.md). Delivered four new interactive graph charts on `/stats` (Situational Downs, Finishing Drives, Resume vs. Dominance, and Slate Market Board) and the "Tale of the Tape" 5 Factors head-to-head component on `/matchup/[gameId]`.
-- **Outcome:** All five visualizations are active, fully responsive, integrate seamlessly with the existing `ChartFrame` PNG export and mobile sticky bar architecture, and pass the complete CI verification suite.
+- **Outcome:** All five visualizations are active, fully responsive, integrate seamlessly with the existing `ChartFrame` PNG export and mobile sticky bar architecture, and pass `make check` (but not the Playwright suite; see `04-viz-suite-ci-fix-and-release.md`).
 - **Plan Contract:** [`docs/plans/2026-10-26/02-advanced-visualization-suite.md`](../../docs/plans/2026-10-26/02-advanced-visualization-suite.md)
-- **Approval / Status:** Implemented; verified with `make check`.
+- **Approval / Status:** Implemented; verified with `make check` (browser tests were not run).
 - **Blockers:** None.
 - **Next:** User review and git commit.
 
@@ -72,7 +72,7 @@
 - [x] `npm --prefix web run typecheck` — 0 errors
 - [x] `npm --prefix web run test:publication` — 417 passed, 0 failed
 - [x] `npm --prefix web run build` — Next.js 16 production build succeeded
-- [x] `make check` — Mirrors CI (ruff, contracts, data quality registry, pytest, mkdocs --strict, web checks) passed cleanly
+- [x] `make check` — ruff, contracts, data quality registry, pytest, mkdocs --strict, web lint/typecheck/unit tests/build passed. (Corrected: this does not mirror CI; it omits the Playwright suite, which failed in CI. See `04-viz-suite-ci-fix-and-release.md`.)
 - [x] `git diff --check` — Clean (no whitespace or syntax errors)
 
 ## Amendments and Blockers

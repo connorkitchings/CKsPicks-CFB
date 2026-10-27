@@ -106,3 +106,10 @@ This plan is an exploratory expansion contract. Upon user approval, implement in
 3. Stats page scatter integrations
 4. Matchup Tale of the Tape
 5. Fixtures, tests, and build verification
+
+## Amendment (2026-10-26, after release review)
+
+- **Tale of the Tape relabeled "Key factors".** The card has no turnover factor (its fifth row is 3rd/4th-down conversion), so it is not a true Five Factors view. Turnover margin needs a pipeline metric in `team_stats.py` and a data release; tracked in the deferred backlog of [`docs/status.md`](../../status.md). The card also now handles missing ranks ("Not available", no bar, verdict over compared rows only) and scales bars by cohort size.
+- **Defensive quadrant names corrected.** On defense both axes are inverted (up and right are better); the Situational Downs and Finishing Drives quadrant names now match their positions.
+- **E2E gap.** `make check` never ran the fixture build and Playwright suite, so PR #13 merged with the `Web` CI job red (seven failures: six stale picker assertions and one 800px overflow). `make web-e2e` now runs that step and is required before a `dev` to `main` release that touches `web/`. The two new charts and the matchup card gained e2e coverage.
+- **Scope note.** Resume vs. Dominance and Slate Market Board remain hidden from the picker; `?chart=resume-quality` and `?chart=market-board` fall back to net success.
