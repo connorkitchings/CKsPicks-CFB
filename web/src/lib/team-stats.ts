@@ -299,18 +299,6 @@ export function cohortSizeOf(rows: TeamStatRow[]): number | null {
   return sizes.length ? Math.max(...sizes) : null;
 }
 
-/** Tiers are percentiles of the ranked pool: top 20%, next 25%, next 30%, rest. */
-export type RankTier = "none" | "top" | "high" | "mid" | "low";
-
-export function rankTier(rank: number | null, cohortSize: number | null = null): RankTier {
-  if (rank === null) return "none";
-  const pct = rank / Math.max(cohortSize ?? 138, rank);
-  if (pct <= 0.2) return "top";
-  if (pct <= 0.45) return "high";
-  if (pct <= 0.75) return "mid";
-  return "low";
-}
-
 export interface MatchupStats {
   /** Snapshot covers FBS-vs-FBS games completed before this week's slate. */
   asOfWeek: number;

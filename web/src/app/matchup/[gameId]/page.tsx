@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Header";
 import { MatchupHero } from "@/components/matchup/MatchupHero";
+import { ShareButton } from "@/components/matchup/ShareButton";
 import { TaleOfTheTape } from "@/components/matchup/TaleOfTheTape";
 import { getMatchupData } from "@/lib/matchup";
 import { parseGameId } from "@/lib/matchup-id";
@@ -69,6 +70,11 @@ export default async function MatchupPage({
         {/* Hero Section */}
         <MatchupHero matchup={matchup} now={pageNow(await searchParams)} />
 
+        <div data-testid="matchup-summary-header" className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-ink-primary">Matchup summary</h2>
+          <ShareButton matchup={matchup} disabled={matchup.lineageStatus !== "ready" || !matchup.stats} />
+        </div>
+
         {matchup.lineageStatus !== "ready" ? (
           <Card as="section" role="status" aria-label="Team stats" padding="none" className="p-6 text-sm text-ink-muted">
             {matchup.lineageStatus === "updating"
@@ -77,14 +83,6 @@ export default async function MatchupPage({
           </Card>
         ) : matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
-            <TaleOfTheTape
-              awayTeam={matchup.awayTeam}
-              homeTeam={matchup.homeTeam}
-              awayOffVsHomeDef={matchup.stats.awayOffVsHomeDef}
-              homeOffVsAwayDef={matchup.stats.homeOffVsAwayDef}
-              awayRating={matchup.awayRating}
-              homeRating={matchup.homeRating}
-            />
             <UnitMatchups
               away={{
                 offenseTeam: matchup.awayTeam,
@@ -110,6 +108,14 @@ export default async function MatchupPage({
                 <p>Ranks are among {matchup.stats.cohortSize} teams; T = tied.</p>
               )}
             </section>
+            <TaleOfTheTape
+              awayTeam={matchup.awayTeam}
+              homeTeam={matchup.homeTeam}
+              awayOffVsHomeDef={matchup.stats.awayOffVsHomeDef}
+              homeOffVsAwayDef={matchup.stats.homeOffVsAwayDef}
+              awayRating={matchup.awayRating}
+              homeRating={matchup.homeRating}
+            />
           </section>
         ) : (
           <Card

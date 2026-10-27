@@ -11,7 +11,6 @@ import {
   hasMissingValue,
   rankLabel,
   rankTitle,
-  rankTier,
   rowEdge,
   rowGap,
   edgeSummary,
@@ -270,16 +269,6 @@ test("mismatchSummary says who has the edge and by how many places; a panel can 
   assert.deepEqual(one, []);
   const spot = topMismatches([{ ...panel, rows: [unitRow("z", 1, 2)] }]);
   assert.deepEqual(spot, [], "a one-place gap is even");
-});
-
-test("rankTier uses the percentile bands for the share card badges", () => {
-  assert.equal(rankTier(null), "none");
-  assert.equal(rankTier(27, 138), "top"); // 19.6%
-  assert.equal(rankTier(28, 138), "high");
-  assert.equal(rankTier(62, 138), "high"); // 44.9%
-  assert.equal(rankTier(63, 138), "mid");
-  assert.equal(rankTier(103, 138), "mid"); // 74.6%
-  assert.equal(rankTier(104, 138), "low");
 });
 
 test("formatMetric shows a PPA that rounds to zero without a sign", () => {

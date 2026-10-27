@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { RankChip } from "@/components/ui/RankChip";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { chartColor } from "@/lib/charts";
 import { buildTapeRows, tapeVerdict, type TapeVerdict } from "@/lib/tale-of-tape";
@@ -74,7 +75,7 @@ export function TaleOfTheTape({
       aria-label="Key factors tale of the tape"
       data-testid="tale-of-the-tape"
       padding="none"
-      className="p-5 sm:p-6 mb-6"
+      className="p-5 sm:p-6"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4 mb-5">
         <div className="min-w-0">
@@ -102,12 +103,12 @@ export function TaleOfTheTape({
           <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: offColor }} />
           <span className="min-w-0 truncate text-ink-primary">{offTeam} Offense</span>
           {offRating.offenseRank !== null && offRating.offenseRank !== undefined && (
-            <span className="shrink-0 text-[11px] font-mono text-ink-muted">#{offRating.offenseRank}</span>
+            <RankChip rank={offRating.offenseRank} title="Model Offense Rank" className="shrink-0 text-[11px]" />
           )}
         </div>
         <div className="flex min-w-0 items-center justify-end gap-2 text-right">
           {defRating.defenseRank !== null && defRating.defenseRank !== undefined && (
-            <span className="shrink-0 text-[11px] font-mono text-ink-muted">#{defRating.defenseRank}</span>
+            <RankChip rank={defRating.defenseRank} title="Model Defense Rank" className="shrink-0 text-[11px]" />
           )}
           <span className="min-w-0 truncate text-ink-primary">{defTeam} Defense</span>
           <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: defColor }} />
@@ -124,12 +125,13 @@ export function TaleOfTheTape({
                 <div className="flex items-baseline gap-2">
                   <span className="font-mono font-bold text-sm text-ink-primary">{row.offenseValue}</span>
                   {row.offenseRank !== null && (
-                    <span
-                      className="text-[11px] font-medium text-ink-muted"
+                    <RankChip
+                      rank={row.offenseRank}
+                      total={row.offenseCohort ?? undefined}
+                      label={rankLabel(row.offenseRank, row.offenseTied)}
+                      className="text-[11px] font-medium"
                       title={rankTitle(row.offenseRank, row.offenseTied, row.offenseCohort)}
-                    >
-                      {rankLabel(row.offenseRank, row.offenseTied)}
-                    </span>
+                    />
                   )}
                 </div>
 
@@ -139,12 +141,13 @@ export function TaleOfTheTape({
 
                 <div className="flex items-baseline gap-2 justify-end">
                   {row.defenseRank !== null && (
-                    <span
-                      className="text-[11px] font-medium text-ink-muted"
+                    <RankChip
+                      rank={row.defenseRank}
+                      total={row.defenseCohort ?? undefined}
+                      label={rankLabel(row.defenseRank, row.defenseTied)}
+                      className="text-[11px] font-medium"
                       title={rankTitle(row.defenseRank, row.defenseTied, row.defenseCohort)}
-                    >
-                      {rankLabel(row.defenseRank, row.defenseTied)}
-                    </span>
+                    />
                   )}
                   <span className="font-mono font-bold text-sm text-ink-primary">{row.defenseValue}</span>
                 </div>

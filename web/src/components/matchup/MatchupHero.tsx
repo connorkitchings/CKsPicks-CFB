@@ -12,7 +12,6 @@ import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/team-routes";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { AwaitingTag } from "@/components/slate/AwaitingTag";
-import { ShareButton } from "./ShareButton";
 
 function TeamBlock({
   name,
@@ -148,9 +147,7 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
         >
           ← Week {matchup.week} games
         </Link>
-        {/* Right-aligned on every line so the share button, always last, keeps its tooltip inside the viewport. */}
         <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-ink-muted max-sm:w-full max-sm:flex-nowrap max-sm:justify-between max-sm:gap-x-3" data-testid="game-facts">
-          {/* Phones: the date and place share one left block beside the share buttons (wrapping if long); from sm the spans are items of the row. */}
           <p className="min-w-0 max-sm:flex-1 sm:contents">
             <span>{formatKickoff(matchup.startDate)}</span>
             {venue && (
@@ -163,7 +160,6 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
           <span className="rounded bg-surface-inset px-2 py-0.5 max-sm:hidden text-xs font-semibold uppercase tracking-wider text-ink-muted">
             Game Breakdown
           </span>
-          <ShareButton matchup={matchup} disabled={matchup.lineageStatus !== "ready"} />
         </div>
       </div>
 
