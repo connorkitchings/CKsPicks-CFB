@@ -1,6 +1,6 @@
 # Stratum CFB rebrand and Production publication
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-10-27
 - **Planner:** Sol
 - **Approval source:** Owner explicitly requested implementation of this exact plan in chat, including dev push and Production publication.
@@ -37,3 +37,7 @@ Repository/package names, Python modules, database identifiers, credentials, sto
 ## Handoff/amendments
 
 The current owner request authorizes this contract and release. Parent persists the plan and documentation; a fresh Terra worker implements product changes under implement-plan. Preserve pre-existing work. Mechanical amendments may proceed only without changing scope, interfaces or acceptance; record reason and impact here. Material deviations return to planning before implementation. Mark Implemented only after validation and Production verification are complete.
+
+## Completion evidence
+
+Implemented and published 2026-10-27 through PR #17, merge commit `ab74daca7ba538a03d5fd0e0c7525391f0fb6232`. Full `make check` and `make web-e2e` passed; generator and invalid-font checks passed; eight wordmark screenshots, generated images and PNG exports inspected. Local Production-data review passed. Dev and PR CI passed. Vercel Production READY at the expected commit; public pages show Stratum, live favicon/social PNGs exactly match inspected images, and the actual Production matchup download uses Stratum branding/filename. Active data release and coverage unchanged. Detailed evidence is in the implementation session log; live data identifiers remain in Current Status.
