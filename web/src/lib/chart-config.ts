@@ -633,7 +633,7 @@ export function describeGameLogGame(team: string, game: GameLogGame, metric: Gam
 // ---------------------------------------------------------------------------
 
 export function downsFootnote(): string {
-  return "Cumulative early down EPA/play (1st & 2nd down) and 3rd/4th down conversion rate on eligible plays, regulation play only, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are play-weighted FBS averages.";
+  return "Cumulative early down EPA/play (1st & 2nd down) and 3rd/4th down conversion rate on eligible plays, regulation play only, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are FBS averages pooled over plays: early-down plays for EPA, 3rd/4th-down attempts for conversion rate.";
 }
 
 export function downsConfig(side: Side): ScatterConfig {
@@ -685,7 +685,7 @@ export function describeDownsPoint(point: ScatterPoint, side: Side): string {
 }
 
 export function finishingDrivesFootnote(): string {
-  return "Scoring opportunity rate (Eckel rate: share of drives reaching the opponent 40-yard line) against points scored per scoring opportunity, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are drive-weighted FBS averages.";
+  return "Scoring opportunity rate (Eckel rate: share of drives reaching the opponent 40-yard line) against points scored per scoring opportunity, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are FBS averages pooled over drives for opportunity rate and over scoring opportunities for points per opportunity.";
 }
 
 export function finishingDrivesConfig(side: Side): ScatterConfig {

@@ -589,6 +589,30 @@ test("finishing drives scatter: scoring opp rate vs pts/opp, role separation, an
   assert.deepEqual([def.invertX, def.invertY], [true, true]);
 });
 
+test("downs scatter: each axis average is pooled over its own sample size", () => {
+  const rows: TeamSeasonStatRow[] = [
+    statRow({ team: "Alabama", role: "offense", metric: "early_down_epa", value: 0.2, n: 100 }),
+    statRow({ team: "Alabama", role: "offense", metric: "conv_rate_3rd_4th", value: 0.5, n: 20 }),
+    statRow({ team: "Michigan", role: "offense", metric: "early_down_epa", value: 0.1, n: 300 }),
+    statRow({ team: "Michigan", role: "offense", metric: "conv_rate_3rd_4th", value: 0.3, n: 60 }),
+  ];
+  const data = downsScatterPoints(roster, rows, "offense");
+  // EPA: (0.2*100 + 0.1*300) / 400; conversion: (10 + 18) conversions / 80 attempts.
+  assert.ok(Math.abs(data.average!.x - 50 / 400) < 1e-12);
+  assert.ok(Math.abs(data.average!.y - 28 / 80) < 1e-12);
+  assert.equal(data.points.find((p) => p.team === "Alabama")!.n, 100);
+});
+
+test("finishing drives scatter: average is null when an axis has no weight", () => {
+  const rows: TeamSeasonStatRow[] = [
+    statRow({ team: "Alabama", role: "offense", metric: "scoring_opp_rate", value: 0.45, n: 80 }),
+    statRow({ team: "Alabama", role: "offense", metric: "pts_per_scoring_opp", value: 4.8, n: 0 }),
+  ];
+  const data = finishingDrivesScatterPoints(roster, rows, "offense");
+  assert.equal(data.points.length, 1);
+  assert.equal(data.average, null);
+});
+
 test("resume quality scatter: joins rating and SOR, handles missing teams or null SOR", () => {
   const ratings: RatingSnapshotRow[] = [
     { week: 9, team: "Alabama", overallRating: 25.5, overallVariance: 1, offenseRating: 40, offenseVariance: 1, defenseRating: 15, defenseVariance: 1 },

@@ -28,4 +28,12 @@
 
 ## Release
 
-(Filled in after deploy.)
+- Pushed `dev` (`17dbcc8c`); dev CI green. PR #14 (`dev` to `main`, merge commit `97493b77`) passed all checks, including `Web` with the Playwright suite; `main` CI green; Vercel Production deployment `7347234966` succeeded.
+- Live readback on `https://c-ks-picks-cfb.vercel.app`: `/stats?chart=downs`, `/stats?chart=finishing-drives&side=defense` and `/matchup/401871071` return 200; the matchup page shows "Key factors"; `?chart=market-board` falls back to Net success rate. `/api/health` reports an active release `production-season-2026-923f3c7bb97d007642b4d14c` (Week 9, 56 of 56 predicted and lined); this change released no data, and that release was not one I made.
+- Code review (medium) findings fixed: the split-verdict wording and a misplaced doc comment. Not fixed, pre-existing from PR #13: `stats/page.tsx` coerces null query results to `[]`, so the "charts unavailable" notice for downs and finishing drives cannot fire on real data.
+
+## Follow-ups closed
+
+- Null handling: `/stats` no longer coerces null query results to `[]`, so the "Charts are temporarily unavailable." notice now fires for downs, finishing drives, possession, adjusted, resume and market. Covered by `fixture=season-stats-missing` in `web/e2e/charts-situational.spec.ts`.
+- Pooled averages: the downs and finishing-drives scatter plots share one helper that weights each axis by its own metric's sample (the pipeline stores a separate `n` per metric). The dashed lines move slightly on live charts; footnotes corrected.
+- `MarketBoardData` is kept: it is the return type of `marketBoardPoints`, used by `MarketBoardView`.
