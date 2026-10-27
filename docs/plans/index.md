@@ -10,6 +10,7 @@ Contracts whose status is In Progress, Draft or Approved (newest first).
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
+| [Stratum CFB rebrand](2026-10-27/stratum-cfb-rebrand.md) | Public identity, licensed wordmark, exports, metadata and current documentation; existing URL and data unchanged | In Progress; owner authorized implementation and Production publication. |
 | [Advanced visualization suite](2026-10-26/02-advanced-visualization-suite.md) | Five experimental visualizations: Standard vs Passing Downs, Finishing Drives, Resume vs Quality, Slate Market Board, and Matchup 5 Factors Tale of the Tape | Implemented October 26; verified with `make check`. Log: `session_logs/2026-10-26/03-advanced-visualization-suite-implementation.md`. |
 | [Weekly update automation](2026-10-26/01-weekly-update-automation.md) | Unattended GitHub Actions close-week and market-refresh with automatic Production activation when every gate passes | Approved October 26; implemented on `connorkitchings/weekly-update-automation`. Owner gates: GitHub environment and secrets, `dev` to `main` release (merge commit), Preview rehearsal, then `CFB_WEEKLY_AUTOMATION_ENABLED=true`. Log: `session_logs/2026-10-26/01-weekly-update-automation.md`. |
 | [Pre-merge fixes and Crest release completion](2026-10-25/01-pre-merge-fixes-and-crest-release.md) | Six review fixes plus the open-licence wordmark regeneration, then the `dev` to `main` publication | Implemented; deployed to Production 2026-10-25 in `86c16f66` |

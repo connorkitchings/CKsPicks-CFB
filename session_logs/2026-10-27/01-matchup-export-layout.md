@@ -65,3 +65,12 @@ User supplied an exported matchup image with blue #3 ranks and requested an audi
 ## Publication authorization
 
 - User explicitly requested “Push to dev.” Fetched origin and confirmed the worktree base equals remote dev before committing. This push does not merge dev into main or activate Production.
+
+## Production web release
+
+- User approved the local Production-data review and explicitly requested “Push to production.”
+- Full `CI=1 PLAYWRIGHT_PORT=3117 make web-e2e` release gate: 423 passed, 10 skipped. Dev CI and PR CI passed all checks.
+- Release PR [#16](https://github.com/connorkitchings/CKsPicks-CFB/pull/16) merged `dev` into `main` with merge commit `d2df11fcfaf779f02f149635b01dd0b2bd72b6ee`.
+- Vercel project `c-ks-picks-cfb`, team `connorkitchings-projects`: Production deployment `dpl_7SFbisoRqnpEncGN3xRPXmhaXV5q` READY, public alias assigned to the expected merge commit. GitHub deployment `7360493741`.
+- Live `/matchup/401856734` returns 200; browser and HTML checks confirm Matchup summary controls above the tables, Key factors after the notes, and shared rank chips rendered. Health remains OK with Week 9 coverage 56 expected, predicted and lined. Active data release unchanged; live identifiers remain in docs/status.md only.
+- Updated status with web publication evidence. Release documentation is pushed to dev separately; this does not change the deployed application.

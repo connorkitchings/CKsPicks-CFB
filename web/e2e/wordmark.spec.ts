@@ -19,9 +19,9 @@ for (const vp of VIEWPORTS) {
         await gotoHydrated(page, "/");
       });
 
-      test("is named, themed, contained and links home", async ({ page }) => {
+      test("is named, themed, contained and links home", async ({ page }, testInfo) => {
         const bar = page.locator(vp.bar).first();
-        const link = bar.getByRole("link", { name: /Crest CFB/ });
+        const link = bar.getByRole("link", { name: /Stratum CFB/ });
         await expect(link).toHaveCount(1);
         const svg = link.locator("svg");
         await expect(svg).toBeVisible();
@@ -36,10 +36,11 @@ for (const vp of VIEWPORTS) {
 
         expect(await link.evaluate((el) => getComputedStyle(el).color)).toBe(COLORS[theme]);
         expect(await svg.locator("path").first().evaluate((el) => getComputedStyle(el).fill)).toBe(COLORS[theme]);
+        await page.screenshot({ path: testInfo.outputPath("wordmark.png") });
       });
 
       test("shows a focus outline for keyboard focus and navigates home on click", async ({ page }) => {
-        const link = page.locator(vp.bar).first().getByRole("link", { name: /Crest CFB/ });
+        const link = page.locator(vp.bar).first().getByRole("link", { name: /Stratum CFB/ });
         for (let i = 0; i < 8 && !(await link.evaluate((el) => el === document.activeElement)); i++) {
           await page.keyboard.press("Tab");
         }
@@ -58,3 +59,27 @@ for (const vp of VIEWPORTS) {
     });
   }
 }
+
+test("metadata and generated image routes use the current identity", async ({ page, request }) => {
+  await gotoHydrated(page, "/");
+  await expect(page).toHaveTitle(/Stratum CFB/);
+  await expect(page.locator('meta[name="application-name"]')).toHaveAttribute("content", "Stratum CFB");
+  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute("content", "Stratum CFB");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Stratum CFB/);
+  await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute("content", /Stratum CFB/);
+  for (const [selector, width, height] of [
+    ['link[rel="icon"]', 32, 32],
+    ['meta[property="og:image"]', 1200, 630],
+  ] as const) {
+    const url = await page.locator(selector).first().getAttribute(selector.startsWith("link") ? "href" : "content");
+    expect(url).toBeTruthy();
+    const imageUrl = new URL(url!, page.url());
+    const response = await request.get(imageUrl.pathname + imageUrl.search);
+    expect(response.ok()).toBeTruthy();
+    expect(response.headers()["content-type"]).toContain("image/png");
+    const png = await response.body();
+    expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+    expect(png.readUInt32BE(16)).toBe(width);
+    expect(png.readUInt32BE(20)).toBe(height);
+  }
+});

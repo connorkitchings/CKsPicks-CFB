@@ -20,7 +20,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
         const bar = page.getByTestId("app-bar");
         await expect(page.getByTestId("app-bar-title")).toHaveText(title);
         // The brand shows once on every tab, centered; the page name stays for assistive tech only.
-        const brand = bar.getByRole("link", { name: /Crest/ });
+        const brand = bar.getByRole("link", { name: /Stratum/ });
         await expect(brand).toHaveCount(1);
         const brandBox = (await brand.boundingBox())!;
         expect(Math.abs(brandBox.x + brandBox.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(2);
@@ -52,7 +52,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       // Matchups carry a forecast update time, which the sheet shows.
       await gotoHydrated(page, "/matchup/1");
       await expect(page.getByTestId("app-bar-title")).toHaveText(/ at /);
-      await expect(page.getByTestId("app-bar").getByRole("link", { name: /Crest/ })).toHaveCount(0);
+      await expect(page.getByTestId("app-bar").getByRole("link", { name: /Stratum/ })).toHaveCount(0);
       await expect(page.getByTestId("app-bar").getByRole("link", { name: /^Week \d+ games$/ })).toBeVisible();
       await expect(menu).toBeEnabled();
       await menu.click();
@@ -62,7 +62,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     test("a team page keeps the back link and its visible title instead of the brand", async ({ page }) => {
       await gotoHydrated(page, "/teams/Alabama");
       const bar = page.getByTestId("app-bar");
-      await expect(bar.getByRole("link", { name: /Crest/ })).toHaveCount(0);
+      await expect(bar.getByRole("link", { name: /Stratum/ })).toHaveCount(0);
       await expect(page.getByTestId("app-bar-title")).toBeVisible();
       await expect(page.getByTestId("app-bar-title")).toHaveText("ALA");
       await expect(bar.getByRole("link", { name: "Back to ratings" })).toHaveAttribute("href", "/ratings");

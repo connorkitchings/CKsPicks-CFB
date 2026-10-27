@@ -4,7 +4,7 @@ import { isShareCancellation, reusablePreparedImage, sameShareImageIdentity, typ
 
 const base: ShareImageIdentity = {
   contentKey: "week 3|all|",
-  filename: "crest-efficiency-2026-through-week-3.png",
+  filename: "stratum-efficiency-2026-through-week-3.png",
   title: "Efficiency vs explosiveness",
   width: 1000,
   height: 562,

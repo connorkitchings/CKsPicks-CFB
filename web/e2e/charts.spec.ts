@@ -486,10 +486,12 @@ test.describe("team charts", () => {
 
   test("PNG export of a scatter is 2000x1125 with every logo decoded", async ({ page }) => {
         await gotoHydrated(page, "/stats?chart=efficiency&week=3");
-    const { file, report } = await exportPng(page);
+    const { file, report, capture } = await exportPng(page);
     expect(pngSize(file)).toEqual({ width: 2000, height: 1125 });
     expect(report.logos).toBeGreaterThan(0);
     expect(report.decoded).toBe(report.logos);
+    expect(capture.text).toContain("Stratum CFB");
+    expect(capture.text).not.toContain("Crest");
   });
 
   test("charts share through the same export actions as the matchup card when the browser can", async ({ page }) => {
@@ -498,7 +500,7 @@ test.describe("team charts", () => {
     await page.getByTestId("chart-share").click();
     await expect.poll(async () => (await sharedFiles(page)).length).toBe(1);
     const [file] = await sharedFiles(page);
-    expect(file.name).toMatch(/^crest-.+\.png$/);
+    expect(file.name).toMatch(/^stratum-.+\.png$/);
     expect(file.type).toBe("image/png");
     expect(file.title).toBe("Efficiency vs explosiveness");
   });

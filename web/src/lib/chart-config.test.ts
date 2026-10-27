@@ -129,14 +129,14 @@ test("titles, subtitles and export names follow the registry", () => {
   assert.equal(chartSubtitle("efficiency", 2026, 7, "offense"), "Offense | 2026 | FBS vs FBS | Through Week 7");
   assert.equal(chartSubtitle("adjusted", 2026, 3, "defense"), "2026 | FBS vs FBS | Through Week 3");
   assert.equal(chartSubtitle("net-success", 2026, 0, "offense"), "Week 0 | 2026 | FBS vs FBS");
-  assert.equal(exportFilename("efficiency", 2026, 3, "defense"), "crest-efficiency-defense-2026-through-week-3.png");
-  assert.equal(exportFilename("net-success", 2026, 0, "offense"), "crest-net-success-2026-week-0.png");
-  assert.equal(exportFilename("adjusted", 2026, 3, "offense"), "crest-adjusted-2026-through-week-3.png");
+  assert.equal(exportFilename("efficiency", 2026, 3, "defense"), "stratum-efficiency-defense-2026-through-week-3.png");
+  assert.equal(exportFilename("net-success", 2026, 0, "offense"), "stratum-net-success-2026-week-0.png");
+  assert.equal(exportFilename("adjusted", 2026, 3, "offense"), "stratum-adjusted-2026-through-week-3.png");
   // V5 ratings and possession measurements are FBS teams' values from every game, not an FBS-vs-FBS game filter.
   assert.equal(chartSubtitle("possession", 2026, 2, "defense"), "2026 | FBS teams, all games | Through Week 2");
   assert.equal(chartSubtitle("rating-trajectory", 2026, 7, "defense"), "2026 | FBS teams");
-  assert.equal(exportFilename("possession", 2026, 2, "defense", "ppp"), "crest-possession-ppp-2026-through-week-2.png");
-  assert.equal(exportFilename("rating-trajectory", 2026, 7, "offense", "overall"), "crest-rating-trajectory-overall-2026.png");
+  assert.equal(exportFilename("possession", 2026, 2, "defense", "ppp"), "stratum-possession-ppp-2026-through-week-2.png");
+  assert.equal(exportFilename("rating-trajectory", 2026, 7, "offense", "overall"), "stratum-rating-trajectory-overall-2026.png");
 });
 
 test("efficiency axes follow side and metric; explosiveness defaults to 20+ rate only when served", () => {

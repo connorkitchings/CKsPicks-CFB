@@ -1,6 +1,8 @@
-# Crest CFB
+# Stratum CFB
 
 College-football spread and total forecasts from a Python V5 season engine, an immutable Cloudflare R2 lake, Neon Postgres and a Vercel web app.
+
+The public product is **Stratum CFB**. Repository, package, infrastructure identifiers and the existing website address retain their technical names. See the [brand decision](docs/decisions/2026-10-27-stratum-cfb-brand.md).
 
 ## Current status and operations
 

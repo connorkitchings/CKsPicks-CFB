@@ -1,4 +1,4 @@
-site_name: CKsPicks-CFB
+site_name: Stratum CFB
 site_description: College-football prediction system documentation.
 
 theme:
@@ -44,7 +44,8 @@ nav:
       - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md
   - Decisions and Contracts:
       - Decision Log: decisions/decision_log.md
-      - Crest Wordmark Decision: decisions/2026-10-25-crest-wordmark.md
+      - Stratum CFB Brand: decisions/2026-10-27-stratum-cfb-brand.md
+      - Historical Crest Wordmark Decision: decisions/2026-10-25-crest-wordmark.md
       - Implementation Contracts: plans/index.md
       - V5 Contract Archive: archive/v5-contracts/index.md
   - Archive:

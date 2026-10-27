@@ -1,8 +1,10 @@
-# Crest CFB Web App
+# Stratum CFB Web App
 
 Next.js 16 / React 19 / Tailwind v4 application served from Vercel and backed
 by Neon Postgres. The Python pipeline owns football-model generation; this app
 only renders the active immutable season release under the configured publication policy.
+
+Public identity is centralized in `src/lib/brand.ts`; the outlined wordmark and reproduction/license records live in `design/stratum-wordmarks/` at repository root. The existing host is unchanged. See the [Stratum brand decision](../docs/decisions/2026-10-27-stratum-cfb-brand.md).
 
 ## Current boundary
 
