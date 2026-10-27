@@ -1,4 +1,4 @@
-.PHONY: help format lint test check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-close-week season-revision season-market-revision season-prepare season-release season-rollback
+.PHONY: help format lint test check web-e2e all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-close-week season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -8,7 +8,8 @@ help:
 	@echo "  make format    - Format code with ruff"
 	@echo "  make lint      - Run linter with ruff"
 	@echo "  make test      - Run tests with pytest"
-	@echo "  make check     - Mirror CI: lint, contracts, tests, docs build, web checks"
+	@echo "  make check     - Fast local gate: lint, contracts, tests, docs build, web lint/typecheck/unit/build"
+	@echo "  make web-e2e   - Browser tests (fixture build + Playwright); the Web CI step make check omits"
 	@echo "  make all       - Format + lint + test + contracts + quality registry"
 	@echo "  make clean     - Clean cache files"
 	@echo "  make contracts-check - Validate contracts/ files are in sync"
@@ -61,7 +62,8 @@ all: format lint test contracts-check quality-check
 	@echo ""
 	@echo "✅ All checks complete!"
 
-# Mirror of CI: Python lint/contracts/tests, docs build, web checks
+# Fast local gate: Python lint/contracts/tests, docs build, web lint/typecheck/unit/build.
+# Does NOT run the Playwright suite; CI does. Run `make web-e2e` for that.
 check:
 	uv run ruff format --check .
 	uv run ruff check .
@@ -72,7 +74,7 @@ check:
 	npm --prefix web run typecheck
 	npm --prefix web run test:publication
 	npm --prefix web run build
-	@echo "✅ All CI-equivalent checks passed"
+	@echo "✅ All checks passed (run make web-e2e for the browser tests CI also runs)"
 
 # ---------------------------------------------------------------------------
 # Contracts validation
@@ -115,6 +117,11 @@ web-build:
 web-lint:
 	@echo "🔍 Linting web/..."
 	cd web && npm run lint
+
+# Browser tests: the fixture build plus Playwright, as in the Web CI job.
+web-e2e:
+	CFB_UI_TEST_MODE=1 CFB_PUBLICATION_MODE=predictions npm --prefix web run build
+	npm --prefix web run test:ui
 
 web-typecheck:
 	@echo "🔧 Typechecking web/..."
