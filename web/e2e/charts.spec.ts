@@ -81,7 +81,7 @@ test.describe("team charts", () => {
       await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
       await expect(page.getByTestId("net-success-chart")).toBeVisible();
       await expect(page.getByTestId("chart-picker").getByRole("link")).toHaveText([
-        "Net success rate", "Efficiency vs explosiveness", "Adjusted PPA/play", "Possession efficiency", "Game log",
+        "Net success rate", "Efficiency vs explosiveness", "Adjusted PPA/play", "Possession efficiency", "Situational downs", "Finishing drives", "Game log",
       ]);
     }
   });

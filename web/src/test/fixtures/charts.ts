@@ -246,12 +246,24 @@ export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[]
 
 export const chartsSeasonStatsWeeksFixture = [3, 4];
 
+/** Season stats for the 16 playing teams (the downs and finishing-drives charts). */
 export function chartsSeasonStatsFixture(asOfWeek: number): TeamSeasonStatRow[] {
+  return buildSeasonStats(asOfWeek, PLAYING);
+}
+
+export const chartsSlateSeasonStatsWeeksFixture = [3, 4];
+
+/** Season stats for every logo-bearing school, matching the slate fixture's 138-team roster. */
+export function chartsSlateSeasonStatsFixture(asOfWeek: number): TeamSeasonStatRow[] {
+  return buildSeasonStats(asOfWeek, Object.keys(LOGO_IDS));
+}
+
+function buildSeasonStats(asOfWeek: number, teams: readonly string[]): TeamSeasonStatRow[] {
   const random = lcg(100 + asOfWeek);
   const rows: TeamSeasonStatRow[] = [];
   const metrics = ["early_down_epa", "conv_rate_3rd_4th", "scoring_opp_rate", "pts_per_scoring_opp"];
 
-  for (const team of PLAYING) {
+  for (const team of teams) {
     for (const role of ["offense", "defense"] as const) {
       for (const metric of metrics) {
         let value = 0;
@@ -274,7 +286,7 @@ export function chartsSeasonStatsFixture(asOfWeek: number): TeamSeasonStatRow[] 
           n: 60 + Math.floor(random() * 40),
           games: asOfWeek,
           rank: null,
-          cohortSize: PLAYING.length,
+          cohortSize: teams.length,
         });
       }
     }

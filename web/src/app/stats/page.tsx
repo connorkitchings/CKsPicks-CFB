@@ -65,6 +65,8 @@ import {
   chartsSlateFixture,
   chartsSlateMarketGamesFixture,
   chartsSlateMarketWeeksFixture,
+  chartsSlateSeasonStatsFixture,
+  chartsSlateSeasonStatsWeeksFixture,
   chartsTeamResumeFixture,
   chartsYardageFixture,
 } from "@/test/fixtures/charts";
@@ -121,7 +123,12 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
     if (fixture === "error") return { state: "unavailable" };
     if (fixture === "slate") {
       const { roster, rows, yardage } = chartsSlateFixture();
-      return { state: "ready", roster, rows: withYardage(rows, yardage), explosiveness: true, adjustedWeeks: [], adjustedFor: async () => [], ...NO_V5_ROWS };
+      return {
+        state: "ready", roster, rows: withYardage(rows, yardage), explosiveness: true, adjustedWeeks: [], adjustedFor: async () => [],
+        ...NO_V5_ROWS,
+        seasonStatsWeeks: chartsSlateSeasonStatsWeeksFixture,
+        seasonStatsFor: async (asOfWeek) => chartsSlateSeasonStatsFixture(asOfWeek),
+      };
     }
     // `v1`: a retained `charts_v1` release (no yardage); otherwise `charts_v2`.
     const explosiveness = fixture !== "v1";
@@ -250,9 +257,9 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
       <MobileStickyBar as="nav" aria-label="Chart type" data-testid="chart-picker">
         <div className="hidden flex-wrap items-end gap-x-5 gap-y-2 sm:flex">
           {pickerGroups().map((group) => (
-            <div key={group.id} className="flex shrink-0 flex-col gap-1" role="group" aria-label={group.label}>
+            <div key={group.id} className="flex min-w-0 flex-col gap-1" role="group" aria-label={group.label}>
               <span className="px-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>{group.label}</span>
-              <div className="flex gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {group.kinds.map((target) => (
                   <ChartLink
                     key={target}
