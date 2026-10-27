@@ -4,13 +4,17 @@ import { gotoHydrated, sharedFiles, stubWebShare } from "./helpers";
 
 test.describe("matchup page (fixture mode)", () => {
   test("mismatched publication lineage hides model sections and disables sharing", async ({ page }) => {
+    await stubWebShare(page);
     await page.goto("/matchup/987656");
     await expect(page.getByRole("status", { name: "Team stats" })).toContainText("provenance is unavailable");
     await expect(page.getByRole("table")).toHaveCount(0);
     await expect(page.getByTestId("model-rating")).toHaveCount(0);
     await expect(page.getByTestId("forecast-grid")).toContainText("Market");
     await expect(page.getByTestId("forecast-grid")).not.toContainText("Model");
-    await expect(page.getByTestId("share-download")).toBeDisabled();
+    const controls = page.getByTestId("matchup-summary-header").getByTestId("share-controls");
+    await expect(controls.getByTestId("share-download")).toBeDisabled();
+    await expect(controls.getByTestId("share-button")).toBeDisabled();
+    for (const button of await controls.getByRole("button").all()) await expect(button).toBeDisabled();
   });
 
   test("shows both unit tables: 12 grouped metrics, ties, an unranked zero and unranked dashes", async ({ page }) => {
@@ -366,6 +370,7 @@ test.describe("matchup page (fixture mode)", () => {
     expect(fit.text).toMatch(/Biggest mismatches/);
     expect(fit.text).toMatch(/(offense|defense) by \d+ spots?/);
     expect(fit.text).toContain("Forecast & Lines");
+    expect(fit.text).not.toMatch(/Key factors|Tape Verdict/);
     expect(fit.text).not.toMatch(/Lean|Model minus market/);
 
     expect(download.suggestedFilename()).toMatch(/^crest-.+-at-.+-2026-week-\d+\.png$/);

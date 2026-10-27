@@ -23,11 +23,19 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       const appBox = (await appBar.boundingBox())!;
       expect(appBox.height).toBeLessThanOrEqual(60);
 
-      // Date/place and the share buttons share one compact row.
+      // Game facts stay compact; exports belong to the summary above the unit tables.
       const facts = (await page.getByTestId("game-facts").boundingBox())!;
       expect(facts.height).toBeLessThanOrEqual(50);
-      const share = (await page.getByTestId("share-controls").boundingBox())!;
-      expect(Math.abs(share.y + share.height / 2 - (facts.y + facts.height / 2))).toBeLessThanOrEqual(4);
+      await expect(page.getByTestId("game-facts").getByTestId("share-controls")).toHaveCount(0);
+      const summary = page.getByTestId("matchup-summary-header");
+      const share = (await summary.getByTestId("share-controls").boundingBox())!;
+      const summaryBox = (await summary.boundingBox())!;
+      const table = (await page.getByRole("table").first().boundingBox())!;
+      expect(share.y).toBeGreaterThan(facts.y + facts.height);
+      expect(share.y + share.height).toBeLessThanOrEqual(summaryBox.y + summaryBox.height);
+      expect(summaryBox.y + summaryBox.height).toBeLessThan(table.y);
+      expect(share.x).toBeGreaterThanOrEqual(0);
+      expect(share.x + share.width).toBeLessThanOrEqual(viewport.width);
 
       // Hero: the forecast grid (market, model and bet lines) starts high on the page, each spread cell on one line.
       const grid = (await page.getByTestId("forecast-grid").boundingBox())!;

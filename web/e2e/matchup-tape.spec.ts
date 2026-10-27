@@ -13,6 +13,19 @@ test.describe("Key factors tale of the tape", () => {
     await expect(card.getByTestId("tape-verdict")).toContainText(/Tape Verdict:/);
   });
 
+  test("summary exports sit above the unit tables, with Key factors after their notes", async ({ page }) => {
+    await gotoHydrated(page, "/matchup/1");
+    const summary = page.getByTestId("matchup-summary-header");
+    await expect(summary.getByRole("heading", { name: "Matchup summary", exact: true })).toBeVisible();
+    await expect(summary.getByTestId("share-controls")).toHaveCount(1);
+    await expect(page.getByTestId("game-facts").getByTestId("share-controls")).toHaveCount(0);
+    await expect(page.getByTestId("tale-of-the-tape").getByTestId("share-controls")).toHaveCount(0);
+    const order = await page.locator('[data-testid="matchup-summary-header"], table, [data-testid="matchup-notes"], [data-testid="tale-of-the-tape"]').evaluateAll(
+      (elements) => elements.map((element) => element.getAttribute("data-testid") ?? element.tagName.toLowerCase()),
+    );
+    expect(order).toEqual(["matchup-summary-header", "table", "table", "matchup-notes", "tale-of-the-tape"]);
+  });
+
   test("the segmented control switches the clash and its verdict", async ({ page }) => {
     await gotoHydrated(page, "/matchup/1");
     const card = page.getByTestId("tale-of-the-tape");
@@ -38,6 +51,7 @@ test.describe("Key factors tale of the tape", () => {
     await page.goto("/matchup/987655");
     await expect(page.getByRole("region", { name: "Team stats" })).toContainText("temporarily unavailable");
     await expect(page.getByTestId("tale-of-the-tape")).toHaveCount(0);
+    await expect(page.getByTestId("share-download")).toBeDisabled();
   });
 
   test.describe("at 320px", () => {

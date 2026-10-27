@@ -4,15 +4,15 @@ import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { spreadBetLabel } from "@/lib/betting-format";
 import { logoSrc, teamInitials } from "@/lib/team-logos";
 import { BRAND_FULL } from "@/lib/brand";
+import { RankChip } from "@/components/ui/RankChip";
 import {
   groupUnitRows,
   hasMissingValue,
   mismatchSummary,
   rankLabel,
-  rankTier,
+  rankTitle,
   topMismatches,
   type Mismatch,
-  type RankTier,
   type UnitMatchupRow,
 } from "@/lib/team-stats";
 
@@ -36,14 +36,6 @@ const C = {
   faint: "#71717a",
   accent: "#93c5fd",
 } as const;
-
-const TIER_STYLE: Record<RankTier, CSSProperties> = {
-  none: { background: "#1a1a1d", color: C.faint, border: `1px solid ${C.line}`, fontWeight: 500 },
-  top: { background: "rgba(59,130,246,0.18)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.4)", fontWeight: 700 },
-  high: { background: "rgba(6,182,212,0.12)", color: "#67e8f9", border: "1px solid rgba(6,182,212,0.3)", fontWeight: 600 },
-  mid: { background: C.inset, color: C.muted, border: `1px solid ${C.line}`, fontWeight: 500 },
-  low: { background: "rgba(239,68,68,0.14)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.3)", fontWeight: 500 },
-};
 
 const sans = "var(--font-geist-sans), system-ui, -apple-system, 'Segoe UI', sans-serif";
 const mono = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -77,9 +69,12 @@ function Logo({ name, size }: { name: string; size: number }) {
 
 function Badge({ rank, cohort, tied }: { rank: number | null; cohort: number | null; tied: boolean }) {
   return (
-    <span
+    <RankChip
+      rank={rank}
+      total={cohort ?? undefined}
+      label={rankLabel(rank, tied)}
+      title={rankTitle(rank, tied, cohort)}
       style={{
-        ...TIER_STYLE[rankTier(rank, cohort)],
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -90,9 +85,7 @@ function Badge({ rank, cohort, tied }: { rank: number | null; cohort: number | n
         fontSize: 15,
         whiteSpace: "nowrap",
       }}
-    >
-      {rankLabel(rank, tied)}
-    </span>
+    />
   );
 }
 
@@ -127,7 +120,7 @@ function TeamHeader({
           fontWeight: 600,
         }}
       >
-        Model Rank <span style={{ fontFamily: mono }}>#{rank ?? "—"}</span>
+        Model Rank <RankChip rank={rank} title="Model Rank" style={{ height: 26, minWidth: 46, padding: "0 7px", borderRadius: 6, fontSize: 18 }} />
       </div>
     </div>
   );
@@ -297,14 +290,14 @@ function Panel({
           <Logo name={offenseTeam} size={36} />
           <div style={unitName}>{offenseTeam}</div>
           <div style={{ ...unitRole, color: C.accent }}>Offense</div>
-          <div style={unitRank}>Model Offense Rank #{offenseRank ?? "—"}</div>
+          <div style={unitRank}>Model Offense Rank <RankChip rank={offenseRank} title="Model Offense Rank" style={{ fontSize: 13 }} /></div>
         </div>
         <div style={{ marginTop: 14, fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.faint, textTransform: "uppercase" }}>vs</div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
           <Logo name={defenseTeam} size={36} />
           <div style={unitName}>{defenseTeam}</div>
           <div style={{ ...unitRole, color: C.muted }}>Defense</div>
-          <div style={unitRank}>Model Defense Rank #{defenseRank ?? "—"}</div>
+          <div style={unitRank}>Model Defense Rank <RankChip rank={defenseRank} title="Model Defense Rank" style={{ fontSize: 13 }} /></div>
         </div>
       </div>
       {groupUnitRows(rows).map((group) => (
@@ -391,7 +384,14 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
         flexDirection: "column",
         gap: 16,
         overflow: "hidden",
-      }}
+        "--rank-good": "#4ade80",
+        "--rank-mid": "#fbbf24",
+        "--rank-bad": "#f87171",
+        "--ink": C.ink,
+        "--ink-muted": C.muted,
+        "--surface-inset": C.inset,
+        "--line": C.line,
+      } as CSSProperties}
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", borderBottom: `1px solid ${C.line}`, paddingBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
