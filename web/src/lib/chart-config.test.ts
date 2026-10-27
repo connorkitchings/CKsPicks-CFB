@@ -241,8 +241,9 @@ test("downs and finishing drives quadrant names match their positions on both si
   assert.equal(finishingOffCaptions.bottomRight, "Higher opportunity rate / Lower points per opportunity");
 });
 
-test("footnotes: drive-weighted finishing average and cohort-neutral resume rank", () => {
-  assert.ok(finishingDrivesConfig("offense").footnote?.includes("drive-weighted"));
+test("footnotes: pooled finishing average and cohort-neutral resume rank", () => {
+  assert.ok(finishingDrivesConfig("offense").footnote?.includes("pooled over drives for opportunity rate and over scoring opportunities"));
+  assert.ok(downsConfig("offense").footnote?.includes("pooled over plays: early-down plays for EPA, 3rd/4th-down attempts for conversion rate."));
   assert.ok(!RESUME_QUALITY_CONFIG.footnote?.includes("134"));
   assert.equal(RESUME_QUALITY_CONFIG.averageNames.y, "Avg SOR rank");
 });

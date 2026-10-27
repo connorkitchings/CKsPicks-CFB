@@ -960,118 +960,73 @@ export type MarketBoardData = {
   metric: MarketBoardMetric;
 };
 
-export function downsScatterPoints(
+/**
+ * Two season-stat metrics against each other for roster teams that have both. Each metric
+ * carries its own sample size (plays, attempts, drives, opportunities), so each axis's
+ * average is weighted by that axis's own `n`; it is null when either axis has no weight.
+ * A point's `n` is the x metric's sample size.
+ */
+function metricPairScatter(
   roster: readonly RosterRow[],
   statsRows: readonly TeamSeasonStatRow[],
   side: Side,
+  xMetric: string,
+  yMetric: string,
 ): ScatterData {
-  const points: ScatterPoint[] = [];
-  const unavailable: string[] = [];
-
-  const byTeamMap = new Map<string, { epa?: number; conv?: number; n: number }>();
+  const x = new Map<string, TeamSeasonStatRow & { value: number }>();
+  const y = new Map<string, TeamSeasonStatRow & { value: number }>();
   for (const r of statsRows) {
     if (r.role !== side || r.value === null || !Number.isFinite(r.value)) continue;
-    const entry = byTeamMap.get(r.team) ?? { n: 0 };
-    if (r.metric === "early_down_epa") {
-      entry.epa = r.value;
-      entry.n = Math.max(entry.n, r.n);
-    } else if (r.metric === "conv_rate_3rd_4th") {
-      entry.conv = r.value;
-      entry.n = Math.max(entry.n, r.n);
-    }
-    byTeamMap.set(r.team, entry);
+    const row = r as TeamSeasonStatRow & { value: number };
+    if (r.metric === xMetric) x.set(r.team, row);
+    else if (r.metric === yMetric) y.set(r.team, row);
   }
-
-  const rosterByTeam = new Map(roster.map((r) => [r.team, r]));
-  for (const [team, r] of rosterByTeam) {
-    const entry = byTeamMap.get(team);
-    if (entry && entry.epa !== undefined && entry.conv !== undefined) {
-      points.push({
-        team,
-        conference: r.conference,
-        x: entry.epa,
-        y: entry.conv,
-        n: entry.n,
-      });
-    } else {
+  const points: ScatterPoint[] = [];
+  const unavailable: string[] = [];
+  let sx = 0;
+  let sy = 0;
+  let xn = 0;
+  let yn = 0;
+  for (const { team, conference } of new Map(roster.map((r) => [r.team, r])).values()) {
+    const xr = x.get(team);
+    const yr = y.get(team);
+    if (!xr || !yr) {
       unavailable.push(team);
+      continue;
     }
+    points.push({ team, conference, x: xr.value, y: yr.value, n: xr.n });
+    sx += xr.value * xr.n;
+    xn += xr.n;
+    sy += yr.value * yr.n;
+    yn += yr.n;
   }
   points.sort(byTeam);
-
-  let average: { x: number; y: number } | null = null;
-  if (points.length > 0) {
-    const totalN = points.reduce((s, p) => s + (p.n > 0 ? p.n : 1), 0);
-    const avgX = points.reduce((s, p) => s + p.x * (p.n > 0 ? p.n : 1), 0) / totalN;
-    const avgY = points.reduce((s, p) => s + p.y * (p.n > 0 ? p.n : 1), 0) / totalN;
-    average = { x: avgX, y: avgY };
-  }
-
   const isDefense = side === "defense";
   return {
     points,
-    average,
+    average: xn > 0 && yn > 0 ? { x: sx / xn, y: sy / yn } : null,
     unavailable,
     invertX: isDefense,
     invertY: isDefense,
   };
 }
 
+/** Early-down EPA/play (x) against 3rd/4th-down conversion rate (y). */
+export function downsScatterPoints(
+  roster: readonly RosterRow[],
+  statsRows: readonly TeamSeasonStatRow[],
+  side: Side,
+): ScatterData {
+  return metricPairScatter(roster, statsRows, side, "early_down_epa", "conv_rate_3rd_4th");
+}
+
+/** Scoring opportunity rate (x) against points per scoring opportunity (y). */
 export function finishingDrivesScatterPoints(
   roster: readonly RosterRow[],
   statsRows: readonly TeamSeasonStatRow[],
   side: Side,
 ): ScatterData {
-  const points: ScatterPoint[] = [];
-  const unavailable: string[] = [];
-
-  const byTeamMap = new Map<string, { oppRate?: number; ptsPerOpp?: number; n: number }>();
-  for (const r of statsRows) {
-    if (r.role !== side || r.value === null || !Number.isFinite(r.value)) continue;
-    const entry = byTeamMap.get(r.team) ?? { n: 0 };
-    if (r.metric === "scoring_opp_rate") {
-      entry.oppRate = r.value;
-      entry.n = Math.max(entry.n, r.n);
-    } else if (r.metric === "pts_per_scoring_opp") {
-      entry.ptsPerOpp = r.value;
-      entry.n = Math.max(entry.n, r.n);
-    }
-    byTeamMap.set(r.team, entry);
-  }
-
-  const rosterByTeam = new Map(roster.map((r) => [r.team, r]));
-  for (const [team, r] of rosterByTeam) {
-    const entry = byTeamMap.get(team);
-    if (entry && entry.oppRate !== undefined && entry.ptsPerOpp !== undefined) {
-      points.push({
-        team,
-        conference: r.conference,
-        x: entry.oppRate,
-        y: entry.ptsPerOpp,
-        n: entry.n,
-      });
-    } else {
-      unavailable.push(team);
-    }
-  }
-  points.sort(byTeam);
-
-  let average: { x: number; y: number } | null = null;
-  if (points.length > 0) {
-    const totalN = points.reduce((s, p) => s + (p.n > 0 ? p.n : 1), 0);
-    const avgX = points.reduce((s, p) => s + p.x * (p.n > 0 ? p.n : 1), 0) / totalN;
-    const avgY = points.reduce((s, p) => s + p.y * (p.n > 0 ? p.n : 1), 0) / totalN;
-    average = { x: avgX, y: avgY };
-  }
-
-  const isDefense = side === "defense";
-  return {
-    points,
-    average,
-    unavailable,
-    invertX: isDefense,
-    invertY: isDefense,
-  };
+  return metricPairScatter(roster, statsRows, side, "scoring_opp_rate", "pts_per_scoring_opp");
 }
 
 export function resumeQualityScatterPoints(
