@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { gotoHydrated } from "./helpers";
 
-const TITLES = ["Net success rate", "Efficiency vs explosiveness", "Adjusted PPA/play", "Possession efficiency", "Game log"];
+const TITLES = [
+  "Net success rate", "Efficiency vs explosiveness", "Adjusted PPA/play", "Possession efficiency", "Situational downs", "Finishing drives", "Game log",
+];
 
 test.describe("phone chart picker", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
@@ -45,14 +47,14 @@ test.describe("phone chart picker", () => {
   });
 
   const CHARTS = [
-    ["net-success", "/stats?chart=net-success&week=3", false],
-    ["efficiency", "/stats?chart=efficiency&week=3", true],
-    ["adjusted", "/stats?chart=adjusted&week=2", true],
-    ["possession", "/stats?chart=possession&week=3", true],
-    ["game-log", "/stats?chart=game-log", true],
+    ["net-success", "/stats?chart=net-success&week=3", false, "Net success rate"],
+    ["efficiency", "/stats?chart=efficiency&week=3", true, "Efficiency vs explosiveness"],
+    ["adjusted", "/stats?chart=adjusted&week=2", true, "Adjusted PPA/play"],
+    ["possession", "/stats?chart=possession&week=3", true, "Possession efficiency"],
+    ["game-log", "/stats?chart=game-log", true, "Game log"],
   ] as const;
 
-  for (const [chart, url, hasFinder] of CHARTS) {
+  for (const [chart, url, hasFinder, title] of CHARTS) {
     test(`${chart}: compact phone header with the pinned bar, one summary row and the chart card up top`, async ({ page }) => {
       await gotoHydrated(page, url);
       const bar = page.getByTestId("chart-picker");
@@ -88,7 +90,7 @@ test.describe("phone chart picker", () => {
       expect(top).toBeLessThan(335);
 
       // The chart title is screen-reader only; the description and credit sit in "About this chart".
-      const chartTitle = page.getByRole("heading", { level: 2, name: TITLES[CHARTS.findIndex(([name]) => name === chart)] });
+      const chartTitle = page.getByRole("heading", { level: 2, name: title });
       expect((await chartTitle.boundingBox())!.width).toBeLessThanOrEqual(1);
       // Screen-reader only (Playwright counts a clipped 1px node as visible), so it takes no room.
       expect((await page.getByTestId("chart-description").boundingBox())!.width).toBeLessThanOrEqual(1);

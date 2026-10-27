@@ -5,7 +5,7 @@ for (const width of [320, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     await page.goto("/stats?chart=efficiency&week=3");
     const select = page.getByTestId("chart-select");
-    await expect(select.locator("option")).toHaveCount(5);
+    await expect(select.locator("option")).toHaveCount(7);
     expect((await select.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(page.getByTestId("team-search")).toBeVisible();
     await expect(page.getByTestId("conference-filter")).toHaveCount(1);

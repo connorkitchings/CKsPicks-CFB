@@ -205,6 +205,48 @@ test("the game log footnote defines the selected metric and leaves scope notes t
   assert.equal(CHART_REGISTRY["game-log"].footnote, gameLogFootnote("success"));
 });
 
+test("downs and finishing drives quadrant names match their positions on both sides", () => {
+  // Defense axes are inverted: up = fewer allowed on y, right = fewer allowed on x.
+  const expected = {
+    downs: {
+      offense: ["Late-Down Bailouts", "Unstoppable Engine", "Struggling", "On-Schedule Only"],
+      defense: ["Bend, Don't Break", "Suffocating Defense", "Vulnerable", "Stingy Early, Leaky Late"],
+    },
+    finishing: {
+      offense: ["Low Volume, High TD Rate", "Elite Finishers", "Struggling Finishers", "Drive Stallers / FG Settlers"],
+      defense: ["Red-Zone Wall", "Lockdown Defense", "Generous Defense", "Stingy Early, Leaky Inside"],
+    },
+  };
+  for (const side of ["offense", "defense"] as const) {
+    for (const [config, names] of [
+      [downsConfig(side), expected.downs[side]],
+      [finishingDrivesConfig(side), expected.finishing[side]],
+    ] as const) {
+      const n = config.captions.names;
+      assert.deepEqual([n.topLeft, n.topRight, n.bottomLeft, n.bottomRight], names, side);
+    }
+  }
+
+  const downsDefCaptions = downsConfig("defense").captions;
+  assert.equal(downsDefCaptions.topLeft, "Higher early EPA allowed / Lower conversion allowed");
+  assert.equal(downsDefCaptions.bottomRight, "Lower early EPA allowed / Higher conversion allowed");
+  const finishingDefCaptions = finishingDrivesConfig("defense").captions;
+  assert.equal(finishingDefCaptions.topLeft, "Higher opportunity rate allowed / Fewer points allowed per opportunity");
+  assert.equal(finishingDefCaptions.bottomRight, "Lower opportunity rate allowed / More points allowed per opportunity");
+  const downsOffCaptions = downsConfig("offense").captions;
+  assert.equal(downsOffCaptions.topLeft, "Lower early EPA / Higher conversion");
+  assert.equal(downsOffCaptions.bottomRight, "Higher early EPA / Lower conversion");
+  const finishingOffCaptions = finishingDrivesConfig("offense").captions;
+  assert.equal(finishingOffCaptions.topLeft, "Lower opportunity rate / Higher points per opportunity");
+  assert.equal(finishingOffCaptions.bottomRight, "Higher opportunity rate / Lower points per opportunity");
+});
+
+test("footnotes: drive-weighted finishing average and cohort-neutral resume rank", () => {
+  assert.ok(finishingDrivesConfig("offense").footnote?.includes("drive-weighted"));
+  assert.ok(!RESUME_QUALITY_CONFIG.footnote?.includes("134"));
+  assert.equal(RESUME_QUALITY_CONFIG.averageNames.y, "Avg SOR rank");
+});
+
 test("advanced visualization suite configs and formatters", () => {
   const downsOff = downsConfig("offense");
   assert.equal(downsOff.xLabel, "Early Down PPA/play (1st & 2nd)");
@@ -213,7 +255,7 @@ test("advanced visualization suite configs and formatters", () => {
 
   const downsDef = downsConfig("defense");
   assert.equal(downsDef.captions.names.topRight, "Suffocating Defense");
-  assert.equal(downsDef.captions.names.bottomRight, "Bend-Don't-Break");
+  assert.equal(downsDef.captions.names.bottomRight, "Stingy Early, Leaky Late");
 
   const finishingOff = finishingDrivesConfig("offense");
   assert.equal(finishingOff.xLabel, "Scoring Opportunity Rate (Drives to Opponent 40)");

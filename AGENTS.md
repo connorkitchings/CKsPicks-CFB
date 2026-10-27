@@ -56,7 +56,8 @@ Site: the 4-tab interface (Games `/`, Ratings `/ratings`, Graphs `/stats`, Model
 ## Validation
 
 ```bash
-make check    # mirrors CI: ruff, contracts, quality registry, pytest, mkdocs --strict, web lint/typecheck/tests/build
+make check    # fast local gate: ruff, contracts, quality registry, pytest, mkdocs --strict, web lint/typecheck/unit tests/build (no browser tests)
+make web-e2e  # browser-test step of Web CI: fixture build + Playwright; required before any dev to main release that touches web/
 make test     # Python tests only
 uv run pytest tests/<file>.py
 ```

@@ -277,8 +277,6 @@ export const getTeamSeasonStatsSnapshot = cache(releaseCached("getTeamSeasonStat
   return rows as TeamSeasonStatRow[];
 }));
 
-export const getTeamSeasonStats = getTeamSeasonStatsSnapshot;
-
 const RESUME_CHART_SPEC: RowSpec = {
   periodId: { kind: "string" },
   postWeek: { kind: "int", nullable: true },
