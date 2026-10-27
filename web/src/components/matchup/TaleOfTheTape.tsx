@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { teamAbbr, teamColor } from "@/lib/team-logos";
-import type { UnitMatchupRow } from "@/lib/team-stats";
+import { chartColor } from "@/lib/charts";
+import { buildTapeRows, tapeVerdict, type TapeVerdict } from "@/lib/tale-of-tape";
+import { FALLBACK_TEAM_COLOR, teamAbbr, teamAltColor, teamColor } from "@/lib/team-logos";
+import { rankLabel, rankTitle, type UnitMatchupRow } from "@/lib/team-stats";
 import type { TeamRatingSummary } from "@/lib/matchup";
 
 export type TaleOfTheTapeProps = {
@@ -16,47 +18,33 @@ export type TaleOfTheTapeProps = {
   homeRating: TeamRatingSummary;
 };
 
-type FactorKey = "efficiency" | "explosiveness" | "finishing" | "passing_downs" | "field_position";
+const sideColor = (team: string) => chartColor(teamColor(team), teamAltColor(team), FALLBACK_TEAM_COLOR);
 
-type FactorDef = {
-  key: FactorKey;
-  label: string;
-  metricKey: string;
-  description: string;
-};
-
-const FIVE_FACTORS: FactorDef[] = [
-  {
-    key: "efficiency",
-    label: "Overall Efficiency",
-    metricKey: "success_rate",
-    description: "Success rate (% of plays gaining necessary yardage)",
-  },
-  {
-    key: "explosiveness",
-    label: "Explosiveness",
-    metricKey: "explosive_rate",
-    description: "20+ yard play rate on standard downs",
-  },
-  {
-    key: "finishing",
-    label: "Finishing Drives",
-    metricKey: "pts_per_scoring_opp",
-    description: "Points per scoring opportunity (inside the 40)",
-  },
-  {
-    key: "passing_downs",
-    label: "Late-Down Conversions",
-    metricKey: "conv_rate_3rd_4th",
-    description: "3rd & 4th down conversion rate",
-  },
-  {
-    key: "field_position",
-    label: "Starting Field Position",
-    metricKey: "avg_start_field_pos",
-    description: "Average offensive starting yardline",
-  },
-];
+function Verdict({
+  verdict,
+  offTeam,
+  defTeam,
+  offColor,
+  defColor,
+}: {
+  verdict: TapeVerdict;
+  offTeam: string;
+  defTeam: string;
+  offColor: string;
+  defColor: string;
+}) {
+  if (verdict.kind === "none") return <span>Not enough ranked data to compare these factors.</span>;
+  if (verdict.kind === "split") return <span>Neither unit has the edge across the {verdict.compared} compared factors.</span>;
+  const offense = verdict.kind === "offense";
+  return (
+    <span>
+      <strong style={{ color: offense ? offColor : defColor }}>
+        {offense ? offTeam : defTeam} {offense ? "Offense" : "Defense"}
+      </strong>{" "}
+      controls the statistical edge in {verdict.count} of {verdict.compared} compared factors.
+    </span>
+  );
+}
 
 export function TaleOfTheTape({
   awayTeam,
@@ -73,33 +61,26 @@ export function TaleOfTheTape({
   const defTeam = isAwayOff ? homeTeam : awayTeam;
   const offRating = isAwayOff ? awayRating : homeRating;
   const defRating = isAwayOff ? homeRating : awayRating;
-  const rows = isAwayOff ? awayOffVsHomeDef : homeOffVsAwayDef;
 
-  const offColor = teamColor(offTeam);
-  const defColor = teamColor(defTeam);
+  const offColor = sideColor(offTeam);
+  const defColor = sideColor(defTeam);
 
-  // Tally factor edges
-  let offEdgeCount = 0;
-  let defEdgeCount = 0;
-
-  FIVE_FACTORS.forEach((factor) => {
-    const row = rows.find((r) => r.key === factor.metricKey);
-    if (row?.edge?.side === "offense") offEdgeCount++;
-    else if (row?.edge?.side === "defense") defEdgeCount++;
-  });
+  const tapeRows = buildTapeRows(isAwayOff ? awayOffVsHomeDef : homeOffVsAwayDef);
+  const verdict = tapeVerdict(tapeRows);
 
   return (
-    <Card as="section" aria-label="Five Factors Tale of the Tape" padding="none" className="p-5 sm:p-6 mb-6">
+    <Card
+      as="section"
+      aria-label="Key factors tale of the tape"
+      data-testid="tale-of-the-tape"
+      padding="none"
+      className="p-5 sm:p-6 mb-6"
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4 mb-5">
-        <div>
-          <h2 className="text-base font-bold text-ink-primary flex items-center gap-2">
-            <span>Five Factors: Head-to-Head Tape</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/10 text-accent">
-              Core Analytics
-            </span>
-          </h2>
+        <div className="min-w-0">
+          <h2 className="text-base font-bold text-ink-primary">Key factors</h2>
           <p className="text-xs text-ink-muted mt-0.5">
-            Bi-directional contrast of unit strength based on Bill Connelly&apos;s Five Factors.
+            Head-to-head unit strength on the factors that drive scoring. Turnovers are not included yet.
           </p>
         </div>
 
@@ -117,95 +98,95 @@ export function TaleOfTheTape({
 
       {/* Clash header */}
       <div className="grid grid-cols-2 gap-4 pb-3 text-sm font-semibold border-b border-line/40">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: offColor }} />
-          <span className="text-ink-primary">{offTeam} Offense</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: offColor }} />
+          <span className="min-w-0 truncate text-ink-primary">{offTeam} Offense</span>
           {offRating.offenseRank !== null && offRating.offenseRank !== undefined && (
-            <span className="text-[11px] font-mono text-ink-muted">#{offRating.offenseRank}</span>
+            <span className="shrink-0 text-[11px] font-mono text-ink-muted">#{offRating.offenseRank}</span>
           )}
         </div>
-        <div className="flex items-center justify-end gap-2 text-right">
+        <div className="flex min-w-0 items-center justify-end gap-2 text-right">
           {defRating.defenseRank !== null && defRating.defenseRank !== undefined && (
-            <span className="text-[11px] font-mono text-ink-muted">#{defRating.defenseRank}</span>
+            <span className="shrink-0 text-[11px] font-mono text-ink-muted">#{defRating.defenseRank}</span>
           )}
-          <span className="text-ink-primary">{defTeam} Defense</span>
-          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: defColor }} />
+          <span className="min-w-0 truncate text-ink-primary">{defTeam} Defense</span>
+          <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: defColor }} />
         </div>
       </div>
 
       {/* Factors list */}
       <div className="divide-y divide-line/30">
-        {FIVE_FACTORS.map((factor) => {
-          const row = rows.find((r) => r.key === factor.metricKey);
-          const offVal = row?.offenseValue ?? "—";
-          const defVal = row?.defenseValue ?? "—";
-          const offRank = row?.offenseRank;
-          const defRank = row?.defenseRank;
-          const edge = row?.edge;
-
-          // Normalized percentile relative to 134 FBS teams (1 = best rank #1, 0 = worst rank #134)
-          const offPct = offRank ? Math.max(0.05, Math.min(1, 1 - (offRank - 1) / 133)) : 0.5;
-          const defPct = defRank ? Math.max(0.05, Math.min(1, 1 - (defRank - 1) / 133)) : 0.5;
-
+        {tapeRows.map((row) => {
+          const { factor, edge } = row;
           return (
-            <div key={factor.key} className="py-3.5 first:pt-3 last:pb-1">
-              <div className="flex items-center justify-between text-xs mb-1.5">
-                {/* Offense stat */}
+            <div key={factor.key} data-testid="tape-row" className="py-3.5 first:pt-3 last:pb-1">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs mb-1.5">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-mono font-bold text-sm text-ink-primary">{offVal}</span>
-                  {offRank !== null && offRank !== undefined && (
-                    <span className="text-[11px] font-medium text-ink-muted">#{offRank}</span>
+                  <span className="font-mono font-bold text-sm text-ink-primary">{row.offenseValue}</span>
+                  {row.offenseRank !== null && (
+                    <span
+                      className="text-[11px] font-medium text-ink-muted"
+                      title={rankTitle(row.offenseRank, row.offenseTied, row.offenseCohort)}
+                    >
+                      {rankLabel(row.offenseRank, row.offenseTied)}
+                    </span>
                   )}
                 </div>
 
-                {/* Metric title */}
-                <div className="text-center font-semibold text-ink-primary text-xs tracking-tight">
+                <div className="order-first basis-full text-center font-semibold text-ink-primary text-xs tracking-tight sm:order-none sm:basis-auto">
                   {factor.label}
                 </div>
 
-                {/* Defense stat */}
                 <div className="flex items-baseline gap-2 justify-end">
-                  {defRank !== null && defRank !== undefined && (
-                    <span className="text-[11px] font-medium text-ink-muted">#{defRank}</span>
+                  {row.defenseRank !== null && (
+                    <span
+                      className="text-[11px] font-medium text-ink-muted"
+                      title={rankTitle(row.defenseRank, row.defenseTied, row.defenseCohort)}
+                    >
+                      {rankLabel(row.defenseRank, row.defenseTied)}
+                    </span>
                   )}
-                  <span className="font-mono font-bold text-sm text-ink-primary">{defVal}</span>
+                  <span className="font-mono font-bold text-sm text-ink-primary">{row.defenseValue}</span>
                 </div>
               </div>
 
-              {/* Bi-directional comparison bar */}
+              {/* Bi-directional comparison bar; none when a rank is missing */}
               <div className="grid grid-cols-2 gap-1 h-2 rounded-full overflow-hidden bg-surface-inset">
-                {/* Left side (Offense) */}
-                <div className="flex justify-end">
-                  <div
-                    className="h-full rounded-l-full transition-all duration-300"
-                    style={{
-                      width: `${offPct * 100}%`,
-                      backgroundColor: offColor,
-                      opacity: edge?.side === "offense" ? 1 : 0.45,
-                    }}
-                  />
-                </div>
-                {/* Right side (Defense) */}
-                <div className="flex justify-start">
-                  <div
-                    className="h-full rounded-r-full transition-all duration-300"
-                    style={{
-                      width: `${defPct * 100}%`,
-                      backgroundColor: defColor,
-                      opacity: edge?.side === "defense" ? 1 : 0.45,
-                    }}
-                  />
-                </div>
+                {edge && row.offenseBar !== null && row.defenseBar !== null && (
+                  <>
+                    <div className="flex justify-end">
+                      <div
+                        className="h-full rounded-l-full transition-all duration-300"
+                        style={{
+                          width: `${row.offenseBar * 100}%`,
+                          backgroundColor: offColor,
+                          opacity: edge.side === "offense" ? 1 : 0.45,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-start">
+                      <div
+                        className="h-full rounded-r-full transition-all duration-300"
+                        style={{
+                          width: `${row.defenseBar * 100}%`,
+                          backgroundColor: defColor,
+                          opacity: edge.side === "defense" ? 1 : 0.45,
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Edge summary badge */}
-              <div className="flex items-center justify-between text-[10px] text-ink-muted mt-1 px-0.5">
-                <span>{factor.description}</span>
-                {edge?.side === "offense" ? (
+              <div className="flex flex-wrap items-center justify-between gap-x-3 text-[10px] text-ink-muted mt-1 px-0.5">
+                <span className="min-w-0">{factor.description}</span>
+                {!edge ? (
+                  <span className="font-medium text-ink-muted">Not available</span>
+                ) : edge.side === "offense" ? (
                   <span className="font-bold text-ink-primary">
                     Advantage: <span style={{ color: offColor }}>{offTeam}</span>
                   </span>
-                ) : edge?.side === "defense" ? (
+                ) : edge.side === "defense" ? (
                   <span className="font-bold text-ink-primary">
                     Advantage: <span style={{ color: defColor }}>{defTeam}</span>
                   </span>
@@ -220,21 +201,9 @@ export function TaleOfTheTape({
 
       {/* Summary Footer */}
       <div className="mt-4 pt-3.5 border-t border-line flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-ink-muted">
-        <div>
+        <div data-testid="tape-verdict">
           <span className="font-semibold text-ink-primary">Tape Verdict: </span>
-          {offEdgeCount > defEdgeCount ? (
-            <span>
-              <strong style={{ color: offColor }}>{offTeam} Offense</strong> controls the statistical edge in{" "}
-              {offEdgeCount} of 5 core factors.
-            </span>
-          ) : defEdgeCount > offEdgeCount ? (
-            <span>
-              <strong style={{ color: defColor }}>{defTeam} Defense</strong> controls the statistical edge in{" "}
-              {defEdgeCount} of 5 core factors.
-            </span>
-          ) : (
-            <span>Both units split advantages evenly across the core factors.</span>
-          )}
+          <Verdict verdict={verdict} offTeam={offTeam} defTeam={defTeam} offColor={offColor} defColor={defColor} />
         </div>
         <div className="text-[11px] text-ink-faint">National ranks based on FBS-vs-FBS games.</div>
       </div>
