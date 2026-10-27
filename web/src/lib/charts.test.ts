@@ -34,12 +34,9 @@ import {
   type TeamGameRow,
   type TeamGameYardageRow,
   downsScatterPoints,
-  downsThroughWeeks,
   finishingDrivesScatterPoints,
-  finishingDrivesThroughWeeks,
   resumeQualityScatterPoints,
   marketBoardPoints,
-  marketBoardWeeks,
   type TeamSeasonStatRow,
   type TeamResumeChartRow,
   type SlateMarketGameRow,
@@ -554,8 +551,6 @@ test("downs scatter: early down EPA vs 3rd/4th down conv rate, offense vs defens
     statRow({ team: "Alabama", role: "defense", metric: "conv_rate_3rd_4th", value: 0.30, asOfWeek: 9 }),
   ];
 
-  assert.deepEqual(downsThroughWeeks(rows), [9]);
-
   const off = downsScatterPoints(roster, rows, "offense");
   assert.equal(off.points.length, 2);
   assert.deepEqual(off.points.map((p) => p.team), ["Alabama", "Michigan"]);
@@ -581,8 +576,6 @@ test("finishing drives scatter: scoring opp rate vs pts/opp, role separation, an
     statRow({ team: "Alabama", role: "defense", metric: "scoring_opp_rate", value: 0.25, n: 70 }),
     statRow({ team: "Alabama", role: "defense", metric: "pts_per_scoring_opp", value: 2.8, n: 70 }),
   ];
-
-  assert.deepEqual(finishingDrivesThroughWeeks(rows), [9]);
 
   const off = finishingDrivesScatterPoints(roster, rows, "offense");
   assert.equal(off.points.length, 2);
@@ -670,8 +663,6 @@ test("slate market board: consensus coordinates, spread sign inversion, high-edg
       totalLean: null,
     },
   ];
-
-  assert.deepEqual(marketBoardWeeks(games), [9]);
 
   const spreads = marketBoardPoints(games, "spread");
   assert.equal(spreads.points.length, 2);

@@ -938,24 +938,6 @@ export type SlateMarketGameRow = {
   totalLean: "over" | "under" | null;
 };
 
-export type DownsScatterPoint = ScatterPoint & {
-  earlyDownEpa: number;
-  convRate3rd4th: number;
-};
-
-export type FinishingDrivesScatterPoint = ScatterPoint & {
-  scoringOppRate: number;
-  ptsPerScoringOpp: number;
-};
-
-export type ResumeScatterPoint = ScatterPoint & {
-  overallRating: number;
-  sor: number;
-  sorRank: number | null;
-  wins: number;
-  losses: number;
-};
-
 export type MarketBoardMetric = "spread" | "total";
 
 export type MarketBoardPoint = {
@@ -977,16 +959,6 @@ export type MarketBoardData = {
   unavailable: { homeTeam: string; awayTeam: string; reason: string }[];
   metric: MarketBoardMetric;
 };
-
-export function downsThroughWeeks(rows: readonly TeamSeasonStatRow[]): number[] {
-  const weeks = new Set<number>();
-  for (const r of rows) {
-    if (r.metric === "early_down_epa" || r.metric === "conv_rate_3rd_4th") {
-      weeks.add(r.asOfWeek);
-    }
-  }
-  return [...weeks].sort((a, b) => a - b);
-}
 
 export function downsScatterPoints(
   roster: readonly RosterRow[],
@@ -1043,16 +1015,6 @@ export function downsScatterPoints(
     invertX: isDefense,
     invertY: isDefense,
   };
-}
-
-export function finishingDrivesThroughWeeks(rows: readonly TeamSeasonStatRow[]): number[] {
-  const weeks = new Set<number>();
-  for (const r of rows) {
-    if (r.metric === "scoring_opp_rate" || r.metric === "pts_per_scoring_opp") {
-      weeks.add(r.asOfWeek);
-    }
-  }
-  return [...weeks].sort((a, b) => a - b);
 }
 
 export function finishingDrivesScatterPoints(
@@ -1162,14 +1124,6 @@ export function resumeQualityScatterPoints(
     invertX: false,
     invertY: true,
   };
-}
-
-export function marketBoardWeeks(games: readonly SlateMarketGameRow[]): number[] {
-  const weeks = new Set<number>();
-  for (const g of games) {
-    weeks.add(g.week);
-  }
-  return [...weeks].sort((a, b) => a - b);
 }
 
 export function marketBoardPoints(

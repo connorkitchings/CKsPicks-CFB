@@ -196,12 +196,12 @@ export function readyKinds(): ChartKind[] {
   return (Object.keys(CHART_REGISTRY) as ChartKind[]).filter((kind) => CHART_REGISTRY[kind].ready);
 }
 
-/** Picker groups with their ready kinds; a group without one is omitted. */
 /** A footnote as one entry per sentence, so each can sit on its own line. */
 export function footnoteLines(footnote: string): string[] {
   return footnote.split(/(?<=[.!?])\s+(?=[A-Z0-9])/).filter(Boolean);
 }
 
+/** Picker groups with their ready kinds; a group without one is omitted. */
 export function pickerGroups(): { id: ChartGroup; label: string; kinds: ChartKind[] }[] {
   const ready = readyKinds();
   return CHART_GROUPS.map((group) => ({ ...group, kinds: ready.filter((kind) => CHART_REGISTRY[kind].group === group.id) }))
@@ -645,25 +645,31 @@ export function downsConfig(side: Side): ScatterConfig {
     tickX: formatEpaTick,
     tickY: percentTick,
     metricLabel: "",
-    captions: {
-      topLeft: isOffense ? "Lower early EPA / Higher conversion" : "Higher early EPA allowed / Lower conversion allowed",
-      topRight: isOffense ? "High early EPA / High conversion" : "Suffocating defense",
-      bottomLeft: isOffense ? "Struggling on early and late downs" : "Vulnerable on early and late downs",
-      bottomRight: isOffense ? "High early EPA / Low conversion" : "Bend, don't break",
-      names: isOffense
-        ? {
-            topLeft: "Cardiac / Big-Play",
+    captions: isOffense
+      ? {
+          topLeft: "Lower early EPA / Higher conversion",
+          topRight: "Higher early EPA / Higher conversion",
+          bottomLeft: "Lower early EPA / Lower conversion",
+          bottomRight: "Higher early EPA / Lower conversion",
+          names: {
+            topLeft: "Late-Down Bailouts",
             topRight: "Unstoppable Engine",
             bottomLeft: "Struggling",
             bottomRight: "On-Schedule Only",
-          }
-        : {
-            topLeft: "Late-Down Erasers",
+          },
+        }
+      : {
+          topLeft: "Higher early EPA allowed / Lower conversion allowed",
+          topRight: "Lower early EPA allowed / Lower conversion allowed",
+          bottomLeft: "Higher early EPA allowed / Higher conversion allowed",
+          bottomRight: "Lower early EPA allowed / Higher conversion allowed",
+          names: {
+            topLeft: "Bend, Don't Break",
             topRight: "Suffocating Defense",
             bottomLeft: "Vulnerable",
-            bottomRight: "Bend-Don't-Break",
+            bottomRight: "Stingy Early, Leaky Late",
           },
-    },
+        },
     averageNames: {
       x: isOffense ? "Avg early EPA" : "Avg early EPA allowed",
       y: isOffense ? "Avg conv rate" : "Avg conv rate allowed",
@@ -679,7 +685,7 @@ export function describeDownsPoint(point: ScatterPoint, side: Side): string {
 }
 
 export function finishingDrivesFootnote(): string {
-  return "Scoring opportunity rate (Eckel rate: share of drives reaching the opponent 40-yard line) against points scored per scoring opportunity, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are play-weighted FBS averages.";
+  return "Scoring opportunity rate (Eckel rate: share of drives reaching the opponent 40-yard line) against points scored per scoring opportunity, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are drive-weighted FBS averages.";
 }
 
 export function finishingDrivesConfig(side: Side): ScatterConfig {
@@ -691,25 +697,31 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
     tickX: percentTick,
     tickY: (v) => v.toFixed(2),
     metricLabel: "",
-    captions: {
-      topLeft: isOffense ? "Fewer opportunities / Higher points per opportunity" : "More opportunities allowed / Fewer points allowed per opportunity",
-      topRight: isOffense ? "Elite Finishers" : "Lockdown Defense",
-      bottomLeft: isOffense ? "Struggling Finishers" : "Generous Defense",
-      bottomRight: isOffense ? "Drive Stallers / FG Settlers" : "Red-Zone Wall",
-      names: isOffense
-        ? {
+    captions: isOffense
+      ? {
+          topLeft: "Lower opportunity rate / Higher points per opportunity",
+          topRight: "Higher opportunity rate / Higher points per opportunity",
+          bottomLeft: "Lower opportunity rate / Lower points per opportunity",
+          bottomRight: "Higher opportunity rate / Lower points per opportunity",
+          names: {
             topLeft: "Low Volume, High TD Rate",
             topRight: "Elite Finishers",
             bottomLeft: "Struggling Finishers",
             bottomRight: "Drive Stallers / FG Settlers",
-          }
-        : {
-            topLeft: "Bend-Don't-Break",
+          },
+        }
+      : {
+          topLeft: "Higher opportunity rate allowed / Fewer points allowed per opportunity",
+          topRight: "Lower opportunity rate allowed / Fewer points allowed per opportunity",
+          bottomLeft: "Higher opportunity rate allowed / More points allowed per opportunity",
+          bottomRight: "Lower opportunity rate allowed / More points allowed per opportunity",
+          names: {
+            topLeft: "Red-Zone Wall",
             topRight: "Lockdown Defense",
             bottomLeft: "Generous Defense",
-            bottomRight: "Red-Zone Wall",
+            bottomRight: "Stingy Early, Leaky Inside",
           },
-    },
+        },
     averageNames: {
       x: "Avg opp rate",
       y: "Avg pts/opp",
@@ -725,7 +737,7 @@ export function describeFinishingDrivesPoint(point: ScatterPoint, side: Side): s
 }
 
 export function resumeQualityFootnote(): string {
-  return "V5 model rating dominance (points per possession above average) against Strength of Record (SOR) Rank (1 to 134, where #1 is national best). Up and right is better. Dashed lines are FBS averages.";
+  return "V5 model rating dominance (points per possession above average) against Strength of Record (SOR) Rank (where #1 is the national best). Up and right is better. Dashed lines are FBS averages.";
 }
 
 export const RESUME_QUALITY_CONFIG: ScatterConfig = {
@@ -749,7 +761,7 @@ export const RESUME_QUALITY_CONFIG: ScatterConfig = {
   },
   averageNames: {
     x: "Avg rating",
-    y: "Median SOR rank",
+    y: "Avg SOR rank",
   },
   footnote: resumeQualityFootnote(),
 };
