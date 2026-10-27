@@ -73,7 +73,7 @@ export function AppBar({
         )}
         {tab && (
           <Link href="/" className="inline-flex min-h-11 shrink-0 items-center rounded text-wordmark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-            <Wordmark className="h-[26px] w-auto" />
+            <Wordmark className="h-auto w-[170px] max-w-full" />
           </Link>
         )}
         {/* On the tabs the brand is the title; the name stays for assistive tech and tests. */}

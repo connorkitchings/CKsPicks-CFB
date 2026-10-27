@@ -1,6 +1,6 @@
-# CKsPicks-CFB Documentation
+# Stratum CFB Documentation
 
-CKsPicks-CFB forecasts college-football spreads and totals with the V5 Blitzkrieg season engine, an immutable Cloudflare R2 lake, Neon serving projections and a Vercel web app.
+Stratum CFB forecasts college-football spreads and totals with the V5 Blitzkrieg season engine, an immutable Cloudflare R2 lake, Neon serving projections and a Vercel web app.
 
 ## Current authority
 

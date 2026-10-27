@@ -1,7 +1,7 @@
 # Crest CFB wordmark decision
 
 **Date:** 2026-10-25  
-**Status:** Accepted and integrated (header and phone app bar); deployed to Production 2026-10-25 in merge commit `86c16f66`.
+**Status:** Superseded by the [Stratum CFB brand decision](2026-10-27-stratum-cfb-brand.md). Retained as historical evidence of the Crest wordmark accepted and deployed on 2026-10-25 in merge commit `86c16f66`.
 
 **Authority:** The owner selected lettering C, then navy color option B, then instructed that it be implemented; the owner reviewed the regenerated open-font lettering and accepted it.
 

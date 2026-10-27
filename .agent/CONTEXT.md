@@ -2,7 +2,7 @@
 
 ## Product and current authority
 
-CKsPicks-CFB publishes college-football spread and total leans through a Next.js 16 / React 19 / Tailwind v4 web app. Python 3.12 produces V5 Blitzkrieg forecasts; Neon serves derived projections; Cloudflare R2 preserves immutable data and artifacts. See [`docs/status.md`](../docs/status.md) for live release IDs, week state and the scoreboard, the [V5 guide](../docs/modeling/v5_status.md) for the accepted model, and the [weekly runbook](../docs/ops/weekly_runbook.md) for all recurring operations.
+Stratum CFB (repository `CKsPicks-CFB`) publishes college-football spread and total leans through a Next.js 16 / React 19 / Tailwind v4 web app. Python 3.12 produces V5 Blitzkrieg forecasts; Neon serves derived projections; Cloudflare R2 preserves immutable data and artifacts. See [`docs/status.md`](../docs/status.md) for live release IDs, week state and the scoreboard, the [V5 guide](../docs/modeling/v5_status.md) for the accepted model, and the [weekly runbook](../docs/ops/weekly_runbook.md) for all recurring operations.
 
 V5 is the only operational model. V4 lineage, windows and results are [historical evidence](../docs/modeling/v4_retrospective.md), no longer an operational rollback path. Rollback reactivates a prior verified V5 season release. Six slates are not a prelaunch gate; the cumulative 2026 record is monitoring evidence.
 

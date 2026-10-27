@@ -1,6 +1,7 @@
 # Brand Identity Evaluation: Transitioning from "CK's Picks"
 
-- **Status:** Selected: Crest CFB (2026-10-25)
+- **Status:** Stratum CFB selected 2026-10-27; supersedes the Crest CFB selection of 2026-10-25. See the [current brand decision](../decisions/2026-10-27-stratum-cfb-brand.md).
+- **Historical evaluation:** The shortlist, rationale and collision register below record the earlier exploration. Availability statements are historical assessments, not current clearance.
 - **Date:** 2026-10-24
 - **Final 3 Shortlist:**
   1. **Stratum CFB** (Top Analytical & Physical Contender)

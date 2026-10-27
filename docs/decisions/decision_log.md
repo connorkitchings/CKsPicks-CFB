@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-10-27: Stratum CFB public identity
+
+- **Context:** The owner rejected the Crest name because of its toothpaste association and selected Stratum after reviewing finalists.
+- **Decision:** Use **Stratum CFB**, primary lettering **STRATUM CFB**, monogram **S**, and export prefix **stratum**. Retain the licensed collegiate serif/sans wordmark style, navy `#20344D` in light mode, white `#F8FAFC` in dark mode and existing website address.
+- **Impact:** Rebrand current public surfaces and documentation in one web release; preserve repository, package and infrastructure names, historical evidence, modeling and active data release. The owner explicitly authorized implementation and Production publication.
+- **Source:** [Brand decision](2026-10-27-stratum-cfb-brand.md), [implementation contract](../plans/2026-10-27/stratum-cfb-rebrand.md), session log `session_logs/2026-10-27/02-stratum-cfb-rebrand.md`.
+
 ## 2026-10-26: Automatic Production activation and unattended weekly update
 
 - **Context:** Each weekly close and line refresh needed an owner at a terminal for capture, build, prepare, Preview and Production release, and the runbook said "Production activation is an owner decision". The Week 9 rollover showed the steps are mechanical and gated by checks that already exist.

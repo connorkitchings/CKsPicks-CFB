@@ -4,8 +4,8 @@ import { gotoHydrated } from "./helpers";
 // Fixture-mode chart page; the Share action behaves identically on every export surface.
 const URL = "/stats?chart=efficiency&week=3";
 const TITLE = "Efficiency vs explosiveness";
-const WEEK_3 = "crest-efficiency-offense-2026-through-week-3.png";
-const WEEK_2 = "crest-efficiency-offense-2026-through-week-2.png";
+const WEEK_3 = "stratum-efficiency-offense-2026-through-week-3.png";
+const WEEK_2 = "stratum-efficiency-offense-2026-through-week-2.png";
 
 type Outcome = "ok" | "abort" | "expired" | "fail";
 type ShareCall = { name: string; title: string; theme: "light" | "dark" };
