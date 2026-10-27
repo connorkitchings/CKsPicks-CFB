@@ -92,17 +92,18 @@ type Loaded =
       /** The release serves `team_game_yardage` (`charts_v2`), joined onto `rows`. */
       explosiveness: boolean;
       adjustedWeeks: number[];
-      adjustedFor: (asOfWeek: number) => Promise<AdjustedRow[]>;
+      /** Null: the query failed or the window is not stored. */
+      adjustedFor: (asOfWeek: number) => Promise<AdjustedRow[] | null>;
       /** Stored `team_possession_adjusted` windows (`as_of_week`). */
       possessionWeeks: number[];
-      possessionFor: (asOfWeek: number) => Promise<PossessionRow[]>;
+      possessionFor: (asOfWeek: number) => Promise<PossessionRow[] | null>;
       /** `current` V5 rating snapshots of every stored week. */
-      ratingSnapshots: () => Promise<RatingSnapshotRow[]>;
+      ratingSnapshots: () => Promise<RatingSnapshotRow[] | null>;
       seasonStatsWeeks: number[];
-      seasonStatsFor: (asOfWeek: number) => Promise<TeamSeasonStatRow[]>;
-      teamResume: (week?: number) => Promise<TeamResumeChartRow[]>;
+      seasonStatsFor: (asOfWeek: number) => Promise<TeamSeasonStatRow[] | null>;
+      teamResume: (week?: number) => Promise<TeamResumeChartRow[] | null>;
       slateWeeks: number[];
-      slateGamesFor: (week: number) => Promise<SlateMarketGameRow[]>;
+      slateGamesFor: (week: number) => Promise<SlateMarketGameRow[] | null>;
     };
 
 /** Fixture releases without possession windows or rating snapshots. */
@@ -121,13 +122,14 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
   if (process.env.CFB_UI_TEST_MODE === "1") {
     if (fixture === "unsupported") return { state: "unsupported" };
     if (fixture === "error") return { state: "unavailable" };
-    if (fixture === "slate") {
+    if (fixture === "slate" || fixture === "season-stats-missing") {
       const { roster, rows, yardage } = chartsSlateFixture();
       return {
         state: "ready", roster, rows: withYardage(rows, yardage), explosiveness: true, adjustedWeeks: [], adjustedFor: async () => [],
         ...NO_V5_ROWS,
         seasonStatsWeeks: chartsSlateSeasonStatsWeeksFixture,
-        seasonStatsFor: async (asOfWeek) => chartsSlateSeasonStatsFixture(asOfWeek),
+        // `season-stats-missing`: the stored windows are listed but their query fails to resolve.
+        seasonStatsFor: async (asOfWeek) => (fixture === "slate" ? chartsSlateSeasonStatsFixture(asOfWeek) : null),
       };
     }
     // `v1`: a retained `charts_v1` release (no yardage); otherwise `charts_v2`.
@@ -186,15 +188,15 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
       rows: yardage ? withYardage(rows, yardage) : rows,
       explosiveness: yardage !== null,
       adjustedWeeks,
-      adjustedFor: async (asOfWeek) => (await getTeamAdjustedEpa(season, asOfWeek)) ?? [],
+      adjustedFor: (asOfWeek) => getTeamAdjustedEpa(season, asOfWeek),
       possessionWeeks,
-      possessionFor: async (asOfWeek) => (await getTeamPossessionAdjusted(season, asOfWeek)) ?? [],
-      ratingSnapshots: async () => (await getV5RatingSnapshots(season)) ?? [],
+      possessionFor: (asOfWeek) => getTeamPossessionAdjusted(season, asOfWeek),
+      ratingSnapshots: () => getV5RatingSnapshots(season),
       seasonStatsWeeks: seasonStatsWeeks ?? [],
-      seasonStatsFor: async (asOfWeek) => (await getTeamSeasonStatsSnapshot(season, asOfWeek)) ?? [],
-      teamResume: async (w?: number) => (await getTeamResume(season, w)) ?? [],
+      seasonStatsFor: (asOfWeek) => getTeamSeasonStatsSnapshot(season, asOfWeek),
+      teamResume: (w?: number) => getTeamResume(season, w),
       slateWeeks: slateWeeks ?? [],
-      slateGamesFor: async (week) => (await getSlateMarketComparison(season, week)) ?? [],
+      slateGamesFor: (week) => getSlateMarketComparison(season, week),
     };
   } catch (error) {
     console.error("Team charts query failed", error);
@@ -332,7 +334,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
       let adjusted: AdjustedRow[] = [];
       if (latestWindow !== null) {
         try {
-          adjusted = await loaded.adjustedFor(latestWindow);
+          adjusted = (await loaded.adjustedFor(latestWindow)) ?? [];
         } catch (error) {
           console.error("Team charts game-log adjusted query failed", error);
         }
