@@ -101,3 +101,15 @@ Final inventory: six worktrees including the primary checkout. Removed one workt
 ## Owner-authorized planning commit
 
 After the wrap-up, the owner asked to clean up the remaining uncommitted changes. Interpreted this as authorization to commit the five reviewed planning files with the proposed message, preserving their content and Stage 1 Draft status. This supersedes the earlier uncommitted handoff state once the commit succeeds. No push, merge, implementation or data operation is included. Resume from this planning branch or carry its commit into the implementation checkout.
+
+## Final consolidation requested by the owner
+
+The owner requested removal of the remaining branch/worktree clutter and explicitly authorized stopping the Stratum worktree's development server and Codex subprocesses. Stopped only the 19 processes scoped to that worktree; verified no remaining current-directory users before removal.
+
+Preserved every pre-cleanup branch tip in a verified Git bundle at `.worktrees/cleanup-backups/2026-10-28/data-architecture-roadmap/branches.bundle` under the primary checkout. `manifest.json` records original tips and SHA-256s. The bundle is self-contained and preserves the two unmerged graph commits and one unmerged blueprint-review commit without merging their implementation into `dev`.
+
+The same owner-only backup directory contains `incremental-close-week-private.tar.gz` (mode 0600) with the rollover `.env` and retained artifacts; all 74 regular files were verified against their originals by SHA-256. Never publish this archive. An earlier blueprint-review removal partially succeeded but left files after Git removed its metadata; moved that entire remaining directory into `blueprint-review-leftovers` in the backup rather than deleting it.
+
+Removed the graph, rollover, prior blueprint-review and Stratum worktree registrations/checkouts. The root `dev` checkout was clean. Final consolidation fast-forwards local `dev` to the planning branch, archives the attached planning worktree using the Codex app recovery mechanism and removes temporary local branch names; no content push, `main` merge, deployment, provider request, or cloud data operation is part of this cleanup. The backup README explains recovering the original branch names with `git fetch` from the bundle.
+
+After consolidation, use the primary repository's `docs/plans/2026-10-28/01-data-architecture-operational-safeguards.md` for the next contract review, and start a fresh isolated implementation worktree from local `dev` once that exact Draft contract is authorized. This supersedes the earlier handoff's now-archived planning-worktree path. Blueprint, Stage 1 contract and indexes remain unchanged; documentation validation already passed. The cleanup log is committed before the fast-forward so the primary checkout remains clean.
