@@ -14,7 +14,7 @@ The [weekly runbook](ops/weekly_runbook.md) is the sole operational guide: build
 - [Weekly runbook](ops/weekly_runbook.md) — environments, revision/prepare/release and rollback.
 - [Repository boundaries](architecture/repository_boundaries.md) — dependency direction and compatibility rules.
 - [Data platform](architecture/data_platform_2026.md) — immutable source lineage and derived serving data.
-- [Football data architecture blueprint](planning/data_architecture_blueprint.md) — approved staged migration roadmap for shared measurements and temporal profiles; Stage 1 operational-safeguards contract is drafted for review, with implementation and data-operation gates kept separate.
+- [Football data architecture blueprint](planning/data_architecture_blueprint.md) — approved roadmap, revised 2026-10-29: Stage 1a operational safeguards, web read performance, shared descriptive facts and read-shaped projections; the repair CLI (1b) and temporal profiles (4B) are deferred. Implementation and data-operation gates stay separate.
 - [Rating requirements](modeling/rating_system_requirements.md) and [measurement catalog](modeling/measurement_catalog.md) — football meaning, provenance and eligibility.
 - [Ratings laboratory](research/ratings-lab-v1.md) and [research capture](ops/data_first_capture.md) — isolated research workflows.
 - [Research roadmap](planning/data-first-football-forecasting-roadmap.md) and [2026 roadmap](planning/roadmap.md) — research direction and historical execution record.
