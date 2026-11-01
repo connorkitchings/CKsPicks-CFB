@@ -15,6 +15,11 @@
     "reason": "Week 6 scoring events sum to 7, final is 27; play-by-play score stream flagged score_regression_or_nonintegral"
   },
   {
+    "game_id": 401856732,
+    "team": "Ole Miss",
+    "reason": "Week 8 scoring events sum to 3, final is 27; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
     "game_id": 401856783,
     "team": "Texas Tech",
     "reason": "Week 2 scoring events sum to 21, final is 35; play-by-play score stream flagged impossible_score_increment"
@@ -78,6 +83,16 @@
     "game_id": 401858259,
     "team": "Virginia Tech",
     "reason": "Week 6 scoring events sum to 7, final is 20; play-by-play score stream flagged impossible_score_increment"
+  },
+  {
+    "game_id": 401858278,
+    "team": "SMU",
+    "reason": "Week 9 scoring events sum to 17, final is 27 (equals the quarter line scores); play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401858283,
+    "team": "Louisville",
+    "reason": "Week 9 scoring events sum to 17, final is 52 (equals the quarter line scores); play-by-play score stream flagged impossible_score_increment"
   },
   {
     "game_id": 401858433,
@@ -145,6 +160,11 @@
     "reason": "Week 5 scoring events sum to 11, final is 31; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
   },
   {
+    "game_id": 401861966,
+    "team": "Connecticut",
+    "reason": "Week 9 scoring events sum to 0, final is 26 (equals the quarter line scores); play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
     "game_id": 401861970,
     "team": "Miami (OH)",
     "reason": "Week 4 scoring events sum to 1, final is 24; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
@@ -190,6 +210,11 @@
     "reason": "Week 4 scoring events sum to 7, final is 26; play-by-play score stream flagged impossible_score_increment"
   },
   {
+    "game_id": 401866449,
+    "team": "Eastern Michigan",
+    "reason": "Week 8 scoring events sum to 0, final is 20; play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
     "game_id": 401869933,
     "team": "South Alabama",
     "reason": "Week 6 scoring events sum to 0, final is 56; play-by-play score stream flagged impossible_score_increment"
@@ -213,15 +238,5 @@
     "game_id": 401871049,
     "team": "New Mexico State",
     "reason": "Week 5 scoring events sum to 6, final is 34; play-by-play score stream flagged impossible_score_increment"
-  },
-  {
-    "game_id": 401856732,
-    "team": "Ole Miss",
-    "reason": "Week 8 scoring events sum to 3, final is 27; play-by-play score stream flagged impossible_score_increment"
-  },
-  {
-    "game_id": 401866449,
-    "team": "Eastern Michigan",
-    "reason": "Week 8 scoring events sum to 0, final is 20; play-by-play score stream flagged score_regression_or_nonintegral"
   }
 ]
