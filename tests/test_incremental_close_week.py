@@ -6,6 +6,7 @@ Local storage and frames only; no database or network.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -362,10 +363,25 @@ def test_require_completed_weeks_accepts_full_coverage():
     require_completed_weeks(frames, 3)
 
 
-def test_committed_week_9_manifest_passes_the_repo_loaders():
+def _latest_committed_manifest() -> Path:
+    """The newest ``revision_manifest_w<week>_v<version>.json`` by number.
+
+    Each close-week re-pins the mutable score-exceptions file, so only the newest
+    manifest is guaranteed to match the working copy; older ones are reproducible
+    from their own commits.
+    """
+    pattern = re.compile(r"revision_manifest_w(\d+)_v(\d+)\.json")
+    found = [
+        (int(m[1]), int(m[2]), path)
+        for path in Path("conf/season/2026").glob("revision_manifest_w*_v*.json")
+        if (m := pattern.fullmatch(path.name))
+    ]
+    assert found, "no committed revision manifests"
+    return max(found)[2]
+
+
+def test_latest_committed_manifest_passes_the_repo_loaders():
     from cks_picks_cfb.season.inputs import score_exceptions
 
-    manifest = json.loads(
-        Path("conf/season/2026/revision_manifest_w9_v1.json").read_text()
-    )
+    manifest = json.loads(_latest_committed_manifest().read_text())
     assert score_exceptions(manifest)

@@ -38,7 +38,8 @@
 
 ## Amendments and Blockers
 
-- None.
+- Rerun: owner-approved full close-week run 41390458854 from `dev` (`50a78c6`, `accept_cutoff_correction=8`) resumed at prepare; prepare, parity, Preview release and then Production release all passed (2026-11-02 04:48Z to 04:57Z).
+- CI on `50a78c6` failed one test, `test_committed_week_9_manifest_passes_the_repo_loaders`. It came from the automation commit `c3ee43e` (pushes by `GITHUB_TOKEN` do not run CI): that commit added five score exceptions, so the hard-coded `w9_v1` manifest no longer matches the mutable exceptions file. The test now loads the newest committed manifest by week and version (`test_latest_committed_manifest_passes_the_repo_loaders`). CI's general suite passes locally (2205 passed, 5 skipped).
 
 ## Handoff Notes
 
