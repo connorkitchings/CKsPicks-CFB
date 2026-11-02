@@ -80,10 +80,12 @@ Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actio
 - `mode`: `close-week`, `market-refresh` or `plan-only`. `plan-only` detects the week, checks that secrets and database roles are present and read-only, and computes cutoffs; it makes no provider call and no write.
 - `force`: run even when the week gate would skip (for example a refresh with full line coverage).
 - `skip_production`: stop after the Preview release, for a rehearsal.
+- `accept_cutoff_correction`: `close-week` only, for one owner-chosen run. A completed week number whose pregame rating-snapshot `cutoff_utc` the parity gate may accept as changed; every value column of those rows still compares strictly. Leave it blank otherwise; the schedule never sets it. It was added for the Week 10 close (2026-11-01), whose manifest corrects the stale Week 8 cutoff that the Week 9 manifests carried.
 
 ```bash
 gh workflow run weekly-season-update.yml -f mode=plan-only
 gh workflow run weekly-season-update.yml -f mode=close-week -f skip_production=true
+gh workflow run weekly-season-update.yml --ref dev -f mode=close-week -f accept_cutoff_correction=8
 ```
 
 **Disable.** Set the repository variable `CFB_WEEKLY_AUTOMATION_ENABLED` to anything other than `true` (or delete it); scheduled runs are then skipped. A manual `workflow_dispatch` still runs, so rehearsals work before the schedule is enabled. In-flight runs are not cancelled, and the `weekly-season-update` concurrency group queues overlapping runs.

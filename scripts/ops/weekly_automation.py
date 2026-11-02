@@ -378,6 +378,9 @@ class Controller:
     base_env: dict[str, str]
     root: Path = Path(".")
     summary: dict[str, Any] = field(default_factory=dict)
+    #: Owner-chosen, one run only: completed weeks whose pregame snapshot
+    #: ``cutoff_utc`` the close-week parity gate may accept as changed.
+    accept_cutoff_corrections: tuple[int, ...] = ()
 
     # -- plumbing
     def log(self, message: str) -> None:
@@ -802,6 +805,14 @@ class Controller:
             # whose Production release failed) is a same-week republish.
             if parity_mode == "close-week" and self.preview_active_week() == nxt:
                 parity_mode = "market-refresh"
+            corrections: list[Any] = []
+            if parity_mode == "close-week":
+                for week in self.accept_cutoff_corrections:
+                    corrections += ["--accept-cutoff-correction", week]
+                if self.accept_cutoff_corrections:
+                    self.summary["accepted_cutoff_corrections"] = list(
+                        self.accept_cutoff_corrections
+                    )
             self.step(
                 "check release parity",
                 self.py(
@@ -810,6 +821,7 @@ class Controller:
                     "--mode", parity_mode, "--completed-week", done,
                     "--upcoming-week", nxt,
                     "--report", self.receipts() / "parity.json",
+                    *corrections,
                 ),
                 "preview",
             )  # fmt: skip
@@ -929,7 +941,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--skip-production", action="store_true")
+    parser.add_argument(
+        "--accept-cutoff-correction",
+        type=int,
+        action="append",
+        default=[],
+        metavar="WEEK",
+        help="close-week only, one run: accept WEEK's corrected pregame cutoff",
+    )
     args = parser.parse_args(argv)
+    if args.accept_cutoff_correction and args.mode != "close-week":
+        parser.error("--accept-cutoff-correction applies to close-week only")
     secrets = {
         k: os.environ[k]
         for k in (*REQUIRED_SECRETS, "THE_ODDS_API_KEY")
@@ -939,6 +961,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         mode=args.mode,
         force=args.force,
         skip_production=args.skip_production,
+        accept_cutoff_corrections=tuple(args.accept_cutoff_correction),
         secrets=secrets,
         deps=default_deps(secrets),
         base_env=dict(os.environ),

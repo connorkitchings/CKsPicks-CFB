@@ -250,6 +250,7 @@ class Harness:
             mode=mode,
             force=False,
             skip_production=kw.get("skip_production", False),
+            accept_cutoff_corrections=kw.get("accept_cutoff_corrections", ()),
             secrets=SECRETS,
             deps=deps,
             base_env={"PATH": "/bin"},
@@ -393,3 +394,37 @@ def test_missing_secret_stops(harness):
     c.secrets = {k: v for k, v in SECRETS.items() if k != "THE_ODDS_API_KEY"}
     assert c.run() == 1
     assert harness.calls == []
+
+
+def _parity_args(h):
+    return next(
+        a for a, _ in h.calls if "scripts/pipeline/check_release_parity.py" in a
+    )
+
+
+def test_cutoff_correction_reaches_close_week_parity_only_when_set(harness):
+    assert harness.controller(accept_cutoff_corrections=(8,)).run() == 0
+    parity = _parity_args(harness)
+    assert parity[parity.index("--mode") + 1] == "close-week"
+    flag = parity.index("--accept-cutoff-correction")
+    assert str(parity[flag + 1]) == "8"
+
+
+def test_no_cutoff_correction_by_default(harness):
+    assert harness.controller().run() == 0
+    assert "--accept-cutoff-correction" not in _parity_args(harness)
+
+
+def test_cutoff_correction_dropped_when_parity_falls_back_to_market_refresh(harness):
+    harness.preview_active = "preview-season-2026-new"
+    harness.existing["preview-season-2026-new"] = "other"
+    harness.preview_week = 10
+    assert harness.controller(accept_cutoff_corrections=(8,)).run() == 0
+    parity = _parity_args(harness)
+    assert parity[parity.index("--mode") + 1] == "market-refresh"
+    assert "--accept-cutoff-correction" not in parity
+
+
+def test_cutoff_correction_cli_refuses_other_modes():
+    with pytest.raises(SystemExit):
+        wa.main(["--mode", "market-refresh", "--accept-cutoff-correction", "8"])

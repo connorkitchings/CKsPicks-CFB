@@ -19,6 +19,10 @@ on:
         description: Release to Preview only
         type: boolean
         default: false
+      accept_cutoff_correction:
+        description: "close-week only, one run: completed week whose corrected pregame cutoff parity may accept (blank for none)"
+        type: string
+        default: ""
 
 concurrency:
   group: weekly-season-update
@@ -66,9 +70,18 @@ jobs:
           MODE: ${{ inputs.mode || (github.event.schedule == '7 17 * * 0' && 'close-week' || 'market-refresh') }}
           FORCE: ${{ inputs.force && '--force' || '' }}
           SKIP_PRODUCTION: ${{ inputs.skip_production && '--skip-production' || '' }}
-        run: >-
-          uv run --frozen python scripts/ops/weekly_automation.py
-          --mode "$MODE" $FORCE $SKIP_PRODUCTION
+          # Passed through env, never interpolated into the script; validated below.
+          CUTOFF_CORRECTION: ${{ inputs.accept_cutoff_correction || '' }}
+        run: |
+          CORRECTION=()
+          if [ -n "$CUTOFF_CORRECTION" ]; then
+            case "$CUTOFF_CORRECTION" in
+              *[!0-9]*) echo "accept_cutoff_correction must be a week number"; exit 2 ;;
+            esac
+            CORRECTION=(--accept-cutoff-correction "$CUTOFF_CORRECTION")
+          fi
+          uv run --frozen python scripts/ops/weekly_automation.py \
+            --mode "$MODE" $FORCE $SKIP_PRODUCTION "${CORRECTION[@]}"
       - name: Step summary
         if: always()
         run: |
