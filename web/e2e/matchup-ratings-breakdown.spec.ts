@@ -9,7 +9,7 @@ test.describe("matchup rating breakdown (fixture mode)", () => {
     await gotoHydrated(page, "/matchup/1");
     const region = section(page);
     await expect(region).toContainText("Ratings use opponent-adjusted scoring per possession plus a shrinking preseason prior.");
-    await expect(region).toContainText("The tables show raw statistics and are not combined to form the rating.");
+    await expect(region).toContainText("The Team stats tables above show raw statistics and are not combined to form the rating.");
     await expect(region).toContainText("not points");
     await expect(region.getByRole("link", { name: "prior" })).toHaveAttribute("href", "/model/method#prior");
     await expect(region.getByRole("link", { name: "updates" })).toHaveAttribute("href", "/model/method#updates");

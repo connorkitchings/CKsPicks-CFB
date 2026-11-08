@@ -124,8 +124,8 @@ export function RatingBreakdown({ awayTeam, homeTeam, breakdown }: { awayTeam: s
       <SectionHeading id="rating-breakdown-heading">How the ratings are built</SectionHeading>
       <div className="space-y-1.5 text-xs leading-relaxed text-ink-muted">
         <p>
-          Ratings use opponent-adjusted scoring per possession plus a shrinking preseason prior. The tables show raw
-          statistics and are not combined to form the rating.
+          Ratings use opponent-adjusted scoring per possession plus a shrinking preseason prior. The Team stats tables
+          above show raw statistics and are not combined to form the rating.
         </p>
         <p>
           The prior plus the per-game contributions add up to the rating. The prior&apos;s share shrinks as possessions
