@@ -64,7 +64,7 @@ test.describe("matchup rating breakdown (fixture mode)", () => {
     await offense.locator("summary").first().click();
     const audit = offense.locator("details details");
     await expect(audit).not.toHaveAttribute("open", "");
-    await expect(audit.locator("summary")).toContainText("Audit detail: each game's effect on the rating");
+    await expect(audit.locator("summary")).toContainText("Each game's effect on the rating");
     await expect(offense.getByRole("table")).toHaveCount(1);
     await expect(audit.getByRole("table")).toBeHidden();
     await audit.locator("summary").click();

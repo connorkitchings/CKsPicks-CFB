@@ -63,7 +63,7 @@ function ReadyBody({ unit }: { unit: ReadyUnit }) {
         {plural(unit.completedGames, "game")} ({plural(Math.round(unit.possessions), "possession")})
         {unused > 0 && ` · ${unused} ${unused === 1 ? "game" : "games"} not used`}
       </p>
-      <Disclosure title="Show the math">
+      <Disclosure title="Week by week">
         <p className="text-xs">
           Season to date after each week. Adjusted values re-score every past game with today&apos;s opponent ratings, so they
           can differ from earlier weeks.
@@ -113,7 +113,7 @@ function ReadyBody({ unit }: { unit: ReadyUnit }) {
             </ul>
           </div>
         )}
-        <Disclosure title="Audit detail: each game's effect on the rating" className="mt-3">
+        <Disclosure title="Each game's effect on the rating" className="mt-3">
           {/* Nested padding leaves the four-column table 2px short at 320px; reclaim it. */}
           <div className="-mx-2 overflow-x-auto">
             <table className="w-full border-collapse text-xs" aria-label={`${unit.role} game-by-game effect on rating`}>
