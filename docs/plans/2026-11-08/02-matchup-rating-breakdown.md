@@ -1,10 +1,10 @@
 # Matchup page: "How the ratings are built"
 
-- **Status:** Approved
+- **Status:** Implemented on local `dev` only; not pushed, no PR
 - **Created:** 2026-11-08
 - **Planner:** Sol
 - **Approval source:** Owner approved this plan in the planning session (2026-11-08); decisions: each of the four units gets a summary line plus a collapsed per-game table; the section is on the matchup page only.
-- **Implementation log:** Pending
+- **Implementation log:** `session_logs/2026-11-08/03-matchup-rating-breakdown-planning.md`
 - **Commit policy:** Commit with implementation. Commit, push and PR only on the owner's go-ahead.
 
 ## Goal and acceptance
