@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema.ts";
-import { matchupRatingQuery, renderedRatingSource } from "./matchup-rating-query.ts";
+import { matchupRatingQuery, ratingComponentsQuery, renderedRatingSource, teamScheduleQuery } from "./matchup-rating-query.ts";
 
 test("rating provenance DISTINCT selects its ordering column and preserves pregame scope", () => {
   const kickoff = new Date("2026-10-04T03:59:00Z");
@@ -31,6 +31,22 @@ test("competing same-cutoff manifests cannot replace the rendered rating source"
   assert.equal(renderedRatingSource(candidates, teams), null);
   assert.equal(renderedRatingSource(rendered.slice(0, 1), teams), null);
   assert.equal(renderedRatingSource([rendered[0], candidates[1]], teams), null);
+});
+
+test("rating components are fetched by primary key without cutoff or week predicates", () => {
+  const ids = ["run:pregame:A:preseason:offense", "run:pregame:A:preseason:defense"];
+  const query = ratingComponentsQuery(drizzle.mock({ schema }), 2026, "source", ids).toSQL();
+  assert.match(query.sql, /"evidence"/);
+  assert.match(query.sql, /"excluded_observations"/);
+  assert.match(query.sql, /"component_id" in \(\$3, \$4\)/);
+  assert.doesNotMatch(query.sql, /cutoff_utc|as_of_week/);
+  assert.deepEqual(query.params, [2026, "source", ...ids]);
+});
+
+test("team schedule matches either side of the game", () => {
+  const query = teamScheduleQuery(drizzle.mock({ schema }), 2026, ["A", "B"]).toSQL();
+  assert.match(query.sql, /"home_team" in \(\$2, \$3\) or "games"\."away_team" in \(\$4, \$5\)/);
+  assert.deepEqual(query.params, [2026, "A", "B", "A", "B"]);
 });
 
 test("PostgreSQL selects only the rendered manifest when cutoffs tie", {

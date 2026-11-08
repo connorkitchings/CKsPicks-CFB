@@ -31,6 +31,10 @@ make web-local ENV=production     # read the active Production release locally
 
 The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env.local`) and the app only reads. Games (`/`) lists the week's games by day (`?week=N` for other weeks); each game card links to its matchup breakdown (`/matchup/[gameId]`), which links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
 
+### Matchup "How the ratings are built"
+
+Below Team stats (only when lineage is ready and stats are present), the matchup page explains the four displayed unit ratings from the release's `team_rating_components` rows: each unit's prior share, a `Raw PPP → adjusted → rating` summary, and a collapsed per-game table whose contributions plus the prior add up to the rating. Components are looked up by `${snapshotId}:${role}` from the rendered rating rows, and opponent names come from `games`. `src/lib/rating-breakdown.ts` fail-closes per unit (`missing`, `mismatch`, `invalid` or `lookup`): a unit whose stored rating, snapshot, source, team or role disagrees with what the page rendered, or whose row does not sum to its rating, shows "Breakdown unavailable" with no numbers. A failure here never fails the page. Fixture game ids `987657` (one mismatched unit) and `987658` (preseason-only units) exercise those states.
+
 ## Graphs (`/stats`)
 
 Graphs (`/stats`) is public alongside Games, Ratings and Model. Legacy `/charts` URLs redirect to `/stats` with a 307. Mobile navigation has four equal items (`grid-cols-4`).

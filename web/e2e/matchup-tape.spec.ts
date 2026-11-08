@@ -20,7 +20,7 @@ test.describe("Key factors tale of the tape", () => {
     await expect(summary.getByTestId("share-controls")).toHaveCount(1);
     await expect(page.getByTestId("game-facts").getByTestId("share-controls")).toHaveCount(0);
     await expect(page.getByTestId("tale-of-the-tape").getByTestId("share-controls")).toHaveCount(0);
-    const order = await page.locator('[data-testid="matchup-summary-header"], table, [data-testid="matchup-notes"], [data-testid="tale-of-the-tape"]').evaluateAll(
+    const order = await page.locator('[data-testid="matchup-summary-header"], [aria-label="Team stats"] table, [data-testid="matchup-notes"], [data-testid="tale-of-the-tape"]').evaluateAll(
       (elements) => elements.map((element) => element.getAttribute("data-testid") ?? element.tagName.toLowerCase()),
     );
     expect(order).toEqual(["matchup-summary-header", "table", "table", "matchup-notes", "tale-of-the-tape"]);

@@ -5,7 +5,20 @@ import { getSeasonDb } from "./season-release";
 import { releaseCached } from "./release-cache.ts";
 import { getRatingsAsOf } from "./v5.ts";
 import { ratingName } from "./rating-names.ts";
-import { matchupRatingQuery, renderedRatingSource } from "./matchup-rating-query.ts";
+import {
+  matchupRatingQuery,
+  ratingComponentsQuery,
+  renderedRatingSource,
+  teamScheduleQuery,
+} from "./matchup-rating-query.ts";
+import {
+  buildUnitBreakdown,
+  componentId,
+  type ComponentRow,
+  type RatingBreakdown,
+  type ScheduledGame,
+  type UnitRole,
+} from "./rating-breakdown.ts";
 import {
   displaySystemName,
   isAllowedSeason,
@@ -93,6 +106,8 @@ export interface MatchupData {
   statsUnavailable: boolean;
   lineageStatus: MatchupLineageStatus;
   lineageReason: string;
+  /** Per-unit prior and per-game evidence behind the four displayed ratings. */
+  ratingBreakdown: RatingBreakdown;
 }
 
 /** Silver-based and V5 possession stats for the two teams (raw values only). */
@@ -127,6 +142,20 @@ const getRatingProvenance = releaseCached("getMatchupRatingProvenance", async (
   const db = await getSeasonDb(season);
   const rows = await matchupRatingQuery(db, season, new Date(kickoffMs), teams, sourceManifestSha256);
   return rows.map(({ team, sourceManifestSha256: sha }) => ({ team, sourceManifestSha256: sha }));
+});
+
+// Component rows are insert-only per release and keyed by the rendered snapshot ids; the
+// schedule is the release's games table. Both throw on failure and are never cached then.
+const getRatingComponents = releaseCached("getMatchupRatingComponents", async (
+  season: number, sourceManifestSha256: string, componentIds: string[],
+): Promise<ComponentRow[]> => {
+  const db = await getSeasonDb(season);
+  return ratingComponentsQuery(db, season, sourceManifestSha256, componentIds);
+});
+
+const getTeamSchedule = releaseCached("getMatchupTeamSchedule", async (season: number, teams: string[]) => {
+  const db = await getSeasonDb(season);
+  return teamScheduleQuery(db, season, teams);
 });
 
 const getStatProvenance = releaseCached("getMatchupStatProvenance", async (season: number, week: number, teams: string[]) => {
@@ -211,7 +240,11 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
   const statMeasurementManifestSha256 = statMeasurementManifests.size === 1 ? [...statMeasurementManifests][0] : null;
 
   const renderedSource = renderedRatingSource(ratings, ratingTeams);
-  const [ratingProvenanceRows, publishedMeasurementManifestSha256] = await Promise.all([
+  const renderedRow = (team: string) => ratings.find((r) => r.team === ratingName(team));
+  const units = ([game.awayTeam, game.homeTeam] as const).flatMap((team) =>
+    (["offense", "defense"] as const).map((role) => ({ team, role, snapshotId: renderedRow(team)?.snapshotId })));
+  const componentIds = units.flatMap(({ role, snapshotId }) => (snapshotId ? [componentId(snapshotId, role)] : []));
+  const [ratingProvenanceRows, publishedMeasurementManifestSha256, components, schedule] = await Promise.all([
     renderedSource ? getRatingProvenance(season, game.startDate.getTime(), ratingTeams, renderedSource) : Promise.resolve([]),
     statRatingManifestSha256 && statMeasurementManifestSha256 && !lineageLookupUnavailable
       ? getPublishedMeasurement(season, statRatingManifestSha256, statMeasurementManifestSha256).catch(() => {
@@ -219,6 +252,11 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
         return null;
       })
       : Promise.resolve(null),
+    // The breakdown never fails the page: a failed lookup becomes "unavailable" per unit.
+    renderedSource && componentIds.length > 0
+      ? getRatingComponents(season, renderedSource, componentIds).catch(() => null)
+      : Promise.resolve([]),
+    getTeamSchedule(season, teams).catch(() => null),
   ]);
   const latestRatingManifestByTeam = new Map<string, string>();
   for (const row of ratingProvenanceRows) {
@@ -254,6 +292,26 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
       defenseRating: row?.defenseRating ?? null,
       defenseRank: defenseRanks.get(key) ?? null,
     };
+  };
+
+  const componentsById = components && new Map(components.map((row) => [row.componentId, row]));
+  const scheduleById = schedule && new Map<number, ScheduledGame>(schedule.map((scheduled) => [scheduled.gameId, scheduled]));
+  const breakdownUnit = (team: string, role: UnitRole) => {
+    const row = renderedRow(team);
+    const ranks = role === "offense" ? offenseRanks : defenseRanks;
+    return buildUnitBreakdown({
+      role,
+      team,
+      rendered: row && {
+        snapshotId: row.snapshotId,
+        sourceManifestSha256: row.sourceManifestSha256,
+        ratingTeam: row.team,
+        rating: role === "offense" ? row.offenseRating : row.defenseRating,
+        rank: ranks.get(row.team) ?? null,
+      },
+      components: componentsById,
+      schedule: scheduleById,
+    });
   };
 
   const marketView = marketSpreadView(game.homeTeam, game.awayTeam, view.marketSpreadLine);
@@ -313,5 +371,11 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     statsUnavailable: statRows.unavailable,
     lineageStatus: lineage.status,
     lineageReason: lineage.reason,
+    ratingBreakdown: {
+      awayOffense: breakdownUnit(game.awayTeam, "offense"),
+      awayDefense: breakdownUnit(game.awayTeam, "defense"),
+      homeOffense: breakdownUnit(game.homeTeam, "offense"),
+      homeDefense: breakdownUnit(game.homeTeam, "defense"),
+    },
   };
 });

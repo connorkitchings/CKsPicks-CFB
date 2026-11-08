@@ -61,6 +61,7 @@ export const getCurrentRatings = cache(releaseCached("getCurrentRatings", async 
   if (!sourceSha) return [];
   const rows = await db.select({
     team: schema.v5RatingSnapshots.team,
+    snapshotId: schema.v5RatingSnapshots.snapshotId,
     sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
     week: schema.v5RatingSnapshots.week,
     cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,
@@ -149,6 +150,7 @@ export const getRatingPeriods = cache(releaseCached("getRatingPeriods", async (s
 
 const RATING_SELECT = {
   team: schema.v5RatingSnapshots.team,
+  snapshotId: schema.v5RatingSnapshots.snapshotId,
   sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
   week: schema.v5RatingSnapshots.week,
   cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,

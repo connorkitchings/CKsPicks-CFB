@@ -134,13 +134,13 @@ test.describe("desktop layout at 1280px", () => {
   test("matchup offense selector is hidden at desktop widths where both tables show", async ({ page }) => {
     await page.goto("/matchup/1");
     await expect(page.getByRole("group", { name: "Offense comparison" })).toBeHidden();
-    await expect(page.getByRole("table")).toHaveCount(2);
+    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(2);
   });
 
   test("each unit table header shows one logo per team in light mode", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/matchup/1");
-    for (const table of await page.getByRole("table").all()) {
+    for (const table of await page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").all()) {
       const header = table.locator("xpath=preceding-sibling::div[1]");
       await expect(header.locator("img[data-logo]:visible")).toHaveCount(2);
     }
