@@ -428,3 +428,64 @@ def test_cutoff_correction_dropped_when_parity_falls_back_to_market_refresh(harn
 def test_cutoff_correction_cli_refuses_other_modes():
     with pytest.raises(SystemExit):
         wa.main(["--mode", "market-refresh", "--accept-cutoff-correction", "8"])
+
+
+# ------------------------------------------------- Monday catch-up
+
+
+MONDAY = datetime(2026, 11, 2, 17, 7, tzinfo=UTC)
+
+
+def _monday(harness):
+    harness.clock = MONDAY
+    return harness
+
+
+def test_market_refresh_catches_up_a_kicked_off_unrolled_final_week(harness):
+    c = _monday(harness).controller(mode="market-refresh")
+    assert c.run() == 0
+    assert c.effective_mode == "close-week" and c.mode == "market-refresh"
+    assert c.summary["caught_up"] is True
+    assert c.summary["effective_mode"] == "close-week"
+    assert c.summary["result"] == "released"
+    parity = _parity_args(harness)
+    assert parity[parity.index("--mode") + 1] == "close-week"
+
+
+def test_market_refresh_catch_up_fails_red_when_a_game_is_not_final(harness):
+    harness.week_games[9] = games(PAST) + [wa.Game(99, PAST, False)]
+    c = _monday(harness).controller(mode="market-refresh")
+    assert c.run() == 1
+    assert c.summary["caught_up"] is True
+    assert "no final score" in c.summary["result"]
+    assert harness.calls == []
+
+
+def test_market_refresh_unchanged_when_active_week_not_started(harness):
+    harness.week_games[9] = games(FUTURE, final=False)
+    c = _monday(harness).controller(mode="market-refresh")
+    assert c.run() == 0
+    assert c.effective_mode == "market-refresh"
+    assert "caught_up" not in c.summary
+    assert c.summary["result"].startswith("skipped: week 9 already fully lined")
+    assert harness.calls == []
+
+
+def test_monday_plan_only_catch_up_checks_window_and_changes_nothing(harness):
+    _with_preview_login(harness, "cks_preview_pipeline")
+    c = _monday(harness).controller(mode="plan-only")
+    assert c.run() == 0
+    assert c.effective_mode == "close-week"
+    assert c.summary["caught_up"] is True
+    assert c.summary["result"] == "planned"
+    assert harness.calls == []
+
+
+def test_plan_only_enforces_the_completed_week_kickoff_window(harness):
+    _with_preview_login(harness, "cks_preview_pipeline")
+    # Last game kicks off 30 minutes before the cutoff would land.
+    harness.week_games[9] = [wa.Game(1, NOW + timedelta(minutes=30), True)]
+    c = harness.controller(mode="plan-only")
+    assert c.run() == 1
+    assert "cutoff" in c.summary["result"]
+    assert harness.calls == []

@@ -381,6 +381,10 @@ class Controller:
     #: Owner-chosen, one run only: completed weeks whose pregame snapshot
     #: ``cutoff_utc`` the close-week parity gate may accept as changed.
     accept_cutoff_corrections: tuple[int, ...] = ()
+    #: What this run actually does, resolved by ``detect``. ``mode`` is never
+    #: rewritten (plan-only must stay plan-only); a market-refresh run for a
+    #: week that kicked off without a rollover becomes "close-week".
+    effective_mode: str = ""
 
     # -- plumbing
     def log(self, message: str) -> None:
@@ -550,7 +554,7 @@ class Controller:
                 self.plan_cutoffs(decision)
                 self.summary["result"] = "planned"
                 return 0
-            if self.mode == "close-week":
+            if self.effective_mode == "close-week":
                 self.close_week(decision, started)
             else:
                 self.market_refresh(decision, release_id)
@@ -571,6 +575,25 @@ class Controller:
             self.mode == "plan-only" and now.weekday() == 0
         ):
             upcoming = self.deps.games(active_week)
+            kick = first_kickoff(upcoming)
+            if kick is not None and kick <= now:
+                # The active week already started, so the Sunday close never
+                # rolled it over. Finish that rollover instead of skipping.
+                self.effective_mode = "close-week"
+                self.log(
+                    f"catch-up: week {active_week} kicked off without rollover; "
+                    "running close-week"
+                )
+                self.summary.update(
+                    {"caught_up": True, "effective_mode": self.effective_mode}
+                )
+                return decide_close_week(
+                    now=now,
+                    active_week=active_week,
+                    completed=upcoming,
+                    upcoming=self.deps.games(active_week + 1),
+                )
+            self.effective_mode = "market-refresh"
             lined, total = self.production_coverage(release_id, active_week)
             self.summary["coverage"] = {"lined": lined, "total": total}
             return decide_market_refresh(
@@ -581,6 +604,7 @@ class Controller:
                 total=total,
                 force=self.force,
             )
+        self.effective_mode = "close-week"
         completed = self.deps.games(active_week)
         upcoming = self.deps.games(active_week + 1)
         self.summary["games"] = {
@@ -601,7 +625,7 @@ class Controller:
             cutoff,
             upcoming_first_kickoff=first_kickoff(upcoming),
             completed_last_kickoff=last_kickoff(completed)
-            if self.mode == "close-week"
+            if self.effective_mode == "close-week"
             else None,
         )
         self.summary["planned_cutoffs"] = {
