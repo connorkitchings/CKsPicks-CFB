@@ -5,6 +5,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ratingText } from "@/components/ratings/StatGrid";
 import {
   adjustmentSentence,
+  cumulativeByWeek,
   contributionText,
   pppText,
   priorPercent,
@@ -49,6 +50,7 @@ function ReadyBody({ unit }: { unit: ReadyUnit }) {
       </>
     );
   }
+  const weeks = cumulativeByWeek(unit.games);
   const missingContext = unit.games.some((game) => game.missingContext);
   return (
     <>
@@ -62,44 +64,40 @@ function ReadyBody({ unit }: { unit: ReadyUnit }) {
         {unused > 0 && ` · ${unused} ${unused === 1 ? "game" : "games"} not used`}
       </p>
       <Disclosure title="Show the math">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs" aria-label={`${unit.role} game-by-game effect on rating`}>
+        <p className="text-xs">
+          Season to date after each week. Adjusted values re-score every past game with today&apos;s opponent ratings, so they
+          can differ from earlier weeks.
+        </p>
+        <div className="mt-2 overflow-x-auto">
+          <table className="w-full border-collapse text-xs" aria-label={`${unit.role} season-to-date raw and adjusted points per possession`}>
             <thead>
               <tr className="border-b border-line text-ink-muted">
-                <th scope="col" className="px-2 py-1.5 text-left font-medium">Opponent</th>
+                <th scope="col" className="px-2 py-1.5 text-left font-medium">Through week</th>
                 <th scope="col" className={head}>Raw</th>
                 <th scope="col" className={head}>Adj.</th>
-                <th scope="col" className={head}>Effect on rating</th>
               </tr>
             </thead>
             <tbody>
-              {unit.games.map((game) => (
-                <tr key={game.gameId} className="border-b border-line/60">
+              {weeks.map((row, index) => (
+                <tr key={row.week} className={index === weeks.length - 1 ? "border-b border-line/60 font-semibold text-ink" : "border-b border-line/60"}>
                   <th scope="row" className="px-2 py-1.5 text-left font-normal text-ink">
-                    {game.opponent ?? "Opponent unknown"}
-                    <span className="block text-ink-muted">Wk {game.week} · {Math.round(game.exposure)} poss.</span>
+                    <span className={index === weeks.length - 1 ? "font-semibold" : undefined}>Wk {row.week}</span>
+                    <span className="block font-normal text-ink-muted">+ {row.added.join(", ")}</span>
                   </th>
-                  <td className={cell}>{pppText(game.rawPpp)}</td>
-                  <td className={cell}>{pppText(game.adjustedPpp)}{game.missingContext && <sup title="No opponent context">†</sup>}</td>
-                  <td className={cell}>{contributionText(game.contribution)}</td>
+                  <td className={cell}>{row.rawPpp === null ? "" : pppText(row.rawPpp)}</td>
+                  <td className={cell}>
+                    {row.adjustedPpp === null ? "" : pppText(row.adjustedPpp)}
+                    {row.hasMissingContext && <sup title="No opponent context">†</sup>}
+                  </td>
                 </tr>
               ))}
-              <tr className="border-b border-line/60">
-                <th scope="row" className="px-2 py-1.5 text-left font-normal text-ink">Preseason estimate</th>
-                <td className={cell} />
-                <td className={cell} />
-                <td className={cell}>{contributionText(unit.priorContribution)}</td>
-              </tr>
             </tbody>
-            <tfoot>
-              <tr className="font-semibold text-ink">
-                <th scope="row" className="px-2 py-1.5 text-left">Rating</th>
-                <td className={cell} colSpan={2} />
-                <td className={cell}>{ratingText(unit.rating)}</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
+        <p className="mt-2 text-xs">
+          The rating blends the season-to-date adjusted number (on the standardized scale) with the preseason estimate, which
+          is {priorPercent(unit.priorWeight)} of this rating.
+        </p>
         {missingContext && (
           <p className="mt-2 text-xs">† No opponent context was available, so the raw value was used as the adjusted value.</p>
         )}
@@ -115,6 +113,47 @@ function ReadyBody({ unit }: { unit: ReadyUnit }) {
             </ul>
           </div>
         )}
+        <Disclosure title="Audit detail: each game's effect on the rating" className="mt-3">
+          {/* Nested padding leaves the four-column table 2px short at 320px; reclaim it. */}
+          <div className="-mx-2 overflow-x-auto">
+            <table className="w-full border-collapse text-xs" aria-label={`${unit.role} game-by-game effect on rating`}>
+              <thead>
+                <tr className="border-b border-line text-ink-muted">
+                  <th scope="col" className="px-2 py-1.5 text-left font-medium">Opponent</th>
+                  <th scope="col" className={head}>Raw</th>
+                  <th scope="col" className={head}>Adj.</th>
+                  <th scope="col" className={head}>Effect on rating</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unit.games.map((game) => (
+                  <tr key={game.gameId} className="border-b border-line/60">
+                    <th scope="row" className="px-2 py-1.5 text-left font-normal text-ink">
+                      {game.opponent ?? "Opponent unknown"}
+                      <span className="block text-ink-muted">Wk {game.week} · {Math.round(game.exposure)} poss.</span>
+                    </th>
+                    <td className={cell}>{pppText(game.rawPpp)}</td>
+                    <td className={cell}>{pppText(game.adjustedPpp)}{game.missingContext && <sup title="No opponent context">†</sup>}</td>
+                    <td className={cell}>{contributionText(game.contribution)}</td>
+                  </tr>
+                ))}
+                <tr className="border-b border-line/60">
+                  <th scope="row" className="px-2 py-1.5 text-left font-normal text-ink">Preseason estimate</th>
+                  <td className={cell} />
+                  <td className={cell} />
+                  <td className={cell}>{contributionText(unit.priorContribution)}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr className="font-semibold text-ink">
+                  <th scope="row" className="px-2 py-1.5 text-left">Rating</th>
+                  <td className={cell} colSpan={2} />
+                  <td className={cell}>{ratingText(unit.rating)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Disclosure>
       </Disclosure>
     </>
   );

@@ -265,3 +265,44 @@ export function buildUnitBreakdown(input: {
     })),
   };
 }
+
+export interface CumulativeWeek {
+  week: number;
+  /** Opponents played this week, in game order. */
+  added: string[];
+  /** Games and possessions from week 1 through this week. */
+  games: number;
+  exposure: number;
+  /** Exposure-weighted means over every game through this week; null with no exposure. */
+  rawPpp: number | null;
+  adjustedPpp: number | null;
+  /** True when any game through this week used raw as its adjusted value. */
+  hasMissingContext: boolean;
+}
+
+/** Season-to-date raw and adjusted points per possession after each week. Expects week-sorted games. */
+export function cumulativeByWeek(games: readonly BreakdownGame[]): CumulativeWeek[] {
+  const rows: CumulativeWeek[] = [];
+  let exposure = 0;
+  let rawSum = 0;
+  let adjustedSum = 0;
+  let hasMissingContext = false;
+  games.forEach((game, index) => {
+    exposure += game.exposure;
+    rawSum += game.exposure * game.rawPpp;
+    adjustedSum += game.exposure * game.adjustedPpp;
+    hasMissingContext ||= game.missingContext;
+    const opponent = game.opponent ?? "Opponent unknown";
+    if (index > 0 && games[index - 1].week === game.week) rows[rows.length - 1].added.push(opponent);
+    else rows.push({ week: game.week, added: [opponent], games: 0, exposure: 0, rawPpp: null, adjustedPpp: null, hasMissingContext: false });
+    // Totals are cumulative through the current game; the last game of a week leaves the week's final values.
+    Object.assign(rows[rows.length - 1], {
+      games: index + 1,
+      exposure,
+      rawPpp: exposure > 0 ? rawSum / exposure : null,
+      adjustedPpp: exposure > 0 ? adjustedSum / exposure : null,
+      hasMissingContext,
+    });
+  });
+  return rows;
+}

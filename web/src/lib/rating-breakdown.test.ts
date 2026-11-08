@@ -5,6 +5,8 @@ import {
   buildUnitBreakdown,
   componentId,
   contributionText,
+  cumulativeByWeek,
+  type BreakdownGame,
   excludedReasonLabel,
   opponentFor,
   parseComponent,
@@ -207,4 +209,49 @@ test("ratingStanding_follows_the_sign_of_the_rating", () => {
   assert.equal(ratingStanding(1.67), "above average");
   assert.equal(ratingStanding(-0.4), "below average");
   assert.equal(ratingStanding(0), "average");
+});
+
+const game = (week: number, exposure: number, rawPpp: number, adjustedPpp: number, opponent: string | null = "Opp", missingContext = false): BreakdownGame =>
+  ({ gameId: week * 100 + exposure, week, opponent, exposure, rawPpp, adjustedPpp, contribution: 0, missingContext });
+
+test("cumulativeByWeek_weights_by_possessions_and_ends_at_the_unit_means", () => {
+  const result = build(componentRow("offense"));
+  assert.equal(result.status, "ready");
+  if (result.status !== "ready") return;
+  const rows = cumulativeByWeek(result.games);
+  assert.deepEqual(rows.map((row) => row.week), [1, 2, 3]);
+  assert.deepEqual(rows.map((row) => row.games), [1, 2, 3]);
+  assert.deepEqual(rows.map((row) => row.exposure), [10, 30, 40]);
+  // Hand computed: raw (2*10 + 3*20)/30 = 80/30; adjusted (3*10 + 3.5*20)/30 = 100/30.
+  assert.ok(Math.abs(rows[1].rawPpp! - 80 / 30) < 1e-12);
+  assert.ok(Math.abs(rows[1].adjustedPpp! - 100 / 30) < 1e-12);
+  const last = rows[rows.length - 1];
+  assert.ok(Math.abs(last.rawPpp! - result.rawPpp!) < 1e-9);
+  assert.ok(Math.abs(last.adjustedPpp! - result.adjustedPpp!) < 1e-9);
+});
+
+test("cumulativeByWeek_collapses_games_in_the_same_week_into_one_row", () => {
+  const rows = cumulativeByWeek([game(1, 10, 2, 2, "Clemson"), game(2, 10, 4, 4, "Florida"), game(2, 20, 1, 1, "Texas")]);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows[1].added, ["Florida", "Texas"]);
+  assert.equal(rows[1].games, 3);
+  assert.equal(rows[1].exposure, 40);
+  assert.ok(Math.abs(rows[1].rawPpp! - (20 + 40 + 20) / 40) < 1e-12);
+});
+
+test("cumulativeByWeek_carries_the_missing_context_flag_to_later_rows", () => {
+  const rows = cumulativeByWeek([game(1, 10, 2, 2), game(2, 10, 3, 3, "Opp", true), game(3, 10, 3, 3)]);
+  assert.deepEqual(rows.map((row) => row.hasMissingContext), [false, true, true]);
+});
+
+test("cumulativeByWeek_handles_a_single_game_and_unknown_opponents", () => {
+  const rows = cumulativeByWeek([game(4, 12, 3.5, 3.1, null)]);
+  assert.deepEqual(rows, [{ week: 4, added: ["Opponent unknown"], games: 1, exposure: 12, rawPpp: 3.5, adjustedPpp: 3.1, hasMissingContext: false }]);
+  assert.deepEqual(cumulativeByWeek([]), []);
+});
+
+test("cumulativeByWeek_does_not_divide_by_zero_exposure", () => {
+  const rows = cumulativeByWeek([game(1, 0, 2, 2)]);
+  assert.equal(rows[0].rawPpp, null);
+  assert.equal(rows[0].adjustedPpp, null);
 });
