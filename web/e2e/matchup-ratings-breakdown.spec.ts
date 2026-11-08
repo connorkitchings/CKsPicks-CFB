@@ -8,15 +8,16 @@ test.describe("matchup rating breakdown (fixture mode)", () => {
   test("explains the build and shows four unit cards with a summary line each", async ({ page }) => {
     await gotoHydrated(page, "/matchup/1");
     const region = section(page);
-    await expect(region).toContainText("Ratings use opponent-adjusted scoring per possession plus a shrinking preseason prior.");
-    await expect(region).toContainText("The Team stats tables above show raw statistics and are not combined to form the rating.");
-    await expect(region).toContainText("not points");
+    await expect(region).toContainText("points scored (or allowed) per possession, adjusted for the strength of opponents");
+    await expect(region).toContainText("do not feed the rating");
+    await expect(region).toContainText("0 is an average team and higher is better, including defense");
     await expect(region.getByRole("link", { name: "prior" })).toHaveAttribute("href", "/model/method#prior");
     await expect(region.getByRole("link", { name: "updates" })).toHaveAttribute("href", "/model/method#updates");
     await expect(cards(page)).toHaveCount(4);
     for (const card of await cards(page).all()) {
-      await expect(card).toContainText(/Raw PPP( allowed)? \d\.\d{2} → adjusted \d\.\d{2} → rating [+-]\d\.\d{2} \(#\d+\)/);
-      await expect(card).toContainText(/Prior \d+% · \d+ games?, \d+ possessions/);
+      await expect(card).toContainText(/(Scores|Allows) \d\.\d{2} points per possession\./);
+      await expect(card).toContainText(/Rating [+-]\d\.\d{2} \(#\d+\), (above |below )?average/);
+      await expect(card).toContainText(/\d+% of this rating is the preseason estimate; the rest is this season's \d+ games? \(\d+ possessions?\)/);
     }
     // Placed after the team stats.
     const stats = (await page.getByRole("region", { name: "Team stats", exact: true }).boundingBox())!;
@@ -24,10 +25,10 @@ test.describe("matchup rating breakdown (fixture mode)", () => {
     expect(box.y).toBeGreaterThan(stats.y + stats.height - 2);
   });
 
-  test("defense says allowed; the game table opens with the prior last and a footer equal to the rating", async ({ page }) => {
+  test("defense says allowed; the table opens with the preseason estimate last and a footer equal to the rating", async ({ page }) => {
     await gotoHydrated(page, "/matchup/1");
-    const defense = cards(page).filter({ hasText: "defense" }).first();
-    await expect(defense).toContainText("PPP allowed");
+    const defense = cards(page).filter({ has: page.getByRole("heading", { name: / defense$/ }) }).first();
+    await expect(defense).toContainText("Allows");
 
     const offense = cards(page).first();
     const disclosure = offense.locator("details");
@@ -37,7 +38,7 @@ test.describe("matchup rating breakdown (fixture mode)", () => {
     const table = offense.getByRole("table");
     await expect(table).toBeVisible();
     const body = table.locator("tbody tr");
-    await expect(body.last()).toContainText("Preseason prior");
+    await expect(body.last()).toContainText("Preseason estimate");
     await expect(body).toHaveCount(4);
     const contributions = await body.locator("td:last-child").allTextContents();
     const total = contributions.reduce((sum, text) => sum + Number(text), 0);
@@ -48,7 +49,7 @@ test.describe("matchup rating breakdown (fixture mode)", () => {
     await expect(offense).toContainText("No opponent context was available");
     await expect(offense).toContainText("Not used by the rating");
     await expect(offense).toContainText("scoring could not be attributed to a possession");
-    await expect(offense).toContainText("1 not used");
+    await expect(offense).toContainText("1 game not used");
   });
 
   test("lineage problems and unpublished stats hide the section", async ({ page }) => {
@@ -65,14 +66,14 @@ test.describe("matchup rating breakdown (fixture mode)", () => {
     await expect(unavailable).toHaveCount(1);
     await expect(unavailable).toContainText("Breakdown unavailable for this rating");
     await expect(cards(page).filter({ hasText: "Breakdown unavailable" })).not.toContainText(/\d\.\d{2}/);
-    await expect(cards(page).filter({ hasText: "Raw PPP" })).toHaveCount(3);
+    await expect(cards(page).filter({ hasText: "points per possession" })).toHaveCount(3);
   });
 
   test("preseason-only units say so and have no tables", async ({ page }) => {
     await page.goto("/matchup/987658");
     await expect(cards(page)).toHaveCount(4);
     for (const card of await cards(page).all()) {
-      await expect(card).toContainText("No completed games yet · rating is the preseason prior (100%)");
+      await expect(card).toContainText("No completed games yet · rating is the preseason estimate (100%)");
     }
     await expect(section(page).getByRole("table")).toHaveCount(0);
     await expect(section(page).locator("details")).toHaveCount(0);
@@ -93,7 +94,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       }
       await expect(section(page).getByRole("table")).toHaveCount(4);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      // Every column, including the contribution values, must fit without an inner horizontal scroll.
+      // Every column, including the effect-on-rating values, must fit without an inner horizontal scroll.
       for (const table of await section(page).getByRole("table").all()) {
         expect(await table.evaluate((el) => el.parentElement!.scrollWidth <= el.parentElement!.clientWidth)).toBe(true);
       }

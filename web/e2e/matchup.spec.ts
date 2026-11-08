@@ -160,10 +160,10 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(away).toContainText(/Away · \d+-\d+/);
     await expect(page.locator("[data-side='home']")).toContainText(/Home · \d+-\d+/);
     await expect(away.getByTestId("model-rating")).toHaveText(/^Model Rank\s*#\d+$/);
-    // No rating numbers anywhere; offense and defense ranks live in the table headers, not the hero.
+    // No rating numbers in the hero (the rating breakdown section below shows them); offense and defense ranks live in the table headers, not the hero.
     await expect(away).not.toContainText("Model Offense");
     await expect(away).not.toContainText("V5 rank");
-    await expect(page.getByText(/Rating [+−]\d/)).toHaveCount(0);
+    await expect(page.locator("[data-side]").getByText(/Rating [+−]\d/)).toHaveCount(0);
     const first = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first().locator("xpath=ancestor::div[1]");
     await expect(first.getByTestId("unit-offense-rank")).toHaveText(/^Model Offense Rank\s*#\d+$/);
     await expect(first.getByTestId("unit-defense-rank")).toHaveText(/^Model Defense Rank\s*#\d+$/);

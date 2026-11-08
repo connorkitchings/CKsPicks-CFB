@@ -181,6 +181,30 @@ export const pppText = (value: number) => value.toFixed(2);
 export const contributionText = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(3)}`;
 export const priorPercent = (weight: number) => `${Math.round(weight * 100)}%`;
 
+const SMALL_ADJUSTMENT = 0.05;
+
+/**
+ * Plain-language reading of raw versus adjusted points per possession. A higher adjusted
+ * value means a tougher offense schedule's defenses (offense) or weaker opposing offenses (defense).
+ */
+export function adjustmentSentence(role: UnitRole, rawPpp: number, adjustedPpp: number): string {
+  const verb = role === "offense" ? "Scores" : "Allows";
+  const faced = role === "offense" ? "defenses" : "offenses";
+  const lead = `${verb} ${pppText(rawPpp)} points per possession.`;
+  const delta = adjustedPpp - rawPpp;
+  if (Math.abs(delta) < SMALL_ADJUSTMENT) {
+    return `${lead} Opponents were about average ${faced}, so the adjustment is small.`;
+  }
+  const tougher = role === "offense" ? delta > 0 : delta < 0;
+  return `${lead} Against ${tougher ? "tougher" : "weaker"}-than-average ${faced}, the model counts that as ${pppText(adjustedPpp)}.`;
+}
+
+/** Rating headline with its position relative to an average team (0). */
+export function ratingStanding(rating: number): string {
+  if (rating === 0) return "average";
+  return rating > 0 ? "above average" : "below average";
+}
+
 const unavailable = (role: UnitRole, reason: UnavailableReason): UnitRatingBreakdown =>
   ({ status: "unavailable", role, reason });
 

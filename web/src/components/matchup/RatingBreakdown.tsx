@@ -4,9 +4,11 @@ import { Disclosure } from "@/components/ui/Disclosure";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ratingText } from "@/components/ratings/StatGrid";
 import {
+  adjustmentSentence,
   contributionText,
   pppText,
   priorPercent,
+  ratingStanding,
   type RatingBreakdown as Breakdown,
   type UnitRatingBreakdown,
 } from "@/lib/rating-breakdown";
@@ -14,16 +16,16 @@ import {
 type ReadyUnit = Extract<UnitRatingBreakdown, { status: "ready" }>;
 
 const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
+const rankText = (rank: number | null) => (rank === null ? "" : ` (#${rank})`);
 const cell = "px-1 py-1.5 text-right font-mono tabular-nums";
 const head = "px-1 py-1.5 text-right font-medium";
 
 function UnitCard({ team, unit }: { team: string; unit: UnitRatingBreakdown }) {
-  const defense = unit.role === "defense";
   const title = `${team} ${unit.role}`;
   return (
     <Card as="article" aria-label={`${title} rating breakdown`} className="min-w-0 space-y-2">
       <h3 className="text-sm font-semibold text-ink">{title}</h3>
-      {unit.status === "ready" ? <ReadyBody unit={unit} defense={defense} /> : (
+      {unit.status === "ready" ? <ReadyBody unit={unit} /> : (
         <p role="status" className="text-sm text-ink-muted">
           Breakdown unavailable for this rating. The stored components could not be matched to the rating shown above.
         </p>
@@ -32,17 +34,17 @@ function UnitCard({ team, unit }: { team: string; unit: UnitRatingBreakdown }) {
   );
 }
 
-function ReadyBody({ unit, defense }: { unit: ReadyUnit; defense: boolean }) {
+function ReadyBody({ unit }: { unit: ReadyUnit }) {
   const unused = unit.excluded.length;
   if (unit.completedGames === 0) {
     return (
       <>
-        <p className="text-sm text-ink">
-          No completed games yet · rating is the preseason prior ({priorPercent(unit.priorWeight)})
-          {unused > 0 && ` · ${unused} not used`}
+        <p className="text-sm font-semibold tabular-nums text-ink">
+          Rating {ratingText(unit.rating)}{rankText(unit.rank)}, {ratingStanding(unit.rating)}
         </p>
-        <p className="font-mono text-sm tabular-nums text-ink">
-          Rating {ratingText(unit.rating)}{unit.rank !== null && ` (#${unit.rank})`}
+        <p className="text-xs text-ink-muted">
+          No completed games yet · rating is the preseason estimate ({priorPercent(unit.priorWeight)})
+          {unused > 0 && ` · ${unused} not used`}
         </p>
       </>
     );
@@ -50,23 +52,24 @@ function ReadyBody({ unit, defense }: { unit: ReadyUnit; defense: boolean }) {
   const missingContext = unit.games.some((game) => game.missingContext);
   return (
     <>
-      <p className="font-mono text-sm tabular-nums text-ink">
-        Raw PPP{defense && " allowed"} {pppText(unit.rawPpp!)} → adjusted {pppText(unit.adjustedPpp!)} → rating{" "}
-        {ratingText(unit.rating)}{unit.rank !== null && ` (#${unit.rank})`}
+      <p className="text-sm text-ink">{adjustmentSentence(unit.role, unit.rawPpp!, unit.adjustedPpp!)}</p>
+      <p className="text-sm font-semibold tabular-nums text-ink">
+        Rating {ratingText(unit.rating)}{rankText(unit.rank)}, {ratingStanding(unit.rating)}
       </p>
       <p className="text-xs text-ink-muted">
-        Prior {priorPercent(unit.priorWeight)} · {plural(unit.completedGames, "game")}, {Math.round(unit.possessions)} possessions
-        {unused > 0 && ` · ${unused} not used`}
+        {priorPercent(unit.priorWeight)} of this rating is the preseason estimate; the rest is this season&apos;s{" "}
+        {plural(unit.completedGames, "game")} ({plural(Math.round(unit.possessions), "possession")})
+        {unused > 0 && ` · ${unused} ${unused === 1 ? "game" : "games"} not used`}
       </p>
-      <Disclosure title="Game-by-game">
+      <Disclosure title="Show the math">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-xs" aria-label={`${unit.role} game-by-game contributions`}>
+          <table className="w-full border-collapse text-xs" aria-label={`${unit.role} game-by-game effect on rating`}>
             <thead>
               <tr className="border-b border-line text-ink-muted">
                 <th scope="col" className="px-2 py-1.5 text-left font-medium">Opponent</th>
                 <th scope="col" className={head}>Raw</th>
                 <th scope="col" className={head}>Adj.</th>
-                <th scope="col" className={head}>Contrib.</th>
+                <th scope="col" className={head}>Effect on rating</th>
               </tr>
             </thead>
             <tbody>
@@ -82,7 +85,7 @@ function ReadyBody({ unit, defense }: { unit: ReadyUnit; defense: boolean }) {
                 </tr>
               ))}
               <tr className="border-b border-line/60">
-                <th scope="row" className="px-2 py-1.5 text-left font-normal text-ink">Preseason prior</th>
+                <th scope="row" className="px-2 py-1.5 text-left font-normal text-ink">Preseason estimate</th>
                 <td className={cell} />
                 <td className={cell} />
                 <td className={cell}>{contributionText(unit.priorContribution)}</td>
@@ -122,19 +125,13 @@ export function RatingBreakdown({ awayTeam, homeTeam, breakdown }: { awayTeam: s
   return (
     <section aria-labelledby="rating-breakdown-heading" className="space-y-3">
       <SectionHeading id="rating-breakdown-heading">How the ratings are built</SectionHeading>
-      <div className="space-y-1.5 text-xs leading-relaxed text-ink-muted">
-        <p>
-          Ratings use opponent-adjusted scoring per possession plus a shrinking preseason prior. The Team stats tables
-          above show raw statistics and are not combined to form the rating.
-        </p>
-        <p>
-          The prior plus the per-game contributions add up to the rating. The prior&apos;s share shrinks as possessions
-          accumulate (see the <Link href="/model/method#prior" className="underline hover:text-accent-ink">prior</Link> and{" "}
-          <Link href="/model/method#updates" className="underline hover:text-accent-ink">updates</Link> methods). Defense rows
-          measure the opposing offense, and a higher defense rating means allowing less. Ratings are on a standardized scale,
-          not points, and small rank gaps are near ties. Games with incomplete data are left out or used without opponent context.
-        </p>
-      </div>
+      <p className="text-xs leading-relaxed text-ink-muted">
+        Each rating measures one thing: points scored (or allowed) per possession, adjusted for the strength of opponents.
+        The Team stats tables above are shown for context and do not feed the rating. 0 is an average team and higher is
+        better, including defense (allowing fewer points gives a higher rating); the preseason estimate counts for less as
+        games are played (see the <Link href="/model/method#prior" className="underline hover:text-accent-ink">prior</Link> and{" "}
+        <Link href="/model/method#updates" className="underline hover:text-accent-ink">updates</Link> methods).
+      </p>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="min-w-0 space-y-4">
           <UnitCard team={awayTeam} unit={breakdown.awayOffense} />

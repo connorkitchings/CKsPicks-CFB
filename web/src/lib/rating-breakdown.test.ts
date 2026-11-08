@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  adjustmentSentence,
   buildUnitBreakdown,
   componentId,
   contributionText,
@@ -9,6 +10,7 @@ import {
   parseComponent,
   pppText,
   priorPercent,
+  ratingStanding,
   type ComponentRow,
   type RenderedUnit,
   type ScheduledGame,
@@ -181,4 +183,28 @@ test("formatters", () => {
   assert.equal(contributionText(0.1234), "+0.123");
   assert.equal(contributionText(-0.0456), "-0.046");
   assert.equal(priorPercent(0.174), "17%");
+});
+
+test("adjustmentSentence_offense_describes_tougher_weaker_and_similar_defenses", () => {
+  assert.equal(adjustmentSentence("offense", 3.17, 3.37),
+    "Scores 3.17 points per possession. Against tougher-than-average defenses, the model counts that as 3.37.");
+  assert.equal(adjustmentSentence("offense", 3.17, 2.98),
+    "Scores 3.17 points per possession. Against weaker-than-average defenses, the model counts that as 2.98.");
+  assert.equal(adjustmentSentence("offense", 3.17, 3.2),
+    "Scores 3.17 points per possession. Opponents were about average defenses, so the adjustment is small.");
+});
+
+test("adjustmentSentence_defense_reads_higher_adjusted_as_weaker_offenses", () => {
+  assert.equal(adjustmentSentence("defense", 1.89, 2.24),
+    "Allows 1.89 points per possession. Against weaker-than-average offenses, the model counts that as 2.24.");
+  assert.equal(adjustmentSentence("defense", 1.89, 1.6),
+    "Allows 1.89 points per possession. Against tougher-than-average offenses, the model counts that as 1.60.");
+  assert.equal(adjustmentSentence("defense", 1.89, 1.91),
+    "Allows 1.89 points per possession. Opponents were about average offenses, so the adjustment is small.");
+});
+
+test("ratingStanding_follows_the_sign_of_the_rating", () => {
+  assert.equal(ratingStanding(1.67), "above average");
+  assert.equal(ratingStanding(-0.4), "below average");
+  assert.equal(ratingStanding(0), "average");
 });
