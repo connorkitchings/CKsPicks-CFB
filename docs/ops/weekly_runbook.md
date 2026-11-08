@@ -55,10 +55,14 @@ The October 19 promotion mistakenly started the full-history path. It was stoppe
 
 Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actions workflow `.github/workflows/weekly-season-update.yml`, driven by `scripts/ops/weekly_automation.py`. The controller runs the same commands as the `make season-*` targets (it mirrors the wrappers without `zsh` or the macOS Keychain, taking credentials from the job environment), in one job, because the run manifest stores absolute candidate paths and release re-hashes the candidate from local disk.
 
-**Schedule (both at 17:07 UTC, which is 13:07 ET in daylight time and 12:07 ET in standard time):**
+**Schedule (primary slots at 17:07 UTC, which is 13:07 ET in daylight time and 12:07 ET in standard time; backup slots at 22:37 UTC the same day):**
 
 - Sunday: close the completed week and open the next (the full cadence below: capture, build, score exceptions, prepare, parity, Preview release, Production release, live health probe).
 - Monday: market-only line refresh for the active week, only when the active release has fewer than 100% of games lined. It stops without releasing when coverage did not improve.
+- Monday catch-up: if the active week has already kicked off, Sunday's close never rolled it over, so Monday runs the close-week path instead of a market refresh. It resumes at prepare when the manifest is already committed, completes the rollover, or fails red with the close-week stop reason (for example a game without a final score). It never ends as a green skip. `accept_cutoff_correction` is still owner-dispatched and applies only to this close-week path.
+- Backup slots: GitHub `schedule` is best-effort, and runs are delayed by hours or dropped on GitHub's side. Each day therefore has a second slot (Sunday `37 22 * * 0`, Monday `37 22 * * 1`; Sunday `7 17 * * 0` and Monday `7 17 * * 1` remain the primary slots). The controller is idempotent, so a duplicate run after a successful close is a fast no-op skip ("already rolled over"). A backup slot that fires while a delayed run is still going queues behind it in the `weekly-season-update` concurrency group, then skips as "already rolled over". After an interrupted run, the next slot resumes at prepare.
+- Manual fallback if every slot is missed: `gh workflow run weekly-season-update.yml --ref dev -f mode=close-week`.
+- Where changes take effect: edits to the workflow file (crons, mode mapping) apply only after a `dev` to `main` release PR, because GitHub reads schedules from the default branch. Controller changes apply from `dev` immediately, since the job checks out `dev`.
 
 **Gates (any failure stops the run before the next step; nothing further is activated):**
 
@@ -80,10 +84,12 @@ Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actio
 - `mode`: `close-week`, `market-refresh` or `plan-only`. `plan-only` detects the week, checks that secrets and database roles are present and read-only, and computes cutoffs; it makes no provider call and no write.
 - `force`: run even when the week gate would skip (for example a refresh with full line coverage).
 - `skip_production`: stop after the Preview release, for a rehearsal.
+- `accept_cutoff_correction`: `close-week` only, for one owner-chosen run. A completed week number whose pregame rating-snapshot `cutoff_utc` the parity gate may accept as changed; every value column of those rows still compares strictly. Leave it blank otherwise; the schedule never sets it. It was added for the Week 10 close (2026-11-01), whose manifest corrects the stale Week 8 cutoff that the Week 9 manifests carried.
 
 ```bash
 gh workflow run weekly-season-update.yml -f mode=plan-only
 gh workflow run weekly-season-update.yml -f mode=close-week -f skip_production=true
+gh workflow run weekly-season-update.yml --ref dev -f mode=close-week -f accept_cutoff_correction=8
 ```
 
 **Disable.** Set the repository variable `CFB_WEEKLY_AUTOMATION_ENABLED` to anything other than `true` (or delete it); scheduled runs are then skipped. A manual `workflow_dispatch` still runs, so rehearsals work before the schedule is enabled. In-flight runs are not cancelled, and the `weekly-season-update` concurrency group queues overlapping runs.

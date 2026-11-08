@@ -1,7 +1,7 @@
 # Stratum CFB brand decision
 
 **Date:** 2026-10-27  
-**Status:** Accepted; implementation and Production publication authorized by the owner.
+**Status:** Implemented and published to Production 2026-10-27 through PR #17 (`ab74daca`); owner authorized implementation and publication.
 
 ## Identity
 

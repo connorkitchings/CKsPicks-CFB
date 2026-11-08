@@ -27,6 +27,12 @@ week's rows may also differ (the refresh moves that cutoff); completed weeks'
 cutoffs must match. In both modes the upcoming week must be 100%
 predicted; lined-game coverage is reported but never blocks.
 
+``--accept-cutoff-correction WEEK`` (close-week only, one run at a time): the
+``cutoff_utc`` of week ``WEEK``'s pregame ``v5_rating_snapshots`` may differ; every
+other column of those rows still compares strictly. It exists for an owner-chosen
+one-off correction of a stale completed-week cutoff (the Week 9 manifests carried
+Week 8 at 18:00Z against the certified 14:39Z) and is never set by the schedule.
+
 ``team_resume.sor_rank`` may permute only among teams whose ``sor`` values tie
 within 1e-9 (platform rounding decides their order), and only inside that tied
 group's span of ranks; ``sor`` itself is always compared.
@@ -114,6 +120,7 @@ class ParityReport:
     upcoming_games: int = 0
     upcoming_predicted: int = 0
     upcoming_lined: int = 0
+    accepted_cutoff_corrections: list[int] = field(default_factory=list)
 
     @property
     def passed(self) -> bool:
@@ -130,6 +137,7 @@ class ParityReport:
             "upcoming_week_games": self.upcoming_games,
             "upcoming_week_predicted": self.upcoming_predicted,
             "upcoming_week_lined": self.upcoming_lined,
+            "accepted_cutoff_corrections": self.accepted_cutoff_corrections,
         }
 
 
@@ -322,11 +330,26 @@ def _check_close_week(
             row["snapshot_class"] == "pregame" and int(row["week"]) <= stable
         ),
     }
+    corrected = set(report.accepted_cutoff_corrections)
+
+    def corrected_snapshot(row: Row) -> bool:
+        return int(row["week"]) in corrected
+
     for table, keep in scopes.items():
         old = [row for row in previous[table] if keep(row)]
         new = [row for row in candidate[table] if keep(row)]
         report.compared[table] = len(old)
-        report.failures += compare_rows(table, old, new)
+        if table != "v5_rating_snapshots" or not corrected:
+            report.failures += compare_rows(table, old, new)
+            continue
+        # Only the named weeks' cutoffs may move; their values stay strict.
+        for in_corrected in (False, True):
+            report.failures += compare_rows(
+                table,
+                [r for r in old if corrected_snapshot(r) == in_corrected],
+                [r for r in new if corrected_snapshot(r) == in_corrected],
+                ignore=frozenset({"cutoff_utc"}) if in_corrected else frozenset(),
+            )
 
 
 def _check_market_refresh(
@@ -417,11 +440,21 @@ def compare_releases(
     mode: str,
     completed_week: int,
     upcoming_week: int,
+    accept_cutoff_corrections: tuple[int, ...] = (),
 ) -> ParityReport:
     """Pure parity decision over two ``{table: [row, ...]}`` structures."""
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}")
     report = ParityReport(mode, completed_week, upcoming_week)
+    if accept_cutoff_corrections:
+        if mode != "close-week":
+            raise ValueError("cutoff corrections apply to close-week only")
+        bad = [w for w in accept_cutoff_corrections if not 0 <= w < completed_week]
+        if bad:
+            raise ValueError(
+                f"cutoff correction weeks {bad} are not before week {completed_week}"
+            )
+        report.accepted_cutoff_corrections = sorted(set(accept_cutoff_corrections))
     for table in REQUIRED_TABLES:
         for name, release in (("active release", previous), ("candidate", candidate)):
             if table not in release:
@@ -484,7 +517,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--completed-week", type=int, required=True)
     parser.add_argument("--upcoming-week", type=int, required=True)
     parser.add_argument("--report", type=Path, required=True)
+    parser.add_argument(
+        "--accept-cutoff-correction",
+        type=int,
+        action="append",
+        default=[],
+        metavar="WEEK",
+        help="close-week only: allow WEEK's pregame snapshot cutoff_utc to differ",
+    )
     args = parser.parse_args(argv)
+    if args.accept_cutoff_correction and args.mode != "close-week":
+        parser.error("--accept-cutoff-correction applies to close-week only")
     import psycopg
 
     url = os.environ.get("DATABASE_URL")
@@ -501,6 +544,7 @@ def main(argv: list[str] | None = None) -> int:
         mode=args.mode,
         completed_week=args.completed_week,
         upcoming_week=args.upcoming_week,
+        accept_cutoff_corrections=tuple(args.accept_cutoff_correction),
     )
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report.as_dict(), indent=2, sort_keys=True))

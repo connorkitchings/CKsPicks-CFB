@@ -378,6 +378,13 @@ class Controller:
     base_env: dict[str, str]
     root: Path = Path(".")
     summary: dict[str, Any] = field(default_factory=dict)
+    #: Owner-chosen, one run only: completed weeks whose pregame snapshot
+    #: ``cutoff_utc`` the close-week parity gate may accept as changed.
+    accept_cutoff_corrections: tuple[int, ...] = ()
+    #: What this run actually does, resolved by ``detect``. ``mode`` is never
+    #: rewritten (plan-only must stay plan-only); a market-refresh run for a
+    #: week that kicked off without a rollover becomes "close-week".
+    effective_mode: str = ""
 
     # -- plumbing
     def log(self, message: str) -> None:
@@ -547,7 +554,7 @@ class Controller:
                 self.plan_cutoffs(decision)
                 self.summary["result"] = "planned"
                 return 0
-            if self.mode == "close-week":
+            if self.effective_mode == "close-week":
                 self.close_week(decision, started)
             else:
                 self.market_refresh(decision, release_id)
@@ -568,6 +575,25 @@ class Controller:
             self.mode == "plan-only" and now.weekday() == 0
         ):
             upcoming = self.deps.games(active_week)
+            kick = first_kickoff(upcoming)
+            if kick is not None and kick <= now:
+                # The active week already started, so the Sunday close never
+                # rolled it over. Finish that rollover instead of skipping.
+                self.effective_mode = "close-week"
+                self.log(
+                    f"catch-up: week {active_week} kicked off without rollover; "
+                    "running close-week"
+                )
+                self.summary.update(
+                    {"caught_up": True, "effective_mode": self.effective_mode}
+                )
+                return decide_close_week(
+                    now=now,
+                    active_week=active_week,
+                    completed=upcoming,
+                    upcoming=self.deps.games(active_week + 1),
+                )
+            self.effective_mode = "market-refresh"
             lined, total = self.production_coverage(release_id, active_week)
             self.summary["coverage"] = {"lined": lined, "total": total}
             return decide_market_refresh(
@@ -578,6 +604,7 @@ class Controller:
                 total=total,
                 force=self.force,
             )
+        self.effective_mode = "close-week"
         completed = self.deps.games(active_week)
         upcoming = self.deps.games(active_week + 1)
         self.summary["games"] = {
@@ -598,7 +625,7 @@ class Controller:
             cutoff,
             upcoming_first_kickoff=first_kickoff(upcoming),
             completed_last_kickoff=last_kickoff(completed)
-            if self.mode == "close-week"
+            if self.effective_mode == "close-week"
             else None,
         )
         self.summary["planned_cutoffs"] = {
@@ -802,6 +829,14 @@ class Controller:
             # whose Production release failed) is a same-week republish.
             if parity_mode == "close-week" and self.preview_active_week() == nxt:
                 parity_mode = "market-refresh"
+            corrections: list[Any] = []
+            if parity_mode == "close-week":
+                for week in self.accept_cutoff_corrections:
+                    corrections += ["--accept-cutoff-correction", week]
+                if self.accept_cutoff_corrections:
+                    self.summary["accepted_cutoff_corrections"] = list(
+                        self.accept_cutoff_corrections
+                    )
             self.step(
                 "check release parity",
                 self.py(
@@ -810,6 +845,7 @@ class Controller:
                     "--mode", parity_mode, "--completed-week", done,
                     "--upcoming-week", nxt,
                     "--report", self.receipts() / "parity.json",
+                    *corrections,
                 ),
                 "preview",
             )  # fmt: skip
@@ -929,7 +965,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--skip-production", action="store_true")
+    parser.add_argument(
+        "--accept-cutoff-correction",
+        type=int,
+        action="append",
+        default=[],
+        metavar="WEEK",
+        help="close-week only, one run: accept WEEK's corrected pregame cutoff",
+    )
     args = parser.parse_args(argv)
+    if args.accept_cutoff_correction and args.mode != "close-week":
+        parser.error("--accept-cutoff-correction applies to close-week only")
     secrets = {
         k: os.environ[k]
         for k in (*REQUIRED_SECRETS, "THE_ODDS_API_KEY")
@@ -939,6 +985,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         mode=args.mode,
         force=args.force,
         skip_production=args.skip_production,
+        accept_cutoff_corrections=tuple(args.accept_cutoff_correction),
         secrets=secrets,
         deps=default_deps(secrets),
         base_env=dict(os.environ),

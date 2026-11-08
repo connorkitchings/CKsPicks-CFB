@@ -3,11 +3,11 @@
 ## TL;DR
 
 - **Worked On:** Replaced the public Crest identity with Stratum CFB across the app, licensed vector wordmark, exports, metadata and current documentation.
-- **Outcome:** Implementation and all local gates passed; authorized release verification pending.
+- **Outcome:** Stratum CFB published to Production; full local gates, dev/PR CI and live readback passed.
 - **Plan Contract:** [Stratum CFB rebrand](../../docs/plans/2026-10-27/stratum-cfb-rebrand.md)
 - **Approval / Status:** Owner explicitly approved implementation and Production publication in chat. Existing URL and collegiate navy/white style retained.
 - **Blockers:** None; validation findings are being corrected before publication.
-- **Next:** Push dev, await CI, merge dev to main with a merge commit, verify live Production.
+- **Next:** Session complete; release documentation pushed to dev.
 
 **tags:** ["brand", "stratum", "web", "release"]
 
@@ -43,7 +43,7 @@
 
 ## Handoff Notes
 
-- **Resume at:** Final validation and authorized publication.
+- **Resume at:** Session complete; Stratum CFB is live.
 - **Watch out for:** No new domain or data release; live data identifiers stay in docs/status.md.
 
 ## Final local gates
@@ -53,3 +53,13 @@
 - Generator positive and negative checks passed; invalid font checksum refused before parsing.
 - Inspected all eight screenshots at 320/390/1280/1440 in both themes: lettering and CFB suffix readable, contained, correct palette. Inspected actual matchup PNG, favicon and social preview; no clipping or layout regressions.
 - Current web source contains no Crest brand labels; remaining test mentions assert absence. Historical design/docs references intentionally retained with supersession records.
+
+## Production publication
+
+- Implementation commit `0d4d3dab3a9b9dd1161b149ee7dccad907903719` pushed to dev; dev and PR CI passed every gate.
+- [PR #17](https://github.com/connorkitchings/CKsPicks-CFB/pull/17) merged dev into main with merge commit `ab74daca7ba538a03d5fd0e0c7525391f0fb6232`.
+- Vercel project `c-ks-picks-cfb`, team `connorkitchings-projects`: Production deployment `dpl_HkukaGHJ7aiRhha62Dg5dJghP8z3` READY and public alias points to the intended commit. GitHub deployment `7367443869`.
+- Live `/`, `/matchup/401856734` and `/stats?chart=efficiency` return 200 with Stratum CFB accessible wordmark and no Crest CFB text. Live favicon and social-preview PNGs are byte-identical to the locally reviewed Stratum images.
+- Actual Production matchup export downloaded as `stratum-florida-at-georgia-2026-week-9.png`; inspected the PNG and confirmed Stratum label, correct stats/colors and intact canvas.
+- Health is OK; exact activeRelease object and coverage match the saved pre-release baseline. No football-data release changed. Live identifiers remain confined to docs/status.md.
+- Marked plan Implemented and brand decision published; updated status and session log. Documentation closure is committed/pushed to dev separately from the deployed application.

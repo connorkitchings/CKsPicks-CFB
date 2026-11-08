@@ -7,6 +7,8 @@ import json
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import pytest
+
 from scripts.pipeline import check_release_parity as parity
 
 OLD_RUN = "season-2026-" + "a" * 24
@@ -483,3 +485,66 @@ def test_sor_rank_change_without_a_tie_fails_and_sor_stays_strict():
     )
     new["team_resume"][0]["sor_rank"] = 2
     assert any("sor_rank" in f for f in resume_failures(old, new))
+
+
+# --- one-off completed-week cutoff correction ---------------------------------
+
+
+def cutoff_pair(old_cutoff="2026-10-20T18:00:00Z", new_cutoff="2026-10-20T14:39:00Z"):
+    old, new = release(OLD_RUN), release(NEW_RUN)
+    for tables, cutoff in ((old, old_cutoff), (new, new_cutoff)):
+        for snap in tables["v5_rating_snapshots"]:
+            snap["cutoff_utc"] = cutoff if snap["week"] == 8 else "2026-09-03T05:00:00Z"
+    return old, new
+
+
+def correct(old, new, weeks=(8,)):
+    # Weeks 0..8 are stable, as in the 2026-11-01 run (completed week 9); the
+    # fixture's predicted slate is week 9, so it stands in for the upcoming week.
+    return parity.compare_releases(
+        old,
+        new,
+        mode="close-week",
+        completed_week=9,
+        upcoming_week=9,
+        accept_cutoff_corrections=weeks,
+    )
+
+
+def test_corrected_week_cutoff_fails_close_week_without_the_flag():
+    old, new = cutoff_pair()
+    failures = correct(old, new, weeks=()).failures
+    assert any("week-8" in f and "cutoff_utc" in f for f in failures)
+
+
+def test_flag_accepts_only_the_named_weeks_cutoff():
+    old, new = cutoff_pair()
+    report = correct(old, new)
+    assert report.passed, report.failures
+    assert report.as_dict()["accepted_cutoff_corrections"] == [8]
+
+
+def test_flag_keeps_values_of_the_corrected_week_strict():
+    old, new = cutoff_pair()
+    row(new, "v5_rating_snapshots", week=8)["overall_rating"] = 9.0
+    failures = correct(old, new).failures
+    assert any("week-8" in f and "overall_rating" in f for f in failures)
+
+
+def test_flag_does_not_cover_other_weeks_cutoffs():
+    old, new = cutoff_pair()
+    row(new, "v5_rating_snapshots", week=1)["cutoff_utc"] = "2026-09-03T06:00:00Z"
+    failures = correct(old, new).failures
+    assert any("week-1" in f and "cutoff_utc" in f for f in failures)
+    assert not any("week-8" in f for f in failures)
+
+
+def test_flag_refuses_market_refresh_and_non_completed_weeks():
+    old, new = cutoff_pair()
+    with pytest.raises(ValueError):
+        parity.compare_releases(
+            old, new, mode="market-refresh", completed_week=9, upcoming_week=9,
+            accept_cutoff_corrections=(8,),
+        )  # fmt: skip
+    with pytest.raises(ValueError):
+        correct(old, new, weeks=(9,))
