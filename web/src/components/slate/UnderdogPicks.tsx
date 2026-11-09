@@ -4,12 +4,14 @@ import { useState } from "react";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import TeamLogo from "@/components/TeamLogo";
 import { signedSpread } from "@/lib/betting-format";
-import { COLLAPSED_ROWS, visibleRows, type UnderdogPick, type Tally } from "@/lib/slate";
+import { COLLAPSED_ROWS, visibleRows, winRatePct, type UnderdogPick, type Tally } from "@/lib/slate";
 import { phoneTeamName } from "@/lib/team-logos";
 
 /** Season straight-up record text for the Underdog picks view, or null before any scored week. */
 export function underdogRecordText(record: Tally | null | undefined, season: number): string | null {
-  return record && record.win + record.loss > 0 ? `${season}: ${record.win}–${record.loss}` : null;
+  if (!record) return null;
+  const pct = winRatePct(record.win, record.loss);
+  return pct === null ? null : `${season}: ${record.win}–${record.loss} (${pct.toFixed(1)}%)`;
 }
 
 /**
