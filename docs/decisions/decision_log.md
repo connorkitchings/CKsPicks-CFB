@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-11-08: Model page market comparison, big-miss threshold and luck band
+
+- **Context:** `/model` showed only the model's record and its own errors, so readers could not see whether the model was closer to the final score than the betting line, or whether a win rate differed from break-even by more than luck.
+- **Decision:** (1) compare the model with the retained pre-kickoff canonical line only, on the same games, excluding retrospective and unknown line sources and showing their counts; (2) a big miss is an absolute error strictly greater than 28 points, fixed before examining the 2026 tail numbers; (3) exact error ties are shown as "even" and left out of the percentage denominator; (4) the win-rate caveat uses the 95% range around 52.4% to choose between "within normal luck of break-even" wording and an outside-the-range wording; (5) units, ROI and profit stay off `/model` (the 2026-10-03 decision stands).
+- **Impact:** web read path and `/model` UI only; no schema, pipeline or V5 methodology change. The official record is unchanged and still settled at the best quote.
+- **Source:** [contract](../plans/2026-11-08/model-performance-dashboard.md), [record methodology](../modeling/record_methodology.md#model-page-market-comparison), session log `session_logs/2026-11-08/02-model-performance-dashboard-impl.md`.
+
 ## 2026-10-27: Stratum CFB public identity
 
 - **Context:** The owner rejected the Crest name because of its toothpaste association and selected Stratum after reviewing finalists.

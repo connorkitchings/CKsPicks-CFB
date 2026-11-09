@@ -1,5 +1,6 @@
 import { V5_RECORD_EVIDENCE } from "./run-selection";
 import { and, asc, desc, eq, inArray, lte, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { cache } from "react";
 import { db as legacyDb, schema } from "./db";
 import { getSeasonDb, getSeasonReleaseContext } from "./season-release";
@@ -486,6 +487,23 @@ export interface GradedGamePick {
   totalEdge: number | null;
   highConfidence: boolean;
   evidenceClass: "replay" | "live" | "pending";
+  /** Retained line behind each grade (`market_snapshots`); null when the grade has no snapshot. */
+  canonicalSpread?: number | null;
+  canonicalTotal?: number | null;
+  /** `prediction_grades.grading_version` per target; its suffix names the line source. */
+  spreadGradingVersion?: string | null;
+  totalGradingVersion?: string | null;
+}
+
+/**
+ * Per selected week. `ungradedGames` counts selected games with no final score or no eligible line;
+ * `unplayedGames` is the subset with no final score yet. A finished game with no retained line is
+ * ungraded but not unplayed, so only `unplayedGames` marks a week as in progress.
+ */
+export interface WeekPerformanceRow {
+  week: number;
+  ungradedGames: number;
+  unplayedGames: number;
 }
 
 export interface PerformanceDetail {
@@ -495,6 +513,7 @@ export interface PerformanceDetail {
   byWeek: Record<number, PerformanceSummary>;
   gradedGames: GradedGamePick[];
   weeks: number[];
+  weekRows: WeekPerformanceRow[];
 }
 
 function computeBetRecord(wins: number, losses: number, pushes: number): BetRecord {
@@ -535,7 +554,17 @@ type DetailRow = {
   highConfidence: boolean;
   spreadResult: "win" | "loss" | "push" | null;
   totalResult: "win" | "loss" | "push" | null;
+  canonicalSpread?: number | null;
+  canonicalTotal?: number | null;
+  spreadGradingVersion?: string | null;
+  totalGradingVersion?: string | null;
 };
+
+/** A selected game counts once it has a final score and at least one graded target. */
+function isGradedGame(row: DetailRow): boolean {
+  return row.homePoints !== null && row.awayPoints !== null
+    && (row.spreadResult !== null || row.totalResult !== null);
+}
 
 function summarizeDetail(
   rows: DetailRow[],
@@ -616,6 +645,11 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
   season: number,
 ): Promise<PerformanceDetail> => {
   const db = await getSeasonDb(season);
+  // One grade join and one snapshot join per target replace the per-row scalar subqueries.
+  const spreadGrade = alias(schema.predictionGrades, "spread_grade");
+  const totalGrade = alias(schema.predictionGrades, "total_grade");
+  const spreadSnapshot = alias(schema.marketSnapshots, "spread_snapshot");
+  const totalSnapshot = alias(schema.marketSnapshots, "total_snapshot");
   const fields = {
     evidenceClass: schema.predictionRuns.evidenceClass,
     week: schema.siteWeekSelections.week,
@@ -639,10 +673,9 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
     edgeSpread: schema.predictions.edgeSpread,
     edgeTotal: schema.predictions.edgeTotal,
     highConfidence: schema.predictions.highConfidence,
-    spreadResult: sql<"win" | "loss" | "push" | null>`(
-      SELECT result FROM prediction_grades pg WHERE pg.run_id = predictions.run_id
-        AND pg.game_id = predictions.game_id AND pg.target = 'spread' LIMIT 1
-    )`,
+    spreadResult: spreadGrade.result,
+    spreadGradingVersion: spreadGrade.gradingVersion,
+    canonicalSpread: spreadSnapshot.spread,
     spreadPriceProvenance: sql<"actual" | "defaulted" | "unavailable">`COALESCE((
       SELECT CASE WHEN CASE WHEN pms.side = 'home' THEN mq.home_spread_price ELSE mq.away_spread_price END IS NULL THEN 'defaulted' ELSE 'actual' END
       FROM prediction_market_selections pms JOIN market_quotes mq ON mq.quote_id = pms.quote_id
@@ -655,16 +688,27 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
       WHERE pms.run_id = predictions.run_id AND pms.game_id = predictions.game_id
         AND pms.target = 'total' LIMIT 1
     ), 'unavailable')`,
-    totalResult: sql<"win" | "loss" | "push" | null>`(
-      SELECT result FROM prediction_grades pg WHERE pg.run_id = predictions.run_id
-        AND pg.game_id = predictions.game_id AND pg.target = 'total' LIMIT 1
-    )`,
+    totalResult: totalGrade.result,
+    totalGradingVersion: totalGrade.gradingVersion,
+    canonicalTotal: totalSnapshot.total,
   };
   const rows = await db.select(fields).from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
     .innerJoin(schema.predictions, eq(schema.predictionRuns.runId, schema.predictions.runId))
     .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
     .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
+    .leftJoin(spreadGrade, and(
+      eq(spreadGrade.runId, schema.predictions.runId),
+      eq(spreadGrade.gameId, schema.predictions.gameId),
+      eq(spreadGrade.target, "spread"),
+    ))
+    .leftJoin(spreadSnapshot, eq(spreadSnapshot.snapshotId, spreadGrade.marketSnapshotId))
+    .leftJoin(totalGrade, and(
+      eq(totalGrade.runId, schema.predictions.runId),
+      eq(totalGrade.gameId, schema.predictions.gameId),
+      eq(totalGrade.target, "total"),
+    ))
+    .leftJoin(totalSnapshot, eq(totalSnapshot.snapshotId, totalGrade.marketSnapshotId))
     .where(and(
       eq(schema.siteWeekSelections.season, season),
       inArray(schema.predictionRuns.evidenceClass, [...V5_RECORD_EVIDENCE]),
@@ -702,6 +746,10 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
       totalEdge: r.edgeTotal,
       highConfidence: r.highConfidence,
       evidenceClass: r.evidenceClass,
+      canonicalSpread: r.canonicalSpread,
+      canonicalTotal: r.canonicalTotal,
+      spreadGradingVersion: r.spreadGradingVersion,
+      totalGradingVersion: r.totalGradingVersion,
     }));
 
   const weeks = Array.from(new Set(gradedGames.map((r) => r.week))).sort((a, b) => a - b);
@@ -710,6 +758,12 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
     byWeek[w] = summarizeDetail(typed.filter((r) => r.week === w), "all");
   }
 
+  const weekRows = weeks.map((week) => ({
+    week,
+    ungradedGames: typed.filter((r) => r.week === week && !isGradedGame(r)).length,
+    unplayedGames: typed.filter((r) => r.week === week && (r.homePoints === null || r.awayPoints === null)).length,
+  }));
+
   return {
     classification: "all",
     selectedGames: typed.length,
@@ -717,5 +771,6 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
     byWeek,
     gradedGames,
     weeks,
+    weekRows,
   };
 }, RUN_STATE_CACHE));

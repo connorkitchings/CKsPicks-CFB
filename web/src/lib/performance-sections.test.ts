@@ -23,6 +23,12 @@ test("cumulative queries include selected pending grades and do not require a fr
   assert.match(query, /from\(schema.siteWeekSelections\)/);
   assert.match(query, /inArray\(schema.predictionRuns.evidenceClass, \[\.\.\.V5_RECORD_EVIDENCE\]\)/);
   assert.doesNotMatch(query, /prospectiveWeekRecords/);
+  // The canonical pre-kickoff line and its source come from one join per target, not scalar subqueries.
+  assert.match(query, /alias\(schema.marketSnapshots, "spread_snapshot"\)/);
+  assert.match(query, /alias\(schema.marketSnapshots, "total_snapshot"\)/);
+  assert.match(query, /spreadGradingVersion: spreadGrade.gradingVersion/);
+  assert.match(query, /totalGradingVersion: totalGrade.gradingVersion/);
+  assert.doesNotMatch(query, /SELECT result FROM prediction_grades/);
   const stats = readFileSync(new URL("./queries.ts", import.meta.url), "utf8")
     .split("export const getSystemStatsThroughWeek")[1];
   assert.doesNotMatch(stats, /eq\(schema.predictionRuns.state, "scored"\)/);

@@ -198,4 +198,8 @@ export const PERFORMANCE_DETAIL_SPEC: RowSpec = {
   spreadResult: { kind: GRADE, nullable: true },
   totalResult: { kind: GRADE, nullable: true },
   highConfidence: { kind: "boolean" },
+  canonicalSpread: OPTIONAL_NUMBER,
+  canonicalTotal: OPTIONAL_NUMBER,
+  spreadGradingVersion: { kind: "string", nullable: true },
+  totalGradingVersion: { kind: "string", nullable: true },
 };
