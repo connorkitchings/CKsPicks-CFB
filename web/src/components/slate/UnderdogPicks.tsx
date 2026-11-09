@@ -9,7 +9,7 @@ import { phoneTeamName } from "@/lib/team-logos";
 
 /** Season straight-up record text for the Underdog picks view, or null before any scored week. */
 export function underdogRecordText(record: Tally | null | undefined, season: number): string | null {
-  return record && record.win + record.loss > 0 ? `${season}: ${record.win}–${record.loss} straight up, all picks` : null;
+  return record && record.win + record.loss > 0 ? `${season}: ${record.win}–${record.loss}` : null;
 }
 
 /**
@@ -21,7 +21,7 @@ export function UnderdogPicksBody({ picks, recordText }: { picks: UnderdogPick[]
   const [expanded, setExpanded] = useState(false);
   return (
     <>
-    <p className="mb-1 text-xs">The model picks the underdog to win</p>
+    <p className="mb-1 text-xs">The model says the wrong team is favored</p>
     <ol className="divide-y divide-line/40">
       {visibleRows(picks, expanded).map((p) => (
         <li key={p.game.gameId}>
@@ -55,7 +55,7 @@ export function UnderdogPicksBody({ picks, recordText }: { picks: UnderdogPick[]
     )}
     {recordText && (
       <p className="mt-1 px-2.5 text-xs">
-        Straight-up record: picks won outright<span className="sm:hidden">, {recordText}</span>
+        Straight-up record: picks won outright<span className="sm:hidden"> ({recordText})</span>
       </p>
     )}
     </>
