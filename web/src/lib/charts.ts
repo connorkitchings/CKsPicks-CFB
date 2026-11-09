@@ -55,6 +55,12 @@ export type TeamGameRow = {
   defSuccessSum: number;
   defEpaN: number;
   defEpaSum: number;
+  /**
+   * Offensive success over scrimmage plays that include overtime (garbage time still dropped); read only by
+   * the Net success rate chart. Null (or absent) in releases built before the columns existed.
+   */
+  offSuccessOtN?: number | null;
+  offSuccessOtSum?: number | null;
 } & Partial<Omit<TeamGameYardageRow, "gameId" | "team">>;
 
 /** Yardage counts of one team-game (`team_game_yardage`, `charts_v2` releases only). */
@@ -172,9 +178,10 @@ function successRate(n: number, sum: number): number | null {
 }
 
 /**
- * One bar per game of `week`. Winner = higher points; equal points and games where either
- * offense has no valid success observation are listed as not charted. Sorted by value
- * ascending, then game id.
+ * One bar per game of `week`, from offensive success over scrimmage plays including
+ * overtime (`offSuccessOt*`; this chart only; garbage time is still dropped). Winner = higher points; equal
+ * points and games where either offense has no valid success observation (including releases
+ * that predate the columns) are listed as not charted. Sorted by value ascending, then game id.
  */
 export function netSuccessBars(
   rows: readonly TeamGameRow[],
@@ -198,8 +205,8 @@ export function netSuccessBars(
       continue;
     }
     const [winner, loser] = a.pointsFor > b.pointsFor ? [a, b] : [b, a];
-    const winnerRate = successRate(winner.offSuccessN, winner.offSuccessSum);
-    const loserRate = successRate(loser.offSuccessN, loser.offSuccessSum);
+    const winnerRate = successRate(winner.offSuccessOtN ?? 0, winner.offSuccessOtSum ?? 0);
+    const loserRate = successRate(loser.offSuccessOtN ?? 0, loser.offSuccessOtSum ?? 0);
     if (winnerRate === null || loserRate === null) {
       notCharted.push({ gameId, reason: "success rate unavailable" });
       continue;

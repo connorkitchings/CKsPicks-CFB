@@ -777,3 +777,95 @@ def test_carries_historical_lines_reads_the_candidate_revision_manifest(tmp_path
     assert not parity.carries_historical_lines(tmp_path)
     manifest.write_text(json.dumps({"inputs": {"historical_lines": {}}}))
     assert parity.carries_historical_lines(tmp_path)
+
+
+# --- overtime success counts (migration 0029) -------------------------------
+
+
+def tgs_row(game, team, *, ot_n, ot_sum, n=40, total=18.0, plays=44):
+    return {
+        "season": 2026,
+        "week": 7,
+        "game_id": game,
+        "team": team,
+        "points_for": 24,
+        "off_plays": plays,
+        "off_success_n": n,
+        "off_success_sum": total,
+        "off_success_ot_n": ot_n,
+        "off_success_ot_sum": ot_sum,
+    }
+
+
+def tgs_pair(*, held=None):
+    """Active release rows (OT columns ``held``) and the candidate with counts."""
+    old, new = release(OLD_RUN), release(NEW_RUN)
+    old["team_game_stats"] = [
+        tgs_row(1, "A", ot_n=held, ot_sum=held),
+        tgs_row(1, "B", ot_n=held, ot_sum=held),
+    ]
+    new["team_game_stats"] = [
+        tgs_row(1, "A", ot_n=40, ot_sum=18.0),  # no overtime: equal to regulation
+        tgs_row(1, "B", ot_n=46, ot_sum=21.0),  # overtime plays added
+    ]
+    return old, new
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_overtime_columns_may_appear_where_the_active_release_is_null(mode):
+    old, new = tgs_pair()
+    assert run(old, new, mode=mode).passed
+
+
+def test_overtime_columns_missing_from_the_active_rows_also_pass():
+    old, new = tgs_pair()
+    for r in old["team_game_stats"]:
+        del r["off_success_ot_n"], r["off_success_ot_sum"]
+    assert run(old, new, mode="market-refresh").passed
+
+
+def test_overtime_value_differing_from_a_held_value_fails():
+    # close-week does not compare team_game_stats at all; market-refresh does.
+    old, new = tgs_pair(held=40)
+    report = run(old, new, mode="market-refresh")
+    assert not report.passed
+    assert any("off_success_ot_n" in f for f in report.failures)
+
+
+def test_overtime_value_equal_to_a_held_value_passes():
+    old, new = tgs_pair()
+    old["team_game_stats"] = [dict(r) for r in new["team_game_stats"]]
+    assert run(old, new, mode="market-refresh").passed
+
+
+@pytest.mark.parametrize(
+    "column, value", [("off_success_ot_n", 39), ("off_success_ot_sum", 17.5)]
+)
+def test_candidate_below_the_regulation_count_fails(column, value):
+    old, new = tgs_pair()
+    new["team_game_stats"][0][column] = value
+    report = run(old, new, mode="market-refresh")
+    assert not report.passed
+    assert any("is below" in f for f in report.failures)
+
+
+def test_candidate_without_overtime_counts_fails():
+    old, new = tgs_pair()
+    new["team_game_stats"][1]["off_success_ot_n"] = None
+    report = run(old, new, mode="market-refresh")
+    assert any("is NULL" in f for f in report.failures)
+
+
+@pytest.mark.parametrize("column", ["off_success_n", "off_plays", "points_for"])
+def test_another_team_game_stats_column_changing_still_fails(column):
+    old, new = tgs_pair()
+    new["team_game_stats"][0][column] += 1
+    report = run(old, new, mode="market-refresh")
+    assert not report.passed
+    assert any(column in f for f in report.failures)
+
+
+def test_another_table_changing_still_fails_with_overtime_columns_added():
+    old, new = tgs_pair()
+    row(new, "predictions", game_id=3)["predicted_spread"] += 1.0
+    assert not run(old, new, mode="market-refresh").passed

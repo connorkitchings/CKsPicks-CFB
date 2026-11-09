@@ -176,7 +176,7 @@ test("footnotes split into one line per sentence and no longer carry the release
     assert.ok(footnoteLines(footnote).every((line) => /[.!?]$/.test(line)), `${kind} lines end a sentence`);
   }
   assert.deepEqual(footnoteLines(CHART_REGISTRY["net-success"].footnote), [
-    "Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded).",
+    "Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays, overtime included (this chart only; garbage time and special teams excluded).",
     "Label = winner and final score.",
     SUCCESS_RATE_DEFINITION,
   ]);

@@ -75,8 +75,8 @@ function game(
   const [h, hp, hn, hs] = home;
   const [a, ap, an, as] = away;
   return [
-    row({ gameId, week, team: h, opponent: a, pointsFor: hp, pointsAgainst: ap, offSuccessN: hn, offSuccessSum: hs, defSuccessN: an, defSuccessSum: as }),
-    row({ gameId, week, team: a, opponent: h, site: "away", pointsFor: ap, pointsAgainst: hp, offSuccessN: an, offSuccessSum: as, defSuccessN: hn, defSuccessSum: hs }),
+    row({ gameId, week, team: h, opponent: a, pointsFor: hp, pointsAgainst: ap, offSuccessN: hn, offSuccessSum: hs, offSuccessOtN: hn, offSuccessOtSum: hs, defSuccessN: an, defSuccessSum: as }),
+    row({ gameId, week, team: a, opponent: h, site: "away", pointsFor: ap, pointsAgainst: hp, offSuccessN: an, offSuccessSum: as, offSuccessOtN: an, offSuccessOtSum: as, defSuccessN: hn, defSuccessSum: hs }),
   ];
 }
 
@@ -104,6 +104,28 @@ test("net success bars: winner minus loser offensive success, mirrored label, st
   assert.equal(bars[2].loser, "Tulane");
   assert.equal(bars[1].label, `${teamAbbr("Alabama")} 31-10`);
   assert.equal(netSuccessBars(rows, 9).bars.length, 0);
+});
+
+test("net success reads the overtime-inclusive columns, not the regulation ones", () => {
+  // Overtime game: regulation counts say 20/40 against 16/40; the overtime-inclusive counts add the extra periods.
+  const rows = [
+    row({ gameId: 1, week: 3, team: "Alabama", opponent: "Michigan", pointsFor: 37, pointsAgainst: 34, offSuccessN: 40, offSuccessSum: 20, offSuccessOtN: 50, offSuccessOtSum: 27 }),
+    row({ gameId: 1, week: 3, team: "Michigan", opponent: "Alabama", site: "away", pointsFor: 34, pointsAgainst: 37, offSuccessN: 40, offSuccessSum: 16, offSuccessOtN: 50, offSuccessOtSum: 20 }),
+  ];
+  const [bar] = netSuccessBars(rows, 3).bars;
+  assert.equal(bar.winnerSuccessRate, 27 / 50);
+  assert.equal(bar.loserSuccessRate, 20 / 50);
+  assert.equal(bar.value, 27 / 50 - 20 / 50, "not the regulation-only 0.50 - 0.40");
+});
+
+test("net success: rows without the overtime-inclusive columns (earlier releases) are not charted", () => {
+  const rows = [
+    row({ gameId: 1, week: 3, team: "Alabama", opponent: "Michigan", pointsFor: 42, pointsAgainst: 7, offSuccessOtN: null, offSuccessOtSum: null }),
+    row({ gameId: 1, week: 3, team: "Michigan", opponent: "Alabama", site: "away", pointsFor: 7, pointsAgainst: 42 }),
+  ];
+  const { bars, notCharted } = netSuccessBars(rows, 3);
+  assert.deepEqual(bars, []);
+  assert.deepEqual(notCharted, [{ gameId: 1, reason: "success rate unavailable" }]);
 });
 
 test("net success: tied points and missing success rates are listed, not charted", () => {

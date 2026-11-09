@@ -43,6 +43,9 @@ def migration_columns(table: str) -> set[str]:
         re.S,
     ).group(1)
     names = set(re.findall(r"^\s+([a-z_0-9]+)\s+[A-Z]", block, re.M))
+    if table == "team_game_stats":  # columns added later by 0029
+        added = (MIGRATIONS / "0029_team_game_success_ot.sql").read_text()
+        names |= set(re.findall(r"ADD COLUMN IF NOT EXISTS (\w+)", added))
     return names - {"PRIMARY"} - pc.SERVER_COLUMNS
 
 

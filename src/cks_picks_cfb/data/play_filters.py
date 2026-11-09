@@ -54,10 +54,17 @@ def is_dead_play(value: Any) -> bool:
     return any(marker in text for marker in _DEAD_MARKERS)
 
 
-def eligible_play(row: Any) -> bool:
-    """V5 legacy play filter for one row (see module docstring)."""
+def eligible_play(row: Any, *, keep_overtime: bool = False) -> bool:
+    """V5 legacy play filter for one row (see module docstring).
+
+    ``keep_overtime`` relaxes only the regulation-only period rule: a valid
+    overtime period passes, an unknown period still fails. Garbage time and every
+    other rule are unchanged.
+    """
+    period = play_period(row.quarter)
+    in_period = period != "unknown" if keep_overtime else period == "regulation"
     return (
-        play_period(row.quarter) == "regulation"
+        in_period
         and finite_number(row.st) == 0
         and finite_number(row.penalty) == 0
         and finite_number(row.twopoint) == 0
@@ -66,10 +73,15 @@ def eligible_play(row: Any) -> bool:
     )
 
 
-def eligible_possession_play_mask(byplay: pd.DataFrame) -> pd.Series:
+def eligible_possession_play_mask(
+    byplay: pd.DataFrame, *, keep_overtime: bool = False
+) -> pd.Series:
     """Vector form of the V5 legacy filter. Still passes "Punt Return" rows."""
     return pd.Series(
-        [eligible_play(row) for row in byplay.itertuples(index=False)],
+        [
+            eligible_play(row, keep_overtime=keep_overtime)
+            for row in byplay.itertuples(index=False)
+        ],
         index=byplay.index,
         dtype=bool,
     )
@@ -80,8 +92,14 @@ def kicking_play_mask(play_type: pd.Series) -> pd.Series:
     return text.isin(KICKING_PLAY_TYPES) | text.str.startswith(_KICKING_PLAY_PREFIXES)
 
 
-def scrimmage_play_mask(byplay: pd.DataFrame) -> pd.Series:
-    """Legacy filter minus kicking plays: the plays team stats counts."""
-    return eligible_possession_play_mask(byplay) & ~kicking_play_mask(
-        byplay["play_type"]
-    )
+def scrimmage_play_mask(
+    byplay: pd.DataFrame, *, keep_overtime: bool = False
+) -> pd.Series:
+    """Legacy filter minus kicking plays: the plays team stats counts.
+
+    ``keep_overtime=True`` is used only by the Net success rate chart
+    (``off_success_ot_*``); the default is what every other consumer relies on.
+    """
+    return eligible_possession_play_mask(
+        byplay, keep_overtime=keep_overtime
+    ) & ~kicking_play_mask(byplay["play_type"])

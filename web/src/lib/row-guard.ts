@@ -205,3 +205,26 @@ export const PERFORMANCE_DETAIL_SPEC: RowSpec = {
   spreadGradingVersion: { kind: "string", nullable: true },
   totalGradingVersion: { kind: "string", nullable: true },
 };
+
+/** `team_game_stats` rows; the all-plays success counts are null in releases built before they existed. */
+export const TEAM_GAME_STATS_SPEC: RowSpec = {
+  week: { kind: "int" },
+  gameId: { kind: "int" },
+  team: { kind: "string" },
+  opponent: { kind: "string" },
+  site: { kind: { enum: ["home", "away", "neutral"] } },
+  pointsFor: { kind: "int" },
+  pointsAgainst: { kind: "int" },
+  offPlays: { kind: "int" },
+  offSuccessN: { kind: "int" },
+  offSuccessSum: { kind: "number" },
+  offEpaN: { kind: "int" },
+  offEpaSum: { kind: "number" },
+  defPlays: { kind: "int" },
+  defSuccessN: { kind: "int" },
+  defSuccessSum: { kind: "number" },
+  defEpaN: { kind: "int" },
+  defEpaSum: { kind: "number" },
+  offSuccessOtN: { kind: "int", nullable: true },
+  offSuccessOtSum: { kind: "number", nullable: true },
+};

@@ -35,7 +35,7 @@ The durable store is the Cloudflare R2 immutable lake (`CFB_STORAGE_BACKEND=r2`)
 | Season engine | `src/cks_picks_cfb/season/`, `scripts/pipeline/run_season.py` | Prepare, verify, release, rollback |
 | Research | `scripts/research/`, `conf/research/` | Isolated; see `scripts/research/README.md` |
 | Web app | `web/` | Next.js 16, React 19, Tailwind v4, npm; own `package.json` |
-| Contracts | `contracts/` | Canonical schema (`schema.sql`, `schema.ts`), team mapping (`teams.py`, `teams.ts`) and append-only migrations (latest 0028) |
+| Contracts | `contracts/` | Canonical schema (`schema.sql`, `schema.ts`), team mapping (`teams.py`, `teams.ts`) and append-only migrations (latest 0029) |
 | Durable data | Cloudflare R2 | Source of truth; Neon is derived serving state |
 
 Data flow: immutable R2 captures and reconciled Silver inputs, then a hash-pinned revision manifest, then `run_season.py prepare` (measurements, ratings, predictions, grades, verified projections), then Preview rehearsal, then an atomic Production release (automatic when every gate passes) in Neon, then Vercel reads the active release through Drizzle with ISR.

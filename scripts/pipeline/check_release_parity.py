@@ -44,6 +44,11 @@ grades' wins, losses, pushes and profit. Everything else, including every
 prediction mean, variance and rating, still compares strictly. Once the active
 release holds the grades, they compare strictly like any other grade.
 
+Overtime success counts: ``team_game_stats.off_success_ot_n``/``off_success_ot_sum``
+(migration 0029) may differ only where the active release holds NULL; the
+candidate must carry both on every row and not below ``off_success_n``/
+``off_success_sum``. Once the active release holds values they compare strictly.
+
 ``team_resume.sor_rank`` may permute only among teams whose ``sor`` values tie
 within 1e-9 (platform rounding decides their order), and only inside that tied
 group's span of ranks; ``sor`` itself is always compared.
@@ -470,6 +475,49 @@ def _accept_retrospective_lines(
     return {**candidate, **out}
 
 
+#: Overtime-inclusive success counts added to ``team_game_stats`` by migration 0029,
+#: with the regulation counts each must not fall below.
+OVERTIME_COLUMNS = {
+    "off_success_ot_n": "off_success_n",
+    "off_success_ot_sum": "off_success_sum",
+}
+
+
+def _accept_overtime_columns(
+    previous: Tables, candidate: Tables, report: ParityReport
+) -> Tables:
+    """The candidate with first-time overtime success counts reset to ``previous``.
+
+    A candidate value may differ only where the active release holds NULL for it
+    (a release built before migration 0029). Every candidate row must carry both
+    counts and not fall below its regulation counts. A value the active release
+    already holds, and every other column, still compares strictly.
+    """
+    rows = candidate.get("team_game_stats")
+    if not rows:
+        return candidate
+    old = {_key("team_game_stats", r): r for r in previous.get("team_game_stats", [])}
+    problems, out = [], []
+    for row in rows:
+        key = _key("team_game_stats", row)
+        for column, floor in OVERTIME_COLUMNS.items():
+            value, base = row.get(column), row.get(floor)
+            if value is None:
+                problems.append(f"{_label('team_game_stats', key)}: {column} is NULL")
+            elif base is not None and value < base:
+                problems.append(
+                    f"{_label('team_game_stats', key)}: {column} is below {floor}"
+                )
+        held = old.get(key)
+        if held is None:
+            out.append(row)
+            continue
+        reset = {c: held.get(c) for c in OVERTIME_COLUMNS if held.get(c) is None}
+        out.append({**row, **reset})
+    report.failures += problems
+    return {**candidate, "team_game_stats": out}
+
+
 # --- the two modes -----------------------------------------------------------
 
 
@@ -622,6 +670,7 @@ def compare_releases(
         return report
     if retrospective_lines:
         candidate = _accept_retrospective_lines(previous, candidate, report)
+    candidate = _accept_overtime_columns(previous, candidate, report)
     weeks = _game_weeks(previous, candidate)
     check = _check_close_week if mode == "close-week" else _check_market_refresh
     check(previous, candidate, report, weeks)

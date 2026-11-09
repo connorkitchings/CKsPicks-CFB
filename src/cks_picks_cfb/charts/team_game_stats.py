@@ -5,6 +5,10 @@ Plays, games and metric validity are identical to ``build_team_season_stats``
 season, completed games; EPA is ``ppa`` masked where ``ppa_missing``; success and
 EPA each drop their own missing values. Counts and sums are stored so any
 cumulative window reproduces the team-stats values exactly.
+
+``off_success_ot_n``/``off_success_ot_sum`` are the one exception to the plays
+rule: the same mask with overtime plays kept (garbage time still dropped), used only by the Net
+success rate chart. They never feed the cumulative windows or any rating.
 """
 
 from __future__ import annotations
@@ -16,6 +20,8 @@ import pandas as pd
 from cks_picks_cfb.data.play_filters import scrimmage_play_mask
 
 STAT_FIELDS = ("plays", "success_n", "success_sum", "epa_n", "epa_sum")
+#: Offensive success over scrimmage plays that keep overtime (garbage time still dropped).
+OVERTIME_COLUMNS = ("off_success_ot_n", "off_success_ot_sum")
 TEAM_GAME_COLUMNS = (
     "season",
     "week",
@@ -26,6 +32,7 @@ TEAM_GAME_COLUMNS = (
     "points_for",
     "points_against",
     *(f"{role}_{field}" for role in ("off", "def") for field in STAT_FIELDS),
+    *OVERTIME_COLUMNS,
 )
 _REQUIRED_PLAYS = ("season", "game_id", "offense", "defense", "ppa", "success")
 
@@ -105,9 +112,11 @@ def build_team_game_stats(
     gaps = sorted(ids - set(plays["game_id"].astype(int)))
     if gaps:
         raise TeamGameStatsError(f"completed games without plays: {gaps[:20]}")
+    overtime_plays = plays[scrimmage_play_mask(plays, keep_overtime=True)]
     plays = plays[scrimmage_play_mask(plays)]
     offense = _side_stats(plays, "offense")
     defense = _side_stats(plays, "defense")
+    offense_ot = _side_stats(overtime_plays, "offense")
     empty = dict.fromkeys(STAT_FIELDS, 0)
     neutral = {int(g) for g in neutral_game_ids}
     rows = []
@@ -133,6 +142,9 @@ def build_team_game_stats(
             for role, stats in (("off", offense), ("def", defense)):
                 found = stats.get((game_id, str(team)), empty)
                 row.update({f"{role}_{field}": found[field] for field in STAT_FIELDS})
+            kept = offense_ot.get((game_id, str(team)), empty)
+            row["off_success_ot_n"] = kept["success_n"]
+            row["off_success_ot_sum"] = kept["success_sum"]
             rows.append(row)
     frame = pd.DataFrame(rows, columns=list(TEAM_GAME_COLUMNS))
     return frame.sort_values(

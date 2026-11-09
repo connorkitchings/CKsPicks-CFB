@@ -130,6 +130,9 @@ def chart_tables() -> tuple[list[dict], list[dict]]:
                     "points_against": allowed,
                     **{f"off_{k}": v for k, v in zip(fields, own, strict=True)},
                     **{f"def_{k}": v for k, v in zip(fields, other, strict=True)},
+                    # No overtime in the synthetic games.
+                    "off_success_ot_n": own[1],
+                    "off_success_ot_sum": own[2],
                 }
             )
     return roster, rows
