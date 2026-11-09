@@ -5,6 +5,7 @@ import {
   PREDICTION_GAME_SPEC,
   RATING_SPEC,
   RowContractError,
+  TEAM_GAME_STATS_SPEC,
   TEAM_STAT_RULES,
   TEAM_STAT_SPEC,
   checkRows,
@@ -106,19 +107,29 @@ test("dates must be valid Date objects", () => {
 test("prediction and performance rows allow null leans and grades but not null identities", () => {
   const game = {
     gameId: 1, week: 1, startDate: new Date(), homeTeam: "A", awayTeam: "B",
-    homeTeamSpreadLine: null, totalLine: null, predictedSpread: -3.2, predictedTotal: 50.1,
+    homeTeamSpreadLine: null, canonicalSpread: null, totalLine: null, predictedSpread: -3.2, predictedTotal: 50.1,
     spreadLean: null, totalLean: null, edgeSpread: 0.4, edgeTotal: 0.1, highConfidence: false,
     spreadResult: null, totalResult: null,
   };
   assert.equal(checkRows([game], PREDICTION_GAME_SPEC).total, 0);
+  assert.equal(checkRows([{ ...game, canonicalSpread: 3.5 }], PREDICTION_GAME_SPEC).total, 0);
+  assert.equal(checkRows([{ ...game, canonicalSpread: undefined }], PREDICTION_GAME_SPEC).total, 1);
   assert.equal(checkRows([{ ...game, gameId: null }], PREDICTION_GAME_SPEC).total, 1);
   assert.equal(checkRows([{ ...game, spreadLean: "push" }], PREDICTION_GAME_SPEC).total, 1);
   const detail = {
     evidenceClass: "replay", week: 1, gameId: 1, runId: "run-1", startDate: new Date(), homeTeam: "A", awayTeam: "B",
     predictedSpread: null, predictedTotal: null, predictedSpreadStdDev: null, predictedTotalStdDev: null,
     spreadLean: "away", totalLean: null, spreadResult: "win", totalResult: null, highConfidence: true,
+    canonicalSpread: null, canonicalTotal: null, spreadGradingVersion: null, totalGradingVersion: null,
   };
   assert.equal(checkRows([detail], PERFORMANCE_DETAIL_SPEC).total, 0);
+  const withLines = {
+    ...detail, canonicalSpread: -3.5, canonicalTotal: 51,
+    spreadGradingVersion: "model_side_best_quote_v2:retained_prekickoff", totalGradingVersion: "model_side_best_quote_v2:cfbd_retrospective",
+  };
+  assert.equal(checkRows([withLines], PERFORMANCE_DETAIL_SPEC).total, 0);
+  assert.equal(checkRows([{ ...withLines, canonicalSpread: Number.NaN }], PERFORMANCE_DETAIL_SPEC).total, 1);
+  assert.equal(checkRows([{ ...withLines, spreadGradingVersion: "" }], PERFORMANCE_DETAIL_SPEC).total, 1);
   assert.equal(checkRows([{ ...detail, evidenceClass: "pending" }], PERFORMANCE_DETAIL_SPEC).total, 0);
   assert.equal(checkRows([{ ...detail, evidenceClass: "live" }], PERFORMANCE_DETAIL_SPEC).total, 0);
   assert.equal(checkRows([{ ...detail, evidenceClass: "draft" }], PERFORMANCE_DETAIL_SPEC).total, 1);
@@ -143,6 +154,24 @@ test("the UI-test fixtures satisfy the row contracts (CFB_UI_TEST_MODE=1 stays v
     spreadResult: g.spreadResult,
     totalResult: g.totalResult,
     highConfidence: g.highConfidence,
+    canonicalSpread: g.canonicalSpread ?? null,
+    canonicalTotal: g.canonicalTotal ?? null,
+    spreadGradingVersion: g.spreadGradingVersion ?? null,
+    totalGradingVersion: g.totalGradingVersion ?? null,
   }));
   assert.equal(checkRows(detailRows, PERFORMANCE_DETAIL_SPEC).total, 0);
+});
+
+test("team game stats rows allow null all-plays success counts but not missing or non-finite ones", () => {
+  const row = {
+    week: 3, gameId: 1, team: "Tulsa", opponent: "Tulane", site: "home", pointsFor: 60, pointsAgainst: 10,
+    offPlays: 51, offSuccessN: 51, offSuccessSum: 34, offEpaN: 51, offEpaSum: 9.5,
+    defPlays: 25, defSuccessN: 25, defSuccessSum: 5, defEpaN: 25, defEpaSum: -2,
+    offSuccessOtN: 55, offSuccessOtSum: 36,
+  };
+  assert.equal(checkRows([row], TEAM_GAME_STATS_SPEC).total, 0);
+  assert.equal(checkRows([{ ...row, offSuccessOtN: null, offSuccessOtSum: null }], TEAM_GAME_STATS_SPEC).total, 0, "earlier releases");
+  assert.equal(checkRows([{ ...row, offSuccessOtN: undefined }], TEAM_GAME_STATS_SPEC).total, 1, "the loader must select the column");
+  assert.equal(checkRows([{ ...row, offSuccessOtSum: Number.NaN }], TEAM_GAME_STATS_SPEC).total, 1);
+  assert.equal(checkRows([{ ...row, offSuccessOtN: 55.5 }], TEAM_GAME_STATS_SPEC).total, 1);
 });

@@ -11,6 +11,8 @@ import { etDate, etDateYear } from "./time-et.ts";
 
 export type Rating = {
   team: string;
+  /** `v5_rating_snapshots.snapshot_id`; the key to this row's rating components. */
+  snapshotId?: string;
   sourceManifestSha256?: string;
   week: number;
   cutoffUtc: Date;

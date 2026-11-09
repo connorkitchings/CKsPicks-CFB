@@ -124,6 +124,8 @@ test.describe("team logos", () => {
 
   test("the matchup hero logo follows its responsive size classes", async ({ page }) => {
     await page.goto("/matchup/1");
+    // The route streams; wait for the hero content to replace the loading shell.
+    await expect(page.locator("[data-side] img[data-logo]:visible")).toHaveCount(2);
     for (const [viewportWidth, logoWidth] of [[390, 40], [1280, 64]] as const) {
       await page.setViewportSize({ width: viewportWidth, height: 800 });
       const widths = await page.locator("[data-side] img[data-logo]:visible")

@@ -13,6 +13,7 @@ import { publicationScope } from "@/lib/publication";
 import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/team-routes";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
+import { RatingBreakdown } from "@/components/matchup/RatingBreakdown";
 import { UnitMatchups } from "@/components/matchup/UnitMatchups";
 import { Card } from "@/components/ui/Card";
 
@@ -128,6 +129,10 @@ export default async function MatchupPage({
               ? "Team stats are temporarily unavailable."
               : "Team stats are not published for this game yet."}
           </Card>
+        )}
+
+        {matchup.lineageStatus === "ready" && matchup.stats && (
+          <RatingBreakdown awayTeam={matchup.awayTeam} homeTeam={matchup.homeTeam} breakdown={matchup.ratingBreakdown} />
         )}
 
         <div className="flex flex-wrap items-center gap-3">

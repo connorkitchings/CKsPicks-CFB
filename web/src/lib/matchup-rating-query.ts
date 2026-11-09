@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lte } from "drizzle-orm";
+import { and, desc, eq, inArray, lte, or } from "drizzle-orm";
 import type { getSeasonDb } from "./season-release";
 import * as schema from "./schema.ts";
 
@@ -35,4 +35,47 @@ export function matchupRatingQuery(
     lte(schema.v5RatingSnapshots.cutoffUtc, kickoff),
     inArray(schema.v5RatingSnapshots.team, teams),
   )).orderBy(desc(schema.v5RatingSnapshots.cutoffUtc));
+}
+
+/**
+ * Component rows are keyed by `component_id`, so no cutoff or week predicate is needed: the
+ * ids come from the rendered snapshot ids. The source is pinned to the rendered rating source.
+ */
+export function ratingComponentsQuery(
+  db: Awaited<ReturnType<typeof getSeasonDb>>,
+  season: number,
+  sourceManifestSha256: string,
+  componentIds: string[],
+) {
+  const c = schema.teamRatingComponents;
+  return db.select({
+    componentId: c.componentId,
+    v5SnapshotId: c.v5SnapshotId,
+    sourceManifestSha256: c.sourceManifestSha256,
+    ratingTeam: c.ratingTeam,
+    unitRole: c.unitRole,
+    ratingMean: c.ratingMean,
+    priorWeight: c.priorWeight,
+    priorContribution: c.priorContribution,
+    usableExposure: c.usableExposure,
+    completedGames: c.completedGames,
+    evidence: c.evidence,
+    excludedObservations: c.excludedObservations,
+  }).from(c).where(and(
+    eq(c.season, season),
+    eq(c.sourceManifestSha256, sourceManifestSha256),
+    inArray(c.componentId, componentIds),
+  ));
+}
+
+/** Every scheduled game of the given teams, for opponent names. */
+export function teamScheduleQuery(
+  db: Awaited<ReturnType<typeof getSeasonDb>>,
+  season: number,
+  teams: string[],
+) {
+  const g = schema.games;
+  return db.select({ gameId: g.gameId, week: g.week, homeTeam: g.homeTeam, awayTeam: g.awayTeam })
+    .from(g)
+    .where(and(eq(g.season, season), or(inArray(g.homeTeam, teams), inArray(g.awayTeam, teams))));
 }

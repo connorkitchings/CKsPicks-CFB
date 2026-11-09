@@ -202,6 +202,7 @@ export function ScatterChart({
     const start = touch.current;
     touch.current = null;
     if (!start || start.pointerId !== event.pointerId || start.cancelled) return;
+    revealDetails.current = true;
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) return;
     const svg = svgRef.current;
     const matrix = svg?.getScreenCTM();
@@ -224,8 +225,21 @@ export function ScatterChart({
   };
   const validChoices = choices.filter((team) => points.some((p) => p.team === team));
   const isHighlighted = highlight === tip?.team;
-  const details = interactive && (tip || validChoices.length > 0) ? (
-    <div className="show-on-touch-or-small mt-3 rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink" data-testid="scatter-details">
+  const hasDetails = interactive && Boolean(tip || validChoices.length > 0);
+  const detailsRef = useRef<HTMLDivElement>(null);
+  const revealDetails = useRef(false);
+  // The panel sits under the plot, where a phone's fixed tab bar can cover its buttons; bring it clear of the bar.
+  // Scrolling only when it is covered keeps an already visible panel from firing a scroll event, which cancels a tap in progress.
+  useEffect(() => {
+    const panel = detailsRef.current;
+    if (!hasDetails || !panel || !revealDetails.current) return;
+    revealDetails.current = false;
+    const nav = document.querySelector('nav[aria-label="Main navigation"]');
+    const barTop = nav && nav.getBoundingClientRect().top > 0 ? nav.getBoundingClientRect().top : window.innerHeight;
+    if (panel.getBoundingClientRect().bottom > barTop) panel.scrollIntoView({ block: "nearest" });
+  }, [hasDetails, selected, validChoices.length]);
+  const details = hasDetails ? (
+    <div ref={detailsRef} className="show-on-touch-or-small scroll-mb-28 mt-3rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink" data-testid="scatter-details">
       {validChoices.length > 0 ? (
         <>
           <p role="status">Several teams are nearby. Choose a team:</p>

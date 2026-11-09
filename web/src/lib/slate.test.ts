@@ -20,6 +20,9 @@ import {
   topLeans,
   resultFor,
   topLeansRecord,
+  underdogPicks,
+  underdogRecord,
+  visibleRows,
   winRatePct,
 } from "./slate.ts";
 import type { Game } from "./queries.ts";
@@ -447,4 +450,113 @@ test("weekStatus: a mix of states is in progress", () => {
 
 test("weekStatus: every game scored is final", () => {
   assert.equal(weekStatus([game({ startDate: kickoff, ...scored }), game({ gameId: 2, startDate: kickoff, ...scored })], at("2026-10-26T12:00:00Z")), "final");
+});
+
+// Underdog picks: the model picks the consensus-line underdog to win outright.
+// `canonicalSpread` is the home team's number; `predictedSpread` is the home margin.
+const ud = (over: Record<string, unknown>) => game({ homeTeamSpreadLine: 99, ...over });
+
+test("underdogPicks: a home underdog and an away underdog are both named as the picked team", () => {
+  const home = ud({ gameId: 1, homeTeam: "Oklahoma", awayTeam: "Texas", canonicalSpread: 4, predictedSpread: 2 });
+  const away = ud({ gameId: 2, homeTeam: "Wisconsin", awayTeam: "Penn State", canonicalSpread: -2.5, predictedSpread: -3 });
+  const [first, second] = underdogPicks([home, away]);
+  assert.deepEqual([first.team, first.opponent, first.dir, first.line, first.gap], ["Oklahoma", "Texas", "home", 4, 6]);
+  assert.deepEqual([second.team, second.opponent, second.dir, second.line, second.gap], ["Penn State", "Wisconsin", "away", 2.5, 5.5]);
+});
+
+test("underdogPicks: games where the model agrees with the market favorite are not picks", () => {
+  const picks = underdogPicks([
+    ud({ canonicalSpread: -6.5, predictedSpread: 10 }),
+    ud({ gameId: 2, canonicalSpread: 3, predictedSpread: -2.6 }),
+  ]);
+  assert.deepEqual(picks, []);
+});
+
+test("underdogPicks: a consensus pick'em has no favorite, even when the shown line is not zero", () => {
+  assert.deepEqual(underdogPicks([ud({ canonicalSpread: 0, homeTeamSpreadLine: 1.5, predictedSpread: 0.4 })]), []);
+  // -0 from the database or arithmetic is a pick'em too.
+  assert.deepEqual(underdogPicks([ud({ canonicalSpread: -0, predictedSpread: 3 })]), []);
+});
+
+test("underdogPicks: a model margin under 0.05 is no call, and a missing consensus line fails closed", () => {
+  assert.deepEqual(underdogPicks([ud({ canonicalSpread: -3, predictedSpread: -0.04 })]), []);
+  assert.deepEqual(underdogPicks([ud({ canonicalSpread: -3, predictedSpread: 0 })]), []);
+  assert.deepEqual(underdogPicks([ud({ canonicalSpread: null, predictedSpread: -4 })]), []);
+  assert.deepEqual(underdogPicks([ud({ canonicalSpread: undefined, predictedSpread: -4 })]), []);
+  // Exactly 0.05 is a call.
+  assert.equal(underdogPicks([ud({ canonicalSpread: -3, predictedSpread: -0.05 })]).length, 1);
+});
+
+test("underdogPicks: the line shown is never -0 and carries the underdog's sign", () => {
+  const [pick] = underdogPicks([ud({ canonicalSpread: -0.5, predictedSpread: -1 })]);
+  assert.equal(pick.line, 0.5);
+  assert.equal(Object.is(pick.line, -0), false);
+});
+
+test("underdogPicks: ranks by gap, then earlier kickoff, then game id", () => {
+  const early = new Date("2026-10-03T16:00:00Z");
+  const late = new Date("2026-10-03T23:00:00Z");
+  // Home underdogs: gap = predicted + canonical.
+  const games = [
+    ud({ gameId: 30, startDate: late, canonicalSpread: 3, predictedSpread: 1 }), // gap 4
+    ud({ gameId: 20, startDate: early, canonicalSpread: 3, predictedSpread: 1 }), // gap 4, earlier
+    ud({ gameId: 10, startDate: early, canonicalSpread: 3, predictedSpread: 1 }), // gap 4, earlier, lower id
+    ud({ gameId: 40, canonicalSpread: 9, predictedSpread: 1 }), // gap 10
+    ud({ gameId: 50, canonicalSpread: 2, predictedSpread: 1 }), // gap 3
+    ud({ gameId: 60, canonicalSpread: 1.5, predictedSpread: 1 }), // gap 2.5, last
+  ];
+  assert.deepEqual(underdogPicks(games).map((p) => p.game.gameId), [40, 10, 20, 30, 50, 60]);
+  assert.deepEqual(underdogPicks(games, 5).map((p) => p.game.gameId), [40, 10, 20, 30, 50]);
+  assert.equal(underdogPicks(games, 2).length, 2);
+});
+
+test("underdogPicks: finished games and market-mode rows are left out of the display", () => {
+  const picks = underdogPicks([
+    ud({ gameId: 1, canonicalSpread: 4, predictedSpread: 2, homePoints: 20, awayPoints: 17 }),
+    ud({ gameId: 2, canonicalSpread: 4, predictedSpread: 2 }),
+    { ...ud({ gameId: 3 }), publicationMode: "market" } as Game,
+  ]);
+  assert.deepEqual(picks.map((p) => p.game.gameId), [2]);
+});
+
+test("underdogRecord: grades the picked team straight up; losses count, ties and unplayed games do not", () => {
+  const week = [
+    ud({ gameId: 1, canonicalSpread: 4, predictedSpread: 2, homePoints: 20, awayPoints: 17 }), // home pick won
+    ud({ gameId: 2, canonicalSpread: -2.5, predictedSpread: -3, homePoints: 10, awayPoints: 27 }), // away pick won
+    ud({ gameId: 3, canonicalSpread: 4, predictedSpread: 2, homePoints: 14, awayPoints: 31 }), // home pick lost
+    ud({ gameId: 4, canonicalSpread: 4, predictedSpread: 2, homePoints: 21, awayPoints: 21 }), // tie
+    ud({ gameId: 5, canonicalSpread: 4, predictedSpread: 2 }), // not played
+    ud({ gameId: 6, canonicalSpread: -4, predictedSpread: 2, homePoints: 3, awayPoints: 40 }), // agrees with market: not a pick
+  ];
+  assert.deepEqual(underdogRecord([week]), { win: 2, loss: 1, push: 0 });
+  assert.deepEqual(underdogRecord([week, week]), { win: 4, loss: 2, push: 0 });
+  assert.deepEqual(underdogRecord([]), { win: 0, loss: 0, push: 0 });
+});
+
+test("underdogPicks: every pick is returned when no count is given, in the same order", () => {
+  const games = [1, 2, 3, 4, 5, 6, 7].map((n) => ud({ gameId: n, canonicalSpread: 10 - n, predictedSpread: 1 }));
+  assert.deepEqual(underdogPicks(games).map((p) => p.game.gameId), [1, 2, 3, 4, 5, 6, 7]);
+  assert.equal(underdogPicks(games, 5).length, 5);
+});
+
+test("visibleRows: the first five while collapsed, everything once expanded", () => {
+  const rows = [1, 2, 3, 4, 5, 6, 7, 8];
+  assert.deepEqual(visibleRows(rows, false), [1, 2, 3, 4, 5]);
+  assert.deepEqual(visibleRows(rows, true), rows);
+  assert.deepEqual(visibleRows([1, 2, 3], false), [1, 2, 3]);
+});
+
+test("underdogRecord: every pick in a week counts, not just the top five", () => {
+  const lost = { homePoints: 0, awayPoints: 7 };
+  const won = { homePoints: 7, awayPoints: 0 };
+  // Six picks; the smallest gap is a win outside the old top five, and it counts.
+  const week = [
+    ud({ gameId: 1, canonicalSpread: 9, predictedSpread: 1, ...lost }),
+    ud({ gameId: 2, canonicalSpread: 8, predictedSpread: 1, ...lost }),
+    ud({ gameId: 3, canonicalSpread: 7, predictedSpread: 1, ...lost }),
+    ud({ gameId: 4, canonicalSpread: 6, predictedSpread: 1, ...lost }),
+    ud({ gameId: 5, canonicalSpread: 5, predictedSpread: 1, ...lost }),
+    ud({ gameId: 6, canonicalSpread: 3, predictedSpread: 1, ...won }),
+  ];
+  assert.deepEqual(underdogRecord([week]), { win: 1, loss: 5, push: 0 });
 });

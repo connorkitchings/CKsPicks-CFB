@@ -1,9 +1,7 @@
 "use client";
 
-import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Eyebrow } from "@/components/ui/SectionHeading";
-import { useState } from "react";
 import clsx from "clsx";
 import type { Game } from "@/lib/queries";
 import { topLeans, winRatePct, type LeanKind, type Tally } from "@/lib/slate";
@@ -65,55 +63,38 @@ function Column({
   );
 }
 
-/** Largest-edge leans first; every game is still listed below. */
-export function TopLeans({
+/** Season record text for the Biggest edges view, or null before any scored week. */
+export function edgesRecordText(record: Tally | null | undefined, season: number): string | null {
+  if (!record) return null;
+  const decided = record.win + record.loss;
+  if (decided + record.push === 0) return null;
+  const pct = winRatePct(record.win, record.loss);
+  const rate = pct === null ? "" : ` (${pct.toFixed(1)}%)`;
+  return `${season}: ${record.win}–${record.loss}–${record.push}${rate}`;
+}
+
+/** Largest-edge leans first; every game is still listed below. Section and disclosure live in FeaturedGames. */
+export function TopLeansBody({
   games,
-  record,
-  season,
+  recordText,
+  tab,
+  onTabChange,
 }: {
   games: Game[];
-  record?: Tally | null;
-  season: number;
+  recordText: string | null;
+  tab: LeanKind;
+  onTabChange: (tab: LeanKind) => void;
 }) {
-  const [tab, setTab] = useState<LeanKind>("spread");
-  const decided = (record?.win ?? 0) + (record?.loss ?? 0);
-  const rate = decided > 0 && record ? winRatePct(record.win, record.loss) : null;
-
-  const title = (
-    <span>
-      Biggest edges
-      {record && (decided + record.push) > 0 && (
-        <span className="ml-2 text-xs font-normal text-ink-muted">
-          {season}: {record.win}–{record.loss}–{record.push}{rate !== null ? ` (${rate.toFixed(1)}%)` : ""}
-        </span>
-      )}
-    </span>
-  );
-
   return (
-    <section aria-label="Biggest edges">
-      <ResponsiveDisclosure
-        title={title}
-        heading={title}
-      >
-        <div className="mb-3 sm:hidden">
-          <SegmentedControl label="Biggest edges category" value={tab} onChange={setTab} options={[{ value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]} fill />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Column
-            games={games}
-            kind="spread"
-            title="Spread"
-            className={tab !== "spread" ? "hidden sm:block" : undefined}
-          />
-          <Column
-            games={games}
-            kind="total"
-            title="Total"
-            className={tab !== "total" ? "hidden sm:block" : undefined}
-          />
-        </div>
-      </ResponsiveDisclosure>
-    </section>
+    <>
+      {recordText && <p className="mb-2 text-xs sm:hidden">{recordText}</p>}
+      <div className="mb-3 sm:hidden">
+        <SegmentedControl label="Biggest edges category" value={tab} onChange={onTabChange} options={[{ value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]} fill />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Column games={games} kind="spread" title="Spread" className={tab !== "spread" ? "hidden sm:block" : undefined} />
+        <Column games={games} kind="total" title="Total" className={tab !== "total" ? "hidden sm:block" : undefined} />
+      </div>
+    </>
   );
 }

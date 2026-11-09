@@ -548,3 +548,324 @@ def test_flag_refuses_market_refresh_and_non_completed_weeks():
         )  # fmt: skip
     with pytest.raises(ValueError):
         correct(old, new, weeks=(9,))
+
+
+# --- one-off CFBD retrospective lines -----------------------------------------
+
+RETRO = "401871090"
+RETRO_VERSION = "model_side_best_quote_v2:cfbd_retrospective"
+STATS = {
+    "season": 2026,
+    "as_of_week": 8,
+    "spread_wins": 10,
+    "spread_losses": 5,
+    "spread_pushes": 1,
+    "spread_profit_units": 4.0,
+    "total_wins": 8,
+    "total_losses": 7,
+    "total_pushes": 1,
+    "total_profit_units": 0.5,
+}
+RETRO_TABLES = (
+    "market_quotes",
+    "market_snapshots",
+    "market_snapshot_quotes",
+    "prediction_market_selections",
+    "prediction_grades",
+    "games",
+    "predictions",
+    "game_results",
+    "system_stats",
+)
+
+
+def retro_pair(*, graded_before=False):
+    """Release pair where a Week 6 game, ungraded before, gains CFBD grades."""
+    old, new = release(OLD_RUN), release(NEW_RUN)
+    for tables, run in ((old, OLD_RUN), (new, NEW_RUN)):
+        tables["games"].append(
+            {**tables["games"][0], "game_id": RETRO, "week": 6, "predicted_spread": 2.0}
+        )
+        tables["predictions"].append(
+            {**tables["predictions"][0], "run_id": f"{run}:w6", "game_id": RETRO}
+        )
+        tables["game_results"] = [
+            {"game_id": RETRO, "spread_result": None, "total_result": None}
+        ]
+        tables["system_stats"] = [dict(STATS)]
+    targets = (("spread", "win", 0.9091), ("total", "loss", -1.0))
+    new["market_quotes"].append(
+        {"quote_id": "q-r", "game_id": RETRO, "provider": "Bovada", "spread": -9.5}
+    )
+    for target, result, profit in targets:
+        new["market_snapshots"].append(
+            {"snapshot_id": f"snap-r-{target}", "game_id": RETRO, "spread": -9.5}
+        )
+        new["market_snapshot_quotes"].append(
+            {"snapshot_id": f"snap-r-{target}", "quote_id": "q-r", "target": target}
+        )
+        new["prediction_market_selections"].append(
+            {
+                "run_id": f"{NEW_RUN}:w6",
+                "game_id": RETRO,
+                "target": target,
+                "snapshot_id": f"snap-r-{target}",
+                "quote_id": "q-r",
+                "edge": 2.0,
+            }
+        )
+        new["prediction_grades"].append(
+            {
+                "run_id": f"{NEW_RUN}:w6",
+                "game_id": RETRO,
+                "target": target,
+                "result": result,
+                "profit_units": profit,
+                "grading_version": RETRO_VERSION,
+                "market_quote_id": "q-r",
+                "market_snapshot_id": f"snap-r-{target}",
+                "graded_at": LATER,
+            }
+        )
+    for table in ("games", "predictions"):
+        row(new, table, game_id=RETRO).update(
+            home_team_spread_line=-9.5,
+            total_line=51.5,
+            spread_lean="home",
+            total_lean="over",
+            edge_spread=2.0,
+            edge_total=1.0,
+        )
+    row(new, "predictions", game_id=RETRO)["market_snapshot_id"] = "snap-r-spread"
+    row(new, "game_results", game_id=RETRO).update(
+        spread_result="home", total_result="under"
+    )
+    new["system_stats"][0].update(
+        spread_wins=11,
+        spread_profit_units=4.9091,
+        total_losses=8,
+        total_profit_units=-0.5,
+    )
+    if graded_before:  # the active release already holds the grades
+        for table in RETRO_TABLES:
+            old[table] = copy.deepcopy(new[table])
+    return old, new
+
+
+def retro(old, new, mode="close-week", flag=True):
+    return parity.compare_releases(
+        old,
+        new,
+        mode=mode,
+        completed_week=8,
+        upcoming_week=9,
+        retrospective_lines=flag,
+    )
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_retrospective_lines_pass_when_the_manifest_carries_the_input(mode):
+    old, new = retro_pair()
+    report = retro(old, new, mode)
+    assert report.passed, report.failures
+    assert report.as_dict()["accepted_retrospective_games"] == [RETRO]
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_retrospective_lines_fail_without_the_manifest_input(mode):
+    old, new = retro_pair()
+    assert not retro(old, new, mode, flag=False).passed
+
+
+@pytest.mark.parametrize("column", ["predicted_spread", "predicted_total"])
+def test_retrospective_game_prediction_values_stay_strict(column):
+    old, new = retro_pair()
+    row(new, "predictions", game_id=RETRO)[column] += 1.0
+    failures = retro(old, new, "market-refresh").failures
+    assert any(column in f for f in failures)
+
+
+def test_retrospective_game_variance_stays_strict():
+    old, new = retro_pair()
+    row(new, "predictions", game_id=RETRO)["predicted_spread_std_dev"] = 20.0
+    failures = retro(old, new).failures
+    assert any("predicted_spread_std_dev" in f for f in failures)
+
+
+def test_rating_snapshot_change_still_fails_with_the_allowance_on():
+    old, new = retro_pair()
+    row(new, "v5_rating_snapshots", week=1)["overall_rating"] = 9.0
+    assert not retro(old, new).passed
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_other_games_stay_strict_with_the_allowance_on(mode):
+    old, new = retro_pair()
+    row(new, "predictions", game_id=2)["edge_spread"] = 0.5
+    row(new, "prediction_grades", game_id=2)["result"] = "loss"
+    failures = retro(old, new, mode).failures
+    assert any("/2" in f for f in failures)
+
+
+def test_a_game_outside_the_three_cannot_be_graded_retrospectively():
+    old, new = retro_pair()
+    new["prediction_grades"].append(
+        {**row(new, "prediction_grades", game_id=2), "target": "total"}
+    )
+    assert any("/2/total" in f for f in retro(old, new).failures)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"grading_version": "model_side_best_quote_v2"},
+        {"market_quote_id": "q-other"},
+        {"market_snapshot_id": "snap-other"},
+        {"target": "moneyline"},
+    ],
+)
+def test_retrospective_grade_must_match_the_retrospective_rows(change):
+    old, new = retro_pair()
+    new["prediction_grades"][-1].update(change)
+    report = retro(old, new)
+    assert not report.passed
+    assert report.as_dict()["accepted_retrospective_games"] == []
+
+
+def test_selection_or_prediction_citing_foreign_rows_fails():
+    old, new = retro_pair()
+    row(new, "prediction_market_selections", game_id=RETRO, target="total")[
+        "quote_id"
+    ] = "q-other"
+    assert not retro(old, new).passed
+    old, new = retro_pair()
+    row(new, "predictions", game_id=RETRO)["market_snapshot_id"] = "snap-4"
+    assert not retro(old, new).passed
+
+
+def test_retrospective_rows_must_be_complete():
+    old, new = retro_pair()
+    new["market_quotes"] = [q for q in new["market_quotes"] if q["quote_id"] != "q-r"]
+    assert not retro(old, new).passed
+
+
+@pytest.mark.parametrize("column", ["spread_wins", "total_profit_units"])
+def test_system_stats_must_move_by_exactly_the_new_grades(column):
+    old, new = retro_pair()
+    new["system_stats"][0][column] += 1
+    failures = retro(old, new).failures
+    assert any(column in f for f in failures)
+
+
+def test_system_stats_change_in_another_column_fails():
+    old, new = retro_pair()
+    new["system_stats"][0]["as_of_week"] = 9
+    assert not retro(old, new, "market-refresh").passed
+
+
+def test_once_graded_the_retrospective_rows_compare_strictly():
+    old, new = retro_pair(graded_before=True)
+    assert retro(old, new).passed
+    row(new, "prediction_grades", game_id=RETRO, target="spread")["result"] = "loss"
+    assert not retro(old, new).passed
+
+
+def test_carries_historical_lines_reads_the_candidate_revision_manifest(tmp_path):
+    assert not parity.carries_historical_lines(tmp_path)  # no manifest: strict
+    manifest = tmp_path / "revision-manifest.json"
+    manifest.write_text(json.dumps({"inputs": {"market_quotes": {}}}))
+    assert not parity.carries_historical_lines(tmp_path)
+    manifest.write_text(json.dumps({"inputs": {"historical_lines": {}}}))
+    assert parity.carries_historical_lines(tmp_path)
+
+
+# --- overtime success counts (migration 0029) -------------------------------
+
+
+def tgs_row(game, team, *, ot_n, ot_sum, n=40, total=18.0, plays=44):
+    return {
+        "season": 2026,
+        "week": 7,
+        "game_id": game,
+        "team": team,
+        "points_for": 24,
+        "off_plays": plays,
+        "off_success_n": n,
+        "off_success_sum": total,
+        "off_success_ot_n": ot_n,
+        "off_success_ot_sum": ot_sum,
+    }
+
+
+def tgs_pair(*, held=None):
+    """Active release rows (OT columns ``held``) and the candidate with counts."""
+    old, new = release(OLD_RUN), release(NEW_RUN)
+    old["team_game_stats"] = [
+        tgs_row(1, "A", ot_n=held, ot_sum=held),
+        tgs_row(1, "B", ot_n=held, ot_sum=held),
+    ]
+    new["team_game_stats"] = [
+        tgs_row(1, "A", ot_n=40, ot_sum=18.0),  # no overtime: equal to regulation
+        tgs_row(1, "B", ot_n=46, ot_sum=21.0),  # overtime plays added
+    ]
+    return old, new
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_overtime_columns_may_appear_where_the_active_release_is_null(mode):
+    old, new = tgs_pair()
+    assert run(old, new, mode=mode).passed
+
+
+def test_overtime_columns_missing_from_the_active_rows_also_pass():
+    old, new = tgs_pair()
+    for r in old["team_game_stats"]:
+        del r["off_success_ot_n"], r["off_success_ot_sum"]
+    assert run(old, new, mode="market-refresh").passed
+
+
+def test_overtime_value_differing_from_a_held_value_fails():
+    # close-week does not compare team_game_stats at all; market-refresh does.
+    old, new = tgs_pair(held=40)
+    report = run(old, new, mode="market-refresh")
+    assert not report.passed
+    assert any("off_success_ot_n" in f for f in report.failures)
+
+
+def test_overtime_value_equal_to_a_held_value_passes():
+    old, new = tgs_pair()
+    old["team_game_stats"] = [dict(r) for r in new["team_game_stats"]]
+    assert run(old, new, mode="market-refresh").passed
+
+
+@pytest.mark.parametrize(
+    "column, value", [("off_success_ot_n", 39), ("off_success_ot_sum", 17.5)]
+)
+def test_candidate_below_the_regulation_count_fails(column, value):
+    old, new = tgs_pair()
+    new["team_game_stats"][0][column] = value
+    report = run(old, new, mode="market-refresh")
+    assert not report.passed
+    assert any("is below" in f for f in report.failures)
+
+
+def test_candidate_without_overtime_counts_fails():
+    old, new = tgs_pair()
+    new["team_game_stats"][1]["off_success_ot_n"] = None
+    report = run(old, new, mode="market-refresh")
+    assert any("is NULL" in f for f in report.failures)
+
+
+@pytest.mark.parametrize("column", ["off_success_n", "off_plays", "points_for"])
+def test_another_team_game_stats_column_changing_still_fails(column):
+    old, new = tgs_pair()
+    new["team_game_stats"][0][column] += 1
+    report = run(old, new, mode="market-refresh")
+    assert not report.passed
+    assert any(column in f for f in report.failures)
+
+
+def test_another_table_changing_still_fails_with_overtime_columns_added():
+    old, new = tgs_pair()
+    row(new, "predictions", game_id=3)["predicted_spread"] += 1.0
+    assert not run(old, new, mode="market-refresh").passed

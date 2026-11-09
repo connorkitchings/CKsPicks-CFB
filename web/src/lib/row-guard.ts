@@ -169,6 +169,8 @@ export const PREDICTION_GAME_SPEC: RowSpec = {
   homeTeam: { kind: "string" },
   awayTeam: { kind: "string" },
   homeTeamSpreadLine: OPTIONAL_NUMBER,
+  // Consensus line: `undefined` (no snapshot join selected) is reported missing; a missing snapshot is `null`.
+  canonicalSpread: OPTIONAL_NUMBER,
   totalLine: OPTIONAL_NUMBER,
   predictedSpread: OPTIONAL_NUMBER,
   predictedTotal: OPTIONAL_NUMBER,
@@ -198,4 +200,31 @@ export const PERFORMANCE_DETAIL_SPEC: RowSpec = {
   spreadResult: { kind: GRADE, nullable: true },
   totalResult: { kind: GRADE, nullable: true },
   highConfidence: { kind: "boolean" },
+  canonicalSpread: OPTIONAL_NUMBER,
+  canonicalTotal: OPTIONAL_NUMBER,
+  spreadGradingVersion: { kind: "string", nullable: true },
+  totalGradingVersion: { kind: "string", nullable: true },
+};
+
+/** `team_game_stats` rows; the all-plays success counts are null in releases built before they existed. */
+export const TEAM_GAME_STATS_SPEC: RowSpec = {
+  week: { kind: "int" },
+  gameId: { kind: "int" },
+  team: { kind: "string" },
+  opponent: { kind: "string" },
+  site: { kind: { enum: ["home", "away", "neutral"] } },
+  pointsFor: { kind: "int" },
+  pointsAgainst: { kind: "int" },
+  offPlays: { kind: "int" },
+  offSuccessN: { kind: "int" },
+  offSuccessSum: { kind: "number" },
+  offEpaN: { kind: "int" },
+  offEpaSum: { kind: "number" },
+  defPlays: { kind: "int" },
+  defSuccessN: { kind: "int" },
+  defSuccessSum: { kind: "number" },
+  defEpaN: { kind: "int" },
+  defEpaSum: { kind: "number" },
+  offSuccessOtN: { kind: "int", nullable: true },
+  offSuccessOtSum: { kind: "number", nullable: true },
 };

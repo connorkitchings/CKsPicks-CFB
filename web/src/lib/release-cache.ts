@@ -45,7 +45,7 @@
  *                getTeamSeasonStats / PossessionStats ... immutable (release stat tables)
  *                getRunForWeek, getAvailableWeeks, getScoredWeeks, getUpcomingWeeks,
  *                getGamesForWeek, getMarketGamesForWeek, getSystemStatsThroughWeek,
- *                getBiggestEdgesRecord .................. mutable (prediction_runs state /
+ *                getBiggestEdgesRecord, getUnderdogRecord  mutable (prediction_runs state /
  *                                                         evidence_class): revalidate 3600
  *   v5.ts        getSelectedRatingSource and everything built on it (getCurrentRatings,
  *                getRatingPeriods, getWeeklyRatings, getTeamHistory), getTeamGames
@@ -54,7 +54,8 @@
  *                                                      .. mutable (evidence_class): 3600
  *                team résumé reads (season_release_team_resume) ... immutable
  *   chart-queries.ts  every chart loader ................. immutable (release chart tables)
- *   matchup.ts   game identity, rating-manifest and stat-provenance lookups ... immutable
+ *   matchup.ts   game identity, rating-manifest, stat-provenance, rating-component and
+ *                team-schedule lookups ... immutable
  *                (the slate it builds on is cached by queries.ts with its own cap)
  * - `getHistoricalModelContext` reads a live table and is deliberately not cached.
  */

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { gotoHydrated } from "./helpers";
 
 const DESKTOP = { width: 1280, height: 900 };
 
@@ -66,19 +67,59 @@ test.describe("desktop layout at 1280px", () => {
     await expect(record).toBeVisible();
   });
 
+  test("slate shows one featured card that flips from Biggest edges to Underdog picks and back", async ({ page }) => {
+    await gotoHydrated(page, "/");
+    const card = page.getByRole("region", { name: "Biggest edges" });
+    await expect(page.getByRole("region", { name: "Underdog picks" })).toHaveCount(0);
+    await expect(card.locator("summary").filter({ visible: true })).toHaveCount(0);
+    const view = card.getByRole("group", { name: "Featured games view" });
+    const edgesButton = view.getByRole("button", { name: "Biggest edges", exact: true });
+    const underdogsButton = view.getByRole("button", { name: "Underdog picks", exact: true });
+    // Default view on every load.
+    await expect(edgesButton).toHaveAttribute("aria-pressed", "true");
+    await expect(card.getByRole("heading", { name: /^Biggest edges/ })).toBeVisible();
+    await expect(card.getByText(/2026: 7–3–0/).filter({ visible: true }).first()).toBeVisible();
+    await expect(card.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
+    await expect(card).not.toContainText("The model says the wrong team is favored");
+
+    await underdogsButton.click();
+    await expect(underdogsButton).toHaveAttribute("aria-pressed", "true");
+    await expect(card.getByRole("heading", { name: /^Underdog picks/ })).toBeVisible();
+    await expect(card.getByRole("heading", { name: /^Underdog picks\s*2026: 2–0$/ })).toBeVisible();
+    await expect(card).toContainText("The model says the wrong team is favored");
+    await expect(card).not.toContainText("picks the underdog to win");
+    await expect(card).not.toContainText(/straight up, all picks/i);
+    await expect(card).toContainText("Straight-up record: picks won outright");
+    await expect(card.locator("a[href^='#game-']")).toHaveCount(1);
+    await expect(card.locator("a[href='#game-9']")).toBeVisible();
+
+    await edgesButton.click();
+    await expect(edgesButton).toHaveAttribute("aria-pressed", "true");
+    await expect(card.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
+  });
+
+  test("the featured card's view control sits to the right of the title on the same row from 640px", async ({ page }) => {
+    await page.setViewportSize({ width: 640, height: 900 });
+    await gotoHydrated(page, "/");
+    const card = page.getByRole("region", { name: "Biggest edges" });
+    const view = card.getByRole("group", { name: "Featured games view" });
+    const underdogsButton = view.getByRole("button", { name: "Underdog picks", exact: true });
+    for (const name of [/^Biggest edges/, /^Underdog picks/]) {
+      const title = (await card.getByRole("heading", { name }).boundingBox())!;
+      const control = (await view.boundingBox())!;
+      expect(control.x).toBeGreaterThanOrEqual(title.x + title.width);
+      expect(Math.abs(control.y - title.y)).toBeLessThan(title.height + 8);
+      expect(control.y + control.height).toBeGreaterThan(title.y);
+      await underdogsButton.click();
+    }
+  });
+
   test("a final week shows Result Highlights without a click", async ({ page }) => {
     await page.goto("/?week=4");
     await expect(visibleHeading(page, "Highlights")).toBeVisible();
     await expect(page.locator("summary").filter({ visible: true, hasText: "Highlights" })).toHaveCount(0);
   });
 
-  test("model Pick target control is compact and one line per option", async ({ page }) => {
-    await page.goto("/model");
-    const target = page.getByRole("group", { name: "Pick target" }).filter({ visible: true });
-    await expect(target).toBeVisible();
-    await expectCompactSegments(target);
-    await expectMaxHeight(target);
-  });
 
   test("ratings sort headers are compact and one line at desktop width", async ({ page }) => {
     await page.goto("/ratings");
@@ -130,13 +171,13 @@ test.describe("desktop layout at 1280px", () => {
   test("matchup offense selector is hidden at desktop widths where both tables show", async ({ page }) => {
     await page.goto("/matchup/1");
     await expect(page.getByRole("group", { name: "Offense comparison" })).toBeHidden();
-    await expect(page.getByRole("table")).toHaveCount(2);
+    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(2);
   });
 
   test("each unit table header shows one logo per team in light mode", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/matchup/1");
-    for (const table of await page.getByRole("table").all()) {
+    for (const table of await page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").all()) {
       const header = table.locator("xpath=preceding-sibling::div[1]");
       await expect(header.locator("img[data-logo]:visible")).toHaveCount(2);
     }

@@ -231,6 +231,100 @@ export function topLeans(games: Game[], kind: LeanKind, n: number, includeFinal 
   return out.slice(0, n);
 }
 
+/** The prediction fields underdog calls read; lets a lightweight query row stand in for a full game. */
+export type UnderdogSource = Pick<
+  PredictionGame,
+  | "publicationMode"
+  | "week"
+  | "gameId"
+  | "startDate"
+  | "homeTeam"
+  | "awayTeam"
+  | "predictedSpread"
+  | "homePoints"
+  | "awayPoints"
+> & { canonicalSpread?: number | null };
+
+/** One game where the model picks the market underdog to win outright. */
+export type UnderdogPick = {
+  game: PredictionGame;
+  /** Side the model picks to win. */
+  dir: "home" | "away";
+  /** Team the model picks to win (the market underdog). */
+  team: string;
+  opponent: string;
+  /** Consensus line for the picked team; always positive, since it is the underdog. */
+  line: number;
+  /** Model margin for the picked team; always positive. */
+  margin: number;
+  /** Model margin minus the market's implied margin, from the picked team's side; always positive. */
+  gap: number;
+};
+
+type UnderdogCall = Pick<UnderdogPick, "dir" | "line" | "margin" | "gap">;
+
+/**
+ * The model's call when it picks the consensus-line underdog, else null. Both margins must be non-zero
+ * (a pick'em has no favorite; a model margin under 0.05 is no call, as in `modelCrossesMarket`) and disagree.
+ * `predictedSpread` is the home margin; the consensus line is the home team's number, so the market's
+ * implied home margin is its negation (never -0).
+ */
+function underdogCall(game: Game | UnderdogSource): UnderdogCall | null {
+  if (game.publicationMode !== "predictions") return null;
+  const { predictedSpread, canonicalSpread } = game;
+  if (predictedSpread === null || canonicalSpread === null || canonicalSpread === undefined) return null;
+  const implied = canonicalSpread === 0 ? 0 : -canonicalSpread;
+  if (implied === 0 || Math.abs(predictedSpread) < 0.05) return null;
+  if (predictedSpread > 0 === implied > 0) return null;
+  const dir = predictedSpread > 0 ? "home" : "away";
+  const sign = dir === "home" ? 1 : -1;
+  return { dir, line: sign * canonicalSpread, margin: sign * predictedSpread, gap: Math.abs(predictedSpread - implied) };
+}
+
+type Ranked = { gap: number; game: { startDate: Date; gameId: number } };
+
+/** Largest gap first, then earlier kickoff, then game id. */
+const byUnderdogOrder = (a: Ranked, b: Ranked) =>
+  b.gap - a.gap || a.game.startDate.getTime() - b.game.startDate.getTime() || a.game.gameId - b.game.gameId;
+
+/** Underdog picks among games that have not finished (the current-week display), largest gap first; every pick when `n` is omitted. */
+export function underdogPicks(games: Game[], n?: number): UnderdogPick[] {
+  const out: UnderdogPick[] = [];
+  for (const game of games) {
+    if (game.publicationMode !== "predictions" || isFinal(game)) continue;
+    const call = underdogCall(game);
+    if (!call) continue;
+    const home = call.dir === "home";
+    out.push({ ...call, game, team: home ? game.homeTeam : game.awayTeam, opponent: home ? game.awayTeam : game.homeTeam });
+  }
+  return out.sort(byUnderdogOrder).slice(0, n);
+}
+
+/** Rows shown before an expandable list is opened. */
+export const COLLAPSED_ROWS = 5;
+
+/** The rows to render: the first `limit` while collapsed, all of them once expanded. */
+export function visibleRows<T>(rows: readonly T[], expanded: boolean, limit = COLLAPSED_ROWS): readonly T[] {
+  return expanded ? rows : rows.slice(0, limit);
+}
+
+/**
+ * Season straight-up record of every underdog pick in each scored week (no cap). Pass one array per
+ * scored week. Unfinished and tied games count nowhere; `push` stays zero.
+ */
+export function underdogRecord(weeks: ReadonlyArray<ReadonlyArray<Game | UnderdogSource>>): Tally {
+  const out: Tally = { win: 0, loss: 0, push: 0 };
+  for (const games of weeks) {
+    for (const game of games) {
+      const call = underdogCall(game);
+      if (!call || game.publicationMode !== "predictions") continue;
+      if (game.homePoints === null || game.awayPoints === null || game.homePoints === game.awayPoints) continue;
+      out[game.homePoints > game.awayPoints === (call.dir === "home") ? "win" : "loss"] += 1;
+    }
+  }
+  return out;
+}
+
 export type SortKey = "kickoff" | "bestEdge" | "spreadEdge" | "totalEdge";
 
 function edgeOf(game: Game, kind: LeanKind): number | null {

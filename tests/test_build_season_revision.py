@@ -136,6 +136,35 @@ def test_revision_manifest_fresh_inputs_omits_recomputed_measurements():
     )
 
 
+def _next_revision(previous: dict) -> dict:
+    return builder.revision_manifest(
+        previous,
+        week=8,
+        as_of=datetime(2026, 10, 18, 15, tzinfo=timezone.utc),
+        pre_week_cutoff=datetime(2026, 10, 20, 18, tzinfo=timezone.utc),
+        captured_at=datetime(2026, 10, 18, 16, 1, 2, tzinfo=timezone.utc),
+        refs=fresh_refs(),
+    )
+
+
+def test_revision_manifest_carries_historical_lines_byte_identical():
+    previous = previous_revision()
+    previous["inputs"]["historical_lines"] = {
+        "uri": "lake/silver/dataset=market_quotes/version=hist/data.parquet",
+        "sha256": "b" * 64,
+    }
+
+    carried = _next_revision(previous)["inputs"]["historical_lines"]
+
+    assert json.dumps(carried, sort_keys=True) == json.dumps(
+        previous["inputs"]["historical_lines"], sort_keys=True
+    )
+
+
+def test_revision_manifest_without_historical_lines_stays_without():
+    assert "historical_lines" not in _next_revision(previous_revision())["inputs"]
+
+
 def test_revision_manifest_naive_timestamp_raises():
     with pytest.raises(ValueError, match="timezone"):
         builder._utc("2026-10-18T15:00:00")

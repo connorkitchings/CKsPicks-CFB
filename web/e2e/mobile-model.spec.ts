@@ -7,7 +7,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
 
     test("the first KPI card sits near the top, with a summary and no duplicate headings", async ({ page }) => {
       await gotoHydrated(page, "/model");
-      const spread = page.getByRole("button", { name: /^Spread/ });
+      const spread = page.getByRole("region", { name: "Forecast accuracy summary", exact: true }).locator("[data-card]").filter({ hasText: "Spread" });
       await expect(spread).toBeVisible();
       expect((await spread.boundingBox())!.y).toBeLessThan(330);
       await expect(page.getByTestId("model-summary")).toHaveText(/^2026 · V5 · \d+ graded weeks?$/);
@@ -27,25 +27,25 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       await expect.poll(async () => Math.abs((await tabs.boundingBox())!.y - (bar.y + bar.height))).toBeLessThanOrEqual(1);
     });
 
-    test("the Spread and Totals cards are the only filter and narrow the weekly cards", async ({ page }) => {
+    test("there is no target selector and every week card shows both targets", async ({ page }) => {
       await gotoHydrated(page, "/model");
       await expect(page.getByRole("group", { name: "Pick target" })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "All Picks" })).toHaveCount(0);
       const weekly = page.getByRole("region", { name: "Weekly accuracy breakdown" });
-      const spread = page.getByRole("button", { name: /^Spread/ });
-      const totals = page.getByRole("button", { name: /^Totals/ });
-      await expect(weekly.getByText("Total", { exact: true }).first()).toBeVisible();
-      await spread.click();
-      await expect(spread).toHaveAttribute("aria-pressed", "true");
-      await expect(weekly.getByText("Spread", { exact: true }).first()).toBeVisible();
-      await expect(weekly.getByText("Total", { exact: true })).toHaveCount(0);
-      await totals.click();
-      await expect(spread).toHaveAttribute("aria-pressed", "false");
-      await expect(weekly.getByText("Spread", { exact: true })).toHaveCount(0);
-      await totals.click();
-      await expect(totals).toHaveAttribute("aria-pressed", "false");
       await expect(weekly.getByText("Spread", { exact: true }).first()).toBeVisible();
       await expect(weekly.getByText("Total", { exact: true }).first()).toBeVisible();
+      await expect(weekly.getByText(/Average miss/)).toHaveCount(0);
+    });
+
+
+    test("the trend, comparison cards and week cards fit without horizontal scroll", async ({ page }) => {
+      await gotoHydrated(page, "/model");
+      await expect(page.getByTestId("record-trend-chart")).toBeVisible();
+      await expect(page.getByTestId("market-spread")).toBeVisible();
+      await expect(page.getByText("In progress", { exact: true }).filter({ visible: true })).toHaveCount(1);
+      await page.getByTestId("table-toggle").click();
+      await expect(page.getByTestId("chart-table")).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
 
     test("the explainers live in one collapsed disclosure", async ({ page }) => {

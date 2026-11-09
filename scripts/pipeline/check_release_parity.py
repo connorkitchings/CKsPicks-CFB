@@ -33,6 +33,22 @@ other column of those rows still compares strictly. It exists for an owner-chose
 one-off correction of a stale completed-week cutoff (the Week 9 manifests carried
 Week 8 at 18:00Z against the certified 14:39Z) and is never set by the schedule.
 
+Retrospective lines (one-off, automatic): when the candidate's revision manifest
+carries the ``historical_lines`` input, three Week 6 games that had no pre-kickoff
+quote (``RETROSPECTIVE_GAMES``) may gain CFBD ``cfbd_retrospective`` grades. For
+exactly those games, and only while the active release holds no market rows for
+them, the candidate may add their quotes, snapshots, selections and grades, move
+the market columns of their ``games``/``predictions`` rows and the result columns
+of their ``game_results`` rows, and move ``system_stats`` by exactly the new
+grades' wins, losses, pushes and profit. Everything else, including every
+prediction mean, variance and rating, still compares strictly. Once the active
+release holds the grades, they compare strictly like any other grade.
+
+Overtime success counts: ``team_game_stats.off_success_ot_n``/``off_success_ot_sum``
+(migration 0029) may differ only where the active release holds NULL; the
+candidate must carry both on every row and not below ``off_success_n``/
+``off_success_sum``. Once the active release holds values they compare strictly.
+
 ``team_resume.sor_rank`` may permute only among teams whose ``sor`` values tie
 within 1e-9 (platform rounding decides their order), and only inside that tied
 group's span of ranks; ``sor`` itself is always compared.
@@ -100,6 +116,24 @@ MARKET_TABLES = frozenset(
 #: Tables every release must carry for the parity decision to mean anything.
 REQUIRED_TABLES = ("games", "predictions", "prediction_grades", "v5_rating_snapshots")
 
+#: Week 6 games with no retained pre-kickoff quote, graded from CFBD lines fetched
+#: after kickoff (Southern Miss at Troy, Jacksonville State at Kennesaw State and
+#: New Mexico State at Florida International).
+RETROSPECTIVE_GAMES = frozenset({"401871090", "401871051", "401871066"})
+RETROSPECTIVE_GRADING_VERSION = "model_side_best_quote_v2:cfbd_retrospective"
+#: Tables of per-game market rows that the retrospective lines add.
+RETROSPECTIVE_ROW_TABLES = (
+    "market_quotes",
+    "market_snapshots",
+    "prediction_market_selections",
+    "prediction_grades",
+)
+RESULT_COLUMNS = frozenset({"spread_result", "total_result"})
+TARGETS = ("spread", "total")
+STATS_KINDS = ("wins", "losses", "pushes", "profit_units")
+STATS_COLUMNS = frozenset(f"{t}_{kind}" for t in TARGETS for kind in STATS_KINDS)
+STATS_TOLERANCE = 1e-3
+
 _RUN_ID = re.compile(r"season-\d{4}-[0-9a-f]{16,}")
 #: Hex digests (model versions, source/manifest hashes, hash-prefixed keys). Needs
 #: a digit and a letter so plain numbers and ordinary words never match.
@@ -121,6 +155,7 @@ class ParityReport:
     upcoming_predicted: int = 0
     upcoming_lined: int = 0
     accepted_cutoff_corrections: list[int] = field(default_factory=list)
+    accepted_retrospective_games: list[str] = field(default_factory=list)
 
     @property
     def passed(self) -> bool:
@@ -138,6 +173,7 @@ class ParityReport:
             "upcoming_week_predicted": self.upcoming_predicted,
             "upcoming_week_lined": self.upcoming_lined,
             "accepted_cutoff_corrections": self.accepted_cutoff_corrections,
+            "accepted_retrospective_games": self.accepted_retrospective_games,
         }
 
 
@@ -312,6 +348,176 @@ def _row_game(table: str, row: Row, snapshot_games: dict[str, Any]) -> Any:
     return None
 
 
+# --- one-off retrospective lines -----------------------------------------------
+
+
+def _retrospective_problems(candidate: Tables, game: str) -> list[str]:
+    """Why the candidate's rows for ``game`` are not complete CFBD retrospective rows."""
+
+    def mine(table: str) -> list[Row]:
+        return [r for r in candidate.get(table, []) if str(r["game_id"]) == game]
+
+    quotes = {r["quote_id"] for r in mine("market_quotes")}
+    snapshots = {r["snapshot_id"] for r in mine("market_snapshots")}
+    problems = [f"{t} has no rows" for t in RETROSPECTIVE_ROW_TABLES if not mine(t)]
+    for grade in mine("prediction_grades"):
+        if (
+            grade.get("grading_version") != RETROSPECTIVE_GRADING_VERSION
+            or grade.get("target") not in TARGETS
+            or grade.get("market_quote_id") not in quotes
+            or grade.get("market_snapshot_id") not in snapshots
+        ):
+            problems.append(f"{grade.get('target')} grade is not a retrospective grade")
+    for pick in mine("prediction_market_selections"):
+        if (
+            pick.get("quote_id") not in quotes
+            or pick.get("snapshot_id") not in snapshots
+        ):
+            problems.append(f"{pick.get('target')} selection cites a foreign quote")
+    for pred in mine("predictions"):
+        if pred.get("market_snapshot_id") not in snapshots | {None}:
+            problems.append("prediction cites a foreign snapshot")
+    return problems
+
+
+def _system_stats_problems(
+    previous: Tables, candidate: Tables, grades: list[Row]
+) -> list[str]:
+    """``system_stats`` columns that moved by anything but the new grades."""
+    outcome = {"win": "wins", "loss": "losses", "push": "pushes"}
+    expected = dict.fromkeys(STATS_COLUMNS, 0.0)
+    for grade in (g for g in grades if g.get("target") in TARGETS):
+        if grade.get("result") in outcome:
+            expected[f"{grade['target']}_{outcome[grade['result']]}"] += 1
+        expected[f"{grade['target']}_profit_units"] += float(
+            grade.get("profit_units") or 0.0
+        )
+    before = {r["season"]: r for r in previous.get("system_stats", [])}
+    return [
+        f"system_stats {column} moved {moved:+g}, not {expected[column]:+g}"
+        for row in candidate.get("system_stats", [])
+        if row["season"] in before
+        for column in sorted(STATS_COLUMNS)
+        for moved in [float(row[column]) - float(before[row["season"]][column])]
+        if abs(moved - expected[column]) > STATS_TOLERANCE
+    ]
+
+
+def _reset_columns(
+    previous: list[Row], candidate: list[Row], key: str, keys: set[str], columns
+) -> list[Row]:
+    """Candidate rows whose ``key`` is in ``keys`` take ``columns`` from ``previous``."""
+    before = {str(r[key]): r for r in previous}
+    return [
+        {**r, **{c: before[str(r[key])].get(c) for c in columns & r.keys()}}
+        if str(r[key]) in keys and str(r[key]) in before
+        else r
+        for r in candidate
+    ]
+
+
+def _accept_retrospective_lines(
+    previous: Tables, candidate: Tables, report: ParityReport
+) -> Tables:
+    """The candidate with the retrospective-line additions reset to ``previous``.
+
+    Only games the active release holds no market rows for qualify. Their new rows
+    must be complete and cite only each other, and ``system_stats`` must move by
+    exactly their grades. Any problem is a failure and the candidate is returned
+    untouched, so the strict comparison reports the same rows as well.
+    """
+    held = {
+        str(r["game_id"]) for t in RETROSPECTIVE_ROW_TABLES for r in previous.get(t, [])
+    }
+    graded = {str(r["game_id"]) for r in candidate["prediction_grades"]}
+    fresh = graded & (RETROSPECTIVE_GAMES - held)
+    if not fresh:
+        return candidate
+    grades = [r for r in candidate["prediction_grades"] if str(r["game_id"]) in fresh]
+    problems = [
+        f"retrospective game {game}: {problem}"
+        for game in sorted(fresh)
+        for problem in _retrospective_problems(candidate, game)
+    ] + _system_stats_problems(previous, candidate, grades)
+    if problems:
+        report.failures += problems
+        return candidate
+    report.accepted_retrospective_games = sorted(fresh)
+    snapshots = {
+        r["snapshot_id"]
+        for r in candidate["market_snapshots"]
+        if str(r["game_id"]) in fresh
+    }
+    out = {
+        table: [r for r in candidate[table] if str(r["game_id"]) not in fresh]
+        for table in RETROSPECTIVE_ROW_TABLES
+    }
+    out["market_snapshot_quotes"] = [
+        r
+        for r in candidate.get("market_snapshot_quotes", [])
+        if r["snapshot_id"] not in snapshots
+    ]
+    for table, columns in (
+        ("games", MARKET_COLUMNS),
+        ("predictions", MARKET_COLUMNS),
+        ("game_results", RESULT_COLUMNS),
+    ):
+        out[table] = _reset_columns(
+            previous.get(table, []), candidate.get(table, []), "game_id", fresh, columns
+        )
+    out["system_stats"] = _reset_columns(
+        previous.get("system_stats", []),
+        candidate.get("system_stats", []),
+        "season",
+        {str(r["season"]) for r in candidate.get("system_stats", [])},
+        STATS_COLUMNS,
+    )
+    return {**candidate, **out}
+
+
+#: Overtime-inclusive success counts added to ``team_game_stats`` by migration 0029,
+#: with the regulation counts each must not fall below.
+OVERTIME_COLUMNS = {
+    "off_success_ot_n": "off_success_n",
+    "off_success_ot_sum": "off_success_sum",
+}
+
+
+def _accept_overtime_columns(
+    previous: Tables, candidate: Tables, report: ParityReport
+) -> Tables:
+    """The candidate with first-time overtime success counts reset to ``previous``.
+
+    A candidate value may differ only where the active release holds NULL for it
+    (a release built before migration 0029). Every candidate row must carry both
+    counts and not fall below its regulation counts. A value the active release
+    already holds, and every other column, still compares strictly.
+    """
+    rows = candidate.get("team_game_stats")
+    if not rows:
+        return candidate
+    old = {_key("team_game_stats", r): r for r in previous.get("team_game_stats", [])}
+    problems, out = [], []
+    for row in rows:
+        key = _key("team_game_stats", row)
+        for column, floor in OVERTIME_COLUMNS.items():
+            value, base = row.get(column), row.get(floor)
+            if value is None:
+                problems.append(f"{_label('team_game_stats', key)}: {column} is NULL")
+            elif base is not None and value < base:
+                problems.append(
+                    f"{_label('team_game_stats', key)}: {column} is below {floor}"
+                )
+        held = old.get(key)
+        if held is None:
+            out.append(row)
+            continue
+        reset = {c: held.get(c) for c in OVERTIME_COLUMNS if held.get(c) is None}
+        out.append({**row, **reset})
+    report.failures += problems
+    return {**candidate, "team_game_stats": out}
+
+
 # --- the two modes -----------------------------------------------------------
 
 
@@ -441,6 +647,7 @@ def compare_releases(
     completed_week: int,
     upcoming_week: int,
     accept_cutoff_corrections: tuple[int, ...] = (),
+    retrospective_lines: bool = False,
 ) -> ParityReport:
     """Pure parity decision over two ``{table: [row, ...]}`` structures."""
     if mode not in MODES:
@@ -461,6 +668,9 @@ def compare_releases(
                 report.failures.append(f"{name} lacks table {table}")
     if report.failures:
         return report
+    if retrospective_lines:
+        candidate = _accept_retrospective_lines(previous, candidate, report)
+    candidate = _accept_overtime_columns(previous, candidate, report)
     weeks = _game_weeks(previous, candidate)
     check = _check_close_week if mode == "close-week" else _check_market_refresh
     check(previous, candidate, report, weeks)
@@ -510,6 +720,15 @@ def read_active_preview(conn) -> Tables:
     return release
 
 
+def carries_historical_lines(candidate_dir: Path) -> bool:
+    """Whether the candidate's revision manifest pins the ``historical_lines`` input."""
+    path = candidate_dir / "revision-manifest.json"
+    # No manifest means no allowance: the comparison stays strict.
+    return (
+        path.exists() and "historical_lines" in json.loads(path.read_text())["inputs"]
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-dir", type=Path, required=True)
@@ -545,6 +764,7 @@ def main(argv: list[str] | None = None) -> int:
         completed_week=args.completed_week,
         upcoming_week=args.upcoming_week,
         accept_cutoff_corrections=tuple(args.accept_cutoff_correction),
+        retrospective_lines=carries_historical_lines(args.candidate_dir),
     )
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report.as_dict(), indent=2, sort_keys=True))

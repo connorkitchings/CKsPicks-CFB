@@ -30,7 +30,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       const summary = page.getByTestId("matchup-summary-header");
       const share = (await summary.getByTestId("share-controls").boundingBox())!;
       const summaryBox = (await summary.boundingBox())!;
-      const table = (await page.getByRole("table").first().boundingBox())!;
+      const table = (await page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first().boundingBox())!;
       expect(share.y).toBeGreaterThan(facts.y + facts.height);
       expect(share.y + share.height).toBeLessThanOrEqual(summaryBox.y + summaryBox.height);
       expect(summaryBox.y + summaryBox.height).toBeLessThan(table.y);
@@ -64,7 +64,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
 
     test("the unit table header lines up with its columns and the card header is one line", async ({ page }) => {
       await gotoHydrated(page, "/matchup/1");
-      const table = page.getByRole("table").first();
+      const table = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first();
       const heads = await table.locator("thead th").all();
       const offenseHead = (await heads[0].locator("span").first().boundingBox())!;
       const metricHead = (await heads[1].boundingBox())!;

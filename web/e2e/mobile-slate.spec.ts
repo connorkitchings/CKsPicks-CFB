@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { gotoHydrated } from "./helpers";
 
 // Upcoming week, then a final week whose graded cards and highlights share the page.
 for (const path of ["/", "/?week=4"]) {
@@ -101,6 +102,66 @@ test("collapsed biggest edges preserve every game anchor and selected category",
   expect(card!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height + 24);
 });
 
+
+test("one collapsed featured card on phones flips to underdog picks and keeps their anchors", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoHydrated(page, "/");
+  const card = page.getByRole("region", { name: "Biggest edges" });
+  await expect(page.getByRole("region", { name: "Underdog picks" })).toHaveCount(0);
+  await expect(page.locator("details[open]")).toHaveCount(0);
+  // One full-width, one-line, 44px summary; the flip control lives inside the opened card.
+  const summary = card.locator("summary");
+  const box = (await summary.boundingBox())!;
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  expect(box.height).toBeLessThanOrEqual(48);
+  expect((await card.boundingBox())!.width).toBeGreaterThan(300);
+  const view = card.getByRole("group", { name: "Featured games view" });
+  await expect(view).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await summary.click();
+  await expect(view).toBeVisible();
+  const edgesButton = view.getByRole("button", { name: "Biggest edges", exact: true });
+  const underdogsButton = view.getByRole("button", { name: "Underdog picks", exact: true });
+  await expect(edgesButton).toHaveAttribute("aria-pressed", "true");
+  expect((await underdogsButton.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await underdogsButton.click();
+  await expect(underdogsButton).toHaveAttribute("aria-pressed", "true");
+  const shown = await card.locator("a[href^='#game-']").filter({ visible: true }).evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+  expect(shown).toEqual(["#game-9"]);
+  await expect(card).toContainText("Straight-up record: picks won outright");
+  const link = card.locator("a[href='#game-9']");
+  expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await link.click();
+  expect(new URL(page.url()).hash).toBe("#game-9");
+});
+
+test("the opened featured card keeps its control inside a 320px phone in both views", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await gotoHydrated(page, "/");
+  const card = page.getByRole("region", { name: "Biggest edges" });
+  await card.locator("summary").click();
+  const view = card.getByRole("group", { name: "Featured games view" });
+  await expect(view).toBeVisible();
+  for (const name of ["Biggest edges", "Underdog picks"]) {
+    await view.getByRole("button", { name, exact: true }).click();
+    const box = (await view.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  }
+});
+
+test("the featured card starts on Biggest edges again after a reload", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoHydrated(page, "/");
+  const card = page.getByRole("region", { name: "Biggest edges" });
+  await card.locator("summary").click();
+  await card.getByRole("button", { name: "Underdog picks", exact: true }).click();
+  await page.reload();
+  await expect(page.locator("details[open]")).toHaveCount(0);
+  await card.locator("summary").click();
+  await expect(card.getByRole("button", { name: "Biggest edges", exact: true })).toHaveAttribute("aria-pressed", "true");
+});
 
 test("biggest edges and highlights are open inline on desktop without a click", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });

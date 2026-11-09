@@ -18,7 +18,7 @@ CFBD / Odds API → immutable Bronze captures + catalog registry
 
 `build_season_revision.py` reuses controller ingestion/Silver steps and creates cumulative registered market inputs. `run_season.py prepare` reconstructs completed weeks and forecasts the next slate at its pre-week cutoff; `season_verification_v2` uses frozen checks per recorded projection set (24 for new `charts_v2` candidates). `run_season.py release` stages immutable projections and atomically activates the release after verification/readback, expected-prior-release checks and, for Production, independent Preview rehearsal proof. Active-release context makes the Games, Ratings, Stats and Model tabs and `/api/health` resolve the same release. Legacy web reads remain only as a fallback when there is no active season release.
 
-Neon `season_releases`, `season_release_policies` and `season_release_*` projection tables are defined by migration `0025`; the latest migration is `0028` (`contracts/migrations/`). Earlier `prediction_runs`, `current_week`, `games`, grades and optional matchup tables remain for compatibility. Schema upgrades are append-only under `contracts/migrations/`; `contracts/schema.sql` and `schema.ts` are canonical. Web copies must pass `make contracts-check`.
+Neon `season_releases`, `season_release_policies` and `season_release_*` projection tables are defined by migration `0025`; the latest migration is `0029` (`contracts/migrations/`). Earlier `prediction_runs`, `current_week`, `games`, grades and optional matchup tables remain for compatibility. Schema upgrades are append-only under `contracts/migrations/`; `contracts/schema.sql` and `schema.ts` are canonical. Web copies must pass `make contracts-check`.
 
 ## Operational invariants
 

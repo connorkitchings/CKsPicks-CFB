@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { gotoHydrated } from "./helpers";
 
 const fits = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
@@ -42,6 +43,31 @@ test("navigation exposes active tabs", async ({ page }) => {
 });
 
 test.describe("upcoming week (/)", () => {
+  test("underdog picks name the model's winner, ignore the pick'em, and state no odds or returns", async ({ page }) => {
+    await gotoHydrated(page, "/");
+    const section = page.getByRole("region", { name: "Biggest edges" });
+    await section.getByRole("group", { name: "Featured games view" }).getByRole("button", { name: "Underdog picks", exact: true }).click();
+    // Game 9: Oklahoma is +4.0 on the consensus line and the model has Oklahoma by 2.0.
+    await expect(section.locator("a[href^='#game-']")).toHaveCount(1);
+    const row = section.locator("a[href='#game-9']");
+    await expect(row).toContainText("Oklahoma");
+    await expect(row).toContainText("+4.0");
+    await expect(row).toContainText("gap 6.0");
+    await expect(row).toHaveAttribute("aria-label", "Texas at Oklahoma: model picks Oklahoma to win");
+    // Game 4 only looks like an upset on the shopped line; its consensus line is a pick'em.
+    await expect(section.locator("a[href='#game-4']")).toHaveCount(0);
+    await expect(section).toContainText("The model says the wrong team is favored");
+    await expect(section).toContainText("Straight-up record: picks won outright");
+    await expect(section.getByText(/2026: 2–0/).first()).toBeAttached();
+    await expect(section).not.toContainText(/straight up, all picks/i);
+    // One pick: nothing to expand. The toggle itself is covered by unit tests (no fixture week has more than five).
+    await expect(section.getByRole("button", { name: /^Show (all|fewer)/ })).toHaveCount(0);
+    const text = await section.textContent();
+    for (const banned of [/\bROI\b/, /profit/i, /\bunits?\b/i, /net return/i, /payout/i, /-110/, /moneyline/i]) {
+      expect(text, String(banned)).not.toMatch(banned);
+    }
+  });
+
   test("shows the phase, record, top leans and the full slate", async ({ page }) => {
     await page.goto("/");
 
@@ -49,6 +75,7 @@ test.describe("upcoming week (/)", () => {
     await expect(page.getByTestId("week-phase")).toHaveText("Upcoming");
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Biggest edges" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Featured games view" })).toBeAttached();
     // Nothing is graded yet: no highlights, no week record, no result sorts.
     await expect(page.getByRole("region", { name: "Highlights" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: /^Week \d+ record/ })).toHaveCount(0);
@@ -331,6 +358,7 @@ test.describe("in-progress week (/?week=6)", () => {
 
     await expect(page.getByTestId("week-phase")).toHaveText("In progress");
     await expect(page.getByRole("region", { name: "Biggest edges" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Featured games view" })).toBeAttached();
     await expect(page.getByRole("region", { name: "Highlights" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Week 6 record" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Season record before Week 6" })).toBeVisible();

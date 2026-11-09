@@ -2,9 +2,10 @@ import {
   getAvailableWeeks,
   getBiggestEdgesRecord,
   getCurrentWeek,
+  getUnderdogRecord,
 } from "@/lib/queries";
 import { SlateView } from "@/components/slate/SlateView";
-import { isRetrospective, topLeansRecord, type Tally } from "@/lib/slate";
+import { isRetrospective, topLeansRecord, underdogRecord, type Tally } from "@/lib/slate";
 import { publicationScope } from "@/lib/publication";
 import {
   isUiTestMode,
@@ -127,16 +128,24 @@ export default async function Home({
   const { games } = data;
 
   let biggestEdges: Tally | null = null;
+  let underdogs: Tally | null = null;
   if (publicationMode === "predictions" && !data.dbError) {
     if (isUiTestMode()) {
       const fx = await import("@/test/fixtures/slate");
       biggestEdges = topLeansRecord([fx.slateResults().games]);
+      underdogs = underdogRecord([fx.slateResults().games]);
     } else if (season > 0) {
       // Only after the slate loaded: during an outage this would add a doomed query.
-      biggestEdges = await getBiggestEdgesRecord(season).catch((err) => {
-        console.error("Biggest edges record query failed", err);
-        return null;
-      });
+      [biggestEdges, underdogs] = await Promise.all([
+        getBiggestEdgesRecord(season).catch((err) => {
+          console.error("Biggest edges record query failed", err);
+          return null;
+        }),
+        getUnderdogRecord(season).catch((err) => {
+          console.error("Underdog picks record query failed", err);
+          return null;
+        }),
+      ]);
     }
   }
 
@@ -153,6 +162,7 @@ export default async function Home({
       performance={data.performance}
       weekPerformance={data.weekPerformance}
       topLeansRecord={biggestEdges}
+      underdogRecord={underdogs}
       systemName={data.systemName}
       runState={firstPrediction?.runState ?? null}
       retrospective={isRetrospective(data.retrospectiveRepair, firstPrediction)}

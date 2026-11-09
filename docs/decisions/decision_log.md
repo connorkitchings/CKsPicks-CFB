@@ -2,6 +2,49 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-11-09: Net success rate includes overtime
+
+- **Context:** Fleming's Week 10 chart disagrees with ours on blowouts. We first considered keeping garbage time and overtime; the investigation showed our data is sound and that keeping garbage time tracks his game ordering worse (rank agreement 0.952 kept against 0.966 dropped), so garbage-time exclusion does not explain the gap.
+- **Decision:** The Net success rate chart alone also counts overtime scrimmage plays, from two new offense columns, `off_success_ot_n` and `off_success_ot_sum`. Garbage time, special teams, penalties, two-point tries, dead plays, kicking plays and non-FBS games stay excluded. Our net success rate is the winner's offensive success rate minus the loser's and differs from Fleming's published chart, whose method we could not reproduce (best rank agreement 0.966; magnitudes differ most on UGA 42-7). `scrimmage_play_mask`, `eligible_play`, the existing columns and every other chart, rating and forecast are unchanged.
+- **Impact:** Additive nullable columns on `team_game_stats` and `season_release_team_game_stats` (migration `0029`); no new projection set. Only games with overtime change: in Week 10, Buffalo 34-31 Miami (OH) and Massachusetts 31-30 Ball State. A release built before the migration carries null, and its Net success rate bars are listed as not charted.
+- **Release:** Preview only, `preview-season-2026-d842113f4ec9b4d719f84016` (replacing `preview-season-2026-aca7b33dcff32ff589616c88`) after migration `0029` on Preview. The release parity gate gained a narrow allowance: `off_success_ot_n` and `off_success_ot_sum` may differ only where the active release holds NULL, and every candidate row must carry them at or above the regulation counts. Production is not released.
+- **Source:** [contract](../plans/2026-11-09/nsr-include-overtime.md), session log `session_logs/2026-11-09/06-nsr-keep-garbage-time-impl.md`.
+
+## 2026-11-09: Underdog picks list and record count every pick
+
+- **Context:** The Underdog picks list and its season straight-up record were capped at each week's top 5 by model-vs-market gap, so weaker-gap picks were neither shown nor counted. The owner asked for every underdog pick and accepted the extra space.
+- **Decision:** List and count every qualifying underdog pick. The card shows the first 5 and a "Show all N" button (collapsed on every load) reveals the rest; the record reads "x–y" (the card footer says it is the straight-up record; the "straight up, all picks" wording was later dropped, see the featured card header contract). Ranking (gap, kickoff, game id), exclusions and straight-up grading are unchanged. This supersedes the top-5 cap in the 2026-11-08 underdog decision; the Biggest edges view and record keep their cap.
+- **Impact:** Web UI and `underdogRecord` only; no loader, query, schema or methodology change beyond the record's population. The displayed record changes because more picks now count. Still no odds, prices, payouts, units or ROI.
+- **Source:** [contract](../plans/2026-11-09/all-underdog-picks.md), session log `session_logs/2026-11-09/02-all-underdog-picks-impl.md`.
+
+## 2026-11-09: CFBD retrospective lines for three Week 6 games
+
+- **Context:** Three Week 6 games kicked off on 2026-10-07 before any market capture existed (Southern Miss at Troy `401871090`, Jacksonville State at Kennesaw State `401871051`, New Mexico State at Florida International `401871066`), so they were ungraded for both targets. The registered CFBD capture of 2026-10-08T16:19Z holds their Bovada and DraftKings lines.
+- **Decision:** (1) Grade the three games with the documented `cfbd_retrospective` fallback, from a pinned `historical_lines` revision input (`conf/season/2026/revision_manifest_w11_v2.json`); the grades carry the `model_side_best_quote_v2:cfbd_retrospective` label and are not pre-kickoff evidence. (2) The revision builder carries `historical_lines` forward from the previous manifest, so later weekly closes keep the grades. (3) The release parity gate has a narrow automatic allowance, active only when the candidate manifest carries `historical_lines`: exactly these three games may gain their quotes, snapshots, selections and retrospective grades while the active release holds none, with `system_stats` moving by exactly those grades; every prediction, variance, rating and other game still compares strictly, and once the active release holds the grades they compare strictly. (4) Owner approved a Preview release only; Production activation needs separate approval.
+- **Impact:** Preview record moves from spread 271-279-9 (559 graded) to 273-280-9 (562) and totals from 267-289-2 (558) to 269-290-2 (561). Production is unchanged until released. No prediction, variance or rating changed.
+- **Source:** [contract](../plans/2026-11-09/cfbd-retrospective-lines.md), [record methodology](../modeling/record_methodology.md#published-state-and-the-accepted-quote-correction), [weekly runbook](../ops/weekly_runbook.md), session logs `session_logs/2026-11-09/03-cfbd-retrospective-lines-phase1.md` and `session_logs/2026-11-09/04-cfbd-retrospective-lines-release.md`.
+
+## 2026-11-09: One featured-games card with a flip control
+
+- **Context:** "Biggest edges" and "Underdog picks" were two separate Games page sections, side by side as collapsed cards on phones, which crowded the first screen.
+- **Decision:** Show one card, `FeaturedGames`, with a two-option control that flips between "Biggest edges" (default on every load) and "Underdog picks". The control renders only when both views have content; otherwise the card is the Biggest edges card alone. The card stays collapsed on phones and open from 640px, and its heading and season record follow the selected view.
+- **Impact:** Games page UI only; no change to the lists, records, loaders or methodology, and still no odds, prices or returns.
+- **Source:** [contract](../plans/2026-11-09/underdog-flipper.md), session log `session_logs/2026-11-09/01-underdog-flipper-impl.md`.
+
+## 2026-11-08: Model page market comparison, big-miss threshold and luck band
+
+- **Context:** `/model` showed only the model's record and its own errors, so readers could not see whether the model was closer to the final score than the betting line, or whether a win rate differed from break-even by more than luck.
+- **Decision:** (1) compare the model with the retained pre-kickoff canonical line only, on the same games, excluding retrospective and unknown line sources and showing their counts; (2) a big miss is an absolute error strictly greater than 28 points, fixed before examining the 2026 tail numbers; (3) exact error ties are shown as "even" and left out of the percentage denominator; (4) the win-rate caveat uses the 95% range around 52.4% to choose between "within normal luck of break-even" wording and an outside-the-range wording; (5) units, ROI and profit stay off `/model` (the 2026-10-03 decision stands).
+- **Impact:** web read path and `/model` UI only; no schema, pipeline or V5 methodology change. The official record is unchanged and still settled at the best quote.
+- **Source:** [contract](../plans/2026-11-08/model-performance-dashboard.md), [record methodology](../modeling/record_methodology.md#model-page-market-comparison), session log `session_logs/2026-11-08/02-model-performance-dashboard-impl.md`.
+
+## 2026-11-08: Underdog picks on the Games page
+
+- **Context:** The owner wanted the Games page to show where the model picks the market underdog to win outright. Moneylines are barred from the model and no prices are stored.
+- **Decision:** Add a display-only "Underdog picks" section beside "Biggest edges", graded straight up on the final score. The market favorite is the consensus pre-kickoff line (`market_snapshots.spread` via `predictions.market_snapshot_id`), not the shopped line on the cards. Pick'em games and model margins under 0.05 are excluded; the list and the season record both use the top 5 per week, largest model-vs-market gap first, then kickoff, then game id.
+- **Impact:** One extra left join on the slate query and a season-record loader. No schema, pipeline, methodology or record change; no odds, prices, payouts, units or ROI appear anywhere. A game with no linked snapshot is excluded.
+- **Source:** [implementation contract](../plans/2026-11-08/model-underdog-picks.md), session log `session_logs/2026-11-08/03-model-underdog-picks-impl.md`.
+
 ## 2026-10-27: Stratum CFB public identity
 
 - **Context:** The owner rejected the Crest name because of its toothpaste association and selected Stratum after reviewing finalists.

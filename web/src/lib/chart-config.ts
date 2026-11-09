@@ -93,7 +93,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     credit: "Inspired by Parker Fleming: “Did We Really Get Beat That Bad?”",
     population: FBS_GAMES,
     controls: { side: false, week: "week", team: false },
-    footnote: `Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays (regulation only; garbage time and special teams excluded). Label = winner and final score. ${SUCCESS_RATE_DEFINITION}`,
+    footnote: `Bar = winner's offensive success-rate advantage/disadvantage in percentage points, on eligible plays, overtime included (this chart only; garbage time and special teams excluded). Label = winner and final score. ${SUCCESS_RATE_DEFINITION}`,
     ready: true,
   },
   efficiency: {

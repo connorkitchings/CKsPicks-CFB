@@ -70,7 +70,7 @@ Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actio
 - The revision builder's stop gate (completed-week schedule and finals unchanged) and its check that completed-week cutoffs match the previous certified manifest.
 - Score-reconciliation exceptions are added automatically only when the final score equals the sum of the quarter line scores for that team-game; otherwise the run stops and names the games. An earlier-week exception changing or becoming unused also stops the run.
 - Prepare passes every `season_verification_v2` check.
-- Parity against the active Preview release. For the close: completed-week predictions, variances, grades and earlier rating snapshots are identical within 1e-9. For the refresh: ratings, predictions, features and all grades are identical, and only the upcoming week's line, edge, lean and pending-pick columns differ. The upcoming week must be 100% predicted; line coverage is reported but does not block.
+- Parity against the active Preview release. When the candidate's revision manifest carries `historical_lines`, the gate also accepts, once and only for games `401871090`, `401871051` and `401871066`, the addition of their `cfbd_retrospective` quotes, snapshots, selections and grades with the matching `system_stats` movement; everything else is unchanged. For the close: completed-week predictions, variances, grades and earlier rating snapshots are identical within 1e-9. For the refresh: ratings, predictions, features and all grades are identical, and only the upcoming week's line, edge, lean and pending-pick columns differ. The upcoming week must be 100% predicted; line coverage is reported but does not block.
 - Preview release with `--expected-previous-release-id` read from the database, then Production release with the independent Preview proof, then a probe of the live `/api/health` until it reports the new release.
 
 **Commits.** The job commits the revision manifest and the exceptions file and pushes to `dev` before it prepares, then makes no further commit (prepare needs a clean tree and release needs `HEAD` equal to the prepared commit). Pushes made with `GITHUB_TOKEN` do not trigger `ci.yml`, so the workflow runs its own gates and does not rely on CI for that commit.
@@ -172,7 +172,7 @@ Do not run `ingest_season.py --entities games`, `build_expected_request_inventor
 3. Builds Silver `games` and `game_outcomes` from the fresh capture, runs the stop gate (`verify_completed_week_stability`: completed weeks 0..N−2 must equal the previous certified schedule and finals; any difference stops the run and names the games — route them to an approved repair, never a silent rewrite), then builds `plays` and `team_game_stats` from the union of the carried captures and the new week's captures.
 4. Derives `byplay`, `drives` and `source_reconciliation` from that Silver, builds one content-addressed cumulative `market_quotes` version from every registered capture, and writes `conf/season/2026/revision_manifest_w<NEXT_WEEK>_v1.json`.
 
-`venues`, `teams` and `score_reconciliation_exceptions` are copied unchanged from the previous manifest.
+`venues`, `teams`, `score_reconciliation_exceptions` and, when the previous manifest pins it, `historical_lines` (the CFBD retrospective lines for three Week 6 games) are copied unchanged from the previous manifest.
 
 ```bash
 make season-close-week WEEK=<NEXT_WEEK> AS_OF="$POST_WEEK_CUTOFF" \

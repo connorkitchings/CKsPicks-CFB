@@ -31,7 +31,7 @@ for (const scheme of ["light", "dark"] as const) {
       Object.defineProperty(document.fonts, "ready", { get: () => ready, configurable: true });
     });
     await gotoHydrated(page, "/matchup/1");
-    const live = await chipStyles(page.getByRole("table"));
+    const live = await chipStyles(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table"));
     expect(live.some((chip) => chip.neutral)).toBe(true);
     const factors = await chipStyles(page.getByTestId("tale-of-the-tape").getByTestId("tape-row"));
     expect(factors.length).toBeGreaterThan(0);

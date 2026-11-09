@@ -70,7 +70,7 @@ function buildGameRows(): TeamGameRow[] {
       for (const { team, opponent, site, own, other, pf, pa } of pair) {
         rows.push({
           week, gameId, team, opponent, site, pointsFor: pf, pointsAgainst: pa,
-          offPlays: own.plays, offSuccessN: own.plays, offSuccessSum: own.success, offEpaN: own.plays, offEpaSum: own.epa,
+          offPlays: own.plays, offSuccessN: own.plays, offSuccessSum: own.success, offSuccessOtN: own.plays, offSuccessOtSum: own.success, offEpaN: own.plays, offEpaSum: own.epa,
           defPlays: other.plays, defSuccessN: other.plays, defSuccessSum: other.success, defEpaN: other.plays, defEpaSum: other.epa,
         });
       }
@@ -220,7 +220,7 @@ export function chartsSlateFixture(): { roster: RosterRow[]; rows: TeamGameRow[]
     pf: number, pa: number, own: number, other: number,
   ): TeamGameRow => ({
     week: 0, gameId, team, opponent, site, pointsFor: pf, pointsAgainst: pa,
-    offPlays: 70, offSuccessN: 70, offSuccessSum: own, offEpaN: 70, offEpaSum: own / 100,
+    offPlays: 70, offSuccessN: 70, offSuccessSum: own, offSuccessOtN: 70, offSuccessOtSum: own, offEpaN: 70, offEpaSum: own / 100,
     defPlays: 70, defSuccessN: 70, defSuccessSum: other, defEpaN: 70, defEpaSum: other / 100,
   });
   for (let i = 0; i < Math.floor(names.length / 2); i++) {
