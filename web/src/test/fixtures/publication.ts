@@ -54,6 +54,7 @@ export const v5PerformanceDetailFixture: PerformanceDetail = {
     },
   },
   weeks: [0],
+  weekRows: [{ week: 0, ungradedGames: 0, unplayedGames: 0 }],
   gradedGames: [
     {
       gameId: 401000001,

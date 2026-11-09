@@ -90,7 +90,11 @@ export default function ModelMethodPage() {
             The 2025 historical review reported a margin error of 14.160 points and a total error of 13.356 points
             (mean absolute error) across 934 games per target. A separate postseason market comparison had lower
             market error on both targets. There is no like-for-like point-in-time V4 backtest, so the evidence does
-            not establish that V5 beats V4.
+            not establish that V5 beats V4.{" "}
+            <Link href="/model#market-heading" className="font-semibold text-accent-ink underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
+              See the 2026 comparison with the betting line
+            </Link>
+            .
           </p>
         </Section>
 

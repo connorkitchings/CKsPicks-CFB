@@ -117,8 +117,16 @@ test("prediction and performance rows allow null leans and grades but not null i
     evidenceClass: "replay", week: 1, gameId: 1, runId: "run-1", startDate: new Date(), homeTeam: "A", awayTeam: "B",
     predictedSpread: null, predictedTotal: null, predictedSpreadStdDev: null, predictedTotalStdDev: null,
     spreadLean: "away", totalLean: null, spreadResult: "win", totalResult: null, highConfidence: true,
+    canonicalSpread: null, canonicalTotal: null, spreadGradingVersion: null, totalGradingVersion: null,
   };
   assert.equal(checkRows([detail], PERFORMANCE_DETAIL_SPEC).total, 0);
+  const withLines = {
+    ...detail, canonicalSpread: -3.5, canonicalTotal: 51,
+    spreadGradingVersion: "model_side_best_quote_v2:retained_prekickoff", totalGradingVersion: "model_side_best_quote_v2:cfbd_retrospective",
+  };
+  assert.equal(checkRows([withLines], PERFORMANCE_DETAIL_SPEC).total, 0);
+  assert.equal(checkRows([{ ...withLines, canonicalSpread: Number.NaN }], PERFORMANCE_DETAIL_SPEC).total, 1);
+  assert.equal(checkRows([{ ...withLines, spreadGradingVersion: "" }], PERFORMANCE_DETAIL_SPEC).total, 1);
   assert.equal(checkRows([{ ...detail, evidenceClass: "pending" }], PERFORMANCE_DETAIL_SPEC).total, 0);
   assert.equal(checkRows([{ ...detail, evidenceClass: "live" }], PERFORMANCE_DETAIL_SPEC).total, 0);
   assert.equal(checkRows([{ ...detail, evidenceClass: "draft" }], PERFORMANCE_DETAIL_SPEC).total, 1);
@@ -143,6 +151,10 @@ test("the UI-test fixtures satisfy the row contracts (CFB_UI_TEST_MODE=1 stays v
     spreadResult: g.spreadResult,
     totalResult: g.totalResult,
     highConfidence: g.highConfidence,
+    canonicalSpread: g.canonicalSpread ?? null,
+    canonicalTotal: g.canonicalTotal ?? null,
+    spreadGradingVersion: g.spreadGradingVersion ?? null,
+    totalGradingVersion: g.totalGradingVersion ?? null,
   }));
   assert.equal(checkRows(detailRows, PERFORMANCE_DETAIL_SPEC).total, 0);
 });

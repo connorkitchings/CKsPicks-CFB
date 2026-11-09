@@ -1,5 +1,12 @@
 import { getV5PerformanceDetail, type PerformanceDetail } from "@/lib/v5";
-import { mobilePerformanceFixture } from "@/test/fixtures/performance-mobile";
+import { mobilePerformanceFixture, partialPerformanceFixture } from "@/test/fixtures/performance-mobile";
+import { isUiTestMode } from "@/lib/slate-page";
+import {
+  lineSourceCounts,
+  marketComparison,
+  type MarketTarget,
+} from "@/lib/performance-market";
+import { weeklyAndCumulative } from "@/lib/performance-trend";
 import { publicationScope } from "@/lib/publication";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import { PageShell } from "@/components/PageShell";
@@ -7,26 +14,39 @@ import { ModelTabs } from "@/components/model/ModelTabs";
 import { Notice } from "@/components/ui/Notice";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { PageHeading } from "@/components/ui/PageHeading";
-import { PerformanceDashboard, type PerformanceView } from "@/components/PerformanceDashboard";
+import { PerformanceDashboard, type MarketView, type PerformanceView } from "@/components/PerformanceDashboard";
 import { loadPerformanceRecord } from "@/lib/performance-sections";
 
 // Selection changes must not serve a record baked into an earlier build.
 export const dynamic = "force-dynamic";
 
 // The client bundle receives only the fields the dashboard renders.
-const EXPLAINER = `Win rate excludes pushes. A game without an eligible market line does not count as a win or loss. Grades use captured selected lines and forecasts use point-in-time inputs.`;
+const EXPLAINER = `Win rate excludes pushes. A game without an eligible market line does not count as a win or loss. Grades use captured selected lines and forecasts use point-in-time inputs. The record is settled at the best quote found for each pick; the comparison with the betting line uses the retained pre-kickoff line.`;
 
-function clientView(detail: PerformanceDetail): PerformanceView {
+function marketView(detail: PerformanceDetail, target: MarketTarget): MarketView {
   return {
-    summary: detail.summary,
-    weeks: detail.weeks,
-    gradedGames: detail.gradedGames.map(({ week, spreadResult, totalResult }) => ({ week, spreadResult, totalResult })),
+    comparison: marketComparison(detail.gradedGames, target),
+    counts: lineSourceCounts(detail.gradedGames, target),
   };
 }
 
-export default async function ModelPage() {
-  const record = process.env.CFB_UI_TEST_MODE === "1"
-    ? { status: "ok" as const, value: mobilePerformanceFixture }
+function clientView(detail: PerformanceDetail): PerformanceView {
+  const gradedGames = detail.gradedGames.map(({ week, spreadResult, totalResult }) => ({ week, spreadResult, totalResult }));
+  return {
+    summary: detail.summary,
+    weeks: detail.weeks,
+    gradedGames,
+    weekRows: detail.weekRows,
+    trend: weeklyAndCumulative(gradedGames, detail.weeks),
+    market: { spread: marketView(detail, "spread"), total: marketView(detail, "total") },
+  };
+}
+
+export default async function ModelPage({ searchParams }: { searchParams?: Promise<{ fixture?: string }> }) {
+  // `?fixture=partial` is a UI-test variant for the empty states; search params are read only there.
+  const fixture = isUiTestMode() ? (await searchParams)?.fixture : undefined;
+  const record = isUiTestMode()
+    ? { status: "ok" as const, value: fixture === "partial" ? partialPerformanceFixture : mobilePerformanceFixture }
     : await loadPerformanceRecord(
       () => getV5PerformanceDetail(publicationScope.season),
       error => console.error("V5 cumulative performance query failed", error),
