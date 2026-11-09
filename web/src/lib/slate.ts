@@ -287,8 +287,8 @@ type Ranked = { gap: number; game: { startDate: Date; gameId: number } };
 const byUnderdogOrder = (a: Ranked, b: Ranked) =>
   b.gap - a.gap || a.game.startDate.getTime() - b.game.startDate.getTime() || a.game.gameId - b.game.gameId;
 
-/** Underdog picks among games that have not finished (the current-week display), largest gap first. */
-export function underdogPicks(games: Game[], n = 5): UnderdogPick[] {
+/** Underdog picks among games that have not finished (the current-week display), largest gap first; every pick when `n` is omitted. */
+export function underdogPicks(games: Game[], n?: number): UnderdogPick[] {
   const out: UnderdogPick[] = [];
   for (const game of games) {
     if (game.publicationMode !== "predictions" || isFinal(game)) continue;
@@ -300,22 +300,26 @@ export function underdogPicks(games: Game[], n = 5): UnderdogPick[] {
   return out.sort(byUnderdogOrder).slice(0, n);
 }
 
+/** Rows shown before an expandable list is opened. */
+export const COLLAPSED_ROWS = 5;
+
+/** The rows to render: the first `limit` while collapsed, all of them once expanded. */
+export function visibleRows<T>(rows: readonly T[], expanded: boolean, limit = COLLAPSED_ROWS): readonly T[] {
+  return expanded ? rows : rows.slice(0, limit);
+}
+
 /**
- * Season straight-up record of each week's top-n underdog picks (the same cap as `biggestEdgesRecord`
- * and the display). Pass one array per scored week. Unfinished and tied games count nowhere, but still
- * occupy a top-n slot; `push` stays zero.
+ * Season straight-up record of every underdog pick in each scored week (no cap). Pass one array per
+ * scored week. Unfinished and tied games count nowhere; `push` stays zero.
  */
-export function underdogRecord(weeks: ReadonlyArray<ReadonlyArray<Game | UnderdogSource>>, n = 5): Tally {
+export function underdogRecord(weeks: ReadonlyArray<ReadonlyArray<Game | UnderdogSource>>): Tally {
   const out: Tally = { win: 0, loss: 0, push: 0 };
   for (const games of weeks) {
-    const calls: (Ranked & { game: UnderdogSource; dir: "home" | "away" })[] = [];
     for (const game of games) {
       const call = underdogCall(game);
-      if (call && game.publicationMode === "predictions") calls.push({ gap: call.gap, game, dir: call.dir });
-    }
-    for (const { game, dir } of calls.sort(byUnderdogOrder).slice(0, n)) {
+      if (!call || game.publicationMode !== "predictions") continue;
       if (game.homePoints === null || game.awayPoints === null || game.homePoints === game.awayPoints) continue;
-      out[game.homePoints > game.awayPoints === (dir === "home") ? "win" : "loss"] += 1;
+      out[game.homePoints > game.awayPoints === (call.dir === "home") ? "win" : "loss"] += 1;
     }
   }
   return out;
