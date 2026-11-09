@@ -58,7 +58,9 @@ test.describe("upcoming week (/)", () => {
     await expect(section.locator("a[href='#game-4']")).toHaveCount(0);
     await expect(section).toContainText("The model picks the underdog to win");
     await expect(section).toContainText("Straight-up record: picks won outright");
-    await expect(section.getByText(/2026: 2–0 straight up/).first()).toBeAttached();
+    await expect(section.getByText(/2026: 2–0 straight up, all picks/).first()).toBeAttached();
+    // One pick: nothing to expand. The toggle itself is covered by unit tests (no fixture week has more than five).
+    await expect(section.getByRole("button", { name: /^Show (all|fewer)/ })).toHaveCount(0);
     const text = await section.textContent();
     for (const banned of [/\bROI\b/, /profit/i, /\bunits?\b/i, /net return/i, /payout/i, /-110/, /moneyline/i]) {
       expect(text, String(banned)).not.toMatch(banned);

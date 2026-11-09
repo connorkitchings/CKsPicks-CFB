@@ -22,6 +22,7 @@ import {
   topLeansRecord,
   underdogPicks,
   underdogRecord,
+  visibleRows,
   winRatePct,
 } from "./slate.ts";
 import type { Game } from "./queries.ts";
@@ -492,7 +493,7 @@ test("underdogPicks: the line shown is never -0 and carries the underdog's sign"
   assert.equal(Object.is(pick.line, -0), false);
 });
 
-test("underdogPicks: ranks by gap, then earlier kickoff, then game id, and keeps five", () => {
+test("underdogPicks: ranks by gap, then earlier kickoff, then game id", () => {
   const early = new Date("2026-10-03T16:00:00Z");
   const late = new Date("2026-10-03T23:00:00Z");
   // Home underdogs: gap = predicted + canonical.
@@ -502,9 +503,10 @@ test("underdogPicks: ranks by gap, then earlier kickoff, then game id, and keeps
     ud({ gameId: 10, startDate: early, canonicalSpread: 3, predictedSpread: 1 }), // gap 4, earlier, lower id
     ud({ gameId: 40, canonicalSpread: 9, predictedSpread: 1 }), // gap 10
     ud({ gameId: 50, canonicalSpread: 2, predictedSpread: 1 }), // gap 3
-    ud({ gameId: 60, canonicalSpread: 1.5, predictedSpread: 1 }), // gap 2.5, cut off
+    ud({ gameId: 60, canonicalSpread: 1.5, predictedSpread: 1 }), // gap 2.5, last
   ];
-  assert.deepEqual(underdogPicks(games).map((p) => p.game.gameId), [40, 10, 20, 30, 50]);
+  assert.deepEqual(underdogPicks(games).map((p) => p.game.gameId), [40, 10, 20, 30, 50, 60]);
+  assert.deepEqual(underdogPicks(games, 5).map((p) => p.game.gameId), [40, 10, 20, 30, 50]);
   assert.equal(underdogPicks(games, 2).length, 2);
 });
 
@@ -531,10 +533,23 @@ test("underdogRecord: grades the picked team straight up; losses count, ties and
   assert.deepEqual(underdogRecord([]), { win: 0, loss: 0, push: 0 });
 });
 
-test("underdogRecord: only each week's top five by gap count", () => {
+test("underdogPicks: every pick is returned when no count is given, in the same order", () => {
+  const games = [1, 2, 3, 4, 5, 6, 7].map((n) => ud({ gameId: n, canonicalSpread: 10 - n, predictedSpread: 1 }));
+  assert.deepEqual(underdogPicks(games).map((p) => p.game.gameId), [1, 2, 3, 4, 5, 6, 7]);
+  assert.equal(underdogPicks(games, 5).length, 5);
+});
+
+test("visibleRows: the first five while collapsed, everything once expanded", () => {
+  const rows = [1, 2, 3, 4, 5, 6, 7, 8];
+  assert.deepEqual(visibleRows(rows, false), [1, 2, 3, 4, 5]);
+  assert.deepEqual(visibleRows(rows, true), rows);
+  assert.deepEqual(visibleRows([1, 2, 3], false), [1, 2, 3]);
+});
+
+test("underdogRecord: every pick in a week counts, not just the top five", () => {
   const lost = { homePoints: 0, awayPoints: 7 };
   const won = { homePoints: 7, awayPoints: 0 };
-  // Six picks; the smallest gap is a win that falls outside the top five, so it must not count.
+  // Six picks; the smallest gap is a win outside the old top five, and it counts.
   const week = [
     ud({ gameId: 1, canonicalSpread: 9, predictedSpread: 1, ...lost }),
     ud({ gameId: 2, canonicalSpread: 8, predictedSpread: 1, ...lost }),
@@ -543,5 +558,5 @@ test("underdogRecord: only each week's top five by gap count", () => {
     ud({ gameId: 5, canonicalSpread: 5, predictedSpread: 1, ...lost }),
     ud({ gameId: 6, canonicalSpread: 3, predictedSpread: 1, ...won }),
   ];
-  assert.deepEqual(underdogRecord([week]), { win: 0, loss: 5, push: 0 });
+  assert.deepEqual(underdogRecord([week]), { win: 1, loss: 5, push: 0 });
 });

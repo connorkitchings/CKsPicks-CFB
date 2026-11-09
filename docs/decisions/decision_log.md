@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-11-09: Underdog picks list and record count every pick
+
+- **Context:** The Underdog picks list and its season straight-up record were capped at each week's top 5 by model-vs-market gap, so weaker-gap picks were neither shown nor counted. The owner asked for every underdog pick and accepted the extra space.
+- **Decision:** List and count every qualifying underdog pick. The card shows the first 5 and a "Show all N" button (collapsed on every load) reveals the rest; the record reads "x–y straight up, all picks". Ranking (gap, kickoff, game id), exclusions and straight-up grading are unchanged. This supersedes the top-5 cap in the 2026-11-08 underdog decision; the Biggest edges view and record keep their cap.
+- **Impact:** Web UI and `underdogRecord` only; no loader, query, schema or methodology change beyond the record's population. The displayed record changes because more picks now count. Still no odds, prices, payouts, units or ROI.
+- **Source:** [contract](../plans/2026-11-09/all-underdog-picks.md), session log `session_logs/2026-11-09/02-all-underdog-picks-impl.md`.
+
 ## 2026-11-09: One featured-games card with a flip control
 
 - **Context:** "Biggest edges" and "Underdog picks" were two separate Games page sections, side by side as collapsed cards on phones, which crowded the first screen.

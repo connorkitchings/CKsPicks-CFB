@@ -27,7 +27,7 @@ export interface SlateViewProps {
   weekPerformance?: Performance[];
   /** Season track record over each scored week's top leans. */
   topLeansRecord?: Tally | null;
-  /** Season straight-up record over each scored week's top underdog picks. */
+  /** Season straight-up record over every underdog pick in each scored week. */
   underdogRecord?: Tally | null;
   systemName?: string | null;
   runState?: string | null;

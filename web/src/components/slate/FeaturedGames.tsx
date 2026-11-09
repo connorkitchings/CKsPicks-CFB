@@ -29,14 +29,14 @@ export function FeaturedGames({
   games: Game[];
   /** Season record over each scored week's top spread/total leans. */
   edgesRecord?: Tally | null;
-  /** Season straight-up record over each scored week's top underdog picks. */
+  /** Season straight-up record over every underdog pick in each scored week. */
   underdogRecord?: Tally | null;
   season: number;
 }) {
   const [view, setView] = useState<View>("edges");
   const [tab, setTab] = useState<LeanKind>("spread");
 
-  const picks = underdogPicks(games, 5);
+  const picks = underdogPicks(games);
   const hasEdges = topLeans(games, "spread", 5).length > 0 || topLeans(games, "total", 5).length > 0;
   const hasUnderdogs = picks.length > 0;
   if (!hasEdges && !hasUnderdogs) return null;
