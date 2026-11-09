@@ -106,11 +106,13 @@ test("dates must be valid Date objects", () => {
 test("prediction and performance rows allow null leans and grades but not null identities", () => {
   const game = {
     gameId: 1, week: 1, startDate: new Date(), homeTeam: "A", awayTeam: "B",
-    homeTeamSpreadLine: null, totalLine: null, predictedSpread: -3.2, predictedTotal: 50.1,
+    homeTeamSpreadLine: null, canonicalSpread: null, totalLine: null, predictedSpread: -3.2, predictedTotal: 50.1,
     spreadLean: null, totalLean: null, edgeSpread: 0.4, edgeTotal: 0.1, highConfidence: false,
     spreadResult: null, totalResult: null,
   };
   assert.equal(checkRows([game], PREDICTION_GAME_SPEC).total, 0);
+  assert.equal(checkRows([{ ...game, canonicalSpread: 3.5 }], PREDICTION_GAME_SPEC).total, 0);
+  assert.equal(checkRows([{ ...game, canonicalSpread: undefined }], PREDICTION_GAME_SPEC).total, 1);
   assert.equal(checkRows([{ ...game, gameId: null }], PREDICTION_GAME_SPEC).total, 1);
   assert.equal(checkRows([{ ...game, spreadLean: "push" }], PREDICTION_GAME_SPEC).total, 1);
   const detail = {

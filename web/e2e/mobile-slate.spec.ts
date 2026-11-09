@@ -102,6 +102,34 @@ test("collapsed biggest edges preserve every game anchor and selected category",
 });
 
 
+test("collapsed disclosures sit side by side on phones and underdog picks keep their anchors", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
+  const underdogs = page.getByRole("region", { name: "Underdog picks" });
+  await expect(page.locator("details[open]")).toHaveCount(0);
+  const [left, right] = [await biggestEdges.boundingBox(), await underdogs.boundingBox()];
+  expect(Math.abs(left!.y - right!.y)).toBeLessThan(1);
+  expect(right!.x).toBeGreaterThan(left!.x + left!.width - 1);
+  // One 44px row each: neither label wraps.
+  for (const region of [biggestEdges, underdogs]) {
+    const box = await region.locator("summary").boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    expect(box!.height).toBeLessThanOrEqual(48);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await underdogs.locator("summary").click();
+  const shown = await underdogs.locator("a[href^='#game-']").filter({ visible: true }).evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+  expect(shown).toEqual(["#game-9"]);
+  // Opening one stacks them full width.
+  const opened = await underdogs.boundingBox();
+  expect(opened!.width).toBeGreaterThan(300);
+  const link = underdogs.locator("a[href='#game-9']");
+  expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await link.click();
+  expect(new URL(page.url()).hash).toBe("#game-9");
+});
+
 test("biggest edges and highlights are open inline on desktop without a click", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");

@@ -21,7 +21,7 @@ import {
 } from "./row-guard.ts";
 import type { TeamStatRow } from "./team-stats";
 import { cachedOrTolerant, degradedScope, SwallowedReadError } from "./cached-or-tolerant.ts";
-import { biggestEdgesRecord, leanFor, type LeanGradeRow, type Tally } from "./slate.ts";
+import { biggestEdgesRecord, leanFor, underdogRecord, type LeanGradeRow, type Tally } from "./slate.ts";
 
 type BaseGame = {
   gameId: number;
@@ -82,6 +82,11 @@ export type PredictionGame = BaseGame & {
    */
   spreadSource?: string | null;
   totalSource?: string | null;
+  /**
+   * Consensus pre-kickoff spread (home team's number) from the prediction's market snapshot. Unlike
+   * `homeTeamSpreadLine` it is never replaced by the shopped quote. Null when no snapshot is linked.
+   */
+  canonicalSpread?: number | null;
 };
 
 export type Game = MarketGame | PredictionGame;
@@ -437,6 +442,7 @@ type FrozenLineFields = {
   totalLean: "over" | "under" | null;
   edgeSpread: number | null;
   edgeTotal: number | null;
+  canonicalSpread?: number | null;
 };
 
 const missesLines = (rows: FrozenLineFields[]) =>
@@ -466,7 +472,16 @@ function applyFrozenLines<T extends FrozenLineFields>(rows: T[], lines: Map<numb
       totalLean = view.lean;
       if (edgeTotal === null) edgeTotal = view.edge;
     }
-    return { ...row, homeTeamSpreadLine, totalLine, spreadLean, totalLean, edgeSpread, edgeTotal };
+    return {
+      ...row,
+      homeTeamSpreadLine,
+      totalLine,
+      spreadLean,
+      totalLean,
+      edgeSpread,
+      edgeTotal,
+      canonicalSpread: row.canonicalSpread ?? frozen.spread,
+    };
   });
 }
 
@@ -778,6 +793,7 @@ async function loadGamesForWeek(season: number, week: number, strict: boolean): 
           homeTeam: schema.games.homeTeam,
           awayTeam: schema.games.awayTeam,
           homeTeamSpreadLine: schema.predictions.homeTeamSpreadLine,
+          canonicalSpread: schema.marketSnapshots.spread,
           totalLine: schema.predictions.totalLine,
           predictedSpread: schema.predictions.predictedSpread,
           predictedTotal: schema.predictions.predictedTotal,
@@ -817,6 +833,7 @@ async function loadGamesForWeek(season: number, week: number, strict: boolean): 
         .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
         .innerJoin(schema.predictionRuns, eq(schema.predictions.runId, schema.predictionRuns.runId))
         .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
+        .leftJoin(schema.marketSnapshots, eq(schema.predictions.marketSnapshotId, schema.marketSnapshots.snapshotId))
         .where(eq(schema.predictions.runId, run.runId))
         .orderBy(asc(schema.games.startDate), asc(schema.games.gameId)),
       getMarketSelectionsForRun(run.runId, season, strict),
@@ -897,6 +914,7 @@ async function loadGamesForWeek(season: number, week: number, strict: boolean): 
       publicationMode: "predictions" as const,
       runId: null,
       runState: "legacy" as const,
+      canonicalSpread: null,
       regime: null,
       homeCompletedGames: 0,
       awayCompletedGames: 0,
@@ -1203,3 +1221,64 @@ const cachedBiggestEdgesRecord = releaseCached("getBiggestEdgesRecord", (season:
 
 export const getBiggestEdgesRecord = cache(async (season: number): Promise<Tally> =>
   cachedOrTolerant(await degradedScopeFor(season), cachedBiggestEdgesRecord, (value: number) => loadBiggestEdgesRecord(value, false), season));
+
+/**
+ * Season straight-up record of each scored week's top underdog picks ("Underdog picks"): the model's
+ * winner against the final score, for games where it picks the consensus-line underdog. Reads the same
+ * selected runs as `loadBiggestEdgesRecord`, with the consensus line from the prediction's market snapshot
+ * (backfilled from the week's frozen snapshots like the slate). A missing line excludes the game.
+ */
+async function loadUnderdogRecord(season: number): Promise<Tally> {
+  const weeks = await getScoredWeeks(season);
+  if (weeks.length === 0) return { win: 0, loss: 0, push: 0 };
+  const db = await getSeasonDb(season);
+  const rows = await db
+    .select({
+      week: schema.games.week,
+      gameId: schema.games.gameId,
+      startDate: schema.games.startDate,
+      homeTeam: schema.games.homeTeam,
+      awayTeam: schema.games.awayTeam,
+      predictedSpread: schema.predictions.predictedSpread,
+      canonicalSpread: schema.marketSnapshots.spread,
+      homePoints: schema.gameResults.homePoints,
+      awayPoints: schema.gameResults.awayPoints,
+      modelId: schema.predictionRuns.modelId,
+      state: schema.predictionRuns.state,
+      evidenceClass: schema.predictionRuns.evidenceClass,
+    })
+    .from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, and(
+      eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId),
+      eq(schema.predictionRuns.season, season),
+      eq(schema.predictionRuns.week, schema.siteWeekSelections.week),
+    ))
+    .innerJoin(schema.predictions, eq(schema.predictions.runId, schema.predictionRuns.runId))
+    .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
+    .leftJoin(schema.marketSnapshots, eq(schema.predictions.marketSnapshotId, schema.marketSnapshots.snapshotId))
+    .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
+    .where(and(
+      eq(schema.siteWeekSelections.season, season),
+      inArray(schema.siteWeekSelections.week, weeks),
+    ))
+    .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
+
+  const selectable = rows.filter(isSelectableRun);
+  const needsLine = weeks.filter((week) => selectable.some((row) => row.week === week && row.canonicalSpread === null));
+  const frozenLines = needsLine.length > 0 ? await frozenLinesForWeeks(season, needsLine) : new Map<number, Map<number, FrozenLine>>();
+  return underdogRecord(weeks.map((week) =>
+    selectable
+      .filter((row) => row.week === week)
+      .map((row) => ({
+        ...row,
+        publicationMode: "predictions" as const,
+        canonicalSpread: row.canonicalSpread ?? frozenLines.get(week)?.get(row.gameId)?.spread ?? null,
+      })),
+  ));
+}
+
+const cachedUnderdogRecord = releaseCached("getUnderdogRecord", (season: number) =>
+  loadUnderdogRecord(season), RUN_STATE_CACHE);
+
+export const getUnderdogRecord = cache(async (season: number): Promise<Tally> =>
+  cachedOrTolerant(await degradedScopeFor(season), cachedUnderdogRecord, (value: number) => loadUnderdogRecord(value), season));

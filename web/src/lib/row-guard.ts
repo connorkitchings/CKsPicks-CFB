@@ -169,6 +169,8 @@ export const PREDICTION_GAME_SPEC: RowSpec = {
   homeTeam: { kind: "string" },
   awayTeam: { kind: "string" },
   homeTeamSpreadLine: OPTIONAL_NUMBER,
+  // Consensus line: `undefined` (no snapshot join selected) is reported missing; a missing snapshot is `null`.
+  canonicalSpread: OPTIONAL_NUMBER,
   totalLine: OPTIONAL_NUMBER,
   predictedSpread: OPTIONAL_NUMBER,
   predictedTotal: OPTIONAL_NUMBER,
