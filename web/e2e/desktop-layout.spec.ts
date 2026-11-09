@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { gotoHydrated } from "./helpers";
 
 const DESKTOP = { width: 1280, height: 900 };
 
@@ -66,15 +67,33 @@ test.describe("desktop layout at 1280px", () => {
     await expect(record).toBeVisible();
   });
 
-  test("slate shows Underdog picks inline and open, below Biggest edges, without a click", async ({ page }) => {
-    await page.goto("/");
-    const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
-    const underdogs = page.getByRole("region", { name: "Underdog picks" });
-    await expect(underdogs.getByText("Underdog picks", { exact: false }).filter({ visible: true }).first()).toBeVisible();
-    await expect(underdogs.locator("summary").filter({ visible: true })).toHaveCount(0);
-    await expect(underdogs.locator("a[href='#game-9']")).toBeVisible();
-    const [top, below] = [await biggestEdges.boundingBox(), await underdogs.boundingBox()];
-    expect(below!.y).toBeGreaterThanOrEqual(top!.y + top!.height);
+  test("slate shows one featured card that flips from Biggest edges to Underdog picks and back", async ({ page }) => {
+    await gotoHydrated(page, "/");
+    const card = page.getByRole("region", { name: "Biggest edges" });
+    await expect(page.getByRole("region", { name: "Underdog picks" })).toHaveCount(0);
+    await expect(card.locator("summary").filter({ visible: true })).toHaveCount(0);
+    const view = card.getByRole("group", { name: "Featured games view" });
+    const edgesButton = view.getByRole("button", { name: "Biggest edges", exact: true });
+    const underdogsButton = view.getByRole("button", { name: "Underdog picks", exact: true });
+    // Default view on every load.
+    await expect(edgesButton).toHaveAttribute("aria-pressed", "true");
+    await expect(card.getByRole("heading", { name: /^Biggest edges/ })).toBeVisible();
+    await expect(card.getByText(/2026: 7–3–0/).filter({ visible: true }).first()).toBeVisible();
+    await expect(card.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
+    await expect(card).not.toContainText("The model picks the underdog to win");
+
+    await underdogsButton.click();
+    await expect(underdogsButton).toHaveAttribute("aria-pressed", "true");
+    await expect(card.getByRole("heading", { name: /^Underdog picks/ })).toBeVisible();
+    await expect(card.getByRole("heading", { name: /2026: 2–0 straight up/ })).toBeVisible();
+    await expect(card).toContainText("The model picks the underdog to win");
+    await expect(card).toContainText("Straight-up record: picks won outright");
+    await expect(card.locator("a[href^='#game-']")).toHaveCount(1);
+    await expect(card.locator("a[href='#game-9']")).toBeVisible();
+
+    await edgesButton.click();
+    await expect(edgesButton).toHaveAttribute("aria-pressed", "true");
+    await expect(card.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
   });
 
   test("a final week shows Result Highlights without a click", async ({ page }) => {

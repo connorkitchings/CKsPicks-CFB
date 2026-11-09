@@ -4,8 +4,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
 import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
-import { TopLeans } from "@/components/slate/TopLeans";
-import { UnderdogPicks } from "@/components/slate/UnderdogPicks";
+import { FeaturedGames } from "@/components/slate/FeaturedGames";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
 import { SlateList } from "@/components/slate/SlateList";
 import { WeekNav } from "@/components/WeekNav";
@@ -208,9 +207,8 @@ export function SlateView({
                 now={now}
                 weekNav={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact selectId="week-select-phone" /> : undefined}
                 extras={predictionsVisible ? (
-                  <div className="grid grid-cols-2 gap-2 has-[details[open]]:grid-cols-1 sm:grid-cols-1 sm:gap-4 [&>:only-child]:col-span-full">
-                    {phase !== "final" && <TopLeans games={games} record={topLeansRecord} season={season} />}
-                    {phase !== "final" && <UnderdogPicks games={games} record={underdogRecord} season={season} />}
+                  <div className="space-y-2 sm:space-y-4">
+                    {phase !== "final" && <FeaturedGames games={games} edgesRecord={topLeansRecord} underdogRecord={underdogRecord} season={season} />}
                     {phase !== "upcoming" && <ResultHighlights games={games} />}
                   </div>
                 ) : undefined}

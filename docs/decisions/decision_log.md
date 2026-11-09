@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-11-09: One featured-games card with a flip control
+
+- **Context:** "Biggest edges" and "Underdog picks" were two separate Games page sections, side by side as collapsed cards on phones, which crowded the first screen.
+- **Decision:** Show one card, `FeaturedGames`, with a two-option control that flips between "Biggest edges" (default on every load) and "Underdog picks". The control renders only when both views have content; otherwise the card is the Biggest edges card alone. The card stays collapsed on phones and open from 640px, and its heading and season record follow the selected view.
+- **Impact:** Games page UI only; no change to the lists, records, loaders or methodology, and still no odds, prices or returns.
+- **Source:** [contract](../plans/2026-11-09/underdog-flipper.md), session log `session_logs/2026-11-09/01-underdog-flipper-impl.md`.
+
 ## 2026-11-08: Model page market comparison, big-miss threshold and luck band
 
 - **Context:** `/model` showed only the model's record and its own errors, so readers could not see whether the model was closer to the final score than the betting line, or whether a win rate differed from break-even by more than luck.
