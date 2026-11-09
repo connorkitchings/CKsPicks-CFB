@@ -135,6 +135,22 @@ test("one collapsed featured card on phones flips to underdog picks and keeps th
   expect(new URL(page.url()).hash).toBe("#game-9");
 });
 
+test("the opened featured card keeps its control inside a 320px phone in both views", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await gotoHydrated(page, "/");
+  const card = page.getByRole("region", { name: "Biggest edges" });
+  await card.locator("summary").click();
+  const view = card.getByRole("group", { name: "Featured games view" });
+  await expect(view).toBeVisible();
+  for (const name of ["Biggest edges", "Underdog picks"]) {
+    await view.getByRole("button", { name, exact: true }).click();
+    const box = (await view.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  }
+});
+
 test("the featured card starts on Biggest edges again after a reload", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoHydrated(page, "/");

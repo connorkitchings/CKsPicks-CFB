@@ -5,7 +5,7 @@ This log records architectural and product decisions, newest first. Older entrie
 ## 2026-11-09: Underdog picks list and record count every pick
 
 - **Context:** The Underdog picks list and its season straight-up record were capped at each week's top 5 by model-vs-market gap, so weaker-gap picks were neither shown nor counted. The owner asked for every underdog pick and accepted the extra space.
-- **Decision:** List and count every qualifying underdog pick. The card shows the first 5 and a "Show all N" button (collapsed on every load) reveals the rest; the record reads "x–y straight up, all picks". Ranking (gap, kickoff, game id), exclusions and straight-up grading are unchanged. This supersedes the top-5 cap in the 2026-11-08 underdog decision; the Biggest edges view and record keep their cap.
+- **Decision:** List and count every qualifying underdog pick. The card shows the first 5 and a "Show all N" button (collapsed on every load) reveals the rest; the record reads "x–y" (the card footer says it is the straight-up record; the "straight up, all picks" wording was later dropped, see the featured card header contract). Ranking (gap, kickoff, game id), exclusions and straight-up grading are unchanged. This supersedes the top-5 cap in the 2026-11-08 underdog decision; the Biggest edges view and record keep their cap.
 - **Impact:** Web UI and `underdogRecord` only; no loader, query, schema or methodology change beyond the record's population. The displayed record changes because more picks now count. Still no odds, prices, payouts, units or ROI.
 - **Source:** [contract](../plans/2026-11-09/all-underdog-picks.md), session log `session_logs/2026-11-09/02-all-underdog-picks-impl.md`.
 

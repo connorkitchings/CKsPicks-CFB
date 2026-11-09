@@ -56,9 +56,10 @@ test.describe("upcoming week (/)", () => {
     await expect(row).toHaveAttribute("aria-label", "Texas at Oklahoma: model picks Oklahoma to win");
     // Game 4 only looks like an upset on the shopped line; its consensus line is a pick'em.
     await expect(section.locator("a[href='#game-4']")).toHaveCount(0);
-    await expect(section).toContainText("The model picks the underdog to win");
+    await expect(section).toContainText("The model says the wrong team is favored");
     await expect(section).toContainText("Straight-up record: picks won outright");
-    await expect(section.getByText(/2026: 2–0 straight up, all picks/).first()).toBeAttached();
+    await expect(section.getByText(/2026: 2–0/).first()).toBeAttached();
+    await expect(section).not.toContainText(/straight up, all picks/i);
     // One pick: nothing to expand. The toggle itself is covered by unit tests (no fixture week has more than five).
     await expect(section.getByRole("button", { name: /^Show (all|fewer)/ })).toHaveCount(0);
     const text = await section.textContent();

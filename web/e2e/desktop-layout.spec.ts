@@ -80,13 +80,15 @@ test.describe("desktop layout at 1280px", () => {
     await expect(card.getByRole("heading", { name: /^Biggest edges/ })).toBeVisible();
     await expect(card.getByText(/2026: 7–3–0/).filter({ visible: true }).first()).toBeVisible();
     await expect(card.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
-    await expect(card).not.toContainText("The model picks the underdog to win");
+    await expect(card).not.toContainText("The model says the wrong team is favored");
 
     await underdogsButton.click();
     await expect(underdogsButton).toHaveAttribute("aria-pressed", "true");
     await expect(card.getByRole("heading", { name: /^Underdog picks/ })).toBeVisible();
-    await expect(card.getByRole("heading", { name: /2026: 2–0 straight up/ })).toBeVisible();
-    await expect(card).toContainText("The model picks the underdog to win");
+    await expect(card.getByRole("heading", { name: /^Underdog picks\s*2026: 2–0$/ })).toBeVisible();
+    await expect(card).toContainText("The model says the wrong team is favored");
+    await expect(card).not.toContainText("picks the underdog to win");
+    await expect(card).not.toContainText(/straight up, all picks/i);
     await expect(card).toContainText("Straight-up record: picks won outright");
     await expect(card.locator("a[href^='#game-']")).toHaveCount(1);
     await expect(card.locator("a[href='#game-9']")).toBeVisible();
@@ -94,6 +96,22 @@ test.describe("desktop layout at 1280px", () => {
     await edgesButton.click();
     await expect(edgesButton).toHaveAttribute("aria-pressed", "true");
     await expect(card.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
+  });
+
+  test("the featured card's view control sits to the right of the title on the same row from 640px", async ({ page }) => {
+    await page.setViewportSize({ width: 640, height: 900 });
+    await gotoHydrated(page, "/");
+    const card = page.getByRole("region", { name: "Biggest edges" });
+    const view = card.getByRole("group", { name: "Featured games view" });
+    const underdogsButton = view.getByRole("button", { name: "Underdog picks", exact: true });
+    for (const name of [/^Biggest edges/, /^Underdog picks/]) {
+      const title = (await card.getByRole("heading", { name }).boundingBox())!;
+      const control = (await view.boundingBox())!;
+      expect(control.x).toBeGreaterThanOrEqual(title.x + title.width);
+      expect(Math.abs(control.y - title.y)).toBeLessThan(title.height + 8);
+      expect(control.y + control.height).toBeGreaterThan(title.y);
+      await underdogsButton.click();
+    }
   });
 
   test("a final week shows Result Highlights without a click", async ({ page }) => {

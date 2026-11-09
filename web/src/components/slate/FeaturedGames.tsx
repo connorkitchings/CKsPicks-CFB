@@ -57,12 +57,10 @@ export function FeaturedGames({
             {recordText && <span className="ml-2 text-xs font-normal text-ink-muted">{recordText}</span>}
           </span>
         }
+        action={
+          canFlip ? <SegmentedControl label="Featured games view" value={active} onChange={setView} options={VIEW_OPTIONS} fill /> : undefined
+        }
       >
-        {canFlip && (
-          <div className="mb-3">
-            <SegmentedControl label="Featured games view" value={active} onChange={setView} options={VIEW_OPTIONS} fill />
-          </div>
-        )}
         {active === "edges" ? (
           <TopLeansBody games={games} recordText={recordText} tab={tab} onTabChange={setTab} />
         ) : (
