@@ -45,7 +45,7 @@ ROW_KEYS = {
     "team_adjusted_epa": ("season", "as_of_week", "team", "role"),
     "team_game_yardage": ("season", "game_id", "team"),
 }
-#: INTEGER columns per table (migrations 0026, 0027); builders may yield floats.
+#: INTEGER columns per table (migrations 0026, 0027, 0029); builders may yield floats.
 INTEGER_COLUMNS = {
     "team_season_roster": ("season",),
     "team_game_stats": (
@@ -60,6 +60,7 @@ INTEGER_COLUMNS = {
         "def_plays",
         "def_success_n",
         "def_epa_n",
+        "off_success_ot_n",
     ),
     "team_adjusted_epa": (
         "season",

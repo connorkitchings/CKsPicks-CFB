@@ -5,6 +5,7 @@ import {
   PREDICTION_GAME_SPEC,
   RATING_SPEC,
   RowContractError,
+  TEAM_GAME_STATS_SPEC,
   TEAM_STAT_RULES,
   TEAM_STAT_SPEC,
   checkRows,
@@ -159,4 +160,18 @@ test("the UI-test fixtures satisfy the row contracts (CFB_UI_TEST_MODE=1 stays v
     totalGradingVersion: g.totalGradingVersion ?? null,
   }));
   assert.equal(checkRows(detailRows, PERFORMANCE_DETAIL_SPEC).total, 0);
+});
+
+test("team game stats rows allow null all-plays success counts but not missing or non-finite ones", () => {
+  const row = {
+    week: 3, gameId: 1, team: "Tulsa", opponent: "Tulane", site: "home", pointsFor: 60, pointsAgainst: 10,
+    offPlays: 51, offSuccessN: 51, offSuccessSum: 34, offEpaN: 51, offEpaSum: 9.5,
+    defPlays: 25, defSuccessN: 25, defSuccessSum: 5, defEpaN: 25, defEpaSum: -2,
+    offSuccessOtN: 55, offSuccessOtSum: 36,
+  };
+  assert.equal(checkRows([row], TEAM_GAME_STATS_SPEC).total, 0);
+  assert.equal(checkRows([{ ...row, offSuccessOtN: null, offSuccessOtSum: null }], TEAM_GAME_STATS_SPEC).total, 0, "earlier releases");
+  assert.equal(checkRows([{ ...row, offSuccessOtN: undefined }], TEAM_GAME_STATS_SPEC).total, 1, "the loader must select the column");
+  assert.equal(checkRows([{ ...row, offSuccessOtSum: Number.NaN }], TEAM_GAME_STATS_SPEC).total, 1);
+  assert.equal(checkRows([{ ...row, offSuccessOtN: 55.5 }], TEAM_GAME_STATS_SPEC).total, 1);
 });

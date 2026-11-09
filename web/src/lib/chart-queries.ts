@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db as legacyDb, schema } from "./db";
-import { guardRows, type RowSpec } from "./row-guard.ts";
+import { guardRows, TEAM_GAME_STATS_SPEC, type RowSpec } from "./row-guard.ts";
 import { releaseCached } from "./release-cache.ts";
 import { getChartsDb, getSeasonReleaseContext } from "./season-release";
 import { explosivenessAvailable } from "./season-release-context.ts";
@@ -33,25 +33,6 @@ import type {
 const ROSTER_SPEC: RowSpec = {
   team: { kind: "string" },
   conference: { kind: "string", nullable: true },
-};
-const GAME_STATS_SPEC: RowSpec = {
-  week: { kind: "int" },
-  gameId: { kind: "int" },
-  team: { kind: "string" },
-  opponent: { kind: "string" },
-  site: { kind: { enum: ["home", "away", "neutral"] } },
-  pointsFor: { kind: "int" },
-  pointsAgainst: { kind: "int" },
-  offPlays: { kind: "int" },
-  offSuccessN: { kind: "int" },
-  offSuccessSum: { kind: "number" },
-  offEpaN: { kind: "int" },
-  offEpaSum: { kind: "number" },
-  defPlays: { kind: "int" },
-  defSuccessN: { kind: "int" },
-  defSuccessSum: { kind: "number" },
-  defEpaN: { kind: "int" },
-  defEpaSum: { kind: "number" },
 };
 const YARDAGE_SPEC: RowSpec = {
   gameId: { kind: "int" },
@@ -101,8 +82,9 @@ export const getTeamGameStats = cache(releaseCached("getTeamGameStats", async (s
     offEpaN: t.offEpaN, offEpaSum: t.offEpaSum,
     defPlays: t.defPlays, defSuccessN: t.defSuccessN, defSuccessSum: t.defSuccessSum,
     defEpaN: t.defEpaN, defEpaSum: t.defEpaSum,
+    offSuccessOtN: t.offSuccessOtN, offSuccessOtSum: t.offSuccessOtSum,
   }).from(t).where(eq(t.season, season)).orderBy(asc(t.week), asc(t.gameId), asc(t.team));
-  guardRows("team_game_stats", rows, GAME_STATS_SPEC);
+  guardRows("team_game_stats", rows, TEAM_GAME_STATS_SPEC);
   return rows as TeamGameRow[];
 }));
 

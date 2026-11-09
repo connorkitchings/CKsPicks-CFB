@@ -85,6 +85,7 @@ MIGRATION_0025 = MIGRATIONS / "0025_season_releases.sql"
 MIGRATION_0026 = MIGRATIONS / "0026_team_chart_tables.sql"
 MIGRATION_0027 = MIGRATIONS / "0027_team_game_yardage.sql"
 MIGRATION_0028 = MIGRATIONS / "0028_team_resume.sql"
+MIGRATION_0029 = MIGRATIONS / "0029_team_game_success_ot.sql"
 SNAPSHOT_MARKER = "-- Additive season releases."
 
 OWNER = "cks_owner"
@@ -157,6 +158,9 @@ def _bootstrap(cluster: PgCluster) -> None:
     _create_db(cluster, "tpl_0026", "tpl_0025")
     with cluster.connect("tpl_0026", OWNER, autocommit=True) as conn:
         conn.execute(MIGRATION_0026.read_text())
+        # 0029 only adds columns to the 0026 tables, so every later template carries it
+        # and the builders' team_game_stats rows match the schema at each stage.
+        conn.execute(MIGRATION_0029.read_text())
     _create_db(cluster, "tpl_0026_operable", "tpl_0026")
     _create_db(cluster, "tpl_migrated", "tpl_0026")
     with cluster.connect("tpl_migrated", OWNER, autocommit=True) as conn:
@@ -420,14 +424,20 @@ def owner_insert_release(
 # --------------------------------------------------------------------------
 
 
-def test_snapshot_tail_is_migrations_0025_to_0028_verbatim_matches():
+def test_snapshot_tail_is_migrations_0025_to_0029_verbatim_matches():
     schema = (ROOT / "contracts" / "schema.sql").read_text()
 
     tail = schema[schema.index(SNAPSHOT_MARKER) :]
 
     assert tail == "".join(
         path.read_text()
-        for path in (MIGRATION_0025, MIGRATION_0026, MIGRATION_0027, MIGRATION_0028)
+        for path in (
+            MIGRATION_0025,
+            MIGRATION_0026,
+            MIGRATION_0027,
+            MIGRATION_0028,
+            MIGRATION_0029,
+        )
     )
 
 

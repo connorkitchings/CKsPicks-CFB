@@ -1151,6 +1151,8 @@ export const teamGameStats = pgTable("team_game_stats", {
     defSuccessSum: doublePrecision("def_success_sum").notNull(),
     defEpaN: integer("def_epa_n").notNull(),
     defEpaSum: doublePrecision("def_epa_sum").notNull(),
+    offSuccessOtN: integer("off_success_ot_n"),
+    offSuccessOtSum: doublePrecision("off_success_ot_sum"),
 }, (table) => [primaryKey({ columns: [table.season, table.gameId, table.team] })]);
 
 export const seasonReleaseTeamGameStats = pgTable("season_release_team_game_stats", {
@@ -1173,6 +1175,8 @@ export const seasonReleaseTeamGameStats = pgTable("season_release_team_game_stat
     defSuccessSum: doublePrecision("def_success_sum").notNull(),
     defEpaN: integer("def_epa_n").notNull(),
     defEpaSum: doublePrecision("def_epa_sum").notNull(),
+    offSuccessOtN: integer("off_success_ot_n"),
+    offSuccessOtSum: doublePrecision("off_success_ot_sum"),
 }, (table) => [primaryKey({ columns: [table.releaseId, table.season, table.gameId, table.team] })]);
 
 export const teamAdjustedEpa = pgTable("team_adjusted_epa", {
