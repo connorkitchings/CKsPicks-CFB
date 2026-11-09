@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-11-09: Net success rate includes overtime
+
+- **Context:** Fleming's Week 10 chart disagrees with ours on blowouts. We first considered keeping garbage time and overtime; the investigation showed our data is sound and that keeping garbage time tracks his game ordering worse (rank agreement 0.952 kept against 0.966 dropped), so garbage-time exclusion does not explain the gap.
+- **Decision:** The Net success rate chart alone also counts overtime scrimmage plays, from two new offense columns, `off_success_ot_n` and `off_success_ot_sum`. Garbage time, special teams, penalties, two-point tries, dead plays, kicking plays and non-FBS games stay excluded. Our net success rate is the winner's offensive success rate minus the loser's and differs from Fleming's published chart, whose method we could not reproduce (best rank agreement 0.966; magnitudes differ most on UGA 42-7). `scrimmage_play_mask`, `eligible_play`, the existing columns and every other chart, rating and forecast are unchanged.
+- **Impact:** Additive nullable columns on `team_game_stats` and `season_release_team_game_stats` (migration `0029`); no new projection set. Only games with overtime change: in Week 10, Buffalo 34-31 Miami (OH) and Massachusetts 31-30 Ball State. A release built before the migration carries null, and its Net success rate bars are listed as not charted.
+- **Source:** [contract](../plans/2026-11-09/nsr-include-overtime.md), session log `session_logs/2026-11-09/06-nsr-keep-garbage-time-impl.md`.
+
 ## 2026-11-09: Underdog picks list and record count every pick
 
 - **Context:** The Underdog picks list and its season straight-up record were capped at each week's top 5 by model-vs-market gap, so weaker-gap picks were neither shown nor counted. The owner asked for every underdog pick and accepted the extra space.

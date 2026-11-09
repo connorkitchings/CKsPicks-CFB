@@ -47,7 +47,7 @@ V4 code was removed on 2026-10-22; see the [V4 retrospective](../docs/modeling/v
 | Path | Purpose |
 |---|---|
 | `contracts/schema.sql`, `schema.ts` | Canonical schema snapshot and Drizzle contract |
-| `contracts/migrations/` | Append-only upgrades through `0028_team_resume.sql` |
+| `contracts/migrations/` | Append-only upgrades through `0029_team_game_success_ot.sql` |
 | `contracts/teams.py`, `teams.ts`, `validation.py` | Shared team mappings and sync validation |
 | `src/cks_picks_cfb/db/migrations.py`, `scripts/pipeline/migrate_db.py` | Verified-target migration mechanism |
 | `web/src/lib/schema.ts`, `teams.ts` | Synchronized contract copies |

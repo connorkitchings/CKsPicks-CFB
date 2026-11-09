@@ -6,7 +6,7 @@ The **Stats** page (`/stats`, formerly Charts) is published with no feature flag
 
 | Chart | What it shows |
 | --- | --- |
-| **Net success rate** | One bar per game of a single week: the winner's offensive success rate minus the loser's. The header and PNG export carry the credit "Inspired by Parker Fleming: “Did We Really Get Beat That Bad?”". The winner's logo sits at the bar tip; the loser's sits just across the zero line, opposite the bar. The label is the winner's abbreviation and the final score. Available from Week 0. |
+| **Net success rate** | One bar per game of a single week: the winner's offensive success rate minus the loser's. The header and PNG export carry the credit "Inspired by Parker Fleming: “Did We Really Get Beat That Bad?”". Unlike every other chart, it includes overtime plays (garbage time is still dropped; see Definitions). Our bar is the winner's offensive success rate minus the loser's; it differs from Fleming's published chart, whose method we could not reproduce (best rank agreement 0.966 across a Week 10 comparison; magnitudes differ most on UGA 42-7). The winner's logo sits at the bar tip; the loser's sits just across the zero line, opposite the bar. The label is the winner's abbreviation and the final score. Available from Week 0. |
 | **Efficiency vs explosiveness** | Cumulative success rate (x) against 20+ yard rate or yards per successful play (y) through Week N. Retained `charts_v1` releases show Success Rate vs PPA/play, with no explosiveness toggle. Offense or defense; defense axes invert so up and right is better. Available from Through Week 2. |
 | **Adjusted PPA/play** | Adjusted offense (x) against adjusted defense allowed (y, inverted), with dashed play-weighted averages and corner labels relative to them. Available from "Through Week 2". |
 
@@ -20,7 +20,7 @@ PPA/play is an efficiency measure, not a standalone explosiveness measure. The o
 
 ## Definitions
 
-- **Plays.** `scrimmage_play_mask` (`src/cks_picks_cfb/data/play_filters.py`): regulation scrimmage plays; garbage time, special teams, penalties, two-point tries, dead plays and kicking plays are excluded.
+- **Plays.** `scrimmage_play_mask` (`src/cks_picks_cfb/data/play_filters.py`): regulation scrimmage plays; garbage time, special teams, penalties, two-point tries, dead plays and kicking plays are excluded. **Exception, Net success rate only:** the same mask with only the regulation-only period rule relaxed (`scrimmage_play_mask(..., keep_overtime=True)`), so overtime scrimmage plays count. Garbage time, special teams, penalties, two-point tries, dead plays and kicking plays are still excluded. These counts are stored in separate columns, `off_success_ot_n` and `off_success_ot_sum`; the existing columns, the cumulative windows, adjusted PPA/play, Possession efficiency, Game log, ratings and forecasts are unchanged.
 - **Games.** FBS-vs-FBS, regular season, completed. This is the same population as `build_team_season_stats` (`src/cks_picks_cfb/data/team_stats.py`).
 - **Success rate** is the mean of the play-level `success` flag over eligible plays that have one.
 - **PPA/play** is CFBD Predicted Points Added averaged over eligible plays with valid PPA; `ppa` is masked where `ppa_missing`. Internal `epa_*` field names and all calculations are retained. Yards per successful play is a yardage measure, not IsoPPP (points per successful play).
@@ -51,7 +51,7 @@ Each `team_adjusted_epa` row stores the decomposition `raw - venue_correction - 
 | Table | Content |
 | --- | --- |
 | `team_season_roster` | `season, team, conference` for every FBS team. |
-| `team_game_stats` | One row per team per completed game: opponent, site, points, and offense and defense `plays`, `success_n`, `success_sum`, `epa_n`, `epa_sum`. |
+| `team_game_stats` | One row per team per completed game: opponent, site, points, and offense and defense `plays`, `success_n`, `success_sum`, `epa_n`, `epa_sum`, plus offense-only `off_success_ot_n` and `off_success_ot_sum` (success over scrimmage plays including overtime, garbage time still dropped; read only by Net success rate; nullable, migration 0029, null in releases built before it, whose Net success rate bars are then not charted). |
 | `team_adjusted_epa` | One row per `(as_of_week, team, role)` as described above. |
 | `team_game_yardage` | Companion row for every `(season, game_id, team)` in `team_game_stats`; independent offense/defense `yards_n`, `explosive_n`, `success_yards_n`, `success_yards_sum`. |
 
