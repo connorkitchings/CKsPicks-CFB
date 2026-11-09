@@ -85,7 +85,7 @@ test.describe("desktop layout at 1280px", () => {
     await underdogsButton.click();
     await expect(underdogsButton).toHaveAttribute("aria-pressed", "true");
     await expect(card.getByRole("heading", { name: /^Underdog picks/ })).toBeVisible();
-    await expect(card.getByRole("heading", { name: /^Underdog picks\s*2026: 2–0$/ })).toBeVisible();
+    await expect(card.getByRole("heading", { name: /^Underdog picks\s*2026: 2–0 \(100\.0%\)$/ })).toBeVisible();
     await expect(card).toContainText("The model says the wrong team is favored");
     await expect(card).not.toContainText("picks the underdog to win");
     await expect(card).not.toContainText(/straight up, all picks/i);
