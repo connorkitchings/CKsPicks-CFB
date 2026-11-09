@@ -548,3 +548,232 @@ def test_flag_refuses_market_refresh_and_non_completed_weeks():
         )  # fmt: skip
     with pytest.raises(ValueError):
         correct(old, new, weeks=(9,))
+
+
+# --- one-off CFBD retrospective lines -----------------------------------------
+
+RETRO = "401871090"
+RETRO_VERSION = "model_side_best_quote_v2:cfbd_retrospective"
+STATS = {
+    "season": 2026,
+    "as_of_week": 8,
+    "spread_wins": 10,
+    "spread_losses": 5,
+    "spread_pushes": 1,
+    "spread_profit_units": 4.0,
+    "total_wins": 8,
+    "total_losses": 7,
+    "total_pushes": 1,
+    "total_profit_units": 0.5,
+}
+RETRO_TABLES = (
+    "market_quotes",
+    "market_snapshots",
+    "market_snapshot_quotes",
+    "prediction_market_selections",
+    "prediction_grades",
+    "games",
+    "predictions",
+    "game_results",
+    "system_stats",
+)
+
+
+def retro_pair(*, graded_before=False):
+    """Release pair where a Week 6 game, ungraded before, gains CFBD grades."""
+    old, new = release(OLD_RUN), release(NEW_RUN)
+    for tables, run in ((old, OLD_RUN), (new, NEW_RUN)):
+        tables["games"].append(
+            {**tables["games"][0], "game_id": RETRO, "week": 6, "predicted_spread": 2.0}
+        )
+        tables["predictions"].append(
+            {**tables["predictions"][0], "run_id": f"{run}:w6", "game_id": RETRO}
+        )
+        tables["game_results"] = [
+            {"game_id": RETRO, "spread_result": None, "total_result": None}
+        ]
+        tables["system_stats"] = [dict(STATS)]
+    targets = (("spread", "win", 0.9091), ("total", "loss", -1.0))
+    new["market_quotes"].append(
+        {"quote_id": "q-r", "game_id": RETRO, "provider": "Bovada", "spread": -9.5}
+    )
+    for target, result, profit in targets:
+        new["market_snapshots"].append(
+            {"snapshot_id": f"snap-r-{target}", "game_id": RETRO, "spread": -9.5}
+        )
+        new["market_snapshot_quotes"].append(
+            {"snapshot_id": f"snap-r-{target}", "quote_id": "q-r", "target": target}
+        )
+        new["prediction_market_selections"].append(
+            {
+                "run_id": f"{NEW_RUN}:w6",
+                "game_id": RETRO,
+                "target": target,
+                "snapshot_id": f"snap-r-{target}",
+                "quote_id": "q-r",
+                "edge": 2.0,
+            }
+        )
+        new["prediction_grades"].append(
+            {
+                "run_id": f"{NEW_RUN}:w6",
+                "game_id": RETRO,
+                "target": target,
+                "result": result,
+                "profit_units": profit,
+                "grading_version": RETRO_VERSION,
+                "market_quote_id": "q-r",
+                "market_snapshot_id": f"snap-r-{target}",
+                "graded_at": LATER,
+            }
+        )
+    for table in ("games", "predictions"):
+        row(new, table, game_id=RETRO).update(
+            home_team_spread_line=-9.5,
+            total_line=51.5,
+            spread_lean="home",
+            total_lean="over",
+            edge_spread=2.0,
+            edge_total=1.0,
+        )
+    row(new, "predictions", game_id=RETRO)["market_snapshot_id"] = "snap-r-spread"
+    row(new, "game_results", game_id=RETRO).update(
+        spread_result="home", total_result="under"
+    )
+    new["system_stats"][0].update(
+        spread_wins=11,
+        spread_profit_units=4.9091,
+        total_losses=8,
+        total_profit_units=-0.5,
+    )
+    if graded_before:  # the active release already holds the grades
+        for table in RETRO_TABLES:
+            old[table] = copy.deepcopy(new[table])
+    return old, new
+
+
+def retro(old, new, mode="close-week", flag=True):
+    return parity.compare_releases(
+        old,
+        new,
+        mode=mode,
+        completed_week=8,
+        upcoming_week=9,
+        retrospective_lines=flag,
+    )
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_retrospective_lines_pass_when_the_manifest_carries_the_input(mode):
+    old, new = retro_pair()
+    report = retro(old, new, mode)
+    assert report.passed, report.failures
+    assert report.as_dict()["accepted_retrospective_games"] == [RETRO]
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_retrospective_lines_fail_without_the_manifest_input(mode):
+    old, new = retro_pair()
+    assert not retro(old, new, mode, flag=False).passed
+
+
+@pytest.mark.parametrize("column", ["predicted_spread", "predicted_total"])
+def test_retrospective_game_prediction_values_stay_strict(column):
+    old, new = retro_pair()
+    row(new, "predictions", game_id=RETRO)[column] += 1.0
+    failures = retro(old, new, "market-refresh").failures
+    assert any(column in f for f in failures)
+
+
+def test_retrospective_game_variance_stays_strict():
+    old, new = retro_pair()
+    row(new, "predictions", game_id=RETRO)["predicted_spread_std_dev"] = 20.0
+    failures = retro(old, new).failures
+    assert any("predicted_spread_std_dev" in f for f in failures)
+
+
+def test_rating_snapshot_change_still_fails_with_the_allowance_on():
+    old, new = retro_pair()
+    row(new, "v5_rating_snapshots", week=1)["overall_rating"] = 9.0
+    assert not retro(old, new).passed
+
+
+@pytest.mark.parametrize("mode", ["close-week", "market-refresh"])
+def test_other_games_stay_strict_with_the_allowance_on(mode):
+    old, new = retro_pair()
+    row(new, "predictions", game_id=2)["edge_spread"] = 0.5
+    row(new, "prediction_grades", game_id=2)["result"] = "loss"
+    failures = retro(old, new, mode).failures
+    assert any("/2" in f for f in failures)
+
+
+def test_a_game_outside_the_three_cannot_be_graded_retrospectively():
+    old, new = retro_pair()
+    new["prediction_grades"].append(
+        {**row(new, "prediction_grades", game_id=2), "target": "total"}
+    )
+    assert any("/2/total" in f for f in retro(old, new).failures)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"grading_version": "model_side_best_quote_v2"},
+        {"market_quote_id": "q-other"},
+        {"market_snapshot_id": "snap-other"},
+        {"target": "moneyline"},
+    ],
+)
+def test_retrospective_grade_must_match_the_retrospective_rows(change):
+    old, new = retro_pair()
+    new["prediction_grades"][-1].update(change)
+    report = retro(old, new)
+    assert not report.passed
+    assert report.as_dict()["accepted_retrospective_games"] == []
+
+
+def test_selection_or_prediction_citing_foreign_rows_fails():
+    old, new = retro_pair()
+    row(new, "prediction_market_selections", game_id=RETRO, target="total")[
+        "quote_id"
+    ] = "q-other"
+    assert not retro(old, new).passed
+    old, new = retro_pair()
+    row(new, "predictions", game_id=RETRO)["market_snapshot_id"] = "snap-4"
+    assert not retro(old, new).passed
+
+
+def test_retrospective_rows_must_be_complete():
+    old, new = retro_pair()
+    new["market_quotes"] = [q for q in new["market_quotes"] if q["quote_id"] != "q-r"]
+    assert not retro(old, new).passed
+
+
+@pytest.mark.parametrize("column", ["spread_wins", "total_profit_units"])
+def test_system_stats_must_move_by_exactly_the_new_grades(column):
+    old, new = retro_pair()
+    new["system_stats"][0][column] += 1
+    failures = retro(old, new).failures
+    assert any(column in f for f in failures)
+
+
+def test_system_stats_change_in_another_column_fails():
+    old, new = retro_pair()
+    new["system_stats"][0]["as_of_week"] = 9
+    assert not retro(old, new, "market-refresh").passed
+
+
+def test_once_graded_the_retrospective_rows_compare_strictly():
+    old, new = retro_pair(graded_before=True)
+    assert retro(old, new).passed
+    row(new, "prediction_grades", game_id=RETRO, target="spread")["result"] = "loss"
+    assert not retro(old, new).passed
+
+
+def test_carries_historical_lines_reads_the_candidate_revision_manifest(tmp_path):
+    assert not parity.carries_historical_lines(tmp_path)  # no manifest: strict
+    manifest = tmp_path / "revision-manifest.json"
+    manifest.write_text(json.dumps({"inputs": {"market_quotes": {}}}))
+    assert not parity.carries_historical_lines(tmp_path)
+    manifest.write_text(json.dumps({"inputs": {"historical_lines": {}}}))
+    assert parity.carries_historical_lines(tmp_path)

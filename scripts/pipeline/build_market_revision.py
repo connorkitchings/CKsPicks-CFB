@@ -64,25 +64,36 @@ def derive_manifest(
     old: dict[str, Any],
     *,
     revision_id: str,
-    quotes_input: dict[str, str],
     captured_at: str,
     target_week: str,
     cutoff: str,
+    quotes_input: dict[str, str] | None = None,
+    historical_lines: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Return ``old`` with only market identity changed; assert nothing else moved."""
+    """Return ``old`` with only market identity changed; assert nothing else moved.
+
+    ``quotes_input`` replaces the cumulative quotes; ``historical_lines`` pins the
+    explicit retrospective CFBD fallback input. Each is optional.
+    """
     check_target(old, target_week, cutoff)
     new = copy.deepcopy(old)
     new["revision_id"] = revision_id
-    new["inputs"]["market_quotes"] = quotes_input
+    market_inputs = {}
+    if quotes_input is not None:
+        market_inputs["market_quotes"] = quotes_input
+    if historical_lines is not None:
+        market_inputs["historical_lines"] = historical_lines
+    new["inputs"].update(market_inputs)
     new["captured_at"] = captured_at
     new["pre_week_cutoffs"][target_week] = cutoff
 
     def without(mapping: dict[str, Any], key: str) -> dict[str, Any]:
         return {k: v for k, v in mapping.items() if k != key}
 
-    if without(new["inputs"], "market_quotes") != without(
-        old["inputs"], "market_quotes"
-    ):
+    def football(inputs: dict[str, Any]) -> dict[str, Any]:
+        return {k: v for k, v in inputs.items() if k not in market_inputs}
+
+    if football(new["inputs"]) != football(old["inputs"]):
         raise ValueError("football inputs differ from the source manifest")
     if new["post_week_cutoffs"] != old["post_week_cutoffs"]:
         raise ValueError("post-week cutoffs differ from the source manifest")

@@ -9,6 +9,13 @@ This log records architectural and product decisions, newest first. Older entrie
 - **Impact:** Web UI and `underdogRecord` only; no loader, query, schema or methodology change beyond the record's population. The displayed record changes because more picks now count. Still no odds, prices, payouts, units or ROI.
 - **Source:** [contract](../plans/2026-11-09/all-underdog-picks.md), session log `session_logs/2026-11-09/02-all-underdog-picks-impl.md`.
 
+## 2026-11-09: CFBD retrospective lines for three Week 6 games
+
+- **Context:** Three Week 6 games kicked off on 2026-10-07 before any market capture existed (Southern Miss at Troy `401871090`, Jacksonville State at Kennesaw State `401871051`, New Mexico State at Florida International `401871066`), so they were ungraded for both targets. The registered CFBD capture of 2026-10-08T16:19Z holds their Bovada and DraftKings lines.
+- **Decision:** (1) Grade the three games with the documented `cfbd_retrospective` fallback, from a pinned `historical_lines` revision input (`conf/season/2026/revision_manifest_w11_v2.json`); the grades carry the `model_side_best_quote_v2:cfbd_retrospective` label and are not pre-kickoff evidence. (2) The revision builder carries `historical_lines` forward from the previous manifest, so later weekly closes keep the grades. (3) The release parity gate has a narrow automatic allowance, active only when the candidate manifest carries `historical_lines`: exactly these three games may gain their quotes, snapshots, selections and retrospective grades while the active release holds none, with `system_stats` moving by exactly those grades; every prediction, variance, rating and other game still compares strictly, and once the active release holds the grades they compare strictly. (4) Owner approved a Preview release only; Production activation needs separate approval.
+- **Impact:** Preview record moves from spread 271-279-9 (559 graded) to 273-280-9 (562) and totals from 267-289-2 (558) to 269-290-2 (561). Production is unchanged until released. No prediction, variance or rating changed.
+- **Source:** [contract](../plans/2026-11-09/cfbd-retrospective-lines.md), [record methodology](../modeling/record_methodology.md#published-state-and-the-accepted-quote-correction), [weekly runbook](../ops/weekly_runbook.md), session logs `session_logs/2026-11-09/03-cfbd-retrospective-lines-phase1.md` and `session_logs/2026-11-09/04-cfbd-retrospective-lines-release.md`.
+
 ## 2026-11-09: One featured-games card with a flip control
 
 - **Context:** "Biggest edges" and "Underdog picks" were two separate Games page sections, side by side as collapsed cards on phones, which crowded the first screen.

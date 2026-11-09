@@ -95,6 +95,8 @@ DERIVED_CONFIG = {
 }
 #: Revision inputs carried unchanged from the previous week's manifest.
 CARRIED_INPUTS = ("venues", "teams")
+#: Carried only when the previous manifest has them.
+OPTIONAL_CARRIED_INPUTS = ("historical_lines",)
 
 
 def _code_sha() -> str:
@@ -464,7 +466,8 @@ def revision_manifest(
     refs: dict[str, DatasetRef],
     corrections: CutoffCorrections | None = None,
 ) -> dict:
-    """The Week ``week`` revision: fresh Silver inputs, carried venues and teams."""
+    """The Week ``week`` revision: fresh Silver inputs, carried venues, teams and
+    (when present) historical lines."""
     pre, post = revision_cutoffs(
         previous,
         week=week,
@@ -488,6 +491,12 @@ def revision_manifest(
             "market_quotes": _input(refs["market_quotes"]),
             "venue_games": _input(refs["games"]),
             **{name: previous["inputs"][name] for name in CARRIED_INPUTS},
+            # Optional pinned retrospective lines stay graded week after week.
+            **{
+                name: previous["inputs"][name]
+                for name in OPTIONAL_CARRIED_INPUTS
+                if name in previous["inputs"]
+            },
         },
     }
     if "score_reconciliation_exceptions" in previous:
