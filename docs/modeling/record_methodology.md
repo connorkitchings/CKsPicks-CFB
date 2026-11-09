@@ -44,6 +44,16 @@ The `/model` page also shows the market's error beside the model's for the same 
 
 The current active release includes grades for the three early Week 6 games. On October 15, the owner confirmed registration of three Week 2–4 CFBD captures in Preview and accepted a rebuilt-quote candidate. The rebuilt data restore the real capture time for six Week 6 target quotes: games `401871090`, `401871051` and `401871066` have no eligible pre-kickoff quotes and become ungraded for both spread and total in that candidate. No late-quote exception is enabled to rescue them. The candidate remains pending activation; [Current Status](../status.md) holds both the unchanged public scoreboard and accepted candidate result. Other unregistered market captures remain pending owner review because adding quotes can change best-quote selections.
 
+## Underdog picks
+
+The Games page lists games where the model picks the market underdog to win outright. It is display only: it is about who the model picks to win, and no prices, payouts or staking appear because none are stored. It does not change the spread or total record above.
+
+- **Underdog.** The market favorite is decided by the consensus pre-kickoff line (`market_snapshots.spread`, reached through the prediction's `market_snapshot_id`), not by the shopped line shown on the cards, so line shopping never turns a near pick'em into an upset. The model favorite is the team the forecast home margin favors. A game is an underdog pick when both margins are non-zero and disagree.
+- **Exclusions.** A consensus pick'em (line 0) has no favorite, and a model margin under 0.05 is no call, matching the 0.05 rule the lean labels use. A game with no linked snapshot has no consensus line and is excluded everywhere; it is counted nowhere.
+- **Display.** Only unfinished games in prediction mode, ranked by the gap between the model's margin and the market's implied margin (largest first), then earlier kickoff, then game id, top 5. The section is hidden when the week is final or nothing qualifies.
+- **Straight-up grading.** A finished pick is graded on the model's winner against the actual final score. A tie is excluded.
+- **Season record.** The record counts each scored week's top 5 underdog picks by the same order, the same cap as "Biggest edges", and is shown as "x–y straight up". It is a small sample, reported as counts only.
+
 ## Limits and historical evidence
 
 - Later provider corrections to past play-by-play were adopted. Event-time boundaries hold, but the corrected content may have been published after the original forecast week.

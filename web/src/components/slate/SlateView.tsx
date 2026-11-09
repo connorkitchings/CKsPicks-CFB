@@ -5,6 +5,7 @@ import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
 import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
 import { TopLeans } from "@/components/slate/TopLeans";
+import { UnderdogPicks } from "@/components/slate/UnderdogPicks";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
 import { SlateList } from "@/components/slate/SlateList";
 import { WeekNav } from "@/components/WeekNav";
@@ -27,6 +28,8 @@ export interface SlateViewProps {
   weekPerformance?: Performance[];
   /** Season track record over each scored week's top leans. */
   topLeansRecord?: Tally | null;
+  /** Season straight-up record over each scored week's top underdog picks. */
+  underdogRecord?: Tally | null;
   systemName?: string | null;
   runState?: string | null;
   retrospective?: boolean;
@@ -67,6 +70,7 @@ export function SlateView({
   performance = [],
   weekPerformance = [],
   topLeansRecord = null,
+  underdogRecord = null,
   systemName = null,
   runState = null,
   retrospective = false,
@@ -204,8 +208,9 @@ export function SlateView({
                 now={now}
                 weekNav={weeks.length > 1 ? <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact selectId="week-select-phone" /> : undefined}
                 extras={predictionsVisible ? (
-                  <div className="space-y-2 sm:space-y-4">
+                  <div className="grid grid-cols-2 gap-2 has-[details[open]]:grid-cols-1 sm:grid-cols-1 sm:gap-4 [&>:only-child]:col-span-full">
                     {phase !== "final" && <TopLeans games={games} record={topLeansRecord} season={season} />}
+                    {phase !== "final" && <UnderdogPicks games={games} record={underdogRecord} season={season} />}
                     {phase !== "upcoming" && <ResultHighlights games={games} />}
                   </div>
                 ) : undefined}

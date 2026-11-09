@@ -79,23 +79,24 @@ export function TopLeans({
   const decided = (record?.win ?? 0) + (record?.loss ?? 0);
   const rate = decided > 0 && record ? winRatePct(record.win, record.loss) : null;
 
-  const title = (
+  const recordText = record && (decided + record.push) > 0
+    ? `${season}: ${record.win}–${record.loss}–${record.push}${rate !== null ? ` (${rate.toFixed(1)}%)` : ""}`
+    : null;
+  const heading = (
     <span>
       Biggest edges
-      {record && (decided + record.push) > 0 && (
-        <span className="ml-2 text-xs font-normal text-ink-muted">
-          {season}: {record.win}–{record.loss}–{record.push}{rate !== null ? ` (${rate.toFixed(1)}%)` : ""}
-        </span>
-      )}
+      {recordText && <span className="ml-2 text-xs font-normal text-ink-muted">{recordText}</span>}
     </span>
   );
 
   return (
     <section aria-label="Biggest edges">
+      {/* Phones: the summary stays one short label so it fits half a row; the record sits inside. */}
       <ResponsiveDisclosure
-        title={title}
-        heading={title}
+        title="Biggest edges"
+        heading={heading}
       >
+        {recordText && <p className="mb-2 text-xs sm:hidden">{recordText}</p>}
         <div className="mb-3 sm:hidden">
           <SegmentedControl label="Biggest edges category" value={tab} onChange={setTab} options={[{ value: "spread", label: "Spreads" }, { value: "total", label: "Totals" }]} fill />
         </div>

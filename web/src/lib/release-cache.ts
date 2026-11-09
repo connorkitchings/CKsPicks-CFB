@@ -45,7 +45,7 @@
  *                getTeamSeasonStats / PossessionStats ... immutable (release stat tables)
  *                getRunForWeek, getAvailableWeeks, getScoredWeeks, getUpcomingWeeks,
  *                getGamesForWeek, getMarketGamesForWeek, getSystemStatsThroughWeek,
- *                getBiggestEdgesRecord .................. mutable (prediction_runs state /
+ *                getBiggestEdgesRecord, getUnderdogRecord  mutable (prediction_runs state /
  *                                                         evidence_class): revalidate 3600
  *   v5.ts        getSelectedRatingSource and everything built on it (getCurrentRatings,
  *                getRatingPeriods, getWeeklyRatings, getTeamHistory), getTeamGames

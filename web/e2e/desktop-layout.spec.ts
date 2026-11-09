@@ -66,6 +66,17 @@ test.describe("desktop layout at 1280px", () => {
     await expect(record).toBeVisible();
   });
 
+  test("slate shows Underdog picks inline and open, below Biggest edges, without a click", async ({ page }) => {
+    await page.goto("/");
+    const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
+    const underdogs = page.getByRole("region", { name: "Underdog picks" });
+    await expect(underdogs.getByText("Underdog picks", { exact: false }).filter({ visible: true }).first()).toBeVisible();
+    await expect(underdogs.locator("summary").filter({ visible: true })).toHaveCount(0);
+    await expect(underdogs.locator("a[href='#game-9']")).toBeVisible();
+    const [top, below] = [await biggestEdges.boundingBox(), await underdogs.boundingBox()];
+    expect(below!.y).toBeGreaterThanOrEqual(top!.y + top!.height);
+  });
+
   test("a final week shows Result Highlights without a click", async ({ page }) => {
     await page.goto("/?week=4");
     await expect(visibleHeading(page, "Highlights")).toBeVisible();

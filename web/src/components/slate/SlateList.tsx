@@ -44,8 +44,9 @@ export function SlateList({
   /** Phone copy of the week navigator, pinned beside the Filters button. */
   weekNav?: ReactNode;
   /**
-   * Collapsed disclosures (biggest edges, highlights). Rendered once: above the toolbar from 640px,
-   * directly under the pinned bar, before the first day group, on phones, by flex `order`.
+   * Collapsed disclosures (biggest edges, underdog picks, highlights). Rendered once: above the toolbar
+   * from 640px, directly under the pinned bar, before the first day group, on phones, by flex `order`.
+   * On phones the collapsed disclosures sit side by side to save vertical space.
    */
   extras?: ReactNode;
   /** The clock for awaiting-result tags. */

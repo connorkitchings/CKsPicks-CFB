@@ -9,6 +9,13 @@ This log records architectural and product decisions, newest first. Older entrie
 - **Impact:** web read path and `/model` UI only; no schema, pipeline or V5 methodology change. The official record is unchanged and still settled at the best quote.
 - **Source:** [contract](../plans/2026-11-08/model-performance-dashboard.md), [record methodology](../modeling/record_methodology.md#model-page-market-comparison), session log `session_logs/2026-11-08/02-model-performance-dashboard-impl.md`.
 
+## 2026-11-08: Underdog picks on the Games page
+
+- **Context:** The owner wanted the Games page to show where the model picks the market underdog to win outright. Moneylines are barred from the model and no prices are stored.
+- **Decision:** Add a display-only "Underdog picks" section beside "Biggest edges", graded straight up on the final score. The market favorite is the consensus pre-kickoff line (`market_snapshots.spread` via `predictions.market_snapshot_id`), not the shopped line on the cards. Pick'em games and model margins under 0.05 are excluded; the list and the season record both use the top 5 per week, largest model-vs-market gap first, then kickoff, then game id.
+- **Impact:** One extra left join on the slate query and a season-record loader. No schema, pipeline, methodology or record change; no odds, prices, payouts, units or ROI appear anywhere. A game with no linked snapshot is excluded.
+- **Source:** [implementation contract](../plans/2026-11-08/model-underdog-picks.md), session log `session_logs/2026-11-08/03-model-underdog-picks-impl.md`.
+
 ## 2026-10-27: Stratum CFB public identity
 
 - **Context:** The owner rejected the Crest name because of its toothpaste association and selected Stratum after reviewing finalists.
