@@ -1,6 +1,6 @@
 # CFBD retrospective lines for three Week 6 games
 
-- **Status:** In Progress
+- **Status:** Implemented (Preview only; Production not released)
 - **Created:** 2026-11-09
 - **Planner:** Owner instruction relayed by the orchestrating agent (fast-path contract)
 - **Approval source:** Owner request of 2026-11-09, Preview only; Production activation needs separate approval
@@ -42,6 +42,6 @@ Phase 1 (this contract) ends at a verified, prepared candidate. Done when:
 
 ## Handoff/amendments
 
-- **Resume gate:** Phase 2 (Preview release, parity, Production) needs the orchestrator's explicit go-ahead and the weekly runbook release steps; nothing is activated in Phase 1.
+- **Resume gate:** Phase 2 (Preview release and parity) is done. A Production release needs separate owner approval and the weekly runbook's Production steps.
 - **Follow-up risk:** `build_season_revision.revision_manifest` does not carry `historical_lines`; the next close-week manifest would drop the three grades unless that input is carried forward.
-- **Amendments:** none yet.
+- **Amendments (2026-11-09, phase 2):** `build_season_revision.revision_manifest` now carries `historical_lines` forward (closing the follow-up risk above), and `check_release_parity.py` gained a narrow automatic allowance, active only when the candidate revision manifest carries `historical_lines`, for the three games' quotes, snapshots, selections, `cfbd_retrospective` grades, market and result columns and the matching `system_stats` movement. Because prepare pins the code commit, the phase 1 candidate was re-prepared from the clean tree and released to Preview with the weekly runbook's section 2 commands; parity (market-refresh mode) passed, and read-only SQL confirmed the six grades and records 273-280-9 (562) and 269-290-2 (561). Production is not released; it needs separate owner approval and the Production section of the runbook.
