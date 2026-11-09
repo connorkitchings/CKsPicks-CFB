@@ -4,7 +4,7 @@
 - **Created:** 2026-11-09
 - **Planner:** Owner instruction relayed by the orchestrating agent (fast-path contract)
 - **Approval source:** Owner request of 2026-11-09, Preview only; Production activation needs separate approval
-- **Implementation log:** [`session_logs/2026-11-09/03-cfbd-retrospective-lines-phase1.md`](../../../session_logs/2026-11-09/03-cfbd-retrospective-lines-phase1.md)
+- **Implementation log:** `session_logs/2026-11-09/03-cfbd-retrospective-lines-phase1.md` (candidate) and `session_logs/2026-11-09/04-cfbd-retrospective-lines-release.md` (carry-forward, parity allowance, Preview release)
 - **Commit policy:** Commit with implementation (the revision manifest must be committed before `prepare`)
 
 ## Goal and acceptance
