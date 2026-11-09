@@ -303,6 +303,104 @@ test.describe("mobile scatter inspection on the page", () => {
   });
 });
 
+test.describe("scatter touch repro on dense slates and scrolled pages", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  type Dot = { team: string; x: number; y: number };
+  // Screen centers of every non-dim mark, read after the page has been scrolled into position.
+  const dots = (page: import("@playwright/test").Page) => page.locator("g[data-team]").evaluateAll((nodes) => nodes.map((node) => {
+    const circle = node.querySelector('[data-mark] circle:last-child, [data-mark]') as Element;
+    const r = circle.getBoundingClientRect();
+    return { team: node.getAttribute("data-team")!, x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  }));
+  // Mirrors nearestScatterTeams (24px reach, 8px tie window, at most 3) on screen coordinates.
+  const nearby = (all: Dot[], x: number, y: number) => {
+    const near = all.map((d) => ({ team: d.team, d: Math.hypot(d.x - x, d.y - y) })).filter((d) => d.d <= 24).sort((a, b) => a.d - b.d);
+    return near.filter((d) => d.d - near[0].d <= 8).slice(0, 3).map((d) => d.team);
+  };
+  const inViewport = (node: import("@playwright/test").Locator) => node.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return r.top >= 0 && r.bottom <= window.innerHeight && r.height > 0;
+  });
+
+  test("a tap in a dense cluster gives a chooser or selection that is visible in the viewport", async ({ page }) => {
+    await gotoHydrated(page, "/stats?chart=efficiency&week=2&fixture=slate");
+    await expect(page.locator("g[data-team]")).toHaveCount(138);
+    // Bring the plot center to mid-screen so the sticky bar and tab bar do not cover the cluster.
+    await page.getByTestId("scatter-chart").evaluate((node) => window.scrollBy(0, node.getBoundingClientRect().y + node.getBoundingClientRect().height / 2 - window.innerHeight / 2));
+    const all = await dots(page);
+    const spot = all.find((a) => a.y > 100 && a.y < 700 && a.x > 20 && a.x < 370 && nearby(all, a.x, a.y).length >= 2);
+    expect(spot, "a dense cluster with several candidates").toBeTruthy();
+    const candidates = nearby(all, spot!.x, spot!.y);
+    await page.touchscreen.tap(spot!.x, spot!.y);
+    const details = page.getByTestId("scatter-details");
+    await expect(details).toBeVisible();
+    await expect(details).toContainText("Several teams are nearby");
+    for (const team of candidates) await expect(details.getByRole("button", { name: team, exact: true })).toBeVisible();
+    // The result must be on screen, not below the fold.
+    expect(await inViewport(details), "chooser is inside the viewport after the tap").toBe(true);
+  });
+
+  test("a tap on a scrolled page lands on the intended team despite the pressed-state scale transform", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await gotoHydrated(page, "/stats?chart=efficiency&week=3");
+    // Scroll the chart partway so scrollY > 0 while a good part of the plot stays mid-screen.
+    await page.getByTestId("scatter-chart").evaluate((node) => window.scrollTo(0, window.scrollY + node.getBoundingClientRect().y + 120));
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    const all = await dots(page);
+    // Choose an isolated team well inside the viewport, clear of the sticky bar and tab bar.
+    const me = all.find((d) => d.y > 200 && d.y < 650 && d.x > 40 && d.x < 350 && nearby(all, d.x, d.y).length === 1 && nearby(all, d.x, d.y)[0] === d.team);
+    expect(me, "an isolated team in the viewport").toBeTruthy();
+    const target = me!.team;
+    await page.touchscreen.tap(me!.x, me!.y);
+    const details = page.getByTestId("scatter-details");
+    await expect(details).toContainText(target);
+    await expect(details).not.toContainText("Several teams");
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  });
+
+  for (const [chart, week] of [["efficiency", 3], ["adjusted", 2], ["possession", 3]] as const) {
+    test(`a tap on ${chart} leaves the whole details panel, buttons included, above the bottom tab bar`, async ({ page }) => {
+      await gotoHydrated(page, `/stats?chart=${chart}&week=${week}`);
+      // Chart top just under the sticky bar, so the panel below the plot lands where the tab bar sits.
+      await page.getByTestId("scatter-chart").evaluate((node) => window.scrollTo(0, window.scrollY + node.getBoundingClientRect().y - 130));
+      const all = await dots(page);
+      const me = all.filter((d) => d.y > 160 && d.y < 600 && d.x > 40 && d.x < 350).sort((a, b) => a.y - b.y)[0];
+      await page.touchscreen.tap(me.x, me.y);
+      const details = page.getByTestId("scatter-details");
+      await expect(details).toBeVisible();
+      const clear = details.getByRole("button", { name: "Clear details" });
+      await expect.poll(async () => {
+        const nav = (await page.getByRole("navigation", { name: "Main navigation" }).boundingBox())!;
+        const box = (await clear.boundingBox())!;
+        return box.y + box.height <= nav.y + 1;
+      }, { message: "Clear details sits above the Main navigation bar" }).toBe(true);
+    });
+  }
+
+  // Finding: `market-board` is `ready: false` in CHART_REGISTRY, so `?chart=market-board` parses to
+  // `net-success` and the board is unreachable from the URL. Remove test.fail() once the board is
+  // reachable; the toggle assertions below then run for real.
+  test("market board taps select a game and a second tap toggles it off", async ({ page }) => {
+    test.fail();
+    await gotoHydrated(page, "/stats?chart=market-board&week=3");
+    const board = page.getByRole("group", { name: "Games" });
+    await expect(board, "market-board chart renders (not the net-success fallback)").toBeVisible();
+    const game = board.locator("> g").first();
+    await game.evaluate((node) => window.scrollBy(0, node.getBoundingClientRect().y - window.innerHeight / 2));
+    const box = (await game.locator("circle").first().boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    const radius = () => game.locator("circle").nth(1).evaluate((node) => Number(node.getAttribute("r")));
+    const idle = await radius();
+    await page.touchscreen.tap(x, y);
+    await expect.poll(radius, { message: "first tap selects (enlarged dot)" }).toBeGreaterThan(idle);
+    await page.touchscreen.tap(x, y);
+    // Second tap should deselect; pointerenter latching on touch keeps hoveredGameId set otherwise.
+    await expect.poll(radius, { message: "second tap toggles off" }).toBe(idle);
+  });
+});
+
 test.describe("scatter labels on narrow phones", () => {
   test.use({ viewport: { width: 320, height: 568 }, hasTouch: true });
 
