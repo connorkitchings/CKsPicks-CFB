@@ -74,7 +74,7 @@ Week 11 is published and fully lined. The Week 11 to 12 close is Sunday 2026-11-
 
 ## Open items
 
-- Postseason (owner decision 2026-11-11, option B): the official 2026 V5 record ends with the last regular-season week and the site shows a "regular season complete" state; postseason modeling is an offseason item. Contract: [regular-season end state](plans/2026-11-11/regular-season-end-state.md) (Draft; verify the final week first, then implement and release before early December). The 2027 candidate list is in the [offseason backlog](planning/offseason-2027-backlog.md).
+- Postseason (owner decision 2026-11-11, option B): the official 2026 V5 record ends with the last regular-season week and the site shows a "regular season complete" state; postseason modeling is an offseason item. Contract: [regular-season end state](plans/2026-11-11/regular-season-end-state.md) (Approved 2026-11-11; verify the final week first, then implement and release before early December). The 2027 candidate list is in the [offseason backlog](planning/offseason-2027-backlog.md).
 - The Production rollback drill has never been run. The readback fix for releases staged before migration 0029 is on `dev` ([contract](plans/2026-11-11/release-readback-additive-columns.md)); run the drill in a mid-week window, not overlapping a weekly run, from a clean tree containing the fix.
 - Owner decisions pending on final-site-review findings #13, #15, #16 and #17 (`session_logs/2026-10-25/01-final-site-review.md`).
 - The `incremental-close-week` worktree is removable.

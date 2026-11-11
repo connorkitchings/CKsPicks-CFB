@@ -55,4 +55,4 @@ From [Current Status](../status.md#deferred-backlog): historical EPA replacement
 
 - Small fixes from the final site review: console warning on 404 pages, long team names wrapping in the matchup forecast card, a "Bye" row.
 - Web read performance ([contract](../plans/2026-10-29/01-web-read-performance.md)).
-- Content and explainability, depending on whether the site is positioned as an analytics site or a bet-finding tool (open owner question; it sets the priority between model research and content).
+- Content and explainability. Owner decision 2026-11-11: the site is primarily an analytics site, and market comparison and bet finding are a central spoke of that analytics wheel, so betting views are part of the analytics product rather than a separate tool. Weigh model research against explainability and market-comparison content on that basis.
