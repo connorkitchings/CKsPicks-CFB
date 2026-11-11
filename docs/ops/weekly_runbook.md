@@ -357,6 +357,8 @@ Commits are allowed again from here.
    gh pr create --base main --head dev --title "chore(release): release dev to main"
    gh pr merge <PR_NUMBER> --merge
    ```
+
+   GitHub enforces this: only merge commits are allowed on the repository, and `main` requires a pull request with the `Python tests` and `Web` checks passing, applied to admins too, with force-push and deletion blocked (`dev` blocks force-push and deletion only). Emergency valve, owner only: `gh api -X DELETE repos/connorkitchings/CKsPicks-CFB/branches/main/protection/enforce_admins`, make the change, then restore it with `gh api -X POST repos/connorkitchings/CKsPicks-CFB/branches/main/protection/enforce_admins`.
    Scheduled workflows run only from the default branch (`main`), so changes to `.github/workflows/weekly-season-update.yml` take effect only after this release.
 2. Verify live production URLs:
    - `https://c-ks-picks-cfb.vercel.app/`
