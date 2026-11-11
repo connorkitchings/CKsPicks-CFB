@@ -24,7 +24,7 @@
 | Week | State | Selected run |
 |---|---|---|
 | 0–10 | **Scored; 2026 V5 record.** 559 graded spreads and 558 graded totals. Week 9 spread 29-26-1; total 23-33-0. Week 10 spread 25-37-0; total 24-38-0 (62 FBS-vs-FBS games; the 63rd CFBD Week 10 game, Wake Forest 77, Merrimack 0, is FBS-vs-FCS and outside the release universe). | Production `production-season-2026-5d50a63ef62a6751f30d7599`. |
-| 11 | **Active Picks slate (Production).** All 67 games predicted and lined; serving as-of 2026-11-08T18:03:33Z; first kickoff 2026-11-11T00:00Z (Tuesday evening Eastern). Opened by the owner-dispatched close-week run 42507569968 (Preview, then Production, every gate passed, no cutoff correction needed). | Production `production-season-2026-5d50a63ef62a6751f30d7599`. Rollback target: `production-season-2026-3921681d03fcfcb0ebfe96b6` (Week 10 release, active 2026-11-02); owner-authorized rollback only. Preview rollback is not supported by the tooling. **Preview** serves `preview-season-2026-aca7b33dcff32ff589616c88` (2026-11-09; same Week 11 slate, plus `cfbd_retrospective` grades for Week 6 games `401871090`, `401871051`, `401871066`; [decision](decisions/decision_log.md)); previous Preview release `preview-season-2026-5d50a63ef62a6751f30d7599` is the same release Production serves. |
+| 11 | **Active Picks slate (Production).** All 67 games predicted and lined; serving as-of 2026-11-08T18:03:33Z; first kickoff 2026-11-11T00:00Z (Tuesday evening Eastern). Opened by the owner-dispatched close-week run 42507569968 (Preview, then Production, every gate passed, no cutoff correction needed). | Production `production-season-2026-5d50a63ef62a6751f30d7599`. Rollback target: `production-season-2026-3921681d03fcfcb0ebfe96b6` (Week 10 release, active 2026-11-02), **currently unusable**: migration 0029 added nullable columns to `season_release_team_game_stats`, so the activation readback hash of any release staged before 0029 no longer matches and rollback fails closed (nothing is changed). A fix is planned (see Open items); owner-authorized rollback only. Preview rollback is not supported by the tooling. **Preview** serves `preview-season-2026-d842113f4ec9b4d719f84016` (2026-11-09; same Week 11 slate, plus overtime-inclusive success counts and `cfbd_retrospective` grades for Week 6 games `401871090`, `401871051`, `401871066`; [decision](decisions/decision_log.md)); it supersedes `preview-season-2026-aca7b33dcff32ff589616c88`. |
 
 ## Scoreboard
 
@@ -74,12 +74,11 @@ Week 11 is published and fully lined. The Week 11 to 12 close is Sunday 2026-11-
 
 ## Open items
 
-- 16 pre-existing `make test` failures on `dev`, not caused by the automation work.
-- The Production rollback drill has never been run.
+- Postseason: `FINAL_REGULAR_WEEK = 15` in `scripts/ops/weekly_automation.py` and the season engine knows only regular-season weeks. Recommended: the official 2026 V5 record ends at Week 15 with a "regular season complete" site state; full postseason modeling moves to the offseason. Owner decision pending.
+- Production rollback is broken for releases staged before migration 0029 (readback hash includes the new null columns). Fix first via a contract, then run the never-yet-run rollback drill in a mid-week window.
 - Owner decisions pending on final-site-review findings #13, #15, #16 and #17 (`session_logs/2026-10-25/01-final-site-review.md`).
 - The `incremental-close-week` worktree is removable.
 - An unused market-quotes catalog version is registered.
-- Automation catch-up and backup-cron changes are on branch `connorkitchings/weekly-automation-catchup` (not yet committed); the workflow-file part takes effect only after a `dev` to `main` release PR (merge commit).
 - Automation pushes made with `GITHUB_TOKEN` do not trigger CI, so check the automation commit's tests by hand.
 
 ## Deferred backlog
