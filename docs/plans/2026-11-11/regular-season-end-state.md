@@ -1,10 +1,10 @@
 # Regular-season end state (postseason option B)
 
-- **Status:** Approved
+- **Status:** In Progress (code merged in #37; remaining: the `dev` to `main` release, then the final close and its Preview, Production and `/api/health` evidence on 2026-12-13)
 - **Created:** 2026-11-11
 - **Planner:** Sol
 - **Approval source:** Owner chose option B on 2026-11-11 ("B is fine"): the official 2026 V5 record ends with the last regular-season week, and the site shows a clean "regular season complete" state. The owner approved this contract for implementation on 2026-11-11 ("1 approved"). Task 1 (final-week verification) and the stop gates still apply.
-- **Implementation log:** `session_logs/2026-11-11/` (number assigned at implementation)
+- **Implementation log:** `session_logs/2026-11-11/04-regular-season-end-state-impl.md`
 - **Commit policy:** Commit with implementation; one pull request into `dev`. A `dev` to `main` release is needed before the final close runs, because scheduled workflows run only from `main`.
 
 ## Goal and acceptance
