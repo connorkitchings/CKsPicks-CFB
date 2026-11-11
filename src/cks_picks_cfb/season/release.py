@@ -282,6 +282,16 @@ def projection_check(rows: list[dict]) -> dict:
     return {"rows": len(rows), "sha256": _sha(("\n".join(encoded) + "\n").encode())}
 
 
+#: Nullable columns added to an existing ``season_release_*`` table after releases
+#: were staged (migration 0029). A release staged before the column existed hashed
+#: rows without it, so readback accepts the hash without those keys when every
+#: registered value is NULL. Every future ``ADD COLUMN`` on a ``season_release_*``
+#: table must be registered here in the same change.
+POST_STAGING_NULLABLE_COLUMNS = {
+    "team_game_stats": ("off_success_ot_n", "off_success_ot_sum"),
+}
+
+
 def _columns(cur, base: str) -> tuple[dict[str, str], tuple[str, ...]]:
     """(payload columns -> data type, server-filled columns), in schema order."""
     cur.execute(
@@ -320,6 +330,19 @@ def _readback(cur, release_id: str, checks: Mapping, environment: str) -> dict:
         )
         rows = [dict(zip(columns, row, strict=True)) for row in cur.fetchall()]
         actual[base] = projection_check(rows)
+        registered = [
+            c for c in POST_STAGING_NULLABLE_COLUMNS.get(base, ()) if c in columns
+        ]
+        if (
+            actual[base] != checks.get(base)
+            and registered
+            and all(row[c] is None for row in rows for c in registered)
+        ):
+            legacy = projection_check(
+                [{k: v for k, v in row.items() if k not in registered} for row in rows]
+            )
+            if legacy == checks.get(base):
+                actual[base] = legacy
         if "environment" in server:
             cur.execute(
                 sql.SQL(

@@ -24,6 +24,8 @@ Single source of truth for shared contracts between the Python pipeline and the 
 
 The active V5 season release is serving authority. Legacy `prediction_runs` and `current_week` remain for compatibility; the web fallback is used only when no season release is active. Weekly publication must use `run_season.py`, not direct writes to legacy tables. Pipeline, web and owner/migrator privileges are distinct; see the runbook for verified environment and role selection.
 
+An `ADD COLUMN` to an existing `season_release_*` table must be nullable and registered in `POST_STAGING_NULLABLE_COLUMNS` in `src/cks_picks_cfb/season/release.py` in the same change. Retained releases hashed their rows without the column, so readback (and therefore rollback) accepts that hash only through the registry, and only while every registered value is NULL. Its test must cover rollback to a release staged before the column existed (see `test_rollback_to_release_staged_before_0029_succeeds`).
+
 ## Usage
 
 ### Validate sync
