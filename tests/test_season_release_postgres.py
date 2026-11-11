@@ -1013,6 +1013,94 @@ def test_rollback_reactivates_prior_release_and_keeps_all_rows(cluster, db):
             assert after[table] == rows, table
 
 
+OT_COLUMNS = ("off_success_ot_n", "off_success_ot_sum")
+
+
+def _stage_across_migration_0029(cluster, db):
+    """First release staged on the pre-0029 schema, second after 0029 is applied."""
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
+        for table in ("season_release_team_game_stats", "team_game_stats"):
+            for column in OT_COLUMNS:
+                conn.execute(
+                    sql.SQL("ALTER TABLE {} DROP COLUMN {}").format(
+                        sql.Identifier(table), sql.Identifier(column)
+                    )
+                )
+
+    def drop_ot_keys(payload):
+        for row in payload["team_game_stats"]:
+            for column in OT_COLUMNS:
+                del row[column]
+
+    first = stage(cluster, db, "r1", edit_payload=drop_ot_keys)
+    activate(cluster, db, first, None)
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
+        conn.execute(MIGRATION_0029.read_text())
+    second = stage(cluster, db, "r2")
+    activate(cluster, db, second, first)
+    return first, second
+
+
+def _recorded_checks(cluster, db, release_id) -> dict:
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
+        return conn.execute(
+            "SELECT projection_checks FROM season_releases WHERE release_id = %s",
+            (release_id,),
+        ).fetchone()[0]
+
+
+def test_rollback_to_release_staged_before_0029_succeeds(cluster, db):
+    first, second = _stage_across_migration_0029(cluster, db)
+    recorded = _recorded_checks(cluster, db, first)
+
+    receipt = rollback(cluster, db, first, second)
+
+    assert receipt["action"] == "rollback" and receipt["release_id"] == first
+    assert _recorded_checks(cluster, db, first) == recorded
+    assert statuses(cluster, db) == {first: "active", second: "rolled_back"}
+    rollback(cluster, db, second, first)
+    assert statuses(cluster, db) == {first: "rolled_back", second: "active"}
+
+
+def test_rollback_to_pre_0029_release_with_registered_value_refused(cluster, db):
+    first, second = _stage_across_migration_0029(cluster, db)
+    with cluster.connect(db, OWNER, autocommit=True) as conn:
+        conn.execute(
+            "ALTER TABLE season_release_team_game_stats"
+            " DISABLE TRIGGER immutable_projection"
+        )
+        conn.execute(
+            "UPDATE season_release_team_game_stats SET off_success_ot_n = 1"
+            " WHERE ctid = (SELECT ctid FROM season_release_team_game_stats"
+            " WHERE release_id = %s LIMIT 1)",
+            (first,),
+        )
+    before = release_state(cluster, db)
+
+    with pytest.raises(
+        release.SeasonReleaseError, match="entire-view projection readback differs"
+    ):
+        rollback(cluster, db, first, second)
+
+    assert release_state(cluster, db) == before
+
+
+@pytest.mark.parametrize("values", ["real", "null"])
+def test_release_staged_after_0029_verifies_its_own_hash(cluster, db, values):
+    def edit(payload):
+        if values == "null":
+            for row in payload["team_game_stats"]:
+                for column in OT_COLUMNS:
+                    row[column] = None
+
+    first = stage(cluster, db, "r1", edit_payload=edit)
+    activate(cluster, db, first, None)
+    second = stage(cluster, db, "r2")
+    activate(cluster, db, second, first)
+
+    assert rollback(cluster, db, first, second)["release_id"] == first
+
+
 @pytest.mark.parametrize(
     "overrides,user",
     [
