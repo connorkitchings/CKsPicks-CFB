@@ -10,7 +10,7 @@ Contracts whose status is In Progress, Draft or Approved (newest first).
 
 | Contract | Role | State / next gate |
 | --- | --- | --- |
-| [Regular-season end state](2026-11-11/regular-season-end-state.md) | Final close that grades the last regular-season week, then a clean "regular season complete" state; no postseason modeling | In Progress: code merged (#37); needs the `dev` to `main` release and the 2026-12-13 final close evidence |
+| [Regular-season end state](2026-11-11/regular-season-end-state.md) | Final close that grades the last regular-season week, then a clean "regular season complete" state; no postseason modeling | In Progress: code on `dev` (#37); needs the `dev` to `main` release and the 2026-12-13 final close evidence |
 | [V5 offensive and defensive ratings audit](2026-11-08/v5-offense-defense-ratings-audit.md) | Read-only Week 9 v2 calculation/source audit and separate active matchup-to-forecast comparison | CLI, tests and [report](../modeling/v5_offense_defense_ratings_audit_2026.md) implemented; original prepared feature/rating artifacts unavailable, so exact original-forecast verification remains In Progress. No model, publication or rollover changes. |
 | [Web read performance](2026-10-29/01-web-read-performance.md) | Measure Vercel TTFB, release-cache the matchup loader, resolve ineffective ISR, cache key and `/model` entry size | Draft under the revised [roadmap](../planning/data_architecture_blueprint.md); runs in parallel with Stage 1a. Exact-path approval is the next gate. No deploy or data operations authorized. |
 | [Data architecture Stage 1a: operational safeguards and baseline](2026-10-28/01-data-architecture-operational-safeguards.md) | Revision-specific immutable score exceptions, provider-free promotion and rollover request tests, full-history refusal and a `prepare` timing baseline; the budgeted repair CLI is deferred as Stage 1b | Draft, reduced to 1a on 2026-10-29 under the owner-approved [migration blueprint](../planning/data_architecture_blueprint.md); exact-path approval is the next gate. No data operations authorized. |
@@ -120,10 +120,10 @@ Store contracts at `docs/plans/YYYY-MM-DD/<descriptive-slug>.md`; use numeric pr
 | `Draft` | Investigation or approval pending. |
 | `Approved` | Ready for Terra under recorded approval or an explicit handoff naming the exact path. |
 | `In Progress` | Implementation underway. |
-| `Implemented` | All acceptance criteria and required validation passed. |
-| `Merged` | Implemented and merged; integration evidence is recorded in the contract. |
+| `Implemented` | Code and docs committed on `dev`, all acceptance criteria and required validation passed; may not be pushed or released yet. |
+| `Merged` | Released to `main` through the release PR; evidence recorded in the contract. |
 | `Superseded` | A later contract replaces this scope. |
 
 Use Sol planning → approval → persisted contract → fresh Terra implementation for architecture, data/model lineage, schemas/migrations, production/deployment, security-sensitive or multi-subsystem work. A Draft requires explicit authorization naming its exact path before implementation; record approval first. Use the established fast path for localized changes.
 
-Mechanical amendments may proceed only if architecture, interfaces, scope and acceptance remain intact; material conflicts return to Sol. Record commit policy; separate plan commits remain recommended for multi-session, asynchronous, migration, production or difficult-to-reverse work. Git operations remain user-controlled.
+Mechanical amendments may proceed only if architecture, interfaces, scope and acceptance remain intact; material conflicts return to Sol. Record commit policy; separate plan commits remain recommended for multi-session, asynchronous, migration, production or difficult-to-reverse work.

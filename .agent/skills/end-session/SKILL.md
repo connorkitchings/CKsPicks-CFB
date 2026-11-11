@@ -1,6 +1,6 @@
 ---
 name: end-session
-description: Close a CFB Model planning, implementation, or fast-path session with scoped validation, complete session logs, safe worktree review, and a user-controlled commit handoff.
+description: Close a CFB Model planning, implementation, or fast-path session with scoped validation, complete session logs, safe worktree review, and a local commit on `dev`.
 ---
 
 # End Session
@@ -33,7 +33,8 @@ Close the active session without altering unrelated worktree changes.
 1. Inspect `git status`, `git diff`, and staged changes if any.
 2. Separate intentional session changes from pre-existing user changes.
 3. Update documentation when behavior or operational workflow changed. If the week state or selected run changed, update `docs/status.md` — never copy run IDs into other docs.
-4. Propose a conventional commit message and exact files to include. The user controls staging, commits, and pushes.
+4. Commit the session work locally on `dev` with a conventional commit message. If the work was on a local branch or worktree, merge it back into local `dev` and delete the branch.
+5. Push only when the owner says the work is ready: follow the AGENTS.md "Pushing `dev`" routine (`git fetch origin`, rebase onto `origin/dev`, re-run the checks, then one `git push origin dev`). Production database changes, Production releases and rollback still need the owner's explicit go-ahead.
 
 ## Session-log minimum
 

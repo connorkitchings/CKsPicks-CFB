@@ -7,7 +7,7 @@ Session workflows for AI assistants. Each skill is `.agent/skills/<name>/SKILL.m
 | [start-session](start-session/SKILL.md) | Beginning a session or returning after a break | Load `AGENTS.md` and `.codex/QUICKSTART.md`; verify only the storage the task needs, without exposing secrets; review the last three days of session logs; check `git status`; route to a plan contract, contract implementation or the fast path |
 | [plan-session](plan-session/SKILL.md) | The request affects architecture, data/model lineage, schemas, production, security or several subsystems | Investigate in Sol Plan Mode; persist the approved contract at `docs/plans/YYYY-MM-DD/`; write the planning session log and a copy-ready Terra prompt |
 | [implement-plan](implement-plan/SKILL.md) | The user supplies an Approved plan path, or explicitly authorizes an exact Draft path | Reconcile the contract against the current worktree; execute tasks and validation in order; record safe amendments or stop on material conflicts |
-| [end-session](end-session/SKILL.md) | Finishing a task or handing off | Write the session log from `session_logs/TEMPLATE.md`; run session-scoped checks; update docs; propose a commit message; record handoff notes |
+| [end-session](end-session/SKILL.md) | Finishing a task or handing off | Write the session log from `session_logs/TEMPLATE.md`; run session-scoped checks; update docs; commit locally on `dev`; record handoff notes |
 
 ## Operational authority
 

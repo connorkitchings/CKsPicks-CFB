@@ -10,7 +10,7 @@ See [`docs/status.md`](docs/status.md) for the active release, week state and pu
 
 The [weekly runbook](docs/ops/weekly_runbook.md) is the sole operational authority. `build_season_revision.py` produces pinned inputs; `run_season.py prepare` recomputes and verifies the season; `run_season.py release` stages and atomically activates its serving projections. Preview rehearsal is mandatory before Production activation. Rollback reactivates a prior verified V5 season release through the owner credential. Legacy publish/freeze/close commands refuse execution.
 
-Revision manifests and score exceptions must be committed before preparing from a clean tree. Do not commit between prepare and the last release: release requires the exact prepared commit. Production activation and all git commits remain owner-controlled.
+Revision manifests and score exceptions must be committed before preparing from a clean tree. Do not commit between prepare and the last release: release requires the exact prepared commit. Agents commit locally on `dev`; the owner decides when `dev` is pushed, and Production releases through the `dev` into `main` release PR. Production activation is automatic when every gate passes (see [`docs/ops/weekly_runbook.md`](docs/ops/weekly_runbook.md)); rollback is owner-only.
 
 ## Modeling and research
 
