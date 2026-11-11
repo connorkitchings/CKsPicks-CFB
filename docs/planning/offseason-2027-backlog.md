@@ -44,6 +44,12 @@ Full postseason support, if wanted: the provider files bowls and the College Foo
 
 From [Current Status](../status.md#deferred-backlog): historical EPA replacement, the six quality follow-ups, scoring and descendant recertification, the 2025 matchup backfill, the turnover-margin factor for the matchup card, and non-monotonic play-by-play score repair ([known issues](../data/known_issues.md)).
 
+Recovery backup from the 2026-10-28 worktree cleanup (owner decision 2026-11-11: keep it all for now). It lives outside the repository at `.worktrees/cleanup-backups/2026-10-28/data-architecture-roadmap/` in the owner's checkout:
+
+- `branches.bundle` (restore a branch with `git fetch <bundle> refs/heads/<branch>:refs/heads/<branch>`; tips are listed in its `manifest.json`). Two preserved branches are not on `dev`: `worktree-connorkitchings-data-architecture-blueprint-review` and `codex/graph-correctness-fixes` (its helper `optionalChartWeeks` is absent from `dev`; the Graphs repairs shipped through #14 and #15, so it is probably superseded, but that was not verified).
+- The blueprint review (`docs/planning/data_architecture_blueprint_review.md` on that branch, dated 2026-10-24, non-authoritative) lists blueprint claims the code does not support, missing storage and performance design, existing assets the blueprint ignores, and unsequenced data defects. Restore it as a non-authoritative document with the first offseason data contract, after reading it against the 2026-10-29 blueprint revision.
+- `incremental-close-week-private.tar.gz` holds old Preview rollover artifacts and the 2026-10-02/03 investigation backups (6 MB, 74 files). Its `.env` entry is empty and a text scan found no credentials, though the scan cannot see inside parquet files. Keep it until the EPA replacement and 2025 matchup backfill are scoped; do not commit or publish it.
+
 ## F. Operations and resilience
 
 - Production rollback drill (never run; the readback fix is merged). Run it mid-week, outside a weekly run, and record the evidence.
