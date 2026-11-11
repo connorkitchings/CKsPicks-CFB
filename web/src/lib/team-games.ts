@@ -199,3 +199,22 @@ export function winPercent(wins: number, losses: number): string | null {
 
 /** "2–3" or "2–3–1" with pushes; the shared wording of the record line. */
 export const recordText = (wins: number, losses: number, pushes = 0) => `${wins}–${losses}${pushes > 0 ? `–${pushes}` : ""}`;
+
+/** One schedule line: a game, or a bye week where the team played no one. */
+export type ScheduleEntry<T> = { kind: "game"; game: T } | { kind: "bye"; week: number };
+
+/**
+ * The games in schedule order with a bye entry at each week number the team skipped between two
+ * consecutive games. Only the rising run of weeks is bridged: a week number that does not rise (the
+ * postseason restarts the count) adds nothing, and weeks before the first or after the last game are
+ * not byes. Byes are display rows only and are never games.
+ */
+export function withByeWeeks<T extends { week: number }>(games: readonly T[]): ScheduleEntry<T>[] {
+  const entries: ScheduleEntry<T>[] = [];
+  games.forEach((game, i) => {
+    const previous = i > 0 ? games[i - 1].week : game.week;
+    for (let week = previous + 1; week < game.week; week++) entries.push({ kind: "bye", week });
+    entries.push({ kind: "game", game });
+  });
+  return entries;
+}

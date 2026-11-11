@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   atsResult, nextUpcomingGame, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
-  modelTotalPick, modelWinnerName, overUnderResult, recordText, teamRecords, winPercent,
+  modelTotalPick, modelWinnerName, overUnderResult, recordText, teamRecords, winPercent, withByeWeeks,
   type TeamGameFields, type TeamGameLines,
 } from "./team-games.ts";
 
@@ -202,4 +202,16 @@ test("nextUpcomingGame handles bye weeks between games", () => {
 test("nextUpcomingGame is null when nothing is left to play", () => {
   assert.equal(nextId([timed(1, "2026-09-05T23:00:00Z", true), timed(2, "2026-09-12T23:00:00Z")], "2026-09-20T12:00:00Z"), null);
   assert.equal(nextId([], "2026-09-20T12:00:00Z"), null);
+});
+
+test("withByeWeeks adds a bye at each skipped week between games", () => {
+  const entries = withByeWeeks([{ week: 6 }, { week: 7 }, { week: 9 }, { week: 12 }]);
+  assert.deepEqual(entries.map((e) => (e.kind === "bye" ? `bye${e.week}` : e.game.week)), [6, 7, "bye8", 9, "bye10", "bye11", 12]);
+});
+
+test("withByeWeeks adds nothing for a first game after week 0 or a postseason week that restarts", () => {
+  const entries = withByeWeeks([{ week: 1 }, { week: 2 }, { week: 14 }, { week: 1 }]);
+  assert.equal(entries.filter((e) => e.kind === "bye").length, 11, "only the 2 to 14 gap is bridged");
+  assert.deepEqual(withByeWeeks([{ week: 3 }, { week: 4 }]).filter((e) => e.kind === "bye"), []);
+  assert.equal(withByeWeeks([]).length, 0);
 });

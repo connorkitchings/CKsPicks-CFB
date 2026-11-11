@@ -8,7 +8,7 @@ import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { bookName } from "@/lib/slate";
 import { spreadBetLabel } from "@/lib/betting-format";
-import { teamAbbr } from "@/lib/team-logos";
+import { abbreviateLead, phoneTeamName } from "@/lib/team-logos";
 import { teamHref } from "@/lib/team-routes";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { AwaitingTag } from "@/components/slate/AwaitingTag";
@@ -74,16 +74,11 @@ function TeamBlock({
   );
 }
 
-/** "James Madison -10.5" -> "JMU -10.5" for the team that leads the label (or is the whole label); other values pass through. */
-function abbreviateLead(value: string, teams: readonly string[]): string {
-  const team = teams.find((name) => value === name || value.startsWith(`${name} `));
-  return team ? `${teamAbbr(team)}${value.slice(team.length)}` : value;
-}
-
 /** One centered value in the forecast grid, with the sportsbook beneath when known. */
 function Cell({
   value,
   short = value,
+  title,
   book,
   badge,
   accent = false,
@@ -93,6 +88,8 @@ function Cell({
   value: string;
   /** Phones show this instead, so a long team name never wraps the cell. */
   short?: string;
+  /** The full label, shown on hover when `value` is shortened. */
+  title?: string;
   book?: string | null;
   badge?: React.ReactNode;
   accent?: boolean;
@@ -111,10 +108,10 @@ function Cell({
             muted && "!font-normal !text-ink-muted",
           )}
         >
-          {short === value ? value : (
+          {short === value ? <span title={title}>{value}</span> : (
             <>
-              <span className="max-sm:hidden">{value}</span>
-              <span className="sm:hidden" title={value}>{short}</span>
+              <span className="max-sm:hidden" title={title}>{value}</span>
+              <span className="sm:hidden" title={title ?? value}>{short}</span>
             </>
           )}
         </span>
@@ -198,13 +195,13 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
             <Eyebrow as="span" className="text-center">Total</Eyebrow>
 
             <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
-            <Cell value={matchup.marketSpread} short={abbreviateLead(matchup.marketSpread, teams)} book={bookName(matchup.spreadSource)} />
+            <Cell value={abbreviateLead(matchup.marketSpread, teams, phoneTeamName)} short={abbreviateLead(matchup.marketSpread, teams)} title={matchup.marketSpread} book={bookName(matchup.spreadSource)} />
             <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} book={bookName(matchup.totalSource)} />
 
             {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
               <>
                 <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
-                <Cell value={matchup.modelSpread} short={abbreviateLead(matchup.modelSpread, teams)} />
+                <Cell value={abbreviateLead(matchup.modelSpread, teams, phoneTeamName)} short={abbreviateLead(matchup.modelSpread, teams)} title={matchup.modelSpread} />
                 <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
 
                 <div className="col-span-3 border-t border-line/60" aria-hidden />
@@ -212,8 +209,9 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
                 <Cell
                   accent
                   testId="model-bet-spread"
-                  value={betSpread}
+                  value={abbreviateLead(betSpread, teams, phoneTeamName)}
                   short={abbreviateLead(betSpread, teams)}
+                  title={betSpread}
                   muted={!matchup.spreadLean}
                   badge={
                     isFinal && matchup.spreadLean && matchup.spreadResult ? (
