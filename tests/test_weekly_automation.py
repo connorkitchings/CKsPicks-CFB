@@ -79,6 +79,62 @@ def test_close_week_skips_past_final_regular_week():
     assert d.action == "skip"
 
 
+FINAL = wa.FINAL_REGULAR_WEEK
+
+
+def final_decision(**kw):
+    args = {
+        "now": NOW,
+        "active_week": FINAL,
+        "completed": games(PAST),
+        "upcoming": [],
+    }
+    return wa.decide_close_week(**{**args, **kw})
+
+
+def test_week_before_final_still_opens_the_final_week():
+    d = wa.decide_close_week(
+        now=NOW,
+        active_week=FINAL - 1,
+        completed=games(PAST),
+        upcoming=games(FUTURE),
+    )
+    assert (d.action, d.completed_week, d.upcoming_week, d.final) == (
+        "run",
+        FINAL - 1,
+        FINAL,
+        False,
+    )
+
+
+def test_final_week_complete_runs_the_final_close_with_no_next_week():
+    d = final_decision()
+    assert (d.action, d.completed_week, d.final) == ("run", FINAL, True)
+
+
+def test_final_week_incomplete_stops():
+    d = final_decision(completed=games(PAST) + [wa.Game(99, PAST, False)])
+    assert (d.action, d.final) == ("stop", False)
+    assert "no final score" in d.reason
+
+
+def test_final_week_not_started_skips_and_missing_games_stop():
+    assert final_decision(completed=games(FUTURE, final=False)).action == "skip"
+    assert final_decision(completed=[]).action == "stop"
+
+
+def test_final_close_already_live_skips_with_a_clear_reason():
+    d = final_decision(final_released=True)
+    assert (d.action, d.final) == ("skip", False)
+    assert "already live" in d.reason
+
+
+def test_games_past_the_final_week_constant_skip_instead_of_closing():
+    d = final_decision(upcoming=games(FUTURE))
+    assert (d.action, d.final) == ("skip", False)
+    assert "past the final regular-season week" in d.reason
+
+
 def test_market_refresh_skips_when_fully_lined_unless_forced():
     kw = dict(now=NOW, active_week=10, upcoming=games(FUTURE), lined=56, total=56)
     assert wa.decide_market_refresh(force=False, **kw).action == "skip"
@@ -165,6 +221,9 @@ class Harness:
         self.week_games = week_games
         self.preview_active = preview_active or "preview-season-2026-old"
         self.preview_week = 9
+        self.production_week = 9
+        self.manifest_sha = "0" * 64
+        self.health_week = 10
         # preview release id -> "same" (active, same bytes) | "other" (other bytes)
         self.existing: dict[str, str] = {}
         self.prepares = 0
@@ -178,6 +237,12 @@ class Harness:
     def run(self, argv, env, timeout):
         argv = list(map(str, argv))
         self.calls.append((argv, env))
+        if "scripts/pipeline/build_season_revision.py" in argv:
+            week = argv[argv.index("--week") + 1]
+            cutoff = wa.iso_z(self.clock + timedelta(minutes=5))
+            (self.root / wa.CONF / f"revision_manifest_w{week}_v1.json").write_text(
+                json.dumps({"pre_week_cutoffs": {week: cutoff}})
+            )
         if "prepare" in argv:
             self.prepares += 1
             rid = self.release_id()
@@ -214,11 +279,11 @@ class Harness:
         if role == "preview" and "active_week FROM" in sql:
             return [(self.preview_week,)]
         if "active_week FROM" in sql:
-            return [("production-season-2026-old", 9)]
+            return [("production-season-2026-old", self.production_week)]
         if "count(*)" in sql and "season_release_games" in sql:
             return [(56, 56)]
         if "revision_manifest_sha256" in sql:
-            return [("0" * 64,)]
+            return [(self.manifest_sha,)]
         if "release_id FROM season_releases" in sql:
             old = (
                 self.preview_active
@@ -232,7 +297,7 @@ class Harness:
         return {
             "activeRelease": {
                 "releaseId": f"production-{self.release_id()}",
-                "week": 10,
+                "week": self.health_week,
             }
         }
 
@@ -489,3 +554,98 @@ def test_plan_only_enforces_the_completed_week_kickoff_window(harness):
     assert c.run() == 1
     assert "cutoff" in c.summary["result"]
     assert harness.calls == []
+
+
+# ------------------------------------------------- final regular-season close
+
+
+def _final_harness(harness):
+    harness.production_week = FINAL
+    harness.preview_week = FINAL
+    harness.health_week = FINAL
+    harness.week_games = {FINAL: games(PAST), FINAL + 1: []}
+    return harness
+
+
+def _scripts_args(h, script):
+    return [a for a, _ in h.calls if script in a]
+
+
+def test_final_close_builds_and_releases_without_a_next_week(harness):
+    h = _final_harness(harness)
+    c = h.controller()
+    assert c.run() == 0
+    assert c.summary["result"] == "released"
+    assert c.summary["decision"]["final"] is True
+    # The build ran (no manifest on disk) but only the completed week was captured.
+    captures = _scripts_args(h, "scripts/data/ingest_week.py")
+    assert [a[a.index("--week") + 1] for a in captures] == [str(FINAL)]
+    assert not _scripts_args(h, "scripts/data/fetch_odds_api_market_quotes.py")
+    build = _scripts_args(h, "scripts/pipeline/build_season_revision.py")[0]
+    assert build[build.index("--week") + 1] == str(FINAL + 1)
+    prepare = next(
+        a for a in _scripts_args(h, "scripts/pipeline/run_season.py") if "prepare" in a
+    )
+    assert prepare[prepare.index("--through-week") + 1] == str(FINAL)
+    assert "--next-week" not in prepare
+    parity = _parity_args(h)
+    assert parity[parity.index("--completed-week") + 1] == str(FINAL)
+    assert parity[parity.index("--upcoming-week") + 1] == str(FINAL)
+    assert parity[parity.index("--mode") + 1] == "close-week"
+    commit = next(a for a, _ in h.calls if a[:2] == ["git", "commit"])
+    assert "final regular-season revision manifest" in commit[-1]
+
+
+def test_final_close_waits_for_the_last_game_to_be_final(harness):
+    h = _final_harness(harness)
+    h.week_games[FINAL] = games(PAST) + [wa.Game(99, PAST, False)]
+    c = h.controller()
+    assert c.run() == 1
+    assert "no final score" in c.summary["result"]
+    assert h.calls == []
+
+
+def test_final_close_resumes_at_prepare_when_its_manifest_is_committed(harness):
+    h = _final_harness(harness)
+    (h.root / wa.CONF / f"revision_manifest_w{FINAL + 1}_v1.json").write_text(
+        json.dumps({"pre_week_cutoffs": {str(FINAL + 1): wa.iso_z(NOW)}})
+    )
+    assert h.controller().run() == 0
+    assert not _scripts_args(h, "scripts/pipeline/build_season_revision.py")
+    prepare = next(
+        a for a in _scripts_args(h, "scripts/pipeline/run_season.py") if "prepare" in a
+    )
+    assert "--next-week" not in prepare
+
+
+def test_scheduled_runs_skip_cleanly_once_the_final_close_is_live(harness):
+    h = _final_harness(harness)
+    path = h.root / wa.CONF / f"revision_manifest_w{FINAL + 1}_v1.json"
+    path.write_text(json.dumps({"pre_week_cutoffs": {str(FINAL + 1): wa.iso_z(NOW)}}))
+    h.manifest_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    sunday = h.controller()
+    assert sunday.run() == 0
+    assert sunday.summary["result"].startswith("skipped: the final regular-season")
+    h.clock = MONDAY
+    monday = h.controller(mode="market-refresh")
+    assert monday.run() == 0
+    assert monday.summary["result"].startswith("skipped: the final regular-season")
+    assert h.calls == []
+
+
+def test_final_week_in_progress_still_runs_market_refresh_not_a_close(harness):
+    h = _final_harness(harness)
+    h.week_games[FINAL] = games(FUTURE, final=False)
+    c = h.controller(mode="market-refresh")
+    assert c.run() == 0
+    assert c.effective_mode == "market-refresh"
+
+
+def test_final_close_plan_only_makes_no_calls_or_writes(harness):
+    h = _final_harness(harness)
+    _with_preview_login(h, "cks_preview_pipeline")
+    c = h.controller(mode="plan-only")
+    assert c.run() == 0
+    assert c.summary["result"] == "planned"
+    assert c.summary["planned_cutoffs"]["upcoming_first_kickoff"] is None
+    assert h.calls == []

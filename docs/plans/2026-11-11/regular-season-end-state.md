@@ -1,9 +1,9 @@
 # Regular-season end state (postseason option B)
 
-- **Status:** Draft
+- **Status:** Approved
 - **Created:** 2026-11-11
 - **Planner:** Sol
-- **Approval source:** Owner chose option B on 2026-11-11 ("B is fine"): the official 2026 V5 record ends with the last regular-season week, and the site shows a clean "regular season complete" state. This contract itself is Draft until the owner approves the plan or names its path for implementation.
+- **Approval source:** Owner chose option B on 2026-11-11 ("B is fine"): the official 2026 V5 record ends with the last regular-season week, and the site shows a clean "regular season complete" state. The owner approved this contract for implementation on 2026-11-11 ("1 approved"). Task 1 (final-week verification) and the stop gates still apply.
 - **Implementation log:** `session_logs/2026-11-11/` (number assigned at implementation)
 - **Commit policy:** Commit with implementation; one pull request into `dev`. A `dev` to `main` release is needed before the final close runs, because scheduled workflows run only from `main`.
 
@@ -47,6 +47,9 @@ Acceptance:
 
 ## Handoff/amendments
 
-- Approval and resume gate: the owner approves this Draft (or names its path for implementation). Implementation then starts at task 1 and may not start the controller change before the final-week fact is recorded.
+- Approval and resume gate: approved 2026-11-11. Implementation starts at task 1 and may not start the controller change before the final-week fact is recorded.
 - Timing: the work must reach `main` before the final regular-season week completes (early December 2026). Production releases and the final close itself need the owner's usual go-ahead; the automation's normal automatic activation covers the scheduled case.
 - Amendments: a mechanical amendment may proceed if architecture, interfaces, scope and acceptance are unchanged; a material conflict returns to Sol. Record each amendment with reason, previous approach, revised approach and impact.
+  - 2026-11-11, mechanical (task 3): the controller decides a final close only when the week after the final week has no scheduled games. Previous approach: replace the `skip` at `nxt > final_week` unconditionally with a final `run`. Revised approach: the existing test `test_close_week_skips_past_final_regular_week` supplies week-16 games and expects `skip`, and acceptance 5 forbids editing existing expectations, so games present past the final week still skip ("past the final regular-season week") and an empty week 16 (the verified provider state) runs the final close. Impact: none on acceptance; a provider-added week 16 skips loudly in the log instead of closing.
+  - 2026-11-11, mechanical (task 2/3): the final close passes parity as `--completed-week 15 --upcoming-week 15` and the live health probe expects week 15, so neither gate script changes. The revision builder is called unchanged with `--week 16` (its week-to-forecast convention); no builder, engine or schema change was needed.
+  - 2026-11-11, mechanical (task 4): the web notice is computed in `web/src/app/(games)/page.tsx` from the active week, the final-week constant `FINAL_REGULAR_WEEK = 15` in `web/src/lib/slate.ts` (a second copy of the controller constant, commented as a mirror), the games' phase and the published weeks; the e2e fixture uses a UI-test-only `?finalWeek=4` parameter.

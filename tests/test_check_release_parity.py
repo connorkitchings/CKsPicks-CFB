@@ -253,6 +253,32 @@ def test_unpredicted_upcoming_game_fails_but_missing_lines_do_not():
     assert any("1 of 2 games predicted" in f for f in unpredicted.failures)
 
 
+def test_final_close_parity_names_the_final_week_as_upcoming_and_stays_strict():
+    """The final close has no next week: completed == upcoming == the final week.
+
+    The previous release's final week was live; the candidate replays and grades
+    it, so its rows (and new grades) may move, while earlier weeks stay strict.
+    """
+    old, new = release(OLD_RUN), release(NEW_RUN)
+    for r in new["predictions"]:
+        if r["game_id"] in (4, 5):
+            r.update(predicted_spread=r["predicted_spread"] + 0.2)
+    new["prediction_grades"] += [
+        {
+            "run_id": f"{NEW_RUN}:w9",
+            "game_id": 4,
+            "target": "spread",
+            "result": "loss",
+            "profit_units": -1.0,
+            "graded_at": LATER,
+        }
+    ]
+    assert run(old, new, completed=9, upcoming=9).passed
+
+    row(new, "predictions", game_id=3).update(predicted_spread=99.0)
+    assert not run(old, new, completed=9, upcoming=9).passed
+
+
 def test_missing_required_table_fails_closed():
     old, new = release(OLD_RUN), release(NEW_RUN)
     del new["prediction_grades"]

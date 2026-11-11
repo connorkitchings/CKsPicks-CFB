@@ -354,6 +354,8 @@ MODEL_INPUTS = ("priors", "terminal", "historical_population", "historical_event
 def build_season(
     output: Path,
     edit: Callable[[dict[str, pd.DataFrame]], None] | None = None,
+    *,
+    next_week: int | None = NEXT_WEEK,
 ) -> dict[str, Any]:
     """Prepare the season and return the ``build_football`` keyword arguments.
 
@@ -389,7 +391,7 @@ def build_season(
         revision_raw=canonical(revision),
         reader=reader,
         through_week=THROUGH_WEEK,
-        next_week=NEXT_WEEK,
+        next_week=next_week,
         as_of=AS_OF,
         output=output,
         code_sha=CODE_SHA,

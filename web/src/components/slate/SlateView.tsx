@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
+import { RegularSeasonComplete } from "@/components/slate/RegularSeasonComplete";
 import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
 import { FeaturedGames } from "@/components/slate/FeaturedGames";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
@@ -39,6 +40,8 @@ export interface SlateViewProps {
   retrospectiveRepair?: boolean;
   /** Notice for a display-only run; null when the run is an ordinary one. */
   displayOnlyNotice?: string | null;
+  /** The final regular-season close is live: show the season-complete notice with the final record. */
+  regularSeasonComplete?: boolean;
   initialSort?: SlateSort;
   emptyMessage?: string;
   /** The clock for awaiting-result states; passed down so server and browser render the same text. */
@@ -78,6 +81,7 @@ export function SlateView({
   allowedSeasons,
   dbError = null,
   displayOnlyNotice = null,
+  regularSeasonComplete = false,
   initialSort = "kickoff",
   emptyMessage,
   now,
@@ -142,6 +146,9 @@ export function SlateView({
               </div>
               {weeks.length > 1 && <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact className="max-sm:hidden" />}
             </div>
+            {regularSeasonComplete && (
+              <RegularSeasonComplete performance={performance} games={games} />
+            )}
             {showRecord && (
               <ModelRecord
                 phoneHeader={(

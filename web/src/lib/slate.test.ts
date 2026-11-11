@@ -8,7 +8,10 @@ import {
   gameState,
   hasGradedPick,
   hasLean,
+  isRegularSeasonComplete,
+  FINAL_REGULAR_WEEK,
   leanFor,
+  seasonRecordThrough,
   leanGradeRows,
   modelCrossesMarket,
   phoneLean,
@@ -370,6 +373,39 @@ test("weekPhase is upcoming with no finished game or no games, final when all ar
   assert.equal(weekPhase([open, open]), "upcoming");
   assert.equal(weekPhase([done, open]), "in-progress");
   assert.equal(weekPhase([done, done]), "final");
+});
+
+test("regular season is complete only for the final active week, all final, with no later week", () => {
+  const done = [game({ gameId: 1, homePoints: 31, awayPoints: 24 }), game({ gameId: 2, homePoints: 3, awayPoints: 0 })];
+  const open = game({ gameId: 3 });
+  const base = { week: FINAL_REGULAR_WEEK, activeWeek: FINAL_REGULAR_WEEK, weeks: [13, 14, FINAL_REGULAR_WEEK], games: done };
+  assert.equal(isRegularSeasonComplete(base), true);
+  // Not yet: a game without a final, or the earlier-week release that only opens the final week.
+  assert.equal(isRegularSeasonComplete({ ...base, games: [...done, open] }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, games: [] }), false);
+  // Browsing a past week or an inactive final week keeps the ordinary slate.
+  assert.equal(isRegularSeasonComplete({ ...base, week: 14 }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, activeWeek: 14 }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, activeWeek: null }), false);
+  // A published later week means the season has not ended.
+  assert.equal(isRegularSeasonComplete({ ...base, weeks: [...base.weeks, FINAL_REGULAR_WEEK + 1] }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, week: 4, activeWeek: 4, weeks: [4], finalWeek: 4 }), true);
+});
+
+test("seasonRecordThrough adds the final week's graded record to the record before it", () => {
+  const before = [{ classification: "all", spread: { win: 40, loss: 30, push: 1 }, total: { win: 35, loss: 36, push: 0 } }];
+  const games = [
+    game({ gameId: 1, homePoints: 31, awayPoints: 24, spreadResult: "win", totalResult: "loss" }),
+    game({ gameId: 2, homePoints: 3, awayPoints: 0, spreadResult: "push", totalResult: null }),
+  ];
+  assert.deepEqual(seasonRecordThrough(before, games), {
+    spread: { win: 41, loss: 30, push: 2 },
+    total: { win: 35, loss: 37, push: 0 },
+  });
+  assert.deepEqual(seasonRecordThrough([], []), {
+    spread: { win: 0, loss: 0, push: 0 },
+    total: { win: 0, loss: 0, push: 0 },
+  });
 });
 
 test("sortSlate offers result sorts only once a game has finished", () => {

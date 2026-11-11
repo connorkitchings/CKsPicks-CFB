@@ -543,6 +543,49 @@ export function weekPhase(games: Game[]): WeekPhase {
   return finished === games.length ? "final" : "in-progress";
 }
 
+/**
+ * Last regular-season week of the 2026 official record (Army-Navy, 2026-12-12; the provider files no
+ * regular game in week 16). Mirrors `FINAL_REGULAR_WEEK` in `scripts/ops/weekly_automation.py`.
+ */
+export const FINAL_REGULAR_WEEK = 15;
+
+/**
+ * True once the active release is the final regular-season close: the slate shown is the active week, that
+ * week is the final one, every game in it is final, and no later week is published. Postseason is never
+ * published, so the record ends here.
+ */
+export function isRegularSeasonComplete(args: {
+  week: number;
+  activeWeek: number | null;
+  weeks: readonly number[];
+  games: Game[];
+  finalWeek?: number;
+}): boolean {
+  const { week, activeWeek, weeks, games, finalWeek = FINAL_REGULAR_WEEK } = args;
+  return (
+    activeWeek === finalWeek &&
+    week === finalWeek &&
+    games.length > 0 &&
+    weekPhase(games) === "final" &&
+    !weeks.some((w) => w > finalWeek)
+  );
+}
+
+/** The final cumulative record: the season record before the week plus the week's own graded record. */
+export function seasonRecordThrough(
+  before: ReadonlyArray<{ classification: string; spread: Tally | null; total: Tally | null }>,
+  games: Game[],
+): { spread: Tally; total: Tally } {
+  const overall = before.find((p) => p.classification === "all");
+  const week = weekRecord(games);
+  const add = (a: Tally | null | undefined, b: Tally): Tally => ({
+    win: (a?.win ?? 0) + b.win,
+    loss: (a?.loss ?? 0) + b.loss,
+    push: (a?.push ?? 0) + b.push,
+  });
+  return { spread: add(overall?.spread, week.spread), total: add(overall?.total, week.total) };
+}
+
 export type GameState = "final" | "awaiting" | "upcoming";
 
 type Timed = { startDate: Date; homePoints: number | null; awayPoints: number | null };
