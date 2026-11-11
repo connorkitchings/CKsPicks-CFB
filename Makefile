@@ -1,4 +1,4 @@
-.PHONY: help format lint test check web-e2e all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-close-week season-revision season-market-revision season-prepare season-release season-rollback
+.PHONY: help format lint test check pre-push hooks web-install web-e2e all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game prepare-week team-stats promote-silver matchup-data reconcile audit-data season-close-week season-revision season-market-revision season-prepare season-release season-rollback
 
 # Default target
 help:
@@ -9,6 +9,10 @@ help:
 	@echo "  make lint      - Run linter with ruff"
 	@echo "  make test      - Run tests with pytest"
 	@echo "  make check     - Fast local gate: lint, contracts, tests, docs build, web lint/typecheck/unit/build"
+	@echo "  make hooks     - Enable the versioned git hooks (.githooks/pre-push gates pushes of dev)"
+	@echo "  make web-install - Install web dependencies (npm ci --prefix web)"
+	@echo "  make pre-push  - Pre-push gate: Python checks always; web lint/build/typecheck/publication/e2e only if web-affecting paths changed in PRE_PUSH_RANGE (default origin/dev..HEAD)."
+	@echo "                   After a web-gated push web/.next holds a CFB_UI_TEST_MODE=1 fixture build (gitignored artifact); never serve it as real data."
 	@echo "  make web-e2e   - Browser tests (fixture build + Playwright); the Web CI step make check omits"
 	@echo "  make all       - Format + lint + test + contracts + quality registry"
 	@echo "  make clean     - Clean cache files"
@@ -75,6 +79,37 @@ check:
 	npm --prefix web run test:publication
 	npm --prefix web run build
 	@echo "✅ All checks passed (run make web-e2e for the browser tests CI also runs)"
+
+# Local pre-push gate, run by .githooks/pre-push (enable with `make hooks`).
+# Python checks always run; the web gate runs only when the range touches web-affecting paths.
+# The last web step rebuilds web/.next with CFB_UI_TEST_MODE=1 fixture data: never serve it as real data.
+PRE_PUSH_RANGE ?= origin/dev..HEAD
+PRE_PUSH_WEB_PATHS = web/ contracts/teams.ts contracts/schema.ts contracts/projection_sets.json Makefile .github/workflows/ci.yml
+
+pre-push:
+	uv run ruff format --check .
+	uv run ruff check .
+	$(MAKE) contracts-check quality-check
+	PYTHONPATH=src:. uv run pytest tests -q -n 4
+	uv run mkdocs build --strict
+	@if [ -n "$$(git diff --name-only $(PRE_PUSH_RANGE) -- $(PRE_PUSH_WEB_PATHS))" ]; then \
+		echo "pre-push: web gate RUNNING (web-affecting paths changed in $(PRE_PUSH_RANGE))"; \
+		if [ ! -d web/node_modules ]; then echo "pre-push: web/node_modules is missing; run 'make web-install' first" >&2; exit 1; fi; \
+		npm --prefix web run lint && \
+		npm --prefix web run build && \
+		npm --prefix web run typecheck && \
+		npm --prefix web run test:publication && \
+		$(MAKE) web-e2e || exit 1; \
+	else \
+		echo "pre-push: web gate SKIPPED (no web-affecting paths changed in $(PRE_PUSH_RANGE))"; \
+	fi
+	@echo "pre-push: Python gate passed"
+
+hooks:
+	git config core.hooksPath .githooks
+
+web-install:
+	npm ci --prefix web
 
 # ---------------------------------------------------------------------------
 # Contracts validation
