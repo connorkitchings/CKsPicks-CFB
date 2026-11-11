@@ -61,6 +61,19 @@ test.describe("team pages (fixture mode)", () => {
     await expect(table.getByTestId("schedule-next-row")).toContainText("Ohio State");
   });
 
+  test("a bye week shows as a Bye row that is not a game", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHydrated(page, "/teams/Texas");
+    const table = page.getByRole("table", { name: "Lines and results" });
+    const bye = table.getByTestId("schedule-bye-row");
+    await expect(bye).toHaveCount(1);
+    await expect(bye).toContainText("5");
+    await expect(bye).toContainText("Bye");
+    await expect(bye.getByRole("link")).toHaveCount(0);
+    // The record still counts only played games.
+    await expect(page.getByTestId("schedule-record")).toContainText("ATS (W–L) 2–1–1");
+  });
+
   test("the desktop model card lists each pick with its mark and the model record", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
@@ -115,7 +128,8 @@ test.describe("team pages (fixture mode)", () => {
         expect(Math.abs(boxes[i].x - boxes[0].x), `${ids[i - 1]} aligned with the hero`).toBeLessThanOrEqual(2);
       }
       await expect(page.getByRole("table", { name: "Lines and results" })).toBeHidden();
-      await expect(page.getByRole("list", { name: "Schedule" }).getByRole("listitem")).toHaveCount(6);
+      await expect(page.getByRole("list", { name: "Schedule" }).getByRole("listitem")).toHaveCount(7);
+      await expect(page.getByRole("list", { name: "Schedule" }).getByTestId("schedule-bye-row")).toContainText("Wk 5");
       await expect(page.getByLabel("Next game")).toContainText(/at\s*Ohio State/);
       const picks = page.getByRole("list", { name: "Model picks" });
       await expect(picks).toBeVisible();
@@ -129,7 +143,7 @@ test.describe("team pages (fixture mode)", () => {
 
   test("the next-game card skips a game that kicked off without a score", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    // Texas's week 4 game (Sep 26) is past and unscored; week 5 (Oct 3) is still ahead.
+    // Texas's week 4 game (Sep 26) is past and unscored; week 6 (Oct 10) is still ahead.
     await gotoHydrated(page, "/teams/Texas?now=2026-09-30T12:00:00Z");
     await expect(page.getByLabel("Next game")).toContainText(/vs\s*Rice/);
     await expect(page.getByLabel("Next game")).not.toContainText("Ohio State");

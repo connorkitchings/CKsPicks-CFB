@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { hasLogo, logoId, logoSrc, phoneTeamName, teamAbbr, teamInitials } from "./team-logos.ts";
+import { abbreviateLead, hasLogo, logoId, logoSrc, phoneTeamName, teamAbbr, teamInitials } from "./team-logos.ts";
 import { TEAM_DISPLAY } from "./team-logos.generated.ts";
 
 test("unknown team has no v2 logo", () => {
@@ -70,4 +70,13 @@ test("phones keep short names and abbreviate long ones", () => {
   assert.equal(phoneTeamName("San José State"), "San José State");
   assert.equal(phoneTeamName("Florida International"), "FIU");
   assert.equal(phoneTeamName("Southern Mississippi"), "USM");
+});
+
+test("abbreviateLead shortens only a long leading team, keeping the line", () => {
+  const teams = ["Florida International", "Middle Tennessee"];
+  assert.equal(abbreviateLead("Florida International -10.0", teams, phoneTeamName), `${phoneTeamName("Florida International")} -10.0`);
+  assert.notEqual(phoneTeamName("Florida International"), "Florida International");
+  assert.equal(abbreviateLead("Florida International -10.0", teams), `${teamAbbr("Florida International")} -10.0`);
+  assert.equal(abbreviateLead("Texas -3.5", ["Texas", "Rice"], phoneTeamName), "Texas -3.5");
+  assert.equal(abbreviateLead("PK", teams, phoneTeamName), "PK");
 });

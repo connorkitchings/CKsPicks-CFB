@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
+import { ThemeScript } from "@/components/ThemeScript";
 import { SiteNav } from "@/components/SiteNav";
 import { MatchupLinksProvider } from "@/components/MatchupLinks";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
@@ -34,12 +35,6 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-/**
- * Pre-paint theme init: must run before React hydration to avoid a flash.
- * Reads localStorage.theme and creates the theme-color meta (matching --surface-page; ThemeToggle keeps it current). It is not a JSX tag because React would duplicate it on hydration. Defaults to system (honors prefers-color-scheme).
- */
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);var m=document.querySelector('meta[name=theme-color]');if(!m){m=document.createElement('meta');m.name='theme-color';document.head.appendChild(m);}m.content=d?'#000000':'#fafafa';}catch(e){}})();`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -54,7 +49,7 @@ export default function RootLayout({
     >
       <head>
         <meta name="color-scheme" content="light dark" />
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <ThemeScript />
       </head>
       <body className="min-h-full flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] sm:pb-0">
         <MatchupLinksProvider enabled={isMatchupEnabled()}>

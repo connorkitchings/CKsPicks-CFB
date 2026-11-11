@@ -6,7 +6,8 @@ import { MatchupCellLink, MatchupRowLink } from "@/components/teams/MatchupRowLi
 import { TeamGameRow, type TeamGame } from "@/components/teams/TeamGameRow";
 import { TeamSection } from "@/components/teams/TeamSection";
 import {
-  atsResult, isFinal, lineForTeam, lineText, nextUpcomingGame, overUnderResult, recordText, teamRecords, winPercent,
+  atsResult, isFinal, lineForTeam, lineText, nextUpcomingGame, overUnderResult, recordText, teamRecords, winPercent, withByeWeeks,
+  type ScheduleEntry,
   type BetResult,
 } from "@/lib/team-games";
 import { gameState } from "@/lib/slate";
@@ -31,7 +32,17 @@ function Outcome({ game, team }: { game: TeamGame; team: string }) {
   );
 }
 
-function ScheduleTable({ games, team, now, nextId }: { games: readonly TeamGame[]; team: string; now: Date; nextId: number | undefined }) {
+/** A week the team did not play: not a game, so it carries no record, link or result cells. */
+function ByeRow({ week }: { week: number }) {
+  return (
+    <tr data-testid="schedule-bye-row" className="text-ink-muted">
+      <td className={clsx(TD, "font-mono")}>{week}</td>
+      <td className={clsx(TD, "italic")} colSpan={8}>Bye<span className="sr-only"> week, no game</span></td>
+    </tr>
+  );
+}
+
+function ScheduleTable({ entries, team, now, nextId }: { entries: readonly ScheduleEntry<TeamGame>[]; team: string; now: Date; nextId: number | undefined }) {
   return (
     <div className="overflow-x-auto max-sm:hidden">
       <table aria-label="Lines and results" className="w-full text-sm tabular-nums">
@@ -44,7 +55,9 @@ function ScheduleTable({ games, team, now, nextId }: { games: readonly TeamGame[
           </tr>
         </thead>
         <tbody>
-          {games.map((game) => {
+          {entries.map((entry) => {
+            if (entry.kind === "bye") return <ByeRow key={`bye-${entry.week}`} week={entry.week} />;
+            const game = entry.game;
             const final = isFinal(game);
             const home = game.homeTeam === team;
             const opponent = home ? game.awayTeam : game.homeTeam;
@@ -103,14 +116,19 @@ function RecordLine({ games, team }: { games: readonly TeamGame[]; team: string 
  */
 export function TeamSchedule({ games, team, now }: { games: readonly TeamGame[]; team: string; now: Date }) {
   const nextId = nextUpcomingGame(games, now)?.gameId;
+  const entries = withByeWeeks(games);
   return (
     <TeamSection id="team-games" title="Schedule · lines and results">
       {games.length === 0 ? <Notice tone="empty">No selected V5 forecasts are available yet.</Notice> : <>
-        <ScheduleTable games={games} team={team} now={now} nextId={nextId} />
+        <ScheduleTable entries={entries} team={team} now={now} nextId={nextId} />
         <ul aria-label="Schedule" className="-mx-3.5 divide-y divide-line sm:hidden">
-          {games.map((game) => (
-            <li key={game.gameId} className={clsx(game.gameId === nextId && "bg-accent-soft")}>
-              <MatchupRowLink gameId={game.gameId}><TeamGameRow game={game} team={team} now={now} next={game.gameId === nextId} /></MatchupRowLink>
+          {entries.map((entry) => entry.kind === "bye" ? (
+            <li key={`bye-${entry.week}`} data-testid="schedule-bye-row" className="px-3.5 py-2 text-xs text-ink-muted">
+              Wk {entry.week} · <span className="italic">Bye</span><span className="sr-only"> week, no game</span>
+            </li>
+          ) : (
+            <li key={entry.game.gameId} className={clsx(entry.game.gameId === nextId && "bg-accent-soft")}>
+              <MatchupRowLink gameId={entry.game.gameId}><TeamGameRow game={entry.game} team={team} now={now} next={entry.game.gameId === nextId} /></MatchupRowLink>
             </li>
           ))}
         </ul>
