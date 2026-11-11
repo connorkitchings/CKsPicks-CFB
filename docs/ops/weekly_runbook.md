@@ -66,7 +66,7 @@ Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actio
 
 **Gates (any failure stops the run before the next step; nothing further is activated):**
 
-- Week detection reads the active Production release. It stops when the upcoming week's first kickoff has passed, when the season is past its final regular week, or when any completed-week game lacks a final score (a human is needed).
+- Week detection reads the active Production release. It stops when the upcoming week's first kickoff has passed or when any completed-week game lacks a final score (a human is needed). After week 15 it runs the final close once (see [End of the regular season](#end-of-the-regular-season)) and then skips.
 - The revision builder's stop gate (completed-week schedule and finals unchanged) and its check that completed-week cutoffs match the previous certified manifest.
 - Score-reconciliation exceptions are added automatically only when the final score equals the sum of the quarter line scores for that team-game; otherwise the run stops and names the games. An earlier-week exception changing or becoming unused also stops the run.
 - Prepare passes every `season_verification_v2` check.
@@ -121,6 +121,17 @@ gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body false
    ```bash
    gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body true
    ```
+
+### End of the regular season
+
+The official 2026 record ends with the last regular-season week, **week 15** (Army-Navy, Saturday 2026-12-12; verified 2026-11-11 against the provider schedule, which files no regular-season game in week 14 or 16). The week-14 close opens week 15 exactly as every earlier close does. The Sunday 2026-12-13 run then performs the **final close**:
+
+- **What runs.** Detection sees active week 15 with every week-15 game final and no week 16, and decides `run` with the final flag. The controller captures only the week-15 lines (no week-16 lines or odds quotes exist), builds `conf/season/2026/revision_manifest_w16_v1.json` (the "week 16" name is the builder's week-to-forecast convention; its `pre_week_cutoffs["16"]` only fixes the run's as-of and nothing forecasts week 16), prepares with `--through-week 15` and no `--next-week`, checks parity with `--completed-week 15 --upcoming-week 15` (the final week stays the 100%-predicted week; weeks 0..14 compare strictly), then releases to Preview and Production. The release carries every week through 15 graded, `active_week` equal to 15 and no next slate.
+- **Every gate still applies.** Verification (`season_verification_v2`), parity, Preview before Production, the expected-previous-release check and the live health probe are unchanged; the health probe expects week 15.
+- **After it.** Later scheduled runs (Sunday backup, Monday, every following week) detect that the active release's revision manifest is the committed week-16 manifest and skip green with "the final regular-season close (week 15) is already live". A run never fails and never opens a postseason week. If a week-16 regular game ever appears in the provider schedule, the run skips with "past the final regular-season week" instead of closing, and `FINAL_REGULAR_WEEK` needs a decision.
+- **Owner checks after the close.** `/api/health` reports the final release at week 15 with no later slate; the Model page record includes week 15; the home page shows "Regular season complete" with the final record; the next scheduled run skips with the reason above. If the Sunday run is late or missing, dispatch `close-week` (the Monday run also completes it as a catch-up).
+- **Deliberately not done.** No postseason schedule, lines, predictions or grades are ingested or shown, and the record is not extended to bowls or the playoff. Postseason modeling is an offseason item ([backlog](../planning/offseason-2027-backlog.md)).
+- **Before it runs.** The controller runs from `dev`, and the workflow file is unchanged. The web notice reaches the public site with a `dev` to `main` release, which must land before the week-15 games finish. A `plan-only` dispatch after that release confirms detection with no provider call or write.
 
 Everything below is the manual procedure the automation mirrors; use it when the automation is disabled or stops.
 

@@ -36,6 +36,9 @@ from typing import Any, Callable, Sequence
 from unittest import mock
 
 SEASON = 2026
+# The last regular-season week in the 2026 provider schedule (verified
+# 2026-11-11: weeks 14 and 16 hold no regular games; week 15 is Army-Navy on
+# 2026-12-12). The official record ends here; postseason is never ingested.
 FINAL_REGULAR_WEEK = 15
 CONF = Path(f"conf/season/{SEASON}")
 EXCEPTIONS_FILE = CONF / "score_reconciliation_exceptions.json"
@@ -108,6 +111,8 @@ class Decision:
     reason: str
     completed_week: int
     upcoming_week: int
+    #: A final close: the last regular week is complete and no later week opens.
+    final: bool = False
 
 
 def iso_z(value: datetime) -> str:
@@ -135,13 +140,19 @@ def decide_close_week(
     completed: Sequence[Game],
     upcoming: Sequence[Game],
     final_week: int = FINAL_REGULAR_WEEK,
+    final_released: bool = False,
 ) -> Decision:
     done, nxt = active_week, active_week + 1
+    is_final = nxt > final_week
 
     def d(action: str, reason: str) -> Decision:
-        return Decision(action, reason, done, nxt)
+        return Decision(action, reason, done, nxt, final=is_final and action == "run")
 
-    if nxt > final_week:
+    if is_final and final_released:
+        return d(
+            "skip", f"the final regular-season close (week {done}) is already live"
+        )
+    if is_final and upcoming:
         return d("skip", f"week {nxt} is past the final regular-season week")
     if not completed:
         return d("stop", f"no games found for completed week {done}")
@@ -151,6 +162,8 @@ def decide_close_week(
         if kick is not None and kick > now:
             return d("skip", f"week {done} has not started (already rolled over)")
         return d("stop", f"{len(missing)} week {done} game(s) have no final score")
+    if is_final:
+        return d("run", f"week {done} is final; closing the regular season")
     if not upcoming:
         return d("skip", f"week {nxt} has no scheduled games")
     kick = first_kickoff(upcoming)
@@ -191,10 +204,10 @@ def pre_week_cutoff(last_capture_end: datetime) -> datetime:
 def check_cutoff_window(
     cutoff: datetime,
     *,
-    upcoming_first_kickoff: datetime,
+    upcoming_first_kickoff: datetime | None,
     completed_last_kickoff: datetime | None,
 ) -> None:
-    if cutoff >= upcoming_first_kickoff:
+    if upcoming_first_kickoff is not None and cutoff >= upcoming_first_kickoff:
         raise StopRunError(f"cutoff {iso_z(cutoff)} is not before the first kickoff")
     if (
         completed_last_kickoff is not None
@@ -592,6 +605,7 @@ class Controller:
                     active_week=active_week,
                     completed=upcoming,
                     upcoming=self.deps.games(active_week + 1),
+                    final_released=self.final_released(release_id, active_week),
                 )
             self.effective_mode = "market-refresh"
             lined, total = self.production_coverage(release_id, active_week)
@@ -613,17 +627,37 @@ class Controller:
             "upcoming": len(upcoming),
         }
         return decide_close_week(
-            now=now, active_week=active_week, completed=completed, upcoming=upcoming
+            now=now,
+            active_week=active_week,
+            completed=completed,
+            upcoming=upcoming,
+            final_released=self.final_released(release_id, active_week),
         )
+
+    def final_released(self, release_id: str, active_week: int) -> bool:
+        """Is the active Production release the final close (its revision manifest)?
+
+        The pre-final release and the final one both have active week 15, so the
+        committed final manifest's hash is what tells them apart.
+        """
+        if active_week != FINAL_REGULAR_WEEK:
+            return False
+        versions = manifest_versions(self.conf(), FINAL_REGULAR_WEEK + 1)
+        if not versions:
+            return False
+        top = versions[max(versions)]
+        live = self.active_manifest_sha(release_id)
+        return live == hashlib.sha256(top.read_bytes()).hexdigest()
 
     def plan_cutoffs(self, decision: Decision) -> None:
         now = self.deps.now()
-        upcoming = self.deps.games(decision.upcoming_week)
+        upcoming = [] if decision.final else self.deps.games(decision.upcoming_week)
         completed = self.deps.games(decision.completed_week)
         cutoff = pre_week_cutoff(now)
+        upcoming_kickoff = first_kickoff(upcoming)
         check_cutoff_window(
             cutoff,
-            upcoming_first_kickoff=first_kickoff(upcoming),
+            upcoming_first_kickoff=upcoming_kickoff,
             completed_last_kickoff=last_kickoff(completed)
             if self.effective_mode == "close-week"
             else None,
@@ -631,19 +665,23 @@ class Controller:
         self.summary["planned_cutoffs"] = {
             "post_week": iso_z(now),
             "pre_week_if_captured_now": iso_z(cutoff),
-            "upcoming_first_kickoff": iso_z(first_kickoff(upcoming)),
+            "upcoming_first_kickoff": upcoming_kickoff and iso_z(upcoming_kickoff),
         }
 
     # -- close-week
     def close_week(self, decision: Decision, started: datetime) -> None:
         done, nxt = decision.completed_week, decision.upcoming_week
         manifest = self.conf() / f"revision_manifest_w{nxt}_v1.json"
+        if decision.final:
+            self.summary["final_close"] = True
         if manifest.exists():
             self.log(f"manifest for week {nxt} exists on dev; resuming at prepare")
             self.summary["resumed"] = True
         else:
-            self.build_close_week(done, nxt, started, manifest)
-        self.prepare_and_release(manifest, nxt, "close-week", done)
+            self.build_close_week(done, nxt, started, manifest, final=decision.final)
+        self.prepare_and_release(
+            manifest, nxt, "close-week", done, final=decision.final
+        )
 
     def capture(self, week: int, odds: bool = True) -> datetime:
         self.step(
@@ -678,15 +716,27 @@ class Controller:
         return self.deps.now()
 
     def build_close_week(
-        self, done: int, nxt: int, started: datetime, manifest: Path
+        self,
+        done: int,
+        nxt: int,
+        started: datetime,
+        manifest: Path,
+        *,
+        final: bool = False,
     ) -> None:
-        self.capture(done)
-        self.capture(nxt)
-        last = self.capture_odds(nxt)
+        last = self.capture(done)
+        if final:
+            # No later week: nothing to line. The "pre-week" cutoff of the
+            # nonexistent week only fixes the run's as-of, after the last capture.
+            upcoming_kickoff = None
+        else:
+            self.capture(nxt)
+            last = self.capture_odds(nxt)
+            upcoming_kickoff = first_kickoff(self.deps.games(nxt))
         cutoff = pre_week_cutoff(last)
         check_cutoff_window(
             cutoff,
-            upcoming_first_kickoff=first_kickoff(self.deps.games(nxt)),
+            upcoming_first_kickoff=upcoming_kickoff,
             completed_last_kickoff=last_kickoff(self.deps.games(done)),
         )
         post = iso_z(started)
@@ -714,7 +764,9 @@ class Controller:
         )  # fmt: skip
         self.commit_push(
             [manifest, EXCEPTIONS_FILE],
-            f"chore(season): add the Week {nxt} revision manifest",
+            "chore(season): add the final regular-season revision manifest"
+            if final
+            else f"chore(season): add the Week {nxt} revision manifest",
         )
 
     def commit_push(self, paths: list[Path], message: str) -> None:
@@ -783,7 +835,13 @@ class Controller:
 
     # -- shared tail
     def prepare_and_release(
-        self, manifest: Path, nxt: int, parity_mode: str, done: int
+        self,
+        manifest: Path,
+        nxt: int,
+        parity_mode: str,
+        done: int,
+        *,
+        final: bool = False,
     ) -> None:
         revision = json.loads(manifest.read_text())
         as_of = parse_z(revision["pre_week_cutoffs"][str(nxt)])
@@ -794,7 +852,7 @@ class Controller:
             )
         if wait.total_seconds() > 0:
             self.deps.sleep(wait.total_seconds() + 5)
-        candidate = self.prepare(manifest, nxt, as_of)
+        candidate = self.prepare(manifest, nxt, as_of, final=final)
         production_active = self.active_release("production")
         if production_active == f"production-{candidate['release_id']}":
             raise SkipRunError("candidate is already active in Production")
@@ -812,7 +870,7 @@ class Controller:
             )  # fmt: skip
             self.push_clean()
             self.summary["retried_with_fresh_candidate"] = True
-            candidate = self.prepare(manifest, nxt, as_of)
+            candidate = self.prepare(manifest, nxt, as_of, final=final)
             state = self.preview_candidate_state(
                 candidate["release_id"], candidate["run_manifest_sha256"]
             )
@@ -843,7 +901,9 @@ class Controller:
                     "scripts/pipeline/check_release_parity.py",
                     "--candidate-dir", Path(candidate["candidate_dir"]),
                     "--mode", parity_mode, "--completed-week", done,
-                    "--upcoming-week", nxt,
+                    # A final close has no later week: the final week itself
+                    # (already predicted in full) is the week parity must see.
+                    "--upcoming-week", done if final else nxt,
                     "--report", self.receipts() / "parity.json",
                     *corrections,
                 ),
@@ -863,16 +923,19 @@ class Controller:
             self.release_args("production", production_active, run_manifest, sha),
             "production",
         )
-        self.probe_health(release_id, nxt)
+        self.probe_health(release_id, done if final else nxt)
 
-    def prepare(self, manifest: Path, nxt: int, as_of: datetime) -> dict[str, str]:
+    def prepare(
+        self, manifest: Path, nxt: int, as_of: datetime, *, final: bool = False
+    ) -> dict[str, str]:
         self.step(
             "prepare candidate",
             self.py(
                 "scripts/pipeline/run_season.py", "prepare",
                 "--model-manifest", MODEL_MANIFEST,
                 "--revision-manifest", manifest,
-                "--through-week", nxt - 1, "--next-week", nxt,
+                "--through-week", nxt - 1,
+                *([] if final else ["--next-week", nxt]),
                 "--as-of", iso_z(as_of), "--output", SEASON_OUTPUT,
                 "--environment", "preview",
             ),

@@ -19,6 +19,8 @@ export type SlateSearchParams = Promise<{
   mode?: string;
   sort?: string;
   now?: string;
+  /** UI test mode only: treat this week as the final regular-season week (and the active one). */
+  finalWeek?: string;
 }>;
 type ResolvedParams = Awaited<SlateSearchParams>;
 
