@@ -18,9 +18,9 @@ Work that cannot wait for January, each under a Draft contract in `docs/plans/20
   - Status 2026-11-12: investigation implemented and documented ([report](../modeling/score_attribution_investigation_2026.md)). Owner decision: do not fix the running-score problem now; revisit on 2026-11-13. Open items for then: adopt rule R4 plus the quarter-line check as the next-model rule (and re-derive the 2025 terminal table and priors), a play-text points ledger for the four unresolved games, whether to raise the feed defect with CFBD, and why game `401858279` is quarantined without a score-exception entry.
 - [Prediction-error diagnostics](../plans/2026-11-12/03-prediction-error-diagnostics.md): section A below, as a contract.
 
-Also to schedule (no contract yet):
+Also scheduled:
 
-- **2026 holdout replay readiness.** The Week 7 and Week 8 revision manifests can no longer be re-prepared because the score-exceptions file is edited in place and its checksum no longer matches. Version the score-exceptions file per manifest from 2027, and after the 2026-12-13 final close export one frozen holdout table (pre-kickoff inputs per week, outcomes, captured lines) with hashes, so a candidate can be scored on 2026 once at the original information time.
+- **2026 holdout replay readiness** ([contract](../plans/2026-11-12/05-holdout-replay-readiness.md)). Verified 2026-11-12: every manifest's pinned exceptions file still exists in git history, so Weeks 7 and 8 are recoverable. The Week 7 and Week 8 revision manifests can no longer be re-prepared because the score-exceptions file is edited in place and its checksum no longer matches. Version the score-exceptions file per manifest from 2027, and after the 2026-12-13 final close export one frozen holdout table (pre-kickoff inputs per week, outcomes, captured lines) with hashes, so a candidate can be scored on 2026 once at the original information time.
 - **Research bucket.** Provision the private research bucket and `CFB_R2_LAB_*` credentials (owner action in Cloudflare) so the ratings-lab CLI runs without the local-output exception, then re-baseline the closed V6 tournament (`RETAINED_AS_BENCHMARK`) as the benchmark that candidates are compared against alongside V5.
 
 ## A. Prediction-error diagnostics (read-only, first)
