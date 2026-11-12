@@ -8,9 +8,22 @@ Prepared 2026-11-11 as the single list of what to consider from 2027-01-01. It i
 - Diagnostics come before ideas. Start from prediction error, not from betting-result slices. Choosing features or priors from ATS win-rate buckets mixes market evaluation into model selection and breaks the guardrails in [betting policy](../modeling/betting_policy.md) and [evaluation](../modeling/evaluation.md).
 - A research contract states its gates before any run: the data years used for development (2021 to 2025), the comparison model (the frozen V5), the metrics and the thresholds that decide adoption.
 
+## Start-now work (2026-11-12)
+
+Work that cannot wait for January, each under a Draft contract in `docs/plans/2026-11-12/`:
+
+- [Near-kickoff line capture](../plans/2026-11-12/01-near-kickoff-line-capture.md): closing lines cannot be reconstructed later, so capture them in Weeks 12 to 15 (analysis only, outside the record). Time-sensitive.
+- [Pre-registered research protocol](../plans/2026-11-12/02-offseason-research-protocol.md): written while 2026 is unseen. Do this before the diagnostics.
+- [Prediction-error diagnostics](../plans/2026-11-12/03-prediction-error-diagnostics.md): section A below, as a contract.
+
+Also to schedule (no contract yet):
+
+- **2026 holdout replay readiness.** The Week 7 and Week 8 revision manifests can no longer be re-prepared because the score-exceptions file is edited in place and its checksum no longer matches. Version the score-exceptions file per manifest from 2027, and after the 2026-12-13 final close export one frozen holdout table (pre-kickoff inputs per week, outcomes, captured lines) with hashes, so a candidate can be scored on 2026 once at the original information time.
+- **Research bucket.** Provision the private research bucket and `CFB_R2_LAB_*` credentials (owner action in Cloudflare) so the ratings-lab CLI runs without the local-output exception, then re-baseline the closed V6 tournament (`RETAINED_AS_BENCHMARK`) as the benchmark that candidates are compared against alongside V5.
+
 ## A. Prediction-error diagnostics (read-only, first)
 
-Output: a report under `docs/modeling/`, no model change.
+Output: a report under `docs/modeling/`, no model change. Contract: [2026-11-12/03](../plans/2026-11-12/03-prediction-error-diagnostics.md).
 
 - Margin and total residuals for 2021 to 2025 as the development view and 2026 as a separate monitoring view.
 - Mean absolute error and bias by week of season, rating-gap size, totals regime (low, mid, high), conference group and home or neutral site.
