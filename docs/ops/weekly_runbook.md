@@ -289,6 +289,26 @@ If other work sits uncommitted in your checkout (`prepare` and `release` reject 
 
 ---
 
+### Near-kickoff capture (analysis only)
+
+Closing lines exist only while games are being played, so the official record has none ([record methodology](../modeling/record_methodology.md)). From Week 12 to Week 15 a separate capture stores the Odds API board shortly before kickoff, so closing-line value (does the line move toward the model between the early-week capture and kickoff?) can be studied later. Contract: [near-kickoff line capture](../plans/2026-11-12/01-near-kickoff-line-capture.md).
+
+- **Separate by design.** The capture registers under Bronze entity `market_quotes_near_kickoff` (provider `the_odds_api`), not `market_quotes`. The revision builders, `season/inputs.py`, `prepare`, `market_snapshots`, `prediction_grades`, the record and the site never select that entity, so nothing in these captures can replace an early-week line. Step 1b and the mid-week refresh above are unchanged. Never pass a near-kickoff capture id to `build_week_market_snapshot.py --capture-id`; it refuses it.
+- **Scheduler.** `.github/workflows/near-kickoff-capture.yml` (Preview credentials only; concurrency group `near-kickoff-capture`, distinct from the weekly update). Slots, in Eastern time: Saturday 09:00 primary and 10:15 backup; Tuesday to Friday 12:00 primary and 13:15 backup. Sunday and Monday are never scheduled. `scripts/ops/near_kickoff_slot.py` reads the stored schedule and decides per Eastern day: skip outside Weeks 12 to 15, skip when no game kicks off that day, skip when the earliest kickoff has passed (a late capture is not near-kickoff), skip when the slot already has a succeeded capture (so the backup skips after a successful primary and runs after a failed one), and stop after two midweek slots per week. Budget: about 2 credits per capture, about 24 for Weeks 12 to 15 (ceiling 50). Never use the historical-snapshot mode.
+- **Matched-games check.** After the board is matched to the stored schedule, the capture counts the games that kick off later on the same Eastern day (the slot's day, not yet started) and how many of them got quotes. If that share is below `MIN_MATCH_RATIO` (0.80, in `scripts/data/fetch_odds_api_market_quotes.py`) the script exits non-zero, naming the counts, the ratio and the threshold, so the GitHub run fails and emails the owner. No expected games (for example a manual capture on a day without kickoffs) never fails. **The capture is still registered** (it is immutable analysis-only evidence and the credits are spent), but its ingestion run is marked `failed` with category `MatchRatioBelowThreshold`, so the slot is not counted as done and the backup slot retries. Pass `--min-match-ratio 0` to disable the check for a manual early or week-ahead capture; a low match nine days before kickoff is expected because most of the week's games are not on the board yet. In near-kickoff mode the unmatched-events warning prints the count and at most 5 sample names instead of the full list; weekly mode output is unchanged.
+- **Release gate.** GitHub runs scheduled workflows only from `main`. After the `dev` to `main` release, the owner enables the capture by setting the repository variable: `gh variable set CFB_NEAR_KICKOFF_CAPTURE_ENABLED --body true`. Until then (and for any Saturday slate before the release) run the capture by hand, under the Preview wrapper, before the first kickoff:
+  ```bash
+  # Estimate only: prints the credit estimate, makes no provider request
+  CFB_STORAGE_BACKEND=r2 PYTHONPATH=.:src zsh scripts/ops/with_preview_env.sh \
+    uv run python scripts/data/fetch_odds_api_market_quotes.py --year 2026 --week <WEEK> --near-kickoff
+  # Paid: one request, ~2 credits (needs owner go-ahead)
+  CFB_STORAGE_BACKEND=r2 PYTHONPATH=.:src zsh scripts/ops/with_preview_env.sh \
+    uv run python scripts/data/fetch_odds_api_market_quotes.py --year 2026 --week <WEEK> --near-kickoff --confirm
+  ```
+- **Check a capture.** `catalog.source_captures` shows `entity = 'market_quotes_near_kickoff'`, `captured_at` earlier than the day's earliest kickoff, and the capture id appears in no revision manifest and no `prediction_grades` row. A rerun produces a second immutable capture; it never overwrites.
+
+---
+
 ### 2. Preview Release (Required Before Production)
 
 Production release requires an independent read-only Preview rehearsal proof. Release in Preview first, from the same commit:

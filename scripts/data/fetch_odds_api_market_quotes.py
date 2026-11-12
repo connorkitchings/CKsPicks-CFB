@@ -9,6 +9,9 @@ matches raise; unmatched events are logged and skipped, never guessed), and
 writes an immutable Bronze capture registered to the current ingestion run
 (``CFB_INGESTION_RUN_ID`` or a generated ID).
 
+``--near-kickoff`` registers the same board under the separate analysis-only entity
+``market_quotes_near_kickoff`` (see docs/ops/weekly_runbook.md).
+
 Requires THE_ODDS_API_KEY, DATABASE_URL, and storage credentials.
 
 Usage:
@@ -16,6 +19,8 @@ Usage:
         --year 2026 --week 2
     PYTHONPATH=.:src uv run python scripts/data/fetch_odds_api_market_quotes.py \\
         --year 2026 --week 2 --confirm
+    PYTHONPATH=.:src uv run python scripts/data/fetch_odds_api_market_quotes.py \\
+        --year 2026 --week 12 --near-kickoff --confirm
 """
 
 from __future__ import annotations
@@ -42,12 +47,51 @@ from cks_picks_cfb.data.lake import capture_provider_records, read_dataset  # no
 from cks_picks_cfb.data.storage import get_storage  # noqa: E402
 from cks_picks_cfb.data.the_odds_api import (  # noqa: E402
     LIVE_CREDITS_PER_REQUEST,
+    MARKET_QUOTES_ENTITY,
+    NEAR_KICKOFF_ENTITY,
     TheOddsAPIAdapter,
     match_odds_events_to_schedule,
 )
+from scripts.ops.near_kickoff_slot import expected_slot_game_ids  # noqa: E402
 
 PROVIDER = "the_odds_api"
-ENTITY = "market_quotes"
+#: Near-kickoff only: minimum share of the slot day's not-yet-started games that
+#: must have quotes, else the run fails (a thin board is a failed capture).
+MIN_MATCH_RATIO = 0.80
+UNMATCHED_SAMPLE_SIZE = 5
+
+
+def unmatched_summary(unmatched: list[str], *, near_kickoff: bool) -> str:
+    """Warning text; near-kickoff boards carry hundreds of off-week events."""
+    if not near_kickoff:
+        return (
+            f"WARNING: {len(unmatched)} board events did not match the week "
+            f"schedule and were skipped: {sorted(set(unmatched))}"
+        )
+    names = sorted(set(unmatched))
+    return (
+        f"WARNING: {len(unmatched)} board events did not match the week schedule "
+        f"and were skipped (sample of {min(len(names), UNMATCHED_SAMPLE_SIZE)}: "
+        f"{names[:UNMATCHED_SAMPLE_SIZE]})"
+    )
+
+
+def match_ratio_failure(
+    expected: set[str], matched: set[str], min_ratio: float
+) -> str | None:
+    """Failure message when too few expected games have quotes, else ``None``."""
+    if not expected:
+        return None
+    found = len(expected & matched)
+    ratio = found / len(expected)
+    if ratio >= min_ratio:
+        return None
+    return (
+        f"Matched-games check failed: {found} of {len(expected)} games kicking "
+        f"off later today (Eastern) have quotes (ratio {ratio:.2f} < "
+        f"{min_ratio:.2f}); the capture is registered but its run is failed so "
+        "the backup slot retries"
+    )
 
 
 def _week_schedule(conn_url: str, year: int, week: int) -> pd.DataFrame:
@@ -79,12 +123,32 @@ def main() -> None:
         help="Authorize the paid live request (one request, ~2 credits).",
     )
     parser.add_argument(
+        "--near-kickoff",
+        action="store_true",
+        help=(
+            "Register the capture as analysis-only near-kickoff evidence "
+            f"(entity {NEAR_KICKOFF_ENTITY}); the revision builders never select it. "
+            f"Default: the weekly {MARKET_QUOTES_ENTITY} capture."
+        ),
+    )
+    parser.add_argument(
+        "--min-match-ratio",
+        type=float,
+        default=MIN_MATCH_RATIO,
+        help=(
+            "Near-kickoff only: fail when fewer than this share of today's "
+            f"not-yet-started games have quotes (default {MIN_MATCH_RATIO}); "
+            "0 disables, for manual early captures."
+        ),
+    )
+    parser.add_argument(
         "--regions",
         type=str,
         default="us",
         help="Provider region scope (default: us).",
     )
     args = parser.parse_args()
+    entity = NEAR_KICKOFF_ENTITY if args.near_kickoff else MARKET_QUOTES_ENTITY
 
     conn_url = os.getenv("DATABASE_URL")
     if not conn_url:
@@ -107,7 +171,7 @@ def main() -> None:
         return
 
     adapter = TheOddsAPIAdapter()
-    response = adapter.fetch_live(ENTITY, {"regions": args.regions})
+    response = adapter.fetch_live(entity, {"regions": args.regions})
 
     events_by_id: dict[str, dict] = {}
     for record in response.records:
@@ -136,14 +200,19 @@ def main() -> None:
         row["game_id"] = game_id
         matched_records.append(row)
     if unmatched:
-        print(
-            f"WARNING: {len(unmatched)} board events did not match the week "
-            f"schedule and were skipped: {sorted(set(unmatched))}"
-        )
+        print(unmatched_summary(unmatched, near_kickoff=args.near_kickoff))
     if not matched_records:
         raise SystemExit(
             "The live board matched no scheduled games for "
             f"{args.year} week {args.week}"
+        )
+
+    failure = None
+    if args.near_kickoff:
+        failure = match_ratio_failure(
+            expected_slot_game_ids(datetime.now(timezone.utc), schedule),
+            {str(game_id) for game_id in matches.values()},
+            args.min_match_ratio,
         )
 
     storage = get_storage()
@@ -152,14 +221,14 @@ def main() -> None:
         conn_url,
         ingestion_run_id=ingestion_run_id,
         provider=PROVIDER,
-        entity=ENTITY,
+        entity=entity,
         request={"requests": [dict(response.request)]},
     )
     try:
         capture = capture_provider_records(
             storage,
             provider=PROVIDER,
-            entity=ENTITY,
+            entity=entity,
             records=matched_records,
             captured_at=response.captured_at,
             effective_at=response.effective_at,
@@ -172,7 +241,15 @@ def main() -> None:
             },
         )
         register_source_capture(conn_url, capture, ingestion_run_id=ingestion_run_id)
-        finish_ingestion_run(conn_url, ingestion_run_id, succeeded=True)
+        # A failed ratio check still registers the (immutable, analysis-only)
+        # capture, but marks the run failed so the slot is not counted done.
+        finish_ingestion_run(
+            conn_url,
+            ingestion_run_id,
+            succeeded=failure is None,
+            error_category="MatchRatioBelowThreshold" if failure else None,
+            error_detail=failure,
+        )
     except Exception as exc:
         finish_ingestion_run(
             conn_url,
@@ -187,6 +264,8 @@ def main() -> None:
         f"Captured {len(matched_records)} the_odds_api quotes "
         f"({len(matches)} events) as {capture.capture_id}"
     )
+    if failure:
+        raise SystemExit(failure)
 
 
 if __name__ == "__main__":
