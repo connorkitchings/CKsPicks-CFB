@@ -14,6 +14,7 @@ Work that cannot wait for January, each under a Draft contract in `docs/plans/20
 
 - [Near-kickoff line capture](../plans/2026-11-12/01-near-kickoff-line-capture.md): closing lines cannot be reconstructed later, so capture them in Weeks 12 to 15 (analysis only, outside the record). Time-sensitive.
 - [Pre-registered research protocol](../plans/2026-11-12/02-offseason-research-protocol.md): approved 2026-11-12, written while 2026 is unseen.
+- [Score-attribution investigation](../plans/2026-11-12/04-score-attribution-investigation.md): examine each quarantined game and specify a direct repair of the running-score defect (owner direction 2026-11-12: repair, do not keep quarantining).
 - [Prediction-error diagnostics](../plans/2026-11-12/03-prediction-error-diagnostics.md): section A below, as a contract.
 
 Also to schedule (no contract yet):
@@ -23,7 +24,7 @@ Also to schedule (no contract yet):
 
 ## A. Prediction-error diagnostics (read-only, first)
 
-Output: a report under `docs/modeling/`, no model change. Contract: [2026-11-12/03](../plans/2026-11-12/03-prediction-error-diagnostics.md).
+Output: a report under `docs/modeling/`, no model change. Contract: [2026-11-12/03](../plans/2026-11-12/03-prediction-error-diagnostics.md). Report (development view only): [prediction-error diagnostics, 2021 to 2025](../modeling/prediction_error_diagnostics_2021_2025.md). It includes site class, conference and a totals over-prediction diagnostic; only a true partial-quarantine re-estimation remains open (it needs the V5 control replay).
 
 - Margin and total residuals for 2021 to 2025 as the development view and 2026 as a separate monitoring view.
 - Mean absolute error and bias by week of season, rating-gap size, totals regime (low, mid, high), conference group and home or neutral site.
@@ -38,6 +39,7 @@ Chosen only after section A shows where the error is; the likely areas are:
 
 - Preseason priors and the early-season blend.
 - The totals model.
+- Venue as a model input: the forecast hard-codes every game as home (`home_host=1.0`, `venue_unknown=True`), while the diagnostics show neutral-site margin bias of -4.32 points; the venue data is already stored (`fbs_involved_games`, `game_venues`). Not market-derived, so allowed.
 - Measurement refinements: the garbage-time rule for the Net success rate (the analysis in `session_logs/2026-11-09/06-nsr-keep-garbage-time-impl.md` points to a flat margin cut of about 24 points; the owner kept the current rule for 2026, so this is a candidate for the next model version, which needs a stored column and a release), turnover margin, and the historical EPA replacement.
 - Rating-system structure questions raised by the audit, once its original-artifact verification can be completed.
 

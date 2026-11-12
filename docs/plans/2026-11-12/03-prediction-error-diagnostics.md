@@ -1,10 +1,10 @@
 # Prediction-error diagnostics, 2021 to 2025 (read-only)
 
-- **Status:** Draft
+- **Status:** In Progress (implemented on a branch; needs review, commit and pull request into `dev`; site class, conference and a totals-bias diagnostic added by the 2026-11-12 amendment; only the true partial-quarantine re-estimation could not be computed, see the log)
 - **Created:** 2026-11-12
 - **Planner:** Sol
-- **Approval source:** Pending. Starts only after [contract 02](02-offseason-research-protocol.md) is approved and committed.
-- **Implementation log:** Pending (`session_logs/2026-11-12/NN-prediction-error-diagnostics-impl.md`)
+- **Approval source:** Owner approved implementation 2026-11-12, after [contract 02](02-offseason-research-protocol.md) was approved.
+- **Implementation log:** [`session_logs/2026-11-12/02-prediction-error-diagnostics-impl.md`](../../../session_logs/2026-11-12/02-prediction-error-diagnostics-impl.md)
 - **Commit policy:** Commit on `dev` with implementation; one pull request into `dev`.
 
 ## Goal and acceptance
@@ -36,5 +36,14 @@ Acceptance:
 `make check`, `git diff --check`, `uv run mkdocs build --strict`. Rerunning the script reproduces the report byte for byte. The reproduction check (task 1) is the gate.
 
 ## Handoff/amendments
+
+Implementation finding (2026-11-12): the persisted local corpus has no venue or conference data (`home_host` is 1 and `venue_unknown` is true for all games) and holds only frozen ratings. Frozen V5 equals the v5-common bridge row for row in 2022 to 2025, so slices use the v5-common rows (which add intervals and 2021). A true partial-quarantine re-estimation remains not computable; a descriptive exposure proxy is given instead.
+
+**Amendment 2026-11-12 (owner approved three additions).**
+
+- Reason: the first implementation could not report site class or conference (not in the corpus), and the headline finding (total bias about -2.4 points in every season) needed a decomposition before any idea is proposed.
+- Previous approach: venue and conference marked not computable; no totals decomposition.
+- Revised approach: (A) join the pinned `fbs_involved_games` dataset (neutral flag, venue id) by season and `game_id`, classify home venue, neutral site, non-home venue not flagged neutral, and venue unknown; (B) slice by the home team's conference in that season (grouped Power, Group of 5, FBS independent, other; plus each conference) and by conference versus non-conference game; (C) a read-only totals over-prediction section: bias by slice, home versus away points, level versus slope, a rolling-origin recentering shown as a diagnostic only, margin-total error correlation, and the share of MAE recentering explains. Data came from one read-only read of the Preview data lake through the corpus's pinned references, then cached in the local lab output; nothing was written to any bucket and no provider was called.
+- Impact: report, script and tests extended (`site_context.py`, `total_bias.py`); still development view 2021 to 2025 only, no betting slices, no model or release change, byte-for-byte reproducible with `--check`.
 
 Resume gate: contract 02 approved. Next action: task 1. Material changes return to Sol; record amendments here with reason, previous approach, revised approach and impact.

@@ -90,4 +90,4 @@ chosen in the baseline and promotion contracts, not retrofitted after results.
 
 ## Offseason 2027 research protocol
 
-Candidate models for 2027 are compared under the pre-registered [offseason research protocol](../plans/2026-11-12/02-offseason-research-protocol.md): selection on 2021 to 2025, the 2026 season scored once as a holdout, then a refit on 2021 to 2026.
+Candidate models for 2027 are compared under the pre-registered [offseason research protocol](../plans/2026-11-12/02-offseason-research-protocol.md): selection on 2021 to 2025, the 2026 season scored once as a holdout, then a refit on 2021 to 2026. Where V5's error sits across 2021 to 2025 is in the [prediction-error diagnostics](prediction_error_diagnostics_2021_2025.md).
