@@ -27,6 +27,12 @@ week's rows may also differ (the refresh moves that cutoff); completed weeks'
 cutoffs must match. In both modes the upcoming week must be 100%
 predicted; lined-game coverage is reported but never blocks.
 
+Kickoff-time refresh (``market-refresh`` with ``--previous-manifest``): when the
+candidate manifest's ``schedule`` pin differs from the previous manifest's, the
+``start_date`` of upcoming and later-week ``games`` rows may differ. Without a
+changed pin, and for every earlier week, kickoff times stay strict; predictions,
+ratings and grades are never relaxed.
+
 ``--accept-cutoff-correction WEEK`` (close-week only, one run at a time): the
 ``cutoff_utc`` of week ``WEEK``'s pregame ``v5_rating_snapshots`` may differ; every
 other column of those rows still compares strictly. It exists for an owner-chosen
@@ -156,6 +162,9 @@ class ParityReport:
     upcoming_lined: int = 0
     accepted_cutoff_corrections: list[int] = field(default_factory=list)
     accepted_retrospective_games: list[str] = field(default_factory=list)
+    #: Market refresh whose manifest moved the schedule pin: ``start_date`` may
+    #: differ on upcoming and later-week ``games`` rows.
+    schedule_refresh: bool = False
 
     @property
     def passed(self) -> bool:
@@ -174,6 +183,7 @@ class ParityReport:
             "upcoming_week_lined": self.upcoming_lined,
             "accepted_cutoff_corrections": self.accepted_cutoff_corrections,
             "accepted_retrospective_games": self.accepted_retrospective_games,
+            "schedule_refresh": self.schedule_refresh,
         }
 
 
@@ -586,12 +596,28 @@ def _check_market_refresh(
                 [r for r in new if not in_upcoming(table, r)],
             )
         elif table in ("games", "predictions"):
-            for upcoming_rows in (False, True):
+            moved = (
+                frozenset({"start_date"})
+                if table == "games" and report.schedule_refresh
+                else frozenset()
+            )
+
+            def span(row: Row, table: str = table) -> int:
+                week = weeks.get(_row_game(table, row, snapshot_games))
+                return 1 if week == upcoming else 2 if (week or 0) > upcoming else 0
+
+            # Earlier weeks strict; the upcoming week may move market columns and
+            # kickoff time; later weeks may move kickoff time only.
+            for group, ignore in (
+                (0, frozenset()),
+                (1, MARKET_COLUMNS | moved),
+                (2, moved),
+            ):
                 report.failures += compare_rows(
                     table,
-                    [r for r in old if in_upcoming(table, r) == upcoming_rows],
-                    [r for r in new if in_upcoming(table, r) == upcoming_rows],
-                    ignore=MARKET_COLUMNS if upcoming_rows else frozenset(),
+                    [r for r in old if span(r) == group],
+                    [r for r in new if span(r) == group],
+                    ignore=ignore,
                 )
         else:
             # ``cutoff_utc`` legitimately moves to the refresh time for the
@@ -648,11 +674,19 @@ def compare_releases(
     upcoming_week: int,
     accept_cutoff_corrections: tuple[int, ...] = (),
     retrospective_lines: bool = False,
+    schedule_changed: bool = False,
 ) -> ParityReport:
-    """Pure parity decision over two ``{table: [row, ...]}`` structures."""
+    """Pure parity decision over two ``{table: [row, ...]}`` structures.
+
+    ``schedule_changed``: the candidate's manifest pins a different schedule than
+    the active release's (market-refresh only).
+    """
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}")
+    if schedule_changed and mode != "market-refresh":
+        raise ValueError("a schedule refresh applies to market-refresh only")
     report = ParityReport(mode, completed_week, upcoming_week)
+    report.schedule_refresh = schedule_changed
     if accept_cutoff_corrections:
         if mode != "close-week":
             raise ValueError("cutoff corrections apply to close-week only")
@@ -729,6 +763,13 @@ def carries_historical_lines(candidate_dir: Path) -> bool:
     )
 
 
+def schedule_pin_changed(candidate_dir: Path, previous_manifest: Path) -> bool:
+    """Whether the candidate's manifest pins a different schedule than ``previous_manifest``."""
+    candidate = json.loads((candidate_dir / "revision-manifest.json").read_text())
+    previous = json.loads(previous_manifest.read_text())
+    return candidate["inputs"]["schedule"] != previous["inputs"]["schedule"]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-dir", type=Path, required=True)
@@ -744,9 +785,19 @@ def main(argv: list[str] | None = None) -> int:
         metavar="WEEK",
         help="close-week only: allow WEEK's pregame snapshot cutoff_utc to differ",
     )
+    parser.add_argument(
+        "--previous-manifest",
+        type=Path,
+        help=(
+            "market-refresh only: the manifest the active release was built from; "
+            "a changed schedule pin lets start_date differ on upcoming and later weeks"
+        ),
+    )
     args = parser.parse_args(argv)
     if args.accept_cutoff_correction and args.mode != "close-week":
         parser.error("--accept-cutoff-correction applies to close-week only")
+    if args.previous_manifest and args.mode != "market-refresh":
+        parser.error("--previous-manifest applies to market-refresh only")
     import psycopg
 
     url = os.environ.get("DATABASE_URL")
@@ -765,6 +816,8 @@ def main(argv: list[str] | None = None) -> int:
         upcoming_week=args.upcoming_week,
         accept_cutoff_corrections=tuple(args.accept_cutoff_correction),
         retrospective_lines=carries_historical_lines(args.candidate_dir),
+        schedule_changed=bool(args.previous_manifest)
+        and schedule_pin_changed(args.candidate_dir, args.previous_manifest),
     )
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report.as_dict(), indent=2, sort_keys=True))

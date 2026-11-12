@@ -1896,6 +1896,76 @@ def build_steps(
             ]
         )
         return steps
+    if context.command == "refresh-schedule":
+        # Monday market refresh: re-fetch the season schedule only (one provider
+        # request) and rebuild games/game_outcomes Silver so announced kickoff
+        # times reach the next revision. The completed-week stop gate runs
+        # against the active manifest's pins before anything derives from the
+        # new Silver; the changed-game check itself is in build_market_revision.
+        assert week is not None and as_of is not None
+        assert advance is not None
+        root = f"artifacts/{environment}/pipeline-runs/{context.pipeline_run_id}"
+        refs = {
+            "policy": f"{root}/schedule_week_policy_ref.json",
+            "games": f"{root}/games_ref.json",
+            "outcomes": f"{root}/game_outcomes_ref.json",
+        }
+        gate = advance["gate"]
+        return [
+            _fetch_source_step(
+                name="ingest_schedule",
+                argv=_python(
+                    "scripts/data/ingest_season.py",
+                    "--year",
+                    year,
+                    "--entities",
+                    "games",
+                ),
+                conn_url=conn_url,
+                entity="games",
+            ),
+            _week_policy_from_ingestion_step(
+                conn_url=conn_url, output_ref_uri=refs["policy"], as_of=as_of
+            ),
+            _silver_from_ingestion_step(
+                name="build_games",
+                dataset="games",
+                entity="games",
+                conn_url=conn_url,
+                output_ref_uri=refs["games"],
+                as_of=as_of,
+                environment=environment,
+                week_policy_ref_uri=refs["policy"],
+            ),
+            _silver_from_ingestion_step(
+                name="build_outcomes",
+                dataset="game_outcomes",
+                entity="games",
+                conn_url=conn_url,
+                output_ref_uri=refs["outcomes"],
+                as_of=as_of,
+                environment=environment,
+                games_ref_uri=refs["games"],
+            ),
+            subprocess_step(
+                "verify_completed_week_stability",
+                _python(
+                    "scripts/pipeline/verify_completed_week_stability.py",
+                    "--new-games-ref",
+                    refs["games"],
+                    "--new-outcomes-ref",
+                    refs["outcomes"],
+                    "--previous-games",
+                    json.dumps(gate["previous_games"], sort_keys=True),
+                    "--previous-outcomes",
+                    json.dumps(gate["previous_outcomes"], sort_keys=True),
+                    "--through-week",
+                    week - 2,
+                    "--environment",
+                    environment,
+                ),
+            ),
+        ]
     if context.command == "prepare-week":
         assert week is not None and as_of is not None
         root = f"artifacts/{environment}/pipeline-runs/{context.pipeline_run_id}"
@@ -2655,6 +2725,7 @@ def parse_args() -> argparse.Namespace:
         "build-silver",
         "build-team-game",
         "prepare-week",
+        "refresh-schedule",
         "project-v5-ratings",
         "publish-matchup-data",
         "reconcile",
@@ -2682,9 +2753,17 @@ def parse_args() -> argparse.Namespace:
             "build-silver",
             "build-team-game",
             "prepare-week",
+            "refresh-schedule",
             "prepare-rating-history",
         }:
             sub.add_argument("--as-of", required=True)
+        if command == "refresh-schedule":
+            sub.add_argument(
+                "--previous-manifest",
+                type=Path,
+                required=True,
+                help="Active revision manifest whose schedule and finals gate the refresh",
+            )
         if command == "project-v5-ratings":
             sub.add_argument("--rating-manifest-uri", required=True)
         if command == "publish-matchup-data":
@@ -2797,11 +2876,21 @@ def main() -> None:
         as_of=getattr(args, "as_of", None),
         pipeline_run_id=args.pipeline_run_id,
     )
+    advance = None
+    if args.command == "refresh-schedule":
+        previous = json.loads(args.previous_manifest.read_text())
+        advance = {
+            "gate": {
+                "previous_games": previous["inputs"]["schedule"],
+                "previous_outcomes": previous["inputs"]["finals"],
+            }
+        }
     steps = build_steps(
         context,
         conn_url=conn_url,
         waiver=getattr(args, "waiver", None),
         options=args,
+        advance=advance,
     )
     with PostgresStateStore(conn_url) as store:
         StateMachine(

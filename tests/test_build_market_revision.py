@@ -287,3 +287,155 @@ def test_main_names_both_weeks_when_target_is_not_upcoming(
 
     assert not target.exists()
     assert registered == []
+
+
+# --- Monday kickoff-time refresh --------------------------------------------
+
+SCHEDULE = {
+    "uri": "lake/silver/dataset=games/version=fresh/data.parquet",
+    "sha256": "c" * 64,
+}
+
+
+def derive_with_schedule(old: dict, schedule: dict | None = SCHEDULE) -> dict:
+    return builder.derive_manifest(
+        old,
+        revision_id="season-2026-w8-preview-r3",
+        quotes_input=QUOTES,
+        captured_at="2026-10-20T14:33:30Z",
+        target_week="8",
+        cutoff=CUTOFF,
+        schedule_input=schedule,
+    )
+
+
+def test_schedule_refresh_changes_only_the_schedule_and_venue_games_pair():
+    old = source_manifest()
+
+    new = derive_with_schedule(old)
+
+    assert changed_paths(old, new) == {
+        "/revision_id",
+        "/captured_at",
+        "/inputs/market_quotes/uri",
+        "/inputs/market_quotes/sha256",
+        "/pre_week_cutoffs/8",
+        "/inputs/schedule/uri",
+        "/inputs/schedule/sha256",
+        "/inputs/venue_games/uri",
+        "/inputs/venue_games/sha256",
+    }
+    assert new["inputs"]["schedule"] == new["inputs"]["venue_games"] == SCHEDULE
+
+
+def test_schedule_refresh_is_refused_when_the_source_pins_differ():
+    old = source_manifest()
+    old["inputs"]["venue_games"] = dict(QUOTES)
+
+    with pytest.raises(ValueError, match="schedule and venue_games pins differ"):
+        derive_with_schedule(old)
+
+
+def test_without_a_schedule_input_the_schedule_pins_stay_forbidden_to_change():
+    old = source_manifest()
+
+    new = derive_with_schedule(old, schedule=None)
+
+    assert new["inputs"]["schedule"] == old["inputs"]["schedule"]
+    assert new["inputs"]["venue_games"] == old["inputs"]["venue_games"]
+
+
+def schedule_frame(**overrides) -> pd.DataFrame:
+    frame = pd.DataFrame(
+        {
+            "game_id": [1, 2, 3],
+            "week": [7, 8, 8],
+            "home_team": ["A", "C", "E"],
+            "away_team": ["B", "D", "F"],
+            "kickoff_utc": pd.to_datetime(
+                ["2026-10-17T16:00Z", "2026-10-24T05:00Z", "2026-10-24T05:00Z"]
+            ),
+        }
+    )
+    return frame.assign(**overrides)
+
+
+def test_new_kickoff_times_for_the_target_week_are_accepted():
+    old = schedule_frame()
+    new = schedule_frame(
+        kickoff_utc=pd.to_datetime(
+            ["2026-10-17T16:00Z", "2026-10-24T19:30Z", "2026-10-24T23:00Z"]
+        )
+    )
+
+    builder.check_game_set_unchanged(old, new, target_week=8)
+
+
+def test_an_added_cancelled_or_moved_game_fails_closed_with_the_game_list():
+    old = schedule_frame()
+    added = pd.concat(
+        [old, schedule_frame().iloc[[0]].assign(game_id=9)], ignore_index=True
+    )
+    cancelled = old[old.game_id != 2]
+    moved_week = old.assign(week=[7, 9, 8])
+    moved_team = old.assign(home_team=["A", "C", "Z"])
+
+    with pytest.raises(ValueError, match=r"added games \[9\]"):
+        builder.check_game_set_unchanged(old, added, target_week=8)
+    with pytest.raises(ValueError, match=r"cancelled games \[2\]"):
+        builder.check_game_set_unchanged(old, cancelled, target_week=8)
+    with pytest.raises(ValueError, match=r"moved games.*\[2\]"):
+        builder.check_game_set_unchanged(old, moved_week, target_week=8)
+    with pytest.raises(ValueError, match=r"moved games.*\[3\]"):
+        builder.check_game_set_unchanged(old, moved_team, target_week=8)
+
+
+def test_a_changed_completed_week_kickoff_fails_closed():
+    old = schedule_frame()
+    new = schedule_frame(
+        kickoff_utc=pd.to_datetime(
+            ["2026-10-17T17:00Z", "2026-10-24T05:00Z", "2026-10-24T05:00Z"]
+        )
+    )
+
+    with pytest.raises(ValueError, match=r"completed-week kickoff.*\[1\]"):
+        builder.check_game_set_unchanged(old, new, target_week=8)
+
+
+def test_main_stops_before_writing_when_the_refreshed_game_set_changed(
+    tmp_path, monkeypatch, registered
+):
+    ref = "artifacts/preview/pipeline-runs/r/games_ref.json"
+    store = SimpleNamespace(
+        read_bytes=lambda key: json.dumps(
+            {"uri": SCHEDULE["uri"], "content_sha": SCHEDULE["sha256"]}
+        ).encode()
+    )
+    monkeypatch.setattr(builder, "get_storage", lambda environment: store)
+    old = pd.DataFrame(
+        {
+            "game_id": [1],
+            "season": 2026,
+            "week": 8,
+            "home_team": "A",
+            "away_team": "B",
+            "kickoff_utc": pd.to_datetime(["2026-10-24T05:00Z"]),
+        }
+    )
+    fresh = old.assign(game_id=2)
+    monkeypatch.setattr(
+        builder,
+        "frame",
+        lambda s, pin: fresh if pin == SCHEDULE else old,
+    )
+    target = tmp_path / "out.json"
+
+    with pytest.raises(SystemExit, match="added games"):
+        builder.main(
+            ["--from-manifest", str(SOURCE), "--to-manifest", str(target),
+             "--revision-id", "r", "--cutoff", CUTOFF, "--target-week", "8",
+             "--schedule-ref", ref]
+        )  # fmt: skip
+
+    assert not target.exists()
+    assert registered == []

@@ -891,6 +891,100 @@ def test_another_team_game_stats_column_changing_still_fails(column):
     assert any(column in f for f in report.failures)
 
 
+def timed(tables: dict, start: str = "2026-11-14T05:00:00Z") -> dict:
+    """A release whose games carry a kickoff time, as the real table does."""
+    for game in tables["games"]:
+        game["start_date"] = start
+    return tables
+
+
+def refresh_run(old, new, *, schedule_changed):
+    return parity.compare_releases(
+        old,
+        new,
+        mode="market-refresh",
+        completed_week=8,
+        upcoming_week=9,
+        schedule_changed=schedule_changed,
+    )
+
+
+def test_start_date_change_passes_with_a_changed_schedule_pin():
+    old, new = timed(release(OLD_RUN)), timed(release(NEW_RUN), "2026-11-14T17:00:00Z")
+    # Games 1..3 are completed weeks; only the upcoming week's times may move.
+    for completed in new["games"][:3]:
+        completed["start_date"] = "2026-11-14T05:00:00Z"
+
+    report = refresh_run(old, new, schedule_changed=True)
+
+    assert report.passed
+    assert report.as_dict()["schedule_refresh"] is True
+
+
+def test_start_date_change_fails_without_a_changed_schedule_pin():
+    old, new = timed(release(OLD_RUN)), timed(release(NEW_RUN), "2026-11-14T17:00:00Z")
+    for completed in new["games"][:3]:
+        completed["start_date"] = "2026-11-14T05:00:00Z"
+
+    failures = refresh_run(old, new, schedule_changed=False).failures
+
+    assert any(f.startswith("games ") and "start_date" in f for f in failures)
+
+
+def test_start_date_change_in_a_completed_week_fails_even_with_a_changed_pin():
+    old, new = timed(release(OLD_RUN)), timed(release(NEW_RUN))
+    row(new, "games", game_id=3)["start_date"] = "2026-11-14T17:00:00Z"
+
+    failures = refresh_run(old, new, schedule_changed=True).failures
+
+    assert failures == ["games 3: changed columns ['start_date']"]
+
+
+def test_prediction_and_grade_differences_still_fail_with_a_changed_pin():
+    old, new = timed(release(OLD_RUN)), timed(release(NEW_RUN), "2026-11-14T17:00:00Z")
+    for completed in new["games"][:3]:
+        completed["start_date"] = "2026-11-14T05:00:00Z"
+    row(new, "predictions", game_id=5)["predicted_spread"] += 1
+    row(new, "prediction_grades", game_id=3)["result"] = "loss"
+
+    failures = refresh_run(old, new, schedule_changed=True).failures
+
+    assert any(f.startswith("predictions ") for f in failures)
+    assert any(f.startswith("prediction_grades ") for f in failures)
+
+
+def test_schedule_refresh_is_refused_outside_market_refresh():
+    old, new = release(OLD_RUN), release(NEW_RUN)
+
+    with pytest.raises(ValueError, match="market-refresh only"):
+        parity.compare_releases(
+            old,
+            new,
+            mode="close-week",
+            completed_week=8,
+            upcoming_week=9,
+            schedule_changed=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("candidate_schedule", "changed"),
+    [({"uri": "u2", "sha256": "2"}, True), ({"uri": "u1", "sha256": "1"}, False)],
+)
+def test_schedule_pin_change_is_read_from_the_two_manifests(
+    tmp_path, candidate_schedule, changed
+):
+    (tmp_path / "revision-manifest.json").write_text(
+        json.dumps({"inputs": {"schedule": candidate_schedule}})
+    )
+    previous = tmp_path / "previous.json"
+    previous.write_text(
+        json.dumps({"inputs": {"schedule": {"uri": "u1", "sha256": "1"}}})
+    )
+
+    assert parity.schedule_pin_changed(tmp_path, previous) is changed
+
+
 def test_another_table_changing_still_fails_with_overtime_columns_added():
     old, new = tgs_pair()
     row(new, "predictions", game_id=3)["predicted_spread"] += 1.0

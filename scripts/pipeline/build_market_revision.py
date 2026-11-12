@@ -6,9 +6,16 @@ target-week pre-week cutoff and the revision identity. Never queries a provider;
 it reads captures already stored in the database.
 
 Usage: python -m scripts.pipeline.build_market_revision --from-manifest <src> \
-    --to-manifest <dst> --revision-id <id> --cutoff <ISO-8601 UTC> --target-week <N>
+    --to-manifest <dst> --revision-id <id> --cutoff <ISO-8601 UTC> --target-week <N> \
+    [--schedule-ref <games ref key>]
 
 ``--target-week`` must be the upcoming (highest) week in the source manifest.
+
+``--schedule-ref`` (Monday kickoff-time refresh) names a freshly built ``games``
+Silver ref. It replaces the ``schedule`` and ``venue_games`` pins together, and
+only when the game set is unchanged: the same game IDs, weeks and teams, with
+kickoff times moving only for the target week and later. Any added, cancelled or
+moved game stops the build with the game list.
 """
 
 from __future__ import annotations
@@ -21,6 +28,8 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+import pandas as pd
 
 from cks_picks_cfb.data.catalog import register_dataset_version
 from cks_picks_cfb.data.storage import get_storage
@@ -60,6 +69,49 @@ def check_target(old: dict[str, Any], target_week: str, cutoff: str) -> None:
         )
 
 
+def _kickoff_column(games: pd.DataFrame) -> str:
+    return "start_date" if "start_date" in games.columns else "kickoff_utc"
+
+
+def check_game_set_unchanged(
+    old: pd.DataFrame, new: pd.DataFrame, *, target_week: int
+) -> None:
+    """Refuse a refreshed schedule that adds, cancels or moves a game.
+
+    Only the kickoff time of a game in ``target_week`` or later may differ.
+    Raises ``ValueError`` naming the affected game IDs.
+    """
+    key = ["game_id", "week", "home_team", "away_team"]
+    old_ids, new_ids = set(old["game_id"]), set(new["game_id"])
+    problems = []
+    if added := sorted(new_ids - old_ids, key=str):
+        problems.append(f"added games {added}")
+    if cancelled := sorted(old_ids - new_ids, key=str):
+        problems.append(f"cancelled games {cancelled}")
+    shared = old[old["game_id"].isin(new_ids)].set_index("game_id")
+    fresh = new[new["game_id"].isin(old_ids)].set_index("game_id")
+    fresh = fresh.loc[shared.index]
+    moved = shared[key[1:]].ne(fresh[key[1:]]).any(axis=1)
+    if moved.any():
+        problems.append(
+            f"moved games (week or teams) {sorted(shared.index[moved], key=str)}"
+        )
+    start_old, start_new = _kickoff_column(old), _kickoff_column(new)
+    retimed = pd.to_datetime(shared[start_old], utc=True).ne(
+        pd.to_datetime(fresh[start_new], utc=True)
+    )
+    early = retimed & (shared["week"].astype(int) < target_week)
+    if early.any():
+        problems.append(
+            f"completed-week kickoff changed for games {sorted(shared.index[early], key=str)}"
+        )
+    if problems:
+        raise ValueError(
+            "the refreshed schedule differs beyond kickoff times: "
+            + "; ".join(problems)
+        )
+
+
 def derive_manifest(
     old: dict[str, Any],
     *,
@@ -69,11 +121,14 @@ def derive_manifest(
     cutoff: str,
     quotes_input: dict[str, str] | None = None,
     historical_lines: dict[str, str] | None = None,
+    schedule_input: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Return ``old`` with only market identity changed; assert nothing else moved.
 
     ``quotes_input`` replaces the cumulative quotes; ``historical_lines`` pins the
-    explicit retrospective CFBD fallback input. Each is optional.
+    explicit retrospective CFBD fallback input; ``schedule_input`` replaces the
+    ``schedule`` and ``venue_games`` pins together (both must name the same Silver
+    ``games`` version in the source). Each is optional.
     """
     check_target(old, target_week, cutoff)
     new = copy.deepcopy(old)
@@ -83,6 +138,11 @@ def derive_manifest(
         market_inputs["market_quotes"] = quotes_input
     if historical_lines is not None:
         market_inputs["historical_lines"] = historical_lines
+    if schedule_input is not None:
+        if old["inputs"]["schedule"] != old["inputs"]["venue_games"]:
+            raise ValueError("schedule and venue_games pins differ in the source")
+        market_inputs["schedule"] = schedule_input
+        market_inputs["venue_games"] = schedule_input
     new["inputs"].update(market_inputs)
     new["captured_at"] = captured_at
     new["pre_week_cutoffs"][target_week] = cutoff
@@ -124,6 +184,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Upcoming week being refreshed; must be the highest week in the source",
     )
     parser.add_argument("--environment", default="preview")
+    parser.add_argument(
+        "--schedule-ref",
+        help="Storage key of a freshly built games Silver ref (kickoff-time refresh)",
+    )
     args = parser.parse_args(argv)
 
     if args.to_manifest.exists():
@@ -139,6 +203,16 @@ def main(argv: list[str] | None = None) -> int:
     store = get_storage(environment=args.environment)
     games = frame(store, old["inputs"]["schedule"])
     target_week = args.target_week
+    schedule_input = None
+    if args.schedule_ref:
+        fresh_ref = json.loads(store.read_bytes(args.schedule_ref).decode())
+        schedule_input = {"uri": fresh_ref["uri"], "sha256": fresh_ref["content_sha"]}
+        fresh = frame(store, schedule_input)
+        try:
+            check_game_set_unchanged(games, fresh, target_week=target_week)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+        games = fresh
     if games.loc[(games.season == SEASON) & (games.week == target_week)].empty:
         raise SystemExit(f"Week {target_week} has no games in the schedule")
 
@@ -159,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         captured_at=last_capture.isoformat().replace("+00:00", "Z"),
         target_week=str(target_week),
         cutoff=cutoff.isoformat().replace("+00:00", "Z"),
+        schedule_input=schedule_input,
     )
     register_dataset_version(database_url, ref, quotes_manifest)
     args.to_manifest.write_text(json.dumps(new, indent=2) + "\n")

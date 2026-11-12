@@ -227,6 +227,8 @@ class Harness:
         # preview release id -> "same" (active, same bytes) | "other" (other bytes)
         self.existing: dict[str, str] = {}
         self.prepares = 0
+        # (game_id, start_date) rows of the active Production release's week
+        self.release_games: list[tuple] = []
 
     def now(self):
         return self.clock
@@ -242,6 +244,14 @@ class Harness:
             cutoff = wa.iso_z(self.clock + timedelta(minutes=5))
             (self.root / wa.CONF / f"revision_manifest_w{week}_v1.json").write_text(
                 json.dumps({"pre_week_cutoffs": {week: cutoff}})
+            )
+        if "scripts.pipeline.build_market_revision" in argv:
+            target = Path(argv[argv.index("--to-manifest") + 1])
+            week = argv[argv.index("--target-week") + 1]
+            target.write_text(
+                json.dumps(
+                    {"pre_week_cutoffs": {week: argv[argv.index("--cutoff") + 1]}}
+                )
             )
         if "prepare" in argv:
             self.prepares += 1
@@ -276,6 +286,8 @@ class Harness:
             path = self.root / wa.SEASON_OUTPUT / params[0][len("preview-") :]
             same = hashlib.sha256((path / "run-manifest.json").read_bytes()).hexdigest()
             return [("active", same if kind == "same" else "f" * 64)]
+        if "start_date FROM season_release_games" in sql:
+            return self.release_games
         if role == "preview" and "active_week FROM" in sql:
             return [(self.preview_week,)]
         if "active_week FROM" in sql:
@@ -649,3 +661,147 @@ def test_final_close_plan_only_makes_no_calls_or_writes(harness):
     assert c.summary["result"] == "planned"
     assert c.summary["planned_cutoffs"]["upcoming_first_kickoff"] is None
     assert h.calls == []
+
+
+# ------------------------------------------- Monday kickoff-time refresh
+
+# Midnight Eastern on 2026-11-14 (EST) is the provider's "time not announced".
+PLACEHOLDER_START = datetime(2026, 11, 14, 5, 0, tzinfo=UTC)
+REAL_START = datetime(2026, 11, 14, 17, 0, tzinfo=UTC)
+FULLY_LINED = dict(now=NOW, active_week=10, lined=3, total=3, force=False)
+
+
+def tbd_game(game_id: int, start: datetime, *, tbd: bool) -> wa.Game:
+    return wa.Game(game_id, start, False, tbd)
+
+
+def test_fully_lined_week_runs_when_placeholder_times_are_now_announced():
+    upcoming = [
+        tbd_game(1, REAL_START + timedelta(days=1), tbd=False),
+        tbd_game(2, PLACEHOLDER_START + timedelta(days=1), tbd=True),
+        tbd_game(3, REAL_START + timedelta(days=2), tbd=False),
+    ]
+
+    decision = wa.decide_market_refresh(
+        upcoming=upcoming, active_placeholders=frozenset({1, 2}), **FULLY_LINED
+    )
+
+    assert decision.action == "run"
+    assert decision.announced_placeholders == 1
+    assert "1 of 2 placeholder kickoff times announced" in decision.reason
+
+
+def test_fully_lined_week_without_placeholders_skips():
+    decision = wa.decide_market_refresh(
+        upcoming=games(FUTURE), active_placeholders=frozenset(), **FULLY_LINED
+    )
+
+    assert decision.action == "skip"
+    assert decision.announced_placeholders == 0
+
+
+def test_first_kickoff_passed_skips_even_with_announced_placeholders():
+    upcoming = [tbd_game(1, PAST, tbd=False), tbd_game(2, FUTURE, tbd=False)]
+
+    decision = wa.decide_market_refresh(
+        upcoming=upcoming, active_placeholders=frozenset({2}), **FULLY_LINED
+    )
+
+    assert decision.action == "skip"
+    assert "first kickoff already passed" in decision.reason
+
+
+def test_fully_lined_week_skips_while_every_placeholder_is_still_tbd():
+    upcoming = [
+        tbd_game(1, PLACEHOLDER_START + timedelta(days=1), tbd=True),
+        tbd_game(2, PLACEHOLDER_START + timedelta(days=2), tbd=True),
+    ]
+
+    decision = wa.decide_market_refresh(
+        upcoming=upcoming, active_placeholders=frozenset({1, 2}), **FULLY_LINED
+    )
+
+    assert decision.action == "skip"
+    assert "0 of 2 placeholder kickoff times announced" in decision.reason
+
+
+def test_partly_lined_week_still_runs_when_placeholders_remain_tbd():
+    upcoming = [tbd_game(1, PLACEHOLDER_START + timedelta(days=1), tbd=True)]
+
+    decision = wa.decide_market_refresh(
+        upcoming=upcoming,
+        active_placeholders=frozenset({1}),
+        **{**FULLY_LINED, "lined": 1, "total": 3},
+    )
+
+    assert decision.action == "run"
+    assert decision.announced_placeholders == 0
+
+
+@pytest.fixture
+def monday_refresh(harness):
+    """Week 9 live and fully lined; its manifest is the live one."""
+    h = _monday(harness)
+    h.week_games[9] = [
+        tbd_game(1, FUTURE, tbd=False),
+        tbd_game(2, FUTURE + timedelta(hours=1), tbd=False),
+    ]
+    h.health_week = 9
+    h.release_games = [(1, PLACEHOLDER_START), (2, REAL_START)]
+    live = h.root / wa.CONF / "revision_manifest_w9_v1.json"
+    live.write_text(json.dumps({"pre_week_cutoffs": {"9": wa.iso_z(PAST)}}))
+    h.manifest_sha = hashlib.sha256(live.read_bytes()).hexdigest()
+    return h
+
+
+def test_market_refresh_fetches_the_schedule_and_releases_a_time_only_revision(
+    monday_refresh,
+):
+    c = monday_refresh.controller(mode="market-refresh")
+
+    assert c.run() == 0
+
+    assert c.summary["result"] == "released"
+    steps = [s["step"] for s in c.summary["steps"]]
+    assert steps.index("refresh schedule") < steps.index("build market revision")
+    refresh = next(a for a, _ in monday_refresh.calls if "refresh-schedule" in a)
+    run_id = refresh[refresh.index("--pipeline-run-id") + 1]
+    build = _scripts_args(monday_refresh, "scripts.pipeline.build_market_revision")[0]
+    assert (
+        build[build.index("--schedule-ref") + 1]
+        == f"artifacts/preview/pipeline-runs/{run_id}/games_ref.json"
+    )
+    parity = _parity_args(monday_refresh)
+    assert parity[parity.index("--previous-manifest") + 1].endswith(
+        "revision_manifest_w9_v1.json"
+    )
+
+
+def test_market_refresh_without_announced_times_does_not_fetch_the_schedule(
+    monday_refresh,
+):
+    monday_refresh.release_games = [(2, REAL_START)]
+    c = monday_refresh.controller(mode="market-refresh")
+
+    assert c.run() == 0
+
+    assert c.summary["result"].startswith("skipped: week 9 already fully lined")
+    assert monday_refresh.calls == []
+
+
+def test_changed_game_set_stops_the_run_before_any_commit(monday_refresh):
+    original_run = monday_refresh.run
+
+    def run(argv, env, timeout):
+        if "scripts.pipeline.build_market_revision" in list(map(str, argv)):
+            monday_refresh.calls.append((list(map(str, argv)), env))
+            return 1, "the refreshed schedule differs: added games [7]"
+        return original_run(argv, env, timeout)
+
+    monday_refresh.run = run
+    c = monday_refresh.controller(mode="market-refresh")
+
+    assert c.run() == 1
+
+    assert "build market revision failed" in c.summary["result"]
+    assert not any(a[:2] == ["git", "commit"] for a, _ in monday_refresh.calls)
