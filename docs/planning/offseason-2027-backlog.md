@@ -13,7 +13,7 @@ Prepared 2026-11-11 as the single list of what to consider from 2027-01-01. It i
 Work that cannot wait for January, each under a Draft contract in `docs/plans/2026-11-12/`:
 
 - [Near-kickoff line capture](../plans/2026-11-12/01-near-kickoff-line-capture.md): closing lines cannot be reconstructed later, so capture them in Weeks 12 to 15 (analysis only, outside the record). Time-sensitive.
-- [Pre-registered research protocol](../plans/2026-11-12/02-offseason-research-protocol.md): written while 2026 is unseen. Do this before the diagnostics.
+- [Pre-registered research protocol](../plans/2026-11-12/02-offseason-research-protocol.md): approved 2026-11-12, written while 2026 is unseen.
 - [Prediction-error diagnostics](../plans/2026-11-12/03-prediction-error-diagnostics.md): section A below, as a contract.
 
 Also to schedule (no contract yet):

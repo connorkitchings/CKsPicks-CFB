@@ -1,9 +1,9 @@
 # Pre-registered offseason research protocol
 
-- **Status:** Draft
+- **Status:** Approved (2026-11-12)
 - **Created:** 2026-11-12
 - **Planner:** Sol
-- **Approval source:** Pending. The owner approves the thresholds in the Protocol section before any 2026 residual is examined.
+- **Approval source:** The owner approved the Protocol section as written on 2026-11-12, before any 2026 residual was examined ("I'm fine with all of those"), including that a candidate must win on the target it claims, not on both. The values are mirrored in `conf/research/offseason_2027/protocol.yaml`.
 - **Implementation log:** Pending (documentation only; `session_logs/2026-11-12/NN-research-protocol.md`)
 - **Commit policy:** Separate plan commit before any diagnostics run, so the registration date is verifiable in git history.
 
@@ -26,15 +26,15 @@ Acceptance: the Protocol section is approved and committed before the diagnostic
 - **Targets:** home-minus-away margin and total points, scored separately.
 - **Metrics:** MAE, RMSE, bias, Gaussian CRPS, 90% interval coverage and width, each pooled, by season and by completed-game stage, from `scorecard`.
 - **Comparison:** paired bootstrap against frozen V5 and against `v5-common`, 2,000 replicates, seed `20260928`, resampling games.
-- **Adoption thresholds (proposal; the owner edits before approval):** a candidate is eligible only if, on the 2022 to 2025 headline, the paired 95% interval for the MAE difference versus V5 excludes zero in the candidate's favor on the target it claims; no season's MAE is worse than V5's by more than 0.10 points; 90% interval coverage stays within 87% to 93%; and Weeks 0 to 4 are not worse than V5.
-- **Holdout rule:** a candidate is frozen (code, parameters, hashes recorded) before any 2026 scoring. 2026 is scored once, week by week at the original information time, after the 2026-12-13 final close. A failed 2026 score ends that candidate; it is not tuned and rerun.
+- **Adoption thresholds (approved):** a candidate is eligible only if, on the 2022 to 2025 headline, the paired 95% interval for the MAE difference versus V5 excludes zero in the candidate's favor on the target it claims; no season's MAE is worse than V5's by more than 0.10 points; 90% interval coverage stays within 87% to 93%; and Weeks 0 to 4 are not worse than V5.
+- **Holdout rule:** a candidate is frozen (code, parameters, hashes recorded) before any 2026 scoring. 2026 is scored once, week by week at the original information time, after the 2026-12-13 final close. A failed 2026 score ends that candidate; it is not tuned and rerun. **Refit after the holdout:** once the 2026 score is recorded, the 2027 model is refit on 2021 to 2026 (plus the earlier years the lab allows), and the refit changes no choice made from 2021 to 2025. 2027 then becomes the next clean holdout.
 - **Market data:** closing-line value (from the [near-kickoff capture](01-near-kickoff-line-capture.md)) and betting results are monitoring views, never selection criteria.
 - **Logging:** every candidate run records the commit, the protocol hash, the seed and the output hashes.
 
 ## Ordered changes
 
-1. Owner edits and approves the thresholds above. Acceptance: the Status line records approval and date.
-2. Add `conf/research/offseason_2027/protocol.yaml` copying the lab protocol keys, with the approved values and explicit `holdout_season: 2026` and `holdout_scored_once: true` entries. Acceptance: loads with the lab's existing protocol loader (confirm the loader accepts the new keys; if not, stop and return to Sol).
+1. Owner edits and approves the thresholds above. Done 2026-11-12; the Status line records approval and date.
+2. Added (2026-11-12) `conf/research/offseason_2027/protocol.yaml` copying the lab protocol keys, with the approved values and explicit `holdout_season: 2026` and `holdout_scored_once: true` entries. The lab reads its protocol with `yaml.safe_load` into a plain dictionary (`scripts/research/run_v6_tournament.py:181`), so the extra keys do not break it.
 3. Link the protocol from the backlog and `docs/modeling/evaluation.md`.
 
 ## Validation
@@ -43,4 +43,4 @@ Acceptance: the Protocol section is approved and committed before the diagnostic
 
 ## Handoff/amendments
 
-Resume gate: owner approval of the thresholds. Next action: task 2. Amendments are dated entries here stating the reason and the previous and revised values; loosening a threshold after any 2026 residual has been viewed is not allowed.
+Resume gate: met. Next action: task 3, then the diagnostics contract. Amendments are dated entries here stating the reason and the previous and revised values; loosening a threshold after any 2026 residual has been viewed is not allowed.

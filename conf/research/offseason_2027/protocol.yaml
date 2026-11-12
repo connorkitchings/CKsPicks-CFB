@@ -1,0 +1,26 @@
+# Pre-registered offseason 2027 research protocol.
+# Authority: docs/plans/2026-11-12/02-offseason-research-protocol.md (approved 2026-11-12).
+# Loosening any value requires a dated amendment in that contract; never after a
+# 2026 residual has been viewed.
+protocol_id: offseason_2027_v1
+comparison_models: [frozen_v5, v5-common]
+# Fitting data may include 2015-2019 and 2021-2025; 2020 is always excluded.
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+headline_seasons: [2022, 2023, 2024, 2025]
+holdout_season: 2026
+holdout_scored_once: true
+# After the 2026 score is recorded, the 2027 model is refit on 2021-2026 (plus the
+# allowed earlier years) without changing any choice made from 2021-2025.
+post_holdout_refit_seasons_end: 2026
+bootstrap_seed: 20260928
+bootstrap_replicates: 2000
+research_prefix: offseason-2027/v1/
+targets: [margin, total]
+metrics: [mae, rmse, bias, gaussian_crps, interval_90_coverage, interval_90_width]
+adoption:
+  paired_interval_confidence: 0.95
+  paired_interval_excludes_zero_on_claimed_target: true
+  max_season_mae_worse_than_v5: 0.10
+  interval_90_coverage_min: 0.87
+  interval_90_coverage_max: 0.93
+  early_weeks_not_worse_than_v5: [0, 1, 2, 3, 4]
