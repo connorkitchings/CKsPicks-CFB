@@ -28,6 +28,7 @@ nav:
       - Record Methodology: modeling/record_methodology.md
       - Evaluation: modeling/evaluation.md
       - Prediction-Error Diagnostics 2021 to 2025: modeling/prediction_error_diagnostics_2021_2025.md
+      - Score-Attribution Investigation 2026: modeling/score_attribution_investigation_2026.md
       - Betting Policy: modeling/betting_policy.md
   - Data Platform:
       - Repository Boundaries: architecture/repository_boundaries.md

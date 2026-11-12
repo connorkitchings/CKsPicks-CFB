@@ -14,7 +14,8 @@ Work that cannot wait for January, each under a Draft contract in `docs/plans/20
 
 - [Near-kickoff line capture](../plans/2026-11-12/01-near-kickoff-line-capture.md): closing lines cannot be reconstructed later, so capture them in Weeks 12 to 15 (analysis only, outside the record). Time-sensitive.
 - [Pre-registered research protocol](../plans/2026-11-12/02-offseason-research-protocol.md): approved 2026-11-12, written while 2026 is unseen.
-- [Score-attribution investigation](../plans/2026-11-12/04-score-attribution-investigation.md): examine each quarantined game and specify a direct repair of the running-score defect (owner direction 2026-11-12: repair, do not keep quarantining).
+- [Score-attribution investigation](../plans/2026-11-12/04-score-attribution-investigation.md): examine each quarantined game and specify a direct repair of the running-score defect (owner direction 2026-11-12: repair, do not keep quarantining). Report: [score-attribution investigation](../modeling/score_attribution_investigation_2026.md) (per-game data and a specified repair rule; adopting it is a separate next-model contract).
+  - Status 2026-11-12: investigation implemented and documented ([report](../modeling/score_attribution_investigation_2026.md)). Owner decision: do not fix the running-score problem now; revisit on 2026-11-13. Open items for then: adopt rule R4 plus the quarter-line check as the next-model rule (and re-derive the 2025 terminal table and priors), a play-text points ledger for the four unresolved games, whether to raise the feed defect with CFBD, and why game `401858279` is quarantined without a score-exception entry.
 - [Prediction-error diagnostics](../plans/2026-11-12/03-prediction-error-diagnostics.md): section A below, as a contract.
 
 Also to schedule (no contract yet):
