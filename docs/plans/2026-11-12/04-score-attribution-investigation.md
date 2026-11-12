@@ -4,7 +4,7 @@
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner approved implementation on 2026-11-12, after the direction of the same day: document the 44 quarantined games and examine each individually; the goal is to repair the running-score problem directly, not to keep removing games.
-- **Implementation log:** [`session_logs/2026-11-12/03-score-attribution-investigation-impl.md`](../../../session_logs/2026-11-12/03-score-attribution-investigation-impl.md). Report: [score-attribution investigation](../../modeling/score_attribution_investigation_2026.md); data: `docs/modeling/evidence/score_attribution_games_2026.json`.
+- **Implementation log:** `session_logs/2026-11-12/03-score-attribution-investigation-impl.md`. Report: [score-attribution investigation](../../modeling/score_attribution_investigation_2026.md); data: `docs/modeling/evidence/score_attribution_games_2026.json`.
 - **Commit policy:** Commit on local `dev` with implementation (documentation and read-only analysis only). Any later change to how scores are attributed is a separate contract.
 
 ## Goal and acceptance

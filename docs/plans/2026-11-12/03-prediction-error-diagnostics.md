@@ -4,7 +4,7 @@
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner approved implementation 2026-11-12, after [contract 02](02-offseason-research-protocol.md) was approved.
-- **Implementation log:** [`session_logs/2026-11-12/02-prediction-error-diagnostics-impl.md`](../../../session_logs/2026-11-12/02-prediction-error-diagnostics-impl.md)
+- **Implementation log:** `session_logs/2026-11-12/02-prediction-error-diagnostics-impl.md`
 - **Commit policy:** Commit on `dev` with implementation; one pull request into `dev`.
 
 ## Goal and acceptance
