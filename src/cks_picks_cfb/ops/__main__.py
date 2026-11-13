@@ -1961,6 +1961,7 @@ def build_steps(
                     json.dumps(gate["previous_outcomes"], sort_keys=True),
                     "--through-week",
                     week - 2,
+                    "--allow-metadata-corrections",
                     "--environment",
                     environment,
                 ),

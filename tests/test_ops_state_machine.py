@@ -871,6 +871,29 @@ def test_advance_week_plan_fetches_only_the_completed_week():
     )
 
 
+def _gate_argv(command: str, week: int) -> list:
+    context = new_context(
+        command=command,
+        environment="preview",
+        season=2026,
+        week=week,
+        as_of="2026-10-25T21:00:00Z",
+        pipeline_run_id=f"{command}-run",
+    )
+    steps = build_steps(
+        context, conn_url="postgresql://unused", advance=_advance_spec()
+    )
+    gate = next(
+        step for step in steps if step.name == "verify_completed_week_stability"
+    )
+    return gate.definition["argv"]
+
+
+def test_only_the_monday_schedule_refresh_allows_metadata_corrections():
+    assert "--allow-metadata-corrections" in _gate_argv("refresh-schedule", 9)
+    assert "--allow-metadata-corrections" not in _gate_argv("advance-week", 9)
+
+
 def test_advance_week_requires_a_completed_week_and_a_spec():
     with pytest.raises(ValueError, match="requires at least one completed week"):
         build_steps(
