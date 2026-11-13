@@ -29,9 +29,12 @@ predicted; lined-game coverage is reported but never blocks.
 
 Kickoff-time refresh (``market-refresh`` with ``--previous-manifest``): when the
 candidate manifest's ``schedule`` pin differs from the previous manifest's, the
-``start_date`` of upcoming and later-week ``games`` rows may differ. Without a
-changed pin, and for every earlier week, kickoff times stay strict; predictions,
-ratings and grades are never relaxed.
+``start_date`` of ``games`` rows and the display columns of ``game_venues`` rows
+(venue id and name, city, state, country, timezone) may differ in every week,
+because corrected game metadata is allowed whenever it is found. Without a changed
+pin nothing is relaxed. ``neutral_site``, teams, weeks, predictions, ratings and
+grades (which a moved kickoff could change, so the builder re-checks them too)
+are never relaxed.
 
 ``--accept-cutoff-correction WEEK`` (close-week only, one run at a time): the
 ``cutoff_utc`` of week ``WEEK``'s pregame ``v5_rating_snapshots`` may differ; every
@@ -110,6 +113,11 @@ MARKET_COLUMNS = frozenset(
         "market_snapshot_id",
     }
 )
+#: ``game_venues`` columns that only describe where a game is played. ``neutral_site``
+#: is a model input and is deliberately absent.
+VENUE_DISPLAY_COLUMNS = frozenset(
+    {"venue_id", "venue_name", "city", "state", "country_code", "timezone"}
+)
 #: Tables whose upcoming-week rows are wholly market data in a market refresh.
 MARKET_TABLES = frozenset(
     {
@@ -162,8 +170,8 @@ class ParityReport:
     upcoming_lined: int = 0
     accepted_cutoff_corrections: list[int] = field(default_factory=list)
     accepted_retrospective_games: list[str] = field(default_factory=list)
-    #: Market refresh whose manifest moved the schedule pin: ``start_date`` may
-    #: differ on upcoming and later-week ``games`` rows.
+    #: Market refresh whose manifest moved the schedule pin: ``start_date`` of
+    #: ``games`` rows and the venue display columns may differ in every week.
     schedule_refresh: bool = False
 
     @property
@@ -606,10 +614,10 @@ def _check_market_refresh(
                 week = weeks.get(_row_game(table, row, snapshot_games))
                 return 1 if week == upcoming else 2 if (week or 0) > upcoming else 0
 
-            # Earlier weeks strict; the upcoming week may move market columns and
-            # kickoff time; later weeks may move kickoff time only.
+            # The upcoming week may move market columns and later weeks nothing
+            # more; kickoff time (``moved``) may differ in every week.
             for group, ignore in (
-                (0, frozenset()),
+                (0, moved),
                 (1, MARKET_COLUMNS | moved),
                 (2, moved),
             ):
@@ -619,6 +627,10 @@ def _check_market_refresh(
                     [r for r in new if span(r) == group],
                     ignore=ignore,
                 )
+        elif table == "game_venues" and report.schedule_refresh:
+            report.failures += compare_rows(
+                table, old, new, ignore=VENUE_DISPLAY_COLUMNS
+            )
         else:
             # ``cutoff_utc`` legitimately moves to the refresh time for the
             # upcoming week's pregame rows (its quotes are newer); every other
@@ -790,7 +802,7 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help=(
             "market-refresh only: the manifest the active release was built from; "
-            "a changed schedule pin lets start_date differ on upcoming and later weeks"
+            "a changed schedule pin lets start_date and venue display columns differ in any week"
         ),
     )
     args = parser.parse_args(argv)

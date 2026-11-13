@@ -931,13 +931,64 @@ def test_start_date_change_fails_without_a_changed_schedule_pin():
     assert any(f.startswith("games ") and "start_date" in f for f in failures)
 
 
-def test_start_date_change_in_a_completed_week_fails_even_with_a_changed_pin():
+def test_start_date_change_in_a_completed_week_passes_with_a_changed_pin():
     old, new = timed(release(OLD_RUN)), timed(release(NEW_RUN))
     row(new, "games", game_id=3)["start_date"] = "2026-11-14T17:00:00Z"
 
-    failures = refresh_run(old, new, schedule_changed=True).failures
+    assert refresh_run(old, new, schedule_changed=True).passed
+
+
+def test_start_date_change_in_a_completed_week_fails_without_a_changed_pin():
+    old, new = timed(release(OLD_RUN)), timed(release(NEW_RUN))
+    row(new, "games", game_id=3)["start_date"] = "2026-11-14T17:00:00Z"
+
+    failures = refresh_run(old, new, schedule_changed=False).failures
 
     assert failures == ["games 3: changed columns ['start_date']"]
+
+
+def with_venues(tables: dict) -> dict:
+    tables["game_venues"] = [
+        {
+            "game_id": game["game_id"],
+            "venue_id": 1,
+            "venue_name": "Field",
+            "city": "Town",
+            "state": "ST",
+            "country_code": "US",
+            "timezone": "America/New_York",
+            "neutral_site": False,
+        }
+        for game in tables["games"]
+    ]
+    return tables
+
+
+def test_venue_display_change_in_a_completed_week_passes_only_with_a_changed_pin():
+    old, new = with_venues(release(OLD_RUN)), with_venues(release(NEW_RUN))
+    row(new, "game_venues", game_id=3).update(venue_name="New Field", city="Elsewhere")
+
+    assert refresh_run(old, new, schedule_changed=True).passed
+    failures = refresh_run(old, new, schedule_changed=False).failures
+    assert failures == ["game_venues 3: changed columns ['city', 'venue_name']"]
+
+
+def test_neutral_site_change_still_fails_with_a_changed_pin():
+    old, new = with_venues(release(OLD_RUN)), with_venues(release(NEW_RUN))
+    row(new, "game_venues", game_id=3)["neutral_site"] = True
+
+    failures = refresh_run(old, new, schedule_changed=True).failures
+
+    assert failures == ["game_venues 3: changed columns ['neutral_site']"]
+
+
+def test_team_and_week_changes_on_games_still_fail_with_a_changed_pin():
+    old, new = timed(release(OLD_RUN)), timed(release(NEW_RUN))
+    row(new, "games", game_id=3)["home_team"] = "Other"
+
+    failures = refresh_run(old, new, schedule_changed=True).failures
+
+    assert failures == ["games 3: changed columns ['home_team']"]
 
 
 def test_prediction_and_grade_differences_still_fail_with_a_changed_pin():

@@ -20,6 +20,7 @@ SOURCE = (
     / "conf/season/2026/revision_manifest_w8_v2.json"
 )
 CUTOFF = "2026-10-20T14:39:00Z"
+QUOTES_SOURCE_URI = json.loads(SOURCE.read_text())["inputs"]["market_quotes"]["uri"]
 LAST_CAPTURE = datetime(2026, 10, 20, 14, 33, 30, tzinfo=timezone.utc)
 QUOTES = {
     "uri": "lake/silver/dataset=market_quotes/version=new/data.parquet",
@@ -390,7 +391,31 @@ def test_an_added_cancelled_or_moved_game_fails_closed_with_the_game_list():
         builder.check_game_set_unchanged(old, moved_team, target_week=8)
 
 
-def test_a_changed_completed_week_kickoff_fails_closed():
+def test_a_neutral_site_change_fails_closed_with_the_game_list():
+    old = schedule_frame(neutral_site=[False, False, True])
+    new = old.assign(neutral_site=[False, True, True])
+
+    with pytest.raises(ValueError, match=r"moved games.*neutral_site.*\[2\]"):
+        builder.check_game_set_unchanged(old, new, target_week=8)
+
+
+def test_display_column_changes_are_accepted_in_every_week():
+    old = schedule_frame(
+        venue=["Old Field", "B", "C"],
+        venue_id=[1, 2, 3],
+        attendance=[None, None, None],
+        neutral_site=[False, False, True],
+    )
+    new = old.assign(
+        venue=["New Field", "B2", "C2"],
+        venue_id=[9, 2, 3],
+        attendance=[50000, None, 1],
+    )
+
+    assert builder.check_game_set_unchanged(old, new, target_week=8) == []
+
+
+def test_a_completed_week_kickoff_correction_is_reported_not_refused():
     old = schedule_frame()
     new = schedule_frame(
         kickoff_utc=pd.to_datetime(
@@ -398,8 +423,109 @@ def test_a_changed_completed_week_kickoff_fails_closed():
         )
     )
 
-    with pytest.raises(ValueError, match=r"completed-week kickoff.*\[1\]"):
-        builder.check_game_set_unchanged(old, new, target_week=8)
+    assert builder.check_game_set_unchanged(old, new, target_week=8) == [1]
+
+
+CUTOFFS = {"7": "2026-10-13T18:00:00Z", "8": "2026-10-19T14:10:00Z"}
+
+
+def outcome_moves(old, new, quote_times, cutoffs=CUTOFFS):
+    quotes = pd.DataFrame(
+        {
+            "game_id": [g for g, _ in quote_times],
+            "captured_at": pd.to_datetime([t for _, t in quote_times], utc=True),
+        }
+    )
+    return builder.kickoff_outcome_moves(
+        old, new, quotes=quotes, cutoffs=cutoffs, target_week=8
+    )
+
+
+def test_completed_week_kickoff_correction_with_unchanged_outcomes_is_accepted():
+    old = schedule_frame()
+    new = schedule_frame(
+        kickoff_utc=pd.to_datetime(
+            ["2026-10-17T17:00Z", "2026-10-24T19:30Z", "2026-10-24T23:00Z"]
+        )
+    )
+
+    # The quote predates both the old and the corrected kickoff.
+    assert outcome_moves(old, new, [(1, "2026-10-16T12:00Z")]) == []
+
+
+def test_kickoff_correction_that_flips_quote_eligibility_names_the_game():
+    old = schedule_frame()
+    new = schedule_frame(
+        kickoff_utc=pd.to_datetime(
+            ["2026-10-17T15:00Z", "2026-10-24T05:00Z", "2026-10-24T05:00Z"]
+        )
+    )
+
+    # Captured 15:30: before the old 16:00 kickoff, after the corrected 15:00.
+    assert outcome_moves(old, new, [(1, "2026-10-17T15:30Z")]) == [1]
+
+
+def test_kickoff_correction_that_breaks_the_pre_week_cutoff_names_the_games():
+    old = schedule_frame()
+    # Game 1 moves to after the week 8 cutoff minus six hours: unsettled at cutoff.
+    late = schedule_frame(
+        kickoff_utc=pd.to_datetime(
+            ["2026-10-19T10:00Z", "2026-10-24T05:00Z", "2026-10-24T05:00Z"]
+        )
+    )
+    # A week 8 game moves to before the week 8 cutoff.
+    early = schedule_frame(
+        kickoff_utc=pd.to_datetime(
+            ["2026-10-17T16:00Z", "2026-10-19T12:00Z", "2026-10-24T05:00Z"]
+        )
+    )
+
+    assert outcome_moves(old, late, []) == [1]
+    assert outcome_moves(old, early, []) == [2]
+
+
+def test_main_refuses_a_kickoff_correction_that_moves_eligibility_without_writing(
+    tmp_path, monkeypatch, registered
+):
+    store = SimpleNamespace(
+        read_bytes=lambda key: json.dumps(
+            {"uri": SCHEDULE["uri"], "content_sha": SCHEDULE["sha256"]}
+        ).encode()
+    )
+    monkeypatch.setattr(builder, "get_storage", lambda environment: store)
+    old = pd.DataFrame(
+        {
+            "game_id": [1, 2],
+            "season": 2026,
+            "week": [7, 8],
+            "home_team": ["A", "C"],
+            "away_team": ["B", "D"],
+            "kickoff_utc": pd.to_datetime(["2026-10-17T16:00Z", "2026-10-24T19:00Z"]),
+        }
+    )
+    fresh = old.assign(
+        kickoff_utc=pd.to_datetime(["2026-10-17T15:00Z", "2026-10-24T19:00Z"])
+    )
+    quotes = pd.DataFrame(
+        {"game_id": [1], "captured_at": pd.to_datetime(["2026-10-17T15:30Z"])}
+    )
+    pins = {SCHEDULE["uri"]: fresh, QUOTES_SOURCE_URI: quotes}
+    monkeypatch.setattr(
+        builder,
+        "frame",
+        lambda s, pin: pins.get(pin["uri"], old),
+    )
+    target = tmp_path / "out.json"
+
+    with pytest.raises(SystemExit, match=r"outcome for games \[1\]"):
+        builder.main(
+            ["--from-manifest", str(SOURCE), "--to-manifest", str(target),
+             "--revision-id", "r", "--cutoff", CUTOFF, "--target-week", "8",
+             "--schedule-ref", "artifacts/preview/pipeline-runs/r/games_ref.json"]
+        )  # fmt: skip
+
+    assert not target.exists()
+    assert registered == []
 
 
 def test_main_stops_before_writing_when_the_refreshed_game_set_changed(

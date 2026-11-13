@@ -73,15 +73,23 @@ def _kickoff_column(games: pd.DataFrame) -> str:
     return "start_date" if "start_date" in games.columns else "kickoff_utc"
 
 
+def _differs(left: pd.Series, right: pd.Series) -> pd.Series:
+    """Element-wise inequality that treats two missing values as equal."""
+    return left.ne(right) & ~(left.isna() & right.isna())
+
+
 def check_game_set_unchanged(
     old: pd.DataFrame, new: pd.DataFrame, *, target_week: int
-) -> None:
+) -> list[Any]:
     """Refuse a refreshed schedule that adds, cancels or moves a game.
 
-    Only the kickoff time of a game in ``target_week`` or later may differ.
-    Raises ``ValueError`` naming the affected game IDs.
+    Model-relevant fields stop the run: the game set, and each shared game's week,
+    teams and ``neutral_site`` (when both frames carry it). Kickoff time and the
+    display-only columns (venue, venue id, attendance, kickoff-time flag, notes and
+    similar) may differ in any week. Returns the sorted IDs of games before
+    ``target_week`` whose kickoff changed, for reporting and the re-check in
+    ``kickoff_outcome_moves``. Raises ``ValueError`` naming game IDs only.
     """
-    key = ["game_id", "week", "home_team", "away_team"]
     old_ids, new_ids = set(old["game_id"]), set(new["game_id"])
     problems = []
     if added := sorted(new_ids - old_ids, key=str):
@@ -89,27 +97,78 @@ def check_game_set_unchanged(
     if cancelled := sorted(old_ids - new_ids, key=str):
         problems.append(f"cancelled games {cancelled}")
     shared = old[old["game_id"].isin(new_ids)].set_index("game_id")
-    fresh = new[new["game_id"].isin(old_ids)].set_index("game_id")
-    fresh = fresh.loc[shared.index]
-    moved = shared[key[1:]].ne(fresh[key[1:]]).any(axis=1)
+    fresh = new[new["game_id"].isin(old_ids)].set_index("game_id").loc[shared.index]
+    model_columns = ["week", "home_team", "away_team"] + [
+        c for c in ("neutral_site",) if c in shared and c in fresh
+    ]
+    moved = pd.concat(
+        [_differs(shared[c], fresh[c]) for c in model_columns], axis=1
+    ).any(axis=1)
     if moved.any():
         problems.append(
-            f"moved games (week or teams) {sorted(shared.index[moved], key=str)}"
-        )
-    start_old, start_new = _kickoff_column(old), _kickoff_column(new)
-    retimed = pd.to_datetime(shared[start_old], utc=True).ne(
-        pd.to_datetime(fresh[start_new], utc=True)
-    )
-    early = retimed & (shared["week"].astype(int) < target_week)
-    if early.any():
-        problems.append(
-            f"completed-week kickoff changed for games {sorted(shared.index[early], key=str)}"
+            "moved games (week, teams or neutral_site) "
+            f"{sorted(shared.index[moved], key=str)}"
         )
     if problems:
         raise ValueError(
-            "the refreshed schedule differs beyond kickoff times: "
-            + "; ".join(problems)
+            "the refreshed schedule changes more than kickoff time and display "
+            "fields: " + "; ".join(problems)
         )
+    retimed = pd.to_datetime(shared[_kickoff_column(old)], utc=True).ne(
+        pd.to_datetime(fresh[_kickoff_column(new)], utc=True)
+    )
+    return sorted(
+        shared.index[retimed & (shared["week"].astype(int) < target_week)], key=str
+    )
+
+
+def kickoff_outcome_moves(
+    old: pd.DataFrame,
+    new: pd.DataFrame,
+    *,
+    quotes: pd.DataFrame,
+    cutoffs: dict[str, str],
+    target_week: int,
+) -> list[Any]:
+    """IDs of games whose corrected kickoff would move a grade or cutoff outcome.
+
+    Re-runs, on the old and the new schedule, the three kickoff-dependent rules
+    and returns the games whose outcome differs:
+
+    * grading eligibility: a retained quote counts for a game of a week before
+      ``target_week`` only if captured strictly before kickoff
+      (``season/grading.py``); a game moves when a quote's side of kickoff flips;
+    * a week's pre-week cutoff must precede that week's first kickoff;
+    * a week's cutoff must be at least six hours after every earlier kickoff
+      (``season/prepare.py``).
+
+    ``quotes`` needs ``game_id`` and ``captured_at``; ``cutoffs`` maps week to the
+    manifest's cutoff, with ``target_week`` already holding the refreshed value.
+    """
+    column = _kickoff_column(old)
+    kick_old = pd.to_datetime(old.set_index("game_id")[column], utc=True)
+    kick_new = pd.to_datetime(new.set_index("game_id")[_kickoff_column(new)], utc=True)
+    weeks = new.set_index("game_id")["week"].astype(int)
+    moved: set[Any] = set()
+
+    captured = pd.to_datetime(quotes["captured_at"], utc=True)
+    for game_id, stamp in zip(quotes["game_id"], captured, strict=True):
+        if game_id in weeks.index and weeks[game_id] < target_week:
+            if (stamp < kick_old[game_id]) != (stamp < kick_new[game_id]):
+                moved.add(game_id)
+
+    margin = pd.Timedelta(hours=6)
+    for week_text, cutoff_text in cutoffs.items():
+        week, cutoff = int(week_text), pd.Timestamp(cutoff_text).tz_convert("UTC")
+        ids = weeks.index
+
+        def offenders(kick: pd.Series, week: int = week, cutoff: pd.Timestamp = cutoff):
+            late = {g for g in ids[weeks == week] if kick[g] <= cutoff}
+            unsettled = {g for g in ids[weeks < week] if kick[g] + margin > cutoff}
+            return late | unsettled
+
+        moved |= offenders(kick_old) ^ offenders(kick_new)
+    return sorted(moved, key=str)
 
 
 def derive_manifest(
@@ -209,7 +268,23 @@ def main(argv: list[str] | None = None) -> int:
         schedule_input = {"uri": fresh_ref["uri"], "sha256": fresh_ref["content_sha"]}
         fresh = frame(store, schedule_input)
         try:
-            check_game_set_unchanged(games, fresh, target_week=target_week)
+            retimed = check_game_set_unchanged(games, fresh, target_week=target_week)
+            if retimed:
+                print(
+                    f"Kickoff changed for {len(retimed)} completed-week games: {retimed}"
+                )
+            cutoffs = {**old["pre_week_cutoffs"], str(target_week): args.cutoff}
+            if shifted := kickoff_outcome_moves(
+                games,
+                fresh,
+                quotes=frame(store, old["inputs"]["market_quotes"]),
+                cutoffs=cutoffs,
+                target_week=target_week,
+            ):
+                raise ValueError(
+                    "a corrected kickoff would move a grading-eligibility or "
+                    f"pre-week-cutoff outcome for games {shifted}"
+                )
         except ValueError as exc:
             raise SystemExit(str(exc)) from exc
         games = fresh

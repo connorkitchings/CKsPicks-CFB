@@ -1,6 +1,6 @@
 # Monday kickoff-time refresh
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner decisions 2026-11-12 (target Monday 2026-11-16 gated on a passing Preview rehearsal, otherwise Monday 2026-11-23; stop and alert if the refreshed schedule adds, cancels or moves a game); exact-path authorization for implementation is the next gate
@@ -51,4 +51,13 @@ Acceptance:
 
 - Resume gate: explicit authorization naming this path, then implementation by a worker in the worktree; the orchestrator verifies and pushes.
 - Production activation follows the normal automatic gates on the Monday run.
-- Amendments: none yet.
+- Implementation status 2026-11-13 (committed locally on branch `worktree-connor-monday-kickoff-time-refresh`, not pushed to `dev`): items 1 to 6 and 8 are implemented with the metadata amendment below; item 7 is not implemented. Focused tests and `make check` pass.
+- Partial Preview rehearsal 2026-11-13 (owner-approved): the full controller could not run because Week 11's first kickoff had passed (the decision skips by design, and `--force` does not override it). Instead `refresh-schedule` ran alone on Preview for Week 11 against `revision_manifest_w11_v2.json`, one CFBD request; all steps succeeded and the stop gate printed `Completed weeks 0..9 match the previous certified revision`. Read-back of the new Silver `games` version: the game set is unchanged, Week 11 placeholder games went from 14 to 0, and 44 games across later weeks received real kickoff times. Nothing was released, pushed or touched in Production.
+- Not yet rehearsed: the full controller path (parity, `season_verification_v2`, Odds quote matching, a week before its first kickoff). Planned for Monday 2026-11-16 on Preview with `skip_production`; it needs the code on `dev`, so the push decision is the owner's after Sunday's close.
+- Known limits: the builder's eligibility re-check uses the previous manifest's retained quotes and does not cover the retrospective CFBD fallback lines (parity still catches any moved grade); the completed-week stop gate (`verify_completed_week_stability.py`, shared with the Sunday close) compares every non-excluded `games` column for weeks 0..N-2, so it blocks a corrected completed-week kickoff or venue and a late-filled `attendance` or `excitement_index`. Open owner decision: narrow the gate for the Monday refresh only, or treat a gate stop as the signal for a manual repair.
+- Amendments:
+  - **2026-11-13, owner-approved: correct game metadata in any week.** Reason: the first version stopped on any completed-week kickoff change, and parity kept earlier weeks strict. The owner's rule is that matchup metadata (time, location, teams) must be fixable whenever found, while matchup data and ratings stay protected. Kickoff time feeds grading (`season/grading.py:194-196` counts a quote only if captured strictly before kickoff) and the cutoff checks, and `neutral_site` is a model input (`ratings_lab/site_context.py`, `features/situational.py`), so the fields split by effect:
+    - Display-only (venue name, city, attendance, broadcast): may change in any week with no stop.
+    - Integrity-relevant (kickoff time): may change in any week. The run re-grades completed weeks and stops for the owner if any grade, eligibility or cutoff check moves because of a corrected kickoff; it never changes silently.
+    - Model-relevant (`neutral_site`, home or away team, week, game set): still a stop; a fix is an explicit repair showing the model impact.
+    - Previous approach: only upcoming and later-week `start_date` could change, and a completed-week kickoff change stopped the run. Revised: items 4 and 6 above follow this split. Parity allows `start_date` and the display columns to differ in all weeks when the schedule pin changed; predictions, ratings and grades stay strict. Impact: `check_game_set_unchanged`, parity and a new grade/eligibility re-check change; the Sunday close path is untouched.
