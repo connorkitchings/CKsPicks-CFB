@@ -80,8 +80,8 @@ The Closed V6 stages carry five distinct code hashes, consistent with the five s
 |---|---|---|
 | Historical V5 bridge-level scoring and slicing | `ratings_lab/evaluation.py`, `error_slices.py`, `total_bias.py` | Yes, from the corpus (last demonstrated by the 2026-11-12 diagnostics run; not rerun today) |
 | Closed V6 scorecards | `evaluation.scorecard` on the verified prediction stages | Yes |
-| Historical V5 rating-state replay | `ratings_lab/v5_control.py` | Inputs now load offline from the local mirror (2026-11-14); the replay itself has not been run |
-| Repair-arm replay | `scripts/research/v5_intended_update_review.py` | Inputs are local; the script reads Preview directly or a `--verified-cache` folder, so it needs either a cache built from the mirror or a credentialed run |
+| Historical V5 rating-state replay | `ratings_lab/v5_control.py` | Yes: ran offline on 2026-11-14 inside the repair-script rerun and passed its fidelity gate |
+| Repair-arm replay | `scripts/research/v5_intended_update_review.py` | Yes: ran offline on 2026-11-14 from a cache built out of the mirror, reproducing the retained results |
 | New measurements from plays | `Corpus.read_byplay`, `ratings_lab/measurements.py` | No: needs lower-level datasets |
 | Operational V5 historical replay | Engine `IntendedUpdate` (`ratings/possession_intended_update.py`); historical states for the operational recipe are local and hash-verified (2026-11-14); no earlier-only predictions exist | Gap: needs a chronological bridge fit on those states plus offsets |
 | Paired comparison per protocol | `evaluation.paired_comparison` returns 90% season/week intervals | Gap against the written protocol |
@@ -130,9 +130,26 @@ Comparing the two rebuild root manifests object by object (run name normalized):
 
 This file is the historical rating-state set for the operational recipe. No statistic was computed from it beyond row counts and schema.
 
+### Historical reproduction rerun (2026-11-14, owner-approved)
+
+The owner approved rerunning `scripts/research/v5_intended_update_review.py` locally. It ran offline through the script's `--verified-cache` option, from a cache built out of the hash-verified local corpus and the control-input mirror (`~/cfb_ratings_lab_v6/cache-intended-update-2026-11-14/`, with `_index.json`). Output is in `~/cfb_ratings_lab_v6/output/intended-update-rerun-2026-11-14/`; the report's SHA-256 is `2cfef8be12c18cf6e587cc06a73f8d43775f72670f8240123df2b3ce90a32fd4`. Runtime 100 seconds. No bucket or database was touched.
+
+Compared with the retained `2026-09-28-v5-intended-update-results.json`:
+
+| Check | Result |
+|---|---|
+| Structure (every key in every section) | Identical |
+| Numeric values: 2,543 across replica fidelity, the frozen-bridge difference, the sparse-graph checks, pooled, by-season and by-stage metrics for four arms, early diagnostics, and paired bootstrap comparisons | Largest absolute difference 2.8e-14 |
+| Script's own gates: certified replica fidelity and the refitted bridge against the 7,318 frozen predictions (tolerance 1e-9) | Passed |
+| Row counts of the 12 output files | Equal (35,740 states, 7,318 predictions, 5,318 early predictions per arm) |
+| SHA-256 of the 12 output files | None equal |
+| Whole-report bytes | Not identical, because the report embeds the 12 file hashes |
+
+What this establishes: the retained experiment's reported results are reproduced to floating-point precision from the pinned inputs, including 2022 to 2025 margin MAE 14.3197 (historical replica) and 13.7443 (cutoff-specific repair). What it does not establish: row-by-row identity with the original output files. Those files are unavailable, and the differing hashes do not distinguish different rows from different parquet encoding; the cache was written without the script's original compression setting and library versions may differ. Agreement of 2,543 aggregates, including per-season and per-stage cells and seeded bootstrap intervals, makes different rows unlikely, but that is an inference.
+
 ### Still unavailable
 
-- The 12 row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes).
+- The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
 - Earlier-only historical predictions for the operational recipe (they would have to be produced by fitting the bridge chronologically on the retrieved states).
 - The bridge manifest's third parent, `rebuild/6a/6a-task4-w5-r2/receipt/receipt.json` (not in the approved scope).
 - Lower-level play datasets, historical market lines for 2021 to 2024, and the original prepared artifacts the ratings audit could not recover.
@@ -140,7 +157,7 @@ This file is the historical rating-state set for the operational recipe. No stat
 ## Next executable scope (needs owner approval)
 
 1. Done 2026-11-14: `historical-states.parquet` and the `w5` rebuild manifests are in the local mirror.
-2. Decide the route for step 2's historical reproduction, since the repair experiment's row-level outputs are not available: either rerun `scripts/research/v5_intended_update_review.py` from the now-local control inputs and compare its summary with the retained results JSON metric by metric, or search storage for the original outputs first.
+2. Done 2026-11-14: the repair experiment was rerun offline and its retained results are reproduced to 2.8e-14 (see the rerun section). Row-level identity with the original files remains unproven.
 3. Decide whether the retrieved operational states are compared against the repair experiment's cutoff-specific arm (different input lineage: rebuilt data against the 2026-09-21 parents) as part of operational equivalence.
 4. Then the rest of work-order step 2. Running any replay, bridge fit or scoring is not authorized until this scope is approved.
 
