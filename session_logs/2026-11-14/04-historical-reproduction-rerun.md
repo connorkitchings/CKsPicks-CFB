@@ -7,7 +7,7 @@
 - **Plan Contract:** [`docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md`](../../docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md)
 - **Approval / Status:** Owner approved the rerun on 2026-11-14 ("Yes, rerun it"). Contract stays `Draft`.
 - **Blockers:** None.
-- **Next:** Owner decides the operational-equivalence scope (contract, next executable scope items 3 and 4).
+- **Next:** Owner decides the next executable scope in the contract: explain the two state differences, then an earlier-only bridge fit on the serving states.
 
 **tags:** ["model-research", "baseline-audit", "reproduction", "ratings-lab"]
 
@@ -21,6 +21,8 @@
 - Built `~/cfb_ratings_lab_v6/cache-intended-update-2026-11-14/` (nine tables, hashes in `_index.json`).
 - Reran the script (100 seconds): four arms replayed (35,740 states each), bridges refitted chronologically, both built-in gates passed.
 - Compared the new report with the retained results JSON section by section and recorded the outcome in the contract.
+
+- Third approved step ("Yes, compare"): compared the serving bridge run's historical states with the rerun's repaired arm, row by row. Same keys, weeks and cutoffs in all 35,740 rows; contributing game sets equal in 35,698. Values differ: rating mean median absolute difference 0.023 standardized units (99th percentile 0.287, largest 0.864, correlation 0.9965), about twice as large in 2022 to 2025 as earlier. Priors differ in 31,890 rows. Operational V5's historical accuracy is therefore still unmeasured.
 
 ## Files Modified
 

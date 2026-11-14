@@ -147,6 +147,32 @@ Compared with the retained `2026-09-28-v5-intended-update-results.json`:
 
 What this establishes: the retained experiment's reported results are reproduced to floating-point precision from the pinned inputs, including 2022 to 2025 margin MAE 14.3197 (historical replica) and 13.7443 (cutoff-specific repair). What it does not establish: row-by-row identity with the original output files. Those files are unavailable, and the differing hashes do not distinguish different rows from different parquet encoding; the cache was written without the script's original compression setting and library versions may differ. Agreement of 2,543 aggregates, including per-season and per-stage cells and seeded bootstrap intervals, makes different rows unlikely, but that is an inference.
 
+### Operational state comparison (2026-11-14, owner-approved)
+
+Row-level comparison of two rating-state sets for the same recipe (`v5_game_adjusted_at_cutoff_v1`): the serving bridge run's `historical-states.parquet` (rebuilt data) against the rerun's repaired arm (2026-09-21 inputs). States only; no bridge was fitted and no game was scored. Ratings are in standardized units (spread about 0.85 in both sets).
+
+| Check | Result |
+|---|---|
+| Rows, columns, duplicates | 35,740 each; same columns; no duplicate keys |
+| Keys (season, game, team, role) | Identical sets; none missing on either side |
+| Week and forecast cutoff | Equal in all 35,740 rows |
+| Contributing game sets | Equal in 35,698 rows; in 42 rows the serving set has one more game |
+| States with any current-season evidence | 29,378 serving, 29,376 experiment |
+| Usable exposure | Equal in 35,698 rows (largest difference 13 possessions) |
+| Prior mean | Equal within 1e-9 in 3,850 rows; median absolute difference 0.013, 99th percentile 0.138, largest 0.859 |
+| Rating mean | Equal within 1e-9 in 1,154 rows; median absolute difference 0.023, 90th percentile 0.097, 99th percentile 0.287, largest 0.864; correlation 0.9965; mean signed difference +0.003 |
+| Population | FBS teams 33,452 rows (median difference 0.024); non-FBS 2,288 rows (median 0.014) |
+| By season, FBS teams | Median difference 0.005 in 2015, 0.016 to 0.019 in 2016 to 2019, 0.022 in 2021, 0.041 to 0.045 in 2022 to 2025 |
+
+What this establishes: the two sets agree on structure, timing and, in all but 42 rows, on which games contribute. They do not agree on values. The serving model's historical ratings are close to the experiment's but are not the same numbers, and the gap is about twice as large in 2022 to 2025 as in earlier seasons.
+
+Differences identified so far, neither fully explained:
+
+- **Priors differ in 31,890 rows** and are mostly identical only in 2015, the first season. This is consistent with the experiment holding the certified priors fixed (its report says all arms use the accepted preseason priors) while the serving run carries priors from its own earlier-season ratings. That reading is an inference from the pattern, not yet checked in the code that built the serving states.
+- **The same game can carry a different observation value.** In the largest difference (Ohio State offense, 2023, before its second game) both sets use the same single game with the same 10 possessions, but its adjusted value is +0.65 in the serving set and -1.05 in the experiment. Candidate causes are the rebuild's 1,416 admitted scoring-event decisions and different standardization scales; the split is not attributed.
+
+Consequence for the baselines: the 2022 to 2025 results documented for the repaired arm (margin MAE 13.744) describe the experiment's states, not the serving model's. Operational V5's historical accuracy is still unmeasured; it needs an earlier-only bridge fit on the serving states.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
@@ -158,8 +184,10 @@ What this establishes: the retained experiment's reported results are reproduced
 
 1. Done 2026-11-14: `historical-states.parquet` and the `w5` rebuild manifests are in the local mirror.
 2. Done 2026-11-14: the repair experiment was rerun offline and its retained results are reproduced to 2.8e-14 (see the rerun section). Row-level identity with the original files remains unproven.
-3. Decide whether the retrieved operational states are compared against the repair experiment's cutoff-specific arm (different input lineage: rebuilt data against the 2026-09-21 parents) as part of operational equivalence.
-4. Then the rest of work-order step 2. Running any replay, bridge fit or scoring is not authorized until this scope is approved.
+3. Done 2026-11-14: the serving states were compared with the rerun's repaired arm row by row (see the state comparison section). They agree on structure and timing and differ in values.
+4. Explain the two value differences from the code and manifests that built the serving states (how its priors were formed; which observation values changed and why).
+5. Produce Operational V5's historical predictions: an earlier-only chronological bridge fit on the serving states with the rebuild's offsets. This is the first new scoring and is not authorized until approved.
+6. Then the rest of work-order step 2.
 
 ## Work order
 
