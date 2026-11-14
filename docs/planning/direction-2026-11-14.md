@@ -15,7 +15,7 @@ Owner answers that shaped it:
 ## Why
 
 - The 2026 record through Week 10 is 271-279-9 on spreads (49.3%) and 267-289-2 on totals (48.0%), against a 52.4% break-even. In the 2025 holdout the market had lower error than V5 on both targets.
-- The [prediction-error diagnostics for 2021 to 2025](../modeling/prediction_error_diagnostics_2021_2025.md) show structural gaps:
+- The [prediction-error diagnostics for 2021 to 2025](../modeling/prediction_error_diagnostics_2021_2025.md) show structural gaps. Correction, 2026-11-14: these describe Historical V5 (the 2026-09-21 frozen model) and have not yet been established for Operational V5, the intended-update model that serves the site; see the [baseline audit and analysis framework](../plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md). Treat them as hypotheses until that audit confirms them.
     - Totals: predicted totals have a standard deviation of 1.43 points, so a totals lean is close to asking whether the market line is above or below about 56. Predictions also run 2.4 points high in every slice.
     - Venue: every game is forecast as a home game; neutral-site margin bias is -4.32 points over 328 games.
     - Early season and mismatches: margin bias is +6.79 before a team's first game and +3.01 in non-conference games; Week 1 to 3 margin MAE is about 1.4 points above the rest of the season.
@@ -40,10 +40,10 @@ In date order.
 
 Run under the approved [research protocol](../plans/2026-11-12/02-offseason-research-protocol.md); 2026 stays unseen until a candidate is frozen.
 
-1. Research harness first. The lab corpus holds frozen ratings and bridge features only, so nothing upstream of the bridge can be tested. Build a control replay that re-estimates measurements, ratings and bridge for 2015 to 2025 and reproduces frozen V5 exactly (2025 margin MAE 14.1596, total MAE 13.3558). Re-baseline the closed V6 tournament as the second benchmark.
-2. Candidate: venue. Use the stored neutral-site flag instead of `home_host=1.0`. The smallest change and the first full pass through the protocol.
-3. Candidate: totals. First explain why predicted totals barely vary. Hypothesis to check, not a finding: nothing about pace or possessions per game reaches the bridge.
-4. Candidate: preseason priors and the early-season blend.
+1. Baseline audit first (corrected 2026-11-14; the earlier text said a research harness had to be built, which was wrong). Much of the research code exists in `src/cks_picks_cfb/ratings_lab/`, but it pins Historical V5, most of its inputs are not available offline, and no historical replay of Operational V5 exists. Follow the work order in the [baseline audit and analysis framework](../plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md): baselines and inventory, replay parity, chronological baselines and scoring accounting, then bounded experiments.
+2. Bounded experiment: venue. Use the stored neutral-site flag instead of `home_host=1.0`.
+3. Bounded experiment: totals. First explain why predicted totals barely vary, checking sparse updates, compressed ratings, bridge coefficients, feature cancellation and offsets before possession volume.
+4. Bounded experiment: preseason priors and the early-season blend.
 5. Checkpoint: with measured gains from items 2 to 4, decide between shipping a repaired V5 and reopening the architecture.
 6. After the checkpoint: measurement repairs (score attribution, garbage-time rule, turnover margin, historical EPA replacement).
 7. Freeze the candidate, score 2026 once on the holdout export, refit through 2026, then the 2027 rollover list (backlog section C) and a Week 0 Preview rehearsal.
@@ -61,5 +61,5 @@ Batch site work just before the season, when it can present the new model: [web 
 ## Done when
 
 - Phase 1: `main` contains the end-state and capture code; near-kickoff captures exist for Weeks 12 to 15; the rollback drill evidence is logged; every 2026 manifest re-prepares or is listed with a reason; the holdout export hash is recorded.
-- Phase 2, item 1: the control replay matches the frozen V5 MAE to four decimals.
+- Phase 2, item 1: the completion criteria of step 2 in the baseline audit contract are met (row-level reproduction, documented operational equivalence, temporal rule across the dependency chain).
 - Each candidate is judged only by the thresholds in the research protocol.

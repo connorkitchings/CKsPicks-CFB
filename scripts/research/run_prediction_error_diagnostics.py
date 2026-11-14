@@ -508,6 +508,14 @@ def build_report(corpus: Corpus, corpus_key: str, site_rows: pd.DataFrame) -> st
         "(development view 2021 to 2025 only; 2020 excluded; no betting-outcome slices).",
         "",
     )
+    w(
+        "**Baseline caveat (2026-11-14):** every table describes Historical V5, the "
+        "2026-09-21 frozen model in the lab corpus. The findings have not yet been "
+        "established for Operational V5, the intended-update model that serves the site. "
+        "See the [baseline audit and analysis framework]"
+        "(../plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md).",
+        "",
+    )
     w("## Scope and sources", "")
     w(
         f"- Corpus: persisted ratings-lab corpus `{corpus_key}` in local lab storage "
