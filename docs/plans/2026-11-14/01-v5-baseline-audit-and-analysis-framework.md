@@ -166,10 +166,23 @@ Row-level comparison of two rating-state sets for the same recipe (`v5_game_adju
 
 What this establishes: the two sets agree on structure, timing and, in all but 42 rows, on which games contribute. They do not agree on values. The serving model's historical ratings are close to the experiment's but are not the same numbers, and the gap is about twice as large in 2022 to 2025 as in earlier seasons.
 
-Differences identified so far, neither fully explained:
+Differences identified in the comparison (the trace below corrects the first reading and narrows the second):
 
 - **Priors differ in 31,890 rows** and are mostly identical only in 2015, the first season. This is consistent with the experiment holding the certified priors fixed (its report says all arms use the accepted preseason priors) while the serving run carries priors from its own earlier-season ratings. That reading is an inference from the pattern, not yet checked in the code that built the serving states.
 - **The same game can carry a different observation value.** In the largest difference (Ohio State offense, 2023, before its second game) both sets use the same single game with the same 10 possessions, but its adjusted value is +0.65 in the serving set and -1.05 in the experiment. Candidate causes are the rebuild's 1,416 admitted scoring-event decisions and different standardization scales; the split is not attributed.
+
+#### Trace of the differences (2026-11-14, owner-approved)
+
+Sources: the builder that produced the serving states, read from git history (`scripts/pipeline/build_v5_intended_update_bundle.py` and `src/cks_picks_cfb/rebuild/successor_sources.py` at the parent of commit `bacb1e80`, which removed them); the rebuild's `baseline/admission_report.json`; and the per-game contributions stored in each state's explanation. Nothing was fetched or scored.
+
+- **Same code, different inputs.** The builder calls the same replay as the experiment (`replay` with `V5_GAME_AT_CUTOFF`, `CutoffAdjustment`, `control.fixed_priors()`, `apply_fcs_pool`). With `--corrected-lock` it takes all nine historical frames (population, observations, terminal, outcomes, features, snapshots, priors, rating states) from the corrected rebuild instead of the 2026-09-21 parents. The update rule is not a source of difference.
+- **Priors: my first reading was wrong.** Both sets mark every state `certified_fixed_prior: true`; neither carries priors from its own ratings. Each uses the fixed prior table of its own input lineage. Priors are identical in all 3,480 rows of 2015 and differ in almost every row from 2016 on (median difference 0.006 to 0.014 through 2021, 0.021 to 0.033 in 2022 to 2025). So the rebuild's prior table differs from the September one after the first season.
+- **Possession counts did not change.** Across 170,337 contributions present in both sets, exposure is equal in every one. The differences are in the values attached to games, not in which possessions count.
+- **Game values differ widely but mostly slightly.** Across those contributions the median absolute difference in adjusted value is 0.030, the 99th percentile 0.67, the largest 3.07. Of 28,487 distinct team-role source games, 8.7% differ by more than 0.25 at some cutoff and 0.4% by more than 1.0.
+- **The pattern follows the rebuild's scoring corrections.** The share of team-role source games differing by more than 0.25 is 2.5% to 3.9% in 2015 to 2019 and 13.4% to 15.1% in 2021 to 2025. The admission report records 41 to 90 admitted scoring decisions per season in 2015 to 2019 and 193 to 241 in 2021 to 2025 (1,416 in total, 1,389 of them one cause, `dip_restore`). The match in pattern is consistent with the corrections driving the differences; it is not a game-by-game proof.
+- **Evidence matters more than priors.** States with no current-season evidence differ by a median of 0.013; states with evidence by 0.026; among the latter the prior gap and the state gap correlate at only 0.15.
+
+Not separated: how much of a game's value change is a direct points correction and how much is propagation through opponent adjustment or a changed standardization scale. That needs the rebuild's observation and terminal tables and its decisions file, which were listed but not fetched.
 
 Consequence for the baselines: the 2022 to 2025 results documented for the repaired arm (margin MAE 13.744) describe the experiment's states, not the serving model's. Operational V5's historical accuracy is still unmeasured; it needs an earlier-only bridge fit on the serving states.
 
@@ -185,7 +198,7 @@ Consequence for the baselines: the 2022 to 2025 results documented for the repai
 1. Done 2026-11-14: `historical-states.parquet` and the `w5` rebuild manifests are in the local mirror.
 2. Done 2026-11-14: the repair experiment was rerun offline and its retained results are reproduced to 2.8e-14 (see the rerun section). Row-level identity with the original files remains unproven.
 3. Done 2026-11-14: the serving states were compared with the rerun's repaired arm row by row (see the state comparison section). They agree on structure and timing and differ in values.
-4. Explain the two value differences from the code and manifests that built the serving states (how its priors were formed; which observation values changed and why).
+4. Done 2026-11-14 as far as local files allow (see the trace): same update code, different input lineage; the differences follow the rebuild's scoring corrections. Optional follow-up: fetch the rebuild's observations, terminal table and decisions file to separate direct corrections from propagation.
 5. Produce Operational V5's historical predictions: an earlier-only chronological bridge fit on the serving states with the rebuild's offsets. This is the first new scoring and is not authorized until approved.
 6. Then the rest of work-order step 2.
 

@@ -7,7 +7,7 @@
 - **Plan Contract:** [`docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md`](../../docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md)
 - **Approval / Status:** Owner approved the rerun on 2026-11-14 ("Yes, rerun it"). Contract stays `Draft`.
 - **Blockers:** None.
-- **Next:** Owner decides the next executable scope in the contract: explain the two state differences, then an earlier-only bridge fit on the serving states.
+- **Next:** Owner decides whether to approve an earlier-only bridge fit on the serving states, the first new scoring in this work.
 
 **tags:** ["model-research", "baseline-audit", "reproduction", "ratings-lab"]
 
@@ -23,6 +23,8 @@
 - Compared the new report with the retained results JSON section by section and recorded the outcome in the contract.
 
 - Third approved step ("Yes, compare"): compared the serving bridge run's historical states with the rerun's repaired arm, row by row. Same keys, weeks and cutoffs in all 35,740 rows; contributing game sets equal in 35,698. Values differ: rating mean median absolute difference 0.023 standardized units (99th percentile 0.287, largest 0.864, correlation 0.9965), about twice as large in 2022 to 2025 as earlier. Priors differ in 31,890 rows. Operational V5's historical accuracy is therefore still unmeasured.
+
+- Fourth approved step ("Yes, trace it"): read the removed builder from git history and compared per-game contributions. The serving states were built by the same replay code on the corrected rebuild's nine historical frames. Both sets use fixed priors of their own lineage (an earlier inference that the serving run carried its own priors was wrong). Exposure is equal in all 170,337 shared contributions; game values differ, and the share differing by more than 0.25 rises from about 3% (2015 to 2019) to about 14% (2021 to 2025), following the rebuild's admitted scoring decisions by season.
 
 ## Files Modified
 
