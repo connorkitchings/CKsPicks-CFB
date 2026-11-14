@@ -1,6 +1,6 @@
 # Offseason 2027 backlog
 
-Prepared 2026-11-11 as the single list of what to consider from 2027-01-01. It is a backlog, not a commitment: nothing here starts before the offseason, and each item that changes model behavior, data lineage, schemas or Production still needs its own contract (`docs/plans/`) and owner approval. Live release and week state stays in [Current Status](../status.md).
+Prepared 2026-11-11 as the single list of what to consider in the offseason. Owner decision 2026-11-14: model research starts after the 2026-12-13 final close (previously 2027-01-01), and the order of work is set in the [direction document](direction-2026-11-14.md). It is a backlog, not a commitment: nothing here starts before the final close except the start-now work below, and each item that changes model behavior, data lineage, schemas or Production still needs its own contract (`docs/plans/`) and owner approval. Live release and week state stays in [Current Status](../status.md).
 
 ## Ground rules
 
