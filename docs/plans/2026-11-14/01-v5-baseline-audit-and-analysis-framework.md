@@ -237,9 +237,61 @@ What this establishes, for Operational V5 on 2022 to 2025 with earlier-only fitt
 - Its margin accuracy equals the September repaired arm's; the corrected inputs moved ratings but not pooled margin error. Its totals are slightly better, with about one point less bias, which follows from the changed offsets.
 - Flat totals are confirmed for the serving recipe: predicted totals vary by 1.57 points.
 - Early-season weakness is confirmed: before a team's first game the margin bias is +7.51 points and 90% coverage is 85.2%; stages 0 to 3 are slightly worse than Historical V5 and stage 4+ is a full point better.
-- The neutral-site finding has not been rechecked on these predictions.
+- The neutral-site finding is rechecked in the slice report below.
 
 Outputs are in `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/` (predictions SHA-256 `298d9fe58c86385763f53e66e5eeebca0b177b8d8286f12123794c0d855f9999`, early predictions `62d62dec…`, `scorecard.json`).
+
+### Slice report on Operational V5 (2026-11-14, owner-approved)
+
+The existing slice functions (`error_slices.game_attributes`, `attach_slices`, `slice_table`; `site_context.game_context`) run on both models' predictions for 2021 to 2025 (4,546 games; 2021 from each model's earlier-only early-season group, as in the original report). No fitting. Error is actual minus prediction.
+
+- Harness check: the Historical V5 column reproduces the published report cell for cell (for example neutral-site margin bias -4.320, stage 0 margin bias +6.790, week 2 margin bias +4.070).
+- Venue and conference rows come from the cache written on 2026-11-12 (`game_site_context.parquet`), which has no manifest; its provenance is the earlier diagnostics run, not a pinned hash.
+- Gap and totals terciles are cut from each model's own predictions, so those bins are not the same games in both columns. The partial-quarantine slice was not rerun.
+
+Margin:
+
+| Slice | Games | Historical MAE | Historical bias | Operational MAE | Operational bias | Operational 90% coverage |
+|---|---|---|---|---|---|---|
+| Home venue | 4,211 | 14.535 | +0.207 | 13.972 | +0.296 | 90.7% |
+| Neutral site | 328 | 14.911 | -4.320 | 14.179 | -4.322 | 91.5% |
+| Stage 0 | 721 | 16.398 | +6.790 | 16.558 | +7.350 | 84.6% |
+| Stage 1 | 364 | 14.489 | +2.308 | 15.100 | +3.815 | 89.6% |
+| Stage 2 | 302 | 15.246 | +0.438 | 15.863 | +0.787 | 88.1% |
+| Stage 3 | 314 | 13.053 | -1.286 | 13.291 | -1.199 | 93.0% |
+| Stage 4 | 2,845 | 14.219 | -2.100 | 13.090 | -2.368 | 92.4% |
+| Week 1 | 687 | 15.647 | +1.990 | 15.611 | +2.484 | 87.8% |
+| Week 2 | 410 | 15.400 | +4.070 | 16.582 | +5.845 | 84.9% |
+| Week 3 | 353 | 15.586 | +2.844 | 15.684 | +2.967 | 88.1% |
+| Week 4 | 326 | 13.774 | +0.601 | 13.977 | -0.091 | 92.3% |
+| Weeks 5 to 8 | 1,098 | 13.548 | -2.153 | 13.214 | -2.013 | 92.3% |
+| Weeks 9 to 12 | 1,160 | 14.391 | -0.698 | 12.756 | -1.232 | 92.6% |
+| Weeks 13 to 16 | 512 | 14.901 | -3.072 | 13.121 | -3.262 | 92.4% |
+| Conference game | 2,690 | 14.013 | -2.267 | 13.054 | -2.244 | 92.3% |
+| Non-conference game | 1,856 | 15.388 | +3.011 | 15.369 | +3.150 | 88.4% |
+| Power home team | 2,438 | 14.566 | +1.098 | 13.906 | +1.429 | 91.3% |
+| Group of 5 home team | 1,952 | 14.477 | -1.668 | 13.981 | -1.867 | 90.2% |
+
+Total:
+
+| Slice | Games | Historical MAE | Historical bias | Operational MAE | Operational bias |
+|---|---|---|---|---|---|
+| Home venue | 4,211 | 13.493 | -2.290 | 13.258 | -1.091 |
+| Neutral site | 328 | 15.253 | -3.841 | 15.050 | -2.987 |
+| Conference game | 2,690 | 13.772 | -2.471 | 13.509 | -1.381 |
+| Non-conference game | 1,856 | 13.397 | -2.285 | 13.214 | -0.991 |
+| Lowest third of predicted totals | 1,516 | 13.567 | -2.790 | 13.514 | -2.623 |
+| Middle third | 1,515 | 13.965 | -1.980 | 13.468 | -1.121 |
+| Highest third | 1,515 | 13.325 | -2.415 | 13.183 | +0.078 |
+
+What this establishes for Operational V5 on 2021 to 2025:
+
+- **Neutral site is confirmed and unchanged:** margin bias -4.32 points over 328 games, the same as Historical V5. The repair did nothing for it, as expected when every game is forecast as a home game.
+- **All of the repair's gain is in later and conference games.** Margin MAE falls by about 1.0 in conference games, 1.6 in weeks 9 to 12 and 1.8 in weeks 13 to 16. In non-conference games it is unchanged (15.37 against 15.39).
+- **Early season is no better and in places worse.** Stages 0 to 2 and weeks 1 to 3 have equal or higher margin MAE than Historical V5; week 2 is 16.58 against 15.40 with bias +5.85 and 84.9% coverage.
+- **Total bias is about one point smaller almost everywhere**, but it is uneven across the model's own predictions: the lowest third of predicted totals is still over-predicted by 2.6 points while the highest third is unbiased.
+
+Full cells are in `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/slices_historical_vs_operational.json`.
 
 ### Still unavailable
 
@@ -254,7 +306,8 @@ Outputs are in `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14
 3. Done 2026-11-14: the serving states were compared with the rerun's repaired arm row by row (see the state comparison section). They agree on structure and timing and differ in values.
 4. Done 2026-11-14 as far as local files allow (see the trace): same update code, different input lineage; the differences follow the rebuild's scoring corrections. Optional follow-up: fetch the rebuild's observations, terminal table and decisions file to separate direct corrections from propagation.
 5. Done 2026-11-14: Operational V5's historical predictions exist and are scored (see the scoring section).
-6. Remaining in work-order step 2, each needing approval: rerun the slice report (site class, conference, week) on the Operational V5 predictions; measure the spread of each bridge contribution and offset; extend the temporal check upstream of the rating states (opponent adjustment, priors, normalization, offsets).
+6. Done 2026-11-14: the slice report was rerun on the Operational V5 predictions (see the slice section).
+7. Remaining in work-order step 2, each needing approval: measure the spread of each bridge contribution and offset; extend the temporal check upstream of the rating states (opponent adjustment, priors, normalization, offsets). After that, step 3 (chronological baselines and scoring accounting).
 
 ## Work order
 

@@ -7,7 +7,7 @@
 - **Plan Contract:** [`docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md`](../../docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md)
 - **Approval / Status:** Owner approved on 2026-11-14 ("Yes, score it"). Contract stays `Draft`.
 - **Blockers:** None.
-- **Next:** Owner decides whether to rerun the slice report and measure contribution spread on these predictions.
+- **Next:** Owner decides whether to measure bridge contribution spread and extend the temporal check upstream.
 
 **tags:** ["model-research", "baseline-audit", "scoring", "ratings-lab"]
 
@@ -22,6 +22,8 @@
 - Compared the September and rebuild feature frames: identical except offsets.
 - Harness check: experiment states plus the September frame reproduce the rerun's predictions exactly.
 - Fitted the bridge chronologically on the serving states and scored 2022 to 2025 and the early group (2018, 2019, 2021); wrote predictions and a scorecard to the local lab output.
+
+- Next approved step ("Yes, run slices"): ran the existing slice functions on both models for 2021 to 2025. The historical column reproduces the published report cell for cell. For Operational V5: neutral-site margin bias -4.32 (unchanged), non-conference margin MAE unchanged at 15.37, all of the repair's gain in conference and later-season games, early weeks equal or worse (week 2 MAE 16.58, bias +5.85), total bias about one point smaller but still -2.6 in the lowest third of predicted totals.
 
 ## Files Modified
 
@@ -44,4 +46,4 @@
 ## Handoff Notes
 
 - **Resume at:** remaining step 2 items in the contract's next executable scope.
-- **Watch out for:** 2022 to 2025 are previously examined seasons; these numbers are a baseline, not independent evidence. The neutral-site finding is not rechecked on these predictions.
+- **Watch out for:** 2022 to 2025 are previously examined seasons; these numbers are a baseline, not independent evidence. The venue and conference rows used for slicing come from an unpinned cache.
