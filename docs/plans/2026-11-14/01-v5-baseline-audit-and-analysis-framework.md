@@ -83,7 +83,7 @@ The Closed V6 stages carry five distinct code hashes, consistent with the five s
 | Historical V5 rating-state replay | `ratings_lab/v5_control.py` | Yes: ran offline on 2026-11-14 inside the repair-script rerun and passed its fidelity gate |
 | Repair-arm replay | `scripts/research/v5_intended_update_review.py` | Yes: ran offline on 2026-11-14 from a cache built out of the mirror, reproducing the retained results |
 | New measurements from plays | `Corpus.read_byplay`, `ratings_lab/measurements.py` | No: needs lower-level datasets |
-| Operational V5 historical replay | Engine `IntendedUpdate` (`ratings/possession_intended_update.py`); historical states for the operational recipe are local and hash-verified (2026-11-14); no earlier-only predictions exist | Gap: needs a chronological bridge fit on those states plus offsets |
+| Operational V5 historical scoring | Serving states plus the rebuild feature frame through `common_bridge_predictions` | Yes: ran offline on 2026-11-14; predictions and scorecard are local. The states come from the serving bridge run; rebuilding them from plays is still not possible offline |
 | Paired comparison per protocol | `evaluation.paired_comparison` returns 90% season/week intervals | Gap against the written protocol |
 
 `replay_v5_control` reproduces downstream rating states from certified snapshots and priors. It is not a rebuild from plays.
@@ -186,10 +186,64 @@ Not separated: how much of a game's value change is a direct points correction a
 
 Consequence for the baselines: the 2022 to 2025 results documented for the repaired arm (margin MAE 13.744) describe the experiment's states, not the serving model's. Operational V5's historical accuracy is still unmeasured; it needs an earlier-only bridge fit on the serving states.
 
+### Operational V5 historical scoring (2026-11-14, owner-approved)
+
+The first new scoring in this work. One more read-only retrieval preceded it: the rebuild's `forecast/feature_frame.parquet` and `forecast/offsets.parquet`, both matching the hashes in the rebuild root manifest (indexed in `_retrieval_index_features_2026-11-14.json`).
+
+| Field | Content |
+|---|---|
+| Question | What is the 2022 to 2025 accuracy of the serving recipe on the serving input lineage, with a bridge that never sees the scored season? |
+| Changes | Against the repair experiment's repaired arm: the rating states (serving bridge run) and the feature frame with its offsets (rebuild) |
+| Frozen | Game keys, outcomes, venue flags, completed-game stages, alpha-10 Ridge recipe, earlier-only calibration, evaluation code (`frame_with_candidate_states`, `common_bridge_predictions`, `scorecard`) |
+| Refitted | The bridge, once per validation season, on strictly earlier seasons (2022 on 2015 to 2019 and 2021; 2025 on everything through 2024). The serving bundle's coefficients are not used |
+| Population | 3,659 games per target, 2022 to 2025, the same keys as the frozen V5 predictions; FBS-involving games including FBS against FCS |
+| Cannot show | The accuracy of the serving coefficients themselves (fitted through 2025); anything about 2026; independence, since these seasons are previously examined |
+
+Checks before reading the result:
+
+- The two feature frames agree on every game key, team name, outcome, venue flag, week and completed-game stage. They differ only in offsets: `offset_margin` in 5,406 of 8,935 games (largest 3.2 points) and `offset_total` in 8,480 (largest 7.0).
+- Harness check: the same script, given the experiment's states and the September frame, reproduces the rerun's 7,318 predictions with a largest difference of exactly 0.
+- The function's population check passed, so outcomes equal those of the frozen V5 predictions.
+
+Pooled 2022 to 2025:
+
+| Model | Margin MAE | Margin bias | Margin 90% coverage | Total MAE | Total bias | Total 90% coverage |
+|---|---|---|---|---|---|---|
+| Historical V5 (rerun) | 14.3197 | +0.05 | 91.1% | 13.6623 | -2.62 | 91.8% |
+| Repaired arm, September inputs (rerun) | 13.7443 | +0.19 | 91.5% | 13.5067 | -2.39 | 92.3% |
+| **Operational V5, historical** | **13.7424** | +0.19 | 91.3% | **13.4383** | -1.44 | 92.2% |
+
+Operational V5 by season: margin MAE 14.06, 13.81, 13.91, 13.20; total MAE 13.83, 13.65, 13.15, 13.13.
+
+By completed-game stage (margin MAE; margin bias):
+
+| Stage | Games | Historical V5 | Operational V5 | Operational bias | Operational 90% coverage |
+|---|---|---|---|---|---|
+| 0 | 573 | 15.92 | 16.17 | +7.51 | 85.2% |
+| 1 | 301 | 14.28 | 14.41 | +4.19 | 91.0% |
+| 2 | 244 | 14.99 | 15.10 | +0.98 | 90.2% |
+| 3 | 253 | 13.00 | 13.27 | -1.45 | 93.3% |
+| 4+ | 2,288 | 14.00 | 12.95 | -2.07 | 92.8% |
+
+Paired differences from the existing `paired_comparison` (90% interval, season/week blocks, 2,000 replicates, seed 20260928; this is the current function, not the interval the protocol amendment proposes):
+
+- Operational against Historical V5: margin MAE lower by 0.577 (0.302 to 0.862); total lower by 0.224 (0.173 to 0.282).
+- Operational against the September repaired arm: margin lower by 0.002 (-0.039 to 0.041); total lower by 0.068 (0.035 to 0.101).
+
+Spread of predictions: predicted margin has a standard deviation of 13.17 points against 21.95 for actual margins; predicted total 1.57 points (range 50.1 to 62.3) against 16.90 for actual totals.
+
+What this establishes, for Operational V5 on 2022 to 2025 with earlier-only fitting:
+
+- Its margin accuracy equals the September repaired arm's; the corrected inputs moved ratings but not pooled margin error. Its totals are slightly better, with about one point less bias, which follows from the changed offsets.
+- Flat totals are confirmed for the serving recipe: predicted totals vary by 1.57 points.
+- Early-season weakness is confirmed: before a team's first game the margin bias is +7.51 points and 90% coverage is 85.2%; stages 0 to 3 are slightly worse than Historical V5 and stage 4+ is a full point better.
+- The neutral-site finding has not been rechecked on these predictions.
+
+Outputs are in `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/` (predictions SHA-256 `298d9fe58c86385763f53e66e5eeebca0b177b8d8286f12123794c0d855f9999`, early predictions `62d62dec…`, `scorecard.json`).
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
-- Earlier-only historical predictions for the operational recipe (they would have to be produced by fitting the bridge chronologically on the retrieved states).
 - The bridge manifest's third parent, `rebuild/6a/6a-task4-w5-r2/receipt/receipt.json` (not in the approved scope).
 - Lower-level play datasets, historical market lines for 2021 to 2024, and the original prepared artifacts the ratings audit could not recover.
 
@@ -199,8 +253,8 @@ Consequence for the baselines: the 2022 to 2025 results documented for the repai
 2. Done 2026-11-14: the repair experiment was rerun offline and its retained results are reproduced to 2.8e-14 (see the rerun section). Row-level identity with the original files remains unproven.
 3. Done 2026-11-14: the serving states were compared with the rerun's repaired arm row by row (see the state comparison section). They agree on structure and timing and differ in values.
 4. Done 2026-11-14 as far as local files allow (see the trace): same update code, different input lineage; the differences follow the rebuild's scoring corrections. Optional follow-up: fetch the rebuild's observations, terminal table and decisions file to separate direct corrections from propagation.
-5. Produce Operational V5's historical predictions: an earlier-only chronological bridge fit on the serving states with the rebuild's offsets. This is the first new scoring and is not authorized until approved.
-6. Then the rest of work-order step 2.
+5. Done 2026-11-14: Operational V5's historical predictions exist and are scored (see the scoring section).
+6. Remaining in work-order step 2, each needing approval: rerun the slice report (site class, conference, week) on the Operational V5 predictions; measure the spread of each bridge contribution and offset; extend the temporal check upstream of the rating states (opponent adjustment, priors, normalization, offsets).
 
 ## Work order
 
