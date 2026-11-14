@@ -83,7 +83,7 @@ The Closed V6 stages carry five distinct code hashes, consistent with the five s
 | Historical V5 rating-state replay | `ratings_lab/v5_control.py` | Inputs now load offline from the local mirror (2026-11-14); the replay itself has not been run |
 | Repair-arm replay | `scripts/research/v5_intended_update_review.py` | Inputs are local; the script reads Preview directly or a `--verified-cache` folder, so it needs either a cache built from the mirror or a credentialed run |
 | New measurements from plays | `Corpus.read_byplay`, `ratings_lab/measurements.py` | No: needs lower-level datasets |
-| Operational V5 historical replay | Engine `IntendedUpdate` (`ratings/possession_intended_update.py`); historical states exist in the serving bridge run; no earlier-only predictions found | No: gap |
+| Operational V5 historical replay | Engine `IntendedUpdate` (`ratings/possession_intended_update.py`); historical states for the operational recipe are local and hash-verified (2026-11-14); no earlier-only predictions exist | Gap: needs a chronological bridge fit on those states plus offsets |
 | Paired comparison per protocol | `evaluation.paired_comparison` returns 90% season/week intervals | Gap against the written protocol |
 
 `replay_v5_control` reproduces downstream rating states from certified snapshots and priors. It is not a rebuild from plays.
@@ -115,19 +115,34 @@ The owner approved one credentialed, read-only retrieval on 2026-11-14. It used 
 - Total coefficients per standardized rating are +1.66 (home offense), -0.99 (home defense), +0.51 (away offense), -1.11 (away defense), against 6.7 to 9.5 in absolute value for margin. If the four inputs were uncorrelated with unit spread, the predicted total would have a standard deviation of about 2.3 points before offsets. The actual spread still has to be measured in step 2, but the flat-totals question applies to the serving bridge as well as the historical one.
 - Home offense moves the total about three times as much as away offense. Unexplained; a step 2 item.
 - The `w6` rebuild contains its own `forecast/bundle.json` (`63476e48…`) that differs from the serving bundle in centers, scales (about 0.50 to 0.61 against 0.79 to 0.87) and coefficients. Its `ratings/summary.json` names candidate `ppp__rho_0_60__exposure`. It appears to be the historical update recipe on rebuilt data, and it is not what serves.
-- So the serving model combines a bridge fitted on `w5`-rebuild intended-update states with priors and a terminal table from the `w6` rebuild. Whether those are on a consistent scale is a question for the operational-equivalence check, not a conclusion.
+- So the serving model combines a bridge fitted on `w5`-rebuild intended-update states with priors and a terminal table from the `w6` rebuild. The second retrieval below shows those historical inputs are byte-identical between the two rebuilds.
+
+### Second retrieval (2026-11-14, owner-approved): historical states and the `w5` rebuild manifests
+
+Same method and credential. Indexed in `_retrieval_index_states_2026-11-14.json`.
+
+| Artifact | Result |
+|---|---|
+| `historical-states.parquet` of the serving bridge run | 6,431,669 bytes; SHA-256 `8df690ce3d35ece3ae0bf9f68d7c6953e5907a8a7ef63f8e36fc35aa279ddaec`, equal to the bridge manifest and its verifier manifest. 35,740 rows, one candidate (`v5_game_adjusted_at_cutoff_v1`), 17,870 offense and 17,870 defense states, all ten development seasons. Columns: season, week, game, cutoff, team, role, mean, variance, prior mean, prior variance, usable exposure, evidence game IDs, explanation |
+| `6a-rebuild-w5-20261007-r2` root manifest and 15 summaries | Root manifest SHA-256 `7865d35336b039f8983ee235c6855d2795a9b35233a779a7a67a959aee89d9b0`, equal to the parent named in the bridge manifest. Data files (about 23 MB) listed, not fetched |
+
+Comparing the two rebuild root manifests object by object (run name normalized): the terminal table (`4dfdbbe3…`), 2026 priors (`6091ef53…`), raw population (`e35f6792…`), admitted events (`fda63e79…`), and the forecast feature frame, offsets and bundle are byte-identical in `w5` and `w6`, and the first four equal the pins in `model_manifest_v1.json`. The two rebuilds differ only in 2026 state files, three stage summaries and the underlying lake object versions. The bridge's parent and the serving inputs are therefore consistent for historical data.
+
+This file is the historical rating-state set for the operational recipe. No statistic was computed from it beyond row counts and schema.
 
 ### Still unavailable
 
 - The 12 row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes).
-- `historical-states.parquet` for the serving bridge run, and the `w5` rebuild's manifests.
+- Earlier-only historical predictions for the operational recipe (they would have to be produced by fitting the bridge chronologically on the retrieved states).
+- The bridge manifest's third parent, `rebuild/6a/6a-task4-w5-r2/receipt/receipt.json` (not in the approved scope).
 - Lower-level play datasets, historical market lines for 2021 to 2024, and the original prepared artifacts the ratings audit could not recover.
 
 ## Next executable scope (needs owner approval)
 
-1. Retrieve `historical-states.parquet` (6.4 MB) and the `6a-rebuild-w5-20261007-r2` root manifest and summaries, read-only, into the same mirror.
+1. Done 2026-11-14: `historical-states.parquet` and the `w5` rebuild manifests are in the local mirror.
 2. Decide the route for step 2's historical reproduction, since the repair experiment's row-level outputs are not available: either rerun `scripts/research/v5_intended_update_review.py` from the now-local control inputs and compare its summary with the retained results JSON metric by metric, or search storage for the original outputs first.
-3. Then the rest of work-order step 2. Running any replay or scoring is not authorized until this scope is approved.
+3. Decide whether the retrieved operational states are compared against the repair experiment's cutoff-specific arm (different input lineage: rebuilt data against the 2026-09-21 parents) as part of operational equivalence.
+4. Then the rest of work-order step 2. Running any replay, bridge fit or scoring is not authorized until this scope is approved.
 
 ## Work order
 
