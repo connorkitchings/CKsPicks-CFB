@@ -4,7 +4,7 @@
 - **Created:** 2026-11-14
 - **Planner:** Sol
 - **Approval source:** The owner approved writing this Draft and running the local read-only inventory on 2026-11-14, after two rounds of review. Approval to execute any step of the work order is the next gate and is given per step.
-- **Implementation log:** `session_logs/2026-11-14/02-baseline-audit-contract-and-inventory.md` (this Draft and the inventory only)
+- **Implementation log:** `session_logs/2026-11-14/02-baseline-audit-contract-and-inventory.md` (this Draft and the inventory), `session_logs/2026-11-14/03-baseline-input-retrieval.md` (the approved retrieval)
 - **Commit policy:** Commit on local `dev` with the documentation. No push.
 
 ## Goal and acceptance
@@ -28,6 +28,8 @@ The [prediction-error diagnostics](../../modeling/prediction_error_diagnostics_2
 The retained repair experiment (`docs/archive/research/2026-09-28-v5-intended-update-repair-experiment.md`) reports, for 2022 to 2025 on 3,659 games per target: current-season evidence in 1,926 of 35,740 historical states (5.4%) against 29,376 (82.2%) in the repaired arms; margin MAE 14.320 against 13.744; total MAE 13.662 against 13.507. The repaired arm is worse at completed-game stages 0 to 3 and better at 4+. These are documented results; nothing was rerun for this contract.
 
 ## Inventory (2026-11-14, local and repository only)
+
+This section is the state before the retrieval. The [retrieval section](#retrieval-2026-11-14-owner-approved) below supersedes the rows it names.
 
 Method: every child listed in each ratings-lab stage manifest under `~/cfb_ratings_lab_v6/output` was read and its SHA-256 compared with the manifest. Repository files were hashed directly. Nothing was read from R2 or any database.
 
@@ -66,7 +68,7 @@ The Closed V6 stages carry five distinct code hashes, consistent with the five s
 
 ### Missing or unknown
 
-- **No historical replay of Operational V5 exists.** The repair experiment used the 2026-09-21 parents. The serving model takes its priors, terminal table, historical population and events from the 2026-10-12 rebuild (`6a-rebuild-w6-20261012-r2`) and applies a pinned bridge bundle. The experiment therefore differs from serving in input lineage as well as in bridge fitting.
+- **No historical replay of Operational V5 was found locally** (superseded in part by the retrieval: historical states for the operational recipe exist in Preview storage). The repair experiment used the 2026-09-21 parents. The serving model takes its priors, terminal table, historical population and events from the 2026-10-12 rebuild (`6a-rebuild-w6-20261012-r2`) and applies a pinned bridge bundle. The experiment therefore differs from serving in input lineage as well as in bridge fitting.
 - **How the serving bridge bundle was fitted** (seasons, rating lineage, penalty) is not established from the repository. It needs the bridge manifest.
 - Whether a local-verified cache from the repair run (`--verified-cache`) survives anywhere.
 - Historical market lines for 2021 to 2024 (only the 2025 diagnostic is known).
@@ -78,19 +80,54 @@ The Closed V6 stages carry five distinct code hashes, consistent with the five s
 |---|---|---|
 | Historical V5 bridge-level scoring and slicing | `ratings_lab/evaluation.py`, `error_slices.py`, `total_bias.py` | Yes, from the corpus (last demonstrated by the 2026-11-12 diagnostics run; not rerun today) |
 | Closed V6 scorecards | `evaluation.scorecard` on the verified prediction stages | Yes |
-| Historical V5 rating-state replay | `ratings_lab/v5_control.py` | No: needs the control inputs from source |
-| Repair-arm replay | `scripts/research/v5_intended_update_review.py` | No: needs the same inputs |
+| Historical V5 rating-state replay | `ratings_lab/v5_control.py` | Inputs now load offline from the local mirror (2026-11-14); the replay itself has not been run |
+| Repair-arm replay | `scripts/research/v5_intended_update_review.py` | Inputs are local; the script reads Preview directly or a `--verified-cache` folder, so it needs either a cache built from the mirror or a credentialed run |
 | New measurements from plays | `Corpus.read_byplay`, `ratings_lab/measurements.py` | No: needs lower-level datasets |
-| Operational V5 historical replay | Engine `IntendedUpdate` (`ratings/possession_intended_update.py`); no historical runner found | No: gap |
+| Operational V5 historical replay | Engine `IntendedUpdate` (`ratings/possession_intended_update.py`); historical states exist in the serving bridge run; no earlier-only predictions found | No: gap |
 | Paired comparison per protocol | `evaluation.paired_comparison` returns 90% season/week intervals | Gap against the written protocol |
 
 `replay_v5_control` reproduces downstream rating states from certified snapshots and priors. It is not a rebuild from plays.
 
+## Retrieval (2026-11-14, owner-approved)
+
+The owner approved one credentialed, read-only retrieval on 2026-11-14. It used the Preview read credential with GET, HEAD and LIST only; nothing was written to any bucket or database, and no model was run or scored. Exact object bytes were mirrored under `~/cfb_ratings_lab_v6/source/` at their original keys, with SHA-256 and size recorded in `_retrieval_index_control_2026-11-14.json` and `_retrieval_index_serving_2026-11-14.json` in that folder.
+
+### Retrieved and verified
+
+| Artifact | Result |
+|---|---|
+| Historical V5 control inputs (measurement manifest, retained rating manifest, snapshots, priors, rating states) | 319 objects, 10.0 MB. Both manifests match their pins (`10b380d6…`, `9d00e635…`). Loaded through `load_v5_control`, whose readers verify each child's hash before decoding: snapshots 142,960 rows, priors 4,536, rating states 35,740. Reloading from the local mirror alone, with no network source, gives the same shapes |
+| Serving bridge bundle | SHA-256 `a507d0c7cba5419868eac5c0955853d3e2855fc857aabf36f5cd192d5e7a90f1`, equal to the pin in `model_manifest_v1.json` |
+| Serving bridge manifest and its verifier manifest | Retrieved (`52022234…`, `dd144a2a…`); the verifier manifest names the same bridge-manifest and bundle hashes and reports state `verified` |
+| `6a-rebuild-w6-20261012-r2` root manifest and 15 stage summaries | Retrieved (root manifest `9d218543…`). The run's data files (29 objects, about 23 MB) were listed, not fetched |
+
+### How the serving bridge was fitted (from its manifest and bundle)
+
+- Candidate `v5_game_adjusted_at_cutoff_v1`, the intended-update arm; run `v5-intended-update-corrected-w5-r1`; state `frozen`.
+- Alpha-10 Ridge, `reference` head, fitted on all ten development seasons (2015 to 2019, 2021 to 2025), 8,935 rows. Calibration variance comes from 7,192 earlier-only residuals per target (margin 317.65, total 301.24).
+- Its parent is the corrected rebuild `6a-rebuild-w5-20261007-r2`, not the `w6` rebuild that supplies the serving priors, terminal table, population and events.
+- The run also holds `historical-states.parquet` (35,740 rows, 6.4 MB, raw SHA-256 `8df690ce…`): historical rating states for the operational recipe. It was listed, not fetched.
+- Because the bundle is fitted through 2025, it cannot score 2022 to 2025 without leakage. No earlier-only historical predictions for the operational recipe were found in the run.
+
+### Observations from the retrieved files (facts about the files, not new scoring)
+
+- The bundle carries coefficients for the four standardized ratings only. `home_host` and `venue_unknown` are in `feature_order` but have no coefficient; the margin intercept is 7.43 points. How `apply_exported_bridge` treats the two venue flags is not yet verified.
+- Total coefficients per standardized rating are +1.66 (home offense), -0.99 (home defense), +0.51 (away offense), -1.11 (away defense), against 6.7 to 9.5 in absolute value for margin. If the four inputs were uncorrelated with unit spread, the predicted total would have a standard deviation of about 2.3 points before offsets. The actual spread still has to be measured in step 2, but the flat-totals question applies to the serving bridge as well as the historical one.
+- Home offense moves the total about three times as much as away offense. Unexplained; a step 2 item.
+- The `w6` rebuild contains its own `forecast/bundle.json` (`63476e48…`) that differs from the serving bundle in centers, scales (about 0.50 to 0.61 against 0.79 to 0.87) and coefficients. Its `ratings/summary.json` names candidate `ppp__rho_0_60__exposure`. It appears to be the historical update recipe on rebuilt data, and it is not what serves.
+- So the serving model combines a bridge fitted on `w5`-rebuild intended-update states with priors and a terminal table from the `w6` rebuild. Whether those are on a consistent scale is a question for the operational-equivalence check, not a conclusion.
+
+### Still unavailable
+
+- The 12 row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes).
+- `historical-states.parquet` for the serving bridge run, and the `w5` rebuild's manifests.
+- Lower-level play datasets, historical market lines for 2021 to 2024, and the original prepared artifacts the ratings audit could not recover.
+
 ## Next executable scope (needs owner approval)
 
-1. One credentialed, read-only retrieval into a hash-verified local cache: the Historical V5 control inputs, the serving bridge manifest and bundle, and the manifests for the `6a` rebuild inputs.
-2. Read the bridge manifest and record how the serving bridge was fitted.
-3. Then work-order step 2.
+1. Retrieve `historical-states.parquet` (6.4 MB) and the `6a-rebuild-w5-20261007-r2` root manifest and summaries, read-only, into the same mirror.
+2. Decide the route for step 2's historical reproduction, since the repair experiment's row-level outputs are not available: either rerun `scripts/research/v5_intended_update_review.py` from the now-local control inputs and compare its summary with the retained results JSON metric by metric, or search storage for the original outputs first.
+3. Then the rest of work-order step 2. Running any replay or scoring is not authorized until this scope is approved.
 
 ## Work order
 
