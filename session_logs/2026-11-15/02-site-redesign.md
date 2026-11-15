@@ -131,3 +131,14 @@ Branch `codex/site-redesign` merged into local `dev` (which had gained only rese
 - Register new meaningful tests in `web/package.json` and complete Model package after a worker is available.
 - Required final gates remain `make check`, `make web-e2e`, `git diff --check`, real Preview read verification and representative visual/accessibility inspection.
 - Keep contract In Progress until all acceptance criteria pass. Do not push, deploy or merge the unfinished changes into dev.
+
+## Closeout (2026-11-15, later session)
+
+- **Merge confirmed:** `make web-e2e` on `dev` after the merge: 436 passed, 10 skipped, 0 failed.
+- **Model rows:** the retained pre-kickoff line is the grade's `market_snapshots` row, which carries `captured_at`. It is now selected as `canonicalSpreadCapturedAt` / `canonicalTotalCapturedAt` in `lib/v5.ts`, validated in `row-guard.ts`, carried through `MarketGame` and `PairedError.lineCapturedAt`, and shown in the Model error table and detail panel ("unavailable" when null, no fallback). Commit `f7d536f0`; unit test, row-guard test and two browser specs added.
+- **Cleanup:** commit `2810bd10` deleted `RatingsView.tsx`, `RatingsFilterSheet.tsx` and two source-text tests (only two read those files, not three), and fixed the stale comments in `stats/page.tsx` and `SlateList.tsx`. `StatGrid.tsx` kept. The `nextMatchups` fallback on `/stats` was not changed (behavior change left for the owner).
+- **Gates on the closeout branch:** `make check` passed.
+- **Preview verification of the real code paths (read-only):** production build served with `scripts/ops/run_web_local.sh preview` (pipeline login from the Keychain, not printed, no `CFB_UI_TEST_MODE`), once with the default market mode and once with `CFB_PUBLICATION_MODE=predictions`. No writes; server log had no errors.
+  - Market mode: `/`, `?week=10/11/12`, `/matchup/401866453` (completed), `/matchup/401866464`, `/teams`, `/teams/Georgia`, `/stats`, `/model` all returned 200. Model forecasts and capture times are hidden by design; matchup shows "Spread line captured: unavailable".
+  - Predictions mode: Games week 11 shows a capture time on every spread and total (for example "Nov 8, 12:58 PM ET"); the completed matchup shows "Spread line captured: Nov 1, 4:08 PM ET" with statistics and sharing available (lineage ready); `/model` rows show capture times and none read "unavailable"; `/teams/Georgia` shows the rating evidence ledger and weekly ratings from one source; `/teams` and `/stats` render with no failure notices.
+  - Limit (unchanged): `/stats` has no next-matchup links because week 11 has no unstarted games; they return when week 12 is activated.

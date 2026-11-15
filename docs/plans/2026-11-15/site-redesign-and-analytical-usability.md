@@ -1,6 +1,6 @@
 # Stratum CFB: site redesign and analytical usability
 
-- **Status:** In Progress
+- **Status:** Implemented 2026-11-15 (local `dev` only; not pushed or deployed)
 - **Created:** 2026-11-15
 - **Planner:** Sol
 - **Approval source:** Owner approved the complete conversational plan and explicitly instructed “Please implement the plan.” on 2026-11-15.
@@ -130,4 +130,4 @@ Continuation approval: the owner explicitly approved the seven-step “Continue 
 - [x] Graph exploration
 - [x] Model assessment
 - [x] Final gates (`make check`, `make web-e2e` 436 passed / 10 skipped, `git diff --check`), browser inspection at 320/390/820/1280 in both themes (no overflow, no console errors), documentation, local integration
-- [ ] Open before marking Implemented: Preview verification of the application code paths (only equivalent read-only SQL was run). Model rows now show the capture time of the retained pre-kickoff line (`market_snapshots.captured_at`, "unavailable" when unknown)
+- [x] Preview verification of the application code paths ran on 2026-11-15 (read-only; see the session log). Model rows show the capture time of the retained pre-kickoff line (`market_snapshots.captured_at`, "unavailable" when unknown).
