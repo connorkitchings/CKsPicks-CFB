@@ -328,6 +328,35 @@ Interpretation, not a finding: the ratings measure opponent-adjusted scoring eff
 
 Outputs: `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/contribution_spread.json`.
 
+### Upstream temporal check (2026-11-15, owner-approved)
+
+Rule tested: every contributing source game precedes the target week, and its kickoff plus six hours is no later than the forecast cutoff. Local files only; nothing fetched. Six hours remains an availability assumption, and every serving state is labelled `historically_reconstructed`: these checks show the reconstruction is internally consistent, not when data was actually captured.
+
+| Link in the chain | Evidence | Result |
+|---|---|---|
+| Rating-state evidence (serving states) | All 170,379 contributions in the 35,740 serving states, against kickoffs and weeks from the rebuild feature frame | 0 violations: same season, earlier week, available before cutoff. The cutoff equals the target game's kickoff in every state. The tightest case had 85 hours between availability and cutoff |
+| Opponent adjustment | Code: `CutoffAdjustment.graph` admits only rows with an earlier week, kickoff plus six hours at or before the target kickoff, and not the target game | Rule implemented as stated |
+| Opponent adjustment and update, empirically | Future-data removal on the September inputs, repaired arm: every 2024 observation from week 8 on deleted (13,184 rows), then a full replay | 0 of the 2,264 states for 2024 target weeks 1 to 8 changed, to the last bit; 1,402 of the 1,412 later 2024 states changed, so the test has power; no other season changed |
+| Normalization | Code: `standardization` uses only terminal rows from seasons before the target season | Earlier-only |
+| Priors | `prior_source_season` and `calendar_gap` in every serving state | Source season is earlier in every case; the gap matches. 2021 priors come from 2019 or earlier |
+| Offsets | Rebuild feature frame | One league mean per season; the zero-offset bootstrap only in 2015; each side's completed-game count equals its number of earlier kickoffs in all 8,935 rows; usable games never exceed that; games where both sides have no usable games share a single offset pair per season |
+| Bridge fitting | Kickoffs per fold | The latest training kickoff precedes the earliest test kickoff in all seven validation seasons; no 2020 rows |
+| Calibration | Code: `_calibration_variance` uses validation seasons before the scored season, each fitted on seasons before it | Earlier-only |
+
+Not covered: the removal test ran on the September inputs, because the rebuild's observation table is not local; it tests the shared code, not the serving inputs. Priors are a fixed table, so the removal test says nothing about how that table was built; only the source-season fields were checked. Offsets were checked for consistency, not recomputed. The certified measurement tables themselves (how each game's points per possession was derived) are upstream of all of this.
+
+#### Defect found: postseason games are labelled week 1
+
+Not a leak, but it affects every historical number in this contract.
+
+- 415 of the 8,935 games (38 to 46 per season; 176 of the 3,659 scored in 2022 to 2025) kick off in December or January yet carry `week` 1. They are postseason games whose week numbering restarts.
+- Because a source game must come from an earlier week, nothing qualifies for a week-1 target. All 1,660 serving states for these games have zero current-season evidence: bowl and playoff games are forecast from preseason priors alone, while the feature frame labels them completed-game stage 4. In the Historical V5 arm 1,479 of the same 1,660 states have none.
+- Effect on the scored predictions (2022 to 2025, stage 4 rows): Operational V5 margin MAE is 12.84 over 2,112 regular-season games and 14.32 over the 176 postseason games (bias -4.59); total MAE 13.57 and 14.63. Excluding postseason games, pooled Operational V5 margin MAE is 13.713 (against 13.742 with them) and total 13.378 (against 13.438).
+- The same rows contaminate earlier tables: the "week 1" slice mixes season openers with postseason games, and stage 4 includes prior-only forecasts. The bridge, including the serving bundle, was fitted with these rows in its training data.
+- Production scope: the 2026 record ends with week 15 and no postseason game is served, so no published 2026 pick is affected. Whether the serving engine in `season/prepare.py` would treat a postseason week the same way was not examined.
+
+This is recorded, not fixed. Whether to exclude, relabel or re-rate postseason games in the historical benchmark is an owner decision and would change the comparator numbers.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
@@ -343,7 +372,9 @@ Outputs: `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/contr
 5. Done 2026-11-14: Operational V5's historical predictions exist and are scored (see the scoring section).
 6. Done 2026-11-14: the slice report was rerun on the Operational V5 predictions (see the slice section).
 7. Done 2026-11-15: the spread of each rating term, bridge coefficient and offset is measured (see the contribution section).
-8. Remaining in work-order step 2, needing approval: extend the temporal check upstream of the rating states (opponent adjustment, priors, normalization, offsets). After that, step 3 (chronological baselines and scoring accounting).
+8. Done 2026-11-15: the upstream temporal check passed (see that section). Work-order step 2 is complete apart from the limits listed there.
+9. Owner decision needed before step 3: how the historical benchmark treats the 415 postseason games labelled week 1 (keep as is, exclude, or re-rate with correct ordering). It changes the comparator numbers and the week slices.
+10. Then work-order step 3 (chronological baselines and scoring accounting), on approval.
 
 ## Work order
 
