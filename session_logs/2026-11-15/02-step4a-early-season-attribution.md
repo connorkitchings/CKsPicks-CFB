@@ -44,6 +44,8 @@
 
 - Owner confirmed the thresholds; ran the four declared population-aware candidates. P3 and P4 pass all conditions on 2018, 2019 and 2021 (gain 1.07 and 1.11, bias +0.30 and +0.39); P1 and P2 fail. On 2022 to 2025 FBS-vs-FBS stages 0 to 3 P3 and P4 gain 0.93 and 0.92 (all four seasons) with all-stage bias near zero; on the 2026 holdout 0.96 and 0.92 but stage 4 (36 games) is 1.0 worse. No tie-break between P3 and P4 was declared; the evidence does not separate them. Nothing adopted.
 
+- Owner chose P3 over P4 as the leading candidate; not adopted.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section

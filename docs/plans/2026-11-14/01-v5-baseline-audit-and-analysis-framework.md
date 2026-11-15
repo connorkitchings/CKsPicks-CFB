@@ -835,7 +835,7 @@ What this establishes: the tier terms and the population separation together, no
 
 Limits: the selection seasons were chosen after seeing that 2016 and 2017 destabilised earlier candidates; the conference-tier terms cannot be separated from prior quality (they overlap); 2022 to 2025 and 2026 are not independent confirmation; the 2026 stage 4 result (36 games) points the other way; offsets in 2026 are zero for every arm; stage 0 still carries a bias of +1.3 to +1.7; totals were not examined; the thresholds are those the owner confirmed. Nothing is adopted: the research protocol's adoption thresholds are unchanged, and a clean forward test (the early weeks of 2027) is still the only independent evidence.
 
-Open choice for the owner: P3 (one bridge that also predicts FBS-vs-FCS games and fixes their level) or P4 (FBS-vs-FBS only, and FBS-vs-FCS games handled separately). The evidence does not separate them on the published games; P3 is simpler to serve and gives an FBS-vs-FCS prediction.
+**Owner choice (2026-11-15): P3** (one bridge that also predicts FBS-vs-FCS games and fixes their level) over P4 (FBS-vs-FBS only, FBS-vs-FCS handled separately). The evidence did not separate them on the published games; P3 is simpler to serve and gives an FBS-vs-FCS prediction. P3 is the named leading candidate for a forward test on the early weeks of 2027. It is not adopted, and no change to Operational V5 is made.
 
 ### Still unavailable
 
