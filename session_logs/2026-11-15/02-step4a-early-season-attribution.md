@@ -28,11 +28,13 @@
 
 - Owner approved the two read-only checks. Cache holds 1,975 stage 0 to 3 regular-season games for 2015 to 2019 and 2021 (enough to tune); Operational V5 predictions for those seasons must be recomputed. Paired bootstrap spread of the MAE difference: 0.10 (intercept-sized change), 0.23 (large change). Recorded in the B declaration.
 
+- Owner confirmed the thresholds and approved running 4B. Baseline rebuilt from serving states and reproduced the stored predictions exactly. Result: no candidate selected under the declared tuning rule; B2 adds nothing; per-stage intercept (B1s) gains 0.54 stage 0 to 3 MAE on 2022 to 2025 and fixes stage 4 bias but worsens balanced matchups. Owner decision pending (accept, amend rule, forward test, or B3).
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section
 - `docs/plans/index.md` — state line
-- Outside the repository: `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
+- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_results.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
 
 ## Validation
 

@@ -624,6 +624,44 @@ By stage (margin; games, Operational V5 MAE / bias, priors-only MAE / bias):
 
 Outputs: `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json` (every stage-by-group cell with game counts, the intercept check for each season and stage, and the pull hashes). The analysis script was ad hoc and is not in the repository.
 
+### Step 4B results: stage-specific intercept and rating-gap variants (2026-11-15, owner-approved)
+
+Run as declared above (candidates B1, B1s, B2; B3 not run). The margin bridge was refitted earlier-only for each validation season with the added terms (alpha-10 Ridge on standardized inputs, the same recipe and target as the baseline); the totals bridge and everything upstream were untouched. The baseline was rebuilt from the serving states and the rebuild feature frame with the postseason excluded, and **reproduces the stored Operational V5 margin predictions for 2022 to 2025 exactly (largest difference 0.0; MAE 13.7151)**. Bias is actual minus prediction. Outputs: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_results.json`. The script was ad hoc and is not in the repository.
+
+**Selection on the tuning seasons (2016, 2017, 2018, 2019, 2021; 1,662 stage 0 to 3 games; each season fitted on strictly earlier seasons, so 2016 trains on 2015 alone):**
+
+| Candidate | Stage 0 to 3 MAE / bias | Stage 4 MAE / bias |
+|---|---|---|
+| Baseline | 15.99 / +0.51 | 14.81 / -5.67 |
+| B1 (one early intercept) | 16.05 / -2.45 | 14.26 / -2.99 |
+| B1s (intercept per stage) | 15.80 / -2.15 | 13.33 / -0.38 |
+| B2 (B1 plus rating-gap term) | 16.07 / -2.14 | 14.20 / -2.89 |
+
+**Under the declared rule no candidate is selected.** The rule needs a stage 0 to 3 MAE gain of at least 0.2 and a smaller bias magnitude than the baseline; B1s gains 0.19 and its bias magnitude is larger (2.15 against 0.51), B1 and B2 are worse than the baseline. The pooled figure is dominated by 2016 and 2017, whose bridges train on one and two seasons: there the baseline early bias is -4.55 and -2.19 and the candidates go further negative (B1 -5.13 and -6.39), the opposite sign from every later season (+2.8 to +3.3). That is an instability of very short training windows, not evidence about the candidates, but the rule did not exempt those seasons.
+
+**Reported once on 2022 to 2025 (1,371 stage 0 to 3 games; examined evidence, not a selection):**
+
+| Candidate | Stage 0 to 3 MAE / bias | Stage 0 MAE / bias | Stage 4 MAE / bias | All games MAE |
+|---|---|---|---|---|
+| Baseline | 15.01 / +3.68 | 16.08 / +7.16 | 12.87 / -2.08 | 13.715 |
+| B1 | 14.81 / +0.21 | 15.41 / +4.18 | 12.71 / +0.20 | 13.539 |
+| B1s | 14.47 / +0.14 | 15.15 / +0.15 | 12.67 / +0.15 | 13.380 |
+| B2 | 14.86 / +0.31 | 15.52 / +4.52 | 12.75 / +0.19 | 13.582 |
+
+Paired gain in stage 0 to 3 MAE with a 90% bootstrap interval: B1 0.20 (0.05 to 0.36), B1s 0.54 (0.33 to 0.76), B2 0.15 (-0.01 to 0.31). B1s improves three of four seasons (2022 15.56 to 14.96, 2023 14.27 to 13.37, 2025 14.30 to 13.52) and is 0.11 worse in 2024. Frozen-coefficient versions (baseline coefficients kept, added terms fitted on the baseline's training residuals) give gains of 0.26, 0.51 and 0.19 for B1, B1s and B2 on 2022 to 2025 and none on the tuning seasons.
+
+**Post hoc, not part of the declared rule:** restricting the tuning comparison to 2018, 2019 and 2021 (bridges trained on three or more seasons; the early group the project's evaluation code already registers) gives stage 0 to 3 MAE 16.07 for the baseline against 15.88 (B1), 15.54 (B1s) and 15.88 (B2), with stage 4 MAE 13.35 against 13.19, 13.14 and 13.18. That matches the 2022 to 2025 pattern. This subset was chosen after seeing the results and cannot support selection.
+
+What this shows:
+
+1. **The rating-gap term adds nothing.** B2 does not beat B1 (14.86 against 14.81 on 2022 to 2025; 15.88 for both on 2018 to 2021). On the declared criterion B2 fails.
+2. **A per-stage intercept captures what the 4A ceiling said it could, and more.** B1s lowers stage 0 MAE from 16.08 to 15.15 (0.93; 4A's bound was 0.91) and also lowers stage 4 MAE from 12.87 to 12.67 and stage 4 bias from -2.08 to +0.15. The reason is that the bridge's single intercept is pulled upward by openers, which are mostly mismatches with large home margins; separate stage terms (fitted effects +11.4, +7.0, +2.1 and +0.7 points for stages 0 to 3 in the last fit) free the stage 4 level. This refines the 4A note that a global shift cannot serve both ends: one pooled early shift cannot, per-stage terms can.
+3. **The matchup pattern from 4A is not fixed; it moves.** At stage 0, B1s zeroes the mean bias but leaves the matchup spread: Power 4 hosts against FCS and G5 teams fall from +12.00 and +13.28 to +5.51 and +5.39, while Power 4 against Power 4 goes from -3.39 to -12.47 (MAE 13.17 to 16.22) and G5 against G5 from -5.05 to -12.92 (MAE 14.62 to 17.19). The improvement comes from the lopsided games, which are the majority at stage 0, and balanced games get worse. Conference tier (B3) is the declared variant that could address this and was not run.
+
+Limits: the 2022 to 2025 seasons were already examined, so the confirmation figures are not independent; the selection rule failed on the tuning seasons; one season (2024) goes the other way; a stage-specific intercept for stage 0 rests on the stage 0 bias being stable across seasons, which 4A showed for 2022 to 2025 only; totals were not examined.
+
+Decision for the owner: (a) accept the declared outcome (no candidate selected) and change nothing; (b) amend the rule to score tuning from 2018 and select B1s, a post hoc change that the 2022 to 2025 evidence then cannot confirm; (c) keep B1s as the leading candidate and test it forward on the 2026 season's early weeks, which no analysis has touched; (d) separately approve B3 (needs a 2015 to 2019 CFBD membership pull) to address the balanced-game cost.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
