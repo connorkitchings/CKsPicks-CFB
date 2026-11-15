@@ -324,7 +324,7 @@ What this establishes about the explanations for flat totals listed in step 2:
 
 Still unexplained: the home offense rating moves the total about three times as much as the away offense rating, in every validation season.
 
-Interpretation, not a finding: the ratings measure opponent-adjusted scoring efficiency, which mostly cancels in a total (a strong team scores more and allows less), so a linear function of them has little to say about how many points a game will have. That points at inputs the bridge lacks, such as possession volume, more than at the rating update. Step 3's scoring accounting and possession-volume questions test this.
+Interpretation, not a finding: the ratings measure opponent-adjusted scoring efficiency, which mostly cancels in a total (a strong team scores more and allows less), so a linear function of them has little to say about how many points a game will have. The suggestion made here on 2026-11-15 that possession volume is the missing input was tested in step 3 and is not supported; see that section.
 
 Outputs: `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/contribution_spread.json`.
 
@@ -429,6 +429,60 @@ What this establishes: removing the postseason rows from training barely moves a
 
 Outputs: `~/cfb_ratings_lab_v6/output/regular-season-benchmark-2026-11-15/` (predictions and early predictions for the three baselines, `scorecards.json`; Operational V5 predictions SHA-256 begins `5651b023a440838b`).
 
+### Work-order step 3: baselines, scoring accounting and possession volume (2026-11-15, owner-approved)
+
+Regular-season games only (postseason removed). Local files; nothing fetched. Baselines and the Operational V5 row use the rebuild feature frame; the scoring ledger and possession counts come from the September corpus, because the rebuild's corrected event table is not local.
+
+#### A. Chronological baselines, 2022 to 2025 (3,483 games, each fitted on strictly earlier seasons)
+
+| Prediction | Margin MAE | Margin bias | Total MAE | Total bias |
+|---|---|---|---|---|
+| Zero | 18.427 | +8.24 | n/a | n/a |
+| Mean of earlier seasons | 17.465 | +0.77 | 13.653 | -2.37 |
+| Mean of earlier seasons plus the offset | 17.373 | +0.78 | 13.689 | -2.41 |
+| Preseason priors only, through the bridge, plus the offset | 14.413 | -0.07 | 13.541 | -1.73 |
+| Operational V5 | 13.715 | +0.19 | 13.371 | -1.36 |
+
+"Preseason priors only" replaces each rating with its own prior mean from the serving states and refits the bridge the same way; offsets are unchanged and still update in-season. These are reference points, not error floors.
+
+Margin MAE by completed-game stage, priors only against Operational V5: stage 0, 15.88 against 16.08; stage 1, 14.22 against 14.34; stage 2, 15.37 against 15.11; stage 3, 13.19 against 13.32; stage 4, 14.08 against 12.87.
+
+What this establishes:
+
+- **Margin:** priors account for about 3.05 of the 3.75 points by which Operational V5 beats the earlier-season mean; in-season updating adds 0.70. All of that 0.70 arrives at stage 4. Through a team's first three games the updated ratings are no better than its preseason prior, and at stages 0, 1 and 3 slightly worse.
+- **Total:** Operational V5 beats predicting the earlier-season average for every game by 0.28 points of MAE. The offset makes the constant slightly worse (13.689 against 13.653).
+
+#### B. Scoring accounting (September ledger, 8,520 regular-season games)
+
+Identity per game: eligible regulation offense + excluded regulation offense + regulation non-offense + overtime + unresolved = final total.
+
+- 8,003 games (93.9%) reconcile exactly with no unresolved event. The share is 95.8% to 98.2% in 2015 to 2019 and lower afterwards: 87.2% in 2021, 87.9% in 2022, 93.9% in 2023, 94.2% in 2024, 90.0% in 2025.
+- 83 games have no ledger row. Eight games carry an unresolved event.
+
+On the 8,003 reconciled games (mean final total 55.17, standard deviation 17.75):
+
+| Category | Points per game | Share of points | Share of the total's variance |
+|---|---|---|---|
+| Eligible regulation offense | 47.66 | 86.4% | 80.4% |
+| Excluded regulation offense | 2.71 | 4.9% | 9.5% |
+| Regulation non-offense | 4.44 | 8.0% | 8.2% |
+| Overtime | 0.37 | 0.7% | 1.8% |
+
+What this establishes: about 14% of points and 20% of the variance in a game's total come from scoring the ratings do not measure. The observation table's eligible points equal the ledger's eligible category in all 8,033 games checked.
+
+#### C. Possession volume (8,033 games with both offenses observed)
+
+- Eligible regulation possessions per game (both offenses): mean 22.97, standard deviation 4.53. Points per eligible possession: mean 2.125, standard deviation 0.749.
+- After the fact: possessions correlate +0.065 with the final total; points per possession correlate +0.772. Possessions and points per possession correlate -0.349. In logs, possessions account for 10.8% of the variation in eligible offensive points and points per possession for 89.2%.
+- Before kickoff: the average of both teams' earlier-game possession counts (teams with at least three earlier games) correlates +0.220 with actual possessions in 2016 to 2019 and 2021 (2,716 games) and +0.246 in 2022 to 2025 (2,039 games), and +0.016 and +0.048 with the final total.
+- Against Operational V5's total error: the pregame possession average correlates -0.006 with the residual in 2018, 2019 and 2021 (1,622 games) and +0.070 in 2022 to 2025. Even the actual possession count, known only afterwards, correlates +0.09.
+
+What this establishes: **possession volume, measured as eligible regulation possessions, is not the missing totals input.** Game totals vary with scoring efficiency, not with the number of possessions, and what can be predicted of possession count says almost nothing about the total. This contradicts the interpretation offered in the contribution section above and the hypothesis in the first draft of this framework.
+
+Limits: possessions here are eligible regulation possessions, not plays, time of possession or seconds per play, so clock tempo is untested. The pregame average orders a team's games by week; 57 team-weeks hold two games, so a handful of averages may include a same-week game. The correlations on 2022 to 2025 are descriptions of examined seasons.
+
+Outputs: `~/cfb_ratings_lab_v6/output/step3-2026-11-15/` (`step3_results.json`, priors-only predictions).
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
@@ -448,7 +502,8 @@ Outputs: `~/cfb_ratings_lab_v6/output/regular-season-benchmark-2026-11-15/` (pre
 9. Done 2026-11-15: the owner decided to exclude the postseason games; the benchmark is recomputed on regular-season games by filtering (see that section).
 10. Done 2026-11-15: the postseason rows are removed from training, calibration and scoring, and the three baselines are refitted (see the refitted benchmark section). Operational V5: margin MAE 13.7151, total MAE 13.3709 over 3,483 games.
 11. Optional: rerun the slice tables and contribution decomposition on the refitted predictions.
-12. Then work-order step 3 (chronological baselines and scoring accounting), on approval.
+12. Done 2026-11-15: work-order step 3 (see that section).
+13. Before step 4, revise its list of bounded experiments in light of steps 2 and 3: the possession-volume experiment has lost its basis; the venue experiment covers 126 regular-season games; the early-season result (updated ratings no better than priors through three games) and the total's efficiency variation are the larger open questions. This is an owner decision.
 
 ## Work order
 

@@ -42,7 +42,7 @@ Run under the approved [research protocol](../plans/2026-11-12/02-offseason-rese
 
 1. Baseline audit first (corrected 2026-11-14; the earlier text said a research harness had to be built, which was wrong). Much of the research code exists in `src/cks_picks_cfb/ratings_lab/`, but it pins Historical V5, most of its inputs are not available offline, and no historical replay of Operational V5 exists. Follow the work order in the [baseline audit and analysis framework](../plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md): baselines and inventory, replay parity, chronological baselines and scoring accounting, then bounded experiments.
 2. Bounded experiment: venue. Use the stored neutral-site flag instead of `home_host=1.0`.
-3. Bounded experiment: totals. First explain why predicted totals barely vary, checking sparse updates, compressed ratings, bridge coefficients, feature cancellation and offsets before possession volume.
+3. Bounded experiment: totals. Update 2026-11-15: the audit found the cause is small fitted total coefficients plus offense-defense cancellation, and that possession volume (eligible regulation possessions) is not the missing input; game totals vary with scoring efficiency. The totals experiment needs redefining before it runs.
 4. Bounded experiment: preseason priors and the early-season blend.
 5. Checkpoint: with measured gains from items 2 to 4, decide between shipping a repaired V5 and reopening the architecture.
 6. After the checkpoint: measurement repairs (score attribution, garbage-time rule, turnover margin, historical EPA replacement).
