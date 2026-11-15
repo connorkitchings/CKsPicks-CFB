@@ -24,6 +24,8 @@
 - Compared each season's bridge intercept with stage mean outcomes; computed a constant-shift counterfactual.
 - Verified: 3,483 games per target; stage counts 573/301/244/253/2,112; Operational V5 MAE 13.7151 and 13.3709; priors-only 14.4125.
 
+- Owner accepted the recommendation: drafted the step 4B declaration in the contract (candidates B1, B1s, B2, conditional B3; pass condition; tuning on 2015 to 2021, 2022 to 2025 reported once). Not approved to run.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section

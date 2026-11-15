@@ -711,6 +711,20 @@ Order: A, then B, then C. D after B. Each result decides whether the next runs.
 | Population | Tuned on 2015 to 2019 and 2021 where inputs exist; 2022 to 2025 reported as previously examined evidence. |
 | Cannot show | Independent confirmation; a gain at stages 0 to 3 says nothing about totals. |
 
+**B declarations (drafted 2026-11-15 after step 4A, owner-accepted direction; not approved to run).** The owner accepted the recommendation to declare a rating-gap variant together with a stage-specific intercept as its baseline. Every candidate is listed here before anything runs. Nothing else may be added after results are seen.
+
+| Field | Content |
+|---|---|
+| Question | Does letting the early-season home margin depend on the rating gap lower stage 0 to 3 margin MAE and bias beyond what a stage-specific intercept does, without raising stage 4 error? |
+| Candidates (complete list) | **B1, intercept only:** a separate home-edge intercept for stages 0 to 3 pooled (one value), fitted as an extra indicator in the earlier-only bridge. **B1s, per stage:** one intercept for each of stages 0, 1, 2, 3. **B2, rating gap:** B1 plus an interaction of the stage 0 to 3 indicator with the home-minus-away net rating (the sum of the four bridge terms), so mismatches can scale differently early. **B3, conference tier (conditional):** B1 plus indicators for Power 4 host against a weaker (G5 or FCS) visitor and for the reverse, early only. B3 needs conference membership for the tuning seasons, which is not pulled (only 2021 to 2025 is); it runs only if the owner separately approves that CFBD pull. |
+| Changes | Only the added bridge terms listed above, for rows at completed-game stages 0 to 3. Stage 4 rows use the existing bridge terms and receive no new term. |
+| Frozen | Measurements, priors, adjustment, update rules, every rating at every stage, the alpha-10 Ridge recipe, the regular-season population (postseason excluded), earlier-only calibration, and the totals bridge. |
+| Refitted | The margin bridge only, earlier-only, labelled as such. For each validation season the bridge sees only earlier seasons; the stage 4 coefficients may move because the fit is joint, so stage 4 is checked, not assumed unchanged. Frozen-coefficient versions (new terms added to the stored coefficients) are reported separately. |
+| Population | Tuned and selected on 2015 to 2019 and 2021 where the inputs exist, earlier-only within that range. 2022 to 2025 (3,483 games, stages 573, 301, 244, 253, 2,112) are reported once, as previously examined evidence, and are not used to choose among candidates. Whether the 2015 to 2021 cache gives enough stage 0 to 3 games for the tuning step must be checked before approval; if it does not, the owner decides whether to proceed on 2022 to 2025 alone, labelled as such. |
+| Pass condition (declared now) | Selected on the tuning seasons, then confirmed on 2022 to 2025: pooled stage 0 to 3 margin MAE below Operational V5's 15.01 (pooled over the 1,371 stage 0 to 3 games; bias +3.68) and stage 0 to 3 absolute bias below it, with stage 4 margin MAE no more than 0.05 above 12.87 and stage 4 bias magnitude no larger than 2.08. A candidate that gains stage 0 to 3 MAE by less than 0.2 is reported as no gain. The 0.2 and 0.05 thresholds are proposals for the owner to confirm or change before approval. |
+| Reference points from 4A | A single pooled shift that zeroes the stage 0 to 3 bias can lower stage 0 MAE by at most 0.91 and, applied globally, worsens stage 4 (MAE 13.60). B2 and B3 are justified only if they beat B1 and B1s by a margin larger than that noise. |
+| Cannot show | Independent confirmation; a gain on stages 0 to 3 says nothing about totals or about stage 4 beyond the stated guard. B2 cannot separate rating gap from tier because they overlap; B3, if run, cannot separate quality from conference. A gain on 2022 to 2025 that is not present on the tuning seasons is not a result. |
+
 **C. Totals head: shrinkage and feature form.**
 
 | Field | Content |
