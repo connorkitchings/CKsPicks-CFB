@@ -503,7 +503,7 @@ Outputs: `~/cfb_ratings_lab_v6/output/step3-2026-11-15/` (`step3_results.json`, 
 10. Done 2026-11-15: the postseason rows are removed from training, calibration and scoring, and the three baselines are refitted (see the refitted benchmark section). Operational V5: margin MAE 13.7151, total MAE 13.3709 over 3,483 games.
 11. Optional: rerun the slice tables and contribution decomposition on the refitted predictions.
 12. Done 2026-11-15: work-order step 3 (see that section).
-13. Before step 4, revise its list of bounded experiments in light of steps 2 and 3: the possession-volume experiment has lost its basis; the venue experiment covers 126 regular-season games; the early-season result (updated ratings no better than priors through three games) and the total's efficiency variation are the larger open questions. This is an owner decision. Drafted 2026-11-15 in the step 4 section; awaiting owner review.
+13. Before step 4, revise its list of bounded experiments in light of steps 2 and 3: the possession-volume experiment has lost its basis; the venue experiment covers 126 regular-season games; the early-season result (updated ratings no better than priors through three games) and the total's efficiency variation are the larger open questions. This is an owner decision. List approved 2026-11-15 (step 4 section); no experiment approved to run.
 
 ## Work order
 
@@ -534,7 +534,7 @@ Outputs: `~/cfb_ratings_lab_v6/output/step3-2026-11-15/` (`step3_results.json`, 
 - Scoring identity per game, reconciled to the final score: home eligible offensive points + away eligible offensive points + excluded offensive points + non-offense points + overtime + unresolved. The corpus `denominator` counts eligible regulation possessions only ([methodology](../../modeling/possession_rating_methodology.md), D2 to D4), so possessions times points per possession does not rebuild a total.
 - Three separate totals questions: how much ratings, bridge contributions and offsets vary; how much observed possession volume explains after the fact; how much possession volume is predictable before kickoff. Observed possessions depend on game flow, so the second is not an attainable gain.
 
-### Step 4: bounded experiments (revised list, proposed 2026-11-15, not approved)
+### Step 4: bounded experiments (revised list, owner-approved 2026-11-15; running each experiment still needs its own approval)
 
 Steps 2 and 3 changed what is worth testing. The original list was venue, a pregame possession-volume input, and prior and update variants. Revised:
 
@@ -594,7 +594,7 @@ Order: A, then B, then C. D after B. Each result decides whether the next runs.
 
 Flexible bridges are scored only on chronological out-of-sample predictions. One-at-a-time swaps miss interactions between layers and are reported with that caveat. Market results play no part in choosing among these.
 
-Owner decisions needed before any of this runs: approve or change the list and order; confirm A is read-only scoring on existing predictions; confirm that tuning for B and C may use 2015 to 2019 and 2021 only where the retained inputs exist, and say what to do where they do not.
+Owner approved the list and order on 2026-11-15. Still open before B and C run: confirm that tuning may use 2015 to 2019 and 2021 only where the retained inputs exist, and say what to do where they do not. Running A needs a separate go-ahead.
 
 ### Step 5: residual screens and hindsight experiments
 
