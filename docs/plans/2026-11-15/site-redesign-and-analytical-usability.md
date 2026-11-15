@@ -121,6 +121,8 @@ Implementation now authorized by owner's explicit instruction. Commit bounded co
 
 ### Execution checklist
 
+Continuation approval: the owner explicitly approved the seven-step “Continue the Stratum site redesign” execution plan and instructed implementation. Resume in the existing worktree, finishing shared design, Games/matchups, Teams/profiles, Graphs, then Model sequentially. Each bounded slice needs focused verification before its local commit; final review and all original acceptance gates precede integration into local dev. Preserve concurrent model research. The product scope above remains authoritative.
+
 - [ ] Shared design/navigation
 - [ ] Availability/freshness/interpretation
 - [ ] Games/matchups

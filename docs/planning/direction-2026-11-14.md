@@ -4,6 +4,8 @@ Owner decision of 2026-11-14 on what to work on next. It sets order and timing o
 
 ## Decision
 
+Amendment, 2026-11-15: the owner approved the [site redesign and analytical usability contract](../plans/2026-11-15/site-redesign-and-analytical-usability.md) and explicitly authorized its implementation. That contract is an exception to the summer-only timing below: existing-data site improvements may proceed now. It authorizes neither model changes nor deployment; new data coverage and predictive ranges remain separately scoped.
+
 The model is what limits the product, so the model is the focus. The site gets no new feature or performance work until summer 2027. The weeks left in the 2026 season go to work that cannot be done later.
 
 Owner answers that shaped it:
