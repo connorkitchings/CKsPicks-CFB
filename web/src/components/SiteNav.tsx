@@ -7,7 +7,7 @@ import { PAGE_WIDTHS, pageWidthFor } from "@/lib/page-width";
 
 const items = [
   ["Games", "/"],
-  ["Ratings", "/ratings"],
+  ["Teams", "/teams"],
   ["Graphs", "/stats"],
   ["Model", "/model"],
 ] as const;
@@ -15,7 +15,7 @@ const items = [
 /** Extra path prefixes that keep a tab highlighted (detail pages that belong to it). */
 const alsoActive: Record<string, readonly string[]> = {
   "/": ["/matchup"],
-  "/ratings": ["/teams"],
+  "/teams": ["/ratings"],
 };
 
 function isTabActive(href: string, pathname: string): boolean {
@@ -45,7 +45,7 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
           />
         </svg>
       );
-    case "/ratings":
+    case "/teams":
       return (
         <svg
           aria-hidden="true"
@@ -105,7 +105,7 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
   }
 }
 
-export function SiteNav() {
+export function SiteNav({ placement = "mobile" }: { placement?: "mobile" | "desktop" }) {
   const pathname = usePathname();
 
   // Align navigation container with page content widths on desktop.
@@ -114,11 +114,11 @@ export function SiteNav() {
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed bottom-0 inset-x-0 z-40 border-t border-line bg-surface-card/90 backdrop-blur-md pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.3)] sm:static sm:z-auto sm:border-t-0 sm:border-b sm:bg-surface-card sm:backdrop-blur-none sm:pb-0 sm:shadow-none"
+      className={placement === "mobile" ? "fixed bottom-0 inset-x-0 z-40 border-t border-line bg-surface-card/95 pb-[env(safe-area-inset-bottom)] sm:hidden" : "hidden sm:block"}
     >
       <div
         className={clsx(
-          "mx-auto grid h-14 items-stretch px-2 grid-cols-4 sm:flex sm:h-auto sm:gap-6 sm:overflow-x-auto sm:px-4 sm:py-3 sm:text-sm sm:font-medium",
+          "mx-auto grid h-14 items-stretch px-2 grid-cols-4 sm:flex sm:h-auto sm:gap-2 sm:px-0 sm:py-0 sm:text-sm sm:font-medium",
           containerClass,
         )}
       >

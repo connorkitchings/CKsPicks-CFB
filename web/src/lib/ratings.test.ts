@@ -3,10 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { periodBeforeKickoff, PRESEASON_META, type PeriodMeta } from "./rating-periods.ts";
 
-test("SiteNav includes Games, Ratings, Graphs, and Model in navigation items", () => {
+test("SiteNav includes Games, Teams, Graphs, and Model in navigation items", () => {
   const source = readFileSync(new URL("../components/SiteNav.tsx", import.meta.url), "utf8");
   assert.match(source, /\["Games",\s*"\/"\]/);
-  assert.match(source, /\["Ratings",\s*"\/ratings"\]/);
+  assert.match(source, /\["Teams",\s*"\/teams"\]/);
   assert.match(source, /\["Graphs",\s*"\/stats"\]/);
   assert.match(source, /\["Model",\s*"\/model"\]/);
 });

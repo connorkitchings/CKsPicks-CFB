@@ -3,7 +3,7 @@ import { gotoHydrated } from "./helpers";
 
 const PAGES = [
   ["Games", "/"],
-  ["Ratings", "/ratings"],
+  ["Teams", "/ratings"],
   ["Graphs", "/stats?chart=efficiency&week=3"],
   ["Model", "/model"],
 ] as const;

@@ -194,13 +194,13 @@ test.describe("desktop layout at 1280px", () => {
 
   test("all routes render one header with theme toggle, one footer, and aligned SiteNav container widths", async ({ page }) => {
     const routes = [
-      { path: "/", maxWidth: 1152 }, // max-w-6xl
-      { path: "/stats", maxWidth: 1152 },
-      { path: "/ratings", maxWidth: 1024 }, // max-w-5xl
-      { path: "/model", maxWidth: 1024 },
-      { path: "/model/method", maxWidth: 1024 },
-      { path: "/matchup/1", maxWidth: 1024 },
-      { path: "/teams/Alabama", maxWidth: 1152 }, // max-w-6xl
+      { path: "/", maxWidth: 1200 }, // shared editorial canvas
+      { path: "/stats", maxWidth: 1200 },
+      { path: "/ratings", maxWidth: 1200 }, // shared editorial canvas
+      { path: "/model", maxWidth: 1200 },
+      { path: "/model/method", maxWidth: 1200 },
+      { path: "/matchup/1", maxWidth: 1200 },
+      { path: "/teams/Alabama", maxWidth: 1200 }, // shared editorial canvas
     ];
 
     for (const route of routes) {
