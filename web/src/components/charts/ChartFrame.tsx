@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { BRAND_FULL, SITE_URL } from "@/lib/brand";
 import { footnoteLines } from "@/lib/chart-config";
 import { conferenceOptions, type ConferenceFilter, type NotCharted, type RosterRow } from "@/lib/charts";
@@ -24,6 +25,9 @@ export type SharedChartProps = {
   highlight: string | null;
   /** A team toggles its highlight; null clears it. */
   onHighlight: (team: string | null) => void;
+  compare?: string | null;
+  onCompare?: (team: string | null) => void;
+  nextMatchups?: Record<string, number>;
   /** URL-backed settings rendered by the page (side links, week stepper), placed before `controls`. */
   settings?: ReactNode;
 };
@@ -104,6 +108,8 @@ export type ChartFrameProps = {
   figure: ReactNode;
   /** The same rows as a sortable `ChartTable` behind a "Show as table" toggle; the visible charts pass none. */
   table?: ReactNode;
+  /** Persistent inspection content below either the figure or equivalent table. */
+  details?: ReactNode;
   notCharted?: readonly NotCharted[];
   /** Roster teams the chart could not plot. */
   unavailable?: readonly string[];
@@ -127,6 +133,7 @@ export function ChartFrame({
   emptyText = "No teams can be charted for this week yet.",
   figure,
   table,
+  details,
   notCharted = [],
   unavailable = [],
   footnote,
@@ -200,9 +207,10 @@ export function ChartFrame({
           {/* HighlightStatus renders nothing without a highlight; :empty drops this padding with it. */}
           <div className="px-3 pt-2 empty:hidden sm:px-4">{status}</div>
           {!hasData ? (
-            <p role="status" className="p-5 text-ink-muted" data-testid="chart-empty">
-              {emptyText}
-            </p>
+            <div className="space-y-3 p-5" data-testid="chart-empty">
+              <p role="status" className="text-ink-muted">{emptyText} The selected window has not been replaced with a different one.</p>
+              <Link href="/stats?chart=efficiency" className="inline-flex min-h-11 items-center text-sm font-medium text-accent-ink underline underline-offset-4">Explore efficiency</Link>
+            </div>
           ) : asTable && table ? (
             <div className="p-2 sm:p-3">{table}</div>
           ) : (
@@ -211,6 +219,7 @@ export function ChartFrame({
             </div>
           )}
         </div>
+        {details && <div className="border-t border-line">{details}</div>}
       </div>
 
       {(description || credit) && (
@@ -222,9 +231,12 @@ export function ChartFrame({
       )}
 
       {notCharted.length > 0 && (
-        <p className="text-xs text-ink-muted" data-testid="not-charted">
-          Not charted ({notCharted.length}): {notCharted.map((n) => `game ${n.gameId} (${n.reason})`).join(", ")}.
-        </p>
+        <details className="border-t border-line py-3 text-sm text-ink-muted" data-testid="not-charted">
+          <summary className="min-h-11 cursor-pointer py-3 font-medium text-ink">{notCharted.length} games unavailable — coverage details</summary>
+          <ul className="space-y-2 pb-2">
+            {notCharted.map((item) => <li key={item.gameId}>{item.teams?.join(" vs ") || "Unidentified matchup"}: {item.reason}.</li>)}
+          </ul>
+        </details>
       )}
       {unavailable.length > 0 && (
         <details data-card="" className="rounded-xl border border-line bg-surface-card px-3 py-2 text-xs text-ink-muted shadow-2xs" data-testid="unavailable-teams">

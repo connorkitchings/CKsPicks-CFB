@@ -55,25 +55,25 @@ test.describe("mobile scatter inspection on the page", () => {
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     });
     await page.touchscreen.tap(center.x, center.y);
-    const details = page.getByTestId("scatter-details");
-    await expect(details).toContainText("Alabama");
-    expect(await details.evaluate((node) => !!node.closest('[data-testid="scatter-scroll"]'))).toBe(false);
-    // Tap selects locally on the chart without mutating the page URL highlight:
-    await expect(page).not.toHaveURL(/team=Alabama/);
-    // Tapping the explicit highlight button elevates the local selection to a persistent URL highlight:
-    await details.getByRole("button", { name: "Highlight this team" }).click();
+    // An unambiguous tap sets the highlight (URL) and the persistent selection panel shows the team;
+    // the transient details panel is only for ambiguous taps.
+    const panel = page.getByTestId("scatter-selection-panel");
     await expect(page).toHaveURL(/team=Alabama/);
+    await expect(panel).toContainText("Alabama");
+    await expect(page.getByTestId("scatter-details")).toHaveCount(0);
+    expect(await panel.evaluate((node) => !!node.closest('[data-testid="scatter-scroll"]'))).toBe(false);
     // A touch must not leave the selection hook permanently in touch mode.
     await mark.focus();
     await mark.press("ArrowRight");
     const keyboardTeam = await page.evaluate(() => document.activeElement?.getAttribute("data-team"));
-    await expect(details).toContainText(keyboardTeam!);
+    await expect(page.getByTestId("chart-tooltip")).toContainText(keyboardTeam!);
     const svg = page.getByTestId("scatter-chart").locator("svg");
     // The outer SVG margin contains no marks and clears transient detail while preserving URL highlight.
     await svg.dispatchEvent("pointerdown", { pointerId: 5, pointerType: "touch", clientX: 1, clientY: 1 });
     await svg.dispatchEvent("pointerup", { pointerId: 5, pointerType: "touch", clientX: 1, clientY: 1 });
-    await expect(details).toHaveCount(0);
+    await expect(page.getByTestId("scatter-details")).toHaveCount(0);
     await expect(page).toHaveURL(/team=Alabama/);
+    await expect(panel).toContainText("Alabama");
   });
 
   for (const [chart, week] of [["efficiency", 3], ["adjusted", 2], ["possession", 3]]) {
@@ -86,7 +86,7 @@ test.describe("mobile scatter inspection on the page", () => {
     await expect(page.locator('g[data-team="Michigan"] [data-mark="logo"]')).toHaveCount(1);
     await expect(page.locator('g[data-team="Michigan"] [data-mark="dot"]')).toHaveCount(0);
     expect(await page.locator('g[data-team] [data-mark="dot"] circle').last().evaluate((node) => node.getAttribute("r"))).toBe("4");
-    // A tap on a dot (tap target is ~24px) selects the team and shows its logo on top.
+    // A tap on a dot (tap target is ~24px) highlights the team (replacing Michigan) and shows its logo.
     const target = (await page.locator('g[data-team] [data-mark="dot"]').first().evaluate((node) => node.closest("g[data-team]")!.getAttribute("data-team")))!;
     // Bring the dot to mid-screen: the fixed header and bottom tab bar would otherwise cover marks near the plot edges.
     await page.locator(`g[data-team="${target}"]`).evaluate((node) => window.scrollBy(0, node.getBoundingClientRect().y - window.innerHeight / 2));
@@ -95,8 +95,9 @@ test.describe("mobile scatter inspection on the page", () => {
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     });
     await page.touchscreen.tap(dot.x + 3, dot.y + 3);
-    await expect(page.getByTestId("scatter-details")).toContainText(target);
-    await expect(page.locator('[data-testid="hover-mark"] [data-mark="logo"]')).toHaveCount(1);
+    await expect(page.getByTestId("scatter-selection-panel")).toContainText(target);
+    await expect(page.locator(`g[data-team="${target}"] [data-mark="logo"]`)).toHaveCount(1);
+    await expect(page.locator('g[data-team] [data-mark="logo"]')).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
   }
@@ -277,9 +278,10 @@ test.describe("mobile scatter inspection on the page", () => {
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     });
     await page.touchscreen.tap(center.x, center.y);
-    const details = page.getByTestId("scatter-details");
+    const details = page.getByTestId("scatter-selection-panel");
     await expect(details).toBeVisible();
     await expect(details).toContainText("Alabama");
+    await expect(page.getByTestId("scatter-details")).toHaveCount(0);
     await expect(page.getByTestId("chart-tooltip")).not.toBeVisible();
   });
 
@@ -295,9 +297,10 @@ test.describe("mobile scatter inspection on the page", () => {
       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
     });
     await page.touchscreen.tap(center.x, center.y);
-    const details = page.getByTestId("scatter-details");
+    const details = page.getByTestId("scatter-selection-panel");
     await expect(details).toBeVisible();
     await expect(details).toContainText("Alabama");
+    await expect(page.getByTestId("scatter-details")).toHaveCount(0);
     await expect(page.getByTestId("chart-tooltip")).not.toBeVisible();
     await context.close();
   });
@@ -353,28 +356,35 @@ test.describe("scatter touch repro on dense slates and scrolled pages", () => {
     expect(me, "an isolated team in the viewport").toBeTruthy();
     const target = me!.team;
     await page.touchscreen.tap(me!.x, me!.y);
-    const details = page.getByTestId("scatter-details");
+    const details = page.getByTestId("scatter-selection-panel");
     await expect(details).toContainText(target);
+    await expect(page.getByTestId("scatter-details")).toHaveCount(0);
     await expect(details).not.toContainText("Several teams");
     expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   });
 
   for (const [chart, week] of [["efficiency", 3], ["adjusted", 2], ["possession", 3]] as const) {
-    test(`a tap on ${chart} leaves the whole details panel, buttons included, above the bottom tab bar`, async ({ page }) => {
+    test(`a tap on ${chart} leaves the selection panel's links reachable, not covered by the bottom tab bar`, async ({ page }) => {
       await gotoHydrated(page, `/stats?chart=${chart}&week=${week}`);
       // Chart top just under the sticky bar, so the panel below the plot lands where the tab bar sits.
       await page.getByTestId("scatter-chart").evaluate((node) => window.scrollTo(0, window.scrollY + node.getBoundingClientRect().y - 130));
       const all = await dots(page);
       const me = all.filter((d) => d.y > 160 && d.y < 600 && d.x > 40 && d.x < 350).sort((a, b) => a.y - b.y)[0];
       await page.touchscreen.tap(me.x, me.y);
-      const details = page.getByTestId("scatter-details");
+      const details = page.getByTestId("scatter-selection-panel");
       await expect(details).toBeVisible();
-      const clear = details.getByRole("button", { name: "Clear details" });
-      await expect.poll(async () => {
-        const nav = (await page.getByRole("navigation", { name: "Main navigation" }).boundingBox())!;
-        const box = (await clear.boundingBox())!;
-        return box.y + box.height <= nav.y + 1;
-      }, { message: "Clear details sits above the Main navigation bar" }).toBe(true);
+      await expect(page.getByTestId("scatter-details")).toHaveCount(0);
+      // The panel is in-flow page content: scrolled to, its links are not obscured by the fixed tab bar.
+      for (const name of ["Team profile", "Compare ratings"]) {
+        const link = details.getByRole("link", { name }).first();
+        await link.scrollIntoViewIfNeeded();
+        await expect.poll(async () => {
+          const nav = (await page.getByRole("navigation", { name: "Main navigation" }).boundingBox())!;
+          const box = (await link.boundingBox())!;
+          return box.y + box.height <= nav.y + 1;
+        }, { message: `${name} link can be scrolled above the Main navigation bar` }).toBe(true);
+        await link.click({ trial: true });
+      }
     });
   }
 

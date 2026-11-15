@@ -126,7 +126,7 @@ test("net success: rows without the overtime-inclusive columns (earlier releases
   ];
   const { bars, notCharted } = netSuccessBars(rows, 3);
   assert.deepEqual(bars, []);
-  assert.deepEqual(notCharted, [{ gameId: 1, reason: "success rate unavailable" }]);
+  assert.deepEqual(notCharted, [{ gameId: 1, teams: ["Alabama", "Michigan"], reason: "success rate unavailable" }]);
 });
 
 test("net success: tied points and missing success rates are listed, not charted", () => {
@@ -138,10 +138,10 @@ test("net success: tied points and missing success rates are listed, not charted
   const { bars, notCharted } = netSuccessBars(rows, 0);
   assert.deepEqual(bars.map((b) => b.gameId), [3]);
   assert.deepEqual(notCharted, [
-    { gameId: 1, reason: "tied points" },
-    { gameId: 2, reason: "success rate unavailable" },
+    { gameId: 1, teams: ["Alabama", "Michigan"], reason: "tied points" },
+    { gameId: 2, teams: ["Tulane", "Notre Dame"], reason: "success rate unavailable" },
   ]);
-  assert.deepEqual(netSuccessBars([rows[0]], 0).notCharted, [{ gameId: 1, reason: "incomplete game rows" }]);
+  assert.deepEqual(netSuccessBars([rows[0]], 0).notCharted, [{ gameId: 1, teams: ["Alabama"], reason: "incomplete game rows" }]);
 });
 
 test("available weeks per chart and week coercion", () => {

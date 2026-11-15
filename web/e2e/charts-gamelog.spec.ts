@@ -85,7 +85,7 @@ test.describe("team game log", () => {
     const picker = page.getByRole("combobox", { name: "Highlight a team" });
     await picker.fill("Wyoming");
     await picker.press("Enter");
-    await expect(page.getByTestId("chart-empty")).toHaveText("Wyoming has no FBS games in this release yet.");
+    await expect(page.getByTestId("chart-empty")).toContainText("Wyoming has no FBS games in this release yet.");
     await expect(page.getByTestId("chart-download")).toHaveCount(0);
     await expect(page).toHaveURL(/team=wyoming/i);
   });

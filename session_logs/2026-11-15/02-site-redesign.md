@@ -79,6 +79,15 @@ Ran through `psql` with `default_transaction_read_only=on`; the connection strin
 - Verification: `test:publication` 486 passed / 5 failed (the Graphs failures, Step 5) / 1 skipped; `teams.spec.ts` and `teams-hub.spec.ts` 23 of 23 passed.
 - Left in place: the unused `RatingsView.tsx` (plus its filter sheet) and the three source-text tests that still read it; removing that dead code is a separate cleanup.
 
+### Step 5 (Graphs) completed
+
+- `ChartsView.update`/`setHighlight` and `useChartMetric` now build URLs from the live query string through `lib/url-state.ts`, so quick successive updates no longer drop each other. Scatter selection on a phone now only sets the highlight when it is not already on that team (a second tap on the selected point still clears it explicitly).
+- Cleanup: removed the unused `points` prop of `RatingTrend`, the doubled blank line in `EfficiencyView`, the two unused-argument lint warnings in `stats/page.tsx`, and fixed a `mt-3rounded-lg` class typo in `ScatterChart`.
+- Unit expectations updated only for intentional changes: default and fallback chart is Efficiency, neutral quadrant names (finishing drives), not-charted coverage entries now list `teams`. `test:publication`: 491 passed, 0 failed, 1 skipped.
+- Delegated triage of 38 stale chart browser specs to one worker. Intentional changes were encoded in the specs (Efficiency default, notices ending in an "Explore efficiency" link, unavailable weeks shown as a notice instead of clamped, nav link order, conference filter retaining a filtered-out highlight with a notice, phone tap setting the highlight and showing the selection panel, visible "Team graphs" heading). One genuine bug fixed: chart links carried the test-only `fixture` parameter (`withChartState` in `lib/chart-config.ts`). One flaky logo-position spec was hardened with `gotoHydrated`; the underlying position shift before hydration was not investigated.
+- Verification: typecheck and lint clean; chart, scatter, picker, Teams and Games browser specs 177 passed / 9 skipped.
+- Noted: a comment above the "Team graphs" heading in `stats/page.tsx` is stale after the heading became visible on phones.
+
 ## Handoff notes
 
 - **Resume at:** existing worktree and approved contract; do not recreate or discard partial changes.

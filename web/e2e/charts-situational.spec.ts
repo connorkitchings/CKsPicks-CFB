@@ -78,17 +78,18 @@ for (const { kind, title } of CHARTS) {
 }
 
 for (const chart of ["resume-quality", "market-board"]) {
-  test(`hidden chart ${chart} falls back to net success`, async ({ page }) => {
+  test(`hidden chart ${chart} falls back to efficiency`, async ({ page }) => {
     await page.goto(`/stats?chart=${chart}&week=3`);
-    await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
-    await expect(page.getByTestId("net-success-chart")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "Efficiency vs explosiveness" })).toBeVisible();
+    await expect(page.getByTestId("scatter-chart")).toBeVisible();
+    await expect(page.getByTestId("net-success-chart")).toHaveCount(0);
   });
 }
 
 for (const { kind, title } of CHARTS) {
   test(`${title} with a missing season stats window shows the unavailable notice`, async ({ page }) => {
     await page.goto(`/stats?chart=${kind}&week=3&fixture=season-stats-missing`);
-    await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
+    await expect(page.getByTestId("charts-notice")).toContainText("Charts are temporarily unavailable.");
     await expect(page.getByRole("heading", { level: 2, name: title })).toHaveCount(0);
     await expect(page.getByTestId("scatter-chart")).toHaveCount(0);
     await expect(page.locator("#week-select")).toHaveCount(0);

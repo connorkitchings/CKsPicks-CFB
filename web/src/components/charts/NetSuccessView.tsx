@@ -3,6 +3,7 @@
 import { CHART_REGISTRY, chartSubtitle, exportFilename, groupLabel } from "@/lib/chart-config";
 import {
   filterNetSuccessBars,
+  matchesConference,
   formatPercent,
   outplayedWinners,
   type NetSuccessBar,
@@ -29,6 +30,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
   // `bars` arrive in success-gap order (netSuccessBars) and filtering keeps it.
   const shown = filterNetSuccessBars(bars, roster, filter);
   const { outplayed, total } = outplayedWinners(shown);
+  const missing = notCharted.filter((item) => filter === "all" || item.teams?.some((team) => { const row = roster.find((r) => r.team === team); return row && matchesConference(filter, team, row.conference); }));
   const viewSubtitle = `${subtitle} | ${groupLabel(filter)}`;
   const label = `${title}. ${subtitle}`;
   const exportWidth = netSuccessWidth(shown.length);
@@ -57,6 +59,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
         </p>
       )}
       hasData={shown.length > 0}
+      status={<p className="text-sm text-ink-muted">Coverage: {shown.length} of {shown.length + missing.length} games have eligible success-rate observations.</p>}
       figure={
         <NetSuccessChart
           bars={shown}
@@ -68,7 +71,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
           label={label}
         />
       }
-      notCharted={notCharted}
+      notCharted={missing}
       footnote={footnote}
     />
   );

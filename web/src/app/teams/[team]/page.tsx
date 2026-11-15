@@ -139,7 +139,7 @@ export default async function TeamPage({ params, searchParams }: { params: Promi
             ) : <GameLogChart team={team} bars={gameLogBars(gameStats, [team, ratingName])} />}
           </div>
           <div className="min-w-0 space-y-4">
-            <RatingTrend team={ratingName} points={rankHistory} history={analysisHistory} />
+            <RatingTrend team={ratingName} history={analysisHistory} />
             {evidence.length > 0 && <TeamRatingEvidence units={evidence} />}
             {summary && <TeamResume summary={summary} />}
             {unitRows ? <UnitProfile rows={unitRows} /> : (

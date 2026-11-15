@@ -1,4 +1,9 @@
 import clsx from "clsx";
+import Link from "next/link";
+import { getSeasonReleaseContext } from "@/lib/season-release";
+import { getMarketGamesForWeek } from "@/lib/queries";
+import { gameState } from "@/lib/slate";
+import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
 import { Notice } from "@/components/ui/Notice";
 import {
@@ -113,7 +118,7 @@ const NO_V5_ROWS = {
   ratingSnapshots: async () => [],
   seasonStatsWeeks: [],
   seasonStatsFor: async () => [],
-  teamResume: async (_week?: number) => [],
+  teamResume: async () => [],
   slateWeeks: [],
   slateGamesFor: async () => [],
 };
@@ -158,7 +163,7 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
         if (fixture === "adjusted-error") throw new Error("season stats window failed");
         return chartsSeasonStatsFixture(asOfWeek);
       },
-      teamResume: async (_w?: number) => {
+      teamResume: async () => {
         if (fixture === "adjusted-error") throw new Error("team resume failed");
         return chartsTeamResumeFixture();
       },
@@ -204,10 +209,29 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
   }
 }
 
+async function nextMatchups(season: number): Promise<Record<string, number>> {
+  if (!isMatchupEnabled() || process.env.CFB_UI_TEST_MODE === "1") return {};
+  try {
+    const release = await getSeasonReleaseContext(season);
+    if (!release) return {};
+    const games = await getMarketGamesForWeek(season, release.activeWeek);
+    const now = new Date();
+    const result: Record<string, number> = {};
+    for (const game of [...games].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
+      if (gameState(game, now) !== "upcoming") continue;
+      for (const team of [game.homeTeam, game.awayTeam]) if (!(team in result)) result[team] = game.gameId;
+    }
+    return result;
+  } catch (error) {
+    console.error("Chart next matchup links unavailable", error);
+    return {};
+  }
+}
+
 function notice(text: string) {
   return (
     <div data-testid="charts-notice">
-      <Notice tone="empty">{text}</Notice>
+      <Notice tone="empty">{text} <Link className="font-medium text-accent-ink underline" href="/stats?chart=efficiency">Explore efficiency</Link></Notice>
     </div>
   );
 }
@@ -220,7 +244,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
   const side: Side = parseSide(params.side);
   const requested = params.week !== undefined && /^\d{1,2}$/.test(params.week) ? Number(params.week) : null;
 
-  const loaded = await load(season, params.fixture);
+  const [loaded, upcomingMatchups] = await Promise.all([load(season, params.fixture), nextMatchups(season)]);
 
   let body: React.ReactNode;
   let tabs: React.ReactNode = null;
@@ -311,10 +335,12 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
       </div>
     );
     const view = (viewWeek: number, chart: ChartPayload, weekNav: React.ReactNode = null) => (
-      <ChartsView season={season} week={viewWeek} roster={roster} chart={chart} settings={<>{sideNav}{weekNav}</>} />
+      <ChartsView season={season} week={viewWeek} roster={roster} chart={chart} nextMatchups={upcomingMatchups} settings={<>{sideNav}{weekNav}</>} />
     );
 
-    if (kind === "rating-trajectory") {
+    if (requested !== null && CHART_REGISTRY[kind].controls.week && !available.includes(requested)) {
+      body = notice(`Week ${requested} is not available for this chart. Choose an available week from the chart navigation; no other window has been substituted.`);
+    } else if (kind === "rating-trajectory") {
       // Every stored snapshot week (Through Week 0 on) at once, so there is no week selector.
       let snapshots: RatingSnapshotRow[] | null = null;
       try {
@@ -455,8 +481,8 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
       />
       <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-6xl flex-1 px-4 sm:py-4 ${PHONE_PAGE_RHYTHM}`}>
         {/* Phones drop the visible heading (the sticky bar names the chart) but keep it for assistive tech. */}
-        <div className="max-sm:sr-only">
-          <PageHeading title="Team graphs">
+        <div>
+          <PageHeading title="Team graphs" eyebrow="Explore the football">
             {season}
             <span className="text-ink-faint"> · </span>
             {CHART_REGISTRY[kind].population}
