@@ -357,6 +357,47 @@ Not a leak, but it affects every historical number in this contract.
 
 This is recorded, not fixed. Whether to exclude, relabel or re-rate postseason games in the historical benchmark is an owner decision and would change the comparator numbers.
 
+### Regular-season benchmark (owner decision 2026-11-15)
+
+**Decision.** The owner decided on 2026-11-15 to exclude the postseason games from the historical benchmark ("Exclude them"). The benchmark then measures what the site serves, since the published record ends with the regular season.
+
+**Rule.** A game is postseason when its `week` is 1 and it kicks off in December or January. Verified on the rebuild feature frame: in every season the last regular-season game (week 15 or 16, 8 to 14 December) precedes the first flagged game (14 to 20 December); no unflagged game kicks off after 15 December or in January; every unflagged week-1 game is in August or September. The 415 game IDs are saved in `postseason_game_ids.json` in the scoring output folder.
+
+**Scope of what was done.** The existing predictions were filtered; no bridge was refitted. The 415 games are therefore still in the bridges' training and calibration rows. Whether to remove them there too is open (next executable scope).
+
+Pooled 2022 to 2025, regular season only (3,483 games per target; 176 removed):
+
+| Model | Margin MAE | Margin bias | Margin 90% coverage | Total MAE | Total bias | Total 90% coverage |
+|---|---|---|---|---|---|---|
+| Historical V5 | 14.2873 | +0.23 | 91.1% | 13.6116 | -2.61 | 91.9% |
+| Repaired arm, September inputs | 13.7176 | +0.43 | 91.4% | 13.4503 | -2.37 | 92.3% |
+| **Operational V5** | **13.7130** | +0.43 | 91.2% | **13.3782** | -1.41 | 92.3% |
+
+Operational V5 by season (margin, total): 2022 14.03, 13.71; 2023 13.66, 13.71; 2024 13.94, 13.12; 2025 13.24, 12.99.
+
+Paired differences, same method as `paired_comparison` (90% interval, 62 season/week blocks, 2,000 replicates, seed 20260928): Operational against Historical V5, margin MAE lower by 0.574 (0.283 to 0.871), total by 0.233 (0.179 to 0.295); Operational against the September repaired arm, margin by 0.005 (-0.038 to 0.046), total by 0.072 (0.037 to 0.107).
+
+By completed-game stage, Operational V5 (margin MAE, bias, 90% coverage): stage 0, 573 games, 16.17, +7.51, 85.2%; stage 1, 301, 14.41, +4.19, 91.0%; stage 2, 244, 15.10, +0.98, 90.2%; stage 3, 253, 13.27, -1.45, 93.3%; stage 4, 2,112, 12.84, -1.86, 92.8% (Historical V5 stage 4: 13.92).
+
+Slices that change, 2021 to 2025 regular season (4,332 games); these supersede the corresponding rows of the slice section above:
+
+| Slice | Games | Historical margin MAE | Historical bias | Operational margin MAE | Operational bias | Operational 90% coverage |
+|---|---|---|---|---|---|---|
+| Week 1 (season openers only) | 473 | 15.94 | +4.75 | 16.18 | +5.89 | 85.8% |
+| Stage 4 | 2,631 | 14.16 | -1.94 | 12.99 | -2.15 | 92.5% |
+| Neutral site | 126 | 14.72 | -3.94 | 13.91 | -2.69 | 90.5% |
+| Home venue | 4,202 | 14.55 | +0.19 | 13.98 | +0.29 | 90.6% |
+| Non-conference game | 1,642 | 15.44 | +3.94 | 15.50 | +4.22 | 87.9% |
+
+Totals at neutral sites, regular season: Operational MAE 14.92, bias -5.02 (126 games).
+
+What changes in the findings:
+
+- **Neutral site is a smaller question than reported.** Of the 328 neutral-site games, 202 were postseason games forecast from priors alone. On the 126 regular-season neutral-site games, Operational V5's margin bias is -2.69, not -4.32, and the sample is under half the size. The mechanism is unchanged (venue flags are constant; every game gets the home intercept), but the measured effect and the number of games it touches are both smaller.
+- **Season openers are worse than reported.** With postseason games removed from "week 1", Operational V5's opening-week margin MAE is 16.18 with bias +5.89 and 85.8% coverage.
+- **Non-conference games are slightly worse** (bias +4.22), and the late-season gain is unchanged.
+- Flat totals and the contribution findings are unaffected in substance; they were measured on all 3,659 games.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
@@ -373,8 +414,9 @@ This is recorded, not fixed. Whether to exclude, relabel or re-rate postseason g
 6. Done 2026-11-14: the slice report was rerun on the Operational V5 predictions (see the slice section).
 7. Done 2026-11-15: the spread of each rating term, bridge coefficient and offset is measured (see the contribution section).
 8. Done 2026-11-15: the upstream temporal check passed (see that section). Work-order step 2 is complete apart from the limits listed there.
-9. Owner decision needed before step 3: how the historical benchmark treats the 415 postseason games labelled week 1 (keep as is, exclude, or re-rate with correct ordering). It changes the comparator numbers and the week slices.
-10. Then work-order step 3 (chronological baselines and scoring accounting), on approval.
+9. Done 2026-11-15: the owner decided to exclude the postseason games; the benchmark is recomputed on regular-season games by filtering (see that section).
+10. Open: whether the 415 postseason rows are also removed from bridge training and calibration. That is a refit and would change every number slightly; it should be settled before any candidate is compared.
+11. Then work-order step 3 (chronological baselines and scoring accounting), on approval.
 
 ## Work order
 
@@ -440,6 +482,7 @@ Each needs a dated entry in the [research protocol](../2026-11-12/02-offseason-r
 2. **Paired interval.** Retain season/week block resampling as the proposed primary method, compute a two-sided 95% interval, and document the dependence it captures (within a week) and omits (the same teams recurring across weeks). Specify any sensitivity analysis before candidates are evaluated. The 95% comparison interval is distinct from the model's 90% prediction intervals. `paired_comparison` needs an explicit confidence level to implement this.
 3. **2022 to 2025.** Describe these seasons as previously examined temporal validation evidence. Exploration and tuning on 2015 to 2019 and 2021 remain useful but restore no independence. Before the next evaluation batch, freeze the candidate families, the comparison rules and how a finalist is chosen. A ledger of scoring runs records looks; it does not remove selection bias.
 4. **2026.** Document prior exposure (the 215-game counterfactual of 2026-09-28, weekly scoring, and the repair work). Keep the restriction that no candidate is scored on 2026 until a final candidate, or a bounded pre-declared set, is frozen. Prospective confirmation is 2027 predictions.
+6. **Benchmark population (decided 2026-11-15, to be written into the protocol with the other amendments).** The headline population is regular-season games only: 3,483 games per target for 2022 to 2025 instead of 3,659. Postseason games are identified by the rule in the regular-season benchmark section.
 5. **Market.** Market comparison is reported only after football-based priorities are frozen, with identical game coverage, verified spread signs, quote provenance, and cutoff-time lines reported separately from closing lines. Using market results to steer research would be market-informed prioritization and needs its own explicit approval.
 
 ## Validation
