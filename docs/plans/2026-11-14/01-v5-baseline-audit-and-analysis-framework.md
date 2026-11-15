@@ -1083,6 +1083,50 @@ Each needs a dated entry in the [research protocol](../2026-11-12/02-offseason-r
 6. **Benchmark population (decided 2026-11-15, to be written into the protocol with the other amendments).** The headline population is regular-season games only: 3,483 games per target for 2022 to 2025 instead of 3,659. Postseason games are identified by the rule in the regular-season benchmark section and are removed from bridge training and calibration as well as scoring (owner decision 2026-11-15).
 5. **Market.** Market comparison is reported only after football-based priorities are frozen, with identical game coverage, verified spread signs, quote provenance, and cutoff-time lines reported separately from closing lines. Using market results to steer research would be market-informed prioritization and needs its own explicit approval.
 
+### Drafted amendments 7 to 10 and the protocol YAML diff (drafted 2026-11-15, not applied)
+
+These are ready-to-apply wording. Nothing here is written to the [research protocol](../2026-11-12/02-offseason-research-protocol.md) or to `conf/research/offseason_2027/protocol.yaml`; the owner approves, edits or rejects each on a separate gate. Amendments 1 to 6 above stay as drafted. (Item 6 appears before item 5 in the list above for historical reasons; the numbers are kept so earlier references stay valid.)
+
+**7. 2026 exposure (2026-11-15).** On 2026-11-15, with owner approval for retrieval and scoring, 2026 weeks 0 to 6 (329 games at completed-game stages 0 to 4; 293 at stages 0 to 3) were scored for the baseline and for candidates B1s, B3 and P1 to P4, using zero offsets because 2026 offsets are unavailable. 2026 is therefore not a clean holdout for those candidates, and the 2026 holdout rule (scored once after the 2026-12-13 final close, no threshold loosened after a 2026 residual is viewed) continues to apply to everything else. The clean forward test for P3 is the early weeks of 2027. *Effect on a value: none. This records an exposure that has already happened.*
+
+**8. Headline population (2026-11-15).** The headline population for adoption is regular-season FBS-vs-FBS games (both teams FBS by that season's CFBD membership); FBS-vs-FCS games are reported separately and are not part of the headline. Basis: the release universe in [`docs/status.md`](../../status.md) (the published slate is FBS-vs-FBS; an FBS-vs-FCS game such as Wake Forest against Merrimack is outside it). For 2022 to 2025 this is 2,998 of 3,483 regular-season games per target. *Effect on a value: no threshold number changes, but the corpus each threshold is measured on does. The baseline Operational V5 is better early on FBS-vs-FBS (stage 0 to 3 bias +0.84 against +3.68 on all games), so gains measured there are smaller than on all games; but this choice was made after 2026 residuals were viewed, which is the case the YAML header guards against. It needs an explicit owner statement that it is a population definition and not a loosening.*
+
+**9. Frozen candidate for 2027 (2026-11-15).** The named, frozen candidate is **P3**, specified in the "Reproducibility and the frozen P3 specification" section above (script `p4.py`, SHA-256 `30438df9d6d4f9357f2e5f401b2f7ba47bd2054e2d616e836a90156a700f8c09`; bridge: baseline features plus an FBS-vs-FCS indicator and the early conference-tier terms, alpha 10, margin only). It is scored once, on 2027 regular-season FBS-vs-FBS games at completed-game stages 0 to 3, against the baseline Operational V5 recipe fitted earlier-only on the same data. **Pass condition (declared now):** margin MAE gain of at least 0.20 over the baseline with a two-sided 95% paired block-resampling interval that excludes zero; stage 0 to 3 bias magnitude at most 1.0; and, once stage 4 games exist, stage 4 MAE no more than 0.05 above the baseline. It is not adopted by passing on stages 0 to 3 alone: adoption still requires the existing adoption block (interval, per-season, coverage and early-week conditions). Expected size: 2022 to 2025 gain 0.93 on 886 games; the 2026 gain was 0.96 on 293 games with a 90% interval of 0.60 to 1.32. The 2027 offset rule (serving offsets or a stated zero rule) must be fixed before the first 2027 game is scored. *Effect on a value: none; this adds a pre-declared candidate and a stricter 95% interval than the 90% used in 4B.*
+
+**10. Selection-season rule (2026-11-15).** A season may be used to select among candidates, or to set a tuning threshold, only if its fit saw at least three earlier training seasons; with the development seasons 2015 to 2019 and 2021 onward that means 2018, 2019 and 2021 onward. Seasons with shorter training windows (2016, 2017) may be reported but never select. Basis: the 2016 and 2017 windows destabilised every step 4B candidate. *Effect on a value: none; it restricts selection.*
+
+**Which drafts would loosen a value.** None changes a numeric threshold, and 7, 9 and 10 do not loosen anything (7 records history; 9 adds a pre-declared, stricter-interval candidate; 10 restricts selection). Amendment 8 is the one to scrutinise: it redefines the corpus after 2026 residuals were viewed. The YAML header forbids loosening any value after a 2026 residual has been viewed, so 8 must be approved as a population definition by an explicit owner statement, or not applied.
+
+**Ready-to-apply YAML diff for `conf/research/offseason_2027/protocol.yaml` (not written to the file):**
+
+```diff
+ # Pre-registered offseason 2027 research protocol.
+ # Authority: docs/plans/2026-11-12/02-offseason-research-protocol.md (approved 2026-11-12).
+ # Loosening any value requires a dated amendment in that contract; never after a
+ # 2026 residual has been viewed.
++# Amendments 7-10 (2026-11-15) are documented in the same contract; none changes a
++# numeric threshold.
+ protocol_id: offseason_2027_v1
+ comparison_models: [frozen_v5, v5-common]
+@@
+ headline_seasons: [2022, 2023, 2024, 2025]
++headline_population: fbs_vs_fbs_regular_season   # amendment 8; fbs_vs_fcs reported separately
++min_earlier_training_seasons_for_selection: 3     # amendment 10
+ holdout_season: 2026
+ holdout_scored_once: true
++holdout_exposure:                                 # amendment 7
++  - date: 2026-11-15
++    scope: weeks 0-6, zero offsets
++    candidates: [baseline, B1s, B3, P1, P2, P3, P4]
++frozen_candidates:                                # amendment 9
++  - id: p3_fcs_indicator_conference_tier
++    script: p4.py
++    script_sha256: 30438df9d6d4f9357f2e5f401b2f7ba47bd2054e2d616e836a90156a700f8c09
++    forward_test: 2027 regular season, FBS-vs-FBS, completed-game stages 0-3
++    pass: {mae_gain_min: 0.20, paired_interval_confidence: 0.95, bias_abs_max: 1.0, stage4_mae_worse_max: 0.05}
+```
+
+
 ## Validation
 
 `git diff --check`; `uv run mkdocs build --strict`; this contract is listed in the [plans index](../index.md). The inventory counts above were produced by reading and hashing every listed file.
