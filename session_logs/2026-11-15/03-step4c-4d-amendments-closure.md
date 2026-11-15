@@ -5,9 +5,9 @@
 - **Worked On:** Closed out the V5 baseline audit: made the step 4 analysis reproducible, ran the totals-head (4C) and venue-flag (4D) experiments, drafted protocol amendments 7 to 10 with a YAML diff, and wrote the audit conclusions.
 - **Outcome:** Neither experiment helps. Totals: no shrinkage or feature form beats the baseline by more than 0.02 total MAE (declared bar 0.20); the ratings carry little totals signal. Venue: using the neutral-site flag moves the neutral bias from -1.50 to +2.53 on 80 FBS-vs-FBS games, so it overshoots. P3 is frozen as a named specification with script hashes. Audit steps 1 to 4 are complete.
 - **Plan Contract:** [`docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md`](../../docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md)
-- **Approval / Status:** Owner approved the plan (all declarations, thresholds and the alpha list) on 2026-11-15. Contract stays `Draft`. Four local commits on `dev`, not pushed. Nothing from 2026 was scored; no file in `conf/` or the protocol changed.
-- **Blockers:** Owner gates: approve or edit amendments 7 to 10 and the YAML diff; decide step 5 and the 2027 forward test; say where the other session's work lives.
-- **Next:** Owner decision on the gates above.
+- **Approval / Status:** Owner approved the plan (all declarations, thresholds and the alpha list) on 2026-11-15. Contract stays `Draft`. Four local commits on `dev`, not pushed. Nothing from 2026 was scored; no 2026 data scored in 4C or 4D.
+- **Blockers:** Open: amendment 8 (needs an explicit owner statement), amendments 1 to 6, the 2027 offset rule, and the location of the other session's work.
+- **Next:** Verify the 2026 rating recipe matches the historical one; fix the 2027 offset rule before the first 2027 game; locate and reproduce the other session's work in a separate folder.
 
 **tags:** ["model-research", "baseline-audit", "totals", "venue", "protocol-amendments"]
 
@@ -44,3 +44,7 @@
 ## Amendments and Blockers
 
 - None to the plan; see the owner gates above.
+
+## Owner decisions (end of session)
+
+Approved amendments 7, 9, 10 (applied to the protocol and `protocol.yaml`, additive keys only); amendment 8 held; go to the 2027 forward test and skip the rest of step 5 except the rating-recipe check; other session's work to be treated as unverified. Files also modified: `docs/plans/2026-11-12/02-offseason-research-protocol.md`, `conf/research/offseason_2027/protocol.yaml`.

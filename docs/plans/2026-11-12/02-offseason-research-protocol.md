@@ -44,3 +44,12 @@ Acceptance: the Protocol section is approved and committed before the diagnostic
 ## Handoff/amendments
 
 Resume gate: met. Next action: task 3, then the diagnostics contract. Amendments are dated entries here stating the reason and the previous and revised values; loosening a threshold after any 2026 residual has been viewed is not allowed.
+
+### Amendment 2026-11-15 (owner approved amendments 7, 9 and 10 of the baseline audit contract)
+
+Source: [V5 baseline audit and model analysis framework](../2026-11-14/01-v5-baseline-audit-and-analysis-framework.md), drafted amendments section. No threshold value changes; each entry is previous state, revised state.
+
+- **7. 2026 exposure.** Previous: 2026 was a holdout scored once. Revised: on 2026-11-15, under owner approval, 2026 weeks 0 to 6 were scored for the baseline and for candidates B1s, B3 and P1 to P4 (zero offsets). 2026 is not a clean holdout for those candidates; the clean forward test is the early weeks of 2027. The rule against loosening any value after a 2026 residual has been viewed stands.
+- **9. Frozen candidate for 2027.** Previous: none. Revised: P3 (FBS-vs-FCS indicator plus early conference-tier terms; specification in the contract; script `p4.py`, SHA-256 `30438df9d6d4f9357f2e5f401b2f7ba47bd2054e2d616e836a90156a700f8c09`) is scored once on 2027 regular-season games at completed-game stages 0 to 3 against the baseline. Pass: margin MAE gain at least 0.20 with a two-sided 95% paired interval excluding zero, stage 0 to 3 bias magnitude at most 1.0, and stage 4 MAE no more than 0.05 above the baseline once stage 4 games exist; adoption still requires the existing adoption block. The 2027 offset rule must be fixed before the first 2027 game is scored.
+- **10. Selection-season rule.** Previous: none. Revised: a season may select among candidates or set a tuning threshold only if its fit saw at least three earlier training seasons.
+- **Not applied:** amendment 8 (FBS-vs-FBS headline population) waits for an explicit owner statement that it is a population definition and not a loosening; amendments 1 to 6 of the contract remain unapplied.
