@@ -483,6 +483,147 @@ Limits: possessions here are eligible regulation possessions, not plays, time of
 
 Outputs: `~/cfb_ratings_lab_v6/output/step3-2026-11-15/` (`step3_results.json`, priors-only predictions).
 
+### Step 4A results: early-season error attribution (2026-11-15, owner-approved)
+
+A diagnostic on the existing regular-season predictions (2022 to 2025, 3,483 games per target). Nothing was refitted and no market data was used. Bias is actual minus prediction (positive means the home margin or total was under-predicted), the convention of the earlier sections.
+
+**Checks.** Operational V5 margin MAE 13.7151 and total 13.3709, and priors-only margin MAE 14.4125, recomputed from the joined frame, equal the recorded figures. Stage counts per target: 573, 301, 244, 253 and 2,112 for stages 0 to 4. Of 3,483 games, one (Tarleton State as away team in 2022) has no prior row. Returning production is missing for the 484 FCS away teams (expected, CFBD returning production covers FBS only; no home team is FCS), and for 71 team-games of programs in their first FBS seasons (James Madison, Jacksonville State, Sam Houston State, Kennesaw State, Delaware, Missouri State). Those are labelled "no CFBD data" in the tables.
+
+**Group definitions.** Prior rank: quartile of the team's net prior within the season. The net prior is the offense prior **plus** the defense prior, not offense minus defense as the plan stated: the defense rating is oriented higher-is-better (the bridge gives home defense a positive and away defense a negative margin coefficient), and the sum correlates +0.56 with the margin against +0.10 for the difference. Prior source: "default" if either unit fell back to the neutral prior for lack of a predecessor, else "carried over". Returning production: tercile of `percentPPA` within the season among FBS teams that CFBD lists. Conference tier from each season's CFBD membership: P4 is the SEC, Big Ten, Big 12, ACC and Notre Dame, plus the Pac-12 in 2022 and 2023 (its last seasons as a power conference); G5 is other FBS; FCS/other is everything else.
+
+**Caveat.** The CFBD files were captured on 2026-11-15, so it is not verified that they were available at each historical kickoff. That is acceptable for a diagnostic and not for a model input. Pulled files and SHA-256 values: `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`. Cells below 30 games are marked †.
+
+#### Findings
+
+By stage (margin; games, Operational V5 MAE / bias, priors-only MAE / bias):
+
+| Stage | Games | Operational V5 | Priors only |
+|---|---|---|---|
+| 0 | 573 | 16.08 / +7.16 | 15.88 / +5.33 |
+| 1 | 301 | 14.34 / +3.92 | 14.22 / +2.07 |
+| 2 | 244 | 15.11 / +0.77 | 15.37 / +0.26 |
+| 3 | 253 | 13.32 / -1.66 | 13.18 / -1.93 |
+| 4 | 2,112 | 12.87 / -2.08 | 14.08 / -1.65 |
+
+1. **The stage 0 bias is not a constant offset.** The bridge intercept is 7.10 to 7.26 margin points in every validation season, and the stage 0 bias is +6.8, +7.9, +6.7 and +7.2 by season, so it is stable. But it reverses sign with experience (+7.16 at stage 0, -2.08 at stage 4) while the intercept does not move; the mean outcome is a home margin of 24 to 26 at stage 0 and 2 to 4 at stage 4, because openers are mostly mismatches. A single shift that zeroes the stage 0 to 3 bias (+3.68) would lower stage 0 MAE from 16.08 to 15.17 at most (0.91) and would push stage 4 bias to -5.77 and its MAE from 12.87 to 13.60. Removing the whole stage 0 bias, even in sample, leaves 15.17.
+2. **The bias depends on the matchup.** At stage 0, P4 hosts against FCS and G5 opponents are under-predicted by +12.00 (192 games) and +13.28 (86), while P4 against P4 (45) is over-predicted by 3.39. G5 at home against FCS is +6.57 (190); G5 against G5 (42) -5.05; G5 hosts against P4 visitors are over-predicted by 14.43 (17 games, †). By home prior rank the bias rises with the host's strength (Q2 +3.2, Q3 +6.2, Q4 +9.4). Returning production shows no clean gradient (home terciles +4.3, +8.7, +8.2).
+3. **Priors alone show the same pattern, so it comes from the prior and the bridge, not from updating.** At stage 0 the two predictions correlate 0.94 and differ by 4.7 points on average, and the slice biases move together (P4 v FCS/other +8.94 for priors, +12.00 for V5). At stages 1 to 3 the V5 prediction moves 8 to 10 points on average from the prior, yet its MAE differs from priors-only by -0.26 to +0.14, so the updating changes predictions without improving them until stage 4 (V5 beats priors by 1.21 there). At stage 0 the V5 bias is 1.8 points larger than priors-only (+7.16 against +5.33) with the same MAE; this contract does not establish why.
+4. **Teams on the default prior are the clearest prior-quality failure, but a small one.** Away teams with a default (neutral) prior at stage 0: 60 games, V5 MAE 20.41, bias +16.24 (priors only +15.68), against 512 carried-over games at 15.56 / +6.07. Home teams on a default prior number 2 at stage 0 and are not usable.
+5. **Totals show no early-season problem.** Operational V5 total MAE at stages 0 to 4 is 13.16, 13.03, 12.50, 13.55, 13.56 and bias -0.11, -1.46, -1.32, -1.05, -1.73 (positive bias = under-predicted; the sign convention is the same). Priors-only totals are within 0.36 of those. Nothing in the early-season totals points to the prior, the intercept or update speed.
+
+#### What this implies for step 4B
+
+- **Dominant factor:** none of the three alone. The best-supported answer is the prior and bridge together: a home-edge level that is right on average but wrong for lopsided matchups, which are concentrated at stage 0 (P4 hosts against weaker teams are under-predicted by 12 to 13 points; the same slice at stage 4 is +4.75 on 51 games). A constant intercept explains at most 0.91 of the 16.08 stage 0 MAE and cannot also serve stage 4. Update speed is not the cause at stage 0 (there is nothing to update) and does not help at stages 1 to 3.
+- **Worth declaring in B:** a stage-dependent blend or shift is bounded by the 0.91 gain above and the stage 4 damage of a global shift, so a stage-specific intercept must be tested against stage 4 unchanged. A variant that lets the home margin depend on the rating gap (a larger slope for mismatches), or on conference tier, targets the pattern in finding 2 and has more room than an intercept change; it needs a declared form before it runs.
+- **Limits.** Cells are pooled over four seasons and share outcomes with the benchmark, so the groupings describe where the error sits and cannot show that any variant would help. Tier and prior-rank groups overlap (P4 hosts are mostly high-ranked priors), so the tables cannot separate quality from conference. The 2022 to 2025 seasons are already examined.
+
+#### Detail tables (margin unless stated)
+
+**Margin by home team prior-rank quartile** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| Q1 low | 12†; 16.11 / +7.44; 17.09 / +10.39 | 14†; 13.85 / +2.11; 16.49 / +8.85 | 39; 12.23 / -4.80; 13.38 / +7.64 |
+| Q2 | 99; 14.95 / +3.22; 15.36 / +3.91 | 130; 16.26 / -0.46; 15.16 / +1.41 | 400; 13.18 / -5.45; 14.28 / -2.49 |
+| Q3 | 203; 16.36 / +6.22; 17.00 / +4.96 | 284; 13.96 / -0.78; 14.60 / -1.63 | 784; 13.19 / -2.49; 14.41 / -1.33 |
+| Q4 high | 259; 16.28 / +9.39; 15.14 / +5.91 | 370; 13.78 / +3.24; 13.56 / +0.95 | 889; 12.48 / -0.08; 13.73 / -1.97 |
+
+**Margin by away team prior-rank quartile** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| Q1 low | 217; 14.67 / +5.89; 14.42 / +0.53 | 79; 14.13 / +6.76; 16.35 / +2.44 | 43; 13.06 / -6.76; 20.01 / -14.60 |
+| Q2 | 180; 18.14 / +10.54; 17.78 / +9.62 | 190; 14.13 / +4.28; 14.56 / +3.97 | 412; 12.75 / -1.62; 14.20 / -3.16 |
+| Q3 | 101; 16.87 / +8.02; 17.12 / +8.77 | 281; 14.90 / +1.18; 14.58 / +0.39 | 795; 13.42 / -3.32; 14.26 / -2.90 |
+| Q4 high | 70; 13.77 / +0.63; 13.58 / +3.41 | 247; 13.60 / -3.07; 12.91 / -3.57 | 862; 12.41 / -0.92; 13.56 / +0.86 |
+| nan | 4†; 18.12 / +12.92; 14.78 / +12.22 | 1†; 26.69 / +26.69; 20.92 / +20.92 | - |
+| no data | 1†; 20.70 / +20.70; 30.23 / +30.23 | - | - |
+
+**Margin by home prior source** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| carried over | 571; 16.06 / +7.12; 15.86 / +5.27 | 793; 14.27 / +1.13; 14.19 / +0.10 | 2101; 12.87 / -2.08; 14.09 / -1.70 |
+| default (no predecessor) | 2†; 19.23 / +19.23; 20.52 / +20.52 | 5†; 11.87 / +10.26; 23.32 / +23.32 | 11†; 13.22 / -2.38; 12.42 / +7.64 |
+
+**Margin by away prior source** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| carried over | 512; 15.56 / +6.07; 15.36 / +4.06 | 785; 14.31 / +1.21; 14.20 / +0.20 | 2100; 12.86 / -2.10; 14.06 / -1.62 |
+| default (no predecessor) | 60; 20.41 / +16.24; 20.05 / +15.68 | 13†; 11.00 / -0.21; 16.85 / +3.04 | 12†; 15.33 / +1.22; 16.98 / -7.19 |
+| no data | 1†; 20.70 / +20.70; 30.23 / +30.23 | - | - |
+
+**Margin by home returning-production tercile** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| T1 low | 184; 15.99 / +4.30; 15.99 / +2.38 | 253; 14.27 / +0.60; 14.31 / -1.52 | 686; 12.94 / -3.43; 14.29 / -4.41 |
+| T2 | 191; 16.02 / +8.74; 15.85 / +6.77 | 268; 15.06 / +0.60; 14.78 / -0.09 | 691; 13.00 / -1.65; 14.10 / -0.76 |
+| T3 high | 193; 16.11 / +8.19; 15.70 / +6.42 | 267; 13.51 / +2.24; 13.35 / +1.91 | 714; 12.68 / -1.20; 13.85 / -0.09 |
+| no CFBD data | 5†; 19.86 / +12.20; 19.64 / +16.46 | 10†; 11.88 / +3.71; 22.04 / +9.71 | 21†; 13.05 / -2.41; 14.42 / +5.87 |
+
+**Margin by away returning-production tercile** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| T1 low | 69; 16.64 / +6.03; 15.23 / +5.58 | 240; 14.24 / +1.45; 13.89 / +1.89 | 696; 12.81 / -1.74; 13.86 / +0.20 |
+| T2 | 60; 15.89 / -1.15; 15.71 / -0.77 | 216; 14.52 / +0.33; 13.67 / -1.40 | 696; 12.69 / -2.41; 13.54 / -2.31 |
+| T3 high | 58; 12.60 / +2.73; 12.66 / +3.41 | 232; 14.03 / -0.86; 14.09 / -2.30 | 696; 13.09 / -2.06; 14.68 / -2.56 |
+| no CFBD data | 385; 16.51 / +9.29; 16.47 / +6.45 | 110; 14.23 / +6.62; 16.48 / +5.25 | 24†; 13.65 / -3.08; 18.68 / -10.11 |
+| no data | 1†; 20.70 / +20.70; 30.23 / +30.23 | - | - |
+
+**Margin by home conference tier** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| G5 | 249; 15.91 / +3.17; 16.43 / +1.61 | 341; 15.05 / -0.95; 14.97 / -1.53 | 1025; 13.11 / -3.49; 13.97 / -2.36 |
+| P4 | 324; 16.20 / +10.23; 15.45 / +8.18 | 457; 13.66 / +2.79; 13.70 / +1.57 | 1087; 12.64 / -0.76; 14.18 / -0.99 |
+
+**Margin by away conference tier** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| FCS/other | 382; 16.54 / +9.30; 16.50 / +6.47 | 102; 13.96 / +7.22; 16.45 / +6.59 | - |
+| G5 | 128; 15.74 / +7.26; 15.19 / +6.61 | 401; 15.24 / +2.05; 14.58 / +2.12 | 1064; 13.10 / -2.99; 14.02 / -1.85 |
+| P4 | 62; 13.84 / -6.42; 13.23 / -4.77 | 295; 13.01 / -2.07; 13.02 / -4.50 | 1048; 12.64 / -1.16; 14.14 / -1.46 |
+| no data | 1†; 20.70 / +20.70; 30.23 / +30.23 | - | - |
+
+**Margin by tier matchup (home v away)** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| G5 v FCS/other | 190; 16.22 / +6.57; 16.98 / +3.96 | 68; 15.12 / +8.00; 16.75 / +6.31 | - |
+| G5 v G5 | 42; 14.62 / -5.05; 14.75 / -3.71 | 217; 15.08 / -2.07; 14.37 / -1.62 | 1013; 13.08 / -3.38; 13.98 / -2.29 |
+| G5 v P4 | 17†; 15.64 / -14.43; 14.43 / -11.58 | 56; 14.83 / -7.52; 15.12 / -10.72 | 12†; 16.11 / -12.56; 13.48 / -7.84 |
+| P4 v FCS/other | 192; 16.85 / +12.00; 16.02 / +8.94 | 34; 11.62 / +5.65; 15.84 / +7.16 | - |
+| P4 v G5 | 86; 16.28 / +13.28; 15.41 / +11.65 | 184; 15.44 / +6.90; 14.83 / +6.53 | 51; 13.48 / +4.75; 14.82 / +7.02 |
+| P4 v P4 | 45; 13.17 / -3.39; 12.78 / -2.20 | 239; 12.58 / -0.79; 12.53 / -3.04 | 1036; 12.60 / -1.03; 14.15 / -1.38 |
+| P4 v no data | 1†; 20.70 / +20.70; 30.23 / +30.23 | - | - |
+
+**Total by tier matchup (home v away)** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| G5 v FCS/other | 190; 13.31 / +0.16; 13.49 / -1.50 | 68; 14.01 / +0.61; 14.44 / -1.30 | - |
+| G5 v G5 | 42; 14.11 / -1.39; 14.48 / -2.26 | 217; 14.03 / -0.30; 14.27 / -1.15 | 1013; 14.03 / -0.99; 14.27 / -1.83 |
+| G5 v P4 | 17†; 16.47 / +2.16; 16.46 / +1.37 | 56; 12.82 / -1.94; 12.94 / -2.53 | 12†; 14.64 / +2.76; 15.36 / +2.77 |
+| P4 v FCS/other | 192; 12.04 / +2.41; 12.01 / +1.37 | 34; 9.35 / +0.28; 9.34 / -0.98 | - |
+| P4 v G5 | 86; 14.10 / -2.84; 14.17 / -3.37 | 184; 11.96 / -1.87; 12.37 / -1.96 | 51; 11.52 / -1.43; 11.31 / -1.32 |
+| P4 v P4 | 45; 13.23 / -6.91; 13.08 / -6.78 | 239; 13.25 / -2.35; 13.35 / -1.93 | 1036; 13.18 / -2.52; 13.30 / -2.06 |
+| P4 v no data | 1†; 18.79 / +18.79; 18.88 / +18.88 | - | - |
+
+**Total by home returning-production tercile** (n; Operational V5 MAE / bias; priors-only MAE / bias; † = fewer than 30 games)
+
+| Group | Stage 0 | Stages 1-3 | Stage 4 |
+|---|---|---|---|
+| T1 low | 184; 13.73 / -1.30; 13.90 / -2.46 | 253; 12.18 / -2.54; 12.49 / -3.08 | 686; 13.62 / -1.61; 13.82 / -2.07 |
+| T2 | 191; 13.47 / +0.64; 13.41 / -0.42 | 268; 13.58 / -0.99; 13.81 / -1.39 | 691; 13.83 / -1.90; 14.01 / -1.93 |
+| T3 high | 193; 12.43 / +0.48; 12.51 / -0.44 | 267; 13.12 / -0.24; 13.29 / -0.40 | 714; 13.26 / -1.84; 13.39 / -1.84 |
+| no CFBD data | 5†; 7.85 / -7.85; 10.05 / -10.05 | 10†; 17.25 / -5.63; 17.77 / -7.62 | 21†; 12.76 / +3.84; 12.91 / +2.11 |
+
+Outputs: `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json` (every stage-by-group cell with game counts, the intercept check for each season and stage, and the pull hashes). The analysis script was ad hoc and is not in the repository.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
