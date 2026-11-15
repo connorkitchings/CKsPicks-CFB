@@ -123,6 +123,16 @@ gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body false
    gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body true
    ```
 
+### Noon Eastern dispatcher
+
+GitHub `schedule` runs for `weekly-season-update.yml` arrive 3 to 7 hours late, so a Cloudflare Worker in `ops/noon-dispatch` calls the `workflow_dispatch` API at 12:00 America/New_York: Sundays with `mode=close-week`, Mondays with `mode=market-refresh`. It never sends `force`, `skip_production` or `accept_cutoff_correction`. Setup and tests are in `ops/noon-dispatch/README.md`.
+
+- **Kill switch.** `CFB_WEEKLY_AUTOMATION_ENABLED` now gates both the GitHub schedule and the Worker. Before dispatching, the Worker reads the variable and skips unless it is exactly `true`; a missing variable, a failed read or any other value means no dispatch.
+- **Manual runs.** A manual `workflow_dispatch` from the Actions page (or `gh workflow run`) still bypasses the variable, as before.
+- **Backup.** The GitHub cron slots stay in the workflow as backup. The controller is idempotent, so a late scheduled run after a successful Worker dispatch skips.
+- **Token renewal.** The Worker uses a fine-grained token (single repository, "Actions: Read and write" and "Variables: Read") stored as the Worker secret `GITHUB_TOKEN`. Before it expires, create a new token and run `npx wrangler secret put GITHUB_TOKEN` from `ops/noon-dispatch`; no redeploy is needed. An expired token shows as a 401 in the Cloudflare logs.
+- **Disable.** Set `CFB_WEEKLY_AUTOMATION_ENABLED` to `false` (this stops both the schedule and the Worker), or delete the Worker's cron triggers in the Cloudflare dashboard, or run `npx wrangler delete` from `ops/noon-dispatch`.
+
 ### End of the regular season
 
 The official 2026 record ends with the last regular-season week, **week 15** (Army-Navy, Saturday 2026-12-12; verified 2026-11-11 against the provider schedule, which files no regular-season game in week 14 or 16). The week-14 close opens week 15 exactly as every earlier close does. The Sunday 2026-12-13 run then performs the **final close**:

@@ -1,0 +1,11 @@
+name = "noon-dispatch"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+# Two UTC slots cover both offsets; the handler only dispatches when it is
+# 12:xx America/New_York on a Sunday or Monday.
+[triggers]
+crons = ["0 16 * * 0,1", "0 17 * * 0,1"]
+
+# Secret (never stored here): GITHUB_TOKEN, set with `npx wrangler secret put GITHUB_TOKEN`.
