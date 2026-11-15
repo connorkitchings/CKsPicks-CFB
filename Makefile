@@ -78,6 +78,7 @@ check:
 	npm --prefix web run typecheck
 	npm --prefix web run test:publication
 	npm --prefix web run build
+	cd ops/noon-dispatch && node --experimental-strip-types --test src/index.test.ts
 	@echo "✅ All checks passed (run make web-e2e for the browser tests CI also runs)"
 
 # Local pre-push gate, run by .githooks/pre-push (enable with `make hooks`).
