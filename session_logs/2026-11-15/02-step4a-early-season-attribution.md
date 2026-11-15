@@ -26,6 +26,8 @@
 
 - Owner accepted the recommendation: drafted the step 4B declaration in the contract (candidates B1, B1s, B2, conditional B3; pass condition; tuning on 2015 to 2021, 2022 to 2025 reported once). Not approved to run.
 
+- Owner approved the two read-only checks. Cache holds 1,975 stage 0 to 3 regular-season games for 2015 to 2019 and 2021 (enough to tune); Operational V5 predictions for those seasons must be recomputed. Paired bootstrap spread of the MAE difference: 0.10 (intercept-sized change), 0.23 (large change). Recorded in the B declaration.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section
