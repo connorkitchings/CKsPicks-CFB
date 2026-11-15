@@ -56,8 +56,21 @@ test("sign conventions: errors are prediction minus actual and the line is the i
   assert.equal(total.lineError, -2);
 });
 
+test("line capture time passes through per target and unknown stays null", () => {
+  const spreadAt = new Date("2026-09-05T18:00:00.000Z");
+  const totalAt = new Date("2026-09-05T18:30:00.000Z");
+  const both = game({ gameId: 1, canonicalSpreadCapturedAt: spreadAt, canonicalTotalCapturedAt: totalAt });
+  const spreadOnly = game({ gameId: 2, canonicalSpreadCapturedAt: spreadAt, canonicalTotalCapturedAt: null });
+  const absent = game({ gameId: 3 });
+  const invalid = game({ gameId: 4, canonicalSpreadCapturedAt: new Date(NaN), canonicalTotalCapturedAt: spreadAt });
+  const games = [both, spreadOnly, absent, invalid];
+  const at = (target: "spread" | "total") => pairedErrors(games, target).map((p) => p.lineCapturedAt);
+  assert.deepEqual(at("spread"), [spreadAt.toISOString(), spreadAt.toISOString(), null, null]);
+  assert.deepEqual(at("total"), [totalAt.toISOString(), null, null, spreadAt.toISOString()]);
+});
+
 function pair(modelError: number, lineError: number, gameId = 1): PairedError {
-  return { gameId, week: 1, homeTeam: "H", awayTeam: "A", actual: 0, model: modelError, line: lineError, modelError, lineError };
+  return { gameId, week: 1, homeTeam: "H", awayTeam: "A", actual: 0, model: modelError, line: lineError, modelError, lineError, lineCapturedAt: null };
 }
 
 test("equal-error diagonal: below is model closer, above is market closer, on it is even", () => {

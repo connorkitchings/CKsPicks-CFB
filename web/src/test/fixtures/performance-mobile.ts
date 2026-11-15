@@ -34,7 +34,7 @@ const originalGame = v5PerformanceDetailFixture.gradedGames[0];
  *   model closer in 3, line closer in 4
  * Records: spread 3-3-2 and totals 3-3-2 (50.0%, -2.4 pp vs 52.4%).
  */
-const games: GradedGamePick[] = [
+const baseGames: GradedGamePick[] = [
   {
     ...originalGame,
     canonicalSpread: -2.5,
@@ -243,6 +243,14 @@ const games: GradedGamePick[] = [
     totalGradingVersion: PRE,
   },
 ];
+
+const MINUTE_MS = 60_000;
+/** Retained line capture times: spread 90 minutes and total 60 minutes before kickoff. Game 7's spread and game 9's total are unknown (null). */
+const games: GradedGamePick[] = baseGames.map((game) => ({
+  ...game,
+  canonicalSpreadCapturedAt: game.gameId === 401000007 ? null : new Date(game.startDate.getTime() - 90 * MINUTE_MS),
+  canonicalTotalCapturedAt: game.gameId === 401000009 ? null : new Date(game.startDate.getTime() - 60 * MINUTE_MS),
+}));
 
 function record(results: ("win" | "loss" | "push" | null)[]): BetRecord {
   const win = results.filter((result) => result === "win").length;

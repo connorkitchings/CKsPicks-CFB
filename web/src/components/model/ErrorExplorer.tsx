@@ -14,6 +14,7 @@ import {
   type SortDirection,
 } from "@/lib/performance-errors";
 import type { MarketTarget } from "@/lib/performance-market";
+import { etDateTime } from "@/lib/time-et";
 import { replaceSearchParams } from "@/lib/url-state";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -43,6 +44,9 @@ function errorText(target: MarketTarget, pair: PairedError, error: number): stri
   if (target === "total") return `${size} ${error > 0 ? "high" : "low"}`;
   return `${size} toward ${error > 0 ? pair.homeTeam : pair.awayTeam}`;
 }
+
+/** ET capture time of the retained line; "unavailable" when it is unknown. */
+const capturedText = (pair: PairedError) => (pair.lineCapturedAt === null ? "unavailable" : etDateTime(new Date(pair.lineCapturedAt)));
 
 const gameName = (pair: PairedError) => `${pair.awayTeam} at ${pair.homeTeam}`;
 
@@ -157,6 +161,7 @@ function Detail({ target, pair }: { target: MarketTarget; pair: PairedError | nu
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
             <dt className="text-ink-muted">Model forecast</dt><dd className="break-words text-ink">{valueText(target, pair, pair.model)}</dd>
             <dt className="text-ink-muted">Retained line</dt><dd className="break-words text-ink">{valueText(target, pair, pair.line)}</dd>
+            <dt className="text-ink-muted">Line captured</dt><dd className="break-words text-ink" data-testid="error-line-captured">{capturedText(pair)}</dd>
             <dt className="text-ink-muted">Actual</dt><dd className="break-words text-ink">{valueText(target, pair, pair.actual)}</dd>
             <dt className="text-ink-muted">Model error</dt><dd className="break-words text-ink">{errorText(target, pair, pair.modelError)}</dd>
             <dt className="text-ink-muted">Line error</dt><dd className="break-words text-ink">{errorText(target, pair, pair.lineError)}</dd>
@@ -226,7 +231,10 @@ function ErrorTable({
               </th>
               <td className="px-2 py-1 text-right">{pair.week}</td>
               <td className="px-2 py-1 text-right">{target === "spread" ? signed(pair.model) : pair.model.toFixed(1)}</td>
-              <td className="px-2 py-1 text-right">{target === "spread" ? signed(pair.line) : pair.line.toFixed(1)}</td>
+              <td className="px-2 py-1 text-right">
+                {target === "spread" ? signed(pair.line) : pair.line.toFixed(1)}
+                <span className="block whitespace-nowrap text-xs text-ink-muted" data-testid="error-row-captured">Captured {capturedText(pair)}</span>
+              </td>
               <td className="px-2 py-1 text-right">{target === "spread" ? signed(pair.actual) : pair.actual.toFixed(1)}</td>
               <td className="px-2 py-1 text-right">{modelAbsError(pair).toFixed(1)}</td>
               <td className="px-2 py-1 text-right">{lineAbsError(pair).toFixed(1)}</td>

@@ -527,6 +527,9 @@ export interface GradedGamePick {
   /** Retained line behind each grade (`market_snapshots`); null when the grade has no snapshot. */
   canonicalSpread?: number | null;
   canonicalTotal?: number | null;
+  /** `market_snapshots.captured_at` of that retained line; null when the grade has no snapshot. */
+  canonicalSpreadCapturedAt?: Date | null;
+  canonicalTotalCapturedAt?: Date | null;
   /** `prediction_grades.grading_version` per target; its suffix names the line source. */
   spreadGradingVersion?: string | null;
   totalGradingVersion?: string | null;
@@ -593,6 +596,8 @@ type DetailRow = {
   totalResult: "win" | "loss" | "push" | null;
   canonicalSpread?: number | null;
   canonicalTotal?: number | null;
+  canonicalSpreadCapturedAt?: Date | null;
+  canonicalTotalCapturedAt?: Date | null;
   spreadGradingVersion?: string | null;
   totalGradingVersion?: string | null;
 };
@@ -713,6 +718,7 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
     spreadResult: spreadGrade.result,
     spreadGradingVersion: spreadGrade.gradingVersion,
     canonicalSpread: spreadSnapshot.spread,
+    canonicalSpreadCapturedAt: spreadSnapshot.capturedAt,
     spreadPriceProvenance: sql<"actual" | "defaulted" | "unavailable">`COALESCE((
       SELECT CASE WHEN CASE WHEN pms.side = 'home' THEN mq.home_spread_price ELSE mq.away_spread_price END IS NULL THEN 'defaulted' ELSE 'actual' END
       FROM prediction_market_selections pms JOIN market_quotes mq ON mq.quote_id = pms.quote_id
@@ -728,6 +734,7 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
     totalResult: totalGrade.result,
     totalGradingVersion: totalGrade.gradingVersion,
     canonicalTotal: totalSnapshot.total,
+    canonicalTotalCapturedAt: totalSnapshot.capturedAt,
   };
   const rows = await db.select(fields).from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
@@ -785,6 +792,8 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
       evidenceClass: r.evidenceClass,
       canonicalSpread: r.canonicalSpread,
       canonicalTotal: r.canonicalTotal,
+      canonicalSpreadCapturedAt: r.canonicalSpreadCapturedAt,
+      canonicalTotalCapturedAt: r.canonicalTotalCapturedAt,
       spreadGradingVersion: r.spreadGradingVersion,
       totalGradingVersion: r.totalGradingVersion,
     }));
