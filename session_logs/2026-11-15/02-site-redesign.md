@@ -98,7 +98,7 @@ Ran through `psql` with `default_transaction_read_only=on`; the connection strin
 
 ## Session close state (paused)
 
-Contract stays **In Progress**. Nothing merged into local `dev`; nothing pushed. Branch `codex/site-redesign` in `.worktrees/site-redesign` holds local commits `092024ba` (Games), `caf27f64` (Teams), `024e8142` (Graphs) and the Step 6 commit. `web/README.md` has an uncommitted edit from the earlier paused session; it was not reviewed or committed.
+Contract stays **In Progress**. Nothing merged into local `dev`; nothing pushed. Branch `codex/site-redesign` in `.worktrees/site-redesign` holds local commits `092024ba` (Games), `caf27f64` (Teams), `024e8142` (Graphs) and the Step 6 commit. `web/README.md` (route table, navigation and presentation sections) was reviewed against the built behavior and committed as documentation.
 
 ### Blocker: `make web-e2e` is red (86 failed, 350 passed, 10 skipped)
 
