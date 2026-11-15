@@ -784,6 +784,22 @@ What this shows:
 
 Consequence for the work order: the next candidate to declare, if the owner wants one, is a bridge that does not let FBS-vs-FCS games set the FBS-vs-FBS level (an FBS-vs-FCS indicator, or fitting on FBS-vs-FBS games), combined with the tier terms. It is not yet declared or run.
 
+#### Declaration: population-aware bridge (drafted 2026-11-15, owner accepted the direction; not approved to run)
+
+Motivation (from the rescore above): the baseline bridge's single intercept blends FBS-vs-FBS and FBS-vs-FCS games, so it is about 3 points high for the published games, and the pooled early indicators over-correct bias. The candidates below let FBS-vs-FCS games stop setting the FBS-vs-FBS level, with and without the conference-tier terms of B3. Declared before any of them has been run; the list is complete.
+
+| Field | Content |
+|---|---|
+| Question | Does keeping FBS-vs-FCS games from setting the FBS-vs-FBS level, alone or with the B3 tier terms, lower FBS-vs-FBS margin error and bias at stages 0 to 3 and at stage 4? |
+| Candidates (complete list) | **P1:** the baseline bridge plus an FBS-vs-FCS indicator (all stages), fitted on all games; FBS-vs-FBS predictions use the indicator at 0. **P2:** the baseline bridge fitted on FBS-vs-FBS training games only and applied to FBS-vs-FBS games; FBS-vs-FCS games are not predicted by this variant. **P3:** P1 plus the B3 terms (early indicator `E`, Power 4 host against weaker visitor, weaker host against Power 4 visitor, early only). **P4:** P2 plus the same B3 terms, fitted on FBS-vs-FBS games only. Comparators, already run: the baseline and B3 (pooled fit). |
+| Changes | Only the training population and the added terms above. Everything else is the baseline recipe: the alpha-10 Ridge on standardized inputs, the same target, earlier-only fitting. |
+| Frozen | Ratings at every stage, priors, update rules, offsets, the totals bridge, the regular-season population (postseason excluded), and the tier definitions (Power 4 is the SEC, Big Ten, Big 12, ACC and Notre Dame, plus the Pac-12 through 2023). |
+| Population | **Headline: FBS-vs-FBS** (both teams FBS by that season's CFBD membership). FBS-vs-FCS is reported separately: for P1 and P3 from the fitted indicator; for P2 and P4 only through the post hoc earlier-only linear recalibration already described, labelled as such. The one game with no tier is excluded. |
+| Selection protocol | Choose on the **tuning seasons 2018, 2019 and 2021** (each fitted on at least three earlier seasons; this start year is set after seeing that 2016 and 2017 destabilised the earlier candidates, and is declared here before any of these four has been scored). 2016 and 2017 are reported but do not enter selection. Then report 2022 to 2025 once (examined seasons, not a selection), then the 2026 holdout once (293 stage 0 to 3 games, already FBS-vs-FBS; the outcomes are known). |
+| Pass condition | On FBS-vs-FBS, selected on the tuning seasons: stage 0 to 3 margin MAE gain of at least 0.2 over the baseline; stage 4 MAE no more than 0.05 above the baseline; the stage 0 to 3 bias magnitude at most 1.0 and the all-stage bias magnitude at most 1.0 (the baseline's all-stage bias on FBS-vs-FBS is -1.22 and its stage 0 to 3 bias is +0.84); and, to count the tier terms as adding value, P3 or P4 must beat B3 by more than 0.10 MAE at stages 0 to 3. The 1.0 bias limit is about 1.75 standard errors of a 886-game mean bias (error standard deviation about 17); the limits and the 0.2, 0.05 and 0.10 thresholds are proposals for the owner to confirm before approval. |
+| Reference points | FBS-vs-FBS stages 0 to 3, 2022 to 2025: baseline 14.47 / +0.84, B3 13.72 / -2.69; stage 4 baseline 12.87 / -2.08; all stages baseline 13.34 / -1.22. Priors alone are 14.05 at stages 0 to 3, so a gain below about 0.4 would still leave V5 behind them there. |
+| Cannot show | Independent confirmation (2022 to 2025 and 2026 are examined or known); totals; whether the FBS-vs-FCS indicator or the FBS-only fit is better for the FCS games (P2 and P4 do not predict them); that conference tier is the cause rather than a proxy for prior quality. |
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.

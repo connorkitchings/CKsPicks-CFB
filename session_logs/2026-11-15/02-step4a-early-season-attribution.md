@@ -40,6 +40,8 @@
 
 - Rescored the 4B candidates on FBS-vs-FBS only (owner-approved, no refit): B1s no gain (0.02), B1 worse, B3 gain 0.75 over stages 0 to 3 (every season, tuning and 2026 holdout), early bias over-corrected. The bridge intercept (7.4) blends FBS-vs-FBS games (4.1) and FBS-vs-FCS blowouts (29), about 3 points high for published games.
 
+- Owner accepted the recommendation: declared (not run) a population-aware bridge in the contract: P1 FBS-vs-FCS indicator, P2 FBS-only fit, P3 and P4 the same with the B3 tier terms. Selection on 2018, 2019 and 2021 only, then 2022 to 2025 and the 2026 holdout once each; proposed thresholds await the owner.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section
