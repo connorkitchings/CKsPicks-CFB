@@ -870,6 +870,58 @@ Limits: the selection seasons were chosen after seeing that 2016 and 2017 destab
 - **Frozen around it:** ratings at every stage, priors, update rules, offsets, the totals bridge, intervals.
 - **Open item for 2027:** the 2026 holdout ran with zero offsets because 2026 offsets are unavailable; a forward test needs the serving pipeline's offsets for 2027, or a stated zero-offset rule.
 
+### Step 4C results: totals head (declared and run 2026-11-15, owner-approved plan)
+
+Declared before running (complete list, nothing added afterwards). Question: is the flat total caused by over-shrinking and cancellation inside the bridge, or by ratings that carry little totals signal? Candidates: **F4** (the baseline's four separate rating terms) at alpha 1, 10 (baseline), 30, 100, 300 and 1000; **F1** (one feature, home offense plus away offense minus home defense minus away defense, alpha 10); **F2** (two features, offense sum and defense sum, alpha 10). Eight candidates including the baseline. Frozen: ratings, offsets, the margin head, interval construction, earlier-only fitting. Population: FBS-vs-FBS headline, FBS-vs-FCS separate, regular season only. Selection: 2018, 2019 and 2021 pooled FBS-vs-FBS total MAE, then 2022 to 2025 reported once. **Material gain** was declared as: the best candidate beats the baseline total MAE by at least 0.20 on the selection seasons and at least 0.20 on 2022 to 2025 with a paired 90% interval above zero; otherwise no material gain. Total bias is reported, not a pass condition.
+
+Verification before scoring: the baseline reproduces the stored Operational V5 total predictions with a largest difference of 0.0 over 3,483 games (FBS-vs-FBS 2,998; FBS-vs-FCS 485 under the tier assignment used since step 4B, which treats a team absent from the CFBD list as FCS; the earlier step 4A split counted 484 plus one untiered game, the same 485 games). Script `c4.py`; output `~/cfb_ratings_lab_v6/output/step4c-2026-11-15/step4c_totals_results.json`.
+
+Total MAE / bias, FBS-vs-FBS, all stages (intervals are 90%, paired bootstrap, 5,000 resamples):
+
+| Candidate | Selection 2018, 2019, 2021 (2,199 games) | Gain over baseline | 2022 to 2025 (2,998 games) | Gain over baseline |
+|---|---|---|---|---|
+| F4 alpha 1 | 13.928 / +0.07 | 0.000 | 13.490 / -1.77 | 0.000 |
+| **F4 alpha 10 (baseline)** | 13.928 / +0.07 | - | 13.490 / -1.77 | - |
+| F4 alpha 30 | 13.928 / +0.06 | 0.000 | 13.490 / -1.77 | 0.000 |
+| F4 alpha 100 | 13.929 / +0.05 | -0.001 | 13.492 / -1.78 | -0.002 |
+| F4 alpha 300 | 13.931 / +0.02 | -0.003 | 13.496 / -1.79 | -0.007 |
+| F4 alpha 1000 | 13.943 / -0.10 | -0.015 | 13.512 / -1.84 | -0.022 |
+| F1 (one combined feature) | **13.904** / +0.10 | +0.024 (-0.004 to +0.052) | 13.493 / -1.72 | -0.003 (-0.025 to +0.019) |
+| F2 (offense sum, defense sum) | 13.907 / +0.01 | +0.021 (-0.002 to +0.044) | 13.507 / -1.80 | -0.017 (-0.037 to +0.002) |
+
+**Result class: no material gain.** The best candidate on the selection seasons is F1, and it gains 0.024 there and -0.003 on 2022 to 2025, against the declared 0.20. The best candidate is within 0.10 of the baseline on 2022 to 2025, which the declaration reads as: the ratings hold little more totals signal than the baseline already uses.
+
+What this shows about the question:
+- **Over-shrinking is not the cause.** Alpha 1 and alpha 300 give the same totals to within 0.01; the ridge penalty barely matters with thousands of training games and a handful of inputs.
+- **Cancellation inside the bridge is not the cause.** Collapsing four terms into one (F1) or two (F2) changes nothing outside noise.
+- **The ratings carry little totals signal.** For the baseline on FBS-vs-FBS the predictions' standard deviation is 1.5 to 1.6 points against 17 to 18 for actual totals, the correlation is +0.13 (selection) and +0.18 (2022 to 2025), and the MAE beats always predicting the training-mean total (14.02 and 13.56) by only 0.09 and 0.07.
+- Observation, not tested: the slope of actual on predicted total is 1.6 to 1.8, so predictions are under-dispersed relative to the little signal they carry. Rescaling them was not in the declared list and is not claimed.
+- Bias is reported only: baseline total bias is +0.07 on the selection seasons and -1.77 on 2022 to 2025 (predicted too high), a drift of about 1.8 points in the level of FBS-vs-FBS scoring between the two windows.
+
+**FBS-vs-FCS** (selection 341 games, 2022 to 2025 485 games): baseline total MAE 13.47 / +3.20 and 12.64 / +1.16; no candidate improves either (F1 -0.03 and -0.09 gain, F2 -0.09 and -0.06; alpha changes under 0.01).
+
+Cannot show: that a better total does not exist; the unexplained total variance may be game-level scoring noise or information outside these ratings. Seasons 2022 to 2025 are examined evidence, not independent confirmation.
+
+### Step 4D results: venue flag (declared and run 2026-11-15, owner-approved plan)
+
+Declared before running. The neutral-site flag exists locally for 2021 to 2025 only (from `fbs_involved_games_YYYY.parquet`, column `neutral_site`, joined on `game_id`, regular season only). It does not exist for 2015 to 2019, and an unknown flag must not be read as "not neutral", so both arms are fitted on 2021 onward. Question: does using the stored flag instead of the constant home flag reduce the neutral-site margin bias? Candidates: **V1**, the baseline recipe with `home_host` set to 0 on neutral-site games so the feature varies; **V0 (control)**, the baseline recipe fitted on the same restricted window without the flag, so any difference is the flag and not the shorter training window. Both are fitted earlier-only on seasons from 2021 and scored on 2023, 2024 and 2025 (2022 would train on one season and is excluded, declared here). Population: regular-season neutral-site games, and home games to check nothing else moves; FBS-vs-FBS headline. **Evidence of an effect** was declared as: neutral-site margin bias magnitude reduced by at least 1.0 point, home-game MAE worse by no more than 0.05, and the direction consistent in at least 2 of 3 seasons. **No evidence** otherwise. Labelled low-power either way.
+
+Verification: the flag joined for all 4,332 regular-season games of 2021 to 2025 with none missing (126 neutral); the full-window baseline still reproduces the stored Operational V5 margin predictions with a largest difference of 0.0 (so the frame is unchanged). Script `d4.py`; output `~/cfb_ratings_lab_v6/output/step4d-2026-11-15/step4d_venue_results.json`.
+
+Margin, FBS-vs-FBS, scored on 2023 to 2025 (bias is actual minus predicted; interval is the 90% paired bootstrap of the MAE gain of V1 over V0):
+
+| Games | V0 MAE / bias | V1 MAE / bias | V1 gain in MAE |
+|---|---|---|---|
+| Neutral site, pooled (80) | 12.47 / -1.50 | 13.39 / +2.53 | -0.92 (-1.65 to -0.20) |
+| Neutral 2023 (22, under 30) | 11.18 / +1.52 | 13.96 / +7.96 | |
+| Neutral 2024 (35) | 13.97 / -2.41 | 14.19 / +1.13 | |
+| Neutral 2025 (23, under 30) | 11.43 / -3.02 | 11.62 / -0.54 | |
+| Home games, pooled (2,184) | 13.34 / -0.50 | 13.34 / -0.63 | +0.001 (-0.004 to +0.007) |
+
+**Result class: no evidence of an effect, and the flag does worse on the pooled neutral games.** The bias magnitude change is -1.02 (it grows), home-game MAE is unchanged, and the magnitude shrinks in two of three seasons (2024 and 2025) but grows sharply in 2023. The fitted `home_host` coefficient on the 2025 fit is +2.58 points, so setting the flag to 0 lowers a neutral game's predicted home margin by about 2.6, which overshoots: the control's neutral bias is only -1.50, because the team labelled home in a neutral game has no consistent edge. FBS-vs-FCS neutral games number 5 (flagged small); FBS-vs-FCS home games are unchanged.
+
+Cannot show: the size of the home edge, or an effect that survives 80 neutral games (2 of 3 seasons under 30 games). The baseline's 2022 to 2025 neutral-site bias of -2.69 (all populations) is not explained or removed by this flag.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
@@ -971,7 +1023,7 @@ Order: A, then B, then C. D after B. Each result decides whether the next runs.
 | Reference points from 4A | A single pooled shift that zeroes the stage 0 to 3 bias can lower stage 0 MAE by at most 0.91 and, applied globally, worsens stage 4 (MAE 13.60). B2 and B3 are justified only if they beat B1 and B1s by a margin larger than that noise. |
 | Cannot show | Independent confirmation; a gain on stages 0 to 3 says nothing about totals or about stage 4 beyond the stated guard. B2 cannot separate rating gap from tier because they overlap; B3, if run, cannot separate quality from conference. A gain on 2022 to 2025 that is not present on the tuning seasons is not a result. |
 
-**C. Totals head: shrinkage and feature form.**
+**C. Totals head: shrinkage and feature form.** (Run 2026-11-15: no material gain; see the step 4C results section.)
 
 | Field | Content |
 |---|---|
@@ -982,7 +1034,7 @@ Order: A, then B, then C. D after B. Each result decides whether the next runs.
 | Population | Same as B. |
 | Cannot show | That a better total exists; the unexplained 80% of total variance may be game-level efficiency noise. A result near the 13.37 total MAE means ratings hold little more totals signal. |
 
-**D. Venue flag.**
+**D. Venue flag.** (Run 2026-11-15: no evidence of an effect; see the step 4D results section.)
 
 | Field | Content |
 |---|---|
