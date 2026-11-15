@@ -34,11 +34,13 @@
 
 - Owner approved fetching the 2026 pregame states and forecast files from the Preview bucket (read credential; the 2026 data are not local) and ran the declared holdout on 293 stage 0 to 3 games of 2026. B3 gains 0.62 MAE (stage 0 15.40 to 14.20) but over-corrects bias (-2.75 against +0.41) and stage 4 (36 games) is 0.60 worse; B1s gains nothing. Neither passes the declared condition. Zero offsets were used for all arms because 2026 offsets are not in the files.
 
+- Output collision: another session working on the same contract wrote different results to `step4a_results.json` and `step4b_results.json` in the same folders while this session ran, overwriting this session's files. Its files were left in place; this session's results were regenerated from the saved scripts under the names `step4a_attribution_results.json` and `step4b_variants_results.json` and reproduce the recorded figures exactly. That session's work is not in this repository and was not verified, apart from its FBS-vs-FBS stage 0 to 3 figures, which match.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section
 - `docs/plans/index.md` — state line
-- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_results.json`, `step4b_b3_results.json`, `step4b_holdout_2026_results.json`, `~/cfb_ratings_lab_v6/source/preview-2026-11-15/`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/teams_2015..2019.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
+- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_variants_results.json`, `step4b_b3_results.json`, `step4b_holdout_2026_results.json`, `~/cfb_ratings_lab_v6/source/preview-2026-11-15/`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/teams_2015..2019.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_attribution_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
 
 ## Validation
 

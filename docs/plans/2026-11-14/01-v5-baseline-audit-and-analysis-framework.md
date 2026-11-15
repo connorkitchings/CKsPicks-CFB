@@ -622,11 +622,11 @@ By stage (margin; games, Operational V5 MAE / bias, priors-only MAE / bias):
 | T3 high | 193; 12.43 / +0.48; 12.51 / -0.44 | 267; 13.12 / -0.24; 13.29 / -0.40 | 714; 13.26 / -1.84; 13.39 / -1.84 |
 | no CFBD data | 5†; 7.85 / -7.85; 10.05 / -10.05 | 10†; 17.25 / -5.63; 17.77 / -7.62 | 21†; 12.76 / +3.84; 12.91 / +2.11 |
 
-Outputs: `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json` (every stage-by-group cell with game counts, the intercept check for each season and stage, and the pull hashes). The analysis script was ad hoc and is not in the repository.
+Outputs: `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_attribution_results.json` (every stage-by-group cell with game counts, the intercept check for each season and stage, and the pull hashes). The analysis script was ad hoc and is not in the repository.
 
 ### Step 4B results: stage-specific intercept and rating-gap variants (2026-11-15, owner-approved)
 
-Run as declared above (candidates B1, B1s, B2; B3 not run). The margin bridge was refitted earlier-only for each validation season with the added terms (alpha-10 Ridge on standardized inputs, the same recipe and target as the baseline); the totals bridge and everything upstream were untouched. The baseline was rebuilt from the serving states and the rebuild feature frame with the postseason excluded, and **reproduces the stored Operational V5 margin predictions for 2022 to 2025 exactly (largest difference 0.0; MAE 13.7151)**. Bias is actual minus prediction. Outputs: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_results.json`. The script was ad hoc and is not in the repository.
+Run as declared above (candidates B1, B1s, B2; B3 not run). The margin bridge was refitted earlier-only for each validation season with the added terms (alpha-10 Ridge on standardized inputs, the same recipe and target as the baseline); the totals bridge and everything upstream were untouched. The baseline was rebuilt from the serving states and the rebuild feature frame with the postseason excluded, and **reproduces the stored Operational V5 margin predictions for 2022 to 2025 exactly (largest difference 0.0; MAE 13.7151)**. Bias is actual minus prediction. Outputs: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_variants_results.json`. The script was ad hoc and is not in the repository.
 
 **Selection on the tuning seasons (2016, 2017, 2018, 2019, 2021; 1,662 stage 0 to 3 games; each season fitted on strictly earlier seasons, so 2016 trains on 2015 alone):**
 
