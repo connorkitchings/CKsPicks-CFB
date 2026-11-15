@@ -30,6 +30,8 @@
 
 - Owner approval ("Yes, start step 3"): baselines, scoring accounting and possession volume on regular-season games. Margin: earlier-season mean 17.47, preseason priors only 14.41, Operational V5 13.72; the 0.70 from in-season updating arrives entirely at stage 4. Total: earlier-season mean 13.65, Operational V5 13.37. Ledger: 93.9% of games reconcile exactly; eligible offense is 86.4% of points and 80.4% of the total's variance. Possessions correlate +0.065 with the final total and points per possession +0.772; the pregame possession average correlates about +0.02 to +0.05 with the total. Possession volume is not the missing totals input, which contradicts the interpretation recorded earlier the same day.
 
+- Owner approval ("Yes, draft it"): drafted a revised step 4 experiment list in the contract, not approved. Possession volume withdrawn; order is A early-season error attribution (read-only), B prior and update variants, C totals head shrinkage and feature form, D venue flag (126 games, low power). Each has a declaration table. Owner decisions listed at the end of that section.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — contribution section, next scope
@@ -48,5 +50,5 @@
 
 ## Handoff Notes
 
-- **Resume at:** "Next executable scope" item 8 in the contract.
+- **Resume at:** the revised step 4 list in the contract (owner review), then "Next executable scope" item 13. Nothing from the list is approved to run.
 - **Watch out for:** the reading that totals need inputs the bridge lacks is an interpretation; step 3 tests it. The home-offense asymmetry in total coefficients is unexplained.

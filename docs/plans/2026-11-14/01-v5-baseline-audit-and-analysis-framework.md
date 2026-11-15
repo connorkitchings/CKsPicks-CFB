@@ -503,7 +503,7 @@ Outputs: `~/cfb_ratings_lab_v6/output/step3-2026-11-15/` (`step3_results.json`, 
 10. Done 2026-11-15: the postseason rows are removed from training, calibration and scoring, and the three baselines are refitted (see the refitted benchmark section). Operational V5: margin MAE 13.7151, total MAE 13.3709 over 3,483 games.
 11. Optional: rerun the slice tables and contribution decomposition on the refitted predictions.
 12. Done 2026-11-15: work-order step 3 (see that section).
-13. Before step 4, revise its list of bounded experiments in light of steps 2 and 3: the possession-volume experiment has lost its basis; the venue experiment covers 126 regular-season games; the early-season result (updated ratings no better than priors through three games) and the total's efficiency variation are the larger open questions. This is an owner decision.
+13. Before step 4, revise its list of bounded experiments in light of steps 2 and 3: the possession-volume experiment has lost its basis; the venue experiment covers 126 regular-season games; the early-season result (updated ratings no better than priors through three games) and the total's efficiency variation are the larger open questions. This is an owner decision. Drafted 2026-11-15 in the step 4 section; awaiting owner review.
 
 ## Work order
 
@@ -534,9 +534,67 @@ Outputs: `~/cfb_ratings_lab_v6/output/step3-2026-11-15/` (`step3_results.json`, 
 - Scoring identity per game, reconciled to the final score: home eligible offensive points + away eligible offensive points + excluded offensive points + non-offense points + overtime + unresolved. The corpus `denominator` counts eligible regulation possessions only ([methodology](../../modeling/possession_rating_methodology.md), D2 to D4), so possessions times points per possession does not rebuild a total.
 - Three separate totals questions: how much ratings, bridge contributions and offsets vary; how much observed possession volume explains after the fact; how much possession volume is predictable before kickoff. Observed possessions depend on game flow, so the second is not an attainable gain.
 
-### Step 4: bounded experiments
+### Step 4: bounded experiments (revised list, proposed 2026-11-15, not approved)
 
-Venue flag, a pregame possession-volume input, prior and update variants. Each uses the declaration template below. Flexible bridges are scored only on chronological out-of-sample predictions. One-at-a-time swaps miss interactions between layers and are reported with that caveat.
+Steps 2 and 3 changed what is worth testing. The original list was venue, a pregame possession-volume input, and prior and update variants. Revised:
+
+| Item | Status | Reason |
+|---|---|---|
+| Pregame possession-volume input | Withdrawn | Possession volume correlates +0.065 with the final total and +0.016 to +0.048 before kickoff (step 3 section C). |
+| Venue flag | Kept, narrowed | Applies to 126 regular-season neutral-site games (bias -2.69), so it can show direction but has little power. |
+| Early-season error attribution, then prior and update variants | Kept, moved first | Stages 0 to 3 are no better than preseason priors; stage 0 margin bias is +7.16 and week-1 openers 473 games, MAE 16.18, bias +5.89. |
+| Totals head: shrinkage and feature form | Replaces the possession item | Predicted totals vary by about 1.6 points against 16.9 actual because the fitted total coefficients are small and offense and defense terms cancel (correlation -0.50). |
+| Non-conference bias (+4.22) | Moved to step 5 | It overlaps early season and FCS games; screen it after the early-season attribution. |
+
+Order: A, then B, then C. D after B. Each result decides whether the next runs.
+
+**A. Early-season error attribution (diagnostic, no new model).**
+
+| Field | Content |
+|---|---|
+| Question | Is the stage 0 to 3 error mainly the prior's quality, the bridge's home-edge intercept, or the speed of in-season updating? |
+| Changes | Nothing is refitted differently. Split the existing stage 0 to 3 residuals of Operational V5 and of the priors-only prediction by team group (returning starters, prior rank, conference tier), and compare the intercept with the stage's mean outcome. |
+| Frozen | Operational V5 states, priors, bridge recipe, the regular-season population and the earlier-only refit. |
+| Refitted | Nothing beyond the existing earlier-only refit. |
+| Population | Regular-season 2022 to 2025, 3,483 games; 2021 only where the earlier work already used it. |
+| Cannot show | Causation, or that any change would help; the seasons are already examined. |
+
+**B. Prior and update variants (conditional on A).**
+
+| Field | Content |
+|---|---|
+| Question | Does a stage-dependent blend of prior and in-season rating, or a stage-specific bridge intercept, lower stage 0 to 3 margin error and bias without raising stage 4 error? |
+| Changes | Only the blend weight or intercept, chosen from a small list declared before it runs. |
+| Frozen | Measurements, priors, adjustment, update rules and every stage 4 rating. |
+| Refitted | Bridge, earlier-only, labelled as such. Frozen-coefficient variants are reported separately. |
+| Population | Tuned on 2015 to 2019 and 2021 where inputs exist; 2022 to 2025 reported as previously examined evidence. |
+| Cannot show | Independent confirmation; a gain at stages 0 to 3 says nothing about totals. |
+
+**C. Totals head: shrinkage and feature form.**
+
+| Field | Content |
+|---|---|
+| Question | Is the flat total caused by over-shrinking and cancellation inside the bridge, or by ratings that carry little totals signal? |
+| Changes | The total head only: ridge strength, and a sum-of-offense-and-defense feature in place of the four separate terms. The margin head is untouched. |
+| Frozen | Rating states, offsets, the margin head, and the intervals' construction. |
+| Refitted | Total head, earlier-only; the alpha list is declared before it runs. |
+| Population | Same as B. |
+| Cannot show | That a better total exists; the unexplained 80% of total variance may be game-level efficiency noise. A result near the 13.37 total MAE means ratings hold little more totals signal. |
+
+**D. Venue flag.**
+
+| Field | Content |
+|---|---|
+| Question | Does using the stored neutral-site flag instead of a constant home flag reduce the neutral-site bias? |
+| Changes | The flag only; `_design` currently drops it because it is constant, so it must vary. |
+| Frozen | Everything else. |
+| Refitted | Bridge, earlier-only. |
+| Population | 126 regular-season neutral-site games in 2021 to 2025 plus the home games, to check nothing else moves. |
+| Cannot show | The size of the home edge, or an effect that survives 126 games of noise. |
+
+Flexible bridges are scored only on chronological out-of-sample predictions. One-at-a-time swaps miss interactions between layers and are reported with that caveat. Market results play no part in choosing among these.
+
+Owner decisions needed before any of this runs: approve or change the list and order; confirm A is read-only scoring on existing predictions; confirm that tuning for B and C may use 2015 to 2019 and 2021 only where the retained inputs exist, and say what to do where they do not.
 
 ### Step 5: residual screens and hindsight experiments
 
