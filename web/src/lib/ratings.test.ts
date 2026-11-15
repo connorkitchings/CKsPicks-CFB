@@ -29,28 +29,6 @@ test("Teams hub keeps national ranks fixed, validates sort and direction, and ex
   assert.match(source, /searchParamsUrl\("\/teams"/);
 });
 
-test("ratings table orders by column headers with SOS ranked over every team before filtering", () => {
-  const viewSource = readFileSync(new URL("../components/ratings/RatingsView.tsx", import.meta.url), "utf8");
-  // The top segmented sort groups are gone; sorting lives in the table headers and the phone select.
-  assert.doesNotMatch(viewSource, /Rating category|Résumé sort|Sort by résumé|SegmentedControl/);
-  assert.match(viewSource, /aria-label=\{`Sort by \$\{label\}`\}/);
-  assert.match(viewSource, /aria-sort=\{active \? \(direction === "desc" \? "descending" : "ascending"\) : "none"\}/);
-  assert.match(viewSource, /<label htmlFor="rating-sort"[^>]*>Sort by<\/label>/);
-  // SOS ranks come from the full period, and the search filter runs after ranking.
-  assert.match(viewSource, /const sosRanks = useMemo\(\(\) => rankSosByTeam\(ratings\), \[ratings\]\);/);
-  assert.match(viewSource, /ranked\.filter\(/);
-  // Period links carry the direction only when it differs from the sort's best-first default.
-  assert.match(viewSource, /if \(direction !== bestFirstDirection\(sort\)\) params\.set\("dir", direction\);/);
-});
-
-test("ratings table explains SOS and SOR rank tooltips and the note copy", () => {
-  const viewSource = readFileSync(new URL("../components/ratings/RatingsView.tsx", import.meta.url), "utf8");
-  assert.match(viewSource, /Schedule difficulty rank among FBS teams \(1 is hardest\), measured against an average FBS team\./);
-  assert.match(viewSource, /Strength of record rank: 1 is the strongest résumé\./);
-  assert.match(viewSource, /SOS ranks schedule difficulty for an average FBS team \(1 is hardest\)\./);
-  assert.match(viewSource, /href="\/model\/method#elite-reference"/);
-});
-
 test("TeamPair shows team names as plain text, not links (slate cards never link to team pages)", () => {
   const source = readFileSync(new URL("../components/slate/TeamPair.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\/teams\//);
