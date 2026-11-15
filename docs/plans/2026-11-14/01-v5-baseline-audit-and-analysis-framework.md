@@ -111,7 +111,7 @@ The owner approved one credentialed, read-only retrieval on 2026-11-14. It used 
 
 ### Observations from the retrieved files (facts about the files, not new scoring)
 
-- The bundle carries coefficients for the four standardized ratings only. `home_host` and `venue_unknown` are in `feature_order` but have no coefficient; the margin intercept is 7.43 points. How `apply_exported_bridge` treats the two venue flags is not yet verified.
+- The bundle carries coefficients for the four standardized ratings only. `home_host` and `venue_unknown` are in `feature_order` but have no coefficient; the margin intercept is 7.43 points. The contribution section below shows why: both flags are constant and the fit drops non-varying features.
 - Total coefficients per standardized rating are +1.66 (home offense), -0.99 (home defense), +0.51 (away offense), -1.11 (away defense), against 6.7 to 9.5 in absolute value for margin. If the four inputs were uncorrelated with unit spread, the predicted total would have a standard deviation of about 2.3 points before offsets. The actual spread still has to be measured in step 2, but the flat-totals question applies to the serving bridge as well as the historical one.
 - Home offense moves the total about three times as much as away offense. Unexplained; a step 2 item.
 - The `w6` rebuild contains its own `forecast/bundle.json` (`63476e48…`) that differs from the serving bundle in centers, scales (about 0.50 to 0.61 against 0.79 to 0.87) and coefficients. Its `ratings/summary.json` names candidate `ppp__rho_0_60__exposure`. It appears to be the historical update recipe on rebuilt data, and it is not what serves.
@@ -293,6 +293,41 @@ What this establishes for Operational V5 on 2021 to 2025:
 
 Full cells are in `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/slices_historical_vs_operational.json`.
 
+### Contribution spread for Operational V5 (2026-11-15, owner-approved)
+
+Each of the 7,318 Operational V5 predictions for 2022 to 2025 was rebuilt as intercept + four rating terms + offset, using the project's own design and target functions (`forecast/heads.py`: `_design`, `_target`) and the same alpha-10 Ridge per validation season. The rebuilt predictions equal the stored ones to 1.4e-14. No new model; this decomposes the predictions already scored.
+
+Standard deviation of each term, in points:
+
+| Term | Margin | Total |
+|---|---|---|
+| Home offense rating | 6.04 | 1.40 |
+| Home defense rating | 4.81 | 0.44 |
+| Away offense rating | 7.90 | 0.48 |
+| Away defense rating | 6.66 | 0.67 |
+| Four rating terms together | 12.98 | 1.37 |
+| Offset | 0.81 | 0.89 |
+| Prediction | 13.17 | 1.57 |
+| Actual outcome | 21.95 | 16.90 |
+
+Correlation of the prediction with the outcome: +0.606 for margin, +0.164 for total. The offset alone correlates +0.153 with actual margin and -0.022 with actual total.
+
+Bridge coefficients per standardized rating, by validation season: margin 6.8 to 7.1 (home offense), 8.0 to 9.1 (home defense), -8.6 to -8.9 (away offense), -9.6 to -10.7 (away defense); total +1.37 to +1.75 (home offense), -0.56 to -0.97 (home defense), +0.47 to +0.61 (away offense), -0.97 to -1.06 (away defense).
+
+What this establishes about the explanations for flat totals listed in step 2:
+
+- **Venue flags contribute nothing, by construction.** `home_host` and `venue_unknown` equal 1.0 in every row, and `_design` drops any feature that does not vary. Home advantage lives only in the intercept (about 7.1 to 7.3 margin points), which every game receives, neutral-site games included.
+- **Not sparse updates and not compressed ratings.** The same four ratings (raw spread 0.50 to 0.77) give margin predictions a spread of 13 points and a 0.61 correlation with outcomes.
+- **The fitted total coefficients are small.** A one-standard-deviation change in a rating moves the predicted total by 0.5 to 1.75 points, against 7 to 11 points for margin. This is the main cause.
+- **Cancellation is a secondary cause.** Offense and defense terms correlate -0.50 for totals, because a team's offense and defense ratings correlate +0.42 to +0.51. If the four terms were uncorrelated their sum would have a spread of 1.68 points; it is 1.37.
+- **Offsets are not the cause, and add no totals signal.** They add 0.89 points of spread that is uncorrelated with actual totals.
+
+Still unexplained: the home offense rating moves the total about three times as much as the away offense rating, in every validation season.
+
+Interpretation, not a finding: the ratings measure opponent-adjusted scoring efficiency, which mostly cancels in a total (a strong team scores more and allows less), so a linear function of them has little to say about how many points a game will have. That points at inputs the bridge lacks, such as possession volume, more than at the rating update. Step 3's scoring accounting and possession-volume questions test this.
+
+Outputs: `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11-14/contribution_spread.json`.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
@@ -307,7 +342,8 @@ Full cells are in `~/cfb_ratings_lab_v6/output/operational-v5-historical-2026-11
 4. Done 2026-11-14 as far as local files allow (see the trace): same update code, different input lineage; the differences follow the rebuild's scoring corrections. Optional follow-up: fetch the rebuild's observations, terminal table and decisions file to separate direct corrections from propagation.
 5. Done 2026-11-14: Operational V5's historical predictions exist and are scored (see the scoring section).
 6. Done 2026-11-14: the slice report was rerun on the Operational V5 predictions (see the slice section).
-7. Remaining in work-order step 2, each needing approval: measure the spread of each bridge contribution and offset; extend the temporal check upstream of the rating states (opponent adjustment, priors, normalization, offsets). After that, step 3 (chronological baselines and scoring accounting).
+7. Done 2026-11-15: the spread of each rating term, bridge coefficient and offset is measured (see the contribution section).
+8. Remaining in work-order step 2, needing approval: extend the temporal check upstream of the rating states (opponent adjustment, priors, normalization, offsets). After that, step 3 (chronological baselines and scoring accounting).
 
 ## Work order
 
