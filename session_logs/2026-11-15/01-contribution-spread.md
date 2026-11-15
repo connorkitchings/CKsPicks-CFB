@@ -7,7 +7,7 @@
 - **Plan Contract:** [`docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md`](../../docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md)
 - **Approval / Status:** Owner approved on 2026-11-14 ("Yes, measure it"); run on 2026-11-15. Contract stays `Draft`.
 - **Blockers:** None.
-- **Next:** Owner decides whether postseason rows are also dropped from bridge training and calibration, then work-order step 3.
+- **Next:** Owner decides on work-order step 3 (chronological baselines and scoring accounting).
 
 **tags:** ["model-research", "baseline-audit", "totals", "ratings-lab"]
 
@@ -25,6 +25,8 @@
 - Defect found: 415 postseason games carry `week` 1, so they receive no current-season evidence and are forecast from preseason priors alone (all 1,660 serving states). Not a leak. Operational V5 2022 to 2025 margin MAE is 14.32 on the 176 postseason games against 12.84 on regular-season stage 4 games; excluding postseason the pooled figure is 13.713 against 13.742. Recorded, not fixed.
 
 - Owner decision ("Exclude them"): postseason games are excluded from the historical benchmark. Rule verified on every season. Existing predictions filtered, no refit: Operational V5 on 2022 to 2025 regular season is margin MAE 13.7130, total 13.3782 over 3,483 games. The neutral-site finding shrinks (126 regular-season games, margin bias -2.69, not -4.32 over 328); season openers are worse than reported (margin MAE 16.18, bias +5.89).
+
+- Owner approval ("Yes, refit without them"): postseason rows removed from training, calibration and scoring; three baselines refitted with unchanged evaluation code. Benchmark, 2022 to 2025, 3,483 games: Operational V5 margin MAE 13.7151, total 13.3709; Historical V5 14.2960, 13.6062. The refit moves MAE by at most 0.009 and margin bias from +0.43 to +0.19.
 
 ## Files Modified
 

@@ -398,6 +398,37 @@ What changes in the findings:
 - **Non-conference games are slightly worse** (bias +4.22), and the late-season gain is unchanged.
 - Flat totals and the contribution findings are unaffected in substance; they were measured on all 3,659 games.
 
+### Regular-season benchmark, refitted (2026-11-15, owner-approved)
+
+The owner approved removing the postseason games from bridge training and calibration as well ("Yes, refit without them"). The 415 games were dropped from the feature frames, the rating states and the frozen-prediction keys (8,520 games remain; 3,483 per target in 2022 to 2025), and all three baselines were refitted with the unchanged `common_bridge_predictions`: bridge per validation season on strictly earlier seasons, earlier-only calibration. **These are the benchmark numbers.**
+
+Pooled 2022 to 2025 (filtered-only value from the previous section in brackets):
+
+| Model | Margin MAE | Margin bias | Margin 90% coverage | Total MAE | Total bias | Total 90% coverage |
+|---|---|---|---|---|---|---|
+| Historical V5 | 14.2960 [14.2873] | +0.04 [+0.23] | 91.0% | 13.6062 [13.6116] | -2.59 | 91.9% |
+| Repaired arm, September inputs | 13.7182 [13.7176] | +0.19 [+0.43] | 91.3% | 13.4412 [13.4503] | -2.33 | 92.3% |
+| **Operational V5** | **13.7151** [13.7130] | +0.19 [+0.43] | 91.3% | **13.3709** [13.3782] | -1.36 | 92.3% |
+
+Operational V5 by season (margin, total): 2022 14.04, 13.69; 2023 13.66, 13.70; 2024 13.95, 13.12; 2025 13.23, 12.99.
+
+Operational V5 by completed-game stage (games; margin MAE, bias, 90% coverage; total MAE, bias): stage 0, 573; 16.08, +7.16, 85.5%; 13.16, -0.11. Stage 1, 301; 14.34, +3.92, 91.0%; 13.03, -1.46. Stage 2, 244; 15.11, +0.77, 90.2%; 12.50, -1.32. Stage 3, 253; 13.32, -1.66, 93.3%; 13.55, -1.06. Stage 4, 2,112; 12.87, -2.08, 92.9%; 13.56, -1.73. Historical V5 margin MAE by stage: 15.85, 14.24, 14.98, 13.00, 13.96.
+
+Paired differences (62 season/week blocks, 2,000 replicates, seed 20260928), with the existing 90% interval and the two-sided 95% interval the protocol amendment proposes:
+
+| Comparison | Target | MAE lower by | 90% interval | 95% interval |
+|---|---|---|---|---|
+| Operational against Historical V5 | Margin | 0.581 | 0.289 to 0.880 | 0.237 to 0.938 |
+| Operational against Historical V5 | Total | 0.235 | 0.179 to 0.298 | 0.168 to 0.308 |
+| Operational against September repaired arm | Margin | 0.003 | -0.040 to 0.044 | -0.049 to 0.050 |
+| Operational against September repaired arm | Total | 0.070 | 0.035 to 0.106 | 0.029 to 0.112 |
+
+Operational V5 prediction spread: margin 13.46 points against 22.09 actual (correlation +0.615); total 1.62 points against 16.86 actual (correlation +0.168).
+
+What this establishes: removing the postseason rows from training barely moves accuracy (at most 0.009 in MAE) and removes about a quarter of a point of margin bias. The earlier findings stand on the refitted benchmark. Slice tables and the contribution decomposition have not been rerun on the refitted predictions; given the size of the change they are expected to move in the second decimal, but that is not verified.
+
+Outputs: `~/cfb_ratings_lab_v6/output/regular-season-benchmark-2026-11-15/` (predictions and early predictions for the three baselines, `scorecards.json`; Operational V5 predictions SHA-256 begins `5651b023a440838b`).
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
@@ -415,8 +446,9 @@ What changes in the findings:
 7. Done 2026-11-15: the spread of each rating term, bridge coefficient and offset is measured (see the contribution section).
 8. Done 2026-11-15: the upstream temporal check passed (see that section). Work-order step 2 is complete apart from the limits listed there.
 9. Done 2026-11-15: the owner decided to exclude the postseason games; the benchmark is recomputed on regular-season games by filtering (see that section).
-10. Open: whether the 415 postseason rows are also removed from bridge training and calibration. That is a refit and would change every number slightly; it should be settled before any candidate is compared.
-11. Then work-order step 3 (chronological baselines and scoring accounting), on approval.
+10. Done 2026-11-15: the postseason rows are removed from training, calibration and scoring, and the three baselines are refitted (see the refitted benchmark section). Operational V5: margin MAE 13.7151, total MAE 13.3709 over 3,483 games.
+11. Optional: rerun the slice tables and contribution decomposition on the refitted predictions.
+12. Then work-order step 3 (chronological baselines and scoring accounting), on approval.
 
 ## Work order
 
@@ -482,7 +514,7 @@ Each needs a dated entry in the [research protocol](../2026-11-12/02-offseason-r
 2. **Paired interval.** Retain season/week block resampling as the proposed primary method, compute a two-sided 95% interval, and document the dependence it captures (within a week) and omits (the same teams recurring across weeks). Specify any sensitivity analysis before candidates are evaluated. The 95% comparison interval is distinct from the model's 90% prediction intervals. `paired_comparison` needs an explicit confidence level to implement this.
 3. **2022 to 2025.** Describe these seasons as previously examined temporal validation evidence. Exploration and tuning on 2015 to 2019 and 2021 remain useful but restore no independence. Before the next evaluation batch, freeze the candidate families, the comparison rules and how a finalist is chosen. A ledger of scoring runs records looks; it does not remove selection bias.
 4. **2026.** Document prior exposure (the 215-game counterfactual of 2026-09-28, weekly scoring, and the repair work). Keep the restriction that no candidate is scored on 2026 until a final candidate, or a bounded pre-declared set, is frozen. Prospective confirmation is 2027 predictions.
-6. **Benchmark population (decided 2026-11-15, to be written into the protocol with the other amendments).** The headline population is regular-season games only: 3,483 games per target for 2022 to 2025 instead of 3,659. Postseason games are identified by the rule in the regular-season benchmark section.
+6. **Benchmark population (decided 2026-11-15, to be written into the protocol with the other amendments).** The headline population is regular-season games only: 3,483 games per target for 2022 to 2025 instead of 3,659. Postseason games are identified by the rule in the regular-season benchmark section and are removed from bridge training and calibration as well as scoring (owner decision 2026-11-15).
 5. **Market.** Market comparison is reported only after football-based priorities are frozen, with identical game coverage, verified spread signs, quote provenance, and cutoff-time lines reported separately from closing lines. Using market results to steer research would be market-informed prioritization and needs its own explicit approval.
 
 ## Validation
