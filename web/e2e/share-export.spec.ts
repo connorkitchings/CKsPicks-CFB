@@ -125,8 +125,8 @@ const clipboardSettled = (page: Page) => page.evaluate(() => (window as unknown 
 
 /** Leaves the chart page client-side, which unmounts its export actions. */
 async function leaveChartPage(page: Page): Promise<void> {
-  await page.locator("a[href^='/ratings']:visible").first().click();
-  await expect(page).toHaveURL(/\/ratings/);
+  await page.locator("a[href^='/teams']:visible").first().click();
+  await expect(page).toHaveURL(/\/teams/);
   await expect(page.getByTestId("chart-export")).toHaveCount(0);
 }
 

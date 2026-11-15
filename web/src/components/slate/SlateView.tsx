@@ -154,7 +154,7 @@ export function SlateView({
             {regularSeasonComplete && (
               <RegularSeasonComplete performance={performance} games={games} />
             )}
-            <p className="max-w-3xl text-sm leading-relaxed text-ink-muted">Explore the week’s games, compare football forecasts with market lines, and revisit published results.</p>
+            <p className="max-w-3xl text-sm leading-relaxed text-ink-muted max-sm:hidden">Explore the week’s games, compare football forecasts with market lines, and revisit published results.</p>
             <p className="text-xs text-ink-muted">{activatedAt ? `Data release activated ${etDateTime(activatedAt)}. ` : ""}{updatedAt ? `Forecast updated ${etDateTime(updatedAt)}. ` : ""}Schedules, lines and results reflect published data; no live score feed.</p>
 
             {displayOnlyNotice && (
@@ -214,7 +214,7 @@ export function SlateView({
                 ) : undefined}
               />
             )}
-            {showRecord && <details className="border-t border-line py-3"><summary className="cursor-pointer text-sm font-semibold">Season and weekly model record</summary><div className="mt-3"><ModelRecord performance={performance} weekNumber={week} week={graded ? weekRecord(games) : undefined} weekPerformance={graded ? weekPerformance : undefined} /></div></details>}
+            {showRecord && <details className="border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">Season and weekly model record</summary><div className="mt-3"><ModelRecord performance={performance} weekNumber={week} week={graded ? weekRecord(games) : undefined} weekPerformance={graded ? weekPerformance : undefined} /></div></details>}
           </>
         )}
       </main>

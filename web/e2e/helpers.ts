@@ -67,3 +67,29 @@ export async function selectOffense(page: Page, side: "away" | "home"): Promise<
     await expect(button).toHaveAttribute("aria-pressed", "true", { timeout: 500 });
   }).toPass();
 }
+
+/** The collapsed "Featured comparisons and weekly highlights" disclosure on Games (every viewport). */
+export const featuredComparisons = (page: Page) =>
+  page.locator("details").filter({ has: page.locator("summary", { hasText: "Featured comparisons and weekly highlights" }) });
+
+/**
+ * Opens the featured disclosure so Biggest edges, Underdog picks and Highlights can be queried.
+ * On phones each card inside is its own collapsed disclosure; those stay closed for the caller.
+ */
+export async function openFeatured(page: Page): Promise<void> {
+  await openDetails(featuredComparisons(page));
+}
+
+/** The collapsed "Season and weekly model record" disclosure at the bottom of Games. */
+export const slateRecordDetails = (page: Page) =>
+  page.locator("details").filter({ has: page.locator("summary", { hasText: "Season and weekly model record" }) });
+
+/**
+ * Opens the model record disclosure; on phones also opens the record card's own summary line, so
+ * the headings and cells are visible at every width.
+ */
+export async function openRecord(page: Page): Promise<void> {
+  await openDetails(slateRecordDetails(page));
+  const summary = page.getByTestId("record-summary");
+  if (await summary.isVisible()) await openDetails(page.getByRole("region", { name: "Record" }).locator("details"));
+}

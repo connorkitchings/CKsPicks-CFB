@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { featuredComparisons, gotoHydrated, openFeatured, openRecord, openUnitStats, selectOffense, slateRecordDetails, unitStats } from "./helpers";
 
 const DESKTOP = { width: 1280, height: 900 };
 
@@ -55,13 +55,18 @@ test.describe("desktop layout at 1280px", () => {
     await expectMaxHeight(search);
   });
 
-  test("slate shows Biggest edges and the season record without a click", async ({ page }) => {
-    await page.goto("/");
+  test("slate keeps Biggest edges and the season record in two disclosures that open inline content on desktop", async ({ page }) => {
+    await gotoHydrated(page, "/");
+    await expect(featuredComparisons(page)).not.toHaveAttribute("open", "");
+    await expect(slateRecordDetails(page)).not.toHaveAttribute("open", "");
+    await openFeatured(page);
     const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
     await expect(biggestEdges.getByText("Biggest edges", { exact: false }).filter({ visible: true }).first()).toBeVisible();
     await expect(biggestEdges.getByText("Spread", { exact: true }).filter({ visible: true }).first()).toBeVisible();
+    // Inside the opened disclosure the card itself needs no second click on desktop.
     await expect(biggestEdges.locator("summary").filter({ visible: true })).toHaveCount(0);
 
+    await openRecord(page);
     const record = page.getByRole("region", { name: "Record", exact: true });
     await expect(page.getByRole("heading", { name: /^Season record before Week \d+$/ }).filter({ visible: true })).toBeVisible();
     await expect(record).toBeVisible();
@@ -69,6 +74,7 @@ test.describe("desktop layout at 1280px", () => {
 
   test("slate shows one featured card that flips from Biggest edges to Underdog picks and back", async ({ page }) => {
     await gotoHydrated(page, "/");
+    await openFeatured(page);
     const card = page.getByRole("region", { name: "Biggest edges" });
     await expect(page.getByRole("region", { name: "Underdog picks" })).toHaveCount(0);
     await expect(card.locator("summary").filter({ visible: true })).toHaveCount(0);
@@ -101,6 +107,7 @@ test.describe("desktop layout at 1280px", () => {
   test("the featured card's view control sits to the right of the title on the same row from 640px", async ({ page }) => {
     await page.setViewportSize({ width: 640, height: 900 });
     await gotoHydrated(page, "/");
+    await openFeatured(page);
     const card = page.getByRole("region", { name: "Biggest edges" });
     const view = card.getByRole("group", { name: "Featured games view" });
     const underdogsButton = view.getByRole("button", { name: "Underdog picks", exact: true });
@@ -114,38 +121,38 @@ test.describe("desktop layout at 1280px", () => {
     }
   });
 
-  test("a final week shows Result Highlights without a click", async ({ page }) => {
-    await page.goto("/?week=4");
+  test("a final week shows Result Highlights inline once the featured disclosure is open", async ({ page }) => {
+    await gotoHydrated(page, "/?week=4");
+    await openFeatured(page);
     await expect(visibleHeading(page, "Highlights")).toBeVisible();
-    await expect(page.locator("summary").filter({ visible: true, hasText: "Highlights" })).toHaveCount(0);
+    // Only the outer disclosure keeps a summary; the Highlights card has none on desktop.
+    await expect(page.locator("summary").filter({ visible: true, hasText: /^Highlights$/ })).toHaveCount(0);
   });
 
 
-  test("ratings sort headers are compact and one line at desktop width", async ({ page }) => {
-    await page.goto("/ratings");
-    const labels = [
-      "Sort by Overall",
-      "Sort by Offense",
-      "Sort by Defense",
-      "Sort by SOR",
-      "Sort by SOS Played",
-      "Sort by SOS Remaining",
-      "Sort by SOS Full",
+  test("teams ranking sort headers are one line and 44px touch targets at desktop width", async ({ page }) => {
+    // Teams replaced Ratings; its sort buttons keep a 44px target, so "compact" now means one line of text.
+    const groups = [
+      { url: "/teams", labels: ["Sort by Overall", "Sort by Offense", "Sort by Defense"] },
+      { url: "/teams?group=resume", labels: ["Sort by SOR", "Sort by SOS Played", "Sort by SOS Remaining", "Sort by SOS Full"] },
     ];
-    for (const label of labels) {
-      const header = page.getByRole("button", { name: label, exact: true }).filter({ visible: true });
-      await expect(header, label).toHaveCount(1);
-      await expectMaxHeight(header, 40);
-      const measured = await header.evaluate((element) => {
-        const style = getComputedStyle(element);
-        const fontSize = parseFloat(style.fontSize);
-        const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.2;
-        const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-        const minHeight = parseFloat(style.minHeight) || 0;
-        return { oneLine: lineHeight + padding, minHeight, height: element.getBoundingClientRect().height };
-      });
-      // A wrapped label grows past one line; min-height may exceed one line when the control is taller.
-      expect(measured.height, `${label} height`).toBeLessThanOrEqual(Math.max(measured.oneLine, measured.minHeight) + 0.5);
+    for (const { url, labels } of groups) {
+      await gotoHydrated(page, url);
+      for (const label of labels) {
+        const header = page.getByRole("button", { name: label, exact: true }).filter({ visible: true });
+        await expect(header, label).toHaveCount(1);
+        await expectMaxHeight(header, 44);
+        const measured = await header.evaluate((element) => {
+          const style = getComputedStyle(element);
+          const fontSize = parseFloat(style.fontSize);
+          const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.2;
+          const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+          const minHeight = parseFloat(style.minHeight) || 0;
+          return { oneLine: lineHeight + padding, minHeight, height: element.getBoundingClientRect().height };
+        });
+        // A wrapped label grows past one line; min-height may exceed one line when the control is taller.
+        expect(measured.height, `${label} height`).toBeLessThanOrEqual(Math.max(measured.oneLine, measured.minHeight) + 0.5);
+      }
     }
   });
 
@@ -168,16 +175,20 @@ test.describe("desktop layout at 1280px", () => {
     expect(columns).toBe(3);
   });
 
-  test("matchup offense selector is hidden at desktop widths where both tables show", async ({ page }) => {
-    await page.goto("/matchup/1");
-    await expect(page.getByRole("group", { name: "Offense comparison" })).toBeHidden();
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(2);
+  test("matchup keeps one offense selector at desktop width and shows one unit table for the selected offense", async ({ page }) => {
+    await gotoHydrated(page, "/matchup/1");
+    await expect(page.getByRole("group", { name: "Offense comparison" })).toBeVisible();
+    await openUnitStats(page);
+    await expect(unitStats(page).getByRole("table")).toHaveCount(1);
+    await selectOffense(page, "home");
+    await expect(unitStats(page).getByRole("table")).toHaveCount(1);
   });
 
   test("each unit table header shows one logo per team in light mode", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" });
-    await page.goto("/matchup/1");
-    for (const table of await page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").all()) {
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
+    for (const table of await unitStats(page).getByRole("table").all()) {
       const header = table.locator("xpath=preceding-sibling::div[1]");
       await expect(header.locator("img[data-logo]:visible")).toHaveCount(2);
     }

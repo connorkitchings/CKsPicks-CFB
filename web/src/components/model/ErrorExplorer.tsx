@@ -209,7 +209,7 @@ function ErrorTable({
                 aria-sort={sort.key === column.key ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
                 className={clsx("whitespace-nowrap px-2 py-1 font-medium", column.numeric && "text-right")}
               >
-                <button type="button" onClick={() => toggle(column.key)} className="min-h-11 rounded px-1 font-medium hover:text-ink focus-visible:outline-2 focus-visible:outline-accent sm:min-h-8">
+                <button type="button" onClick={() => toggle(column.key)} className="min-h-11 min-w-11 rounded px-1 font-medium hover:text-ink focus-visible:outline-2 focus-visible:outline-accent sm:min-h-8">
                   {column.label}{sort.key === column.key && <span aria-hidden> {sort.direction === "asc" ? "▲" : "▼"}</span>}
                 </button>
               </th>
