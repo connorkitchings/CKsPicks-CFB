@@ -38,11 +38,13 @@
 
 - Owner decision: FBS-vs-FBS is the headline population (confirmed in `docs/status.md`: the release universe excludes FBS-vs-FCS), FBS-vs-FCS secondary. Side-by-side by stage added to the contract. FBS-vs-FBS: Operational V5 margin MAE 13.35 over 2,998 games, early bias +0.84, priors alone match or beat V5 through stage 1. FBS-vs-FCS: correlation +0.39 but mis-levelled (bias +8.86); earlier-only linear recalibration gives MAE 14.24 against 16.00 raw and 15.53 constant.
 
+- Rescored the 4B candidates on FBS-vs-FBS only (owner-approved, no refit): B1s no gain (0.02), B1 worse, B3 gain 0.75 over stages 0 to 3 (every season, tuning and 2026 holdout), early bias over-corrected. The bridge intercept (7.4) blends FBS-vs-FBS games (4.1) and FBS-vs-FCS blowouts (29), about 3 points high for published games.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section
 - `docs/plans/index.md` — state line
-- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_variants_results.json`, `step4b_b3_results.json`, `step4b_holdout_2026_results.json`, `step4a_population_split_results.json`, `~/cfb_ratings_lab_v6/source/preview-2026-11-15/`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/teams_2015..2019.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_attribution_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
+- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_variants_results.json`, `step4b_b3_results.json`, `step4b_holdout_2026_results.json`, `step4a_population_split_results.json`, `step4b_fbs_vs_fbs_rescore.json`, `~/cfb_ratings_lab_v6/source/preview-2026-11-15/`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/teams_2015..2019.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_attribution_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
 
 ## Validation
 

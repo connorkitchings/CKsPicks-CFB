@@ -755,6 +755,35 @@ Total: FBS v FBS 13.49 / -1.77 for Operational V5 (13.67 priors only) over 2,998
 
 Consequences for the work order: step 4B's candidates were judged on the pooled early population, so their gains (B3 especially) partly reflect FBS-vs-FCS games; whether they help the FBS-vs-FBS population is not shown here and is the next measurement. Reporting rule from here: every table gives FBS-vs-FBS as the headline with FBS-vs-FCS separate, and pooled figures only labelled as pooled.
 
+#### Step 4B candidates rescored on FBS-vs-FBS only (2026-11-15, owner-approved)
+
+The saved 4B predictions were split by opponent type. No refit: the candidates were still fitted on the pooled population, only the scoring population changes. Outputs: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_fbs_vs_fbs_rescore.json`. Margin MAE / bias; gains are over the baseline with 90% paired bootstrap intervals.
+
+FBS-vs-FBS, 2022 to 2025 (886 games at stages 0 to 3, 2,112 at stage 4):
+
+| Population / stage | Games | Baseline | B1 | B1s | B3 |
+|---|---|---|---|---|---|
+| Stage 0 | 190 | 15.12 / +2.80 | 15.04 / -0.78 | 15.74 / -5.40 | **13.35 / -1.63** (gain 1.77; 0.97 to 2.59) |
+| Stage 1 | 201 | 14.62 / +2.25 | 14.39 / -1.80 | 14.52 / -2.96 | 13.43 / -1.62 |
+| Stage 2 | 242 | 15.05 / +0.73 | 15.32 / -3.26 | 14.99 / +0.79 | 14.56 / -2.74 |
+| Stage 3 | 253 | 13.32 / -1.66 | 14.04 / -5.70 | 12.92 / -0.23 | 13.43 / -4.30 |
+| Stages 0 to 3 | 886 | 14.47 / +0.84 | 14.68 / -3.09 (gain -0.21) | 14.45 / -1.68 (gain 0.02) | **13.72 / -2.69** (gain 0.75; 0.42 to 1.08) |
+| Stage 4 | 2,112 | 12.87 / -2.08 | 12.71 / +0.20 | 12.67 / +0.15 | 12.71 / +0.21 |
+| All stages | 2,998 | 13.34 / -1.22 | 13.30 / -0.77 | 13.20 / -0.39 | 13.01 / -0.65 |
+
+FBS-vs-FCS, stages 0 to 3 (485 games): baseline 16.00 / +8.88; B1 15.04 / +6.23; B1s 14.51 / +3.46 (gain 1.50); B3 14.75 / +5.21 (gain 1.25).
+
+Other populations: on the tuning seasons FBS-vs-FBS stages 0 to 3 (1,108 games) the baseline is 16.01 / -1.81, B1 16.34, B1s 16.01 (gain 0.00), B3 15.32 / -4.33 (gain 0.70; 0.41 to 1.00), and B3 is better than the baseline in all five tuning seasons. The 2026 holdout population contains no FCS games, so its figures (B3 gain 0.62; B1s -0.05) were already FBS-vs-FBS.
+
+What this shows:
+
+1. **B1s's gain was an FBS-vs-FCS effect.** On the published games it gains 0.02 at stages 0 to 3 and is worse at stage 0 (15.74 against 15.12, with a bias of -5.40); its 0.54 pooled gain came from FBS-vs-FCS games (gain 1.50) and the stage 4 shift. B1 is worse than the baseline on FBS-vs-FBS (-0.21).
+2. **B3 has a real FBS-vs-FBS gain.** 0.75 over stages 0 to 3 (1.77 at stage 0), better than the baseline in all four seasons of 2022 to 2025 (14.94 to 14.01, 13.76 to 13.16, 15.37 to 14.71, 13.83 to 13.01), in all five tuning seasons and on the 2026 holdout. The conference-tier terms therefore help within the published games, not only against FCS opponents (they separate Power 4 hosts from G5 visitors; the rating gap B2 did not).
+3. **Declared rule on FBS-vs-FBS.** B3 meets the gain condition (0.75, at least 0.2) and stage 4 (12.71, below the baseline's 12.87), and fails the bias condition again: early bias -2.69 against +0.84 (tuning -4.33 against -1.81). The early indicator is fitted on pooled rows, including FBS-vs-FCS games, so it is too large for FBS-vs-FBS games, and the over-correction follows.
+4. **The bridge intercept is inflated by FCS games, which explains the stage 4 gain.** For 2022 to 2025 the training mean target (the Ridge intercept) is 7.38 to 7.57, but it is a blend: 4.1 to 4.2 for FBS-vs-FBS training games and 29.0 to 29.5 for the 13% that are FBS-vs-FCS. For published games the single intercept is therefore about 3 points high, consistent with the baseline's FBS-vs-FBS stage 4 bias of -2.08. Every candidate improves FBS-vs-FBS stage 4 (MAE 12.71, 12.67, 12.71 against 12.87; gains 0.16 to 0.20, intervals above zero), which fits the early rows no longer pulling the intercept; this is consistent with, not proof of, that mechanism.
+
+Consequence for the work order: the next candidate to declare, if the owner wants one, is a bridge that does not let FBS-vs-FCS games set the FBS-vs-FBS level (an FBS-vs-FCS indicator, or fitting on FBS-vs-FBS games), combined with the tier terms. It is not yet declared or run.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
