@@ -800,6 +800,43 @@ Motivation (from the rescore above): the baseline bridge's single intercept blen
 | Reference points | FBS-vs-FBS stages 0 to 3, 2022 to 2025: baseline 14.47 / +0.84, B3 13.72 / -2.69; stage 4 baseline 12.87 / -2.08; all stages baseline 13.34 / -1.22. Priors alone are 14.05 at stages 0 to 3, so a gain below about 0.4 would still leave V5 behind them there. |
 | Cannot show | Independent confirmation (2022 to 2025 and 2026 are examined or known); totals; whether the FBS-vs-FCS indicator or the FBS-only fit is better for the FCS games (P2 and P4 do not predict them); that conference tier is the cause rather than a proxy for prior quality. |
 
+#### Population-aware bridge results (2026-11-15, thresholds confirmed and run approved by the owner)
+
+Run exactly as declared: four candidates, margin only, earlier-only fits, FBS-vs-FBS headline. Outputs: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_population_aware_results.json`. Margin MAE / bias, FBS-vs-FBS games; gains are over the baseline with 90% paired bootstrap intervals.
+
+**Selection seasons 2018, 2019 and 2021 (661 games at stages 0 to 3, 1,538 at stage 4):**
+
+| | Baseline | B3 | P1 (FCS indicator) | P2 (FBS-only fit) | P3 (P1 + tier terms) | P4 (P2 + tier terms) |
+|---|---|---|---|---|---|---|
+| Stages 0 to 3 | 15.98 / +0.80 | 15.15 / -2.33 | 15.82 / +2.23 | 15.82 / +2.20 | **14.91 / +0.30** | **14.87 / +0.39** |
+| Stage 4 | 13.35 / -2.74 | 13.24 / -0.47 | 13.20 / -1.45 | 13.09 / -1.38 | 13.22 / -0.53 | 13.10 / -0.52 |
+| All stages | 14.14 / -1.68 | 13.81 / -1.03 | 13.99 / -0.34 | 13.91 / -0.30 | 13.73 / -0.28 | 13.63 / -0.25 |
+
+Declared pass condition on these seasons: **P3 and P4 pass every condition; P1 and P2 fail.** P1 and P2 gain 0.16 (below 0.2) and leave a stage 0 to 3 bias of about +2.2 (limit 1.0). P3 gains 1.07 (0.78 to 1.38), stage 4 MAE 0.13 better, bias +0.30 and -0.28 overall, and beats B3 by 0.24 (0.04 to 0.43). P4 gains 1.11 (0.73 to 1.51), stage 4 0.26 better, bias +0.39 and -0.25 overall, and beats B3 by 0.28 (0.06 to 0.50). Both are better than the baseline in each of the three seasons. **The declaration set no tie-break between P3 and P4, and their difference (0.04) is far inside the noise, so this evidence does not separate them.**
+
+**2016 and 2017, reported but outside selection:** the baseline's bias is large and negative on the short training windows (stage 4 -10.14, all stages -8.77); all four new candidates and B3 are far better there (all-stage MAE 14.0 to 14.8 against 16.7), P4 best (14.00). This is the instability the earlier candidates showed, here partly repaired by the population-aware fits.
+
+**2022 to 2025, reported once (examined seasons):**
+
+| FBS-vs-FBS | Baseline | B3 | P3 | P4 |
+|---|---|---|---|---|
+| Stage 0 (190) | 15.12 / +2.80 | 13.35 / -1.63 | 13.78 / +1.68 | 13.38 / +1.25 |
+| Stages 0 to 3 (886) | 14.47 / +0.84 | 13.72 / -2.69 | **13.54 / -0.10** | **13.55 / -0.10** |
+| Stage 4 (2,112) | 12.87 / -2.08 | 12.71 / +0.21 | 12.69 / +0.12 | 12.66 / +0.11 |
+| All stages (2,998) | 13.34 / -1.22 | 13.01 / -0.65 | **12.94 / +0.06** | **12.93 / +0.05** |
+
+P3 gains 0.93 (0.69 to 1.18) and P4 0.92 (0.61 to 1.23) at stages 0 to 3, each better than the baseline in all four seasons (2022 14.94 to 14.04 and 14.01; 2023 13.76 to 12.88 and 12.97; 2024 15.37 to 14.46 and 14.35; 2025 13.83 to 12.80 and 12.86), and by 0.18 and 0.17 over B3 (intervals touching zero). The all-stage FBS-vs-FBS bias moves from -1.22 to about zero. Stage 0 keeps a residual bias (+1.68 for P3, +1.25 for P4).
+
+**FBS-vs-FCS (stages 0 to 3, 2022 to 2025, 485 games):** baseline 16.00 / +8.88; B3 14.75 / +5.21; P1 14.22 / +0.14; P3 14.13 / +0.15. The indicator fixes the FBS-vs-FCS level (P2 and P4 do not predict these games). On 2016 and 2017 the indicator versions are worse than the baseline on FBS-vs-FCS (17.4 against 15.4, bias -9), a short-window effect.
+
+**2026 holdout, reported once (293 stage 0 to 3 games, all FBS-vs-FBS; zero offsets; outcomes known; rating recipe identity unverified):** stages 0 to 3 baseline 14.10 / +0.41; P3 13.14 / +0.30 (gain 0.96; 0.60 to 1.32); P4 13.18 / +0.72 (gain 0.92; 0.47 to 1.37); P1 and P2 gain nothing (-0.05, -0.12). **Stage 4 (36 games) is worse for P3 and P4:** 14.81 and 14.85 against 13.83 (bias +2.34 and +2.37), so the stage 4 condition is not met on the holdout, on very few games.
+
+What this establishes: the tier terms and the population separation together, not either alone, produce a gain that appears on the selection seasons, on 2022 to 2025 and on the 2026 holdout, with early bias near zero and the all-stage FBS-vs-FBS bias near zero. Separating FBS-vs-FCS games from the FBS level alone (P1, P2) does not help early MAE but removes much of the stage 4 error (stage 4 gain 0.15 to 0.27) and, for P1, fixes the FBS-vs-FCS level. The pooled-fit B3's bias problem was the pooled intercept, as suspected.
+
+Limits: the selection seasons were chosen after seeing that 2016 and 2017 destabilised earlier candidates; the conference-tier terms cannot be separated from prior quality (they overlap); 2022 to 2025 and 2026 are not independent confirmation; the 2026 stage 4 result (36 games) points the other way; offsets in 2026 are zero for every arm; stage 0 still carries a bias of +1.3 to +1.7; totals were not examined; the thresholds are those the owner confirmed. Nothing is adopted: the research protocol's adoption thresholds are unchanged, and a clean forward test (the early weeks of 2027) is still the only independent evidence.
+
+Open choice for the owner: P3 (one bridge that also predicts FBS-vs-FCS games and fixes their level) or P4 (FBS-vs-FBS only, and FBS-vs-FCS games handled separately). The evidence does not separate them on the published games; P3 is simpler to serve and gives an FBS-vs-FCS prediction.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
