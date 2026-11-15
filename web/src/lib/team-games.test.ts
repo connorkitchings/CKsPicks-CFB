@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  atsResult, nextUpcomingGame, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
+  atsResult, nextMatchupByTeam, nextUpcomingGame, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
   modelTotalPick, modelWinnerName, overUnderResult, recordText, teamRecords, winPercent, withByeWeeks,
   type TeamGameFields, type TeamGameLines,
 } from "./team-games.ts";
@@ -214,4 +214,36 @@ test("withByeWeeks adds nothing for a first game after week 0 or a postseason we
   assert.equal(entries.filter((e) => e.kind === "bye").length, 11, "only the 2 to 14 gap is bridged");
   assert.deepEqual(withByeWeeks([{ week: 3 }, { week: 4 }]).filter((e) => e.kind === "bye"), []);
   assert.equal(withByeWeeks([]).length, 0);
+});
+
+const slot = (gameId: number, homeTeam: string, awayTeam: string, iso: string, scored = false) => ({
+  gameId, homeTeam, awayTeam, startDate: new Date(iso), homePoints: scored ? 10 : null, awayPoints: scored ? 7 : null,
+});
+const NOW = new Date("2026-11-14T20:00:00Z");
+
+test("nextMatchupByTeam falls forward to next week once the active week has fully kicked off", () => {
+  const active = [slot(1, "A", "B", "2026-11-14T17:00:00Z", true), slot(2, "C", "D", "2026-11-14T19:00:00Z", true)];
+  const next = [slot(3, "A", "C", "2026-11-21T17:00:00Z"), slot(4, "B", "D", "2026-11-21T20:00:00Z")];
+  assert.deepEqual(nextMatchupByTeam([active, next], NOW), { A: 3, C: 3, B: 4, D: 4 });
+});
+
+test("nextMatchupByTeam keeps this week's game for a team still to play, links the rest to next week", () => {
+  const active = [slot(1, "A", "B", "2026-11-14T17:00:00Z", true), slot(2, "C", "D", "2026-11-14T23:00:00Z")];
+  const next = [slot(3, "A", "C", "2026-11-21T17:00:00Z")];
+  assert.deepEqual(nextMatchupByTeam([active, next], NOW), { C: 2, D: 2, A: 3 });
+});
+
+test("nextMatchupByTeam picks the earliest kickoff within a week from unsorted input", () => {
+  const week = [slot(2, "A", "C", "2026-11-14T23:30:00Z"), slot(1, "A", "B", "2026-11-14T21:00:00Z")];
+  assert.equal(nextMatchupByTeam([week], NOW).A, 1);
+  assert.equal(week[0].gameId, 2);
+});
+
+test("nextMatchupByTeam skips an awaiting game that kicked off without a score", () => {
+  assert.deepEqual(nextMatchupByTeam([[slot(1, "A", "B", "2026-11-14T19:00:00Z")]], NOW), {});
+});
+
+test("nextMatchupByTeam is empty for no games", () => {
+  assert.deepEqual(nextMatchupByTeam([], NOW), {});
+  assert.deepEqual(nextMatchupByTeam([[], []], NOW), {});
 });

@@ -25,6 +25,24 @@ export function nextUpcomingGame<T extends { startDate: Date; homePoints: number
 }
 
 /**
+ * Each team's next game id across `weeks` (earliest week first): the first game still upcoming at `now`, by
+ * kickoff within a week. Games that have kicked off or finished are skipped. Inputs are not mutated.
+ */
+export function nextMatchupByTeam(
+  weeks: readonly (readonly { gameId: number; homeTeam: string; awayTeam: string; startDate: Date; homePoints: number | null; awayPoints: number | null }[])[],
+  now: Date,
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const week of weeks) {
+    for (const game of [...week].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
+      if (gameState(game, now) !== "upcoming") continue;
+      for (const team of [game.homeTeam, game.awayTeam]) if (!(team in result)) result[team] = game.gameId;
+    }
+  }
+  return result;
+}
+
+/**
  * What a team page row says about the game, from `team`'s side: "W 59–45" once final, otherwise
  * "Forecast: Rice -3.5 · 54.8", or null when no forecast exists.
  */

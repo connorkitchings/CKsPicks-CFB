@@ -1,8 +1,8 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { getSeasonReleaseContext } from "@/lib/season-release";
-import { getMarketGamesForWeek } from "@/lib/queries";
-import { gameState } from "@/lib/slate";
+import { getGamesForWeek, getMarketGamesForWeek } from "@/lib/queries";
+import { nextMatchupByTeam } from "@/lib/team-games";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
 import { Notice } from "@/components/ui/Notice";
@@ -40,7 +40,7 @@ import {
   pickerGroups,
   SETTINGS_SLOT_ID,
 } from "@/lib/chart-config";
-import { publicationScope } from "@/lib/publication";
+import { isPublishedWeek, publicationScope } from "@/lib/publication";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import {
   getSlateMarketComparison,
@@ -209,19 +209,28 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
   }
 }
 
+/**
+ * Each team's first game still to be played, in the active week or the one after it, so a link survives once
+ * every game of the active week has kicked off. Games come from the same reader the matchup page uses for the
+ * publication mode, so a link never points at a game that page cannot render.
+ */
 async function nextMatchups(season: number): Promise<Record<string, number>> {
   if (!isMatchupEnabled() || process.env.CFB_UI_TEST_MODE === "1") return {};
   try {
     const release = await getSeasonReleaseContext(season);
     if (!release) return {};
-    const games = await getMarketGamesForWeek(season, release.activeWeek);
-    const now = new Date();
-    const result: Record<string, number> = {};
-    for (const game of [...games].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
-      if (gameState(game, now) !== "upcoming") continue;
-      for (const team of [game.homeTeam, game.awayTeam]) if (!(team in result)) result[team] = game.gameId;
-    }
-    return result;
+    const read = publicationScope.mode === "predictions" ? getGamesForWeek : getMarketGamesForWeek;
+    const followingWeek = release.activeWeek + 1;
+    const [active, following] = await Promise.all([
+      read(season, release.activeWeek),
+      isPublishedWeek(season, followingWeek)
+        ? read(season, followingWeek).catch((error) => {
+          console.error("Chart next-week matchup links unavailable", error);
+          return [];
+        })
+        : [],
+    ]);
+    return nextMatchupByTeam([active, following], new Date());
   } catch (error) {
     console.error("Chart next matchup links unavailable", error);
     return {};
