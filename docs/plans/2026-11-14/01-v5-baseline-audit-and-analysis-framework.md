@@ -837,6 +837,39 @@ Limits: the selection seasons were chosen after seeing that 2016 and 2017 destab
 
 **Owner choice (2026-11-15): P3** (one bridge that also predicts FBS-vs-FCS games and fixes their level) over P4 (FBS-vs-FBS only, FBS-vs-FCS handled separately). The evidence did not separate them on the published games; P3 is simpler to serve and gives an FBS-vs-FCS prediction. P3 is the named leading candidate for a forward test on the early weeks of 2027. It is not adopted, and no change to Operational V5 is made.
 
+### Reproducibility and the frozen P3 specification (2026-11-15)
+
+**Scripts.** Every analysis script behind steps 4A to 4D was copied from a session scratchpad (which can be cleared) to `~/cfb_ratings_lab_v6/scripts/step4-2026-11-15/`, outside the repository. A `SHA256SUMS` file in that folder lists the hashes below. To rerun, set the environment variable `S` to that folder and run `uv run python $S/<script>.py` from the repository root (the scripts read the local mirror under `~/cfb_ratings_lab_v6/` and write to `output/`; `pull.py` and `pull2.py` need `CFBD_API_KEY` in the repository `.env`).
+
+| Script | Role | SHA-256 |
+|---|---|---|
+| `pull.py` | Fetch CFBD returning production and teams, 2021 to 2025 | `7636fb4d320b8cab131090c32c7617decfba65f51e352760e0c39ccb8fd3f5db` |
+| `pull2.py` | Fetch CFBD teams, 2015 to 2019 | `90a54179a49b8cf2d6ec443e3fca3ec00af316c6ba7d9ad285692b5f5dbdefdb` |
+| `analyze.py` | Step 4A attribution; writes `joined.parquet` | `8a9a27d452a42531f9da1db8881d16861272e5ecc44bf9875dedb8278e477866` |
+| `extra.py` | Step 4A per-stage slope and shift counterfactual | `5f49d761db550e68f55ab20385cc6207169bc98bbac8eb2a5ff75131af0f298f` |
+| `b4.py` | Step 4B frame, reproduction check, B1, B1s, B2 | `17f0dca4c5e747cba664fbe4132350dfa56f83388fb3e7fd3f1ac004f4f79d98` |
+| `b5.py` | Step 4B conference tiers and B3 | `7fbd116886081794fa48e7dc95667525439c003986c4684bff706aee4900dde9` |
+| `b6.py` | Step 4B 2026 holdout frame (scores 2026 weeks 0 to 6) | `dd2e9149ace3c9ff759cda06793576ca723556aa04d3c8eab408ae0a4648ad3b` |
+| `resc.py` | FBS-vs-FBS rescore of B1s and B3 | `de4838bf35104a462c4d25b67c6e2627b35a1df70f4d1d33f9bf56645da16e4b` |
+| `pop.py` | Population split and FBS-vs-FCS signal (4A) | `d7a637281efe78914d1214cbd4d0fc2abd36970c0eb29646d4dafdba517d7fe5` |
+| `p4.py` | Population-aware bridge P1 to P4 (defines the P3 specification) | `30438df9d6d4f9357f2e5f401b2f7ba47bd2054e2d616e836a90156a700f8c09` |
+| `c4.py` | Step 4C totals head | `42231e6364c849a39d6bdc0af74e902d379ff6804d9f333c975561be077279ba` |
+| `d4.py` | Step 4D venue flag | `7c9d764b5a5e02e291fec546238f6fe524feff237a46fa8659c395c362309a54` |
+| `joined.parquet` | Derived data from `analyze.py` (regenerable) | `bf455d3e64ff4544e28855f318248765ab9374d3f2ff34c3940b0d9fe2a157ab` |
+
+`p4.py` executes `b6.py`, which executes `b5.py` and `b4.py`; `b6.py` loads and scores 2026 weeks 0 to 6, so rerunning `p4.py` re-exposes 2026 (already recorded below). `c4.py` and `d4.py` execute only `b5.py` and `b4.py` and never load 2026 data. The first ten scripts were copied unchanged from the session scratchpad where they were run; `c4.py` and `d4.py` were written directly in the folder.
+
+**Frozen P3 specification** (named for a forward test; not adopted; defined by `p4.py`, hash above):
+
+- **Target:** `actual_margin - offset_margin`; the prediction is the fitted value plus `offset_margin`.
+- **Features (10):** the baseline `FEATURES` (`home_offense`, `home_defense`, `away_offense`, `away_defense`, `home_host`, `venue_unknown`) plus `FCS`, `E`, `HW`, `WH`. `home_host` and `venue_unknown` are constant in the regular-season frame, so the standardization step drops them; eight features vary.
+- **Definitions:** `E` is 1 when the completed-game stage (the smaller of the two teams' completed games, capped at 4) is 0 to 3. `FCS` is 1 when either team is not FBS. `HW` is `E` times (home Power 4 and away not Power 4). `WH` is `E` times (home not Power 4 and away Power 4).
+- **Tiers:** Power 4 is the SEC, Big Ten, Big 12, ACC and Notre Dame, plus the Pac-12 through 2023; other FBS teams are Group of 5; a team not classified FBS in that season's CFBD team list, or absent from it, is `FCS/other`.
+- **Model:** Ridge, alpha 10, inputs standardized on the training rows (mean, population standard deviation, floor 1e-6); intercept free.
+- **Training:** every regular-season game of all earlier seasons (2015 to 2019 and 2021 onward; 2020 is absent), FBS-vs-FCS games included; postseason excluded. No later season is ever used.
+- **Frozen around it:** ratings at every stage, priors, update rules, offsets, the totals bridge, intervals.
+- **Open item for 2027:** the 2026 holdout ran with zero offsets because 2026 offsets are unavailable; a forward test needs the serving pipeline's offsets for 2027, or a stated zero-offset rule.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
