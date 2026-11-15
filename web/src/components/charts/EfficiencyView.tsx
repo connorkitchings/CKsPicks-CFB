@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useChartMetric } from "./useChartMetric";
+
 import { EFFICIENCY_METRICS, EXPLOSIVENESS_METRICS, describeEfficiencyPoint, efficiencyConfig } from "@/lib/chart-config";
 import type { EfficiencyMetric, ScatterData, Side } from "@/lib/charts";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -21,7 +22,7 @@ export type EfficiencyViewProps = {
 
 /** Cumulative success rate against PPA/play, or an explosiveness metric when yardage is served. */
 export function EfficiencyView({ shared, side, data: byMetric, initialMetric, explosiveness }: EfficiencyViewProps) {
-  const [metric, setMetric] = useState<EfficiencyMetric>(explosiveness ? initialMetric : "ppa");
+  const [metric, setMetric] = useChartMetric<EfficiencyMetric>(explosiveness ? initialMetric : "ppa", explosiveness ? ["ppa", "explosive_rate", "yards_per_success"] : ["ppa"]);
   const data = byMetric[metric] ?? byMetric.ppa!;
 
   return (

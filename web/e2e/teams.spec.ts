@@ -25,7 +25,7 @@ test.describe("team pages (fixture mode)", () => {
     await gotoHydrated(page, "/teams/Texas");
     await expect(page.getByRole("heading", { level: 1, name: "Texas" })).toBeVisible();
     await expect(page).toHaveTitle(/Texas · Team page/);
-    await expect(page.getByRole("link", { name: "← All ratings" })).toHaveAttribute("href", "/ratings");
+    await expect(page.getByRole("link", { name: "← All teams" })).toHaveAttribute("href", "/teams");
 
     const h = await hero(page);
     const schedule = await card(page, "team-games");
@@ -115,9 +115,9 @@ test.describe("team pages (fixture mode)", () => {
     test(`the phone page is one column in order and fits at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await gotoHydrated(page, "/teams/Texas");
-      await expect(page.getByTestId("app-bar").getByRole("link", { name: "Back to ratings" })).toHaveAttribute("href", "/ratings");
+      await expect(page.getByTestId("app-bar").getByRole("link", { name: "Back to teams" })).toHaveAttribute("href", "/teams");
       await expect(page.getByTestId("app-bar-title")).toHaveText("TEX");
-      await expect(page.getByRole("link", { name: "← All ratings" })).toBeHidden();
+      await expect(page.getByRole("link", { name: "← All teams" })).toBeHidden();
       await expect(page.getByRole("heading", { level: 1, name: "Texas" })).toBeVisible();
 
       const ids = ["team-games", "team-model", "team-game-log", "team-rating-trend", "team-resume", "team-unit-profile"];
@@ -188,12 +188,12 @@ test.describe("team pages (fixture mode)", () => {
     await gotoHydrated(page, "/teams/Texas");
     const toggle = page.getByTestId("trend-measure");
     const chart = (name: RegExp) => page.getByRole("img", { name });
-    await expect(chart(/^Overall rating by week/)).toBeVisible();
+    await expect(chart(/^overall rating through the selected period/)).toBeVisible();
     await toggle.getByRole("button", { name: "Rank" }).click();
-    await expect(chart(/^Overall rank by week/)).toBeVisible();
-    await expect(chart(/^Overall rating by week/)).toHaveCount(0);
+    await expect(chart(/^overall rank through the selected period/)).toBeVisible();
+    await expect(chart(/^overall rating through the selected period/)).toHaveCount(0);
     await toggle.getByRole("button", { name: "Rating" }).click();
-    await expect(chart(/^Overall rating by week/)).toBeVisible();
+    await expect(chart(/^overall rating through the selected period/)).toBeVisible();
   });
 
   test("on a phone the unit sections start closed and open on tap", async ({ page }) => {

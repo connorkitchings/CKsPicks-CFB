@@ -18,6 +18,7 @@ import {
 } from "./team-resume.ts";
 import { splitPerformanceByWeek, type Performance, type PerformanceRow } from "./performance-split.ts";
 import { withGameNameAliases } from "./rating-names.ts";
+import { analysisPeriod, boundedRatingHistory, type RatingHistoryPeriod } from "./team-analysis.ts";
 import { PERFORMANCE_DETAIL_SPEC, RATING_SPEC, guardRows } from "./row-guard.ts";
 import {
   defaultPeriodForRows,
@@ -332,6 +333,40 @@ export const getWeeklyRatings = cache(async (
   const known = !targetPeriod || ["current", "preseason", "pre"].includes(targetPeriod)
     || (await getRatingPeriods(season)).some((period) => period.id === targetPeriod);
   return known ? cachedWeeklyRatings(season, targetPeriod ?? null) : loadWeeklyRatings(season, targetPeriod);
+});
+
+/** Exact-source, cutoff-bounded history. One release-scoped read; no week-only cross-generation join. */
+export const getRatingAnalysisHistory = cache(async (season: number, targetPeriod: string): Promise<RatingHistoryPeriod[]> => {
+  const selected = await getWeeklyRatings(season, targetPeriod);
+  const selectedPeriod = analysisPeriod(selected.periodMeta, selected.ratings);
+  if (selected.period === "preseason" || !selected.ratings.length) return [selectedPeriod];
+  const source = selected.periodMeta.sourceManifestSha256 ?? selected.ratings[0]?.sourceManifestSha256;
+  const cutoff = selected.periodMeta.cutoffUtc ?? selected.ratings[0]?.cutoffUtc;
+  if (!source || !cutoff) return [selectedPeriod];
+  const db = await getSeasonDb(season);
+  const [rows, priors, facts] = await Promise.all([
+    db.select(RATING_SELECT).from(schema.v5RatingSnapshots).where(and(
+      eq(schema.v5RatingSnapshots.season, season), eq(schema.v5RatingSnapshots.sourceManifestSha256, source),
+      eq(schema.v5RatingSnapshots.snapshotClass, "current"), lte(schema.v5RatingSnapshots.cutoffUtc, cutoff),
+    )).orderBy(asc(schema.v5RatingSnapshots.cutoffUtc), desc(schema.v5RatingSnapshots.createdAt)),
+    getPreseasonPriors(season, source), readResumePeriodFacts(season),
+  ]);
+  guardRows("v5_rating_snapshots", rows, RATING_SPEC);
+  const groups = new Map<string, Map<string, Rating>>();
+  for (const row of rows) {
+    const key = row.cutoffUtc.toISOString();
+    if (!groups.has(key)) groups.set(key, new Map());
+    if (!groups.get(key)!.has(row.team)) groups.get(key)!.set(row.team, row);
+  }
+  const history: RatingHistoryPeriod[] = [];
+  if (priors.length) history.push(analysisPeriod({ ...PRESEASON_META, sourceManifestSha256: source }, priors));
+  for (const [iso, byTeam] of groups) {
+    for (const row of priors) if (!byTeam.has(row.team)) byTeam.set(row.team, row);
+    const cutoffUtc = new Date(iso);
+    const id = sourceQualifiedPeriodId(source, cutoffUtc);
+    history.push(analysisPeriod({ id, cutoffUtc, sourceManifestSha256: source, ...periodLabelFields(cutoffUtc, facts.get(id), id === selected.period) }, [...byTeam.values()]));
+  }
+  return boundedRatingHistory(history, selectedPeriod);
 });
 
 /** `team` must be the rating name from `resolveTeam`, which bounds the cache keys to known schools. */

@@ -70,7 +70,7 @@ export function SlateStatusRow({
       {publishedAt && (
         <span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-muted max-sm:hidden">
           <span className="text-line-strong" aria-hidden="true">·</span>
-          <span className="truncate">Run published {stamp(publishedAt)}</span>
+          <span className="truncate">Forecast updated {stamp(publishedAt)}</span>
         </span>
       )}
     </div>

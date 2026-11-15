@@ -44,7 +44,15 @@ test("a game with a placeholder kickoff shows Time TBD, never 12:00 AM", async (
 test("a Time TBD game is not awaiting until its Eastern day is over", async ({ page }) => {
   // Oct 1, 4 PM ET: the placeholder game's day is still running; only the Sep 26 game is past kickoff.
   await page.goto("/?now=2026-10-01T20:00:00Z");
+  await page.locator('html[data-hydrated="true"]').waitFor({ state: "attached" });
   await expect(page.getByTestId("week-phase")).toHaveText("In progress");
+  // The default Today view holds only Oct 1's games, and the placeholder-kickoff game is not awaiting yet.
+  const status = page.getByRole("group", { name: "Game status" });
+  await expect(status.getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Time TBD")).toHaveCount(1);
+  await expect(page.getByTestId("awaiting-tag")).toHaveCount(0);
+  // All adds the Sep 26 game, the only one past kickoff without a result.
+  await status.getByRole("button", { name: "All", exact: true }).click();
   await expect(page.getByTestId("awaiting-tag")).toHaveCount(1);
 });
 

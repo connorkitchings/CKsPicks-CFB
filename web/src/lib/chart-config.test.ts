@@ -92,13 +92,13 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
   assert.equal(parseChartKind("finishing-drives"), "finishing-drives");
   // Hidden from public picker: rating-trajectory, market-board, and resume-quality (retained for research/internal).
   assert.equal(CHART_REGISTRY["rating-trajectory"].ready, false);
-  assert.equal(parseChartKind("rating-trajectory"), "net-success");
+  assert.equal(parseChartKind("rating-trajectory"), "efficiency");
   assert.equal(CHART_REGISTRY["market-board"].ready, false);
-  assert.equal(parseChartKind("market-board"), "net-success");
+  assert.equal(parseChartKind("market-board"), "efficiency");
   assert.equal(CHART_REGISTRY["resume-quality"].ready, false);
-  assert.equal(parseChartKind("resume-quality"), "net-success");
+  assert.equal(parseChartKind("resume-quality"), "efficiency");
   // Removed kinds fall back to the default chart like any unknown name.
-  for (const removed of ["schedule", "trajectory"]) assert.equal(parseChartKind(removed), "net-success", removed);
+  for (const removed of ["schedule", "trajectory"]) assert.equal(parseChartKind(removed), "efficiency", removed);
   assert.deepEqual(pickerGroups().flatMap((group) => group.kinds.map((kind) => CHART_REGISTRY[kind].tabLabel)), [
     "Net success rate",
     "Efficiency vs explosiveness",
@@ -108,10 +108,10 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
     "Finishing drives",
     "Game log",
   ]);
-  assert.equal(parseChartKind("bogus"), "net-success");
-  assert.equal(parseChartKind(undefined), "net-success");
-  assert.equal(parseChartKind(["efficiency"]), "net-success");
-  for (const kind of kinds.filter((k) => !CHART_REGISTRY[k].ready)) assert.equal(parseChartKind(kind), "net-success", kind);
+  assert.equal(parseChartKind("bogus"), "efficiency");
+  assert.equal(parseChartKind(undefined), "efficiency");
+  assert.equal(parseChartKind(["efficiency"]), "efficiency");
+  for (const kind of kinds.filter((k) => !CHART_REGISTRY[k].ready)) assert.equal(parseChartKind(kind), "efficiency", kind);
   const groups = pickerGroups();
   assert.ok(groups.every((group) => group.kinds.length > 0 && group.kinds.every((kind) => CHART_REGISTRY[kind].ready)));
   assert.equal(groups[0].label, "Games");
@@ -213,8 +213,8 @@ test("downs and finishing drives quadrant names match their positions on both si
       defense: ["Bend, Don't Break", "Suffocating Defense", "Vulnerable", "Stingy Early, Leaky Late"],
     },
     finishing: {
-      offense: ["Low Volume, High TD Rate", "Elite Finishers", "Struggling Finishers", "Drive Stallers / FG Settlers"],
-      defense: ["Red-Zone Wall", "Lockdown Defense", "Generous Defense", "Stingy Early, Leaky Inside"],
+      offense: ["Fewer opportunities, more points", "More opportunities, more points", "Fewer opportunities, fewer points", "More opportunities, fewer points"],
+      defense: ["More opportunities, fewer points allowed", "Fewer opportunities, fewer points allowed", "More opportunities, more points allowed", "Fewer opportunities, more points allowed"],
     },
   };
   for (const side of ["offense", "defense"] as const) {
@@ -261,13 +261,13 @@ test("advanced visualization suite configs and formatters", () => {
   const finishingOff = finishingDrivesConfig("offense");
   assert.equal(finishingOff.xLabel, "Scoring Opportunity Rate (Drives to Opponent 40)");
   assert.equal(finishingOff.yLabel, "Points per Scoring Opportunity");
-  assert.equal(finishingOff.captions.names.topRight, "Elite Finishers");
-  assert.equal(finishingOff.captions.names.bottomRight, "Drive Stallers / FG Settlers");
+  assert.equal(finishingOff.captions.names.topRight, "More opportunities, more points");
+  assert.equal(finishingOff.captions.names.bottomRight, "More opportunities, fewer points");
 
   const finishingDef = finishingDrivesConfig("defense");
   assert.equal(finishingDef.xLabel, "Scoring Opportunity Rate Allowed");
   assert.equal(finishingDef.yLabel, "Points Allowed per Scoring Opportunity");
-  assert.equal(finishingDef.captions.names.topRight, "Lockdown Defense");
+  assert.equal(finishingDef.captions.names.topRight, "Fewer opportunities, fewer points allowed");
 
   assert.equal(RESUME_QUALITY_CONFIG.captions.names.topRight, "Championship Contenders");
   assert.equal(RESUME_QUALITY_CONFIG.captions.names.bottomRight, "Unlucky / Untested Giants");

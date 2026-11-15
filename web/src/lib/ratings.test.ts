@@ -3,49 +3,30 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { periodBeforeKickoff, PRESEASON_META, type PeriodMeta } from "./rating-periods.ts";
 
-test("SiteNav includes Games, Ratings, Graphs, and Model in navigation items", () => {
+test("SiteNav includes Games, Teams, Graphs, and Model in navigation items", () => {
   const source = readFileSync(new URL("../components/SiteNav.tsx", import.meta.url), "utf8");
   assert.match(source, /\["Games",\s*"\/"\]/);
-  assert.match(source, /\["Ratings",\s*"\/ratings"\]/);
+  assert.match(source, /\["Teams",\s*"\/teams"\]/);
   assert.match(source, /\["Graphs",\s*"\/stats"\]/);
   assert.match(source, /\["Model",\s*"\/model"\]/);
 });
 
-test("ratings page includes rank column, methodology explainer, and disambiguated empty states", () => {
-  const pageSource = readFileSync(new URL("../app/ratings/page.tsx", import.meta.url), "utf8");
-  const viewSource = readFileSync(new URL("../components/ratings/RatingsView.tsx", import.meta.url), "utf8");
-  const source = `${pageSource}\n${viewSource}`;
-
-  // Rank column in table header and body (computed pre-filter)
-  assert.match(source, /<th scope="col"[^>]*>Rank<\/th>/);
-  assert.match(source, /\{rank\}/);
-  assert.match(source, /Rank before filtering/);
-  assert.match(source, /aria-label="Ratings timeline"/);
-  assert.match(source, /aria-current=/);
-
-  // Methodology explainer citing possession scoring efficiency (PPP) and Ridge bridge
-  assert.match(source, /scoring efficiency per possession \(PPP\)/);
-  assert.match(source, /average FBS opponent under standard conditions/);
-  assert.match(source, /Both offense and defense are oriented so higher is better/);
-  assert.match(source, /through-2025 Ridge regression bridge with earlier-only non-offense offsets/);
-  assert.match(source, /Preseason baseline priors before 2026 kickoff\./);
-  assert.match(source, /Evidence cutoff: \$\{etDateYearTime\(ratings\[0\]\.cutoffUtc\)\}\./);
-
-  // Disambiguated empty states
-  assert.match(source, /No certified ratings published for the \{season\} season yet\./);
-  assert.match(source, /No teams match &ldquo;\{query\}&rdquo;\./);
-
-  // Season parameterization and ISR
-  assert.match(source, /revalidate\s*=\s*300/);
-  assert.match(source, /season\s*=\s*resolveSeasonParam\(params\.season, publicationScope\.season\)/);
+test("the retired ratings page permanently redirects to Teams and keeps every query parameter", () => {
+  const source = readFileSync(new URL("../app/ratings/page.tsx", import.meta.url), "utf8");
+  assert.match(source, /permanentRedirect\(`\/teams/);
+  assert.match(source, /query\.append\(name, item\)/);
+  assert.match(source, /query\.set\(name, value\)/);
 });
 
-test("ratings page validates sort and direction through parseRatingsSort", () => {
-  const pageSource = readFileSync(new URL("../app/ratings/page.tsx", import.meta.url), "utf8");
-  assert.match(pageSource, /parseRatingsSort\(params\.sort, params\.dir\)/);
-  assert.match(pageSource, /initialSort=\{sort\}/);
-  assert.match(pageSource, /initialDirection=\{dir\}/);
-  assert.match(pageSource, /dir\?: string;/);
+test("Teams hub keeps national ranks fixed, validates sort and direction, and exposes aria-sort", () => {
+  const source = readFileSync(new URL("../components/ratings/TeamsHub.tsx", import.meta.url), "utf8");
+  assert.match(source, /parseRatingsSort\(params\.get\("sort"\)/);
+  assert.match(source, /National ranks stay fixed when you filter/);
+  assert.match(source, /aria-sort=\{/);
+  assert.match(source, /overflow-x-auto/);
+  assert.match(source, /Wins above an average FBS team/);
+  assert.match(source, /href="\/model\/method"/);
+  assert.match(source, /searchParamsUrl\("\/teams"/);
 });
 
 test("ratings table orders by column headers with SOS ranked over every team before filtering", () => {

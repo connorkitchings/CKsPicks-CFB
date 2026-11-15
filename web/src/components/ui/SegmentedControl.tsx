@@ -24,7 +24,7 @@ export function segmentedItemClass(active: boolean, size: SegmentedSize = "md", 
     size === "sm" ? "whitespace-normal sm:whitespace-nowrap" : fill ? "flex-1 whitespace-normal sm:flex-none sm:whitespace-nowrap" : "whitespace-nowrap",
     size === "sm"
       ? clsx("min-h-11 px-3 py-1.5 text-xs font-semibold transition-colors sm:min-h-7.5 sm:py-0", active ? "bg-ink text-surface-card shadow-2xs" : "text-ink-muted hover:bg-surface-inset hover:text-ink")
-      : clsx("min-h-11 px-3 py-2 text-sm font-medium sm:min-h-9 sm:py-1.5", active ? "bg-surface-card text-ink shadow-2xs" : "text-ink-muted hover:text-ink"),
+      : clsx("min-h-11 min-w-11 px-3 py-2 text-sm font-medium sm:min-h-9 sm:min-w-0 sm:py-1.5", active ? "bg-surface-card text-ink shadow-2xs" : "text-ink-muted hover:text-ink"),
   );
 }
 

@@ -82,6 +82,8 @@ export type PredictionGame = BaseGame & {
    */
   spreadSource?: string | null;
   totalSource?: string | null;
+  spreadCapturedAt?: Date | null;
+  totalCapturedAt?: Date | null;
   /**
    * Consensus pre-kickoff spread (home team's number) from the prediction's market snapshot. Unlike
    * `homeTeamSpreadLine` it is never replaced by the shopped quote. Null when no snapshot is linked.
@@ -496,6 +498,7 @@ type TargetSelection = {
   edge: number | null;
   /** Provider (sportsbook) of the selected quote. */
   source: string | null;
+  capturedAt: Date | null;
 };
 
 type GameSelections = {
@@ -547,6 +550,7 @@ export async function getMarketSelectionsForRuns(
         edge: schema.predictionMarketSelections.edge,
         // Left join: a missing quote must never change which lines are served.
         source: schema.marketQuotes.provider,
+        capturedAt: schema.marketQuotes.capturedAt,
       })
       .from(schema.predictionMarketSelections)
       .leftJoin(
@@ -565,6 +569,7 @@ export async function getMarketSelectionsForRuns(
         side: sel.side,
         edge: sel.edge,
         source: sel.source ?? null,
+        capturedAt: sel.capturedAt ?? null,
       };
     }
     return byRun;

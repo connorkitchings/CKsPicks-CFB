@@ -165,7 +165,7 @@ export default function ModelMethodPage() {
             The V5 model was fit through the 2025 season. Its 2026 forecasts use only information available before each
             game; 2026 outcomes do not retrain the model. Market comparison uses timestamped lines after the model
             forecast; missing eligible lines yield no grade. The historical V5 study established an accepted model
-            design. It did not establish that V5 beats V4 in a like-for-like live comparison.
+            design. It did not establish that V5 beats V4 in a like-for-like live comparison, and it is not an operational verification of the 2026 record: that record is graded week by week from captured lines and certified final scores.
           </p>
         </Section>
       </div>

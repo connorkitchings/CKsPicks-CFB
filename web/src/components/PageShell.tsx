@@ -43,7 +43,7 @@ export function PageShell({
         {...mainProps}
         id="main-content"
         tabIndex={-1}
-        className={clsx("mx-auto w-full flex-1 px-4", PAGE_WIDTHS[width], mainClassName)}
+        className={clsx("mx-auto w-full flex-1 px-4 sm:px-6", PAGE_WIDTHS[width], mainClassName)}
       >
         {children}
       </main>

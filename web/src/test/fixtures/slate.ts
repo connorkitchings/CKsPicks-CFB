@@ -34,6 +34,7 @@ export const slateRosterFixture: RosterRow[] = [
  * unplayed week (no finished game, so the week reads as upcoming).
  */
 const published = new Date("2026-09-29T23:24:00Z");
+const quoteCaptured = new Date("2026-09-29T21:15:00Z");
 
 type Spec = {
   id: number;
@@ -120,6 +121,8 @@ function build(
     neutralSite: s.where ? s.where[2] : null,
     spreadSource: s.src?.[0] ?? null,
     totalSource: s.src?.[1] ?? null,
+    spreadCapturedAt: s.src?.[0] ? quoteCaptured : null,
+    totalCapturedAt: s.src?.[1] ? quoteCaptured : null,
     systemName: "Trench Warfare V5",
     modelId: "v5-possession-ppp-rho060-exposure",
     evidenceClass,

@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useChartMetric } from "./useChartMetric";
+
+import { useMemo } from "react";
 import { EXPORT_PREFIX } from "@/lib/brand";
 import {
   CHART_REGISTRY,
@@ -60,7 +62,7 @@ function SeasonStat({ side, log }: { side: Side; log: TeamGameLog }) {
 /** Every game of one team: offense and defense-allowed bars against each week's FBS average. */
 export function GameLogView({ shared, rows, adjusted, initialMetric, explosiveness }: GameLogViewProps) {
   const narrow = useIsPhone();
-  const [metric, setMetric] = useState<GameLogMetric>(initialMetric);
+  const [metric, setMetric] = useChartMetric<GameLogMetric>(initialMetric, gameLogMetrics(explosiveness));
   const { season, roster, filter, highlight } = shared;
   const team = highlight ?? defaultGameLogTeam(roster, rows, adjusted, filter);
   const log = useMemo(() => (team ? teamGameLog(roster, rows, team, metric) : null), [roster, rows, team, metric]);

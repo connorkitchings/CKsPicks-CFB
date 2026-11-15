@@ -189,7 +189,8 @@ export default async function Home({
       systemName={data.systemName}
       runState={firstPrediction?.runState ?? null}
       retrospective={isRetrospective(data.retrospectiveRepair, firstPrediction)}
-      updatedAt={slateUpdatedAt(games, target.currentUpdatedAt)}
+      updatedAt={publicationMode === "predictions" ? slateUpdatedAt(games, null) : null}
+      activatedAt={data.activatedAt}
       publicationMode={publicationMode}
       allowedSeasons={publicationScope.allowedSeasons}
       dbError={data.dbError}

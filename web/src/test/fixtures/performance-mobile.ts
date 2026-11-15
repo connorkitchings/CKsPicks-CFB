@@ -289,3 +289,11 @@ export const partialPerformanceFixture: PerformanceDetail = detail(
   {},
   0,
 );
+
+/** `/model?fixture=archive`: the same games repeated over eight weeks, so the weekly archive has older weeks. */
+export const archivePerformanceFixture: PerformanceDetail = detail(
+  [0, 4].flatMap((offset) => games.map((game) => ({ ...game, gameId: game.gameId + offset * 1000, week: game.week + offset }))),
+  [0, 1, 2, 3, 4, 5, 6, 7],
+  { 7: 2 },
+  2,
+);

@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useChartMetric } from "./useChartMetric";
+
+import { useMemo } from "react";
 import { POSSESSION_METRICS, describePossessionPoint, possessionConfig } from "@/lib/chart-config";
 import { possessionPoints, type PossessionMetric, type PossessionRow } from "@/lib/charts";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -15,7 +17,7 @@ const METRIC_OPTIONS = (Object.keys(POSSESSION_METRICS) as PossessionMetric[]).m
 
 /** Opponent-adjusted possession offense against defense allowed, with averages and corner labels. */
 export function PossessionView({ shared, rows, initialMetric }: { shared: SharedChartProps; rows: PossessionRow[]; initialMetric: PossessionMetric }) {
-  const [metric, setMetric] = useState<PossessionMetric>(initialMetric);
+  const [metric, setMetric] = useChartMetric<PossessionMetric>(initialMetric, ["ppp", "epa_per_possession"]);
   const scatter = useMemo(() => possessionPoints(shared.roster, rows, metric), [shared.roster, rows, metric]);
   return (
     <ScatterView

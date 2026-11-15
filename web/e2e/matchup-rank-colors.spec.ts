@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { gotoHydrated, openUnitStats, selectOffense, unitStats } from "./helpers";
 
 // Resolve modern CSS color-mix colors to sRGB without assuming a browser serialization.
 async function chipStyles(root: Locator) {
@@ -31,7 +31,8 @@ for (const scheme of ["light", "dark"] as const) {
       Object.defineProperty(document.fonts, "ready", { get: () => ready, configurable: true });
     });
     await gotoHydrated(page, "/matchup/1");
-    const live = await chipStyles(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table"));
+    await openUnitStats(page);
+    const live = await chipStyles(unitStats(page).getByRole("table"));
     expect(live.some((chip) => chip.neutral)).toBe(true);
     const factors = await chipStyles(page.getByTestId("tale-of-the-tape").getByTestId("tape-row"));
     expect(factors.length).toBeGreaterThan(0);
@@ -41,7 +42,13 @@ for (const scheme of ["light", "dark"] as const) {
 
     // Collect the site's dark palette before starting an export (theme changes invalidate active exports).
     await page.locator("html").evaluate((element) => element.classList.add("dark"));
-    const darkLive = await chipStyles(page.getByRole("region", { name: "Team stats", exact: true }));
+    // The export shows both offenses, the page one at a time: gather the site's chips for each selection.
+    const darkLive = [];
+    for (const side of ["away", "home"] as const) {
+      await selectOffense(page, side);
+      darkLive.push(...await chipStyles(unitStats(page)));
+    }
+    await selectOffense(page, "away");
     await page.locator("html").evaluate((element, dark) => element.classList.toggle("dark", dark), scheme === "dark");
     await expect.poll(() => page.locator("html").getAttribute("class")).toMatch(scheme === "dark" ? /dark/ : /^(?!.*dark)/);
 

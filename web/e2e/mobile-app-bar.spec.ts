@@ -3,7 +3,7 @@ import { gotoHydrated } from "./helpers";
 
 const PAGES = [
   ["Games", "/"],
-  ["Ratings", "/ratings"],
+  ["Teams", "/teams"],
   ["Graphs", "/stats?chart=efficiency&week=3"],
   ["Model", "/model"],
 ] as const;
@@ -36,7 +36,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       });
     }
 
-    test("the menu sheet holds season, theme and the update time, closes on Escape and returns focus", async ({ page }) => {
+    test("the menu sheet holds season, theme and the forecast update time, closes on Escape and returns focus", async ({ page }) => {
       await gotoHydrated(page, "/");
       const menu = page.getByTestId("app-menu-button");
       await expect(menu).toBeEnabled();
@@ -49,14 +49,17 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       await expect(dialog).toHaveCount(0);
       await expect(menu).toBeFocused();
 
-      // Matchups carry a forecast update time, which the sheet shows.
+      // Matchups show their forecast update time in the page's data context, not in the menu sheet.
       await gotoHydrated(page, "/matchup/1");
       await expect(page.getByTestId("app-bar-title")).toHaveText(/ at /);
       await expect(page.getByTestId("app-bar").getByRole("link", { name: /Stratum/ })).toHaveCount(0);
       await expect(page.getByTestId("app-bar").getByRole("link", { name: /^Week \d+ games$/ })).toBeVisible();
       await expect(menu).toBeEnabled();
       await menu.click();
-      await expect(dialog).toContainText(/Updated Sep (29|30)/);
+      await expect(dialog.getByText("Season", { exact: true })).toBeVisible();
+      await expect(dialog).not.toContainText(/updated/i);
+      await page.keyboard.press("Escape");
+      await expect(page.getByLabel("Data context")).toContainText(/Forecast updated Sep (29|30)/);
     });
 
     test("a team page keeps the back link and its visible title instead of the brand", async ({ page }) => {
@@ -65,13 +68,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       await expect(bar.getByRole("link", { name: /Stratum/ })).toHaveCount(0);
       await expect(page.getByTestId("app-bar-title")).toBeVisible();
       await expect(page.getByTestId("app-bar-title")).toHaveText("ALA");
-      await expect(bar.getByRole("link", { name: "Back to ratings" })).toHaveAttribute("href", "/ratings");
+      await expect(bar.getByRole("link", { name: "Back to teams" })).toHaveAttribute("href", "/teams");
     });
 
     test("the menu shows the slate run time on Games", async ({ page }) => {
       await gotoHydrated(page, "/");
       await page.getByTestId("app-menu-button").click();
-      await expect(page.getByRole("dialog", { name: "Menu", exact: true })).toContainText(/Updated \w{3} \d+/);
+      await expect(page.getByRole("dialog", { name: "Menu", exact: true })).toContainText(/Forecast updated \w{3} \d+/);
     });
 
     test("the theme-color meta follows the toggle and the stored choice", async ({ page }) => {

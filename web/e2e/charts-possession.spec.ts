@@ -45,7 +45,10 @@ test.describe("possession efficiency chart", () => {
   });
 
   test("a URL metric seeds the switcher and the window starts at Through Week 2", async ({ page }) => {
+    // Week 0 has no stored possession window and is never substituted by another one.
     await page.goto("/stats?chart=possession&week=0&metric=epa_per_possession");
+    await expect(page.getByTestId("charts-notice")).toContainText("Week 0 is not available for this chart.");
+    await page.goto("/stats?chart=possession&week=2&metric=epa_per_possession");
     await expect(page.getByTestId("possession-metric-epa-per-possession")).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByTestId("chart-subtitle")).toHaveText("2026 · FBS teams, all games · Through Week 2");
     await expect(page.getByLabel("Through Week", { exact: true }).locator("option")).toHaveText(["2", "3"].map((w) => new RegExp(w)));
@@ -106,7 +109,7 @@ test.describe("possession efficiency chart", () => {
 
   test("a failing possession window shows the unavailable notice", async ({ page }) => {
     await page.goto("/stats?chart=possession&week=3&fixture=adjusted-error");
-    await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
+    await expect(page.getByTestId("charts-notice")).toContainText("Charts are temporarily unavailable.");
     await expect(page.locator("#week-select")).toHaveCount(0);
   });
 });

@@ -189,7 +189,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   },
 };
 
-export const DEFAULT_CHART: ChartKind = "net-success";
+export const DEFAULT_CHART: ChartKind = "efficiency";
 
 /** Kinds whose views ship, in picker order. */
 export function readyKinds(): ChartKind[] {
@@ -274,6 +274,20 @@ export function withTeamParam(href: string, team: string | null): string {
   return text ? `${path}?${text}` : path;
 }
 
+/** Preserve shared exploration state across chart/side links without leaking incompatible metrics. */
+export function withChartState(href: string, current: string): string {
+  const [path, query = ""] = href.split("?");
+  const next = new URLSearchParams(query);
+  const previous = new URLSearchParams(current);
+  for (const key of ["team", "compare", "conf", "season"]) {
+    if (!next.has(key) && previous.has(key)) next.set(key, previous.get(key)!);
+  }
+  if (parseChartKind(next.get("chart")) === parseChartKind(previous.get("chart")) && !next.has("metric") && previous.has("metric")) {
+    next.set("metric", previous.get("metric")!);
+  }
+  return `${path}?${next.toString()}`;
+}
+
 // ---------------------------------------------------------------------------
 // Text
 // ---------------------------------------------------------------------------
@@ -354,6 +368,9 @@ export type ScatterConfig = {
   /** Names of the two dashed average lines ("Avg offense"), printed with their values. */
   averageNames: { x: string; y: string };
   footnote: string;
+  /** Denominator for each axis, never a generic sample count. */
+  xSample?: string;
+  ySample?: string;
 };
 
 /** Percent tick: whole when the tick is a whole percent, else one decimal (`7.5%`), so ticks never repeat. */
@@ -447,6 +464,8 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
         names: OFFENSE_QUADRANTS,
       };
   return {
+    xSample: "eligible success-rate plays",
+    ySample: metric === "yards_per_success" ? "successful plays with yardage" : metric === "explosive_rate" ? "plays with yardage" : "plays with PPA",
     xLabel: "Success Rate",
     yLabel: text.yLabel[side],
     shortYLabel: text.shortYLabel[side],
@@ -464,7 +483,7 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
 
 export function describeEfficiencyPoint(point: ScatterPoint, metric: EfficiencyMetric): string {
   const text = EFFICIENCY_METRICS[metric];
-  return `${point.team} (${conferenceLabel(point.conference)}): success rate ${formatPercent(point.x)}, ${text.describe} ${text.value(point.y)}, ${point.n} plays`;
+  return `${point.team} (${conferenceLabel(point.conference)}): success rate ${formatPercent(point.x)}, ${text.describe} ${text.value(point.y)}; success-rate sample ${point.xN ?? point.n} plays, metric sample ${point.yN ?? point.n} ${metric === "yards_per_success" ? "successful plays" : "plays"}`;
 }
 
 /** Two-decimal signed PPA for axis ticks (`+0.10`). */
@@ -474,6 +493,8 @@ export function formatEpaTick(value: number): string {
 }
 
 export const ADJUSTED_CONFIG: ScatterConfig = {
+  xSample: "offense exposure",
+  ySample: "defense exposure",
   xLabel: "Adjusted offense PPA/play",
   yLabel: "Adjusted defense PPA/play allowed",
   shortYLabel: "Def PPA/play allowed",
@@ -530,6 +551,8 @@ export const POSSESSION_METRICS: Record<PossessionMetric, {
 export function possessionConfig(metric: PossessionMetric): ScatterConfig {
   const text = POSSESSION_METRICS[metric];
   return {
+    xSample: "offensive possessions",
+    ySample: "defensive possessions",
     xLabel: `Adjusted offense ${text.unit}`,
     yLabel: `Adjusted defense ${text.unit} allowed`,
     shortYLabel: metric === "ppp" ? "Def pts/poss allowed" : "Def PPA/poss allowed",
@@ -639,6 +662,8 @@ export function downsFootnote(): string {
 export function downsConfig(side: Side): ScatterConfig {
   const isOffense = side === "offense";
   return {
+    xSample: "early-down plays",
+    ySample: "third/fourth-down attempts",
     xLabel: isOffense ? "Early Down PPA/play (1st & 2nd)" : "Early Down PPA/play Allowed",
     yLabel: isOffense ? "3rd & 4th Down Conv. Rate" : "3rd & 4th Down Conv. Rate Allowed",
     shortYLabel: isOffense ? "3rd/4th Conv Rate" : "3rd/4th Conv Allowed",
@@ -691,6 +716,8 @@ export function finishingDrivesFootnote(): string {
 export function finishingDrivesConfig(side: Side): ScatterConfig {
   const isOffense = side === "offense";
   return {
+    xSample: "eligible drives",
+    ySample: "scoring opportunities",
     xLabel: isOffense ? "Scoring Opportunity Rate (Drives to Opponent 40)" : "Scoring Opportunity Rate Allowed",
     yLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
     shortYLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
@@ -704,10 +731,10 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
           bottomLeft: "Lower opportunity rate / Lower points per opportunity",
           bottomRight: "Higher opportunity rate / Lower points per opportunity",
           names: {
-            topLeft: "Low Volume, High TD Rate",
-            topRight: "Elite Finishers",
-            bottomLeft: "Struggling Finishers",
-            bottomRight: "Drive Stallers / FG Settlers",
+            topLeft: "Fewer opportunities, more points",
+            topRight: "More opportunities, more points",
+            bottomLeft: "Fewer opportunities, fewer points",
+            bottomRight: "More opportunities, fewer points",
           },
         }
       : {
@@ -716,10 +743,10 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
           bottomLeft: "Higher opportunity rate allowed / More points allowed per opportunity",
           bottomRight: "Lower opportunity rate allowed / More points allowed per opportunity",
           names: {
-            topLeft: "Red-Zone Wall",
-            topRight: "Lockdown Defense",
-            bottomLeft: "Generous Defense",
-            bottomRight: "Stingy Early, Leaky Inside",
+            topLeft: "More opportunities, fewer points allowed",
+            topRight: "Fewer opportunities, fewer points allowed",
+            bottomLeft: "More opportunities, more points allowed",
+            bottomRight: "Fewer opportunities, more points allowed",
           },
         },
     averageNames: {

@@ -6,12 +6,14 @@ import clsx from "clsx";
 import type { PerformanceSummary, WeekPerformanceRow } from "@/lib/v5";
 import { accuracyRecord, type AccuracyResult } from "@/lib/performance-accuracy";
 import { BIG_MISS_POINTS, type LineSourceCounts, type MarketComparison, type MarketTarget } from "@/lib/performance-market";
-import { breakEvenCaveat, type TrendWeek } from "@/lib/performance-trend";
+import type { TrendWeek } from "@/lib/performance-trend";
 import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import { Card } from "@/components/ui/Card";
 import { ResponsiveDisclosure } from "@/components/ui/ResponsiveDisclosure";
 import { SummaryLine } from "@/components/ui/SummaryLine";
 import { RecordTrendChart } from "@/components/model/RecordTrendChart";
+import { ErrorExplorer } from "@/components/model/ErrorExplorer";
+import type { PairedError } from "@/lib/performance-errors";
 
 /** Only what the dashboard renders; the per-game audit facts stay server-side. */
 export interface GradedResult {
@@ -33,6 +35,7 @@ export interface PerformanceView {
   weekRows: WeekPerformanceRow[];
   trend: TrendWeek[];
   market: Record<MarketTarget, MarketView>;
+  pairs: Record<MarketTarget, PairedError[]>;
 }
 
 type Record3 = ReturnType<typeof accuracyRecord>;
@@ -40,6 +43,7 @@ const recordText = (record: Record3) => `${record.win}–${record.loss}–${reco
 const rateText = (record: Record3) => record.winRate === null ? "—" : `${record.winRate.toFixed(1)}%`;
 const decimal = (value: number | null, suffix = "") => value === null ? "—" : `${value.toFixed(1)}${suffix}`;
 const graded = (record: Record3) => record.win + record.loss + record.push;
+const decided = (record: Record3) => record.win + record.loss;
 const breakEvenText = (record: Record3) => {
   if (record.winRate === null) return `${BREAK_EVEN_PCT}% break-even`;
   const delta = record.winRate - BREAK_EVEN_PCT;
@@ -120,7 +124,100 @@ function RecordCell({ record, edge }: { record: Record3; edge: string }) {
 
 const TARGETS = ["spread", "total"] as const;
 
-export function PerformanceDashboard({ data, title }: { data: PerformanceView; title: string }) {
+/** The most recent weeks shown before the archive. */
+const RECENT_WEEKS = 4;
+
+type WeekRow = TrendWeek & { inProgress: boolean };
+
+/** Phone cards and the desktop table for a list of weeks; `overall` adds the season total. */
+function WeeklyResults({ rows, overall, label }: { rows: WeekRow[]; overall: Record<"spread" | "total" | "combined", Record3> | null; label: string }) {
+  return (
+    <>
+      <div className="divide-y divide-line sm:hidden">
+        {rows.map((row) => (
+          <div key={row.week} className="space-y-2 p-3">
+            <div className="flex flex-wrap items-center gap-x-3">
+              <Link href={`/?week=${row.week}`} className="inline-flex min-h-11 items-center gap-2 rounded text-sm font-bold text-ink hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">
+                Week {row.week} <span aria-hidden>→</span>
+              </Link>
+              {row.inProgress && <span className="rounded-full border border-warn-line bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">In progress</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {TARGETS.map((target) => (
+                <div key={target} className="min-w-0 rounded-lg bg-surface-inset p-2">
+                  <p className="text-xs font-semibold text-ink-muted">{target === "spread" ? "Spread" : "Total"}</p>
+                  <p className="mt-1 flex flex-wrap justify-between gap-1 font-mono text-sm text-ink">
+                    <span>{recordText(row.weekly[target])}</span><span>{rateText(row.weekly[target])}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-ink-muted">To date {recordText(row.cumulative[target])} · {rateText(row.cumulative[target])}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        {overall && (
+          <div className="space-y-1 border-t-2 border-line bg-surface-inset p-3 text-sm text-ink-muted">
+            <p className="font-semibold text-ink">Season Total</p>
+            <p>Spread: {recordText(overall.spread)} · Total: {recordText(overall.total)}</p>
+            <p>Win rate: {rateText(overall.combined)}</p>
+          </div>
+        )}
+      </div>
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full table-fixed text-left text-sm tabular-nums">
+          <caption className="sr-only">{label}</caption>
+          <colgroup>
+            <col className="w-[16%]" />
+            {TARGETS.flatMap((target) => [0, 1].map((i) => <col key={`${target}-${i}`} />))}
+          </colgroup>
+          <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
+            <tr>
+              <th scope="col" rowSpan={2} className="px-4 py-3 align-bottom">Week</th>
+              {TARGETS.map((target) => (
+                <th key={target} scope="colgroup" colSpan={2} className="border-l border-line px-3 pb-1 pt-3 text-center text-sm font-semibold text-ink">
+                  {target === "spread" ? "Spread" : "Totals"}
+                </th>
+              ))}
+            </tr>
+            <tr>
+              {TARGETS.flatMap((target) => [
+                <th key={`${target}-week`} scope="col" className="border-l border-line px-4 pb-2 text-right font-medium">This week</th>,
+                <th key={`${target}-date`} scope="col" className="border-l border-line/50 px-4 pb-2 text-right font-medium">Season to date</th>,
+              ])}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map((row) => (
+              <tr key={row.week}>
+                <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left text-ink">
+                  <Link href={`/?week=${row.week}`} className="inline-flex min-h-9 items-center rounded font-semibold hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
+                  {row.inProgress && <span className="ml-2 whitespace-nowrap rounded-full border border-warn-line bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">In progress</span>}
+                </th>
+                {TARGETS.flatMap((target) => [
+                  <RecordCell key={`${target}-week`} record={row.weekly[target]} edge="border-line" />,
+                  <RecordCell key={`${target}-date`} record={row.cumulative[target]} edge="border-line/50" />,
+                ])}
+              </tr>
+            ))}
+          </tbody>
+          {overall && (
+            <tfoot className="border-t-2 border-line bg-surface-inset font-semibold text-ink">
+              <tr>
+                <th scope="row" className="whitespace-nowrap px-4 py-3 text-left">Season Total</th>
+                {TARGETS.flatMap((target) => [
+                  <RecordCell key={`${target}-week`} record={overall[target]} edge="border-line" />,
+                  <td key={`${target}-date`} className="border-l border-line/50" />,
+                ])}
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </>
+  );
+}
+
+export function PerformanceDashboard({ data, title, initialTarget }: { data: PerformanceView; title: string; initialTarget: MarketTarget }) {
   const games = data.gradedGames;
   const overall = useMemo(() => {
     const spread = recordFor(games, (game) => game.spreadResult);
@@ -137,8 +234,10 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
       })),
     [data.trend, data.weekRows],
   );
-
-  const caveat = breakEvenCaveat(overall.combined.winRate, overall.combined.win + overall.combined.loss);
+  // Newest first: the latest four weeks lead, the rest are the archive.
+  const newestFirst = useMemo(() => [...weeklyData].sort((a, b) => b.week - a.week), [weeklyData]);
+  const recent = newestFirst.slice(0, RECENT_WEEKS);
+  const archive = newestFirst.slice(RECENT_WEEKS);
 
   return (
     <div className="space-y-2 sm:space-y-6">
@@ -148,6 +247,7 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
         data-testid="model-summary"
       />
       <h2 className="text-lg font-semibold text-ink max-sm:sr-only">{title}</h2>
+
       <section aria-labelledby="kpi-heading" className="grid grid-cols-2 gap-2.5 sm:gap-4">
         <h2 id="kpi-heading" className="sr-only">Forecast accuracy summary</h2>
         {TARGETS.map((target) => {
@@ -157,14 +257,15 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
               key={target}
               data-card=""
               className="min-w-0 rounded-xl border border-line bg-surface-card p-3 text-left shadow-sm sm:p-5"
+              data-testid={`record-${target}`}
             >
-              <span className="block text-xs font-semibold uppercase tracking-wide text-ink-muted">{target === "spread" ? "Spread" : "Totals"}</span>
+              <span className="block text-xs font-semibold uppercase tracking-wide text-ink-muted">{TARGET_LABEL[target]}</span>
               <span className="mt-2 block font-mono text-xl font-bold tracking-tight text-ink sm:text-4xl">{recordText(record)}</span>
               <span className="mt-2 flex flex-wrap justify-between gap-1 text-sm text-ink-muted">
                 <span>Win rate</span><strong className="font-mono text-ink">{rateText(record)}</strong>
               </span>
               <span className="mt-1 flex flex-wrap justify-between gap-1 text-xs text-ink-muted">
-                <span>{graded(record)} graded picks</span>
+                <span>{decided(record)} decided · {record.push} {record.push === 1 ? "push" : "pushes"}</span>
                 <span className="font-mono">{breakEvenText(record)}</span>
               </span>
             </div>
@@ -172,103 +273,8 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
         })}
       </section>
       <p className="text-xs leading-relaxed text-ink-muted" data-testid="record-caveat">
-        Win rate shows how often picks were right; it is not a betting result.
-        {caveat && <> {caveat}</>}
+        Win rate shows how often picks were right; it is not a betting result. Spreads and totals are separate samples and are not pooled. {BREAK_EVEN_PCT}% is the reference win rate at which a standard-priced bet breaks even; it is a yardstick, not a test of the record.
       </p>
-
-      <section aria-labelledby="trend-heading" className="space-y-2">
-        <h2 id="trend-heading" className="text-sm font-semibold text-ink">Season trend</h2>
-        <Card padding="sm" className="sm:p-4">
-          {data.trend.filter((row) => graded(row.weekly.combined) > 0).length >= 2
-            ? <RecordTrendChart rows={data.trend.filter((row) => graded(row.weekly.combined) > 0)} />
-            : <p className="text-sm text-ink-muted">The trend appears after two graded weeks.</p>}
-        </Card>
-      </section>
-
-      <h2 id="filter-heading" className="text-sm font-semibold text-ink">Week by week</h2>
-
-      <Card as="section" padding="none" aria-labelledby="weekly-heading" className="overflow-hidden">
-        <h2 id="weekly-heading" className="sr-only">Weekly accuracy breakdown</h2>
-        <div className="divide-y divide-line sm:hidden">
-          {weeklyData.map((row) => (
-            <div key={row.week} className="space-y-2 p-3">
-              <div className="flex flex-wrap items-center gap-x-3">
-                <Link href={`/?week=${row.week}`} className="inline-flex min-h-11 items-center gap-2 rounded text-sm font-bold text-ink hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">
-                  Week {row.week} <span aria-hidden>→</span>
-                </Link>
-                {row.inProgress && <span className="rounded-full border border-warn-line bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">In progress</span>}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {TARGETS.map((target) => (
-                  <div key={target} className="min-w-0 rounded-lg bg-surface-inset p-2">
-                    <p className="text-xs font-semibold text-ink-muted">{target === "spread" ? "Spread" : "Total"}</p>
-                    <p className="mt-1 flex flex-wrap justify-between gap-1 font-mono text-sm text-ink">
-                      <span>{recordText(row.weekly[target])}</span><span>{rateText(row.weekly[target])}</span>
-                    </p>
-                    <p className="mt-1 text-xs text-ink-muted">To date {recordText(row.cumulative[target])} · {rateText(row.cumulative[target])}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          <div className="space-y-1 border-t-2 border-line bg-surface-inset p-3 text-sm text-ink-muted">
-            <p className="font-semibold text-ink">Season Total</p>
-            <p>Spread: {recordText(overall.spread)} · Total: {recordText(overall.total)}</p>
-            <p>Win rate: {rateText(overall.combined)}</p>
-          </div>
-        </div>
-        <div className="hidden overflow-x-auto sm:block">
-          <table className="w-full table-fixed text-left text-sm tabular-nums">
-            <caption className="sr-only">Weekly pick results</caption>
-            <colgroup>
-              <col className="w-[16%]" />
-              {TARGETS.flatMap((target) => [0, 1].map((i) => <col key={`${target}-${i}`} />))}
-            </colgroup>
-            <thead className="border-b border-line bg-surface-inset text-xs text-ink-muted">
-              <tr>
-                <th scope="col" rowSpan={2} className="px-4 py-3 align-bottom">Week</th>
-                {TARGETS.map((target) => (
-                  <th key={target} scope="colgroup" colSpan={2} className="border-l border-line px-3 pb-1 pt-3 text-center text-sm font-semibold text-ink">
-                    {target === "spread" ? "Spread" : "Totals"}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {TARGETS.flatMap((target) => [
-                  <th key={`${target}-week`} scope="col" className="border-l border-line px-4 pb-2 text-right font-medium">This week</th>,
-                  <th key={`${target}-date`} scope="col" className="border-l border-line/50 px-4 pb-2 text-right font-medium">Season to date</th>,
-                ])}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {weeklyData.map((row) => (
-                <tr key={row.week}>
-                  <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left text-ink">
-                    <Link href={`/?week=${row.week}`} className="inline-flex min-h-9 items-center rounded font-semibold hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
-                    {row.inProgress && <span className="ml-2 whitespace-nowrap rounded-full border border-warn-line bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">In progress</span>}
-                  </th>
-                  {TARGETS.flatMap((target) => [
-                    <RecordCell key={`${target}-week`} record={row.weekly[target]} edge="border-line" />,
-                    <RecordCell key={`${target}-date`} record={row.cumulative[target]} edge="border-line/50" />,
-                  ])}
-                </tr>
-              ))}
-            </tbody>
-            <tfoot className="border-t-2 border-line bg-surface-inset font-semibold text-ink">
-              <tr>
-                <th scope="row" className="whitespace-nowrap px-4 py-3 text-left">Season Total</th>
-                {TARGETS.flatMap((target) => [
-                  <RecordCell key={`${target}-week`} record={overall[target]} edge="border-line" />,
-                  <td key={`${target}-date`} className="border-l border-line/50" />,
-                ])}
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </Card>
-
-
-      <p className="text-xs text-ink-muted">Records are wins–losses–pushes; win rate excludes pushes. <span className="max-sm:hidden">Select a week in the table to view its game-by-game results and graded picks on the Games tab.</span></p>
 
       <section aria-labelledby="market-heading" className="space-y-2">
         <h2 id="market-heading" className="text-sm font-semibold text-ink">Model vs the betting line</h2>
@@ -276,9 +282,35 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceView; t
           The same games and the same final scores: how far off the model and the retained pre-kickoff betting line were. Lower is closer. The win-loss record above is settled separately, at the best quote found for each pick.
         </p>
         <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-4">
-          {(["spread", "total"] as const).map((target) => <ComparisonCard key={target} target={target} view={data.market[target]} />)}
+          {TARGETS.map((target) => <ComparisonCard key={target} target={target} view={data.market[target]} />)}
         </div>
       </section>
+
+      <section aria-labelledby="trend-heading" className="space-y-2">
+        <h2 id="trend-heading" className="text-sm font-semibold text-ink">Season trend</h2>
+        <Card padding="sm" className="sm:p-4">
+          {weeklyData.length >= 2
+            ? <RecordTrendChart rows={weeklyData} />
+            : <p className="text-sm text-ink-muted">The trend appears after two graded weeks.</p>}
+        </Card>
+      </section>
+
+      <ErrorExplorer pairs={data.pairs} initialTarget={initialTarget} />
+
+      <h2 id="filter-heading" className="text-sm font-semibold text-ink">Week by week</h2>
+      <Card as="section" padding="none" aria-labelledby="weekly-heading" className="overflow-hidden">
+        <h2 id="weekly-heading" className="sr-only">Weekly accuracy breakdown</h2>
+        <WeeklyResults rows={recent} overall={overall} label="Weekly pick results, latest weeks" />
+      </Card>
+      {archive.length > 0 && (
+        <details data-testid="weekly-archive" className="rounded-xl border border-line bg-surface-card shadow-2xs">
+          <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9 sm:py-2">
+            Earlier weeks ({archive.length})
+          </summary>
+          <WeeklyResults rows={archive} overall={null} label="Weekly pick results, earlier weeks" />
+        </details>
+      )}
+      <p className="text-xs text-ink-muted">Records are wins–losses–pushes; win rate excludes pushes. <span className="max-sm:hidden">Select a week in the table to view its game-by-game results and graded picks on the Games tab.</span></p>
 
       <ResponsiveDisclosure title="Season-wide forecast diagnostics" heading="Season-wide forecast diagnostics">
         <section aria-labelledby="calibration-heading" className="space-y-3">

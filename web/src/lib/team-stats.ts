@@ -30,10 +30,14 @@ export interface UnitMatchupRow {
   /** Teams ranked on this metric/role (early weeks rank fewer than 138). */
   offenseCohort: number | null;
   offenseTied: boolean;
+  offenseN?: number | null;
+  offenseGames?: number | null;
   defenseValue: string;
   defenseRank: number | null;
   defenseCohort: number | null;
   defenseTied: boolean;
+  defenseN?: number | null;
+  defenseGames?: number | null;
   /** Offense rank against the opposing defense's rank; null when either is unranked. */
   edge: RowEdge | null;
   section: MetricSection;
@@ -258,10 +262,14 @@ export function buildUnitRows(
       key,
       name: label,
       offenseValue: formatMetric(format, off?.value ?? null),
+      offenseN: off?.n ?? null,
+      offenseGames: off?.games ?? null,
       offenseRank: offRank,
       offenseCohort: offRank === null ? null : (off?.cohortSize ?? null),
       offenseTied: offRank !== null && Boolean(off?.tied),
       defenseValue: formatMetric(format, def?.value ?? null),
+      defenseN: def?.n ?? null,
+      defenseGames: def?.games ?? null,
       defenseRank: defRank,
       defenseCohort: defRank === null ? null : (def?.cohortSize ?? null),
       defenseTied: defRank !== null && Boolean(def?.tied),
@@ -325,4 +333,16 @@ export function buildMatchupStats(
     awayOffVsHomeDef: buildUnitRows(rows, awayTeam, homeTeam),
     homeOffVsAwayDef: buildUnitRows(rows, homeTeam, awayTeam),
   };
+}
+
+/** Denominator of each published metric, matching its producer's valid observations. */
+export function metricExposureLabel(key: string): string {
+  if (key === "ppp" || key === "epa_per_possession") return "possessions";
+  if (key === "scoring_opp_rate" || key === "avg_start_field_pos") return "drives";
+  if (key === "pts_per_scoring_opp") return "scoring opportunities";
+  if (key === "conv_rate_3rd_4th") return "3rd/4th-down attempts";
+  if (key === "early_down_epa") return "early-down plays";
+  if (key === "epa_pass") return "pass plays";
+  if (key === "epa_rush") return "rush plays";
+  return "plays";
 }

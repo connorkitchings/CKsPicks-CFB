@@ -3,11 +3,11 @@ import test from "node:test";
 import { PAGE_WIDTHS, pageWidthFor } from "./page-width.ts";
 
 test("page widths map to the shared container classes", () => {
-  assert.deepEqual(PAGE_WIDTHS, { slate: "max-w-6xl", wide: "max-w-5xl", narrow: "max-w-4xl" });
+  assert.deepEqual(PAGE_WIDTHS, { slate: "max-w-[1200px]", wide: "max-w-[1200px]", narrow: "max-w-[760px]" });
 });
 
 test("slate routes use the slate width", () => {
-  for (const p of ["/", "/stats", "/stats/x", "/teams/Ohio%20State"]) {
+  for (const p of ["/", "/teams", "/stats", "/stats/x", "/teams/Ohio%20State"]) {
     assert.equal(pageWidthFor(p), "slate", p);
   }
 });

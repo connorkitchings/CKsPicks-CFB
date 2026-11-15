@@ -41,6 +41,8 @@ export type ScatterChartProps = {
   label: string;
   /** Live mobile details live outside the horizontally scrolling plot. */
   detailsContainer?: HTMLElement | null;
+  /** The enclosing view can render a persistent shared inspector instead. */
+  showDetails?: boolean;
 };
 
 const EXPORT_MARGIN = { top: 18, right: 22, bottom: 52, left: 84 };
@@ -104,6 +106,7 @@ export function ScatterChart({
   interactive = true,
   label,
   detailsContainer,
+  showDetails = true,
 }: ScatterChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [renderedWidth, setRenderedWidth] = useState(interactive ? Math.min(width, 760) : width);
@@ -197,6 +200,8 @@ export function ScatterChart({
   const selectTeam = (team: string) => {
     setChoices([]);
     setSelected(team);
+    // Selecting only ever sets the highlight; the toggle would clear one that is already on this team.
+    if (!showDetails && highlight !== team) onToggleHighlight(team);
   };
   const onTouchUp = (event: PointerEvent<SVGSVGElement>) => {
     const start = touch.current;
@@ -215,6 +220,7 @@ export function ScatterChart({
       if (selected === candidates[0]) {
         setSelected(null);
         setChoices([]);
+        if (!showDetails) onToggleHighlight(candidates[0]);
       } else {
         selectTeam(candidates[0]);
       }
@@ -225,7 +231,7 @@ export function ScatterChart({
   };
   const validChoices = choices.filter((team) => points.some((p) => p.team === team));
   const isHighlighted = highlight === tip?.team;
-  const hasDetails = interactive && Boolean(tip || validChoices.length > 0);
+  const hasDetails = interactive && Boolean((showDetails && tip) || validChoices.length > 0);
   const detailsRef = useRef<HTMLDivElement>(null);
   const revealDetails = useRef(false);
   // The panel sits under the plot, where a phone's fixed tab bar can cover its buttons; bring it clear of the bar.
@@ -239,7 +245,7 @@ export function ScatterChart({
     if (panel.getBoundingClientRect().bottom > barTop) panel.scrollIntoView({ block: "nearest" });
   }, [hasDetails, selected, validChoices.length]);
   const details = hasDetails ? (
-    <div ref={detailsRef} className="show-on-touch-or-small scroll-mb-28 mt-3rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink" data-testid="scatter-details">
+    <div ref={detailsRef} className="show-on-touch-or-small scroll-mb-28 mt-3 rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink" data-testid="scatter-details">
       {validChoices.length > 0 ? (
         <>
           <p role="status">Several teams are nearby. Choose a team:</p>

@@ -1,8 +1,9 @@
 import clsx from "clsx";
+import { etDateTime } from "@/lib/time-et";
 import type { PredictionGame } from "@/lib/queries";
 import { Card } from "@/components/ui/Card";
 import { isFinal } from "@/lib/team-games";
-import { coverMargin, edgeTone, leanFor, modelCrossesMarket, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
+import { coverMargin, leanFor, modelCrossesMarket, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { phoneTeamName } from "@/lib/team-logos";
@@ -35,6 +36,7 @@ function BetCell({ game, kind, results }: {
         <span className="uppercase tracking-wider">{kind === "spread" ? "Spread" : "Total"}</span>
         {grade ? <ResultBadge grade={grade} /> : results ? <span>Ungraded</span> : lean?.source ? <span className="truncate text-ink-muted">{lean.source}</span> : null}
       </div>
+      <p className="mb-1 text-[11px] text-ink-muted">Line captured: {(kind === "spread" ? game.spreadCapturedAt : game.totalCapturedAt) ? etDateTime((kind === "spread" ? game.spreadCapturedAt : game.totalCapturedAt)!) : "unavailable"}</p>
       {lean ? <>
         <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></p>
         <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums text-ink-muted">
@@ -46,7 +48,7 @@ function BetCell({ game, kind, results }: {
                 : modelNumber(lean)}
             </span>
           </span>
-          <span className={clsx("font-semibold", edgeTone(lean.edge, kind))}>({lean.edge.toFixed(1)})</span>
+          <span className="font-semibold text-ink-muted">Difference: {lean.edge.toFixed(1)} pts</span>
         </p>
         {results && (lean.source || cover) && (
           <p className="mt-0.5 text-xs text-ink-muted">
@@ -79,7 +81,7 @@ export function PredictionGameCard({ game, results = false, now }: {
             {game.neutralSite && <span>· Neutral site</span>}
             {final && <span className="rounded bg-surface-inset px-1.5 py-0.5 text-xs font-semibold">Final</span>}
             <AwaitingTag game={game} now={now} />
-            {game.highConfidence && <span className="text-sm text-accent-ink" aria-label="High confidence lean" title="High confidence lean">★</span>}
+
           </div>
           <MatchupButton gameId={game.gameId} />
         </div>

@@ -7,6 +7,7 @@ import { RankChip } from "@/components/ui/RankChip";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import {
   groupUnitRows,
+  metricExposureLabel,
   rankLabel,
   rankTitle,
   type MetricSection,
@@ -190,6 +191,7 @@ export function UnitMatchupTable({
                       <span data-value="offense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.offenseValue}</span>
                       <RankBadge rank={row.offenseRank} cohort={row.offenseCohort} tied={row.offenseTied} />
                     </div>
+                    {row.offenseN != null && <p className="pb-2 text-[10px] text-ink-muted">{row.offenseN.toLocaleString("en-US")} {metricExposureLabel(row.key)} · {row.offenseGames ?? "—"} games</p>}
                   </td>
                   <td className="break-words px-1 text-center text-sm font-medium leading-tight text-ink">
                     <Label text={row.name} />
@@ -199,6 +201,7 @@ export function UnitMatchupTable({
                       <span data-value="defense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.defenseValue}</span>
                       <RankBadge rank={row.defenseRank} cohort={row.defenseCohort} tied={row.defenseTied} />
                     </div>
+                    {row.defenseN != null && <p className="pb-2 text-right text-[10px] text-ink-muted">{row.defenseN.toLocaleString("en-US")} {metricExposureLabel(row.key)} · {row.defenseGames ?? "—"} games</p>}
                   </td>
                 </tr>
               ))}

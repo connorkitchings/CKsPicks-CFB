@@ -37,6 +37,7 @@ import {
   finishingDrivesScatterPoints,
   resumeQualityScatterPoints,
   marketBoardPoints,
+  marketComparisonPoints,
   type TeamSeasonStatRow,
   type TeamResumeChartRow,
   type SlateMarketGameRow,
@@ -125,7 +126,7 @@ test("net success: rows without the overtime-inclusive columns (earlier releases
   ];
   const { bars, notCharted } = netSuccessBars(rows, 3);
   assert.deepEqual(bars, []);
-  assert.deepEqual(notCharted, [{ gameId: 1, reason: "success rate unavailable" }]);
+  assert.deepEqual(notCharted, [{ gameId: 1, teams: ["Alabama", "Michigan"], reason: "success rate unavailable" }]);
 });
 
 test("net success: tied points and missing success rates are listed, not charted", () => {
@@ -137,10 +138,10 @@ test("net success: tied points and missing success rates are listed, not charted
   const { bars, notCharted } = netSuccessBars(rows, 0);
   assert.deepEqual(bars.map((b) => b.gameId), [3]);
   assert.deepEqual(notCharted, [
-    { gameId: 1, reason: "tied points" },
-    { gameId: 2, reason: "success rate unavailable" },
+    { gameId: 1, teams: ["Alabama", "Michigan"], reason: "tied points" },
+    { gameId: 2, teams: ["Tulane", "Notre Dame"], reason: "success rate unavailable" },
   ]);
-  assert.deepEqual(netSuccessBars([rows[0]], 0).notCharted, [{ gameId: 1, reason: "incomplete game rows" }]);
+  assert.deepEqual(netSuccessBars([rows[0]], 0).notCharted, [{ gameId: 1, teams: ["Alabama"], reason: "incomplete game rows" }]);
 });
 
 test("available weeks per chart and week coercion", () => {
@@ -735,4 +736,21 @@ test("slate market board: consensus coordinates, spread sign inversion, high-edg
   assert.equal(g101Total.modelLine, 51.0);
   assert.equal(g101Total.highEdge, true);
   assert.equal(totals.unavailable.length, 1);
+});
+
+test("marketComparisonPoints negates home spread lines into home margins and leaves totals unchanged", () => {
+  const game = {
+    gameId: 201, season: 2026, week: 9, startDate: new Date("2026-10-31T20:00:00Z"),
+    homeTeam: "Home U", awayTeam: "Away U",
+    homeTeamSpreadLine: -7.0, predictedSpread: 10.5, totalLine: 54.5, predictedTotal: 51.0,
+    edgeSpread: 3.5, edgeTotal: 3.5, spreadLean: "home", totalLean: "under",
+  } as unknown as Parameters<typeof marketComparisonPoints>[0][number];
+  const spread = marketComparisonPoints([game], "spread").points[0];
+  assert.equal(spread.market, 7.0, "home favored by 7 reads as a +7 home margin");
+  assert.equal(spread.model, 10.5);
+  const total = marketComparisonPoints([game], "total").points[0];
+  assert.equal(total.market, 54.5);
+  assert.equal(total.model, 51.0);
+  const pickem = marketComparisonPoints([{ ...game, homeTeamSpreadLine: 0 } as typeof game], "spread").points[0];
+  assert.equal(Object.is(pickem.market, 0), true, "a pick'em line is +0, not -0");
 });

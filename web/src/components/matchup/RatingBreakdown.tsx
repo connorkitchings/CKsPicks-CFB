@@ -160,7 +160,7 @@ function ReadyBody({ unit }: { unit: ReadyUnit }) {
 }
 
 /** Two cards per column, paired like the unit comparisons above: an offense and the defense it faces. */
-export function RatingBreakdown({ awayTeam, homeTeam, breakdown }: { awayTeam: string; homeTeam: string; breakdown: Breakdown }) {
+export function RatingBreakdown({ awayTeam, homeTeam, breakdown, selectedSide }: { awayTeam: string; homeTeam: string; breakdown: Breakdown; selectedSide?: "away" | "home" }) {
   return (
     <section aria-labelledby="rating-breakdown-heading" className="space-y-3">
       <SectionHeading id="rating-breakdown-heading">How the ratings are built</SectionHeading>
@@ -172,11 +172,11 @@ export function RatingBreakdown({ awayTeam, homeTeam, breakdown }: { awayTeam: s
         <Link href="/model/method#updates" className="underline hover:text-accent-ink">updates</Link> methods).
       </p>
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4" hidden={selectedSide === "home"}>
           <UnitCard team={awayTeam} unit={breakdown.awayOffense} />
           <UnitCard team={homeTeam} unit={breakdown.homeDefense} />
         </div>
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4" hidden={selectedSide === "away"}>
           <UnitCard team={homeTeam} unit={breakdown.homeOffense} />
           <UnitCard team={awayTeam} unit={breakdown.awayDefense} />
         </div>

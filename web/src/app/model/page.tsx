@@ -1,11 +1,12 @@
 import { getV5PerformanceDetail, type PerformanceDetail } from "@/lib/v5";
-import { mobilePerformanceFixture, partialPerformanceFixture } from "@/test/fixtures/performance-mobile";
+import { archivePerformanceFixture, mobilePerformanceFixture, partialPerformanceFixture } from "@/test/fixtures/performance-mobile";
 import { isUiTestMode } from "@/lib/slate-page";
 import {
   lineSourceCounts,
   marketComparison,
   type MarketTarget,
 } from "@/lib/performance-market";
+import { pairedErrors, parseTarget } from "@/lib/performance-errors";
 import { weeklyAndCumulative } from "@/lib/performance-trend";
 import { publicationScope } from "@/lib/publication";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
@@ -39,14 +40,18 @@ function clientView(detail: PerformanceDetail): PerformanceView {
     weekRows: detail.weekRows,
     trend: weeklyAndCumulative(gradedGames, detail.weeks),
     market: { spread: marketView(detail, "spread"), total: marketView(detail, "total") },
+    pairs: { spread: pairedErrors(detail.gradedGames, "spread"), total: pairedErrors(detail.gradedGames, "total") },
   };
 }
 
-export default async function ModelPage({ searchParams }: { searchParams?: Promise<{ fixture?: string }> }) {
-  // `?fixture=partial` is a UI-test variant for the empty states; search params are read only there.
-  const fixture = isUiTestMode() ? (await searchParams)?.fixture : undefined;
+export default async function ModelPage({ searchParams }: { searchParams?: Promise<{ fixture?: string; target?: string | string[] }> }) {
+  // `?target=` only picks which already-loaded target the error view opens on; unknown values fall back.
+  // `?fixture=partial|archive` are UI-test variants and are read only in fixture mode.
+  const params = await searchParams;
+  const initialTarget = parseTarget(params?.target);
+  const fixture = isUiTestMode() ? params?.fixture : undefined;
   const record = isUiTestMode()
-    ? { status: "ok" as const, value: fixture === "partial" ? partialPerformanceFixture : mobilePerformanceFixture }
+    ? { status: "ok" as const, value: fixture === "partial" ? partialPerformanceFixture : fixture === "archive" ? archivePerformanceFixture : mobilePerformanceFixture }
     : await loadPerformanceRecord(
       () => getV5PerformanceDetail(publicationScope.season),
       error => console.error("V5 cumulative performance query failed", error),
@@ -77,7 +82,7 @@ export default async function ModelPage({ searchParams }: { searchParams?: Promi
           <StatusCard title={title} message="No V5 weeks are selected." />
         ) : record.value.gradedGames.length === 0 ? (
           <StatusCard title={title} message="The selected runs have games, but no grades are available yet." />
-        ) : <PerformanceDashboard data={clientView(record.value)} title={title} />}
+        ) : <PerformanceDashboard data={clientView(record.value)} title={title} initialTarget={initialTarget} />}
         <p className="text-xs leading-relaxed text-ink-muted max-sm:hidden">{EXPLAINER}</p>
         <Disclosure title="About this record" className="sm:hidden">
           <div className="space-y-2 text-xs leading-relaxed">

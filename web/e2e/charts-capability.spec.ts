@@ -24,7 +24,8 @@ test("game log drops a yardage metric when navigating back to a retained release
   await expect(page.getByTestId("game-log-metric-ppa")).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("navigation", { name: "Chart type" }).getByRole("link", { name: "Game log", exact: true }).click();
   await expect(page).not.toHaveURL(/fixture=/);
-  await expect(page.getByTestId("game-log-metric-success")).toHaveAttribute("aria-pressed", "true");
+  // Same chart kind: the selected metric is carried across the link, and the v2 release serves it.
+  await expect(page.getByTestId("game-log-metric-ppa")).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("game-log-metric-explosive-rate").click();
   await expect(page.getByTestId("game-log-metric-explosive-rate")).toHaveAttribute("aria-pressed", "true");
   await page.goBack();

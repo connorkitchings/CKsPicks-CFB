@@ -18,7 +18,7 @@ export function PageHeading({
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="min-w-0">
         {eyebrow && <Eyebrow className="mb-0.5">{eyebrow}</Eyebrow>}
-        <Heading className="text-lg font-bold tracking-tight text-ink sm:text-xl">{title}</Heading>
+        <Heading className={Heading === "h1" ? "text-[clamp(1.75rem,3vw,2.5rem)] font-bold leading-[1.15] tracking-[-0.035em] text-ink" : "text-xl font-bold tracking-tight text-ink sm:text-2xl"}>{title}</Heading>
         {children && <div className="mt-1 text-sm text-ink-muted">{children}</div>}
       </div>
       {actions}

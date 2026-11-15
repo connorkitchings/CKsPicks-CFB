@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CHART_REGISTRY, parseTeamParam, withTeamParam } from "@/lib/chart-config";
+import { replaceSearchParams, searchParamsUrl } from "@/lib/url-state";
 import {
-  matchesConference,
+  conferenceOptions,
   type AdjustedRow,
   type AdjustedScatter,
   type ConferenceFilter,
@@ -57,6 +58,7 @@ export type ChartsViewProps = {
   chart: ChartPayload;
   /** The page's URL-backed settings (side links, week stepper) for the controls row. */
   settings?: ReactNode;
+  nextMatchups?: Record<string, number>;
 };
 
 /**
@@ -65,28 +67,33 @@ export type ChartsViewProps = {
  * the filter persists; the highlight lives in the `team=` URL param, updated in place
  * with the History API (no navigation), which Next keeps in sync with `useSearchParams`.
  */
-export function ChartsView({ season, week, roster, chart, settings }: ChartsViewProps) {
-  const [filter, setFilter] = useState<ConferenceFilter>("all");
+export function ChartsView({ season, week, roster, chart, settings, nextMatchups }: ChartsViewProps) {
   const pathname = usePathname();
   const params = useSearchParams();
   const highlight = parseTeamParam(params.get("team"), roster);
+  const compareCandidate = parseTeamParam(params.get("compare"), roster);
+  const compare = compareCandidate === highlight ? null : compareCandidate;
+  const rawFilter = params.get("conf");
+  const filter: ConferenceFilter = rawFilter && ["all", "p4", ...conferenceOptions(roster)].includes(rawFilter) ? rawFilter : "all";
+  const update = (key: string, value: string | null) => {
+    replaceSearchParams(pathname, (next) => { if (value) next.set(key, value); else next.delete(key); });
+  };
 
   const setHighlight = (team: string | null) => {
-    window.history.replaceState(null, "", withTeamParam(`${pathname}?${params.toString()}`, team));
+    window.history.replaceState(null, "", withTeamParam(searchParamsUrl(pathname, () => {}), team));
   };
   const shared: SharedChartProps = {
     season,
     week,
     roster,
     filter,
-    onFilterChange: (next) => {
-      setFilter(next);
-      const selected = roster.find((r) => r.team === highlight);
-      if (selected && !matchesConference(next, selected.team, selected.conference)) setHighlight(null);
-    },
+    onFilterChange: (next) => update("conf", next === "all" ? null : next),
+    compare,
+    onCompare: (team) => update("compare", team === highlight ? null : team),
     highlight: CHART_REGISTRY[chart.kind].controls.team ? highlight : null,
     onHighlight: (team) => setHighlight(team === null || team === highlight ? null : team),
     settings,
+    nextMatchups,
   };
 
   return renderView(chart, shared);

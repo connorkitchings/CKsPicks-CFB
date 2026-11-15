@@ -184,6 +184,8 @@ export function fixtureMatchup(gameId: number): MatchupData | null {
     modelTotalEdge: predictions ? totalEdge(game.predictedTotal, game.totalLine) : null,
     spreadSource: predictions ? (game.spreadSource ?? null) : null,
     totalSource: predictions ? (game.totalSource ?? null) : null,
+    spreadCapturedAt: predictions ? (game.spreadCapturedAt ?? null) : null,
+    totalCapturedAt: predictions ? (game.totalCapturedAt ?? null) : null,
     highConfidence: predictions ? game.highConfidence : false,
     homeFinalPoints: game.homePoints,
     awayFinalPoints: game.awayPoints,
