@@ -119,7 +119,7 @@ Branch `codex/site-redesign` merged into local `dev` (which had gained only rese
 
 ### Observations to keep
 
-- `/stats` `nextMatchups` only reads the release's active week, so next-matchup chart links vanish once every game in that week has started (week 11 now) until the next release activates.
+- `/stats` `nextMatchups` used to read only the active week; fixed in the follow-up commit (see the closeout section).
 - Chart links no longer carry the test-only `fixture` parameter.
 
 ## Handoff notes
@@ -141,4 +141,4 @@ Branch `codex/site-redesign` merged into local `dev` (which had gained only rese
 - **Preview verification of the real code paths (read-only):** production build served with `scripts/ops/run_web_local.sh preview` (pipeline login from the Keychain, not printed, no `CFB_UI_TEST_MODE`), once with the default market mode and once with `CFB_PUBLICATION_MODE=predictions`. No writes; server log had no errors.
   - Market mode: `/`, `?week=10/11/12`, `/matchup/401866453` (completed), `/matchup/401866464`, `/teams`, `/teams/Georgia`, `/stats`, `/model` all returned 200. Model forecasts and capture times are hidden by design; matchup shows "Spread line captured: unavailable".
   - Predictions mode: Games week 11 shows a capture time on every spread and total (for example "Nov 8, 12:58 PM ET"); the completed matchup shows "Spread line captured: Nov 1, 4:08 PM ET" with statistics and sharing available (lineage ready); `/model` rows show capture times and none read "unavailable"; `/teams/Georgia` shows the rating evidence ledger and weekly ratings from one source; `/teams` and `/stats` render with no failure notices.
-  - Limit (unchanged): `/stats` has no next-matchup links because week 11 has no unstarted games; they return when week 12 is activated.
+  - Fix (follow-up): `/stats` `nextMatchups` now links each team to its first upcoming game in the active week or the week after (`nextMatchupByTeam` in `lib/team-games.ts`), reading with the same function the matchup page uses for the publication mode (`getGamesForWeek` in predictions mode, `getMarketGamesForWeek` in market mode), because `getGamesForWeek` can return fewer games than the market reader. A failed next-week read keeps the active week's links. Preview, read-only, in both modes: the serialized `nextMatchups` prop was non-empty with week 12 game ids, `/matchup/401866464` returned 200, and the server log had no errors. `make check` and `make web-e2e` passed.
