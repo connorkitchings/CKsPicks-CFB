@@ -123,10 +123,11 @@ Implementation now authorized by owner's explicit instruction. Commit bounded co
 
 Continuation approval: the owner explicitly approved the seven-step “Continue the Stratum site redesign” execution plan and instructed implementation. Resume in the existing worktree, finishing shared design, Games/matchups, Teams/profiles, Graphs, then Model sequentially. Each bounded slice needs focused verification before its local commit; final review and all original acceptance gates precede integration into local dev. Preserve concurrent model research. The product scope above remains authoritative.
 
-- [ ] Shared design/navigation
-- [ ] Availability/freshness/interpretation
-- [ ] Games/matchups
-- [ ] Teams hub/profiles
-- [ ] Graph exploration
-- [ ] Model assessment
-- [ ] Review, final gates, Preview read checks, browser evidence, documentation and local integration
+- [x] Shared design/navigation
+- [x] Availability/freshness/interpretation
+- [x] Games/matchups
+- [x] Teams hub/profiles
+- [x] Graph exploration
+- [x] Model assessment
+- [x] Final gates (`make check`, `make web-e2e` 436 passed / 10 skipped, `git diff --check`), browser inspection at 320/390/820/1280 in both themes (no overflow, no console errors), documentation, local integration
+- [ ] Open before marking Implemented: Preview verification of the application code paths (only equivalent read-only SQL was run), and the selected-quote capture time on Model rows (`MarketGame` has no such field)

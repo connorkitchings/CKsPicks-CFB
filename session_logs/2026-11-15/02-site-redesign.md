@@ -96,28 +96,26 @@ Ran through `psql` with `default_transaction_read_only=on`; the connection strin
 - Verification: typecheck and lint clean; `test:publication` 496 passed / 0 failed / 1 skipped; `e2e/model.spec.ts`, `e2e/mobile-model.spec.ts`, `e2e/model-assessment.spec.ts` 33 of 33 passed; `git diff --check` clean; `make check` passed.
 - Not done in this step: the selected-quote capture time on Model rows (`MarketGame` has no such field).
 
-## Session close state (paused)
+## Session close state
 
-Contract stays **In Progress**. Nothing merged into local `dev`; nothing pushed. Branch `codex/site-redesign` in `.worktrees/site-redesign` holds local commits `092024ba` (Games), `caf27f64` (Teams), `024e8142` (Graphs) and the Step 6 commit. `web/README.md` (route table, navigation and presentation sections) was reviewed against the built behavior and committed as documentation.
+### Triage of the red browser suite (resolved)
 
-### Blocker: `make web-e2e` is red (86 failed, 350 passed, 10 skipped)
+All 86 failing browser specs were triaged. Intentional redesign changes were encoded in the specs without removing assertions. Real regressions fixed: matchup lineage-updating and stats-unavailable notices had lost their accessible name and distinct copy; the phone forecast grid wrapped the market spread cell; disclosure summaries, segmented controls and model sort buttons were under 44px; the Teams page ignored the shared phone rhythm; a phone-only intro paragraph pushed the first game card below the tab bar; a stale `/ratings` locator made three share-export specs time out.
 
-Run after Step 5 (full suite, fixture build). Failures by spec file, all in areas the earlier gates did not run; each needs the same triage used for the chart specs (intentional redesign change versus real regression):
+### Final verification
 
-- `matchup.spec.ts` 13, `matchup-ratings-breakdown.spec.ts` 7, `matchup-tape.spec.ts` 5, `matchup-rank-colors.spec.ts` 2, `mobile-matchup.spec.ts` 4: matchup page text and structure after the Step 3 redesign (e.g. the "Team stats" status region, "How the ratings are built" region, tale-of-the-tape, app-bar back link). Check first whether any is a real gating regression, since Step 3 changed the stats/evidence gating.
-- `publication.spec.ts` 11 (one waits for a "Ratings" nav link that is now "Teams"), `mobile-slate.spec.ts` 9, `mobile-games.spec.ts` 9, `desktop-layout.spec.ts` 6, `awaiting-result.spec.ts` 1: slate and navigation expectations.
-- `mobile-polish.spec.ts` 10, `mobile-app-bar.spec.ts` 6: shared shell/menu expectations.
-- `share-export.spec.ts` 3: timeouts on leaving the page mid-share/download/copy.
-- `mobile-scatter.spec.ts` 1: the market-board `test.fail()` case, which is designed to fail; confirm the runner counts it as expected.
+- `make check` passed. `make web-e2e`: 436 passed, 10 skipped (pre-existing), 0 failed. `git diff --check` clean. `test:publication` 496 passed / 1 skipped / 0 failed; typecheck and lint clean.
+- Browser inspection (Playwright screenshots of Games, matchup, Teams, Strength vs résumé, a team profile, Graphs and Model at 320, 390, 820 and 1280 px, light and dark): zero horizontal overflow and zero console errors across all 56 page loads; screenshots of the Games, matchup, Teams, Graphs and Model pages were reviewed visually.
 
-### Remaining Step 7 work
+### Integration
 
-1. Triage and fix the 86 failures above (update specs only for intentional changes; fix real bugs).
-2. Browser inspection at 320, 390, tablet and desktop widths in both themes (not started).
-3. Review the Model page quote-capture-time gap and decide whether it is in scope.
-4. Update docs (`web/README.md`, plan checklist) and, only if the week state changed, `docs/status.md`.
-5. Merge `codex/site-redesign` into local `dev` while preserving the concurrent model-research commits (observed `db223f23` earlier), then delete the branch. Push only on the owner's instruction.
-6. Optional cleanup: delete the dead `RatingsView.tsx`, its filter sheet and the three source-text tests that read it; update the stale comment above the "Team graphs" heading in `stats/page.tsx`; investigate the pre-hydration logo shift behind the hardened flaky chart spec.
+Branch `codex/site-redesign` merged into local `dev` (which had gained only research documentation commits). No push, deploy, migration or database write.
+
+### Still open before the contract can be marked Implemented
+
+1. Preview verification of the application code paths themselves (this session ran equivalent read-only SQL only).
+2. Selected-quote capture time on Model rows (`MarketGame` carries no such field).
+3. Optional cleanup: delete the dead `RatingsView.tsx`, its filter sheet and the three source-text tests that read it; refresh stale comments in `stats/page.tsx` (heading) and `SlateList.tsx` (extras now render after the games); investigate the pre-hydration logo shift behind a hardened flaky chart spec; `nextMatchups` on `/stats` only reads the active week.
 
 ### Observations to keep
 
