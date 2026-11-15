@@ -1,4 +1,6 @@
 import clsx from "clsx";
+import Link from "next/link";
+import { resolveTeam, teamHref } from "@/lib/team-routes";
 import TeamLogo from "@/components/TeamLogo";
 import { Notice } from "@/components/ui/Notice";
 import { AwaitingTag } from "@/components/slate/AwaitingTag";
@@ -72,7 +74,7 @@ function ScheduleTable({ entries, team, now, nextId }: { entries: readonly Sched
                   <span className="flex items-center gap-2">
                     <span className="w-4 text-xs text-ink-faint">{home ? "vs" : "at"}</span>
                     <TeamLogo name={opponent} px={22} />
-                    <span className={clsx(final || game.gameId === nextId ? "font-medium text-ink" : "text-ink-muted")}>{phoneTeamName(opponent)}</span>
+                    {resolveTeam(opponent) ? <Link href={teamHref(opponent)} className={clsx("inline-flex min-h-11 items-center hover:underline", final || game.gameId === nextId ? "font-medium text-ink" : "text-ink-muted")}>{phoneTeamName(opponent)}</Link> : <span className={clsx("inline-flex min-h-11 items-center", final || game.gameId === nextId ? "font-medium text-ink" : "text-ink-muted")}>{phoneTeamName(opponent)}</span>}
                   </span>
                 </td>
                 <td className={clsx(TD, "text-right font-mono")}>{line === null ? NONE : lineText(line)}</td>

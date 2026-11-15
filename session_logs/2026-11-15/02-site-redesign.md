@@ -60,6 +60,25 @@ No scope amendments. Work paused because the delegated workers hit the usage lim
 - Fixes folded in: matchup statistics, evidence and sharing gate on `lineageStatus === "ready"` only, while forecast-derived facts still require predictions mode; `getSeasonReleaseContext` failure no longer blanks the slate; the pick'em/home-margin sign normalization now lives in `marketComparisonPoints` with a unit test; "Show all games" pushes history so Back returns to the filtered state; removed constant `clsx` wrappers, a stray import and blank line, and the unused `edgeTone` helper with its test.
 - Verification: typecheck passed; lint shows no errors (remaining warnings are the two `stats/page.tsx` unused-argument warnings, Step 5); `test:publication` 480 passed / 7 failed (the known Teams and Graphs expectations) / 1 skipped; `e2e/games-redesign.spec.ts` 5 of 5 passed against the fixture server.
 
+### Preview read verification of the new database reads (read-only)
+
+Ran through `psql` with `default_transaction_read_only=on`; the connection string was never printed. Active 2026 release is in week 11 (activated 2026-11-09); the earlier release is superseded.
+
+- Selected market quotes (`season_release_prediction_market_selections` joined to `season_release_market_quotes`, active release): 1,257 selections, 1,257 with `captured_at`, 0 null (0%). The legacy unscoped tables show the same: 2,426 of 2,426.
+- Rating snapshots (active release, `current` class): 1,518 rows, 11 cutoffs, 138 teams per cutoff, exactly 1 source manifest, so exact-source history is unambiguous. The legacy unscoped table holds up to 4 generations per cutoff (8 sources overall), which is why `getRatingAnalysisHistory` must filter on the selected source and never join by week alone.
+- Evidence: for the latest cutoff, all 138 snapshots have rating components (276 component rows, one offense and one defense each), so `getTeamRatingEvidence` resolves for the active snapshot.
+- `/stats` `nextMatchups`: it reads only the release's active week. Week 11 (67 games, last kickoff 2026-11-15) has no upcoming games now, so the map is empty and chart links to the next matchup disappear until the next release activates week 12 (66 games, 2026-11-18 to 2026-11-22). Flagged as a behavior limit, not changed.
+- Not exercised: the application code paths themselves against Preview (SQL equivalents only).
+
+### Step 4 (Teams) completed
+
+- Added `lib/url-state.ts` (`searchParamsUrl`, `replaceSearchParams`), which edits a copy of the live `window.location.search`. `TeamsHub.change` now uses it, so two quick selector changes both persist (browser-tested with simultaneous selections).
+- Strength-vs-résumé x-scale now spans all teams in the period, so conference/search filters no longer move points. The phone rank label follows the selected sort. Schedule opponent names link only when `resolveTeam` succeeds; the separate "Opponent profile" row is gone and the matchup row link is now a stretched overlay so no link nests inside another.
+- Fixed a hydration mismatch: `RatingTimeline` rendered a `<title>` with an array of children; it is now one template string.
+- Tests: new `lib/team-analysis.test.ts` (tied ranks, ambiguous/gap/other-source weekly movement, future and other-source exclusion), registered in `test:publication`. Replaced the two stale ratings-page source assertions with checks on the `/ratings` redirect and `TeamsHub`. Replaced the obsolete `e2e/ratings.spec.ts` (it drove the retired `/ratings` UI) with `e2e/teams-hub.spec.ts` (redirect keeps query parameters, simultaneous selections, phone rank label, scale stability, schedule links); updated `e2e/teams.spec.ts` for the intentional "All teams"/"Back to teams" links and the new trend chart name.
+- Verification: `test:publication` 486 passed / 5 failed (the Graphs failures, Step 5) / 1 skipped; `teams.spec.ts` and `teams-hub.spec.ts` 23 of 23 passed.
+- Left in place: the unused `RatingsView.tsx` (plus its filter sheet) and the three source-text tests that still read it; removing that dead code is a separate cleanup.
+
 ## Handoff notes
 
 - **Resume at:** existing worktree and approved contract; do not recreate or discard partial changes.
