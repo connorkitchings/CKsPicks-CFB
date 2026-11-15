@@ -662,6 +662,42 @@ Limits: the 2022 to 2025 seasons were already examined, so the confirmation figu
 
 Decision for the owner: (a) accept the declared outcome (no candidate selected) and change nothing; (b) amend the rule to score tuning from 2018 and select B1s, a post hoc change that the 2022 to 2025 evidence then cannot confirm; (c) keep B1s as the leading candidate and test it forward on the 2026 season's early weeks, which no analysis has touched; (d) separately approve B3 (needs a 2015 to 2019 CFBD membership pull) to address the balanced-game cost.
 
+### Step 4B continued: conference tier, B3 (2026-11-15, owner-approved)
+
+The owner chose to test B3 and approved the CFBD pull of team membership for 2015 to 2019 (read-only, `get_teams`; files and SHA-256 values in `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`, hashes in `sha256_teams_2015_2019.json`). B3 is as declared: B1 plus two early-only indicators, a Power 4 host against a weaker (G5 or FCS/other) visitor, and a weaker host against a Power 4 visitor. Tiers use each season's membership; Power 4 is the SEC, Big Ten, Big 12, ACC and Notre Dame, plus the Pac-12 through 2023. Every game matched a CFBD team record. Same baseline (reproduced exactly), same earlier-only fitting. Outputs: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_b3_results.json`.
+
+Stage 0 to 3 and stage 4 margin MAE / bias:
+
+| Candidate | Tuning 2016 to 2021, stages 0 to 3 | Tuning, stage 4 | 2022 to 2025, stages 0 to 3 | 2022 to 2025, stage 4 |
+|---|---|---|---|---|
+| Baseline | 15.99 / +0.51 | 14.81 / -5.67 | 15.01 / +3.68 | 12.87 / -2.08 |
+| B1 | 16.05 / -2.45 | 14.26 / -2.99 | 14.81 / +0.21 | 12.71 / +0.20 |
+| B1s | 15.80 / -2.15 | 13.33 / -0.38 | 14.47 / +0.14 | 12.67 / +0.15 |
+| **B3** | **15.30 / -2.26** | 14.21 / -2.84 | **14.09 / +0.10** | 12.71 / +0.21 |
+
+**Against the declared rule on the tuning seasons:** B3 gains 0.68 stage 0 to 3 MAE (rule: at least 0.2), improves stage 4 MAE (14.81 to 14.21) and stage 4 bias magnitude (5.67 to 2.84), and beats B1 and B1s by 0.75 and 0.49 (rule: more than 0.10). It **fails the bias condition** (early bias magnitude 2.26 against 0.51), for the same reason as every candidate: 2016 and 2017 have a negative bias (-4.68 and -6.09) after short training windows. By the letter of the rule B3 is not selected. Its MAE is lower than the baseline in all five tuning seasons, 2016 and 2017 included (15.70 against 16.12, 15.32 against 15.59, 15.22 against 15.97, 14.04 against 14.87, 16.27 against 17.40).
+
+**On 2022 to 2025 (examined seasons, reported once):** paired MAE gain over the baseline for B3 is 0.93 (90% interval 0.68 to 1.18) against 0.54 for B1s and 0.20 for B1; B3 over B1 is 0.72 (0.51 to 0.93). B3 improves all four seasons (2022 15.56 to 14.74, 2023 14.27 to 13.45, 2024 15.94 to 15.06, 2025 14.30 to 13.12), including 2024 where B1s was worse. Stage 4 MAE improves from 12.87 to 12.71. The stage 0 mean bias is still +2.98 under B3 because one early indicator cannot absorb it.
+
+**It addresses the 4A matchup pattern.** Stage 0 bias by matchup on 2022 to 2025 (games; baseline, B1s, B3): Power 4 host v FCS/other (192) +12.00, +5.51, +3.65; Power 4 v G5 (86) +13.28, +5.39, +3.27; Power 4 v Power 4 (45) -3.39, -12.47, -5.14; G5 v Power 4 (17, below 30) -14.43, -22.72, -5.71; G5 v G5 (42) -5.05, -12.92, -6.24. B3 reduces the lopsided-game bias without the cost to balanced games that B1s had (Power 4 v Power 4 MAE 13.17, 16.22 for B1s, 13.38 for B3). In the final fit the two tier terms are +9.7 points for a Power 4 host against a weaker visitor and -10.8 for the reverse, early only. The rating-gap term B2 did not capture this, so the conference-tier information is not in the ratings at stages 0 to 3.
+
+**Post hoc, not part of the rule:** on 2018, 2019 and 2021 only (bridges with three or more training seasons), B3 gives stage 0 to 3 MAE 15.17 against 16.07 for the baseline with bias -0.22 against +3.06, and meets every declared condition there. Adding the same tier terms to the per-stage intercept (B1s plus tier, a candidate not on the declared list, labelled exploratory) gives 2022 to 2025 stage 0 to 3 MAE 13.90 (gain 1.11, 0.83 to 1.40; stage 0 bias -0.03) and 15.35 on the tuning seasons; it was not selected or confirmed.
+
+Limits: the 2022 to 2025 seasons were examined before, so the confirmation figures are not independent; the tuning seasons fail the bias condition and the short-window result is a property of how the rule was set; conference tier is public before kickoff, but the files were captured on 2026-11-15, so historical availability is unverified; tier and prior quality overlap, so the term cannot say whether quality or conference carries the signal; Power 4 membership is a judgement for the Pac-12 (counted through 2023); the model change was fitted only on margin and totals were not examined.
+
+#### Holdout declaration for the owner's chosen test (c), not yet run
+
+The owner accepted testing the leading candidate on seasons no analysis has touched. Correction to the earlier recommendation: the early weeks of 2026 are already played (the season is in its final weeks), so they cannot be a forward test; they are a holdout whose outcomes are known but whose scores no analysis here has used. A genuinely forward test is the early weeks of 2027. Declared now, before any 2026 score exists:
+
+| Field | Content |
+|---|---|
+| Question | Do B1s and B3 lower stage 0 to 3 margin MAE against Operational V5 on 2026 regular-season games, with stage 4 not worse? |
+| Candidates | B1s and B3 as defined above, no others. Bridge refitted on 2015 to 2025, earlier-only; the baseline is the same refit without the added terms. |
+| Population | 2026 regular-season games at completed-game stages 0 to 3, and stage 4 as the comparison; postseason excluded. |
+| Pass condition | Stage 0 to 3 MAE gain of at least 0.2 over the baseline, stage 4 MAE no more than 0.05 above it, and stage 0 to 3 bias magnitude smaller than the baseline's. Report the game count; if fewer than 300 stage 0 to 3 games are usable, say so and treat the result as indicative. |
+| Needs before running | 2026 serving states, outcomes and offsets confirmed present locally (not yet checked) and CFBD 2026 team membership (a further read-only pull, needs approval). |
+| Cannot show | Forward performance: the outcomes are known. The 2027 season is the clean forward test. |
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.

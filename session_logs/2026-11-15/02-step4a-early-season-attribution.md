@@ -30,11 +30,13 @@
 
 - Owner confirmed the thresholds and approved running 4B. Baseline rebuilt from serving states and reproduced the stored predictions exactly. Result: no candidate selected under the declared tuning rule; B2 adds nothing; per-stage intercept (B1s) gains 0.54 stage 0 to 3 MAE on 2022 to 2025 and fixes stage 4 bias but worsens balanced matchups. Owner decision pending (accept, amend rule, forward test, or B3).
 
+- Owner accepted the recommendation (forward test) and asked to test B3 further. Pulled team membership for 2015 to 2019 (hashed), ran B3: 2022 to 2025 stage 0 to 3 MAE 15.01 to 14.09, better in all four seasons and all five tuning seasons; fixes lopsided-matchup bias without B1s's balanced-game cost; fails only the declared early-bias condition on tuning (2016 and 2017). Declared a 2026 holdout test, noting 2026 early weeks are already played so it is a holdout, not forward.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section
 - `docs/plans/index.md` — state line
-- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_results.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
+- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_results.json`, `step4b_b3_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/teams_2015..2019.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
 
 ## Validation
 
