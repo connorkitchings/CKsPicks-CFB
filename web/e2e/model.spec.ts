@@ -89,7 +89,9 @@ test.describe("model page is accuracy-only", () => {
     await expect(totals).toContainText("Model 3.4 pts high; betting line 0.5 pts high");
     await expect(totals).toContainText("Compared on 7 games");
     await expect(page.getByTestId("record-caveat")).toContainText("it is not a betting result");
-    await expect(page.getByTestId("record-caveat")).toContainText("within normal luck of break-even");
+    await expect(page.getByTestId("record-caveat")).toContainText("not pooled");
+    await expect(page.getByTestId("record-caveat")).toContainText("52.4% is the reference win rate");
+    await expect(page.locator("body").getByText(/luck|normal approximation|statistically significant/i)).toHaveCount(0);
   });
 
   test("the season trend has an accessible name and a table view", async ({ page }) => {
@@ -159,9 +161,10 @@ test.describe("inline links on phones", () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
-  test("the ratings elite link is a 44px tap target", async ({ page }) => {
-    await page.goto("/ratings");
-    const box = (await page.getByRole("link", { name: "elite", exact: true }).boundingBox())!;
+  test("the Teams methodology link is a 44px tap target", async ({ page }) => {
+    await gotoHydrated(page, "/teams");
+    await page.getByText("How to read these ratings").click();
+    const box = (await page.getByRole("link", { name: "Read the methodology" }).boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(44);
     expect(box.width).toBeGreaterThanOrEqual(44);
   });
