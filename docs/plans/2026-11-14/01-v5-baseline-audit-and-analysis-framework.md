@@ -1,6 +1,6 @@
 # V5 baseline audit and model analysis framework
 
-- **Status:** Draft
+- **Status:** Draft. Audit steps 1 to 4 are complete (4A to 4D run 2026-11-15) and amendments 7 to 10 are drafted, not applied; step 5 is pending the owner.
 - **Created:** 2026-11-14
 - **Planner:** Sol
 - **Approval source:** The owner approved writing this Draft and running the local read-only inventory on 2026-11-14, after two rounds of review. Approval to execute any step of the work order is the next gate and is given per step.
@@ -1127,6 +1127,35 @@ These are ready-to-apply wording. Nothing here is written to the [research proto
 ```
 
 
+## Audit conclusions (2026-11-15, steps 1 to 4)
+
+**Established**
+
+- **Named baselines.** Historical V5 (the reproducibility reference), Operational V5 (the serving recipe, the proposed comparator) and Closed V6 (a historical comparator) are defined and scored on the same regular-season games. Operational V5 over 2022 to 2025 (3,483 games, each season fitted on earlier seasons only, postseason excluded): margin MAE 13.715, total MAE 13.371. FBS-vs-FBS (2,998 games, the headline population): margin 13.34, total 13.49.
+- **Reproducibility.** The retained repair-experiment results were reproduced offline to 2.8e-14, and every later baseline rebuilt from the serving states reproduced the stored Operational V5 predictions with a largest difference of 0.0 (margin in 4B, 4C and 4D, total in 4C). Row-level identity with the original repair-experiment files remains unproven.
+- **Parity.** The serving states agree with the rerun on structure and timing and differ in values, following the rebuild's scoring corrections. The upstream temporal check passed. The 415 postseason games labelled week 1 were found, excluded by owner decision, and removed from scoring and bridge training.
+- **Scoring accounting.** In-season updating adds 0.70 margin MAE over preseason priors, all of it at stage 4 (four or more completed games for both teams); stages 0 to 3 are no better than priors. Totals beat a constant by 0.28. Possession volume is not the missing totals input.
+- **Where early-season error sits.** The stage 0 margin bias (+7.16, all games) is not a constant intercept error; it follows the matchup (Power 4 hosts against weaker teams under-predicted by 12 to 13 points). On the published population, FBS-vs-FBS, the early bias is small (+0.84) and priors alone match or beat Operational V5 through stage 1.
+- **FBS-vs-FBS and FBS-vs-FCS.** FBS-vs-FCS predictions carry ranking signal (correlation +0.39) but are mis-levelled (bias +8.9). The bridge intercept (7.4) is inflated by FCS blowouts (FBS-vs-FBS training games average 4.1), about 3 points high for the published games.
+- **The P3 candidate.** One bridge with an FBS-vs-FCS indicator plus the early conference-tier terms passes every declared condition on 2018, 2019 and 2021, gains 0.93 margin MAE at FBS-vs-FBS stages 0 to 3 on 2022 to 2025 (all four seasons, interval 0.69 to 1.18) with all-stage bias near zero, and is frozen (specification and hash above). It is not adopted. The owner chose it over P4.
+- **Totals (4C).** No material gain from any shrinkage or feature form; the ratings carry little totals signal (correlation +0.13 to +0.18, MAE 0.07 to 0.09 better than a constant). The flat total is a signal limit, not an over-shrinking or cancellation defect.
+- **Venue (4D).** The stored neutral-site flag does not reduce the neutral-site bias; it overshoots (bias -1.50 becomes +2.53 on 80 FBS-vs-FBS neutral games, 2023 to 2025). Low power; no evidence of an effect.
+
+**Deferred**
+
+- Step 5, residual and hindsight screens (including non-conference bias, now largely overlapped by the FBS-vs-FCS finding).
+- Step 6, market reporting, which waits for football-based priorities to be frozen.
+- The other session's update-speed and scale-matching variants: unverified, outside the declared 4B list, and not part of this audit's findings.
+
+**Known limits**
+
+- 2022 to 2025 are examined seasons; their gains are evidence, not independent confirmation.
+- 2026 exposure: weeks 0 to 6 were scored for the baseline, B1s, B3 and P1 to P4 (zero offsets; rating recipe identity unverified). 2026 is not a clean holdout for them. Steps 4C and 4D scored nothing from 2026.
+- The selection seasons (2018, 2019, 2021) were chosen after seeing that 2016 and 2017 destabilised earlier candidates.
+- The conference-tier terms cannot be separated from prior quality.
+- One parallel session's results were never reproduced here.
+
+
 ## Validation
 
 `git diff --check`; `uv run mkdocs build --strict`; this contract is listed in the [plans index](../index.md). The inventory counts above were produced by reading and hashing every listed file.
@@ -1134,3 +1163,9 @@ These are ready-to-apply wording. Nothing here is written to the [research proto
 ## Handoff/amendments
 
 Resume gate: owner approval of the next executable scope. Record amendments here with the reason, previous approach, revised approach and impact.
+
+**2026-11-15, close of step 4.**
+- **2026 exposure.** Weeks 0 to 6 of 2026 were scored for the baseline, B1s, B3 and P1 to P4 under owner approval (retrieval and run). The approved protocol makes 2026 a holdout scored once after the 2026-12-13 final close; for those candidates it no longer is. Recorded as drafted amendment 7. Steps 4C and 4D, run later, scored no 2026 data.
+- **Output-file collision.** Another session working on this contract wrote `step4a_results.json` and `step4b_results.json` into the same output folders while this session ran. Its files were left in place; this session's results are under different names (`step4a_attribution_results.json`, `step4b_variants_results.json` and the later files). Its work is not in the repository and was not verified.
+- **Open owner gates.** (1) Approve, edit or reject drafted amendments 7 to 10 and the YAML diff (one gate; amendment 8 needs an explicit statement that it is a population definition, not a loosening). Amendments 1 to 6 are also still unapplied. (2) Decide whether the audit moves to step 5 and the 2027 forward test, or stops at step 4. (3) Say where the other session's work lives so it can be merged and verified.
+- No file in `conf/` or the research protocol was changed; nothing was pushed.
