@@ -6,8 +6,8 @@
 - **Outcome:** Neither experiment helps. Totals: no shrinkage or feature form beats the baseline by more than 0.02 total MAE (declared bar 0.20); the ratings carry little totals signal. Venue: using the neutral-site flag moves the neutral bias from -1.50 to +2.53 on 80 FBS-vs-FBS games, so it overshoots. P3 is frozen as a named specification with script hashes. Audit steps 1 to 4 are complete.
 - **Plan Contract:** [`docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md`](../../docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md)
 - **Approval / Status:** Owner approved the plan (all declarations, thresholds and the alpha list) on 2026-11-15. Contract stays `Draft`. Four local commits on `dev`, not pushed. Nothing from 2026 was scored; no 2026 data scored in 4C or 4D.
-- **Blockers:** Open: amendment 8 (needs an explicit owner statement), amendments 1 to 6, the 2027 offset rule, and the location of the other session's work.
-- **Next:** Verify the 2026 rating recipe matches the historical one; fix the 2027 offset rule before the first 2027 game; locate and reproduce the other session's work in a separate folder.
+- **Blockers:** Open: amendments 1 and 2 (to be edited before applying) and the location of the other session's analysis script (only its two output files are known).
+- **Next:** Run the rating-recipe check (recompute 2025 states with the 2026 pipeline and diff against the historical states); revisit the 2027 offset rule before 2027.
 
 **tags:** ["model-research", "baseline-audit", "totals", "venue", "protocol-amendments"]
 
@@ -48,3 +48,5 @@
 ## Owner decisions (end of session)
 
 Approved amendments 7, 9, 10 (applied to the protocol and `protocol.yaml`, additive keys only); amendment 8 held; go to the 2027 forward test and skip the rest of step 5 except the rating-recipe check; other session's work to be treated as unverified. Files also modified: `docs/plans/2026-11-12/02-offseason-research-protocol.md`, `conf/research/offseason_2027/protocol.yaml`.
+
+Later the same day the owner also approved amendment 8 (FBS-vs-FBS headline, FBS-vs-FCS kept as a separate secondary), 3, 5 and 6 (4 folded into 7), and the provisional 2027 offset rule (amendment 11). All were applied to the protocol and `protocol.yaml`. The other session's analysis outputs are `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_results.json` and `step4b-2026-11-15/step4b_results.json`; its script was not found. Uncommitted `web/` changes on `dev` belong to the site session and were left alone.

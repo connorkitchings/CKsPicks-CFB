@@ -3,12 +3,16 @@
 # Loosening any value requires a dated amendment in that contract; never after a
 # 2026 residual has been viewed.
 # Amendments 7, 9 and 10 (2026-11-15) are recorded in the same contract; none changes
-# a numeric threshold.
+# a numeric threshold. Amendments 3, 5, 6, 8 and 11 were applied the same day.
 protocol_id: offseason_2027_v1
 comparison_models: [frozen_v5, v5-common]
 # Fitting data may include 2015-2019 and 2021-2025; 2020 is always excluded.
 development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
 headline_seasons: [2022, 2023, 2024, 2025]
+# Amendments 8 and 6 (2026-11-15): population definition, not a threshold change.
+headline_population: fbs_vs_fbs_regular_season
+secondary_population: fbs_vs_fcs_regular_season   # reported separately for every candidate
+postseason: excluded                              # from training, calibration and scoring
 holdout_season: 2026
 holdout_scored_once: true
 holdout_exposure:                                 # amendment 7
@@ -37,3 +41,5 @@ adoption:
   interval_90_coverage_min: 0.87
   interval_90_coverage_max: 0.93
   early_weeks_not_worse_than_v5: [0, 1, 2, 3, 4]
+market_reporting: after_football_priorities_frozen   # amendment 5
+offset_rule_2027: serving_offsets_if_available_before_kickoff_else_zero_for_both_arms   # amendment 11, provisional
