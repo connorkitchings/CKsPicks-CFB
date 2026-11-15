@@ -3,7 +3,7 @@
 ## TL;DR
 
 - **Worked On:** A Cloudflare Worker that calls the GitHub `workflow_dispatch` API at 12:00 America/New_York on Sundays and Mondays, because GitHub `schedule` runs for `weekly-season-update.yml` arrive hours late.
-- **Outcome:** The Worker, its unit tests and a runbook subsection are committed on `dev` (local only, not pushed). It is not deployed. Nothing under `.github/` changed, so no `dev` to `main` release is needed.
+- **Outcome:** The Worker, its unit tests and a runbook subsection are committed on `dev` (local only, not pushed). The owner deployed it on 2026-11-15 after fixing the cron day numbering. Nothing under `.github/` changed, so no `dev` to `main` release is needed.
 - **Plan Contract:** `N/A (fast path)`
 - **Approval / Status:** Owner chose the Worker approach and decided that the Worker must honor `CFB_WEEKLY_AUTOMATION_ENABLED`.
 - **Blockers:** None for the code. Deployment needs the owner's Cloudflare login and a GitHub token (steps below).
