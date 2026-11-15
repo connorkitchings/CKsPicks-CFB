@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   biggestEdgesRecord,
+  defaultSlateStatus,
+  matchesSlateStatus,
+  parseSlateStatus,
   edgeTier,
-  edgeTone,
   gameState,
   hasGradedPick,
   hasLean,
@@ -79,18 +81,6 @@ test("edge tiers follow the spread and total thresholds", () => {
   assert.equal(edgeTier("spread", 8.1), 3);
   assert.equal(edgeTier("total", 2), 1);
   assert.equal(edgeTier("total", 7.1), 3);
-});
-
-test("edgeTone colors edge magnitudes on the same thresholds", () => {
-  assert.equal(edgeTone(2.9, "spread"), "edge-low");
-  assert.equal(edgeTone(3, "spread"), "edge-medium");
-  assert.equal(edgeTone(8, "spread"), "edge-medium");
-  assert.equal(edgeTone(8.1, "spread"), "edge-high");
-  assert.equal(edgeTone(-8.1, "spread"), "edge-high");
-  assert.equal(edgeTone(1.9, "total"), "edge-low");
-  assert.equal(edgeTone(2, "total"), "edge-medium");
-  assert.equal(edgeTone(7, "total"), "edge-medium");
-  assert.equal(edgeTone(7.1, "total"), "edge-high");
 });
 
 test("leanFor labels the pick side with a positive edge", () => {
@@ -595,4 +585,28 @@ test("underdogRecord: every pick in a week counts, not just the top five", () =>
     ud({ gameId: 6, canonicalSpread: 3, predictedSpread: 1, ...won }),
   ];
   assert.deepEqual(underdogRecord([week]), { win: 1, loss: 5, push: 0 });
+});
+
+
+test("status defaults follow Eastern dates, upcoming, finals and awaiting", () => {
+  const now = new Date("2026-11-01T03:30:00Z"); // still October 31 in Eastern time
+  const today = game({ startDate: new Date("2026-11-01T02:30:00Z") });
+  const future = game({ startDate: new Date("2026-11-01T06:30:00Z") });
+  const final = game({ startDate: new Date("2026-10-30T16:00:00Z"), homePoints: 7, awayPoints: 3 });
+  const awaiting = game({ startDate: new Date("2026-10-30T16:00:00Z") });
+  assert.equal(defaultSlateStatus([today, future], now), "today");
+  assert.equal(matchesSlateStatus(future, "today", now), false);
+  assert.equal(defaultSlateStatus([final, future], now), "upcoming");
+  assert.equal(defaultSlateStatus([final], now), "results");
+  assert.equal(defaultSlateStatus([final, awaiting], now), "all");
+  assert.equal(defaultSlateStatus([awaiting], now), "all");
+  assert.equal(defaultSlateStatus([], now), "all");
+  assert.equal(parseSlateStatus("invalid", [final], now), "results");
+  assert.equal(parseSlateStatus("all", [final], now), "all");
+});
+
+test("TBD kickoff and DST boundaries use the Eastern calendar", () => {
+  const tbd = game({ startDate: new Date("2026-11-01T04:00:00Z") });
+  assert.equal(gameState(tbd, new Date("2026-11-02T04:59:59Z")), "upcoming");
+  assert.equal(gameState(tbd, new Date("2026-11-02T05:00:00Z")), "awaiting");
 });

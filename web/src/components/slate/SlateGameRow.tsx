@@ -1,6 +1,7 @@
 import type { Game } from "@/lib/queries";
+import { etDateTime } from "@/lib/time-et";
 import { isFinal } from "@/lib/team-games";
-import { coverMargin, edgeTone, leanFor, phoneLean, resultFor } from "@/lib/slate";
+import { coverMargin, leanFor, phoneLean, resultFor } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { dayShort, kickoffTime } from "./format";
 import { MatchupButton } from "@/components/MatchupLinks";
@@ -12,17 +13,31 @@ import { coverText, ResultBadge } from "./ResultBadge";
 import { TeamPair } from "./TeamPair";
 import { AwaitingTag } from "./AwaitingTag";
 
+function capturedText(game: Game, kind: "spread" | "total"): string {
+  if (game.publicationMode !== "predictions") return "unavailable";
+  const stamp = kind === "spread" ? game.spreadCapturedAt : game.totalCapturedAt;
+  return stamp ? etDateTime(stamp) : "unavailable";
+}
+
 function GradedCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
   const lean = leanFor(game, kind);
-  if (!lean) return <p className="text-xs text-ink-muted">No {kind} lean</p>;
+  if (!lean) {
+    return (
+      <div className="space-y-0.5 text-xs">
+        <p className="text-[11px] text-ink-muted">Line captured: {capturedText(game, kind)}</p>
+        <p className="text-xs text-ink-muted">No {kind} lean</p>
+      </div>
+    );
+  }
   const grade = resultFor(game, kind);
   const text = coverText(coverMargin(game, kind));
   return (
     <div className="space-y-0.5 text-xs">
+      <p className="text-[11px] text-ink-muted">Line captured: {capturedText(game, kind)}</p>
       <div className="flex items-center gap-2">
         <LeanMarker lean={lean} />
         <span className="min-w-0 break-words text-sm font-semibold text-ink"><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></span>
-        <span className={`shrink-0 tabular-nums ${edgeTone(lean.edge, lean.kind)}`}>({lean.edge.toFixed(1)})</span>
+        <span className="shrink-0 tabular-nums text-ink-muted">Difference: {lean.edge.toFixed(1)} pts</span>
         {grade && <ResultBadge grade={grade} />}
       </div>
       {text && <p className="tabular-nums text-ink-muted">{text}</p>}
@@ -32,7 +47,12 @@ function GradedCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
 
 function LeanCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
   const lean = leanFor(game, kind);
-  return <div>{lean ? <LeanPill lean={lean} compact /> : <p className="text-xs text-ink-muted">No {kind} lean</p>}</div>;
+  return (
+    <div className="space-y-0.5">
+      <p className="text-[11px] text-ink-muted">Line captured: {capturedText(game, kind)}</p>
+      {lean ? <LeanPill lean={lean} compact /> : <p className="text-xs text-ink-muted">No {kind} lean</p>}
+    </div>
+  );
 }
 
 /** Dense one-line-per-game layout; finished games show the graded pick, others the lean. */
@@ -53,7 +73,7 @@ export function SlateGameRow({ game, now }: { game: Game; now: Date }) {
       <div>
         <div className="whitespace-nowrap text-xs tabular-nums text-ink-muted">
           {final ? dayShort(game.startDate) : kickoffTime(game.startDate)}
-          {game.highConfidence && <span className="ml-1.5 text-accent" title="High confidence lean">★</span>}
+
         </div>
         <AwaitingTag game={game} now={now} className="mt-1" />
         <WhereLine game={game} />

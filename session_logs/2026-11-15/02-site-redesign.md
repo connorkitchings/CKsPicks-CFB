@@ -37,6 +37,13 @@
 
 ### Continuation checkpoint
 
+#### Shared design slice completed
+
+- Local commits `ecb7adbf` and `7e3d260f`: editorial desktop header, Teams navigation, phone team finder, canonical alias/accent/abbreviation matching, shared layout widths and scoped CSS preserving the narrative reading column.
+- Verification: 9 focused shared/header browser tests, 17 wordmark browser tests, 6 search/width unit tests and the updated navigation assertion passed. TypeScript passed. ESLint has no errors; two unused fixture-argument warnings remain in the later Graphs slice.
+- Inspected 320px dark and 640px light screenshots. Escape first dismisses search results, then dismisses the phone menu and restores focus. Fixture server stopped after testing.
+- Next sequential slice: complete Games/matchups and their tests. Teams redirect is already partially implemented; its behavioral verification belongs with the Teams slice.
+
 - The owner approved the step-by-step continuation plan and explicitly instructed implementation. Work now proceeds one bounded slice at a time, starting with shared design/navigation.
 - The worktree still has only the planning commit; partial implementation across 49 tracked files and new components is preserved uncommitted. Model implementation and new regression tests were absent at the audited checkpoint.
 - Verified before this continuation: Python 2,546 passed / 12 skipped; Ruff, contract validation and quality registry passed. TypeScript passed at that checkpoint; ESLint had two unused-variable warnings. Web unit suite: 472 passed / 10 failed / 1 skipped. Browser tests, production build, full integrated checks and real Preview read verification remain outstanding.
@@ -46,6 +53,12 @@
 - No push, release, migration, data operation or deployment has been performed.
 
 No scope amendments. Work paused because the delegated workers hit the usage limit; no deployment or local-dev merge occurred.
+
+### Step 3 (Games and matchups) completed
+
+- Resumed in the same worktree after confirming it was idle (no file changes in the prior 5 minutes, no Codex process referencing it).
+- Fixes folded in: matchup statistics, evidence and sharing gate on `lineageStatus === "ready"` only, while forecast-derived facts still require predictions mode; `getSeasonReleaseContext` failure no longer blanks the slate; the pick'em/home-margin sign normalization now lives in `marketComparisonPoints` with a unit test; "Show all games" pushes history so Back returns to the filtered state; removed constant `clsx` wrappers, a stray import and blank line, and the unused `edgeTone` helper with its test.
+- Verification: typecheck passed; lint shows no errors (remaining warnings are the two `stats/page.tsx` unused-argument warnings, Step 5); `test:publication` 480 passed / 7 failed (the known Teams and Graphs expectations) / 1 skipped; `e2e/games-redesign.spec.ts` 5 of 5 passed against the fixture server.
 
 ## Handoff notes
 

@@ -24,17 +24,10 @@ function sourceFiles(dir: URL): URL[] {
   });
 }
 
-test("only ratings rows and matchup pages link to team pages (slate cards never do)", () => {
-  const offenders = sourceFiles(new URL("../", import.meta.url))
-    .filter((url) => /["'`]\/teams\/|href=\{`\/teams|teamHref/.test(readFileSync(url, "utf8")))
-    .map((url) => url.pathname.split("/src/")[1])
-    .sort();
-  assert.deepEqual(offenders, [
-    "app/matchup/[gameId]/page.tsx",
-    "components/matchup/MatchupHero.tsx",
-    "components/ratings/RatingsView.tsx",
-    "lib/team-routes.ts",
-  ].sort());
+test("dense slate cards do not link team names to profiles", () => {
+  const slate = sourceFiles(new URL("../components/slate/", import.meta.url));
+  const offenders = slate.filter((url) => /["'`]\/teams\/|teamHref/.test(readFileSync(url, "utf8")));
+  assert.deepEqual(offenders, []);
 });
 
 test("the root layout provides the matchup gate to client cards", () => {

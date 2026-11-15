@@ -1,6 +1,5 @@
-import clsx from "clsx";
 import type { Lean } from "@/lib/slate";
-import { edgeTone, leanDetail, phoneLean } from "@/lib/slate";
+import { leanDetail, phoneLean } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { LeanMarker } from "./LeanMarker";
 
@@ -26,8 +25,8 @@ export function LeanPill({ lean }: { lean: Lean; compact?: boolean }) {
           <span data-pick className="min-w-0 break-words text-sm font-semibold text-accent-ink">
             <PhoneSwap full={lean.pick} phone={phone.pick} />
           </span>
-          <span className={clsx("whitespace-nowrap text-xs tabular-nums", edgeTone(lean.edge, lean.kind))} title="Edge: points the model differs from the market">
-            ({lean.edge.toFixed(1)})
+          <span className="whitespace-nowrap text-xs tabular-nums text-ink-muted" title="Absolute difference between model and selected market line">
+            Difference: {lean.edge.toFixed(1)} pts
           </span>
         </span>
       </div>

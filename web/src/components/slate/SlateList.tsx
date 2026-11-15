@@ -1,18 +1,20 @@
 "use client";
 
 import clsx from "clsx";
-import { useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { MarketComparison } from "./MarketComparison";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import { Notice } from "@/components/ui/Notice";
 import {
   buildConferenceMap,
   conferenceOptions,
   matchesTeamConference,
-  type ConferenceFilter,
   type RosterRow,
 } from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
-import { slateSorts, sortSlate, weekPhase, type SlateSort } from "@/lib/slate";
+import { slateSorts, sortSlate, weekPhase, gameState, parseSlateStatus, matchesSlateStatus, type SlateSort, type SlateStatusFilter } from "@/lib/slate";
 import { SlateToolbar } from "./SlateToolbar";
 import { SlateGameList } from "./SlateGameList";
 import { dayLabel } from "./format";
@@ -36,6 +38,7 @@ export function SlateList({
   weekNav,
   extras,
   now,
+  matchupEnabled,
 }: {
   games: Game[];
   roster?: RosterRow[];
@@ -51,13 +54,26 @@ export function SlateList({
   extras?: ReactNode;
   /** The clock for awaiting-result tags. */
   now: Date;
+  matchupEnabled: boolean;
 }) {
-  const [query, setQuery] = useState("");
-  const [conference, setConference] = useState<ConferenceFilter>("all");
-  const [sort, setSort] = useState<SlateSort>(initialSort);
-  const [view, setView] = useState<View>("grid");
+  const params = useSearchParams();
+  const [scrollGame, setScrollGame] = useState<number | null>(null);
+  const query = params.get("q") ?? "";
+  const requestedConference = params.get("conference") ?? "all";
+  const sort = (params.get("sort") ?? initialSort) as SlateSort;
+  const view: View = params.get("view") === "list" ? "list" : "grid";
+  const marketView = params.get("view") === "market";
+  const status = parseSlateStatus(params.get("status"), games, now);
+  const metric = params.get("metric") === "total" ? "total" : "spread";
+  function setParam(key: string, value: string) {
+    const next = new URLSearchParams(window.location.search);
+    next.set(key, value);
+    window.history[key === "q" ? "replaceState" : "pushState"](null, "", `${window.location.pathname}?${next}`);
+  }
+  const awaiting = games.filter((game) => gameState(game, now) === "awaiting");
   const conferenceMap = useMemo(() => buildConferenceMap(roster), [roster]);
   const conferences = useMemo(() => conferenceOptions(roster), [roster]);
+  const conference = requestedConference === "all" || requestedConference === "p4" || conferences.includes(requestedConference) ? requestedConference : "all";
 
   const phase = useMemo(() => weekPhase(games), [games]);
   const predictionsVisible = useMemo(
@@ -72,7 +88,7 @@ export function SlateList({
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let rows = [...games];
+    let rows = games.filter((game) => matchesSlateStatus(game, status, now));
     if (conference !== "all") {
       rows = rows.filter(
         (g) =>
@@ -86,7 +102,16 @@ export function SlateList({
       );
     }
     return sortSlate(rows, effectiveSort, phase);
-  }, [games, query, conference, conferenceMap, effectiveSort, phase]);
+  }, [games, query, conference, conferenceMap, effectiveSort, phase, status, now]);
+
+  useEffect(() => {
+    if (scrollGame === null || marketView || !visible.some((game) => game.gameId === scrollGame)) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(`game-${scrollGame}`)?.scrollIntoView({ block: "center" });
+      setScrollGame(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scrollGame, marketView, visible]);
 
   const groups = useMemo(() => {
     if (effectiveSort !== "kickoff") return null;
@@ -102,12 +127,22 @@ export function SlateList({
 
   return (
     <div className="flex flex-col gap-2 [--slate-bar-h:105px] sm:gap-4">
-      {extras && <div className="order-1 sm:-order-1">{extras}</div>}
-      <SlateToolbar query={query} onQueryChange={setQuery} conference={conference} onConferenceChange={setConference} conferences={conferences} sort={effectiveSort} onSortChange={setSort} sortLabels={sortLabels} predictionsVisible={predictionsVisible} view={view} onViewChange={setView} weekNav={weekNav} />
+      <SlateToolbar query={query} onQueryChange={(value) => setParam("q", value)} conference={conference} onConferenceChange={(value) => setParam("conference", value)} conferences={conferences} sort={effectiveSort} onSortChange={(value) => setParam("sort", value)} sortLabels={sortLabels} predictionsVisible={predictionsVisible} view={view} onViewChange={(value) => setParam("view", value)} weekNav={weekNav} />
+      <div className="order-1 flex flex-wrap items-center justify-between gap-3 py-2">
+        <SegmentedControl label="Game status" value={status} onChange={(value: SlateStatusFilter) => setParam("status", value)} options={[{value:"today",label:"Today"},{value:"upcoming",label:"Upcoming"},{value:"results",label:"Results"},{value:"all",label:"All"}]} />
+        {predictionsVisible && <SegmentedControl label="Games analysis" value={marketView ? "market" : "games"} onChange={(value) => setParam("view", value === "market" ? "market" : "grid")} options={[{value:"games",label:"Games"},{value:"market",label:"Model vs market"}]} />}
+      </div>
+      {awaiting.length > 0 && <p className="order-1 text-sm text-ink-muted"><button className="min-h-11 text-accent-ink underline" onClick={() => {
+        const next = new URLSearchParams(window.location.search);
+        next.set("status", "all"); next.delete("q"); next.delete("conference"); next.set("view", "grid");
+        window.history.pushState(null, "", `${window.location.pathname}?${next}#game-${awaiting[0].gameId}`);
+        setScrollGame(awaiting[0].gameId);
+      }}>Awaiting published results: {awaiting.length}</button>. Results arrive with a data release, not a live score feed.</p>}
+      {extras && <details className="order-2 border-t border-line py-3"><summary className="cursor-pointer text-sm font-semibold">Featured comparisons and weekly highlights</summary><div className="mt-3">{extras}</div></details>}
       <p role="status" className="sr-only">Showing {visible.length} of {games.length} games</p>
 
-      {visible.length === 0 ? (
-        <Notice tone="empty">No games match these filters.</Notice>
+      {marketView && predictionsVisible ? <div className="order-1"><MarketComparison games={visible} matchupEnabled={matchupEnabled} metric={metric} onMetricChange={(value) => setParam("metric", value)} /></div> : visible.length === 0 ? (
+        <div className="order-1"><Notice tone="empty">No games match these filters. <button className="underline" onClick={() => { const next = new URLSearchParams(window.location.search); next.set("status", "all"); next.delete("q"); next.delete("conference"); window.history.pushState(null, "", `${window.location.pathname}?${next}`); }}>Show all games</button></Notice></div>
       ) : groups ? (
         groups.map((group, index) => (
           <section key={group.day} aria-label={group.day} className={clsx("space-y-1 sm:space-y-3", "order-1", index > 0 && "mt-4 sm:mt-2")}>

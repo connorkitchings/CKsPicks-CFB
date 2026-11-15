@@ -99,3 +99,15 @@ test("no selection keeps the prediction row", () => {
   assert.equal(out.homeTeamSpreadLine, -3.5);
   assert.equal(out.spreadSource, null);
 });
+
+
+test("each selected target retains its own quote capture time and unknown stays unknown", () => {
+  const capturedAt = new Date("2026-10-01T12:34:00Z");
+  const out = overlaySelection(base, {
+    spread: { ...selection.spread, capturedAt },
+    total: { ...selection.total, capturedAt: null },
+  });
+  assert.equal(out.spreadCapturedAt, capturedAt);
+  assert.equal(out.totalCapturedAt, null);
+  assert.equal(overlaySelection(base, undefined).spreadCapturedAt, null);
+});

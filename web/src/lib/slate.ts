@@ -9,7 +9,7 @@ import {
 } from "./betting-format.ts";
 import { isFinal } from "./team-games.ts";
 import { phoneTeamName } from "./team-logos.ts";
-import { isTimeTbd, nextEtDayStart } from "./time-et.ts";
+import { etDateYear, isTimeTbd, nextEtDayStart } from "./time-et.ts";
 
 export type LeanKind = "spread" | "total";
 
@@ -63,20 +63,6 @@ export function edgeTier(kind: LeanKind, edge: number | null): 0 | 1 | 2 | 3 {
   if (edge <= low) return 1;
   if (edge <= high) return 2;
   return 3;
-}
-
-/**
- * Tone class for an edge magnitude on the shared thresholds: below the low
- * threshold reads low, through the high threshold reads medium, above it
- * reads high. Preserved from the retired comparison table so the lean
- * sentences keep the same edge language.
- */
-export function edgeTone(edge: number, kind: LeanKind): "edge-low" | "edge-medium" | "edge-high" {
-  const magnitude = Math.abs(edge);
-  const [lowThreshold, highThreshold] = EDGE_THRESHOLDS[kind];
-  if (magnitude < lowThreshold) return "edge-low";
-  if (magnitude <= highThreshold) return "edge-medium";
-  return "edge-high";
 }
 
 export type Lean = {
@@ -657,4 +643,22 @@ export function finalMarginText(game: Game, team: string): string | null {
   const margin = team === game.homeTeam ? home - away : away - home;
   if (margin === 0) return "tied";
   return `${margin > 0 ? "won" : "lost"} by ${Math.abs(margin)}`;
+}
+
+/** Public status filters never infer a live score from the clock. */
+export type SlateStatusFilter = "today" | "upcoming" | "results" | "all";
+export function defaultSlateStatus(games: Timed[], now: Date): SlateStatusFilter {
+  if (games.some((game) => etDateYear(game.startDate) === etDateYear(now))) return "today";
+  if (games.some((game) => gameState(game, now) === "upcoming")) return "upcoming";
+  if (games.length > 0 && games.every((game) => gameState(game, now) === "final")) return "results";
+  return "all";
+}
+export function parseSlateStatus(value: string | null | undefined, games: Timed[], now: Date): SlateStatusFilter {
+  return value === "today" || value === "upcoming" || value === "results" || value === "all"
+    ? value : defaultSlateStatus(games, now);
+}
+export function matchesSlateStatus(game: Timed, status: SlateStatusFilter, now: Date): boolean {
+  if (status === "all") return true;
+  if (status === "today") return etDateYear(game.startDate) === etDateYear(now);
+  return gameState(game, now) === (status === "results" ? "final" : "upcoming");
 }

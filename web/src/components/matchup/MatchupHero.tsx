@@ -196,16 +196,16 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
 
             <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
             <Cell value={abbreviateLead(matchup.marketSpread, teams, phoneTeamName)} short={abbreviateLead(matchup.marketSpread, teams)} title={matchup.marketSpread} book={bookName(matchup.spreadSource)} />
-            <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} book={bookName(matchup.totalSource)} />
+            <Cell value={matchup.marketTotal !== null ? matchup.marketTotal.toFixed(1) : "—"} book={bookName(matchup.totalSource)} />
 
             {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
               <>
                 <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
                 <Cell value={abbreviateLead(matchup.modelSpread, teams, phoneTeamName)} short={abbreviateLead(matchup.modelSpread, teams)} title={matchup.modelSpread} />
-                <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
+                <Cell value={matchup.modelTotal !== null ? matchup.modelTotal.toFixed(1) : "—"} />
 
                 <div className="col-span-3 border-t border-line/60" aria-hidden />
-                <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model Bet</span>
+                <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model lean</span>
                 <Cell
                   accent
                   testId="model-bet-spread"
@@ -222,7 +222,7 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
                 <Cell
                   accent
                   testId="model-bet-total"
-                  value={matchup.totalLean ? (matchup.totalLean === "over" ? "Over" : "Under") : "—"}
+                  value={matchup.totalLean ? (`${matchup.totalLean === "over" ? "Over" : "Under"}${matchup.marketTotal === null ? "" : ` ${matchup.marketTotal.toFixed(1)}`}`) : "—"}
                   muted={!matchup.totalLean}
                   badge={
                     isFinal && matchup.totalLean && matchup.totalResult ? (

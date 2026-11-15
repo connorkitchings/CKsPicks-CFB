@@ -22,6 +22,8 @@ export type MatchupPublicView = {
   /** Sportsbook behind the displayed best line; null for a consensus fallback or market mode. */
   spreadSource: string | null;
   totalSource: string | null;
+  spreadCapturedAt: Date | null;
+  totalCapturedAt: Date | null;
   highConfidence: boolean;
   homePoints: number | null;
   awayPoints: number | null;
@@ -54,6 +56,8 @@ export function selectMatchupView(
       edgeTotal: null,
       spreadSource: null,
       totalSource: null,
+      spreadCapturedAt: null,
+      totalCapturedAt: null,
       highConfidence: false,
       spreadResult: null,
       totalResult: null,
@@ -72,6 +76,8 @@ export function selectMatchupView(
     edgeTotal: game.edgeTotal,
     spreadSource: game.spreadSource ?? null,
     totalSource: game.totalSource ?? null,
+    spreadCapturedAt: game.spreadCapturedAt ?? null,
+    totalCapturedAt: game.totalCapturedAt ?? null,
     highConfidence: Boolean(game.highConfidence),
     spreadResult: game.spreadResult ?? null,
     totalResult: game.totalResult ?? null,

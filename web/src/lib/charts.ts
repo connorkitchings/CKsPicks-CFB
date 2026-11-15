@@ -171,7 +171,7 @@ export type NetSuccessBar = {
   /** Axis label: winner abbreviation and final score, e.g. `UGA 31-10`. */
   label: string;
 };
-export type NotCharted = { gameId: number; reason: string };
+export type NotCharted = { gameId: number; reason: string; teams?: string[] };
 
 function successRate(n: number, sum: number): number | null {
   return n > 0 ? sum / n : null;
@@ -196,19 +196,19 @@ export function netSuccessBars(
   const notCharted: NotCharted[] = [];
   for (const [gameId, pair] of [...games].sort((a, b) => a[0] - b[0])) {
     if (pair.length !== 2) {
-      notCharted.push({ gameId, reason: "incomplete game rows" });
+      notCharted.push({ gameId, teams: pair.map((row) => row.team), reason: "incomplete game rows" });
       continue;
     }
     const [a, b] = pair;
     if (a.pointsFor === b.pointsFor) {
-      notCharted.push({ gameId, reason: "tied points" });
+      notCharted.push({ gameId, teams: pair.map((row) => row.team), reason: "tied points" });
       continue;
     }
     const [winner, loser] = a.pointsFor > b.pointsFor ? [a, b] : [b, a];
     const winnerRate = successRate(winner.offSuccessOtN ?? 0, winner.offSuccessOtSum ?? 0);
     const loserRate = successRate(loser.offSuccessOtN ?? 0, loser.offSuccessOtSum ?? 0);
     if (winnerRate === null || loserRate === null) {
-      notCharted.push({ gameId, reason: "success rate unavailable" });
+      notCharted.push({ gameId, teams: pair.map((row) => row.team), reason: "success rate unavailable" });
       continue;
     }
     bars.push({
@@ -248,8 +248,10 @@ export type ScatterPoint = {
   conference: string | null;
   x: number;
   y: number;
-  /** Plays behind the point (eligible PPA observations). */
+  /** Legacy exposure; use xN/yN with axis-specific labels in display. */
   n: number;
+  xN?: number;
+  yN?: number;
 };
 export type ScatterData = {
   points: ScatterPoint[];
@@ -299,7 +301,7 @@ export function efficiencyPoints(
       unavailable.push(team);
       continue;
     }
-    points.push({ team, conference, x: acc.successSum / acc.successN, y: acc.yNum / acc.yDen, n: acc.n });
+    points.push({ team, conference, x: acc.successSum / acc.successN, y: acc.yNum / acc.yDen, n: acc.n, xN: acc.successN, yN: acc.yDen });
   }
   points.sort(byTeam);
   unavailable.sort();
@@ -383,7 +385,7 @@ function roleScatter<R extends { team: string; role: Side }>(
       unavailable.push(team);
       continue;
     }
-    points.push({ team, conference, x: value(o), y: value(d), n: weight(o) + weight(d) });
+    points.push({ team, conference, x: value(o), y: value(d), n: weight(o) + weight(d), xN: weight(o), yN: weight(d) });
     roles[team] = { offense: o, defense: d };
     ox += value(o) * weight(o);
     on += weight(o);
@@ -943,6 +945,10 @@ export type SlateMarketGameRow = {
   edgeTotal: number | null;
   spreadLean: "home" | "away" | null;
   totalLean: "over" | "under" | null;
+  spreadSource?: string | null;
+  totalSource?: string | null;
+  spreadCapturedAt?: Date | null;
+  totalCapturedAt?: Date | null;
 };
 
 export type MarketBoardMetric = "spread" | "total";
@@ -957,6 +963,8 @@ export type MarketBoardPoint = {
   edge: number;
   lean: string | null;
   highEdge: boolean;
+  source?: string | null;
+  capturedAt?: Date | null;
   x: number;
   y: number;
 };
@@ -1001,7 +1009,7 @@ function metricPairScatter(
       unavailable.push(team);
       continue;
     }
-    points.push({ team, conference, x: xr.value, y: yr.value, n: xr.n });
+    points.push({ team, conference, x: xr.value, y: yr.value, n: xr.n, xN: xr.n, yN: yr.n });
     sx += xr.value * xr.n;
     xn += xr.n;
     sy += yr.value * yr.n;
@@ -1114,6 +1122,8 @@ export function marketBoardPoints(
         edge,
         lean: g.spreadLean,
         highEdge: Math.abs(edge) >= 3.0,
+        source: g.spreadSource ?? null,
+        capturedAt: g.spreadCapturedAt ?? null,
         x: market,
         y: model,
       });
@@ -1135,6 +1145,8 @@ export function marketBoardPoints(
         edge,
         lean: g.totalLean,
         highEdge: Math.abs(edge) >= 3.0,
+        source: g.totalSource ?? null,
+        capturedAt: g.totalCapturedAt ?? null,
         x: market,
         y: model,
       });
@@ -1145,5 +1157,22 @@ export function marketBoardPoints(
     points,
     unavailable,
     metric,
+  };
+}
+
+/**
+ * Market-board points expressed on one axis for paired comparison. Spread lines
+ * are home spread lines (negative favors home), so they are negated into home
+ * margins (positive favors home); totals pass through unchanged.
+ */
+export function marketComparisonPoints(
+  games: readonly SlateMarketGameRow[],
+  metric: MarketBoardMetric,
+): { points: (MarketBoardPoint & { market: number; model: number })[]; unavailable: MarketBoardData["unavailable"] } {
+  const data = marketBoardPoints(games, metric);
+  const sign = metric === "spread" ? -1 : 1;
+  return {
+    points: data.points.map((point) => ({ ...point, market: sign * point.marketLine || 0, model: sign * point.modelLine || 0 })),
+    unavailable: data.unavailable,
   };
 }

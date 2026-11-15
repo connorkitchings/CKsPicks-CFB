@@ -5,6 +5,7 @@ export type TargetSelectionOverlay = {
   side: string;
   edge: number | null;
   source: string | null;
+  capturedAt?: Date | null;
 };
 
 export type GameSelectionsOverlay = {
@@ -37,7 +38,7 @@ type OverlayRow = {
 export function overlaySelection<Row extends OverlayRow>(
   row: Row,
   sel: GameSelectionsOverlay | undefined,
-): Row & { spreadSource: string | null; totalSource: string | null } {
+): Row & { spreadSource: string | null; totalSource: string | null; spreadCapturedAt: Date | null; totalCapturedAt: Date | null } {
   const homeTeamSpreadLine = sel?.spread?.point ?? row.homeTeamSpreadLine;
   const totalLine = sel?.total?.point ?? row.totalLine;
 
@@ -73,5 +74,7 @@ export function overlaySelection<Row extends OverlayRow>(
     edgeTotal,
     spreadSource: sel?.spread?.source ?? null,
     totalSource: sel?.total?.source ?? null,
+    spreadCapturedAt: sel?.spread?.capturedAt ?? null,
+    totalCapturedAt: sel?.total?.capturedAt ?? null,
   };
 }

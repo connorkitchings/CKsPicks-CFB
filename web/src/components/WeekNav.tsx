@@ -51,6 +51,7 @@ export function WeekNav({
     const q = new URLSearchParams(params.toString());
     q.set("season", String(season));
     q.set("week", String(w));
+    if (basePath === "/") q.set("status", "all");
     return `${basePath}?${q.toString()}`;
   }
 

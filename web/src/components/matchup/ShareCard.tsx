@@ -201,14 +201,14 @@ function Forecast({ matchup }: { matchup: MatchupData }) {
         <span style={head}>Total</span>
         <span style={label}>Market</span>
         <Cell value={matchup.marketSpread} />
-        <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} />
+        <Cell value={matchup.marketTotal !== null ? matchup.marketTotal.toFixed(1) : "—"} />
         {predictions && (
           <>
             <span style={label}>Model</span>
             <Cell value={matchup.modelSpread} />
-            <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
+            <Cell value={matchup.modelTotal !== null ? matchup.modelTotal.toFixed(1) : "—"} />
             <div style={{ gridColumn: "1 / -1", borderTop: `1px solid ${C.line}` }} />
-            <span style={label}>Model Bet</span>
+            <span style={label}>Model lean</span>
             <Cell accent={Boolean(betSpread)} muted={!betSpread} value={betSpread ?? "No Spread"} />
             <Cell
               accent={Boolean(matchup.totalLean)}
@@ -353,8 +353,8 @@ function Panel({
 }
 
 /** The card root node; the share button rasterizes exactly this element. */
-export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(function ShareCard(
-  { matchup },
+export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData; selectedSide?: "away" | "home" }>(function ShareCard(
+  { matchup, selectedSide = "away" },
   ref,
 ) {
   const stats = matchup.stats;
@@ -412,7 +412,8 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
         <TeamHeader name={matchup.homeTeam} side="Home" record={matchup.homeRecord} rank={matchup.homeRating.rank} />
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <p style={{ margin: 0, fontSize: 16, color: C.muted }}>Selected offense: {selectedSide === "away" ? matchup.awayTeam : matchup.homeTeam}. Both unit comparisons shown below.</p>
+      <div style={{ display: "flex", flexDirection: selectedSide === "home" ? "row-reverse" : "row", justifyContent: "space-between" }}>
         <Panel
           offenseTeam={matchup.awayTeam}
           defenseTeam={matchup.homeTeam}
@@ -429,7 +430,7 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
         />
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", flexDirection: selectedSide === "home" ? "row-reverse" : "row", justifyContent: "space-between" }}>
         <MismatchBox items={awayPanelEdges} />
         <MismatchBox items={homePanelEdges} />
       </div>
