@@ -36,11 +36,13 @@
 
 - Output collision: another session working on the same contract wrote different results to `step4a_results.json` and `step4b_results.json` in the same folders while this session ran, overwriting this session's files. Its files were left in place; this session's results were regenerated from the saved scripts under the names `step4a_attribution_results.json` and `step4b_variants_results.json` and reproduce the recorded figures exactly. That session's work is not in this repository and was not verified, apart from its FBS-vs-FBS stage 0 to 3 figures, which match.
 
+- Owner decision: FBS-vs-FBS is the headline population (confirmed in `docs/status.md`: the release universe excludes FBS-vs-FCS), FBS-vs-FCS secondary. Side-by-side by stage added to the contract. FBS-vs-FBS: Operational V5 margin MAE 13.35 over 2,998 games, early bias +0.84, priors alone match or beat V5 through stage 1. FBS-vs-FCS: correlation +0.39 but mis-levelled (bias +8.86); earlier-only linear recalibration gives MAE 14.24 against 16.00 raw and 15.53 constant.
+
 ## Files Modified
 
 - `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md` — Step 4A results section
 - `docs/plans/index.md` — state line
-- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_variants_results.json`, `step4b_b3_results.json`, `step4b_holdout_2026_results.json`, `~/cfb_ratings_lab_v6/source/preview-2026-11-15/`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/teams_2015..2019.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_attribution_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
+- Outside the repository: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_variants_results.json`, `step4b_b3_results.json`, `step4b_holdout_2026_results.json`, `step4a_population_split_results.json`, `~/cfb_ratings_lab_v6/source/preview-2026-11-15/`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/teams_2015..2019.json`, `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_attribution_results.json`, `~/cfb_ratings_lab_v6/source/cfbd-2026-11-15/`
 
 ## Validation
 

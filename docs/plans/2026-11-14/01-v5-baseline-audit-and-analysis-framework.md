@@ -721,6 +721,40 @@ Reading it: the stage 0 to 3 count is 293, below the 300 declared as the minimum
 
 Overall: B3's MAE gain has now appeared in all five tuning seasons, all four seasons of 2022 to 2025 and the 2026 holdout, but no candidate has passed the declared bias condition on any evidence, and the 2026 data are not a forward test (outcomes were known). No change to Operational V5 is supported by the declared rules. The clean forward test is the early weeks of 2027, and it needs the candidate fixed in advance, with early stage terms shrunk or bias-checked as a declared part of the design if the owner wants a version that passes the bias condition.
 
+### Benchmark population: FBS-vs-FBS headline, FBS-vs-FCS secondary (owner decision 2026-11-15)
+
+The owner decided that the headline population is **FBS-vs-FBS games**, with FBS-vs-FCS games reported separately because they should carry some signal. Basis: the release universe of the weekly slate is FBS-vs-FBS (`docs/status.md`: Week 10 "62 FBS-vs-FBS games; the 63rd ... Wake Forest 77, Merrimack 0, is FBS-vs-FCS and outside the release universe"), and the market diagnostic notes that unlined games are mostly FBS-vs-FCS. Earlier figures in this contract that pool both (13.7151 and 13.3709 over 3,483 games) remain correct for the pooled population and are labelled as such. Outputs: `~/cfb_ratings_lab_v6/output/step4a-2026-11-15/step4a_population_split_results.json`. One 2022 game (Tarleton State) has no tier and is in neither group.
+
+**Why the split matters.** FBS-vs-FCS games exist only at early stages (484 of the 1,371 games at stages 0 to 3, none at stage 4), so comparing early with late stages also compares opponent types. Their actual home margin is +31.1 against +7.7 for early FBS-vs-FBS games.
+
+Margin, 2022 to 2025 (games; actual mean margin; Operational V5 MAE / bias; priors only MAE / bias):
+
+| Population and stage | Games | Actual | Operational V5 | Priors only |
+|---|---|---|---|---|
+| **FBS v FBS, all stages** | **2,998** | +4.4 | **13.35 / -1.22** | 14.07 |
+| FBS v FBS, stage 0 | 190 | +11.5 | 15.12 / +2.80 | 14.55 / +2.90 |
+| FBS v FBS, stage 1 | 201 | +8.6 | 14.62 / +2.25 | 13.23 / -0.15 |
+| FBS v FBS, stage 2 | 242 | +7.3 | 15.05 / +0.73 | 15.26 / +0.18 |
+| FBS v FBS, stage 3 | 253 | +4.6 | 13.32 / -1.66 | 13.18 / -1.93 |
+| FBS v FBS, stages 0 to 3 | 886 | +7.7 | 14.47 / +0.84 | 14.05 / +0.08 |
+| FBS v FBS, stage 4 | 2,112 | +3.2 | 12.87 / -2.08 | 14.08 / -1.65 |
+| FBS v FCS, stages 0 to 3 | 484 | +31.1 | 15.99 / +8.86 | 16.49 / +6.49 |
+
+Total: FBS v FBS 13.49 / -1.77 for Operational V5 (13.67 priors only) over 2,998 games; FBS v FCS 12.62 / +1.13 (12.74 priors only) over 484.
+
+**FBS-vs-FBS reading (the headline).** In the population that is published, the early-season bias is small (+0.84 at stages 0 to 3, +2.80 at stage 0), and priors alone are at least as accurate as Operational V5 through stage 1 (14.55 against 15.12; 13.23 against 14.62) and roughly equal at stages 2 and 3, before in-season updating pays off at stage 4 (12.87 against 14.08). So for the published games the early-season issue is that one-game updating and the pooled bridge do not beat the priors early, not a large mean bias. This changes how 4A should be read: the large stage 0 bias (+7.16) and the intercept discussion belong mostly to FBS-vs-FCS games.
+
+**FBS-vs-FCS signal.** The predictions carry ranking signal but are mis-levelled:
+
+- Correlation of the margin prediction with the actual margin is +0.39 (priors only +0.35); the games ordered by prediction have actual margins of +23.0, +30.7 and +39.6 across the low, middle and high thirds (predicted +9.3, +21.9, +35.6). The slope of actual on prediction is 0.61.
+- The prediction level is wrong: bias +8.86, and the raw MAE 15.99 is worse than a constant (the mean margin of earlier FBS-vs-FCS games, MAE 15.52). The model's home edge and rating scale are fitted on FBS games.
+- **An earlier-only linear map fixes it.** Fitting actual margin on the baseline prediction for earlier FBS-vs-FCS games (slope 0.59 to 0.62, intercept 14.3 to 16.0 in every season) gives MAE 14.24 against 16.00 raw (gain 1.77, 90% interval 1.24 to 2.30) and 15.53 for the constant (gain 1.30, 0.81 to 1.82), better than both in all four seasons. This is a post hoc diagnostic on the examined seasons, not a candidate, and uses the 2016 to 2021 baseline predictions recomputed in step 4B.
+- Winner picks carry no value: the home team wins 95.5% of these games and the model picks the home team 96.9% of the time with 94.4% accuracy. Any value is in margin size (blowout ranking), not who wins.
+- Totals: Operational V5 12.62 against 12.87 for a constant (correlation +0.11, bias +1.13), a small gain.
+- No market comparison is possible (these games are mostly unlined).
+
+Consequences for the work order: step 4B's candidates were judged on the pooled early population, so their gains (B3 especially) partly reflect FBS-vs-FCS games; whether they help the FBS-vs-FBS population is not shown here and is the next measurement. Reporting rule from here: every table gives FBS-vs-FBS as the headline with FBS-vs-FCS separate, and pooled figures only labelled as pooled.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
