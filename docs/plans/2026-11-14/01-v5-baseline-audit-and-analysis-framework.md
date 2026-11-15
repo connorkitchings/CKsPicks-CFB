@@ -698,6 +698,29 @@ The owner accepted testing the leading candidate on seasons no analysis has touc
 | Needs before running | 2026 serving states, outcomes and offsets confirmed present locally (not yet checked) and CFBD 2026 team membership (a further read-only pull, needs approval). |
 | Cannot show | Forward performance: the outcomes are known. The 2027 season is the clean forward test. |
 
+#### 2026 holdout result (2026-11-15, owner-approved retrieval and run)
+
+The owner approved a read-only fetch from the Preview bucket (read credential only) of the 2026 state and forecast files of rebuild run `6a-rebuild-w6-20261012-r2`: `states_2026/` pregame roles, teams, population, priors and summary, and `forecast/` offsets, offset team-games and feature frame. Files and SHA-256 values: `~/cfb_ratings_lab_v6/source/preview-2026-11-15/`; the two files that have a hash in the earlier retrieval index match it, and the other sizes equal the listing. Outputs: `~/cfb_ratings_lab_v6/output/step4b-2026-11-15/step4b_holdout_2026_results.json`.
+
+What the 2026 data allows: pregame ratings for 329 games in weeks 0 to 6 (cutoff 2026-10-11), final scores from the local 2026 finals, tiers from the local 2026 schedule (Pac-12 counted as G5, as in 2024 and 2025). Stages were rebuilt as the smaller of the two teams' completed-game counts, capped at 4; the same rule reproduces every 2025 stage label exactly. **The forecast offsets stop at 2025, so every arm, baseline included, uses a zero offset in 2026** (the 2015 to 2025 offsets average 0.007 with standard deviation 0.84, so this adds noise but does not shift the bias). The bridge was fitted on 2015 to 2025 with the real offsets. The 2026 rating states carry a different candidate name from the historical states (`ppp__rho_0_60__exposure__game_at_cutoff_v1` against `v5_game_adjusted_at_cutoff_v1`) and a similar but not identical rating scale (offense mean 0.43, standard deviation 0.72, against 0.60 and 0.82 pooled); that they are the same recipe is not verified, so the baseline here is not the served model.
+
+Margin MAE / bias (games):
+
+| Candidate | Stages 0 to 3 (293) | Stage 0 (86) | Stage 1 (67) | Stage 2 (71) | Stage 3 (69) | Stage 4 (36) |
+|---|---|---|---|---|---|---|
+| Baseline | 14.10 / +0.41 | 15.40 / +4.83 | 13.13 / -1.44 | 14.98 / -1.69 | 12.52 / -1.14 | 13.83 / +0.02 |
+| B1s | 14.15 / -2.48 | 15.18 / -3.44 | 13.93 / -5.68 | 14.64 / -1.69 | 12.58 / +1.00 | 14.55 / +2.32 |
+| B3 | 13.47 / -2.75 | 14.20 / -0.10 | 12.56 / -4.89 | 14.09 / -4.14 | 12.83 / -2.56 | 14.43 / +2.34 |
+
+Against the declared pass condition (gain at least 0.2, stage 4 MAE no more than 0.05 above, smaller bias magnitude):
+
+- **B1s fails all three.** Gain -0.05 (90% bootstrap interval -0.52 to +0.42), stage 4 MAE +0.72, bias magnitude 2.48 against 0.41.
+- **B3 meets the gain condition and fails the other two.** Gain +0.62 (0.18 to 1.07); stage 4 MAE +0.60 over the baseline on 36 games; bias magnitude 2.75 against 0.41. By the letter of the rule it does not pass.
+
+Reading it: the stage 0 to 3 count is 293, below the 300 declared as the minimum for more than an indicative result, and stage 4 has only 36 games, so the stage 4 condition rests on very little. B3's gain comes from stage 0 (15.40 to 14.20) and shows the 4A pattern again: Power 4 hosts against G5 teams (40 games) go from a bias of +11.7 to +1.7. The bias condition fails because the added early terms over-correct in 2026: stage 1 bias is -5.68 under B1s and -4.89 under B3 against -1.44 for the baseline, where the stage terms fitted on 2015 to 2025 (about +7 points at stage 1) are larger than 2026 needs. That is the instability the tuning seasons showed (2016 and 2017), here in a season with a full training window.
+
+Overall: B3's MAE gain has now appeared in all five tuning seasons, all four seasons of 2022 to 2025 and the 2026 holdout, but no candidate has passed the declared bias condition on any evidence, and the 2026 data are not a forward test (outcomes were known). No change to Operational V5 is supported by the declared rules. The clean forward test is the early weeks of 2027, and it needs the candidate fixed in advance, with early stage terms shrunk or bias-checked as a declared part of the design if the owner wants a version that passes the bias condition.
+
 ### Still unavailable
 
 - The 12 original row-level outputs of the 2026-09-28 repair experiment (not located in the listed prefixes). A rerun copy now exists locally.
