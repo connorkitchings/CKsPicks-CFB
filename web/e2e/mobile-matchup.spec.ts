@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { gotoHydrated, openUnitStats, unitStats } from "./helpers";
 
 for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
   test.describe(`phone matchup top at ${viewport.width}x${viewport.height}`, () => {
@@ -10,7 +10,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       const appBar = page.getByTestId("app-bar");
       const link = appBar.getByRole("link", { name: /^Week \d+ games$/ });
       await expect(link).toBeVisible();
-      await expect(link).toHaveAttribute("href", /^\/\?week=\d+$/);
+      await expect(link).toHaveAttribute("href", /^\/\?week=\d+&status=all$/);
       await expect(appBar.getByTestId("app-bar-title")).toHaveText(/ at /);
       await expect(appBar.getByTestId("app-menu-button")).toBeVisible();
       // No separate pinned back row; the hero's own link is desktop-only, so phones expose the app bar link and the footer link.
@@ -23,20 +23,22 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       const appBox = (await appBar.boundingBox())!;
       expect(appBox.height).toBeLessThanOrEqual(60);
 
-      // Game facts stay compact; exports belong to the summary above the unit tables.
+      // Game facts stay compact; the share section closes the page, after the full unit statistics.
+      await openUnitStats(page);
       const facts = (await page.getByTestId("game-facts").boundingBox())!;
       expect(facts.height).toBeLessThanOrEqual(50);
       await expect(page.getByTestId("game-facts").getByTestId("share-controls")).toHaveCount(0);
       const summary = page.getByTestId("matchup-summary-header");
       const share = (await summary.getByTestId("share-controls").boundingBox())!;
       const summaryBox = (await summary.boundingBox())!;
-      const table = (await page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first().boundingBox())!;
+      const table = (await unitStats(page).getByRole("table").first().boundingBox())!;
       expect(share.y).toBeGreaterThan(facts.y + facts.height);
       expect(share.y + share.height).toBeLessThanOrEqual(summaryBox.y + summaryBox.height);
-      expect(summaryBox.y + summaryBox.height).toBeLessThan(table.y);
+      expect(summaryBox.y).toBeGreaterThanOrEqual(table.y + table.height);
       expect(share.x).toBeGreaterThanOrEqual(0);
       expect(share.x + share.width).toBeLessThanOrEqual(viewport.width);
 
+      await page.evaluate(() => window.scrollTo(0, 0));
       // Hero: the forecast grid (market, model and bet lines) starts high on the page, each spread cell on one line.
       const grid = (await page.getByTestId("forecast-grid").boundingBox())!;
       console.log(`forecast grid top ${viewport.width}x${viewport.height}: ${grid.y}; facts row ${facts.height}`);
@@ -64,7 +66,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
 
     test("the unit table header lines up with its columns and the card header is one line", async ({ page }) => {
       await gotoHydrated(page, "/matchup/1");
-      const table = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first();
+      await openUnitStats(page);
+      const table = unitStats(page).getByRole("table").first();
       const heads = await table.locator("thead th").all();
       const offenseHead = (await heads[0].locator("span").first().boundingBox())!;
       const metricHead = (await heads[1].boundingBox())!;

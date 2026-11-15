@@ -188,7 +188,7 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
 
           <div
             data-testid="forecast-grid"
-            className="grid w-full sm:mt-3 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 gap-y-2 text-sm sm:gap-y-3 sm:gap-x-4"
+            className="grid w-full sm:mt-3 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 max-sm:gap-x-1 gap-y-2 text-sm sm:gap-y-3 sm:gap-x-4"
           >
             <span aria-hidden />
             <Eyebrow as="span" className="text-center">Spread</Eyebrow>
