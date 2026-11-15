@@ -247,7 +247,7 @@ test("method page keeps the tab bar at page width and caps each card to the read
   expect(cardCount, "method page section cards").toBeGreaterThanOrEqual(9);
   for (let index = 0; index < cardCount; index += 1) {
     const box = await cards.nth(index).boundingBox();
-    expect(box!.width, `method card ${index} width`).toBeLessThanOrEqual(800);
+    expect(box!.width, `method card ${index} width`).toBeLessThanOrEqual(760);
     expect(tabsBox!.width, `tab bar wider than card ${index}`).toBeGreaterThan(box!.width);
   }
 });

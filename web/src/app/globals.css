@@ -287,8 +287,9 @@ html.dark [data-card] {
 }
 
 /* Shared editorial rhythm: broad analysis canvas, readable prose and quiet sections. */
-main { max-width: 1200px; }
-@media (min-width: 640px) { main { padding-inline: 24px; } }
-main > section + section { margin-top: 2rem; }
-main h1 { font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.15; letter-spacing: -0.035em; }
-main p { text-wrap: pretty; }
+@layer base {
+  main { max-width: 1200px; }
+  @media (min-width: 640px) { main { padding-inline: 24px; } }
+  main > section + section { margin-top: 2rem; }
+  main h1 { font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.15; letter-spacing: -0.035em; }
+}

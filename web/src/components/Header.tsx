@@ -47,7 +47,8 @@ export function Header({
    */
   loading?: boolean;
 }) {
-  const maxW = PAGE_WIDTHS[width];
+  // The navigation canvas stays full width even on narrow reading pages.
+  const maxW = PAGE_WIDTHS[width === "narrow" ? "wide" : width];
   const hasSubrow = Boolean(
     (publicationMode === "predictions" && systemName) || status || updatedAt,
   );
