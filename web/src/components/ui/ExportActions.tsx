@@ -322,6 +322,8 @@ export function ExportActions({
     } finally {
       if (mounted.current) setJob(null);
       if (pending.current === render) pending.current = null;
+      // Optional test observer: unlike component state, this also reports completion after unmount.
+      (window as Window & { __exportSettled?: (action: Action) => void }).__exportSettled?.(action);
     }
   }
 

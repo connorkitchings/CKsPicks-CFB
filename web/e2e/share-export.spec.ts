@@ -55,50 +55,15 @@ async function holdRender(page: Page): Promise<void> {
     const gate = new Promise<void>((resolve) => (release = resolve));
     Object.assign(window, { __releaseRender: release, __renderStarted: false });
     Object.defineProperty(document.fonts, "ready", { get: () => { (window as unknown as { __renderStarted: boolean }).__renderStarted = true; return gate; }, configurable: true });
-    // Track every async step of an export (font and image fetches, canvas encodes) so
-    // `drainRender` can tell when no image work is still in flight.
-    const win = window as unknown as { __encodesInFlight: number };
-    win.__encodesInFlight = 0;
-    const nativeFetch = window.fetch;
-    window.fetch = (...args) => {
-      // Next's own navigation and prefetch requests are not export work and may stay open.
-      const url = String(args[0] instanceof Request ? args[0].url : args[0]);
-      if (url.includes("_rsc=")) return nativeFetch.apply(window, args);
-      win.__encodesInFlight += 1;
-      return nativeFetch.apply(window, args).finally(() => { win.__encodesInFlight -= 1; });
-    };
-    const toBlob = HTMLCanvasElement.prototype.toBlob;
-    HTMLCanvasElement.prototype.toBlob = function (callback, ...rest) {
-      win.__encodesInFlight += 1;
-      try {
-        return toBlob.call(this, (blob) => {
-          win.__encodesInFlight -= 1;
-          callback(blob);
-        }, ...rest);
-      } catch (error) {
-        win.__encodesInFlight -= 1;
-        throw error;
-      }
-    };
+    const settled: string[] = [];
+    Object.assign(window, { __exportSettled: (action: string) => settled.push(action), __settledExports: settled });
   });
 }
 
 const releaseRender = (page: Page) => page.evaluate(() => (window as unknown as { __releaseRender: () => void }).__releaseRender());
 
-/**
- * Waits until a released render has nothing left to do: no font or image fetch or canvas encode is in flight
- * for 30 consecutive animation frames. Used before asserting that an abandoned export did nothing,
- * which has no positive event to wait for.
- */
-async function drainRender(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    const win = window as unknown as { __encodesInFlight: number };
-    for (let quiet = 0; quiet < 30; ) {
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      quiet = win.__encodesInFlight === 0 ? quiet + 1 : 0;
-    }
-  });
-}
+const renderStarted = (page: Page) => page.evaluate(() => (window as unknown as { __renderStarted: boolean }).__renderStarted);
+const settledExports = (page: Page) => page.evaluate(() => (window as unknown as { __settledExports: string[] }).__settledExports);
 
 async function highlightMichigan(page: Page): Promise<void> {
   await expect(async () => {
@@ -383,9 +348,10 @@ test.describe("share and export", () => {
     await gotoHydrated(page, URL);
     await share(page).click();
     await expect(status(page)).toHaveText("Creating image…");
+    await expect.poll(() => renderStarted(page)).toBe(true);
     await leaveChartPage(page);
     await releaseRender(page);
-    await drainRender(page);
+    await expect.poll(() => settledExports(page)).toEqual(["share"]);
     expect(await shareCalls(page)).toEqual([]);
     expect(downloads.names).toEqual([]);
     expect(errors).toEqual([]);
@@ -399,9 +365,10 @@ test.describe("share and export", () => {
     await gotoHydrated(page, URL);
     await page.getByTestId("chart-download").click();
     await expect(status(page)).toHaveText("Creating image…");
+    await expect.poll(() => renderStarted(page)).toBe(true);
     await leaveChartPage(page);
     await releaseRender(page);
-    await drainRender(page);
+    await expect.poll(() => settledExports(page)).toEqual(["download"]);
     expect(downloads.names).toEqual([]);
     expect(errors).toEqual([]);
   });
@@ -414,10 +381,11 @@ test.describe("share and export", () => {
     await gotoHydrated(page, URL);
     await page.getByTestId("chart-copy").click();
     await expect(status(page)).toHaveText("Creating image…");
+    await expect.poll(() => renderStarted(page)).toBe(true);
     await leaveChartPage(page);
     await releaseRender(page);
+    await expect.poll(() => settledExports(page)).toEqual(["copy"]);
     await expect.poll(() => clipboardSettled(page)).toEqual(["rejected"]);
-    await drainRender(page);
     expect(await clipboardSettled(page)).toEqual(["rejected"]);
     expect(errors).toEqual([]);
   });
