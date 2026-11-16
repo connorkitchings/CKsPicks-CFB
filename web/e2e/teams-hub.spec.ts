@@ -60,21 +60,30 @@ test("cleared Trends selection survives navigation, filters, periods and history
   };
   await assertCleared();
   await page.reload();
+  await page.locator('html[data-hydrated="true"]').waitFor({ state: "attached" });
   await assertCleared();
   await page.getByRole("searchbox", { name: "Search teams" }).fill("tex");
   await page.getByRole("combobox", { name: "Filter by conference" }).selectOption("SEC");
   await page.getByRole("button", { name: "Offense", exact: true }).click();
   await assertCleared();
   await page.getByRole("combobox", { name: "Rating period" }).selectOption({ label: "Preseason" });
-  await assertCleared();
+  await expect.poll(() => new URL(page.url()).searchParams.get("period")).toBe("preseason");
+  await expect(page.getByText(/^Preseason · 4 teams/)).toBeVisible();
+  const assertView = async (view: "Compare" | "Trends") => {
+    await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe(view.toLowerCase());
+    await expect(page.getByRole("button", { name: view, exact: true })).toHaveAttribute("aria-current", "page");
+    await expect.poll(() => new URL(page.url()).searchParams.get("period")).toBe("preseason");
+    await assertCleared();
+  };
+  await assertView("Trends");
   await page.getByRole("button", { name: "Compare", exact: true }).click();
-  await assertCleared();
+  await assertView("Compare");
   await page.getByRole("button", { name: "Trends", exact: true }).click();
-  await assertCleared();
+  await assertView("Trends");
   await page.goBack();
-  await assertCleared();
+  await assertView("Compare");
   await page.goForward();
-  await assertCleared();
+  await assertView("Trends");
 });
 
 test("redirect preserves cleared Trends selection and nonempty team aliases resolve", async ({ page }) => {
