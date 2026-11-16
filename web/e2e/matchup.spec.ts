@@ -3,6 +3,9 @@ import sharp from "sharp";
 import { gotoHydrated, openUnitStats, selectOffense, sharedFiles, stubWebShare, unitStats } from "./helpers";
 
 test.describe("matchup page (fixture mode)", () => {
+  // Phone widths imply a touch device: compact sizes are gated on `pointer: fine`.
+  test.use({ hasTouch: true });
+
   test("mismatched publication lineage hides model sections and disables sharing", async ({ page }) => {
     await stubWebShare(page);
     await page.goto("/matchup/987656");

@@ -101,7 +101,7 @@ const canShareFiles = () =>
 
 /** 44px touch targets on phones, the compact 36px from the sm breakpoint up. */
 const buttonClass =
-  "inline-flex size-11 items-center justify-center rounded-lg border border-line bg-surface-card text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 sm:size-9";
+  "inline-flex size-11 items-center justify-center rounded-lg border border-line bg-surface-card text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 pointer-fine:size-9";
 
 const ICON_PATHS: Record<Action | Outcome, string> = {
   download: "M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14",

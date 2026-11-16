@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { featuredComparisons, gotoHydrated, openFeatured, openRecord } from "./helpers";
 
+// Phone widths imply a touch device: compact sizes are gated on `pointer: fine`.
+test.use({ hasTouch: true });
+
 // Upcoming week, then a final week whose graded cards and highlights share the page.
 for (const path of ["/", "/?week=4"]) {
   test(`${path}: the first complete phone card fits above navigation`, async ({ page }) => {
@@ -246,7 +249,7 @@ test("a graded week shows the week record beside the season record, with accurac
   // The accuracy line is dropped on phones to keep the slate close to the top.
   await expect(record.getByTestId("week-accuracy")).toBeHidden();
   await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(record.getByTestId("week-accuracy")).toContainText("95% interval coverage");
+  await expect(record.getByTestId("week-accuracy")).toContainText("Finals inside the model's 95% band");
 });
 
 test("an upcoming week has no week record, and an in-progress week keeps phone cards inside the viewport", async ({ page }) => {

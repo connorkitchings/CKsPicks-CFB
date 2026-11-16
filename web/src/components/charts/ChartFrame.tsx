@@ -147,7 +147,7 @@ export function ChartFrame({
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-testid="chart-controls">
         <MobileChartSettings finder={highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />} summary={summary} conference={
           <select
-            className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-h-9 sm:text-xs"
+            className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-fine:min-h-9 sm:text-xs"
             value={filter}
             onChange={(event) => onFilterChange(event.target.value)}
             data-testid="conference-filter"
@@ -167,7 +167,7 @@ export function ChartFrame({
               type="button"
               aria-pressed={asTable}
               onClick={() => setAsTable((current) => !current)}
-              className="min-h-11 rounded-lg border border-line bg-surface-card px-3 py-1.5 sm:min-h-9 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
+              className="min-h-11 rounded-lg border border-line bg-surface-card px-3 py-1.5 pointer-fine:min-h-9 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink"
               data-testid="table-toggle"
             >
               {asTable ? "Show chart" : "Show as table"}
@@ -240,7 +240,7 @@ export function ChartFrame({
       )}
       {unavailable.length > 0 && (
         <details data-card="" className="rounded-xl border border-line bg-surface-card px-3 py-2 text-xs text-ink-muted shadow-2xs" data-testid="unavailable-teams">
-          <summary className="cursor-pointer font-semibold text-ink max-sm:min-h-11 max-sm:py-3">Not plotted ({unavailable.length} teams)</summary>
+          <summary className="min-h-11 cursor-pointer py-3 font-semibold text-ink pointer-fine:min-h-0 pointer-fine:py-0">Not plotted ({unavailable.length} teams)</summary>
           <p className="mt-1.5 leading-relaxed">
             {unavailable.join(", ")}. These teams have no eligible FBS games or no valid observations for this chart yet.
           </p>

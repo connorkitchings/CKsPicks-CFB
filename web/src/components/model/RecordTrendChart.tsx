@@ -105,7 +105,7 @@ export function RecordTrendChart({ rows }: { rows: readonly TrendWeek[] }) {
           type="button"
           aria-pressed={asTable}
           onClick={() => setAsTable((current) => !current)}
-          className="min-h-11 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink sm:min-h-9"
+          className="min-h-11 rounded-lg border border-line bg-surface-card px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-pressed:border-accent aria-pressed:text-accent-ink pointer-fine:min-h-9"
           data-testid="table-toggle"
         >
           {asTable ? "Show chart" : "Show as table"}

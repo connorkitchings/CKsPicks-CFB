@@ -64,8 +64,8 @@ export function WeekNav({
     "inline-flex items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
     // Chart settings: borderless arrows inside one bordered group, sized like the chart toggles.
     // Other compact toolbars: borderless 44px phone targets that shrink to 36px from `sm:`.
-    chartCompact && "h-11 w-11 shrink-0 text-sm hover:text-ink sm:h-7.5 sm:w-7.5",
-    compact && !chartCompact && "h-11 w-11 shrink-0 text-base sm:h-9 sm:w-9",
+    chartCompact && "h-11 w-11 shrink-0 text-sm hover:text-ink pointer-fine:h-7.5 pointer-fine:w-7.5",
+    compact && !chartCompact && "h-11 w-11 shrink-0 text-base pointer-fine:h-9 pointer-fine:w-9",
     !compact && "h-11 w-11 shrink-0 border border-line bg-surface-card text-base",
   );
 
@@ -98,8 +98,8 @@ export function WeekNav({
           className={clsx(
             "rounded-md font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             chartCompact
-              ? "min-h-11 min-w-0 bg-transparent px-1.5 text-sm font-semibold hover:bg-surface-inset sm:min-h-7.5 sm:text-xs"
-              : "min-h-11 border border-line bg-surface-card px-2 py-1 text-base sm:min-h-9 sm:text-sm",
+              ? "min-h-11 min-w-0 bg-transparent px-1.5 text-sm font-semibold hover:bg-surface-inset pointer-fine:min-h-7.5 sm:text-xs"
+              : "min-h-11 border border-line bg-surface-card px-2 py-1 text-base pointer-fine:min-h-9 sm:text-sm",
           )}
         >
           {weeks.map((w) => (

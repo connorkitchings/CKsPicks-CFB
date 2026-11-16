@@ -91,7 +91,7 @@ export default function ModelMethodPage() {
             (mean absolute error) across 934 games per target. A separate postseason market comparison had lower
             market error on both targets. There is no like-for-like point-in-time V4 backtest, so the evidence does
             not establish that V5 beats V4.{" "}
-            <Link href="/model#market-heading" className="font-semibold text-accent-ink underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
+            <Link href="/model#market-heading" className="font-semibold text-accent-ink underline -my-3 inline-flex min-h-11 items-center pointer-fine:my-0 pointer-fine:inline pointer-fine:min-h-0">
               See the 2026 comparison with the betting line
             </Link>
             .
@@ -121,7 +121,7 @@ export default function ModelMethodPage() {
             Limits: capture times are when a line was fetched, not when a sportsbook posted it. Some design decisions were
             made with early 2026 outcomes known, though those outcomes do not fit any parameter, so reconstructed
             weeks are not blind forward tests.{" "}
-            <Link href="/model" className="font-semibold text-accent-ink underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
+            <Link href="/model" className="font-semibold text-accent-ink underline -my-3 inline-flex min-h-11 items-center pointer-fine:my-0 pointer-fine:inline pointer-fine:min-h-0">
               See the 2026 record
             </Link>
             .

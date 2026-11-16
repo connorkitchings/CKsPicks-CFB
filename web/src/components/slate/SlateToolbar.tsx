@@ -12,7 +12,7 @@ import { SlateFilterSheet } from "./SlateFilterSheet";
 export type SlateLayout = "grid" | "list";
 
 const SELECT_CLASS =
-  "min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent";
+  "min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink pointer-fine:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent";
 
 /**
  * Search, conference, sort and layout. On phones this is the pinned bar: the week navigator centered

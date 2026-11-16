@@ -153,7 +153,7 @@ test.describe("model page is accuracy-only", () => {
 });
 
 test.describe("inline links on phones", () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
   test("the method page record link is a 44px tap target", async ({ page }) => {
     await page.goto("/model/method");

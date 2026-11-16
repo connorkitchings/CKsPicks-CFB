@@ -174,7 +174,7 @@ export function UnitMatchupTable({
                       type="button"
                       aria-expanded={!isCollapsed}
                       onClick={() => onToggleSection?.(group.section)}
-                      className="inline-flex items-center justify-center gap-1 rounded px-1.5 py-0.5 max-sm:min-h-11 max-sm:px-3 text-xs font-semibold uppercase tracking-wider text-ink-muted hover:bg-surface-inset hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="inline-flex items-center justify-center gap-1 min-h-11 rounded px-3 py-1.5 pointer-fine:min-h-0 pointer-fine:px-1.5 pointer-fine:py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted hover:bg-surface-inset hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     >
                       <span>{group.label}</span>
                       <span aria-hidden="true" className="text-[10px] leading-none">{isCollapsed ? "▸" : "▾"}</span>

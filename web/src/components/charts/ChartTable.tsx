@@ -58,7 +58,7 @@ export function ChartTable<Row>({
                 >
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+                    className="inline-flex min-h-11 items-center gap-1 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent pointer-fine:min-h-0"
                     onClick={() =>
                       setSort(active ? { key: column.key, descending: !sort.descending } : { key: column.key })
                     }

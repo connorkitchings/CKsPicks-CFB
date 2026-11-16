@@ -9,7 +9,7 @@ export function MatchupCellLink({ gameId }: { gameId: number }) {
   const enabled = useContext(MatchupLinksContext);
   if (!enabled) return null;
   return (
-    <Link href={`/matchup/${gameId}`} data-testid="schedule-matchup-link" aria-label="Matchup" className="rounded px-1 font-medium text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+    <Link href={`/matchup/${gameId}`} data-testid="schedule-matchup-link" aria-label="Matchup" className="-my-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 font-medium text-accent-ink pointer-fine:my-0 pointer-fine:inline pointer-fine:min-h-0 pointer-fine:min-w-0 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
       <span aria-hidden>→</span>
     </Link>
   );

@@ -190,7 +190,7 @@ function WeeklyResults({ rows, overall, label }: { rows: WeekRow[]; overall: Rec
             {rows.map((row) => (
               <tr key={row.week}>
                 <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left text-ink">
-                  <Link href={`/?week=${row.week}`} className="inline-flex min-h-9 items-center rounded font-semibold hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
+                  <Link href={`/?week=${row.week}`} className="inline-flex min-h-11 items-center rounded font-semibold pointer-fine:min-h-9 hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent">Week {row.week}</Link>
                   {row.inProgress && <span className="ml-2 whitespace-nowrap rounded-full border border-warn-line bg-warn-soft px-2 py-0.5 text-xs font-medium text-warn">In progress</span>}
                 </th>
                 {TARGETS.flatMap((target) => [
@@ -304,7 +304,7 @@ export function PerformanceDashboard({ data, title, season, initialTarget }: { d
       </Card>
       {archive.length > 0 && (
         <details data-testid="weekly-archive" className="rounded-xl border border-line bg-surface-card shadow-2xs">
-          <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9 sm:py-2">
+          <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent pointer-fine:min-h-9 sm:py-2">
             Earlier weeks ({archive.length})
           </summary>
           <WeeklyResults rows={archive} overall={null} label="Weekly pick results, earlier weeks" />

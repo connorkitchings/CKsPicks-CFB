@@ -45,7 +45,7 @@ test("compact segments wrap on phones with 44px targets and keep desktop 30px he
     const tokens = className.split(" ");
     assert.ok(tokens.includes("whitespace-normal"));
     assert.ok(tokens.includes("sm:whitespace-nowrap"));
-    assert.ok(tokens.includes("sm:min-h-7.5"));
+    assert.ok(tokens.includes("pointer-fine:min-h-7.5"));
     assert.ok(tokens.includes("min-h-11"));
     assert.ok(!tokens.some((token) => token === "break-words" || token === "flex-1"));
   }
@@ -54,7 +54,7 @@ test("compact segments wrap on phones with 44px targets and keep desktop 30px he
 test("default segments are 44px on phones, 36px from sm, and stay on one line", () => {
   const [className] = buttonClasses(renderToStaticMarkup(SegmentedControl({ label: "Layout", value: "grid", onChange: () => {}, options })));
   const tokens = className.split(" ");
-  for (const token of ["whitespace-nowrap", "min-h-11", "sm:min-h-9"]) assert.ok(tokens.includes(token), token);
+  for (const token of ["whitespace-nowrap", "min-h-11", "pointer-fine:min-h-9"]) assert.ok(tokens.includes(token), token);
   assert.ok(!tokens.includes("flex-1"), "only filled groups stretch");
 });
 

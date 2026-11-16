@@ -293,3 +293,7 @@ html.dark [data-card] {
   main > section + section { margin-top: 2rem; }
   main h1 { font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.15; letter-spacing: -0.035em; }
 }
+
+/* Compact control sizes apply only to precise pointers; touch devices (any
+   viewport width) keep the 44px minimum touch target. */
+@custom-variant pointer-fine (@media (pointer: fine));

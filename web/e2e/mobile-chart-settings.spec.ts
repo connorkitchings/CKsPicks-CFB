@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+// Phone widths imply a touch device: compact sizes are gated on `pointer: fine`.
+test.use({ hasTouch: true });
+
 for (const width of [320, 390, 430]) {
   test(`mobile chart settings reflow at ${width}px and retain local configuration`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
