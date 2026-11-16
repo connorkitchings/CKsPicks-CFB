@@ -1,5 +1,4 @@
 import type { Game } from "@/lib/queries";
-import { etDateTime } from "@/lib/time-et";
 import { isFinal } from "@/lib/team-games";
 import { coverMargin, leanFor, phoneLean, resultFor } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
@@ -13,27 +12,15 @@ import { coverText, ResultBadge } from "./ResultBadge";
 import { TeamPair } from "./TeamPair";
 import { AwaitingTag } from "./AwaitingTag";
 
-function capturedText(game: Game, kind: "spread" | "total"): string {
-  if (game.publicationMode !== "predictions") return "unavailable";
-  const stamp = kind === "spread" ? game.spreadCapturedAt : game.totalCapturedAt;
-  return stamp ? etDateTime(stamp) : "unavailable";
-}
-
 function GradedCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
   const lean = leanFor(game, kind);
   if (!lean) {
-    return (
-      <div className="space-y-0.5 text-xs">
-        <p className="text-[11px] text-ink-muted">Line captured: {capturedText(game, kind)}</p>
-        <p className="text-xs text-ink-muted">No {kind} lean</p>
-      </div>
-    );
+    return <p className="text-xs text-ink-muted">No {kind} lean</p>;
   }
   const grade = resultFor(game, kind);
   const text = coverText(coverMargin(game, kind));
   return (
     <div className="space-y-0.5 text-xs">
-      <p className="text-[11px] text-ink-muted">Line captured: {capturedText(game, kind)}</p>
       <div className="flex items-center gap-2">
         <LeanMarker lean={lean} />
         <span className="min-w-0 break-words text-sm font-semibold text-ink"><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></span>
@@ -47,12 +34,7 @@ function GradedCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
 
 function LeanCell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
   const lean = leanFor(game, kind);
-  return (
-    <div className="space-y-0.5">
-      <p className="text-[11px] text-ink-muted">Line captured: {capturedText(game, kind)}</p>
-      {lean ? <LeanPill lean={lean} compact /> : <p className="text-xs text-ink-muted">No {kind} lean</p>}
-    </div>
-  );
+  return lean ? <LeanPill lean={lean} compact /> : <p className="text-xs text-ink-muted">No {kind} lean</p>;
 }
 
 /** Dense one-line-per-game layout; finished games show the graded pick, others the lean. */

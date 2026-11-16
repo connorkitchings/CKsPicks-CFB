@@ -135,6 +135,7 @@ export default async function Home({
     season,
     week: target.week,
     publicationMode,
+    fixture: params.fixture,
     dbError: targetError ? "Weekly data is temporarily unavailable." : null,
   });
   const week = data.fixtureWeek?.week ?? target.week;

@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import { etDateTime } from "@/lib/time-et";
 import type { PredictionGame } from "@/lib/queries";
 import { Card } from "@/components/ui/Card";
 import { isFinal } from "@/lib/team-games";
@@ -36,7 +35,6 @@ function BetCell({ game, kind, results }: {
         <span className="uppercase tracking-wider">{kind === "spread" ? "Spread" : "Total"}</span>
         {grade ? <ResultBadge grade={grade} /> : results ? <span>Ungraded</span> : lean?.source ? <span className="truncate text-ink-muted">{lean.source}</span> : null}
       </div>
-      <p className="mb-1 text-[11px] text-ink-muted">Line captured: {(kind === "spread" ? game.spreadCapturedAt : game.totalCapturedAt) ? etDateTime((kind === "spread" ? game.spreadCapturedAt : game.totalCapturedAt)!) : "unavailable"}</p>
       {lean ? <>
         <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></p>
         <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums text-ink-muted">

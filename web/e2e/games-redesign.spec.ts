@@ -27,42 +27,34 @@ test("status and presentation survive reload, browser history, historical week n
   await expect(status.getByRole("button", { name: "All", exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("card, list and market-comparison views show exact quote capture timestamps, spread signs, totals and missing quotes", async ({ page }) => {
+test("card, list and market-comparison views show spread signs, totals and missing quotes without line-capture timestamps", async ({ page }) => {
   await gotoHydrated(page, "/");
-  // Forecast updated timestamp is distinct from quote capture timestamp
   await expect(page.getByText("Forecast updated Sep 29, 7:24 PM ET", { exact: true })).toBeVisible();
-  // Card view: game 1 has DraftKings/Bovada quotes captured at 5:15 PM ET; game 2 has no quote timestamp ("unavailable")
-  await expect(page.locator("#game-1")).toContainText("Line captured: Sep 29, 5:15 PM ET");
-  await expect(page.locator("#game-2")).toContainText("Line captured: unavailable");
+  await expect(page.locator("body")).not.toContainText(/line captured|captured unavailable|Sep 29, 5:15 PM ET/i);
   // Game 7 is missing total line
   await expect(page.locator("#game-7")).toContainText("No market line");
 
-  // List view shows quote capture timestamps too
+  // List view also omits line capture timestamps
   await page.getByRole("button", { name: "List", exact: true }).click();
-  await expect(page.locator("#game-1")).toContainText("Line captured: Sep 29, 5:15 PM ET");
-  await expect(page.locator("#game-2")).toContainText("Line captured: unavailable");
+  await expect(page.locator("body")).not.toContainText(/line captured|captured unavailable|Sep 29, 5:15 PM ET/i);
 
-  // Market comparison view
+  // Market comparison view shows Spread and Total side by side without a target toggle
   await page.getByRole("group", { name: "Games analysis" }).getByRole("button", { name: "Model vs market" }).click();
   const marketRegion = page.getByRole("region", { name: "Model vs market" });
-  await expect(marketRegion).toContainText("Home margin in points: positive favors the home team; negative favors the away team.");
+  await expect(marketRegion).toContainText("Spread is home margin in points (positive favors the home team; negative favors the away team); Total is combined points scored by both teams.");
+  await expect(marketRegion).toContainText("10 of 10 filtered games have a comparable spread; 9 of 10 have a comparable total.");
   await expect(marketRegion).toContainText("Western Kentucky at Appalachian State");
   await expect(marketRegion).toContainText("Market +2.5 · Model +7.6");
-  await expect(marketRegion).toContainText("DraftKings · Line captured: Sep 29, 5:15 PM ET");
-  await expect(marketRegion).toContainText("Line captured: unavailable");
-
-  // Switch to Total in Market comparison: LSU at Tennessee is listed under unavailable
-  await marketRegion.getByRole("group", { name: "Market comparison target" }).getByRole("button", { name: "Total" }).click();
-  await expect(marketRegion).toContainText("Combined points scored by both teams.");
-  await expect(marketRegion).toContainText("9 of 10 filtered games have both a forecast and selected line.");
-  await marketRegion.getByText(/Why 1 games are unavailable/).click();
+  await expect(marketRegion).toContainText("DraftKings");
+  await expect(marketRegion).not.toContainText("Line captured");
+  await marketRegion.getByText(/Why 1 line is unavailable/).click();
   await expect(marketRegion).toContainText("LSU at Tennessee: Missing total line or model projection");
 });
 
 test("matchup deterministic facts, raw/adjusted evidence, completed context and lineage gates", async ({ page }) => {
   await gotoHydrated(page, "/matchup/1");
   await expect(page.getByRole("heading", { name: "What stands out" })).toBeVisible();
-  await expect(page.getByText("Spread line captured: Sep 29, 5:15 PM ET · Total line captured: Sep 29, 5:15 PM ET")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText(/line captured|captured unavailable|Sep 29, 5:15 PM ET/i);
   const evidence = page.getByRole("region", { name: "Rating evidence" });
   await expect(evidence).toContainText("Raw PPP");
   await expect(evidence).toContainText("Adjusted PPP");
@@ -106,4 +98,47 @@ test("one offense selection controls factors, detail and export through resize",
   await expect(card).toHaveCSS("height", "1350px");
   await page.evaluate(() => (window as unknown as { __releaseFonts: () => void }).__releaseFonts());
   await expect(page.getByTestId("share-controls")).toHaveAttribute("data-last-export", /2160.*2700/, { timeout: 15000 });
+});
+
+for (const width of [320, 390, 820, 1280]) {
+  for (const theme of ["light", "dark"] as const) {
+    test(`market comparisons fit ${width}px in ${theme} theme`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
+      await gotoHydrated(page, "/?view=market");
+      const market = page.getByRole("region", { name: "Model vs market" });
+      await expect(market).toContainText("Market +2.5 · Model +7.6");
+      await expect(market).toContainText("Missing total line or model projection");
+      await expect(market.getByRole("img").first()).toHaveAttribute("aria-label", /home margin points/);
+      await expect(market.getByRole("img").nth(1)).toHaveAttribute("aria-label", /total points/);
+      const summary = market.locator("summary");
+      expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      await page.screenshot({ path: `/private/tmp/market-comparison-${width}-${theme}.png`, fullPage: true });
+    });
+  }
+}
+
+test("market-only publication never exposes model comparisons", async ({ page }) => {
+  await gotoHydrated(page, "/?mode=market&view=market");
+  await expect(page.getByRole("region", { name: "Model vs market" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Model vs market" })).toHaveCount(0);
+});
+
+test("missing both comparisons stays explained and empty filters remain usable", async ({ page }) => {
+  await gotoHydrated(page, "/?view=market&fixture=no-comparisons");
+  const market = page.getByRole("region", { name: "Model vs market" });
+  await expect(market).toContainText("9 of 10 filtered games have a comparable spread; 8 of 10 have a comparable total.");
+  await expect(market.locator("article").filter({ hasText: "Western Kentucky at Appalachian State" })).toHaveCount(0);
+  const summary = market.locator("summary");
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(market).toContainText("Western Kentucky at Appalachian State: Missing spread line or model projection");
+  await expect(market).toContainText("Western Kentucky at Appalachian State: Missing total line or model projection");
+  await page.keyboard.press("Space");
+  await expect(market.locator("details")).not.toHaveAttribute("open", "");
+  await page.getByPlaceholder("Filter by team…").fill("Western Kentucky");
+  await expect(market).toContainText("0 of 1 filtered games have a comparable spread; 0 of 1 have a comparable total.");
+  await expect(market.getByRole("status")).toHaveText("No comparable forecasts and lines for these filters.");
+  await expect(market.locator("article")).toHaveCount(0);
 });

@@ -1,6 +1,6 @@
 # Stratum CFB: site redesign and analytical usability
 
-- **Status:** Implemented 2026-11-15 (local `dev` only; not pushed or deployed)
+- **Status:** Implemented 2026-11-15 (redesign and presentation follow-up verified locally; not pushed or deployed)
 - **Created:** 2026-11-15
 - **Planner:** Sol
 - **Approval source:** Owner approved the complete conversational plan and explicitly instructed “Please implement the plan.” on 2026-11-15.
@@ -131,3 +131,18 @@ Continuation approval: the owner explicitly approved the seven-step “Continue 
 - [x] Model assessment
 - [x] Final gates (`make check`, `make web-e2e` 436 passed / 10 skipped, `git diff --check`), browser inspection at 320/390/820/1280 in both themes (no overflow, no console errors), documentation, local integration
 - [x] Preview verification of the application code paths ran on 2026-11-15 (read-only; see the session log). Model rows show the capture time of the retained pre-kickoff line (`market_snapshots.captured_at`, "unavailable" when unknown).
+
+
+### Owner-approved presentation follow-up (2026-11-15)
+
+The owner confirmed both current follow-up changes and explicitly instructed implementation of the “Finish the redesign follow-up” plan. This amendment supersedes the earlier requirements to display per-line capture timestamps and use a target toggle on the Games comparison.
+
+- Hide line-capture timestamps in Games cards/lists, matchups and Model details/tables. Preserve capture timestamps in serving models, immutable provenance and grading; release activation and forecast-update context remain distinct.
+- Show spread and total simultaneously in the Games Model vs market view, side by side on desktop and stacked on phones. Each target keeps its own domain, units, coverage and unavailable-data explanation.
+- Preserve comparisons, sportsbook labels, keyboard access and publication gates. Unavailable-line disclosures must meet the 44px touch-target standard.
+- Align current navigation documentation with Games / Teams / Graphs / Model, retaining `/ratings` as a permanent query-preserving redirect.
+- Verify both targets, missing one/both comparisons, hidden timestamps, keyboard behavior and layouts at 320/390/tablet/desktop in both themes. Run `make check`, `make web-e2e`, visual review, code review and whitespace checks before local commit.
+- Existing read-only Preview verification remains applicable because no serving query or data interface changes in this follow-up. Repeat relevant Preview checks if that changes.
+- Implementation log: `session_logs/2026-11-15/04-site-presentation-followup.md`. No push, deployment or storage operations are authorized by this amendment.
+
+Follow-up validation: `make check`, `make web-e2e` (446 passed / 10 skipped), whitespace checks and four independent review lenses passed. The missing-both fixture and empty-state/keyboard test address the review’s validation gap; production ignores the fixture parameter. Screenshots at 320/390/820/1280 in both themes were captured, with phone/tablet/desktop visual inspection. Existing Preview read evidence remains applicable: serving queries and grading were unchanged.

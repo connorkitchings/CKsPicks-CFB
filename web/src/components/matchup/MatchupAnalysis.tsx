@@ -40,7 +40,6 @@ export function MatchupAnalysis({ matchup }: { matchup: MatchupData }) {
   return <div className="space-y-8">
     <div className="space-y-1 text-xs text-ink-muted" aria-label="Data context">
       <p>{matchup.publicationMode === "predictions" && `Forecast updated ${etDateTime(matchup.updatedAt)}. `}Finals and analysis update with published data releases; this is not a live feed.</p>
-      <p>Spread line captured: {matchup.spreadCapturedAt ? etDateTime(matchup.spreadCapturedAt) : "unavailable"} · Total line captured: {matchup.totalCapturedAt ? etDateTime(matchup.totalCapturedAt) : "unavailable"}</p>
     </div>
     {facts.length > 0 && <section aria-labelledby="matchup-insights"><h2 id="matchup-insights" className="text-xl font-semibold">What stands out</h2><ul className="mt-3 grid gap-3 text-sm text-ink sm:grid-cols-3">{facts.map((fact) => <li key={fact} className="border-t border-line pt-3">{fact}</li>)}</ul></section>}
     {stats ? <>

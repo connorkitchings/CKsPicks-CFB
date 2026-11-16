@@ -76,7 +76,7 @@ must remain synchronized.
 
 The editorial interface uses Games / Teams / Graphs / Model, with global team search, a common analysis canvas, light/dark themes, and persistent phone navigation. The [implementation contract](../docs/plans/2026-11-15/site-redesign-and-analytical-usability.md) records scope and validation state.
 
-Games offers Today / Upcoming / Results / All, card/list layouts and model-versus-market comparison. Upcoming and awaiting-published-result states use the existing Eastern-time rules; the site is not a live scoreboard. Point differences are descriptive comparisons. Quote capture times refer to the exact selected target quote, while forecast updates and release activation are distinct timestamps.
+Games offers Today / Upcoming / Results / All, card/list layouts and model-versus-market comparison. Upcoming and awaiting-published-result states use the existing Eastern-time rules; the site is not a live scoreboard. The Model vs market view shows spread and total together, side by side on larger screens and stacked on phones, with separate coverage and point scales. Point differences are descriptive comparisons. Line-capture timestamps remain in serving provenance but are hidden in the interface. Forecast updates and release activation are distinct timestamps.
 
 Teams (`/teams`) combines Rankings, Trends, Strength vs résumé and two-team Compare. All views use the same exact certified period. National competition ranks are independent of filtering and sort direction; weekly movement requires the preceding certified week. Profiles connect schedules, component trajectories, comparisons and validated rating evidence.
 

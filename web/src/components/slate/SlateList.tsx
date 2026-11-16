@@ -64,7 +64,6 @@ export function SlateList({
   const view: View = params.get("view") === "list" ? "list" : "grid";
   const marketView = params.get("view") === "market";
   const status = parseSlateStatus(params.get("status"), games, now);
-  const metric = params.get("metric") === "total" ? "total" : "spread";
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(window.location.search);
     next.set(key, value);
@@ -141,7 +140,7 @@ export function SlateList({
       {extras && <details className="order-2 border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">Featured comparisons and weekly highlights</summary><div className="mt-3">{extras}</div></details>}
       <p role="status" className="sr-only">Showing {visible.length} of {games.length} games</p>
 
-      {marketView && predictionsVisible ? <div className="order-1"><MarketComparison games={visible} matchupEnabled={matchupEnabled} metric={metric} onMetricChange={(value) => setParam("metric", value)} /></div> : visible.length === 0 ? (
+      {marketView && predictionsVisible ? <div className="order-1"><MarketComparison games={visible} matchupEnabled={matchupEnabled} /></div> : visible.length === 0 ? (
         <div className="order-1"><Notice tone="empty">No games match these filters. <button className="underline" onClick={() => { const next = new URLSearchParams(window.location.search); next.set("status", "all"); next.delete("q"); next.delete("conference"); window.history.pushState(null, "", `${window.location.pathname}?${next}`); }}>Show all games</button></Notice></div>
       ) : groups ? (
         groups.map((group, index) => (

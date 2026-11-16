@@ -53,7 +53,7 @@ V4 code was removed on 2026-10-22; see the [V4 retrospective](../docs/modeling/v
 | `web/src/lib/schema.ts`, `teams.ts` | Synchronized contract copies |
 | `web/src/lib/season-release-context.ts`, `season-release-query.ts` | Active season release resolution and projections |
 | `web/src/lib/publication.ts`, `queries.ts` | Publication policy and legacy read fallback |
-| `web/src/app/`, `components/` | Routes: Games `(games)`, `ratings`, `stats`, `model`, `matchup/[gameId]`, `teams/[team]`; health at `api/health/route.ts` |
+| `web/src/app/`, `components/` | Routes: Games `(games)`, `teams` (index and profiles), `ratings` (permanent redirect), `stats`, `model`, `matchup/[gameId]`; health at `api/health/route.ts` |
 | `web/README.md`, `web/playwright.config.ts` | Local development, flags and fixture UI verification |
 
 ## Documentation and checks

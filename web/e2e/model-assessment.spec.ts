@@ -10,6 +10,7 @@ async function openTable(page: Page) {
   const details = page.getByTestId("error-table-details");
   if ((await details.getAttribute("open")) === null) await details.locator("summary").click();
   await expect(page.getByTestId("error-table")).toBeVisible();
+  await expect(page.getByTestId("error-table")).not.toContainText(/captured|Sep 19, 6:30 PM ET/i);
 }
 
 test.describe("model assessment", () => {
@@ -56,7 +57,7 @@ test.describe("model assessment", () => {
     await expect(detail).toContainText("Boise State by 10.0");
     await expect(detail).toContainText("Retained line");
     await expect(detail).toContainText("Boise State by 20.0");
-    await expect(detail.getByTestId("error-line-captured")).toHaveText("Sep 19, 6:30 PM ET");
+    await expect(detail).not.toContainText(/captured|Sep 19, 6:30 PM ET/i);
     await expect(detail).toContainText("Boise State by 45.0");
     await expect(detail).toContainText("35.0 pts toward Wyoming");
     await expect(detail).toContainText("25.0 pts toward Wyoming");
@@ -65,16 +66,6 @@ test.describe("model assessment", () => {
     // Switching target clears the selection.
     await targetButton(page, "Totals").click();
     await expect(detail).toContainText("Select a point");
-  });
-
-  test("an unknown line capture time reads unavailable in the detail and the table", async ({ page }) => {
-    await gotoHydrated(page, "/model?target=total");
-    await openTable(page);
-    const wyoming = page.getByRole("button", { name: /^Wyoming at Boise State, Week 3/ });
-    await wyoming.click();
-    await expect(page.getByTestId("error-detail").getByTestId("error-line-captured")).toHaveText("unavailable");
-    await expect(tableRows(page).filter({ hasText: "Wyoming at Boise State" }).getByTestId("error-row-captured")).toHaveText("Captured unavailable");
-    await expect(page.getByTestId("error-row-captured").filter({ hasText: /ET$/ }).first()).toBeVisible();
   });
 
   test("the table lists the same games as the scatter and sorts with aria-sort", async ({ page }) => {

@@ -25,6 +25,7 @@ export type SlateSearchParams = Promise<{
   status?: string;
   metric?: string;
   now?: string;
+  fixture?: string;
   /** UI test mode only: treat this week as the final regular-season week (and the active one). */
   finalWeek?: string;
 }>;
@@ -83,6 +84,7 @@ export async function loadSlateData(args: {
   season: number;
   week: number;
   publicationMode: "predictions" | "market";
+  fixture?: string;
   /** Present when the caller already failed to resolve its target. */
   dbError?: string | null;
 }): Promise<SlateData> {
@@ -103,7 +105,11 @@ export async function loadSlateData(args: {
     if (publicationMode === "predictions") {
       const fx = await import("@/test/fixtures/slate");
       const bundle = week === 4 ? fx.slateResults() : week === 6 ? fx.slatePartial() : fx.slatePicks();
-      out.games = bundle.games;
+      out.games = args.fixture === "no-comparisons"
+        ? bundle.games.map((game) => game.gameId === 1
+          ? { ...game, homeTeamSpreadLine: null, totalLine: null, spreadLean: null, totalLean: null, edgeSpread: null, edgeTotal: null }
+          : game)
+        : bundle.games;
       out.roster = fx.slateRosterFixture;
       out.fixtureWeek = { week: bundle.week, weeks: bundle.weeks };
       if (bundle.games[0]?.publicationMode === "predictions") {
