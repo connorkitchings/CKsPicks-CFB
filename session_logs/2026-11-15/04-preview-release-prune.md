@@ -52,3 +52,10 @@ Production (`ep-noisy-king`, 518 MB, 8 releases) was left alone: its cap is sepa
 
 ### Close outcome
 `gh workflow run weekly-season-update.yml --ref dev -f mode=close-week` (run `43790541091`, started with owner approval) succeeded: `release preview` ok (73s), `release production` ok (85s). Preview afterwards: 433.8 MB, 5 releases. Each release adds about 75 MB, so Preview fills again in roughly 6 releases and Production in about the same. Follow-up, not built: a supported prune plus compaction tool, or a Neon plan upgrade.
+
+### Week 12 live
+Readback after the close (2026-11-15): `/api/health` reports `production-season-2026-0a435fd6f2499457f26d7deb`, Week 12, 66 of 66 games predicted and lined, data as of 2026-11-16T00:07:25Z; `/`, `/ratings`, `/stats` and `/model` return 200. Preview serves the same candidate with 5 releases. The scheduled run `43791819247` skipped ("week 12 has not started (already rolled over)"). First kickoff 2026-11-17T23:00Z.
+
+Record from the new release: Week 11 spread 35-32-0 (52.2%), total 24-43-0 (35.8%). Cumulative 2026 V5 through Week 11: spread 308-312-9 (49.7%), total 293-333-2 (46.8%), including three `cfbd_retrospective` Week 6 grades that Production now carries.
+
+Storage: the Neon console shows the project-storage "Limit reached" banner (Production 629 MB plus Preview 455 MB against 1 GB per project on the Free plan). Deferred by owner decision; each close adds about 75 MB per branch. Whether the banner blocks writes is unconfirmed.
