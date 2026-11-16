@@ -61,7 +61,7 @@ test("cleared Trends selection survives navigation, filters, periods and history
   await assertCleared();
   await page.reload();
   await assertCleared();
-  await page.getByRole("textbox", { name: "Search teams" }).fill("tex");
+  await page.getByRole("searchbox", { name: "Search teams" }).fill("tex");
   await page.getByRole("combobox", { name: "Filter by conference" }).selectOption("SEC");
   await page.getByRole("button", { name: "Offense", exact: true }).click();
   await assertCleared();
