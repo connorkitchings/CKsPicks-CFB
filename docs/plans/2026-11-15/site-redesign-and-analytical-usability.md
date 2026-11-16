@@ -146,3 +146,14 @@ The owner confirmed both current follow-up changes and explicitly instructed imp
 - Implementation log: `session_logs/2026-11-15/04-site-presentation-followup.md`. No push, deployment or storage operations are authorized by this amendment.
 
 Follow-up validation: `make check`, `make web-e2e` (446 passed / 10 skipped), whitespace checks and four independent review lenses passed. The missing-both fixture and empty-state/keyboard test address the review’s validation gap; production ignores the fixture parameter. Screenshots at 320/390/820/1280 in both themes were captured, with phone/tablet/desktop visual inspection. Existing Preview read evidence remains applicable: serving queries and grading were unchanged.
+
+### Review-findings remediation (2026-11-15, local only)
+
+Fixes for the review of the unreleased redesign, committed on `connorkitchings/stratum-review-fixes`. Not pushed.
+
+- **Phase 1, contract compliance:** done. `/ratings` is a 308 in `next.config.ts`; `getRatingAnalysisHistory` is release-bounded and cached; the team page threads the season (`?season=` is read only in UI-test mode to keep ISR); the 95% rows are labelled as historical calibration.
+- **Phase 2, 44px touch targets:** done. Compact sizes are gated on `pointer-fine:`; outlier links and toggles are padded; the Model scatter hit-tests the nearest point. `e2e/touch-targets.spec.ts` sweeps main routes at 390px and 820px with touch.
+- **Phase 3, Games and Model correctness:** done. Model target follows the URL; per-metric chart domains; spreads name the team; Time TBD games sort last in their day.
+- **Phase 4, empty states and copy:** done. Market reset, kickoff and per-side missing reasons; ranked team search with a live region; unknown `?team=`/`?compare=`/`?chart=` notices; alias slug redirects; "Preseason" stats window; narrower Model live region.
+- **Phase 5, hygiene and hardening:** done. Security headers, `--line-control` and `--edge-low` contrast, health season limit, teams-page period normalization, lazy chart views, glob-based `test:publication`, axe smoke tests (`@axe-core/playwright` 4.13.0, owner-approved).
+- Validation: `make check` and `make web-e2e` (483 passed / 10 skipped; the market-board `test.fail()` is expected). Not done: CSP with a nonce (optional follow-up); the Preview check of the Week 12 slate.
