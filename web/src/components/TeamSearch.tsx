@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { searchAnnouncement, searchTeams } from "@/lib/team-search";
 import { teamHref } from "@/lib/team-routes";
@@ -13,9 +13,14 @@ export function TeamSearch({ season, onNavigate }: { season: number | null; onNa
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const keyboardNavigation = useRef(false);
   const matches = searchTeams(query);
   const showing = open && query.trim().length > 0;
   const expanded = showing && matches.length > 0;
+  useLayoutEffect(() => {
+    if (keyboardNavigation.current && expanded) document.getElementById(`${id}-${active}`)?.scrollIntoView({ block: "nearest" });
+    keyboardNavigation.current = false;
+  }, [active, expanded, id]);
   const go = (team: string) => {
     setOpen(false);
     setQuery("");
@@ -30,8 +35,14 @@ export function TeamSearch({ season, onNavigate }: { season: number | null; onNa
       onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setActive(0); setOpen(true); }}
       onKeyDown={(event) => {
         if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); setOpen(false); }
-        if (event.key === "ArrowDown") { event.preventDefault(); setOpen(true); setActive((index) => open ? Math.min(index + 1, Math.max(0, matches.length - 1)) : 0); }
-        if (event.key === "ArrowUp") { event.preventDefault(); setActive((index) => Math.max(0, index - 1)); }
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          const next = event.key === "ArrowDown" ? (open ? Math.min(active + 1, Math.max(0, matches.length - 1)) : 0) : Math.max(0, active - 1);
+          if (expanded) document.getElementById(`${id}-${next}`)?.scrollIntoView({ block: "nearest" });
+          else if (event.key === "ArrowDown" && query.trim() && matches.length) keyboardNavigation.current = true;
+          if (event.key === "ArrowDown") setOpen(true);
+          setActive(next);
+        }
         if (event.key === "Enter" && open && matches[active]) { event.preventDefault(); go(matches[active]); }
       }} />
     <div aria-live="polite" className="sr-only">{searchAnnouncement(query, searchTeams(query, Infinity).length)}</div>

@@ -46,3 +46,42 @@ test("the phone schedule has no nested links and links opponents inside the row"
   await expect(rows.getByTestId("matchup-link").first()).toBeAttached();
   await expect(rows.locator("li a[href^='/teams/']").first()).toBeVisible();
 });
+
+test("cleared Trends selection survives navigation, filters, periods and history", async ({ page }) => {
+  await gotoHydrated(page, "/teams?view=trends");
+  const first = page.getByRole("combobox", { name: "First team" });
+  await expect(first).not.toHaveValue("");
+  await first.selectOption("");
+  const assertCleared = async () => {
+    await expect(page.getByRole("combobox", { name: "First team" })).toHaveValue("");
+    const params = new URL(page.url()).searchParams;
+    expect(params.has("team")).toBe(true);
+    expect(params.get("team")).toBe("");
+  };
+  await assertCleared();
+  await page.reload();
+  await assertCleared();
+  await page.getByRole("textbox", { name: "Search teams" }).fill("tex");
+  await page.getByRole("combobox", { name: "Filter by conference" }).selectOption("SEC");
+  await page.getByRole("button", { name: "Offense", exact: true }).click();
+  await assertCleared();
+  await page.getByRole("combobox", { name: "Rating period" }).selectOption({ label: "Preseason" });
+  await assertCleared();
+  await page.getByRole("button", { name: "Compare", exact: true }).click();
+  await assertCleared();
+  await page.getByRole("button", { name: "Trends", exact: true }).click();
+  await assertCleared();
+  await page.goBack();
+  await assertCleared();
+  await page.goForward();
+  await assertCleared();
+});
+
+test("redirect preserves cleared Trends selection and nonempty team aliases resolve", async ({ page }) => {
+  await gotoHydrated(page, "/ratings?view=trends&team=");
+  expect(new URL(page.url()).pathname).toBe("/teams");
+  expect(new URL(page.url()).searchParams.get("team")).toBe("");
+  await expect(page.getByRole("combobox", { name: "First team" })).toHaveValue("");
+  await gotoHydrated(page, "/teams?view=trends&team=App%20State");
+  await expect(page.getByRole("combobox", { name: "First team" })).toHaveValue("Appalachian State");
+});

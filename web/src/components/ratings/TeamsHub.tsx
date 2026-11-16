@@ -69,7 +69,11 @@ export function TeamsHub({ current, history, timeline, roster, season }: Props) 
   function change(values: Record<string, string | null>, navigate = false) {
     const url = searchParamsUrl("/teams", (next) => {
       next.set("season", String(season));
-      for (const [key, value] of Object.entries(values)) if (value === null || value === "") next.delete(key); else next.set(key, value);
+      for (const [key, value] of Object.entries(values)) {
+        if (key === "team" && (value === null || value === "")) next.set(key, "");
+        else if (value === null || value === "") next.delete(key);
+        else next.set(key, value);
+      }
     });
     if (navigate) router.push(url, { scroll: false });
     else window.history.replaceState(null, "", url);

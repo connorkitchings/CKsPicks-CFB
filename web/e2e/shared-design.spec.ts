@@ -62,3 +62,33 @@ for (const width of [320, 640, 1280]) {
     });
   }
 }
+
+test("keyboard search keeps the active option visible without mouse scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoHydrated(page, "/model");
+  const finder = page.getByRole("combobox", { name: "Find a team" });
+  await finder.fill("state");
+  const list = page.getByRole("listbox", { name: "Matching teams" });
+  const options = list.getByRole("option");
+  const count = await options.count();
+  expect(count).toBeGreaterThan(6);
+  const assertVisibleInList = async (index: number) => {
+    const listBox = (await list.boundingBox())!;
+    const optionBox = (await options.nth(index).boundingBox())!;
+    expect(optionBox.y).toBeGreaterThanOrEqual(listBox.y);
+    expect(optionBox.y + optionBox.height).toBeLessThanOrEqual(listBox.y + listBox.height);
+    await expect(finder).toHaveAttribute("aria-activedescendant", (await options.nth(index).getAttribute("id"))!);
+    await expect(finder).toBeFocused();
+  };
+  await expect(page.locator("[aria-live=polite]").filter({ hasText: /teams found/ })).toHaveCount(1);
+  for (let i = 1; i < count; i++) await finder.press("ArrowDown");
+  await assertVisibleInList(count - 1);
+  const scrollBeforeHover = await list.evaluate((element) => element.scrollTop);
+  await options.first().dispatchEvent("mouseover");
+  expect(await list.evaluate((element) => element.scrollTop)).toBe(scrollBeforeHover);
+  for (let i = 1; i < count; i++) await finder.press("ArrowUp");
+  await assertVisibleInList(0);
+  await finder.press("Escape");
+  await expect(list).toHaveCount(0);
+  await expect(finder).toBeFocused();
+});
