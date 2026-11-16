@@ -3,6 +3,7 @@ import { getTeamSeasonRoster } from "@/lib/chart-queries";
 import type { RosterRow } from "@/lib/conferences";
 import { getRatingAnalysisHistory, getRatingPeriods, getWeeklyRatings } from "@/lib/v5";
 import { analysisPeriod, boundedRatingHistory, type RatingHistoryPeriod } from "@/lib/team-analysis";
+import { normalizeRatingPeriod } from "@/lib/rating-request";
 import { ratingsFixture, ratingsRosterFixture } from "@/test/fixtures/ratings";
 import { publicationScope, resolveSeasonParam } from "@/lib/publication";
 import { Header, Footer } from "@/components/Header";
@@ -33,7 +34,8 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
     roster = ratingsRosterFixture;
   } else {
     try {
-      const [result, periods, loadedRoster] = await Promise.all([getWeeklyRatings(season, requested), getRatingPeriods(season), getTeamSeasonRoster(season).catch(() => null)]);
+      const [periods, loadedRoster] = await Promise.all([getRatingPeriods(season), getTeamSeasonRoster(season).catch(() => null)]);
+      const result = await getWeeklyRatings(season, normalizeRatingPeriod(requested, periods.map((meta) => meta.id)));
       current = analysisPeriod(result.periodMeta, result.ratings);
       history = await getRatingAnalysisHistory(season, result.period).catch(() => [current]);
       timeline = periods.map((meta) => ({ id: meta.id, label: meta.postWeek === undefined ? meta.label : `Through Week ${meta.postWeek}` }));

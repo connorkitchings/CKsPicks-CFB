@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CHART_REGISTRY, parseTeamParam, withTeamParam } from "@/lib/chart-config";
 import { replaceSearchParams, searchParamsUrl } from "@/lib/url-state";
@@ -31,11 +32,8 @@ import { DownsView } from "./DownsView";
 import { EfficiencyView, type EfficiencyData } from "./EfficiencyView";
 import { FinishingDrivesView } from "./FinishingDrivesView";
 import { GameLogView } from "./GameLogView";
-import { MarketBoardView } from "./MarketBoardView";
 import { NetSuccessView } from "./NetSuccessView";
 import { PossessionView } from "./PossessionView";
-import { RatingTrajectoryView } from "./RatingTrajectoryView";
-import { ResumeQualityView } from "./ResumeQualityView";
 
 /** The data of one chart view; a new chart adds its variant here and its case below. */
 export type ChartPayload =
@@ -98,6 +96,11 @@ export function ChartsView({ season, week, roster, chart, settings, nextMatchups
 
   return renderView(chart, shared);
 }
+
+// Views behind charts that are not in the public navigation stay out of the main chart bundle.
+const RatingTrajectoryView = dynamic(() => import("./RatingTrajectoryView").then((m) => m.RatingTrajectoryView));
+const ResumeQualityView = dynamic(() => import("./ResumeQualityView").then((m) => m.ResumeQualityView));
+const MarketBoardView = dynamic(() => import("./MarketBoardView").then((m) => m.MarketBoardView));
 
 function renderView(chart: ChartPayload, shared: SharedChartProps) {
   switch (chart.kind) {

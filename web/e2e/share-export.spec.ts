@@ -55,10 +55,32 @@ async function holdRender(page: Page): Promise<void> {
     const gate = new Promise<void>((resolve) => (release = resolve));
     Object.assign(window, { __releaseRender: release });
     Object.defineProperty(document.fonts, "ready", { get: () => gate, configurable: true });
+    // Track canvas encodes so `drainRender` can tell when no image work is still in flight.
+    const win = window as unknown as { __encodesInFlight: number };
+    win.__encodesInFlight = 0;
+    const toBlob = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function (callback, ...rest) {
+      win.__encodesInFlight += 1;
+      return toBlob.call(this, (blob) => {
+        win.__encodesInFlight -= 1;
+        callback(blob);
+      }, ...rest);
+    };
   });
 }
 
 const releaseRender = (page: Page) => page.evaluate(() => (window as unknown as { __releaseRender: () => void }).__releaseRender());
+
+/**
+ * Waits until a released render has nothing left to do: 30 animation frames pass and no canvas encode is in
+ * flight. Used before asserting that an abandoned export did nothing, which has no positive event to wait for.
+ */
+async function drainRender(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    for (let frame = 0; frame < 30; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __encodesInFlight: number }).__encodesInFlight)).toBe(0);
+}
 
 async function highlightMichigan(page: Page): Promise<void> {
   await expect(async () => {
@@ -277,7 +299,7 @@ test.describe("share and export", () => {
     await expect(status(page)).toHaveText("Creating image…");
     await leaveChartPage(page);
     await releaseRender(page);
-    await page.waitForTimeout(1000);
+    await drainRender(page);
     expect(await shareCalls(page)).toEqual([]);
     expect(downloads.names).toEqual([]);
     expect(errors).toEqual([]);
@@ -293,7 +315,7 @@ test.describe("share and export", () => {
     await expect(status(page)).toHaveText("Creating image…");
     await leaveChartPage(page);
     await releaseRender(page);
-    await page.waitForTimeout(1000);
+    await drainRender(page);
     expect(downloads.names).toEqual([]);
     expect(errors).toEqual([]);
   });
@@ -309,7 +331,7 @@ test.describe("share and export", () => {
     await leaveChartPage(page);
     await releaseRender(page);
     await expect.poll(() => clipboardSettled(page)).toEqual(["rejected"]);
-    await page.waitForTimeout(500);
+    await drainRender(page);
     expect(await clipboardSettled(page)).toEqual(["rejected"]);
     expect(errors).toEqual([]);
   });

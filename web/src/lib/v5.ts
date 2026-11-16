@@ -18,6 +18,7 @@ import {
 } from "./team-resume.ts";
 import { splitPerformanceByWeek, type Performance, type PerformanceRow } from "./performance-split.ts";
 import { withGameNameAliases } from "./rating-names.ts";
+import { canBoundHistoryByRelease } from "./rating-request.ts";
 import { analysisPeriod, boundedRatingHistory, type RatingHistoryPeriod } from "./team-analysis.ts";
 import { PERFORMANCE_DETAIL_SPEC, RATING_SPEC, guardRows } from "./row-guard.ts";
 import {
@@ -340,7 +341,8 @@ export const getRatingAnalysisHistory = cache(releaseCached("getRatingAnalysisHi
   const selected = await getWeeklyRatings(season, targetPeriod);
   const selectedPeriod = analysisPeriod(selected.periodMeta, selected.ratings);
   // History is release-scoped; without an active release there is no exact source to bound it by.
-  if (selected.period === "preseason" || !selected.ratings.length || !await getSeasonReleaseContext(season)) return [selectedPeriod];
+  const hasRelease = !!await getSeasonReleaseContext(season);
+  if (!canBoundHistoryByRelease({ period: selected.period, ratingCount: selected.ratings.length, hasRelease })) return [selectedPeriod];
   const source = selected.periodMeta.sourceManifestSha256 ?? selected.ratings[0]?.sourceManifestSha256;
   const cutoff = selected.periodMeta.cutoffUtc ?? selected.ratings[0]?.cutoffUtc;
   if (!source || !cutoff) return [selectedPeriod];

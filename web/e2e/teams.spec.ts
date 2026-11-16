@@ -287,3 +287,13 @@ test.describe("team pages (fixture mode)", () => {
     expect(response?.status()).toBe(404);
   });
 });
+
+for (const [width, tabbable] of [[1280, false], [390, true]] as const) {
+  test(`team page unit-section headings are ${tabbable ? "" : "not "}focus stops at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await gotoHydrated(page, "/teams/Texas");
+    const summary = page.locator(".unit-section > summary").first();
+    if (tabbable) await expect(summary).not.toHaveAttribute("tabindex", "-1");
+    else await expect(summary).toHaveAttribute("tabindex", "-1");
+  });
+}

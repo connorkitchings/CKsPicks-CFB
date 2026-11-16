@@ -46,3 +46,11 @@ test("/methodology keeps the elite-reference anchor in the browser", async ({ pa
   await page.goto("/methodology#elite-reference");
   await expect(page).toHaveURL(/\/model\/method#elite-reference$/);
 });
+
+test("pages send baseline security headers and cannot be framed", async ({ request }) => {
+  const headers = (await request.get("/")).headers();
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["content-security-policy"]).toBe("frame-ancestors 'none'");
+});

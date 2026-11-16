@@ -26,7 +26,7 @@ export function TeamSearch({ season, onNavigate }: { season: number | null; onNa
     <label htmlFor={id} className="sr-only">Find a team</label>
     <input id={id} role="combobox" aria-autocomplete="list" aria-expanded={expanded} aria-controls={expanded ? `${id}-results` : undefined} aria-activedescendant={open && matches[active] ? `${id}-${active}` : undefined}
       autoComplete="off" type="text" placeholder="Find a team…" value={query}
-      className="min-h-11 w-full rounded-lg border border-line bg-surface-inset px-3 text-sm text-ink outline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
+      className="min-h-11 w-full rounded-lg border border-line-control bg-surface-inset px-3 text-sm text-ink outline-offset-2 focus-visible:outline-2 focus-visible:outline-accent"
       onFocus={() => setOpen(true)} onChange={(event) => { setQuery(event.target.value); setActive(0); setOpen(true); }}
       onKeyDown={(event) => {
         if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); setOpen(false); }

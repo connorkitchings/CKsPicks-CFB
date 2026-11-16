@@ -102,7 +102,7 @@ test("one offense selection controls factors, detail and export through resize",
 
 for (const width of [320, 390, 820, 1280]) {
   for (const theme of ["light", "dark"] as const) {
-    test(`market comparisons fit ${width}px in ${theme} theme`, async ({ page }) => {
+    test(`market comparisons fit ${width}px in ${theme} theme`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width, height: 900 });
       await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
       await gotoHydrated(page, "/?view=market");
@@ -114,9 +114,31 @@ for (const width of [320, 390, 820, 1280]) {
       const summary = market.getByTestId("market-unavailable").locator("summary");
       expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-      await page.screenshot({ path: `/private/tmp/market-comparison-${width}-${theme}.png`, fullPage: true });
+      await page.screenshot({ path: testInfo.outputPath(`market-comparison-${width}-${theme}.png`), fullPage: true });
     });
   }
+}
+
+for (const [width, layout] of [[1280, "side by side"], [390, "stacked"]] as const) {
+  test(`market comparison puts spread and total ${layout} at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await gotoHydrated(page, "/?view=market");
+    const row = page
+      .getByRole("region", { name: "Model vs market" })
+      .locator("article")
+      .filter({ has: page.getByRole("img", { name: /spread/ }) })
+      .filter({ has: page.getByRole("img", { name: /total points/ }) })
+      .first();
+    const spread = (await row.getByRole("img", { name: /spread/ }).boundingBox())!;
+    const total = (await row.getByRole("img", { name: /total points/ }).boundingBox())!;
+    if (layout === "side by side") {
+      expect(Math.abs(total.y - spread.y)).toBeLessThan(spread.height / 2);
+      expect(total.x).toBeGreaterThanOrEqual(spread.x + spread.width - 1);
+    } else {
+      expect(total.y).toBeGreaterThanOrEqual(spread.y + spread.height - 1);
+      expect(Math.abs(total.x - spread.x)).toBeLessThan(2);
+    }
+  });
 }
 
 test("market-only publication never exposes model comparisons", async ({ page }) => {
