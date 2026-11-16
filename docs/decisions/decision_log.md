@@ -6,7 +6,7 @@ This log records architectural and product decisions, newest first. Older entrie
 
 - **Context:** The Preview Neon branch reached 1003 MB of the 1 GB Free-plan cap and the Week 11 to 12 close failed at `release preview` with `DiskFull`.
 - **Decision:** One-off, owner-approved exception to "season releases are retained", for Preview only: delete the 13 Weeks 7 to 9 releases and their 14 history rows, keeping `d842113f`, `aca7b33d`, `5d50a63e` and `3921681d`. Production is untouched.
-- **Impact:** The immutability triggers were disabled briefly and re-enabled; deleted rows are exported to `session_logs/2026-11-15/04-preview-release-prune-export.json`. The prune did not free enough file space: the re-run still hit `DiskFull`, so the Neon plan needs upgrading.
+- **Impact:** The immutability triggers were disabled briefly and re-enabled; deleted rows are exported to `session_logs/2026-11-15/04-preview-release-prune-export.json`. The prune alone did not shrink files, so the re-run still hit `DiskFull`. A follow-up smallest-first `VACUUM FULL` cascade cut Preview from 1018 MB to 354 MB and the close then succeeded. Production was left alone because its cap is separate.
 - **Source:** [contract](../plans/2026-11-15/preview-release-prune.md), session log `session_logs/2026-11-15/04-preview-release-prune.md`.
 
 ## 2026-11-09: Net success rate includes overtime
