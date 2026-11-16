@@ -424,7 +424,7 @@ export function ScatterChart({
               {compact && state !== "searched" ? (
                 <g data-mark="dot">
                   <circle cx={cx} cy={cy} r={DOT_HIT_RADIUS} fill="transparent" />
-                  <circle cx={cx} cy={cy} r={DOT_RADIUS} fill={teamColor(p.team)} stroke="var(--surface-card)" strokeWidth={1} />
+                  <circle cx={cx} cy={cy} r={DOT_RADIUS} fill={teamColor(p.team)} stroke="var(--scatter-dot-outline)" strokeWidth={1} />
                 </g>
               ) : (
                 <TeamMark team={p.team} cx={cx} cy={cy} size={size} />

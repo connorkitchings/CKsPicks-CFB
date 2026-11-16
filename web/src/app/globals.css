@@ -23,6 +23,7 @@
   color-scheme: light;
   --surface-page: #fafafa; /* zinc-50 */
   --surface-card: #ffffff;
+  --scatter-dot-outline: #ffffff;
   --surface-elevated: #ffffff;
   --surface-inset: #f4f4f5; /* zinc-100 — chips, hover fills */
   --line: #e4e4e7; /* zinc-200 */
@@ -64,6 +65,7 @@ html.dark {
   color-scheme: dark;
   --surface-page: #000000;
   --surface-card: #09090b; /* zinc-950 */
+  --scatter-dot-outline: #a1a1aa; /* 7.7:1 against the chart background */
   --surface-elevated: #1c1917; /* stone-900 — elevated controls */
   --surface-inset: #18181b; /* zinc-900 */
   --line: #27272a; /* zinc-800 */
