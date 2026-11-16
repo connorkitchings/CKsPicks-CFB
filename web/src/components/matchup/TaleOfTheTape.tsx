@@ -62,7 +62,7 @@ export function TaleOfTheTape({
       <div className="grid grid-cols-2 gap-4 pb-3 text-sm font-semibold border-b border-line/40">
         <div className="flex min-w-0 items-center gap-2">
           <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: offColor }} />
-          <span className="min-w-0 break-words text-ink-primary"><span className="block">{offTeam}</span><span className="block">Offense</span></span>
+          <span className="min-w-0 break-words text-ink-primary"><span className="block">{offTeam}</span>{" "}<span className="block">Offense</span></span>
           {offRating.offenseRank !== null && offRating.offenseRank !== undefined && (
             <RankChip rank={offRating.offenseRank} title="Model Offense Rank" className="shrink-0 text-[11px]" />
           )}
@@ -71,7 +71,7 @@ export function TaleOfTheTape({
           {defRating.defenseRank !== null && defRating.defenseRank !== undefined && (
             <RankChip rank={defRating.defenseRank} title="Model Defense Rank" className="shrink-0 text-[11px]" />
           )}
-          <span className="min-w-0 break-words text-ink-primary"><span className="block">{defTeam}</span><span className="block">Defense</span></span>
+          <span className="min-w-0 break-words text-ink-primary"><span className="block">{defTeam}</span>{" "}<span className="block">Defense</span></span>
           <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: defColor }} />
         </div>
       </div>
