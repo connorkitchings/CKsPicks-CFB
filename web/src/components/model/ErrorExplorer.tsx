@@ -2,10 +2,12 @@
 
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import clsx from "clsx";
+import { useSearchParams } from "next/navigation";
 import {
   closerSide,
   lineAbsError,
   modelAbsError,
+  parseTarget,
   scatterDomain,
   sortPairedErrors,
   type CloserSide,
@@ -242,18 +244,16 @@ function ErrorTable({
 /** Model-versus-line absolute error for one target, with a table of the same games. */
 export function ErrorExplorer({
   pairs,
-  initialTarget,
 }: {
   pairs: Record<MarketTarget, PairedError[]>;
-  initialTarget: MarketTarget;
+  initialTarget?: MarketTarget;
 }) {
-  const [target, setTarget] = useState<MarketTarget>(initialTarget);
+  const target = parseTarget(useSearchParams().get("target"));
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const rows = pairs[target];
   const selected = rows.find((pair) => pair.gameId === selectedId) ?? null;
 
   function changeTarget(next: MarketTarget) {
-    setTarget(next);
     setSelectedId(null);
     replaceSearchParams("/model", (params) => params.set("target", next));
   }

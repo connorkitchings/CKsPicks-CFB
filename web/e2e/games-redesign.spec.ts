@@ -44,7 +44,7 @@ test("card, list and market-comparison views show spread signs, totals and missi
   await expect(marketRegion).toContainText("Spread is home margin in points (positive favors the home team; negative favors the away team); Total is combined points scored by both teams.");
   await expect(marketRegion).toContainText("10 of 10 filtered games have a comparable spread; 9 of 10 have a comparable total.");
   await expect(marketRegion).toContainText("Western Kentucky at Appalachian State");
-  await expect(marketRegion).toContainText("Market +2.5 · Model +7.6");
+  await expect(marketRegion).toContainText("Market Appalachian State -2.5 · Model Appalachian State -7.6");
   await expect(marketRegion).toContainText("DraftKings");
   await expect(marketRegion).not.toContainText("Line captured");
   await marketRegion.getByText(/Why 1 line is unavailable/).click();
@@ -107,9 +107,9 @@ for (const width of [320, 390, 820, 1280]) {
       await page.addInitScript((value) => localStorage.setItem("theme", value), theme);
       await gotoHydrated(page, "/?view=market");
       const market = page.getByRole("region", { name: "Model vs market" });
-      await expect(market).toContainText("Market +2.5 · Model +7.6");
+      await expect(market).toContainText("Market Appalachian State -2.5 · Model Appalachian State -7.6");
       await expect(market).toContainText("Missing total line or model projection");
-      await expect(market.getByRole("img").first()).toHaveAttribute("aria-label", /home margin points/);
+      await expect(market.getByRole("img").first()).toHaveAttribute("aria-label", /spread/);
       await expect(market.getByRole("img").nth(1)).toHaveAttribute("aria-label", /total points/);
       const summary = market.locator("summary");
       expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);

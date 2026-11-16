@@ -754,3 +754,30 @@ test("marketComparisonPoints negates home spread lines into home margins and lea
   const pickem = marketComparisonPoints([{ ...game, homeTeamSpreadLine: 0 } as typeof game], "spread").points[0];
   assert.equal(Object.is(pickem.market, 0), true, "a pick'em line is +0, not -0");
 });
+
+test("marketComparisonPoints handles sign, pick'em, one-sided and non-finite inputs", () => {
+  const base = {
+    gameId: 301, season: 2026, week: 9, startDate: new Date("2026-10-31T20:00:00Z"),
+    homeTeam: "Home U", awayTeam: "Away U",
+    homeTeamSpreadLine: 4.5, predictedSpread: -2.0, totalLine: 48, predictedTotal: 50,
+    edgeSpread: null, edgeTotal: null, spreadLean: null, totalLean: null,
+  } as unknown as Parameters<typeof marketComparisonPoints>[0][number];
+  const dog = marketComparisonPoints([base], "spread").points[0];
+  assert.equal(dog.market, -4.5, "home underdog line +4.5 is a -4.5 home margin");
+  assert.equal(dog.model, -2.0);
+  assert.equal(dog.edge, 2.5, "edge falls back to the absolute gap when none is stored");
+
+  const pk = marketComparisonPoints([{ ...base, homeTeamSpreadLine: 0, predictedSpread: 0 } as typeof base], "spread").points[0];
+  assert.equal(Object.is(pk.market, 0) && Object.is(pk.model, 0), true);
+
+  const noModel = marketComparisonPoints([{ ...base, predictedSpread: null } as typeof base], "spread");
+  assert.equal(noModel.points.length, 0);
+  assert.equal(noModel.unavailable.length, 1);
+  const noLine = marketComparisonPoints([{ ...base, totalLine: null } as typeof base], "total");
+  assert.equal(noLine.points.length, 0);
+  assert.equal(noLine.unavailable.length, 1);
+
+  const nan = marketComparisonPoints([{ ...base, homeTeamSpreadLine: NaN } as typeof base], "spread");
+  assert.equal(nan.points.length, 0, "NaN never reaches a chart coordinate");
+  assert.equal(nan.unavailable.length, 1);
+});

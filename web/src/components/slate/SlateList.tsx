@@ -14,7 +14,7 @@ import {
   type RosterRow,
 } from "@/lib/conferences";
 import type { Game } from "@/lib/queries";
-import { slateSorts, sortSlate, weekPhase, gameState, parseSlateStatus, matchesSlateStatus, type SlateSort, type SlateStatusFilter } from "@/lib/slate";
+import { byKickoff, slateSorts, sortSlate, weekPhase, gameState, parseSlateStatus, matchesSlateStatus, type SlateSort, type SlateStatusFilter } from "@/lib/slate";
 import { SlateToolbar } from "./SlateToolbar";
 import { SlateGameList } from "./SlateGameList";
 import { dayLabel } from "./format";
@@ -69,7 +69,7 @@ export function SlateList({
     next.set(key, value);
     window.history[key === "q" ? "replaceState" : "pushState"](null, "", `${window.location.pathname}?${next}`);
   }
-  const awaiting = games.filter((game) => gameState(game, now) === "awaiting");
+  const awaiting = games.filter((game) => gameState(game, now) === "awaiting").sort(byKickoff);
   const conferenceMap = useMemo(() => buildConferenceMap(roster), [roster]);
   const conferences = useMemo(() => conferenceOptions(roster), [roster]);
   const conference = requestedConference === "all" || requestedConference === "p4" || conferences.includes(requestedConference) ? requestedConference : "all";

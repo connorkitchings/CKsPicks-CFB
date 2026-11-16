@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   biggestEdgesRecord,
+  byKickoff,
   defaultSlateStatus,
   matchesSlateStatus,
   parseSlateStatus,
@@ -609,4 +610,20 @@ test("TBD kickoff and DST boundaries use the Eastern calendar", () => {
   const tbd = game({ startDate: new Date("2026-11-01T04:00:00Z") });
   assert.equal(gameState(tbd, new Date("2026-11-02T04:59:59Z")), "upcoming");
   assert.equal(gameState(tbd, new Date("2026-11-02T05:00:00Z")), "awaiting");
+});
+
+test("byKickoff and sortGames place a time-TBD game after the timed games of its Eastern day", () => {
+  // 04:00Z on Oct 24 is midnight Eastern (EDT): the placeholder for an unannounced time.
+  const tbd = game({ gameId: 1, startDate: new Date("2026-10-24T04:00:00Z") });
+  const noon = game({ gameId: 2, startDate: new Date("2026-10-24T16:00:00Z") });
+  const night = game({ gameId: 3, startDate: new Date("2026-10-25T00:00:00Z") }); // 8 PM ET Oct 24
+  const nextDay = game({ gameId: 4, startDate: new Date("2026-10-25T16:00:00Z") });
+  assert.deepEqual(sortGames([nextDay, tbd, night, noon], "kickoff").map((g) => g.gameId), [2, 3, 1, 4]);
+  assert.ok(byKickoff(tbd, nextDay) < 0, "a TBD game still precedes the next day");
+});
+
+test("sortGames breaks equal-edge ties with TBD last in the day", () => {
+  const tbd = game({ gameId: 1, startDate: new Date("2026-10-24T04:00:00Z") });
+  const noon = game({ gameId: 2, startDate: new Date("2026-10-24T16:00:00Z") });
+  assert.deepEqual(sortGames([tbd, noon], "bestEdge").map((g) => g.gameId), [2, 1]);
 });

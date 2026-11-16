@@ -3,19 +3,26 @@
 import Link from "next/link";
 import { marketComparisonPoints, type MarketBoardMetric } from "@/lib/charts";
 import type { Game } from "@/lib/queries";
+import { homeSpreadText } from "@/lib/betting-format";
 import { bookName } from "@/lib/slate";
 
 type ComparisonPoint = ReturnType<typeof marketComparisonPoints>["points"][number];
 
-function domainFor(points: readonly ComparisonPoint[]) {
+/** Each metric gets its own padded domain; only the spread (a signed margin) must include 0. */
+function domainFor(points: readonly ComparisonPoint[], metric: MarketBoardMetric) {
   const values = points.flatMap((point) => [point.market, point.model]);
-  const min = Math.min(0, ...values) - 2;
-  const max = Math.max(1, ...values) + 2;
+  if (metric === "spread") values.push(0);
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const min = (Number.isFinite(low) ? low : 0) - 2;
+  const max = Number.isFinite(high) && high > low ? high + 2 : min + 4;
   return (value: number) => 8 + ((value - min) / (max - min)) * 84;
 }
 
-function formatNumber(metric: MarketBoardMetric, value: number) {
-  return `${metric === "spread" && value > 0 ? "+" : ""}${value.toFixed(1)}`;
+/** Home margin (positive favors home) as the home team's spread: "Ohio State -6.0" / "Ohio State PK". */
+function spreadText(homeTeam: string, margin: number) {
+  const homeSpread = Math.abs(margin) < 0.05 ? 0 : -margin;
+  return homeSpreadText(homeTeam, homeSpread);
 }
 
 function TargetCell({
@@ -37,9 +44,9 @@ function TargetCell({
     );
   }
   const book = bookName(point.source);
-  const marketText = formatNumber(metric, point.market);
-  const modelText = formatNumber(metric, point.model);
-  const diffText = Math.abs(point.model - point.market).toFixed(1);
+  const marketText = metric === "spread" ? spreadText(point.homeTeam, point.market) : point.market.toFixed(1);
+  const modelText = metric === "spread" ? spreadText(point.homeTeam, point.model) : point.model.toFixed(1);
+  const diffText = Math.abs(point.edge).toFixed(1);
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2 text-[11px] text-ink-muted">
@@ -50,7 +57,7 @@ function TargetCell({
         viewBox="0 0 100 16"
         className="h-6 w-full"
         role="img"
-        aria-label={`Market ${marketText}, model ${modelText} ${metric === "spread" ? "home margin" : "total"} points`}
+        aria-label={`Market ${marketText}, model ${modelText} ${metric === "spread" ? "spread" : "total points"}`}
       >
         <line x1="8" x2="92" y1="8" y2="8" className="stroke-line" strokeWidth="0.5" />
         <line x1={position(point.market)} x2={position(point.model)} y1="8" y2="8" className="stroke-ink-muted" strokeWidth="1" />
@@ -75,8 +82,8 @@ export function MarketComparison({ games, matchupEnabled }: {
   const totalData = marketComparisonPoints(predictionGames, "total");
   const spreadByGame = new Map(spreadData.points.map((point) => [point.gameId, point]));
   const totalByGame = new Map(totalData.points.map((point) => [point.gameId, point]));
-  const spreadPos = domainFor(spreadData.points);
-  const totalPos = domainFor(totalData.points);
+  const spreadPos = domainFor(spreadData.points, "spread");
+  const totalPos = domainFor(totalData.points, "total");
   const rows = predictionGames.filter((game) => spreadByGame.has(game.gameId) || totalByGame.has(game.gameId));
   const unavailable = [...spreadData.unavailable, ...totalData.unavailable];
 

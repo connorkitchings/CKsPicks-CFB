@@ -62,7 +62,7 @@ test.describe("model page is accuracy-only", () => {
     const accuracy = page.getByRole("region", { name: "Forecast accuracy", exact: true }).filter({ visible: true });
     await expect(accuracy.getByText("Spread average miss", { exact: true })).toBeVisible();
     await expect(accuracy.getByText(/Average miss, every game with a final score \(9 games\)/)).toBeVisible();
-    await expect(accuracy.getByText("Total 95% interval", { exact: true })).toBeVisible();
+    await expect(accuracy.getByText("Total finals inside the model's 95% band", { exact: true })).toBeVisible();
     await expect(accuracy.getByText("4.5 pts", { exact: true })).toBeVisible();
 
     for (const banned of [/\bROI\b/, /profit/i, /\bunits?\b/i, /net return/i, /closing line/i, /-110/, /\d\.\d+u\b/]) {
@@ -167,5 +167,18 @@ test.describe("inline links on phones", () => {
     const box = (await page.getByRole("link", { name: "Read the methodology" }).boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(44);
     expect(box.width).toBeGreaterThanOrEqual(44);
+  });
+});
+
+test.describe("model target follows the URL", () => {
+  test("choosing Totals then the Record tab returns to Spread", async ({ page }) => {
+    await gotoHydrated(page, "/model");
+    const explorer = page.getByTestId("error-explorer");
+    await explorer.getByTestId("error-target-total").click();
+    await expect(page).toHaveURL(/target=total/);
+    await expect(explorer.getByTestId("error-target-total")).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("navigation", { name: "Model sections" }).getByRole("link", { name: "Record" }).click();
+    await expect(page).not.toHaveURL(/target=/);
+    await expect(explorer.getByTestId("error-target-spread")).toHaveAttribute("aria-pressed", "true");
   });
 });

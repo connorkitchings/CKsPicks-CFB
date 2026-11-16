@@ -311,6 +311,12 @@ export function underdogRecord(weeks: ReadonlyArray<ReadonlyArray<Game | Underdo
   return out;
 }
 
+/** Kickoff order with unannounced times (midnight placeholders) last within their Eastern day. */
+export function byKickoff(a: Pick<Game, "startDate">, b: Pick<Game, "startDate">): number {
+  const key = (d: Date) => (isTimeTbd(d) ? nextEtDayStart(d).getTime() - 1 : d.getTime());
+  return key(a.startDate) - key(b.startDate);
+}
+
 export type SortKey = "kickoff" | "bestEdge" | "spreadEdge" | "totalEdge";
 
 function edgeOf(game: Game, kind: LeanKind): number | null {
@@ -320,7 +326,6 @@ function edgeOf(game: Game, kind: LeanKind): number | null {
 /** Biggest edge first; games with no lean sink to the bottom in kickoff order. */
 export function sortGames(games: Game[], sort: SortKey): Game[] {
   const rows = [...games];
-  const byKickoff = (a: Game, b: Game) => a.startDate.getTime() - b.startDate.getTime();
   if (sort === "kickoff") return rows.sort(byKickoff);
   const score = (g: Game): number | null => {
     if (sort === "spreadEdge") return edgeOf(g, "spread");
@@ -506,7 +511,6 @@ function coverScore(game: Game, pick: "max" | "min"): number | null {
 
 /** Result-oriented sort; games with nothing to rank sink in kickoff order. */
 export function sortResults(games: Game[], sort: ResultSort): Game[] {
-  const byKickoff = (a: Game, b: Game) => a.startDate.getTime() - b.startDate.getTime();
   if (sort === "kickoff") return [...games].sort(byKickoff);
   if (sort === "bestEdge") return sortGames(games, "bestEdge");
   const score = (g: Game) => coverScore(g, sort === "bestResult" ? "max" : "min");
