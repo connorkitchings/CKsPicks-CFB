@@ -148,7 +148,7 @@ export function ModelRecord({
               {weekOverall && weekOverall.evaluated > 0 && (
                 <p data-testid="week-accuracy" className="mt-1.5 hidden text-xs text-ink-muted sm:block">
                   Average miss: spread {points(weekOverall.marginMae)} pts · total {points(weekOverall.totalMae)} pts
-                  {" · "}95% interval coverage: spread {pct(weekOverall.marginCoverage95)} · total {pct(weekOverall.totalCoverage95)}
+                  {" · "}Finals inside the model&apos;s 95% band: spread {pct(weekOverall.marginCoverage95)} · total {pct(weekOverall.totalCoverage95)}
                 </p>
               )}
             </div>

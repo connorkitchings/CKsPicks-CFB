@@ -48,6 +48,10 @@ export function TeamsHub({ current, history, timeline, roster, season }: Props) 
   const compared = resolveSelection(params.get("compare"));
   const team = selected || (view === "trends" && !params.has("team") ? current.ratings[0]?.team ?? "" : "");
   const compare = compared === team ? "" : compared;
+  const unrecognized = ([["team", selected], ["compare", compared]] as const)
+    .map(([key, found]) => ({ key, value: (params.get(key) ?? "").trim(), found }))
+    .filter(({ value, found }) => value && !found)
+    .map(({ value }) => value.slice(0, 60));
   const conferenceMap = useMemo(() => buildConferenceMap(roster), [roster]);
   const ranks = useMemo(() => ({ overall: nationalRanks(current.ratings, "overall"), offense: nationalRanks(current.ratings, "offense"), defense: nationalRanks(current.ratings, "defense") }), [current]);
   const sosRanks = useMemo(() => rankSosByTeam(current.ratings), [current]);
@@ -85,6 +89,7 @@ export function TeamsHub({ current, history, timeline, roster, season }: Props) 
     <div className="flex flex-col gap-4 border-b border-line pb-5 lg:flex-row lg:items-end lg:justify-between"><nav aria-label="Team analysis views" className="flex flex-wrap gap-1">{VIEWS.map((item) => <button key={item.value} type="button" aria-current={item.value === view ? "page" : undefined} onClick={() => change({ view: item.value }, true)} className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold ${item.value === view ? "bg-ink text-surface-card" : "text-ink-muted hover:bg-surface-inset"}`}>{item.label}</button>)}</nav>{periodControl}</div>
     <p className="text-sm text-ink-muted">{current.period.label} · {current.ratings.length} teams · National ranks stay fixed when you filter.</p>
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end"><SearchField id="rating-search" label="Search teams" value={query} onChange={(value) => change({ q: value || null })} placeholder="Search teams…" clearLabel="Clear search" className="min-w-0 flex-1" /><label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-muted">Conference<select className={CONTROL} data-testid="conference-filter" aria-label="Filter by conference" value={conference} onChange={(e) => change({ conf: e.target.value })}><option value="all">All FBS</option><option value="p4">Power Four + Notre Dame</option>{confOptions.map((c) => <option key={c}>{c}</option>)}</select></label></div>
+    {unrecognized.length > 0 && <Notice tone="warn">{unrecognized.map((value) => `“${value}”`).join(" and ")} {unrecognized.length === 1 ? "is not a team in this period’s ratings" : "are not teams in this period’s ratings"}, so {unrecognized.length === 1 ? "it was" : "they were"} ignored.</Notice>}
     {filteredSelections.length > 0 && <p role="status" className="text-sm text-ink-muted">Selected outside these filters: {filteredSelections.join(", ")}. Your comparison is preserved.</p>}
     {current.ratings.length === 0 ? <Notice tone="empty">No certified ratings are available for this period.</Notice> : <>
       {view === "rankings" && <>

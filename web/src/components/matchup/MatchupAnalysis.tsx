@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { MatchupData } from "@/lib/matchup";
 import { etDateTime } from "@/lib/time-et";
+import { statsWindowLabel } from "@/lib/stats-window";
 import { pppText, priorPercent, type UnitRatingBreakdown } from "@/lib/rating-breakdown";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ShareButton } from "./ShareButton";
@@ -46,7 +47,7 @@ export function MatchupAnalysis({ matchup }: { matchup: MatchupData }) {
       <section className="space-y-4" aria-label="Team stats">
         <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">When each team has the ball</h2><SegmentedControl label="Offense comparison" value={side} onChange={setSide} options={[{value:"away",label:matchup.awayTeam},{value:"home",label:matchup.homeTeam}]} /></div>
         {matchup.homeFinalPoints !== null && matchup.awayFinalPoints !== null && <p className="text-sm text-ink-muted">The forecast and supporting evidence below are frozen pregame context, not an actual-game statistical breakdown.</p>}
-        <p data-testid="matchup-notes" className="text-xs leading-relaxed text-ink-muted">Statistics through Week {stats.asOfWeek - 1}. FBS opponents only; regulation play, garbage time excluded; raw, not opponent-adjusted. Defense values are allowed. {stats.cohortSize !== null && `Ranks among ${stats.cohortSize} teams; T = tied.`}</p>
+        <p data-testid="matchup-notes" className="text-xs leading-relaxed text-ink-muted">{statsWindowLabel(stats.asOfWeek)}. FBS opponents only; regulation play, garbage time excluded; raw, not opponent-adjusted. Defense values are allowed. {stats.cohortSize !== null && `Ranks among ${stats.cohortSize} teams; T = tied.`}</p>
         <TaleOfTheTape selectedSide={side} awayTeam={matchup.awayTeam} homeTeam={matchup.homeTeam} awayOffVsHomeDef={stats.awayOffVsHomeDef} homeOffVsAwayDef={stats.homeOffVsAwayDef} awayRating={matchup.awayRating} homeRating={matchup.homeRating} />
       </section>
       <section aria-label="Rating evidence" className="space-y-4"><h2 className="text-xl font-semibold">Rating evidence</h2><p className="text-sm text-ink-muted">The same verified possessions before and after opponent adjustment. The rating blends adjusted performance with its preseason estimate.</p><div className="grid gap-5 sm:grid-cols-2"><CompactEvidence team={offTeam} unit={side === "away" ? matchup.ratingBreakdown.awayOffense : matchup.ratingBreakdown.homeOffense}/><CompactEvidence team={defTeam} unit={side === "away" ? matchup.ratingBreakdown.homeDefense : matchup.ratingBreakdown.awayDefense}/></div></section>

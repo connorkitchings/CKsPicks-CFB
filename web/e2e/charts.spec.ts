@@ -337,7 +337,7 @@ test.describe("team charts", () => {
       expect(response?.status()).toBe(200);
       await expect(page.getByTestId("charts-notice")).toContainText("Week 3 is not available for this chart.");
       await page.goto(`/stats?chart=${chart}&fixture=slate`);
-      await expect(page.getByTestId("charts-notice")).toContainText("This chart starts after Week 2 is complete.");
+      await expect(page.getByTestId("charts-notice")).toContainText("has no published week to show yet.");
       await expect(page.getByTestId("chart-picker")).toBeVisible();
     }
   });

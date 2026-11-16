@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { marketComparisonPoints, type MarketBoardMetric } from "@/lib/charts";
+import { groupUnavailableByGame, marketComparisonPoints, type MarketBoardMetric } from "@/lib/charts";
 import type { Game } from "@/lib/queries";
 import { homeSpreadText } from "@/lib/betting-format";
-import { bookName } from "@/lib/slate";
+import { bookName, gameState } from "@/lib/slate";
+import { Disclosure } from "@/components/ui/Disclosure";
+import { Notice } from "@/components/ui/Notice";
+import { AwaitingTag } from "./AwaitingTag";
+import { dayShort, kickoffTime } from "./format";
 
 type ComparisonPoint = ReturnType<typeof marketComparisonPoints>["points"][number];
 
@@ -29,17 +33,20 @@ function TargetCell({
   metric,
   point,
   position,
+  missing,
 }: {
   metric: MarketBoardMetric;
   point: ComparisonPoint | undefined;
   position: (value: number) => number;
+  /** Why there is no point, e.g. "No total line". */
+  missing?: string;
 }) {
   const label = metric === "spread" ? "Spread" : "Total";
   if (!point) {
     return (
       <div className="space-y-1">
         <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">{label}</div>
-        <p className="text-xs text-ink-muted">Missing {metric} line or model projection</p>
+        <p className="text-xs text-ink-muted">{missing ?? "Comparison unavailable"}</p>
       </div>
     );
   }
@@ -72,32 +79,49 @@ function TargetCell({
   );
 }
 
+const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 /** The same market-board data foundation, showing spread and total side by side. */
-export function MarketComparison({ games, matchupEnabled }: {
+export function MarketComparison({ games, matchupEnabled, now, onReset }: {
   games: Game[];
   matchupEnabled: boolean;
+  /** The clock for awaiting-result tags. */
+  now: Date;
+  /** Clears the filters that emptied the view. */
+  onReset: () => void;
 }) {
   const predictionGames = games.filter((game) => game.publicationMode === "predictions");
   const spreadData = marketComparisonPoints(predictionGames, "spread");
   const totalData = marketComparisonPoints(predictionGames, "total");
   const spreadByGame = new Map(spreadData.points.map((point) => [point.gameId, point]));
   const totalByGame = new Map(totalData.points.map((point) => [point.gameId, point]));
+  const spreadMissing = new Map(spreadData.unavailable.map((item) => [item.gameId, capitalized(item.reason)]));
+  const totalMissing = new Map(totalData.unavailable.map((item) => [item.gameId, capitalized(item.reason)]));
   const spreadPos = domainFor(spreadData.points, "spread");
   const totalPos = domainFor(totalData.points, "total");
   const rows = predictionGames.filter((game) => spreadByGame.has(game.gameId) || totalByGame.has(game.gameId));
-  const unavailable = [...spreadData.unavailable, ...totalData.unavailable];
+  const unavailable = groupUnavailableByGame(spreadData.unavailable, totalData.unavailable);
+  const total = predictionGames.length;
 
   return (
     <section className="space-y-4" aria-label="Model vs market">
       <h2 className="text-xl font-semibold text-ink">Model vs market</h2>
-      <p className="max-w-3xl text-sm text-ink-muted">
+      <p className="max-w-3xl text-sm text-ink-muted max-sm:hidden">
         Spread is home margin in points (positive favors the home team; negative favors the away team); Total is combined points scored by both teams. ○ Selected market line · ● Model forecast. Differences describe disagreement, not confidence.
       </p>
+      <Disclosure title="How to read this" className="sm:hidden">
+        <p>Spread is home margin in points (positive favors the home team; negative favors the away team); Total is combined points scored by both teams. ○ Selected market line · ● Model forecast. Differences describe disagreement, not confidence.</p>
+      </Disclosure>
       <p className="text-xs text-ink-muted">
-        {spreadData.points.length} of {games.length} filtered games have a comparable spread; {totalData.points.length} of {games.length} have a comparable total.
+        {spreadData.points.length} of {total} filtered games have a comparable spread; {totalData.points.length} of {total} have a comparable total.
       </p>
       {rows.length === 0 ? (
-        <p role="status" className="py-8 text-sm text-ink-muted">No comparable forecasts and lines for these filters.</p>
+        <Notice
+          tone="empty"
+          action={<button type="button" onClick={onReset} className="min-h-11 rounded-lg px-3 font-medium text-accent-ink underline focus-visible:outline-2 focus-visible:outline-accent">Show all games</button>}
+        >
+          No comparable forecasts and lines for these filters.
+        </Notice>
       ) : (
         <div className="divide-y divide-line">
           {rows.map((game) => (
@@ -105,25 +129,32 @@ export function MarketComparison({ games, matchupEnabled }: {
               key={game.gameId}
               className="grid items-center gap-4 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)]"
             >
-              {matchupEnabled ? (
-                <Link href={`/matchup/${game.gameId}`} className="flex min-h-11 items-center font-medium text-accent-ink underline-offset-4 hover:underline">
-                  {game.awayTeam} at {game.homeTeam}
-                </Link>
-              ) : (
-                <span>{game.awayTeam} at {game.homeTeam}</span>
-              )}
-              <TargetCell metric="spread" point={spreadByGame.get(game.gameId)} position={spreadPos} />
-              <TargetCell metric="total" point={totalByGame.get(game.gameId)} position={totalPos} />
+              <div className="min-w-0">
+                {matchupEnabled ? (
+                  <Link href={`/matchup/${game.gameId}`} className="flex min-h-11 items-center font-medium text-accent-ink underline-offset-4 hover:underline">
+                    {game.awayTeam} at {game.homeTeam}
+                  </Link>
+                ) : (
+                  <span>{game.awayTeam} at {game.homeTeam}</span>
+                )}
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+                  <span>{dayShort(game.startDate)} · {kickoffTime(game.startDate)}</span>
+                  {gameState(game, now) === "final" && <span className="font-semibold">Final</span>}
+                  <AwaitingTag game={game} now={now} />
+                </p>
+              </div>
+              <TargetCell metric="spread" point={spreadByGame.get(game.gameId)} position={spreadPos} missing={spreadMissing.get(game.gameId)} />
+              <TargetCell metric="total" point={totalByGame.get(game.gameId)} position={totalPos} missing={totalMissing.get(game.gameId)} />
             </article>
           ))}
         </div>
       )}
       {unavailable.length > 0 && (
-        <details className="text-sm text-ink-muted">
-          <summary className="min-h-11 cursor-pointer py-3">Why {unavailable.length} {unavailable.length === 1 ? "line is" : "lines are"} unavailable</summary>
+        <details data-testid="market-unavailable" className="text-sm text-ink-muted">
+          <summary className="min-h-11 cursor-pointer py-3">Why {unavailable.length} {unavailable.length === 1 ? "game is" : "games are"} missing a comparison</summary>
           <ul>
-            {unavailable.map((game, i) => (
-              <li key={i}>{game.awayTeam} at {game.homeTeam}: {game.reason}</li>
+            {unavailable.map((game) => (
+              <li key={game.gameId}>{game.awayTeam} at {game.homeTeam}: {game.reasons.join("; ")}</li>
             ))}
           </ul>
         </details>

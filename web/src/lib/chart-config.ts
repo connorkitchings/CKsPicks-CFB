@@ -219,6 +219,26 @@ export function parseChartKind(raw: RawParam): ChartKind {
   return typeof raw === "string" && readyKinds().includes(raw as ChartKind) ? (raw as ChartKind) : DEFAULT_CHART;
 }
 
+/**
+ * One line explaining why `?chart=` did not select the chart it names: an unknown value or a chart that is not
+ * shown yet. Null when the param is absent or honored.
+ */
+export function unhonoredChartNotice(raw: RawParam): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value || (readyKinds() as string[]).includes(value)) return null;
+  const fallback = CHART_REGISTRY[DEFAULT_CHART].title;
+  return Object.hasOwn(CHART_REGISTRY, value)
+    ? `The ${CHART_REGISTRY[value as ChartKind].title} chart is not available yet, so ${fallback} is shown instead.`
+    : `“${value.slice(0, 40)}” is not a chart, so ${fallback} is shown instead.`;
+}
+
+/** What to say when `kind` has no published week to chart. */
+export function chartEmptyMessage(kind: ChartKind): string {
+  if (kind === "net-success") return "No completed games are published yet.";
+  if (kind === "market-board") return "No week with both market lines and model forecasts is published yet.";
+  return `${CHART_REGISTRY[kind].title} has no published week to show yet.`;
+}
+
 export function parseSide(raw: RawParam): Side {
   return raw === "defense" ? "defense" : "offense";
 }

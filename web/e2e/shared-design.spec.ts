@@ -11,7 +11,8 @@ test("global team search supports canonical aliases, keyboard navigation, empty 
   await expect(page.getByRole("listbox", { name: "Matching teams" })).toHaveCount(0);
   await expect(finder).toBeFocused();
   await finder.fill("not-a-real-college");
-  await expect(page.getByRole("status").filter({ hasText: "No matching team." })).toBeVisible();
+  await expect(page.locator("[aria-live=polite]").filter({ hasText: "No matching team" })).toHaveCount(1);
+  await expect(page.getByRole("listbox", { name: "Matching teams" })).toHaveCount(0);
   await finder.press("Enter");
   await expect(page).toHaveURL(/\/model$/);
   await finder.fill("Michigan");

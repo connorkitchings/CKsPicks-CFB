@@ -969,9 +969,50 @@ export type MarketBoardPoint = {
   y: number;
 };
 
+/** Which side of a market comparison is absent: the book's line, the model projection, or both. */
+export type MarketMissing = "line" | "projection" | "both";
+
+export type MarketUnavailable = {
+  gameId: number;
+  homeTeam: string;
+  awayTeam: string;
+  startDate: Date;
+  missing: MarketMissing;
+  reason: string;
+};
+
+function marketUnavailable(
+  g: SlateMarketGameRow,
+  metric: MarketBoardMetric,
+  market: number | null,
+  model: number | null,
+): MarketUnavailable {
+  const lineMissing = market === null || !Number.isFinite(market);
+  const projectionMissing = model === null || !Number.isFinite(model);
+  const missing: MarketMissing = lineMissing && projectionMissing ? "both" : lineMissing ? "line" : "projection";
+  const reason =
+    missing === "both" ? `no ${metric} line or model projection`
+    : missing === "line" ? `no ${metric} line`
+    : `no ${metric} model projection`;
+  return { gameId: g.gameId, homeTeam: g.homeTeam, awayTeam: g.awayTeam, startDate: g.startDate, missing, reason };
+}
+
+/** Unavailable comparisons regrouped one entry per game (first-seen order), with each side's reason. */
+export function groupUnavailableByGame(
+  ...lists: readonly (readonly MarketUnavailable[])[]
+): { gameId: number; homeTeam: string; awayTeam: string; reasons: string[] }[] {
+  const byGame = new Map<number, { gameId: number; homeTeam: string; awayTeam: string; reasons: string[] }>();
+  for (const item of lists.flat()) {
+    const entry = byGame.get(item.gameId) ?? { gameId: item.gameId, homeTeam: item.homeTeam, awayTeam: item.awayTeam, reasons: [] };
+    entry.reasons.push(item.reason);
+    byGame.set(item.gameId, entry);
+  }
+  return [...byGame.values()];
+}
+
 export type MarketBoardData = {
   points: MarketBoardPoint[];
-  unavailable: { homeTeam: string; awayTeam: string; reason: string }[];
+  unavailable: MarketUnavailable[];
   metric: MarketBoardMetric;
 };
 
@@ -1101,14 +1142,14 @@ export function marketBoardPoints(
   metric: MarketBoardMetric,
 ): MarketBoardData {
   const points: MarketBoardPoint[] = [];
-  const unavailable: { homeTeam: string; awayTeam: string; reason: string }[] = [];
+  const unavailable: MarketUnavailable[] = [];
 
   for (const g of games) {
     if (metric === "spread") {
       const market = g.homeTeamSpreadLine;
       const model = homeSpreadFromMargin(g.predictedSpread);
       if (market === null || model === null || !Number.isFinite(market) || !Number.isFinite(model)) {
-        unavailable.push({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, reason: "Missing spread line or model projection" });
+        unavailable.push(marketUnavailable(g, metric, market, model));
         continue;
       }
       const edge = g.edgeSpread ?? Math.abs(model - market);
@@ -1131,7 +1172,7 @@ export function marketBoardPoints(
       const market = g.totalLine;
       const model = g.predictedTotal;
       if (market === null || model === null || !Number.isFinite(market) || !Number.isFinite(model)) {
-        unavailable.push({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, reason: "Missing total line or model projection" });
+        unavailable.push(marketUnavailable(g, metric, market, model));
         continue;
       }
       const edge = g.edgeTotal ?? Math.abs(model - market);

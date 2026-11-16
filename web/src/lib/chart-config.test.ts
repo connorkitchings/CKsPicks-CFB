@@ -26,7 +26,24 @@ import {
   readyKinds,
   RESUME_QUALITY_CONFIG,
   withTeamParam,
+  unhonoredChartNotice,
+  chartEmptyMessage,
 } from "./chart-config.ts";
+
+test("unhonoredChartNotice explains unknown and not-ready charts, and stays quiet otherwise", () => {
+  assert.equal(unhonoredChartNotice(undefined), null);
+  assert.equal(unhonoredChartNotice(""), null);
+  assert.equal(unhonoredChartNotice("efficiency"), null);
+  assert.match(unhonoredChartNotice("bogus")!, /“bogus” is not a chart/);
+  assert.match(unhonoredChartNotice("rating-trajectory")!, /V5 rating trajectory chart is not available yet/);
+  assert.equal(unhonoredChartNotice("constructor")?.includes("not a chart"), true);
+});
+
+test("chartEmptyMessage is specific to the chart", () => {
+  assert.match(chartEmptyMessage("net-success"), /completed games/);
+  assert.match(chartEmptyMessage("market-board"), /market lines/);
+  assert.match(chartEmptyMessage("efficiency"), /^Efficiency vs explosiveness/);
+});
 import type { AdjustedRow, ChartKind } from "./charts.ts";
 
 const roster = [

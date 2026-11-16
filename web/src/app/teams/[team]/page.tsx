@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
 import { publicationScope, resolveSeasonParam } from "@/lib/publication";
-import { resolveTeam } from "@/lib/team-routes";
+import { canonicalTeamSegment, resolveTeam } from "@/lib/team-routes";
 import { getTeamGames, getTeamHistory, getWeeklyRatings, getRatingAnalysisHistory, type Rating } from "@/lib/v5";
 import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
@@ -61,8 +61,11 @@ async function loadUnitRows(season: number, team: string, week: number): Promise
 }
 
 export default async function TeamPage({ params, searchParams }: { params: Promise<{ team: string }>; searchParams: SlateSearchParams }) {
-  const resolved = resolveTeam((await params).team);
+  const segment = (await params).team;
+  const resolved = resolveTeam(segment);
   if (!resolved) notFound();
+  const canonical = canonicalTeamSegment(segment);
+  if (canonical) redirect(`/teams/${canonical}`);
   const { gameName: team, ratingName } = resolved;
   // `?now=` and `?season=` are read only in UI-test mode so production keeps the page statically revalidated.
   const query = isUiTestMode() ? await searchParams : undefined;

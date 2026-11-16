@@ -69,6 +69,11 @@ export function SlateList({
     next.set(key, value);
     window.history[key === "q" ? "replaceState" : "pushState"](null, "", `${window.location.pathname}?${next}`);
   }
+  function showAllGames() {
+    const next = new URLSearchParams(window.location.search);
+    next.set("status", "all"); next.delete("q"); next.delete("conference");
+    window.history.pushState(null, "", `${window.location.pathname}?${next}`);
+  }
   const awaiting = games.filter((game) => gameState(game, now) === "awaiting").sort(byKickoff);
   const conferenceMap = useMemo(() => buildConferenceMap(roster), [roster]);
   const conferences = useMemo(() => conferenceOptions(roster), [roster]);
@@ -140,8 +145,8 @@ export function SlateList({
       {extras && <details className="order-2 border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">Featured comparisons and weekly highlights</summary><div className="mt-3">{extras}</div></details>}
       <p role="status" className="sr-only">Showing {visible.length} of {games.length} games</p>
 
-      {marketView && predictionsVisible ? <div className="order-1"><MarketComparison games={visible} matchupEnabled={matchupEnabled} /></div> : visible.length === 0 ? (
-        <div className="order-1"><Notice tone="empty">No games match these filters. <button className="underline" onClick={() => { const next = new URLSearchParams(window.location.search); next.set("status", "all"); next.delete("q"); next.delete("conference"); window.history.pushState(null, "", `${window.location.pathname}?${next}`); }}>Show all games</button></Notice></div>
+      {marketView && predictionsVisible ? <div className="order-1"><MarketComparison games={visible} matchupEnabled={matchupEnabled} now={now} onReset={showAllGames} /></div> : visible.length === 0 ? (
+        <div className="order-1"><Notice tone="empty">No games match these filters. <button className="-my-3 inline-flex min-h-11 items-center underline pointer-fine:my-0 pointer-fine:inline pointer-fine:min-h-0" onClick={showAllGames}>Show all games</button></Notice></div>
       ) : groups ? (
         groups.map((group, index) => (
           <section key={group.day} aria-label={group.day} className={clsx("space-y-1 sm:space-y-3", "order-1", index > 0 && "mt-4 sm:mt-2")}>

@@ -38,6 +38,7 @@ import {
   resumeQualityScatterPoints,
   marketBoardPoints,
   marketComparisonPoints,
+  groupUnavailableByGame,
   type TeamSeasonStatRow,
   type TeamResumeChartRow,
   type SlateMarketGameRow,
@@ -773,11 +774,35 @@ test("marketComparisonPoints handles sign, pick'em, one-sided and non-finite inp
   const noModel = marketComparisonPoints([{ ...base, predictedSpread: null } as typeof base], "spread");
   assert.equal(noModel.points.length, 0);
   assert.equal(noModel.unavailable.length, 1);
+  assert.equal(noModel.unavailable[0].missing, "projection");
+  assert.equal(noModel.unavailable[0].reason, "no spread model projection");
   const noLine = marketComparisonPoints([{ ...base, totalLine: null } as typeof base], "total");
   assert.equal(noLine.points.length, 0);
   assert.equal(noLine.unavailable.length, 1);
+  assert.equal(noLine.unavailable[0].missing, "line");
+  assert.equal(noLine.unavailable[0].reason, "no total line");
+  const neither = marketComparisonPoints([{ ...base, totalLine: null, predictedTotal: null } as typeof base], "total");
+  assert.equal(neither.unavailable[0].missing, "both");
+  assert.equal(neither.unavailable[0].reason, "no total line or model projection");
 
   const nan = marketComparisonPoints([{ ...base, homeTeamSpreadLine: NaN } as typeof base], "spread");
   assert.equal(nan.points.length, 0, "NaN never reaches a chart coordinate");
   assert.equal(nan.unavailable.length, 1);
+});
+
+test("groupUnavailableByGame merges a game's spread and total gaps and names the missing side", () => {
+  const base = {
+    gameId: 401, season: 2026, week: 9, startDate: new Date("2026-10-31T20:00:00Z"),
+    homeTeam: "Home U", awayTeam: "Away U",
+    homeTeamSpreadLine: null, predictedSpread: 3, totalLine: 48, predictedTotal: null,
+    edgeSpread: null, edgeTotal: null, spreadLean: null, totalLean: null,
+  } as unknown as Parameters<typeof marketComparisonPoints>[0][number];
+  const other = { ...base, gameId: 402, homeTeam: "Other U", homeTeamSpreadLine: 1, predictedTotal: 50 } as typeof base;
+  const groups = groupUnavailableByGame(
+    marketComparisonPoints([base, other], "spread").unavailable,
+    marketComparisonPoints([base, other], "total").unavailable,
+  );
+  assert.deepEqual(groups, [
+    { gameId: 401, homeTeam: "Home U", awayTeam: "Away U", reasons: ["no spread line", "no total model projection"] },
+  ]);
 });

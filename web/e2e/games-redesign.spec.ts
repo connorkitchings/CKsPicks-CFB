@@ -47,8 +47,8 @@ test("card, list and market-comparison views show spread signs, totals and missi
   await expect(marketRegion).toContainText("Market Appalachian State -2.5 · Model Appalachian State -7.6");
   await expect(marketRegion).toContainText("DraftKings");
   await expect(marketRegion).not.toContainText("Line captured");
-  await marketRegion.getByText(/Why 1 line is unavailable/).click();
-  await expect(marketRegion).toContainText("LSU at Tennessee: Missing total line or model projection");
+  await marketRegion.getByText(/Why 1 game is missing a comparison/).click();
+  await expect(marketRegion).toContainText("LSU at Tennessee: no total line");
 });
 
 test("matchup deterministic facts, raw/adjusted evidence, completed context and lineage gates", async ({ page }) => {
@@ -108,10 +108,10 @@ for (const width of [320, 390, 820, 1280]) {
       await gotoHydrated(page, "/?view=market");
       const market = page.getByRole("region", { name: "Model vs market" });
       await expect(market).toContainText("Market Appalachian State -2.5 · Model Appalachian State -7.6");
-      await expect(market).toContainText("Missing total line or model projection");
+      await expect(market).toContainText("No total line");
       await expect(market.getByRole("img").first()).toHaveAttribute("aria-label", /spread/);
       await expect(market.getByRole("img").nth(1)).toHaveAttribute("aria-label", /total points/);
-      const summary = market.locator("summary");
+      const summary = market.getByTestId("market-unavailable").locator("summary");
       expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       await page.screenshot({ path: `/private/tmp/market-comparison-${width}-${theme}.png`, fullPage: true });
@@ -130,15 +130,16 @@ test("missing both comparisons stays explained and empty filters remain usable",
   const market = page.getByRole("region", { name: "Model vs market" });
   await expect(market).toContainText("9 of 10 filtered games have a comparable spread; 8 of 10 have a comparable total.");
   await expect(market.locator("article").filter({ hasText: "Western Kentucky at Appalachian State" })).toHaveCount(0);
-  const summary = market.locator("summary");
+  const summary = market.getByTestId("market-unavailable").locator("summary");
   await summary.focus();
   await page.keyboard.press("Enter");
-  await expect(market).toContainText("Western Kentucky at Appalachian State: Missing spread line or model projection");
-  await expect(market).toContainText("Western Kentucky at Appalachian State: Missing total line or model projection");
+  await expect(market).toContainText("Western Kentucky at Appalachian State: no spread line; no total line");
   await page.keyboard.press("Space");
-  await expect(market.locator("details")).not.toHaveAttribute("open", "");
+  await expect(market.getByTestId("market-unavailable")).not.toHaveAttribute("open", "");
   await page.getByPlaceholder("Filter by team…").fill("Western Kentucky");
   await expect(market).toContainText("0 of 1 filtered games have a comparable spread; 0 of 1 have a comparable total.");
-  await expect(market.getByRole("status")).toHaveText("No comparable forecasts and lines for these filters.");
+  await expect(market.getByRole("status")).toContainText("No comparable forecasts and lines for these filters.");
   await expect(market.locator("article")).toHaveCount(0);
+  await market.getByRole("button", { name: "Show all games" }).click();
+  await expect(market.locator("article").first()).toBeVisible();
 });

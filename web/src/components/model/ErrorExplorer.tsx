@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
 import {
@@ -16,6 +16,7 @@ import {
   type SortDirection,
 } from "@/lib/performance-errors";
 import type { MarketTarget } from "@/lib/performance-market";
+import { nearestScatterTeams } from "@/lib/scatter-selection";
 import { replaceSearchParams } from "@/lib/url-state";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -61,7 +62,7 @@ function Scatter({
   target: MarketTarget;
   pairs: PairedError[];
   selectedId: number | null;
-  onSelect: (gameId: number) => void;
+  onSelect: (gameId: number | null) => void;
 }) {
   const domain = scatterDomain(pairs);
   const x = (value: number) => PAD.left + (value / domain) * PLOT.w;
@@ -69,6 +70,8 @@ function Scatter({
   const ordered = useMemo(() => [...pairs].sort((a, b) => lineAbsError(a) - lineAbsError(b) || a.gameId - b.gameId), [pairs]);
   const [focusId, setFocusId] = useState<number | null>(null);
   const nodes = useRef(new Map<number, SVGGElement>());
+  const svgRef = useRef<SVGSVGElement>(null);
+  const selectedPair = ordered.find((p) => p.gameId === selectedId);
   const tabbable = ordered.find((p) => p.gameId === (focusId ?? selectedId))?.gameId ?? ordered[0]?.gameId;
 
   function move(index: number) {
@@ -87,6 +90,7 @@ function Scatter({
       End: () => move(ordered.length - 1),
       Enter: () => onSelect(pair.gameId),
       " ": () => onSelect(pair.gameId),
+      Escape: () => onSelect(null),
     };
     const action = keys[event.key];
     if (!action) return;
@@ -94,10 +98,25 @@ function Scatter({
     action();
   }
 
+  // Overlapping points are resolved by the nearest one to the pointer, not by whichever is on top.
+  function onPlotClick(event: MouseEvent<SVGSVGElement>) {
+    const matrix = svgRef.current?.getScreenCTM();
+    if (!matrix) return;
+    const [nearest] = nearestScatterTeams(ordered.map((pair) => {
+      const screen = new DOMPoint(x(lineAbsError(pair)), y(modelAbsError(pair))).matrixTransform(matrix);
+      return { team: String(pair.gameId), x: screen.x, y: screen.y };
+    }), event.clientX, event.clientY);
+    if (nearest === undefined) return;
+    setFocusId(Number(nearest));
+    onSelect(Number(nearest));
+  }
+
   const ticks = [0, domain / 2, domain];
   const unit = target === "spread" ? "margin" : "total";
   return (
     <svg
+      ref={svgRef}
+      onClick={onPlotClick}
       viewBox={`0 0 ${W} ${W}`}
       className="mx-auto block h-auto w-full max-w-[440px] text-[10px]"
       role="group"
@@ -131,7 +150,6 @@ function Scatter({
             aria-label={`${gameName(pair)}, Week ${pair.week}: model error ${modelAbsError(pair).toFixed(1)}, betting line error ${lineAbsError(pair).toFixed(1)}, ${CLOSER_LABEL[closerSide(pair)]} closer`}
             data-testid="error-point"
             className="group cursor-pointer outline-none"
-            onClick={() => { setFocusId(pair.gameId); onSelect(pair.gameId); }}
             onKeyDown={(event) => onKeyDown(event, index, pair)}
             onFocus={() => setFocusId(pair.gameId)}
           >
@@ -141,13 +159,19 @@ function Scatter({
           </g>
         );
       })}
+      {/* The selected game is drawn last so no neighbouring point hides it. */}
+      {selectedPair && <circle cx={x(lineAbsError(selectedPair))} cy={y(modelAbsError(selectedPair))} r={5} className="fill-accent stroke-ink" strokeWidth={1.5} pointerEvents="none" aria-hidden />}
     </svg>
   );
 }
 
 function Detail({ target, pair }: { target: MarketTarget; pair: PairedError | null }) {
   return (
-    <div aria-live="polite" data-testid="error-detail" className="min-w-0 rounded-lg bg-surface-inset p-3 text-sm">
+    <div data-testid="error-detail" className="min-w-0 rounded-lg bg-surface-inset p-3 text-sm">
+      {/* Only this one line is announced; the full detail list below is read on demand. */}
+      <p aria-live="polite" className="sr-only">
+        {pair === null ? "No game selected." : `${gameName(pair)}, Week ${pair.week}: ${CLOSER_LABEL[closerSide(pair)]} was closer.`}
+      </p>
       {pair === null ? (
         <p className="text-ink-muted">Select a point or a table row to see that game’s forecast, line and errors.</p>
       ) : (
@@ -211,7 +235,7 @@ function ErrorTable({
                 aria-sort={sort.key === column.key ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
                 className={clsx("whitespace-nowrap px-2 py-1 font-medium", column.numeric && "text-right")}
               >
-                <button type="button" onClick={() => toggle(column.key)} className="min-h-11 min-w-11 rounded px-1 font-medium hover:text-ink focus-visible:outline-2 focus-visible:outline-accent sm:min-h-8">
+                <button type="button" onClick={() => toggle(column.key)} className="min-h-11 min-w-11 rounded px-1 font-medium hover:text-ink focus-visible:outline-2 focus-visible:outline-accent pointer-fine:min-h-8">
                   {column.label}{sort.key === column.key && <span aria-hidden> {sort.direction === "asc" ? "▲" : "▼"}</span>}
                 </button>
               </th>
@@ -222,7 +246,7 @@ function ErrorTable({
           {rows.map((pair) => (
             <tr key={pair.gameId} className={clsx(pair.gameId === selectedId && "bg-surface-inset")}>
               <th scope="row" className="px-2 py-1 text-left font-normal">
-                <button type="button" aria-pressed={pair.gameId === selectedId} onClick={() => onSelect(pair.gameId)} className="min-h-11 whitespace-nowrap rounded px-1 text-left font-medium text-ink hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent sm:min-h-8">
+                <button type="button" aria-pressed={pair.gameId === selectedId} onClick={() => onSelect(pair.gameId)} className="min-h-11 whitespace-nowrap rounded px-1 text-left font-medium text-ink hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-accent pointer-fine:min-h-8">
                   {gameName(pair)}
                 </button>
               </th>
@@ -270,7 +294,10 @@ export function ErrorExplorer({
           <p className="text-sm text-ink-muted">No paired games for this target yet.</p>
         ) : (
           <div className="grid gap-4 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] md:items-start">
-            <Scatter key={target} target={target} pairs={rows} selectedId={selected?.gameId ?? null} onSelect={setSelectedId} />
+            <div className="min-w-0">
+              <Scatter key={target} target={target} pairs={rows} selectedId={selected?.gameId ?? null} onSelect={setSelectedId} />
+              <p className="mt-1 text-center text-xs text-ink-muted max-sm:hidden">Arrow keys move between points, Enter selects, Escape clears the selection.</p>
+            </div>
             <Detail target={target} pair={selected} />
           </div>
         )}
@@ -279,7 +306,7 @@ export function ErrorExplorer({
         </p>
         {rows.length > 0 && (
           <details data-testid="error-table-details" className="rounded-lg border border-line">
-            <summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-accent sm:min-h-9 sm:py-2">Table view of the same games</summary>
+            <summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-accent pointer-fine:min-h-9 pointer-fine:py-2">Table view of the same games</summary>
             <div className="max-h-96 overflow-y-auto">
               <ErrorTable key={target} target={target} pairs={rows} selectedId={selected?.gameId ?? null} onSelect={setSelectedId} />
             </div>

@@ -29,8 +29,10 @@ import {
 } from "@/lib/charts";
 import {
   CHART_REGISTRY,
+  chartEmptyMessage,
   chartHref,
   parseChartKind,
+  unhonoredChartNotice,
   parseEfficiencyMetric,
   parseGameLogMetric,
   parseMarketBoardMetric,
@@ -250,6 +252,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
   const season = publicationScope.season;
   // Only `ready` kinds parse, so a hidden chart's branch below (and its lazy query) never runs.
   const kind = parseChartKind(params.chart);
+  const unhonored = unhonoredChartNotice(params.chart);
   const side: Side = parseSide(params.side);
   const requested = params.week !== undefined && /^\d{1,2}$/.test(params.week) ? Number(params.week) : null;
 
@@ -301,7 +304,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
                     href={chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) })}
                     aria-current={target === kind ? "page" : undefined}
                     className={clsx(
-                      "inline-flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      "inline-flex min-h-11 items-center whitespace-nowrap pointer-fine:min-h-10 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                       target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
                     )}
                   >{CHART_REGISTRY[target].tabLabel}</ChartLink>
@@ -378,11 +381,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         ? notice("No completed games are published yet.")
         : view(charted[charted.length - 1], { kind, rows, adjusted, initialMetric: parseGameLogMetric(params.metric, explosiveness), explosiveness });
     } else if (week === null) {
-      body = notice(
-        kind === "net-success"
-          ? "No completed games are published yet."
-          : "This chart starts after Week 2 is complete.",
-      );
+      body = notice(chartEmptyMessage(kind));
     } else {
       const weekNav = (
         <WeekNav
@@ -497,6 +496,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
             {CHART_REGISTRY[kind].population}
           </PageHeading>
         </div>
+        {unhonored && <Notice tone="info" className="mt-3">{unhonored}</Notice>}
         {tabs}
         {body}
       </main>

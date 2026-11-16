@@ -155,7 +155,7 @@ export function SlateView({
               <RegularSeasonComplete performance={performance} games={games} />
             )}
             <p className="max-w-3xl text-sm leading-relaxed text-ink-muted max-sm:hidden">Explore the week’s games, compare football forecasts with market lines, and revisit published results.</p>
-            <p className="text-xs text-ink-muted">{activatedAt ? `Data release activated ${etDateTime(activatedAt)}. ` : ""}{updatedAt ? `Forecast updated ${etDateTime(updatedAt)}. ` : ""}Schedules, lines and results reflect published data; no live score feed.</p>
+            <p className="text-xs text-ink-muted">{activatedAt ? `Data release activated ${etDateTime(activatedAt)}. ` : ""}Schedules, lines and results reflect published data; no live score feed.</p>
 
             {displayOnlyNotice && (
               <p
