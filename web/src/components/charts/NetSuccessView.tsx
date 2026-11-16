@@ -44,6 +44,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
       description={CHART_REGISTRY["net-success"].description}
       credit={credit}
       exportSpec={{
+        contentKey: JSON.stringify([viewSubtitle, shown]),
         filename: exportFilename("net-success", season, week, "offense"),
         width: exportWidth,
         height: EXPORT_SIZE.height,

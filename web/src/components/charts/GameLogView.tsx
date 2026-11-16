@@ -102,6 +102,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       }
       highlightTeams={roster.filter((r) => matchesConference(filter, r.team, r.conference))}
       exportSpec={{
+        contentKey: JSON.stringify([viewSubtitle, metric, log]),
         filename: `${EXPORT_PREFIX}-game-log-${slug}-${season}.png`,
         width: EXPORT_SIZE.width,
         height: EXPORT_SIZE.height,

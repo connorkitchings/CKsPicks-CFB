@@ -99,7 +99,7 @@ export type ChartFrameProps = {
   /** The phone summary row, built with `chartSummary`. */
   summary: string;
   /** PNG export of `card`, offered while the chart has data. */
-  exportSpec: { filename: string; width: number; height: number; card: ReactNode };
+  exportSpec: { filename: string; width: number; height: number; contentKey: string; card: ReactNode };
   /** A compact line between the header hairline and the figure (highlight status, summaries). */
   status?: ReactNode;
   hasData: boolean;
@@ -174,7 +174,7 @@ export function ChartFrame({
             </button>
           )}
           {hasData && (
-            <ChartExportButton filename={exportSpec.filename} shareTitle={title} width={exportSpec.width} height={exportSpec.height} contentKey={[summary, subtitle, filter, highlight ?? ""].join("|")}>
+            <ChartExportButton filename={exportSpec.filename} shareTitle={title} width={exportSpec.width} height={exportSpec.height} contentKey={JSON.stringify([summary, subtitle, filter, highlight, shared.compare, exportSpec.contentKey])}>
               {exportSpec.card}
             </ChartExportButton>
           )}

@@ -140,6 +140,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       summary={chartSummary({ side: CHART_REGISTRY[kind].controls.side ? side : null, week: { n: week, through: CHART_REGISTRY[kind].controls.week === "through-week" }, filter, metric: config.metricLabel })}
       highlightTeams={roster}
       exportSpec={{
+        contentKey: JSON.stringify([kind, side, exportMetric, viewSubtitle, data]),
         filename: exportFilename(kind, season, week, side, exportMetric),
         width: EXPORT_SIZE.width,
         height: EXPORT_SIZE.height,

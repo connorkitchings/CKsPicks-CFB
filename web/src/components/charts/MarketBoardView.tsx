@@ -84,6 +84,7 @@ export function MarketBoardView({ shared, games, initialMetric }: MarketBoardVie
       })}
       highlightTeams={[]}
       exportSpec={{
+        contentKey: JSON.stringify([metric, selectedGameId, data]),
         filename: exportFilename("market-board", shared.season, shared.week, "offense", metric),
         width: EXPORT_SIZE.width,
         height: EXPORT_SIZE.height,
