@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // The dev server prompts for security upgrades only (the default, pinned explicitly).
+  experimental: { agentUpgrade: "security" },
   turbopack: {
     root: process.cwd(),
   },
