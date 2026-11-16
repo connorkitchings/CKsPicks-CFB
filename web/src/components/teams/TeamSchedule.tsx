@@ -72,7 +72,7 @@ function ScheduleTable({ entries, team, now, nextId }: { entries: readonly Sched
                 <td className={TD}>{etDate(game.startDate)}</td>
                 <td className={TD}>
                   <span className="flex items-center gap-2">
-                    <span className="w-4 text-xs text-ink-faint">{home ? "vs" : "at"}</span>
+                    <span className="w-4 text-xs text-ink-muted">{home ? "vs" : "at"}</span>
                     <TeamLogo name={opponent} px={22} />
                     {resolveTeam(opponent) ? <Link href={teamHref(opponent)} className={clsx("inline-flex min-h-11 items-center hover:underline", final || game.gameId === nextId ? "font-medium text-ink" : "text-ink-muted")}>{phoneTeamName(opponent)}</Link> : <span className={clsx("inline-flex min-h-11 items-center", final || game.gameId === nextId ? "font-medium text-ink" : "text-ink-muted")}>{phoneTeamName(opponent)}</span>}
                   </span>

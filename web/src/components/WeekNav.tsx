@@ -82,7 +82,7 @@ export function WeekNav({
           <span aria-hidden>&larr;</span>
         </Link>
       ) : (
-        <span aria-disabled="true" aria-label={`Previous ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
+        <span role="link" aria-disabled="true" aria-label={`Previous ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
           <span aria-hidden>&larr;</span>
         </span>
       )}
@@ -115,7 +115,7 @@ export function WeekNav({
           <span aria-hidden>&rarr;</span>
         </Link>
       ) : (
-        <span aria-disabled="true" aria-label={`Next ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
+        <span role="link" aria-disabled="true" aria-label={`Next ${noun.toLowerCase()}`} className={clsx(arrow, "pointer-events-none opacity-40")}>
           <span aria-hidden>&rarr;</span>
         </span>
       )}

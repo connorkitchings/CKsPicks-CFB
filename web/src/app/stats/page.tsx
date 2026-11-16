@@ -305,7 +305,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
                     aria-current={target === kind ? "page" : undefined}
                     className={clsx(
                       "inline-flex min-h-11 items-center whitespace-nowrap pointer-fine:min-h-10 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                      target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+                      target === kind ? "bg-accent-solid text-on-accent-solid shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
                     )}
                   >{CHART_REGISTRY[target].tabLabel}</ChartLink>
                 ))}

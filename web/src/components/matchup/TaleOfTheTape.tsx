@@ -148,11 +148,11 @@ export function TaleOfTheTape({
                   <span className="font-medium text-ink-muted">Not available</span>
                 ) : edge.side === "offense" ? (
                   <span className="font-bold text-ink-primary">
-                    Higher-ranked unit: <span style={{ color: offColor }}>{offTeam}</span>
+                    Higher-ranked unit: <span aria-hidden className="mr-0.5 inline-block size-2 rounded-full" style={{ backgroundColor: offColor }} /> {offTeam}
                   </span>
                 ) : edge.side === "defense" ? (
                   <span className="font-bold text-ink-primary">
-                    Higher-ranked unit: <span style={{ color: defColor }}>{defTeam}</span>
+                    Higher-ranked unit: <span aria-hidden className="mr-0.5 inline-block size-2 rounded-full" style={{ backgroundColor: defColor }} /> {defTeam}
                   </span>
                 ) : (
                   <span className="font-medium text-ink-muted">Similar rank percentiles</span>
