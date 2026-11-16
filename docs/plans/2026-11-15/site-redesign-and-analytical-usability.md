@@ -10,6 +10,8 @@
 
 ## Goal and acceptance
 
+The owner-approved [final site corrections contract](../2026-11-16/final-site-corrections.md) adds the bounded 2026-11-16 export, keyboard search, Trends clearing, dark compact-dot and matchup presentation fixes. It preserves the design and local-only delivery policy.
+
 Redesign the site around balanced football analysis: understand games, assess teams, explore statistics, and evaluate the model. The approved direction is editorial analytics and primary navigation Games / Teams / Graphs / Model. Preserve Stratum branding, team identities, light/dark themes, and existing model/publication safeguards.
 
 Stage 1 implements every work package below using existing certified serving data. Completion requires every acceptance item, focused tests, `make check`, `make web-e2e`, `git diff --check`, representative browser inspection, and real Preview verification of changed optional-table reads. Stage 2 is a separate future contract, not implementation scope.
