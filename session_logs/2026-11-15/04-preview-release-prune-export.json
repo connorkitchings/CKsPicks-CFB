@@ -1,0 +1,1858 @@
+{
+ "exported_at": "2026-11-15",
+ "environment": "preview",
+ "note": "Projection rows are not exported; rebuild from run manifests in artifacts/season/2026/preview/.",
+ "season_releases": [
+  {
+   "release_id": "preview-season-2026-a45c8f0d77eb46e0b5a7604c",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "85dab426fca1679c572d7fcd273fbbf2a33b37c104eace18597b4f5adb339929",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "257c4ad37ff3ee3fb8c0e7e0276d0bd9196d73f6",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-a45c8f0d77eb46e0b5a7604c/run-manifest.json",
+   "run_manifest_sha256": "ff0cd0fca7416df9c7434e8645b813ec2ee48a5c5f52f289de54305c2e2704e4",
+   "verification_uri": "season-run:season-2026-a45c8f0d77eb46e0b5a7604c/verification.json",
+   "verification_sha256": "1c8fff5b26f049c8c082ddca314e42ffa5e6a8e8f5ce348caafa939f4cd84e15",
+   "active_week": 7,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "dc3397f3eaf57cd92da6bdb63fa9d52c29423e84af52ad8c08dfa4aae481bab3"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "702570fb35c28d4e2360d7a46b6ca00a4bfb4842f1e411d6e1d4952ad3c39b50"
+    },
+    "predictions": {
+     "rows": 386,
+     "sha256": "d505e082cafe60cd7abe3899b3787f1cb5d960561189b79908ec5c3dc0b0b25d"
+    },
+    "game_results": {
+     "rows": 329,
+     "sha256": "554c0f9d4c20a6f24383be8f3dc6f31a22665e376bddd0d02149669780d2f110"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "d98d5a8b3af25e4e09e361ed6a0ee4de08e8e596623b540aab931403e4089a7f"
+    },
+    "market_quotes": {
+     "rows": 588,
+     "sha256": "1d03d513bd9052e64593505e7e6ee06c9896d61c9bebc2b76d4dbd5fac6fcd64"
+    },
+    "market_snapshots": {
+     "rows": 110,
+     "sha256": "3b2455f4e02e1ec8a09abd46aaa6e1a6e98285602078719d65b140cc2c0b88f9"
+    },
+    "prediction_grades": {
+     "rows": 0,
+     "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    "team_season_stats": {
+     "rows": 17578,
+     "sha256": "b29f376423b35cff9e7740dbc319f645b981937dceec6e0a8625fab3e37a12fc"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2070,
+     "sha256": "33980429406dc99ccb33e547c7da49f8b81f4517c93082284512ff2b26cb13c9"
+    },
+    "site_week_selections": {
+     "rows": 8,
+     "sha256": "d9b96bf4b1f739c1c806524dbd3cfea621f5a7233de060e31b77b2b642e58b2d"
+    },
+    "team_possession_stats": {
+     "rows": 9588,
+     "sha256": "e5441de2b606836dadfaed45322324515b649f5f604bffaf458364f6f1cea27d"
+    },
+    "market_snapshot_quotes": {
+     "rows": 1062,
+     "sha256": "2c89e26b781e2c8ad16a74ba0da40c3178ea6e7a96a022c2475e65c9afb43f9f"
+    },
+    "team_game_measurements": {
+     "rows": 10528,
+     "sha256": "0e6083e1f2cc9648282a963e1e12bc999aca9a3fb06980ef70d17cb9beed0a69"
+    },
+    "team_rating_components": {
+     "rows": 4140,
+     "sha256": "dcc0e1d49cc9a64954b1cd9760fa09e292a59cec1f6eb9902d4c5b4cf279cb09"
+    },
+    "team_possession_adjusted": {
+     "rows": 3067,
+     "sha256": "1fc59122b29b95fe682dd46fd8ab139ee64bb5870a9bc0b83f0b37b84d9c7be6"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "608eecc14ce1a04576f2f8e5599516a21c14d2041a23eb223ae6a28f9e24f290"
+    },
+    "prediction_market_selections": {
+     "rows": 110,
+     "sha256": "510f562754247d4e394f822582e2ba3145e389008ca3ecdaef80068b42855db3"
+    }
+   },
+   "created_at": "2026-10-15T00:54:27.106511+00:00",
+   "activated_at": "2026-10-15T00:54:27.106511+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-58b22e1d6b2ffc4d752b105f",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "8ea85b2b7d4413a3d78406411518b5684955dbedd7253e808554a9fac442423d",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "5a7196d4d3928f7fa4d123991d4afbaefbd7fd0b",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-58b22e1d6b2ffc4d752b105f/run-manifest.json",
+   "run_manifest_sha256": "77460b9d374446fa28cd828b2d2fe8535243e7cf9f0fa34a0f598f6be4746401",
+   "verification_uri": "season-run:season-2026-58b22e1d6b2ffc4d752b105f/verification.json",
+   "verification_sha256": "62905a16e312ecdfb9783486963e883e2e503514761b2b24f144ab965dc045b7",
+   "active_week": 7,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "231433969c0fa331a8d71451c1100730f23333f1fcddf0082eb02aa6996777d2"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "702570fb35c28d4e2360d7a46b6ca00a4bfb4842f1e411d6e1d4952ad3c39b50"
+    },
+    "predictions": {
+     "rows": 388,
+     "sha256": "4385c5990c92045ac5565f4946b3e280187a662981c171310c5c9714241b75c2"
+    },
+    "game_results": {
+     "rows": 329,
+     "sha256": "2327988d36cc1df681f49aea880f0d6654bfe617663db841d8d4373e1eebb4aa"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "d7dd815912d4277fb7ab21ea5d2c82470781a25e6214d1a414230a5b661a49ce"
+    },
+    "market_quotes": {
+     "rows": 1149,
+     "sha256": "0ba603858447543542ad05883da0c39395761349436c2b74ac466e646b850891"
+    },
+    "market_snapshots": {
+     "rows": 771,
+     "sha256": "d89bbef8d6ba1cdd37fb2702400412a9778c12fcd143e9aff29af6df3ab4aa0c"
+    },
+    "prediction_grades": {
+     "rows": 657,
+     "sha256": "4008dc87d6695f317e8beec540ab8065c69c2343ad726ac5fa71c774f3fae58a"
+    },
+    "team_season_stats": {
+     "rows": 17578,
+     "sha256": "b29f376423b35cff9e7740dbc319f645b981937dceec6e0a8625fab3e37a12fc"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2070,
+     "sha256": "9e4c41be56d9f364b7dac729af366fdc76dd464794ff3a6fc6a6ed36c6125251"
+    },
+    "site_week_selections": {
+     "rows": 8,
+     "sha256": "6a28d0ff48ac48a4e2e46feca59d04789b50ecffb2a74740af42280855c74872"
+    },
+    "team_possession_stats": {
+     "rows": 9588,
+     "sha256": "bd02c4e14bc987dc672795fbd924c59b1fa9e3cd6274b726efcf00430fb0569e"
+    },
+    "market_snapshot_quotes": {
+     "rows": 2177,
+     "sha256": "1c7dc8a17e63b3aca1259347a573716bc1c104cc3430e0db8bed5de499a04e50"
+    },
+    "team_game_measurements": {
+     "rows": 10528,
+     "sha256": "5f594eb7ed5d0e0b38581d9496eb470ca9da726b04b0769fc25471babb29cf3e"
+    },
+    "team_rating_components": {
+     "rows": 4140,
+     "sha256": "38af038e103ec6c78db6f022fe7c9bdc51f9d20c912c902d14664f14d6b728f2"
+    },
+    "team_possession_adjusted": {
+     "rows": 3067,
+     "sha256": "66d66ba64a80475d1816c26f07d572c90adf8e879d5f8d5b7bcc9b10a878808b"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "2e128fee7c30953e912854fecc42bbcb701d788add81895622e2280740a298e7"
+    },
+    "prediction_market_selections": {
+     "rows": 771,
+     "sha256": "2e7ab944310ce1dfd36b09e65c5a5c73c9e0fca3930faaba7ee0c9c311751053"
+    }
+   },
+   "created_at": "2026-10-15T01:43:01.217638+00:00",
+   "activated_at": "2026-10-15T01:43:01.217638+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-d0272a48d3a0252fd4196db3",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "8ea85b2b7d4413a3d78406411518b5684955dbedd7253e808554a9fac442423d",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "42a158b8aacbf004daaecfe3e733c880dc1d89f1",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-d0272a48d3a0252fd4196db3/run-manifest.json",
+   "run_manifest_sha256": "927d037439677e4246307b0d5f4feb1cd9033dea63db8cf3e0901e69aeb4c972",
+   "verification_uri": "season-run:season-2026-d0272a48d3a0252fd4196db3/verification.json",
+   "verification_sha256": "f0c46de1fd2e4484105d4a15fee02e7859658fdd5615869b1e8e0e3fdfa41429",
+   "active_week": 7,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "231433969c0fa331a8d71451c1100730f23333f1fcddf0082eb02aa6996777d2"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "702570fb35c28d4e2360d7a46b6ca00a4bfb4842f1e411d6e1d4952ad3c39b50"
+    },
+    "predictions": {
+     "rows": 388,
+     "sha256": "c62e6bb804389a5f02d610332ee54c7f3a142922afaa34a11d95777932657b2d"
+    },
+    "game_results": {
+     "rows": 329,
+     "sha256": "2327988d36cc1df681f49aea880f0d6654bfe617663db841d8d4373e1eebb4aa"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "d7dd815912d4277fb7ab21ea5d2c82470781a25e6214d1a414230a5b661a49ce"
+    },
+    "market_quotes": {
+     "rows": 1149,
+     "sha256": "0ba603858447543542ad05883da0c39395761349436c2b74ac466e646b850891"
+    },
+    "market_snapshots": {
+     "rows": 771,
+     "sha256": "d89bbef8d6ba1cdd37fb2702400412a9778c12fcd143e9aff29af6df3ab4aa0c"
+    },
+    "prediction_grades": {
+     "rows": 657,
+     "sha256": "9a440b95715a151c13c65c0a5b83317224b981d96bb0109601d063e3490338b7"
+    },
+    "team_season_stats": {
+     "rows": 17578,
+     "sha256": "b29f376423b35cff9e7740dbc319f645b981937dceec6e0a8625fab3e37a12fc"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2070,
+     "sha256": "8447c0eaae8d388220a3ec37837baa5ea461a51afe00d52b31ab583dc6644cf1"
+    },
+    "site_week_selections": {
+     "rows": 8,
+     "sha256": "6c18068473237266b83b74b7829ae403021e53cf60f2ecd01ad0846528cc3a68"
+    },
+    "team_possession_stats": {
+     "rows": 9588,
+     "sha256": "9b7d9532b823a8507e811d8239926249be8a462dfce5bcf880f6a5a5fc99c804"
+    },
+    "market_snapshot_quotes": {
+     "rows": 2177,
+     "sha256": "1c7dc8a17e63b3aca1259347a573716bc1c104cc3430e0db8bed5de499a04e50"
+    },
+    "team_game_measurements": {
+     "rows": 10528,
+     "sha256": "95c2ff4696f19ac96251ba5dbf83a350be5e2ac2e3919b85fb1ae2b5a7b42e17"
+    },
+    "team_rating_components": {
+     "rows": 4140,
+     "sha256": "dbd918dec3ac3fdde77b32f5ade818e652af426e63f58e3b6e9c3cc52056c8e6"
+    },
+    "team_possession_adjusted": {
+     "rows": 3067,
+     "sha256": "66d66ba64a80475d1816c26f07d572c90adf8e879d5f8d5b7bcc9b10a878808b"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "e0d48e49653427c8fab58e9ec1d8d1f716e19b32c2f0db7a52cbd1a9412a7efe"
+    },
+    "prediction_market_selections": {
+     "rows": 771,
+     "sha256": "476f16280c3ea693bbdb05ded3bcb284bb74e4db8d85d9d57dacb8bf50740359"
+    }
+   },
+   "created_at": "2026-10-15T02:07:38.251959+00:00",
+   "activated_at": "2026-10-15T02:07:38.251959+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-99c518e3bb66e7cc2adcc169",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "208a4a5b7b070360e78909c78f3d6ed2efcf255ce8b5d8628110e939612040f6",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "749ee12cb91bff3fa323353cbaaad65860ce4b4c",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-99c518e3bb66e7cc2adcc169/run-manifest.json",
+   "run_manifest_sha256": "c405110feb8011a597b2e64b4269075c1c89369efd5cb7da9aeab1106fb690d9",
+   "verification_uri": "season-run:season-2026-99c518e3bb66e7cc2adcc169/verification.json",
+   "verification_sha256": "9b5b9ca5e80605db423a7f80ea10404d0a6a9c3555708ef02bff9ac7a7d899b7",
+   "active_week": 7,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "231433969c0fa331a8d71451c1100730f23333f1fcddf0082eb02aa6996777d2"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "702570fb35c28d4e2360d7a46b6ca00a4bfb4842f1e411d6e1d4952ad3c39b50"
+    },
+    "predictions": {
+     "rows": 388,
+     "sha256": "7b8f8ede2ee1282b6a9dfb3cf090e2c27805ed55c1f1249f2eaa22b0aa13e50d"
+    },
+    "game_results": {
+     "rows": 329,
+     "sha256": "2327988d36cc1df681f49aea880f0d6654bfe617663db841d8d4373e1eebb4aa"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "d7dd815912d4277fb7ab21ea5d2c82470781a25e6214d1a414230a5b661a49ce"
+    },
+    "market_quotes": {
+     "rows": 1149,
+     "sha256": "0ba603858447543542ad05883da0c39395761349436c2b74ac466e646b850891"
+    },
+    "team_game_stats": {
+     "rows": 658,
+     "sha256": "3974360be643b5e6d6b8a173b0374473ad8ee37ce70d34c1a0fb94c1368e469a"
+    },
+    "market_snapshots": {
+     "rows": 771,
+     "sha256": "d89bbef8d6ba1cdd37fb2702400412a9778c12fcd143e9aff29af6df3ab4aa0c"
+    },
+    "prediction_grades": {
+     "rows": 657,
+     "sha256": "9ec16a97f40b10c519f18028907a3b4ed42d52b61b8269a9f3dbb166e97e3a45"
+    },
+    "team_adjusted_epa": {
+     "rows": 1378,
+     "sha256": "ff24e87da419ca3068206749d5e581ced32dae80a8553475383ad760c47c857e"
+    },
+    "team_season_stats": {
+     "rows": 17578,
+     "sha256": "b29f376423b35cff9e7740dbc319f645b981937dceec6e0a8625fab3e37a12fc"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2070,
+     "sha256": "5fdcb2f0624da37affb07dd6690ab7c38b8e9f3245c1ae9e1580cc52a544232c"
+    },
+    "site_week_selections": {
+     "rows": 8,
+     "sha256": "7ebfa0b3ef6ca3622e193d2d31be6b8bb3fb31054d7e6b4e25ab5cb0729d66e3"
+    },
+    "team_possession_stats": {
+     "rows": 9588,
+     "sha256": "e651e7f30cfbd557e7cea85f457ab676b15a5005c80033e19974a8903d620700"
+    },
+    "market_snapshot_quotes": {
+     "rows": 2177,
+     "sha256": "1c7dc8a17e63b3aca1259347a573716bc1c104cc3430e0db8bed5de499a04e50"
+    },
+    "team_game_measurements": {
+     "rows": 10528,
+     "sha256": "b203f29fdbd5e1a99e59b73a5b249a6bd2bf64202e44bd17af0d624bae98d3d4"
+    },
+    "team_rating_components": {
+     "rows": 4140,
+     "sha256": "0d98c03d30287b7a5aaf4980b2ece07fc7972f074e8c930bb7a88ca24c55cb18"
+    },
+    "team_possession_adjusted": {
+     "rows": 3067,
+     "sha256": "a0946515533e9fa15bc5c114bf4df95093f109b1c0ecfd7970713fc07ac091ec"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "91b3955f2f6e1eb38dda34015cbe4e80ce6731f7febdfaf94806e4e0be5515f3"
+    },
+    "prediction_market_selections": {
+     "rows": 771,
+     "sha256": "e783b2dde3eb6e70e1f1e8d7141c18f1ab40c9880b3b82e5395bcecc8c9f712c"
+    }
+   },
+   "created_at": "2026-10-16T15:53:27.698347+00:00",
+   "activated_at": "2026-10-16T15:53:27.698347+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-b1e0ac13c88baf86b97ab213",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "92678e1e98afa2b88d9f7992b3cf5d0b3869c7529b7adeb0b59d10577a74e1be",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "26d27a053b97ff2324b96f99619bf3cd8a8b4a22",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-b1e0ac13c88baf86b97ab213/run-manifest.json",
+   "run_manifest_sha256": "624c5a08adfc77ed39226e71dd818dea10f99bda4db39768122cc6b298038719",
+   "verification_uri": "season-run:season-2026-b1e0ac13c88baf86b97ab213/verification.json",
+   "verification_sha256": "36564885a980e57bcd5598d189a26337f9d55be29e5aaee1507dd6856af1b0fd",
+   "active_week": 8,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "fe1665bc5b0a24d9e89702292216c7c02b245d2c9d86ea543cfa3869f9aa287a"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "691b5ec855ccb285b0035a9c2b88759b5f1aa102b489b807e2ad847b60c6c3b4"
+    },
+    "predictions": {
+     "rows": 444,
+     "sha256": "b3afe56d40ead04fa6c2a9c4cc2d022e41cb7feebb9fd7234e0e4b04488d9eb4"
+    },
+    "game_results": {
+     "rows": 388,
+     "sha256": "89a40d90fa56d6e2df614e7c1851cfe47c4b07aad4b2f11e0072a8294ddf55f5"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "69910454f56b8eabe753b3b09162497bbdfff13334e06a92b60d5b85822678c2"
+    },
+    "market_quotes": {
+     "rows": 1274,
+     "sha256": "369fea05ee3957ed455b7edb83b8e4399293141a171cbd0db6e255346f7eb07d"
+    },
+    "team_game_stats": {
+     "rows": 776,
+     "sha256": "83ded93359b454584ee5913b971f447969bfbb8ed167d91d15c02cc8072ae5c5"
+    },
+    "market_snapshots": {
+     "rows": 833,
+     "sha256": "d249de9597227e3f953bbf2dc3023ed2d86f2e7675c443af3ccf779e0c44b812"
+    },
+    "prediction_grades": {
+     "rows": 769,
+     "sha256": "35dae1093e91488ea003c48f5bfa94e004b1ed77ed74bb880fb7d8692e84802e"
+    },
+    "team_adjusted_epa": {
+     "rows": 1654,
+     "sha256": "6b033e68dbaf7cf93d9a5b2774df81be4c0b4a247515472cc2fd639806465aad"
+    },
+    "team_season_stats": {
+     "rows": 20614,
+     "sha256": "d14285d7781b08cad5c4352a39163b8f3bf2be21eecf7bf1b01d8df5c4cd2a73"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2346,
+     "sha256": "dc90f6599ce9dddfa54f353f74edf404ea147f556aa44e8c48db20105fad0f39"
+    },
+    "site_week_selections": {
+     "rows": 9,
+     "sha256": "3e02ab07cf49ca8c640ea65d88ac30ef9950a95613bc7516e56232119f38f044"
+    },
+    "team_possession_stats": {
+     "rows": 11244,
+     "sha256": "143cfb05873714137bc0b9a6913aecd1cdda5914703261e07da3235b355d7b3c"
+    },
+    "market_snapshot_quotes": {
+     "rows": 2533,
+     "sha256": "2ab310e82b9c7b28608b376443f37260957dd4bdf89be399579dc3fafa1959a5"
+    },
+    "team_game_measurements": {
+     "rows": 12416,
+     "sha256": "ca8cc22eb320b23c96cfb2dccdbccf1d27c1e84b559a21cd2a91f695fbddbbbf"
+    },
+    "team_rating_components": {
+     "rows": 4692,
+     "sha256": "167713835bb9e36c7aeb1871f7a9bff04ed74e00862a4277a4ab2fe2bd698b8c"
+    },
+    "team_possession_adjusted": {
+     "rows": 3619,
+     "sha256": "f10660d0a5197ace2d91e2ae4902faa2e359b5f8daac3750a2eab4cee987834a"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "2af07868c33c7eb3ef0cd7e3d1bb27e7c929545868cddcf89c2e98805e9bd9e2"
+    },
+    "prediction_market_selections": {
+     "rows": 833,
+     "sha256": "bdbd289132a2a7f34d19a633f7772722506b2c41d7419b3b2bc6b63442a6197c"
+    }
+   },
+   "created_at": "2026-10-18T14:52:10.933574+00:00",
+   "activated_at": "2026-10-18T14:52:10.933574+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-b7bc98eb26fa667f6c0941d6",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "cb566dd3d926f8afa89566679f5d1b0aa42405def5d062b429f10bf3f2498263",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "9146392360427c9bf8dd7d3ce2415bab2e4e792f",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-b7bc98eb26fa667f6c0941d6/run-manifest.json",
+   "run_manifest_sha256": "5ea65ffbe0da3747d6e0796194e188ee776b7237b485f05aa9dee6dcfe09b707",
+   "verification_uri": "season-run:season-2026-b7bc98eb26fa667f6c0941d6/verification.json",
+   "verification_sha256": "c186a81f5ab6328b992f7bbf40db625c2698c32bd0a3f5963013bfea6eed76d8",
+   "active_week": 8,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "82bc5efdfafa292393c48a9dbdf024a4b82329481a61ec12cd3e786e7d8a6cf5"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "b404def3630741612a41abd19ca371e402e59447615f719e3db5435b9df21ea4"
+    },
+    "predictions": {
+     "rows": 444,
+     "sha256": "aea317d0c7666958db5303bf2d69d0a404876103b3f8c213c5baea6c840ca616"
+    },
+    "game_results": {
+     "rows": 388,
+     "sha256": "32a7b551e5929418fab5397164186854b5f0eb26dd8620b939b91c79afc9e890"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "0cf39231466b0072ca4f8d34f14847e3e97b48ae5911997f65a2b55e68272936"
+    },
+    "market_quotes": {
+     "rows": 1693,
+     "sha256": "104641b0dcbcc2628c15dc1fe8cd9d657410691d14efb00b8e6df108e0b99e2c"
+    },
+    "team_game_stats": {
+     "rows": 776,
+     "sha256": "83ded93359b454584ee5913b971f447969bfbb8ed167d91d15c02cc8072ae5c5"
+    },
+    "market_snapshots": {
+     "rows": 881,
+     "sha256": "9f81abcfa9eb57d382d72b5355c1461e8513a47202b49a283ba7a217fea5fadc"
+    },
+    "prediction_grades": {
+     "rows": 769,
+     "sha256": "aa97a6ad091de9cc83f951c55e60774ba4b21ca92fe05c6c47edd891e03c2d3c"
+    },
+    "team_adjusted_epa": {
+     "rows": 1654,
+     "sha256": "6b033e68dbaf7cf93d9a5b2774df81be4c0b4a247515472cc2fd639806465aad"
+    },
+    "team_game_yardage": {
+     "rows": 776,
+     "sha256": "229935013ed65bb0c213e3a02d18f24981ed9c2713c9a18e0a455334290e18f2"
+    },
+    "team_season_stats": {
+     "rows": 20614,
+     "sha256": "a0d057ff5425df2918fda9f78e5951181c8b528ff9c55aff34bc993762df2076"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2346,
+     "sha256": "370c100fba26883364b4722400194337040ed864d7b9410e3945dc541df45391"
+    },
+    "site_week_selections": {
+     "rows": 9,
+     "sha256": "5904c6e6b0407623e86901b0f7bb65f758e147f0e4c6fb24c6c1bc634fedd477"
+    },
+    "team_possession_stats": {
+     "rows": 11244,
+     "sha256": "9f8150c3e9f21ca4fdf4bae9a2e464f719162fa301b93a6489e61f9b927f00e0"
+    },
+    "market_snapshot_quotes": {
+     "rows": 3369,
+     "sha256": "1afeffa27457543fed975b1e76f9c15e132c2c248ae29fc2e5400d51d92e7a6c"
+    },
+    "team_game_measurements": {
+     "rows": 12416,
+     "sha256": "c7e998700c3df30cf01422a4b9955749d160a9c2b32b59b9c05d7a19ff9d939d"
+    },
+    "team_rating_components": {
+     "rows": 4692,
+     "sha256": "ed8949984ef965d9c6c7a6651db72568ced39887610ab17c0aff958dc4b56637"
+    },
+    "team_possession_adjusted": {
+     "rows": 3619,
+     "sha256": "c66abebe1bb747ba917ce0eb13a8d16639f1fe785418cd4946642362bf1d4a55"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "2b62b1979e0e56c159e3b8efbd109b1df4660dfee25e5fd9031ac168774af503"
+    },
+    "prediction_market_selections": {
+     "rows": 881,
+     "sha256": "f73fe89f61a50f777fab1ee9356e79795546e7c2558eaf90206d688e4e0d3f0f"
+    }
+   },
+   "created_at": "2026-10-19T14:26:20.132711+00:00",
+   "activated_at": "2026-10-19T14:26:20.132711+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-ac3d6668440e1f3494ba92da",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "cb566dd3d926f8afa89566679f5d1b0aa42405def5d062b429f10bf3f2498263",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "7f49dfd353aa0f3f56af131246cc16e8d3d1f8bd",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-ac3d6668440e1f3494ba92da/run-manifest.json",
+   "run_manifest_sha256": "e4dd2ad3ea358134fde662d86a80ffc97b370e46387d99d91544293aa9a4aaaf",
+   "verification_uri": "season-run:season-2026-ac3d6668440e1f3494ba92da/verification.json",
+   "verification_sha256": "8bd3daffc538583b880b62857fa022c37b706db2f91627e722004a8bf73559a6",
+   "active_week": 8,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "82bc5efdfafa292393c48a9dbdf024a4b82329481a61ec12cd3e786e7d8a6cf5"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "b404def3630741612a41abd19ca371e402e59447615f719e3db5435b9df21ea4"
+    },
+    "predictions": {
+     "rows": 444,
+     "sha256": "1e57b8bdcb8ef87572db970aabebe92a3c54311c148054827c1bd3be70f0383a"
+    },
+    "team_resume": {
+     "rows": 1242,
+     "sha256": "d5d1a57fdaa94970d8365057da8a1d1695633b479d2e73e339468d88f4757329"
+    },
+    "game_results": {
+     "rows": 388,
+     "sha256": "32a7b551e5929418fab5397164186854b5f0eb26dd8620b939b91c79afc9e890"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "0cf39231466b0072ca4f8d34f14847e3e97b48ae5911997f65a2b55e68272936"
+    },
+    "market_quotes": {
+     "rows": 1693,
+     "sha256": "104641b0dcbcc2628c15dc1fe8cd9d657410691d14efb00b8e6df108e0b99e2c"
+    },
+    "team_game_stats": {
+     "rows": 776,
+     "sha256": "83ded93359b454584ee5913b971f447969bfbb8ed167d91d15c02cc8072ae5c5"
+    },
+    "market_snapshots": {
+     "rows": 881,
+     "sha256": "9f81abcfa9eb57d382d72b5355c1461e8513a47202b49a283ba7a217fea5fadc"
+    },
+    "prediction_grades": {
+     "rows": 769,
+     "sha256": "3f96bc5d4a794f0db1011265e15545bc045f9862bad611b4d2272fb0dd8849f6"
+    },
+    "team_adjusted_epa": {
+     "rows": 1654,
+     "sha256": "6b033e68dbaf7cf93d9a5b2774df81be4c0b4a247515472cc2fd639806465aad"
+    },
+    "team_game_yardage": {
+     "rows": 776,
+     "sha256": "229935013ed65bb0c213e3a02d18f24981ed9c2713c9a18e0a455334290e18f2"
+    },
+    "team_season_stats": {
+     "rows": 20614,
+     "sha256": "a0d057ff5425df2918fda9f78e5951181c8b528ff9c55aff34bc993762df2076"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2346,
+     "sha256": "b7d760b5cda6d338f3008c961cf3ac1af48f50bd46210273a97d8deb9a2716c1"
+    },
+    "site_week_selections": {
+     "rows": 9,
+     "sha256": "d92adee7b7b41768ab6a51b441289093f4f2a26cf8ef6bb28bcb6f82b29ae226"
+    },
+    "team_possession_stats": {
+     "rows": 11244,
+     "sha256": "0d527f99d433c8793340651abb511aaecaa452475325978a31896ccbe3ab2a54"
+    },
+    "market_snapshot_quotes": {
+     "rows": 3369,
+     "sha256": "1afeffa27457543fed975b1e76f9c15e132c2c248ae29fc2e5400d51d92e7a6c"
+    },
+    "team_game_measurements": {
+     "rows": 12416,
+     "sha256": "c1b50307ea5a16e41f53cbcdec32b82d6624fc388c2f2f588eaffd1ae718a662"
+    },
+    "team_rating_components": {
+     "rows": 4692,
+     "sha256": "94143dd9ea412f6f30963eb54ef51f32e9bc54fc93e255a1be7b66bfbfd663ca"
+    },
+    "team_possession_adjusted": {
+     "rows": 3619,
+     "sha256": "c66abebe1bb747ba917ce0eb13a8d16639f1fe785418cd4946642362bf1d4a55"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "ef4c44c1288935a9500878108c3a19668e9801137b9fc734c1f6b3f7c2be4765"
+    },
+    "prediction_market_selections": {
+     "rows": 881,
+     "sha256": "1ea35673292f90914417e62d5e8e3fab605da66196141a1826ec3423a83fff51"
+    }
+   },
+   "created_at": "2026-10-19T19:12:34.874643+00:00",
+   "activated_at": "2026-10-19T19:12:34.874643+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-2cdf8916d915e21b3f25fa71",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "cb566dd3d926f8afa89566679f5d1b0aa42405def5d062b429f10bf3f2498263",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "5060aa60aad7820d485e28190a47fe64fbbf6321",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-2cdf8916d915e21b3f25fa71/run-manifest.json",
+   "run_manifest_sha256": "be388db7b16db3d8ea4a6dae11f77204e53bbc74bcb372796f42fe30e3c92088",
+   "verification_uri": "season-run:season-2026-2cdf8916d915e21b3f25fa71/verification.json",
+   "verification_sha256": "c022429c1cf769cca986cffc6b0914760b6e6c626796f13553abec8cbe1a0b1e",
+   "active_week": 8,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "82bc5efdfafa292393c48a9dbdf024a4b82329481a61ec12cd3e786e7d8a6cf5"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "b404def3630741612a41abd19ca371e402e59447615f719e3db5435b9df21ea4"
+    },
+    "predictions": {
+     "rows": 444,
+     "sha256": "8ba2cd032791aaaf7b5901dbc6a570fe4d8536d8082f6a0ed38065d7c86fe235"
+    },
+    "team_resume": {
+     "rows": 1242,
+     "sha256": "d5d1a57fdaa94970d8365057da8a1d1695633b479d2e73e339468d88f4757329"
+    },
+    "game_results": {
+     "rows": 388,
+     "sha256": "32a7b551e5929418fab5397164186854b5f0eb26dd8620b939b91c79afc9e890"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "0cf39231466b0072ca4f8d34f14847e3e97b48ae5911997f65a2b55e68272936"
+    },
+    "market_quotes": {
+     "rows": 1693,
+     "sha256": "104641b0dcbcc2628c15dc1fe8cd9d657410691d14efb00b8e6df108e0b99e2c"
+    },
+    "team_game_stats": {
+     "rows": 776,
+     "sha256": "83ded93359b454584ee5913b971f447969bfbb8ed167d91d15c02cc8072ae5c5"
+    },
+    "market_snapshots": {
+     "rows": 881,
+     "sha256": "9f81abcfa9eb57d382d72b5355c1461e8513a47202b49a283ba7a217fea5fadc"
+    },
+    "prediction_grades": {
+     "rows": 769,
+     "sha256": "4374f696e81b315ebc56789098898929e25a1f23efe57e24b95bfd33ca9cca13"
+    },
+    "team_adjusted_epa": {
+     "rows": 1654,
+     "sha256": "6b033e68dbaf7cf93d9a5b2774df81be4c0b4a247515472cc2fd639806465aad"
+    },
+    "team_game_yardage": {
+     "rows": 776,
+     "sha256": "229935013ed65bb0c213e3a02d18f24981ed9c2713c9a18e0a455334290e18f2"
+    },
+    "team_season_stats": {
+     "rows": 20614,
+     "sha256": "a0d057ff5425df2918fda9f78e5951181c8b528ff9c55aff34bc993762df2076"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2346,
+     "sha256": "bd5d3f10ad6ca91f1b412d4c2f5e46c7ff0b966986b498d1a64a15e9a64e7920"
+    },
+    "site_week_selections": {
+     "rows": 9,
+     "sha256": "158dcead5e237e5107a4a449ae4bf68c1711d9b008f09008e9f150bb9b0e8bc1"
+    },
+    "team_possession_stats": {
+     "rows": 11244,
+     "sha256": "d7e62be7f16a0d5b00c7a1987f648994312343939ae5b8c5744713e31ba09be2"
+    },
+    "market_snapshot_quotes": {
+     "rows": 3369,
+     "sha256": "1afeffa27457543fed975b1e76f9c15e132c2c248ae29fc2e5400d51d92e7a6c"
+    },
+    "team_game_measurements": {
+     "rows": 12416,
+     "sha256": "37ce06652ef7b8288de5fd63494947a1a716a04be18cfe97a65213451b37676d"
+    },
+    "team_rating_components": {
+     "rows": 4692,
+     "sha256": "022bbce8fa7f363b0b4d88e53e29e651bb52672ff51c7be09b6a2e5d6579c64b"
+    },
+    "team_possession_adjusted": {
+     "rows": 3619,
+     "sha256": "c66abebe1bb747ba917ce0eb13a8d16639f1fe785418cd4946642362bf1d4a55"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "19da2deae3efd9884df56e6579459b4c75ee4254f28e51501975996e1c55ff41"
+    },
+    "prediction_market_selections": {
+     "rows": 881,
+     "sha256": "e7d91a35d0bebfca9eb60a4a238ca392e3c3e01f2535ff9c5e4c188530caa4b2"
+    }
+   },
+   "created_at": "2026-10-19T19:46:57.153461+00:00",
+   "activated_at": "2026-10-19T19:46:57.153461+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-125158328e025fb89c96ce0d",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "471f0b5dedacfd63c8c4e970d70e413d3e1552b3c9d7e978aadc0ea482f9e61c",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "e94cf35aeace8e37e5a9475d05e2ad2ecab95cb2",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-125158328e025fb89c96ce0d/run-manifest.json",
+   "run_manifest_sha256": "0021c5468ac9fdfdd620ceccfae593523b80d4520c7da1ecfae7dac2bc998e51",
+   "verification_uri": "season-run:season-2026-125158328e025fb89c96ce0d/verification.json",
+   "verification_sha256": "3c057c67ad377914264a160d0cc1be3159675b8fc552a391562eace5ec79f806",
+   "active_week": 8,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "e644aeade47b3ba0892f79a6d3429c347a6bd7f7a8bf6a930c127e20ddbb20be"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "532d4d5fa8c7e35d6437e69269bb3c6fe98c8125d6e5fa939e43252c30576206"
+    },
+    "predictions": {
+     "rows": 444,
+     "sha256": "be358f44b70eb59bc85ae739d910793525f7597426b071e138779a239a2d67b7"
+    },
+    "team_resume": {
+     "rows": 1242,
+     "sha256": "6be0171461356f7d38aff77f1c481154347078cb3472725386fccafd8170e2df"
+    },
+    "game_results": {
+     "rows": 388,
+     "sha256": "078c74b757563193dc7639ed9d973891562c34f1507e2a706c0ff518a7b49fe9"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "5eec7277d2c465c3e60f89a47666b2c35696e9f12d789bc7c66c63e31a0438ee"
+    },
+    "market_quotes": {
+     "rows": 1695,
+     "sha256": "6a6d0f0cea10be779a1cb3a295d8da6be28a94bbcbda8d3f00931cd0611f15b4"
+    },
+    "team_game_stats": {
+     "rows": 776,
+     "sha256": "83ded93359b454584ee5913b971f447969bfbb8ed167d91d15c02cc8072ae5c5"
+    },
+    "market_snapshots": {
+     "rows": 881,
+     "sha256": "37c153f24090e30ea03f95c3574b8cb92114e1a7c7b63a04d142a1d87df8659f"
+    },
+    "prediction_grades": {
+     "rows": 769,
+     "sha256": "b2a8436b291fc431df95dd36ac741b473f755b13f1032cb4f1f4a3d43ee92072"
+    },
+    "team_adjusted_epa": {
+     "rows": 1654,
+     "sha256": "6b033e68dbaf7cf93d9a5b2774df81be4c0b4a247515472cc2fd639806465aad"
+    },
+    "team_game_yardage": {
+     "rows": 776,
+     "sha256": "229935013ed65bb0c213e3a02d18f24981ed9c2713c9a18e0a455334290e18f2"
+    },
+    "team_season_stats": {
+     "rows": 20614,
+     "sha256": "e971c96c6bd747dc7dd0c1677714e3f67683e4f2cd44f787b722e3efd29567c3"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2346,
+     "sha256": "87b264fd0eb40d4223b204065c80890d34c8bbe4eb6aeb88fc443368c0cf2035"
+    },
+    "site_week_selections": {
+     "rows": 9,
+     "sha256": "3e5ad81cff592b9f3e3f3290c3b48e488f9f56aa852d23d2c658de23c54b4e4a"
+    },
+    "team_possession_stats": {
+     "rows": 11244,
+     "sha256": "71bee2fc8fd043f63c96f2ece79677eefec1a452064214a60178b0e110b9d8eb"
+    },
+    "market_snapshot_quotes": {
+     "rows": 3374,
+     "sha256": "9d541b5ac2505eed3183f3e786e59e7c18b8d62c254741fee9a1ff8122ae78ad"
+    },
+    "team_game_measurements": {
+     "rows": 12416,
+     "sha256": "c315b61b07336e7814d9fbcfc2f713fbfe58752e07679041e52ed2a42f949499"
+    },
+    "team_rating_components": {
+     "rows": 4692,
+     "sha256": "5b2b4cc3f756bce15fb74230ccd58d2e1bfbc7d883358032ed94bf8a9604a19c"
+    },
+    "team_possession_adjusted": {
+     "rows": 3619,
+     "sha256": "e0990f22f838a78063096466dc02d17eadff2117f48cdeafd458e6ebd434a9e9"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "a21fe30e8b35ed08e18f0d83c14b49b87a6cb4a91b9f956e447cbe6b7b814289"
+    },
+    "prediction_market_selections": {
+     "rows": 881,
+     "sha256": "2988ebf412eae7ef01e6e1025a36909e02532b9651bcd4308cc6c511f66b4109"
+    }
+   },
+   "created_at": "2026-10-20T14:42:12.817578+00:00",
+   "activated_at": "2026-10-20T14:42:12.817578+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-7a59b8a92d0f7a85ca0a377b",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "b3793f681a36dda83dcf9187163028e9e7bf7980d32dba118f25d5f47207bb5b",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "8156533366cfe99aae8ff5c2e3bb91fff4083188",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-7a59b8a92d0f7a85ca0a377b/run-manifest.json",
+   "run_manifest_sha256": "7e926bb2c2632c42f38ac389f972dba53ce37b4d829f26c51c7a7436fcf0bcec",
+   "verification_uri": "season-run:season-2026-7a59b8a92d0f7a85ca0a377b/verification.json",
+   "verification_sha256": "a608cc7c1a5d84f50c42a512f7758a12c0f9eda82ee6ba531fe7f2729d560565",
+   "active_week": 9,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "720fdb2308f38fc171ecb2327fd0411abbe0bae8209fdd81b71dc9c6a483fd55"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "b050b834690450b7480c0e741835afa919b8f022dc43884ba09f490851de0277"
+    },
+    "predictions": {
+     "rows": 500,
+     "sha256": "b5d27979e7bb7fa220822899e1e2222d18d23beb0f2f39a4bca69cf2d5bcf97e"
+    },
+    "team_resume": {
+     "rows": 1380,
+     "sha256": "a2679d957d3d53a02e0ad848f190a439b4c1096d39b9e1937a5c5103891bf1f6"
+    },
+    "game_results": {
+     "rows": 444,
+     "sha256": "c9894e955d3e6826c027a3f93deb86ef9770a8a527cfb03a755330e8c8218e13"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "22fb42bc32d10ba7d2c59083b2a71399188100a8af98a2dc3ede6e8dbc7df20e"
+    },
+    "market_quotes": {
+     "rows": 1765,
+     "sha256": "860343dd12856833bd753e6ee18d500b1c0756d14ab3a8236f5896ab2e286a54"
+    },
+    "team_game_stats": {
+     "rows": 888,
+     "sha256": "6fc2847e59bedebbc74f9583c4834e3d6cf338bb84eeb8fcfeb9a1372f685431"
+    },
+    "market_snapshots": {
+     "rows": 941,
+     "sha256": "7ca7c58087ca602ff16a99bdda3eee6a8aea4e7c3200ef553faaf58d8fae6dd9"
+    },
+    "prediction_grades": {
+     "rows": 881,
+     "sha256": "a2a75f09790536811dc3b7358a3d44d62861541dc5ed0a8cebfa9d6db0c4f5a3"
+    },
+    "team_adjusted_epa": {
+     "rows": 1930,
+     "sha256": "5462f029f3e8d7ceae8ea5c26d6acd5d59f0cafd0681aabcad5ecc0dfaa49370"
+    },
+    "team_game_yardage": {
+     "rows": 888,
+     "sha256": "ba4127d2323f0714a728da75decea29b780cc7ffffbab3f738a715aa49b25597"
+    },
+    "team_season_stats": {
+     "rows": 23650,
+     "sha256": "995a43c97fef5e040fe3d8cb8be1cda59f4ccdb54de40a144adda910955267e7"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2622,
+     "sha256": "3fa1ea7aebb6846b151a7bc1dd37b8be86905b9d274f89686878bdbef5bf471c"
+    },
+    "site_week_selections": {
+     "rows": 10,
+     "sha256": "f4639b11109a10525d27bca3af095b4eaf62dcb3d49888fed65dbfe5a6a7bb5c"
+    },
+    "team_possession_stats": {
+     "rows": 12900,
+     "sha256": "09bb9b285b7fa9f366f83c97945d78f090005853eb5d5b9cca182526696f0740"
+    },
+    "market_snapshot_quotes": {
+     "rows": 3514,
+     "sha256": "2ac4a3d5806295356548857dd63f806ec96070c973d02835c2ebaa7a328d2e18"
+    },
+    "team_game_measurements": {
+     "rows": 14208,
+     "sha256": "21b2914e900a29ea607145ab1097b93fbe6836b38b202dda62b9b4cee21ddaf8"
+    },
+    "team_rating_components": {
+     "rows": 5244,
+     "sha256": "c86473651d215cdac3bf3418d9ea2cf52d5c1d6f021adb24d6b8602fef717570"
+    },
+    "team_possession_adjusted": {
+     "rows": 4171,
+     "sha256": "f6dce34771c85d558782173c5fa8305e5b2e48de78dc147026926520b35c0980"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "15cd80a42c4fa3337f459963fb13b6f02bb19823f04a9eb3b3d75b23bea0b593"
+    },
+    "prediction_market_selections": {
+     "rows": 941,
+     "sha256": "76d773b72f94538717f84262aed76cda9f274bfa5dfc587247ce00077ed4a1bc"
+    }
+   },
+   "created_at": "2026-10-25T16:10:27.283997+00:00",
+   "activated_at": "2026-10-25T16:10:27.283997+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-ba909ab93515e133f5c85ecb",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "b80b7da265be650ce429a75772265b2efd289355e3b6df5b861b11daddd02b73",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "b8399b5691c8f7981c5e7c98d180c10571d6ee5d",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-ba909ab93515e133f5c85ecb/run-manifest.json",
+   "run_manifest_sha256": "4dccc812f523fd1990ef80f9ae004c4be275529fe7a03195f7fa8d4a33e485ec",
+   "verification_uri": "season-run:season-2026-ba909ab93515e133f5c85ecb/verification.json",
+   "verification_sha256": "cf2fa605f613c8ad9822acc0021f448bce95ccc15b864d7c6bcde17cbdf974d4",
+   "active_week": 9,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "33060a033a2b8464d368f2b250944189526a229e834eeb46025e6324f9377ce1"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "b6f9c304159554ccf71f661269b004b4a2d9c0d2b370ce25ad637edd1dffe1e2"
+    },
+    "predictions": {
+     "rows": 500,
+     "sha256": "6ea884489939ebbfccc47b55916dfbd20b93c127e3cb1787cc658a6deced4bc8"
+    },
+    "team_resume": {
+     "rows": 1380,
+     "sha256": "85bcfa2b1230b464ad1fcac96e7c0eacb0a5320b9a0c64408af08471c8f710f3"
+    },
+    "game_results": {
+     "rows": 444,
+     "sha256": "01951febe799cca3fe9add84d1bdf4217a84098c4a9af8795f029714aea77589"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "ae9cfeed941c65faf2133dbc96964bc3bcb4929cb20e428932bd6affb12b6006"
+    },
+    "market_quotes": {
+     "rows": 2227,
+     "sha256": "d74b8887ae47cb92bc69a027b87e4f3185deb34e7b029f8613199b2e8c8069d4"
+    },
+    "team_game_stats": {
+     "rows": 888,
+     "sha256": "6fc2847e59bedebbc74f9583c4834e3d6cf338bb84eeb8fcfeb9a1372f685431"
+    },
+    "market_snapshots": {
+     "rows": 993,
+     "sha256": "2473de62ce7a376f11777e8eafe70a8061da59238ec779c7dafcfb9c08aed486"
+    },
+    "prediction_grades": {
+     "rows": 881,
+     "sha256": "2656a36d2614b528dfc839601e940103e12ff1b052b3c6f637ece12e27e2cb94"
+    },
+    "team_adjusted_epa": {
+     "rows": 1930,
+     "sha256": "5462f029f3e8d7ceae8ea5c26d6acd5d59f0cafd0681aabcad5ecc0dfaa49370"
+    },
+    "team_game_yardage": {
+     "rows": 888,
+     "sha256": "ba4127d2323f0714a728da75decea29b780cc7ffffbab3f738a715aa49b25597"
+    },
+    "team_season_stats": {
+     "rows": 23650,
+     "sha256": "5cb6a526cb04c49594a1c4679935fed24520600c0acae4574b6c66233c5dac2f"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2622,
+     "sha256": "acceffeef6efd5f1537c97e273dacf821c34cd615039994c9bc28660e0d52b8f"
+    },
+    "site_week_selections": {
+     "rows": 10,
+     "sha256": "d90f8cdd77f60868c67f04e9190115894115508ba6db4d8af1ff0a8bd6c32453"
+    },
+    "team_possession_stats": {
+     "rows": 12900,
+     "sha256": "c0092ef2d7682ef2ff85b7bf6a752316d7863dd4dc46efe7664fa84a3f3e6785"
+    },
+    "market_snapshot_quotes": {
+     "rows": 4438,
+     "sha256": "4a0085b92195a23fa5deb6f0b20e474c77e97e9bb30d9875145732c002b6a812"
+    },
+    "team_game_measurements": {
+     "rows": 14208,
+     "sha256": "8e38abeb7f6f345a8cbf7c89d5b5f89b375a2ec03dc8ed2a2a33faa28f2a683d"
+    },
+    "team_rating_components": {
+     "rows": 5244,
+     "sha256": "c0fc25e5afca3e7a5d5373d4cbeb0bb4c16221d2217872e68cb9c5912bce660e"
+    },
+    "team_possession_adjusted": {
+     "rows": 4171,
+     "sha256": "badeb059defc4904c4f0dc3ab43b87006320bc0c015321eab71f51d7260756c2"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "ad17e231fb1f883521e53103f1a705246451c62629cc4d7ab2b319a72b81138a"
+    },
+    "prediction_market_selections": {
+     "rows": 993,
+     "sha256": "15aeaf74e1bdbe420abccfbdd2ed15faca7b0843152eb9018e5ebe822957ad16"
+    }
+   },
+   "created_at": "2026-10-25T20:57:04.281359+00:00",
+   "activated_at": "2026-10-25T20:57:04.281359+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-dfa7cc9949d0ad08ced0b05b",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "cd87af16a1913a7b0061b3ac35f961dc71323b3392a44cb44e6884fda05f3dd5",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "9ab805ff3c477be95c790b8f9826d05883c861c3",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-dfa7cc9949d0ad08ced0b05b/run-manifest.json",
+   "run_manifest_sha256": "5721fa5a2b1a81284d0b045cc339181b39e36c3fabcc2db047bc3b293ca801b6",
+   "verification_uri": "season-run:season-2026-dfa7cc9949d0ad08ced0b05b/verification.json",
+   "verification_sha256": "2921af917ad5031f953df315d47a0e439c6b98a9edaddaadbf49a1ebe04f4ccf",
+   "active_week": 9,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "898fa780adf2fb84626cf2997d220ad8458915bd6dc3f4adeb56da13807935a3"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "5cc343d7bf7b0656bd78ce49e7933138e41cdb57db4586955e48c8e471cd094a"
+    },
+    "predictions": {
+     "rows": 500,
+     "sha256": "e4f928a40af3ad13e5d509a03d23f282e9e4795c34564a05ffad1daf02127329"
+    },
+    "team_resume": {
+     "rows": 1380,
+     "sha256": "097625b16a1a9e007a13deea05eaf61b966dea384180553395f4355564fcd2fc"
+    },
+    "game_results": {
+     "rows": 444,
+     "sha256": "5b81f57112579a773147047b61d355f817a5d7b189a82d5c8c7f3dbda8e685c3"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "6833756ec5b1189c98b44622232f5a1dc47486a1d6183f4e886f320504a846e5"
+    },
+    "market_quotes": {
+     "rows": 2309,
+     "sha256": "6ea2bf50c474e49c3b8bbbb247a2a2a4360446eb0a308ca8a499adeb95a34be8"
+    },
+    "team_game_stats": {
+     "rows": 888,
+     "sha256": "6fc2847e59bedebbc74f9583c4834e3d6cf338bb84eeb8fcfeb9a1372f685431"
+    },
+    "market_snapshots": {
+     "rows": 993,
+     "sha256": "8912ca0c02b8defe23350a9357afcd97d58f6799ed624ce081773df44f0a985c"
+    },
+    "prediction_grades": {
+     "rows": 881,
+     "sha256": "5fe1bead9d6c7ba210c27bf0d95cb7e331568ed1cd347df1a930718b83af0198"
+    },
+    "team_adjusted_epa": {
+     "rows": 1930,
+     "sha256": "f53968d05eed71bff92d9107c587a4ba4a12740654320704a88432f223540185"
+    },
+    "team_game_yardage": {
+     "rows": 888,
+     "sha256": "ba4127d2323f0714a728da75decea29b780cc7ffffbab3f738a715aa49b25597"
+    },
+    "team_season_stats": {
+     "rows": 23650,
+     "sha256": "454d957695f7c37acb93c6b00d914dd41683a50dfe9f317f906bd7930a868aa8"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2622,
+     "sha256": "678c48803865ffae9dd7c78860dd8609d014d1c8e2ffd7a22b8397cf179004aa"
+    },
+    "site_week_selections": {
+     "rows": 10,
+     "sha256": "aeb2823b38b5a6c1203d2c485330e1adfc650c435ed0276409cb02b8b96a73c8"
+    },
+    "team_possession_stats": {
+     "rows": 12900,
+     "sha256": "46a5cec98fad95a68a9a090aceef3c6d145ab43ea60eea002cb503bbbd157095"
+    },
+    "market_snapshot_quotes": {
+     "rows": 4602,
+     "sha256": "4b774f2e5f307400174b02059bef5330de74abf8b79843c1a8a8181e74d82c73"
+    },
+    "team_game_measurements": {
+     "rows": 14208,
+     "sha256": "0f4cc948e0246adfece2c6fdff88cab23fbb632a032d77e0ef76ab018008f8a7"
+    },
+    "team_rating_components": {
+     "rows": 5244,
+     "sha256": "87bdbb7d2848cfe78e3e225f9fb91a89793d396787f698959c0c3dddf3090026"
+    },
+    "team_possession_adjusted": {
+     "rows": 4171,
+     "sha256": "6accd6efbe0eeb321064344ef8b04b46761e9dc7a7f6a091c47ca94027ea7371"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "252bbc2a2c2542302edeb925d840b2dda3f064b5b08a8467868eea93e0ac32ad"
+    },
+    "prediction_market_selections": {
+     "rows": 993,
+     "sha256": "81782c4d797e917d58e128d0789c524e478467f2a557359219cf25d723dcd2a9"
+    }
+   },
+   "created_at": "2026-10-26T15:45:33.413152+00:00",
+   "activated_at": "2026-10-26T15:45:33.413152+00:00"
+  },
+  {
+   "release_id": "preview-season-2026-923f3c7bb97d007642b4d14c",
+   "environment": "preview",
+   "season": 2026,
+   "model_manifest_sha256": "a46fa768b45dd9b274b12f4a7efe52ac01ae749f005998aa0c4992e2cd836605",
+   "revision_manifest_sha256": "cd87af16a1913a7b0061b3ac35f961dc71323b3392a44cb44e6884fda05f3dd5",
+   "workflow_version": "season_workflow_v1",
+   "grading_policy_sha256": "63e963c8b22f73e8120c5b5d1d2b0ffdaa72f95d5f665873759424c052262718",
+   "code_sha": "84e749ef0ac81e68c3864d7253f41190c4e01a7e",
+   "config_sha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "run_manifest_uri": "season-run:season-2026-923f3c7bb97d007642b4d14c/run-manifest.json",
+   "run_manifest_sha256": "5dcfb5cc25f36f5312c122e72d2442968ab67675b4eef98a7b9cc4c731e604d6",
+   "verification_uri": "season-run:season-2026-923f3c7bb97d007642b4d14c/verification.json",
+   "verification_sha256": "cca4b01936154d880f155adb9e446bf927a6c108bdaa26f6b937e2ceeab2a1e2",
+   "active_week": 9,
+   "status": "superseded",
+   "projection_checks": {
+    "games": {
+     "rows": 761,
+     "sha256": "898fa780adf2fb84626cf2997d220ad8458915bd6dc3f4adeb56da13807935a3"
+    },
+    "game_venues": {
+     "rows": 761,
+     "sha256": "5cc343d7bf7b0656bd78ce49e7933138e41cdb57db4586955e48c8e471cd094a"
+    },
+    "predictions": {
+     "rows": 500,
+     "sha256": "0aff4fd7ef8e7f7d20e125aa8eeabee77e446bfa200f7a341e1372ceaa800fc1"
+    },
+    "team_resume": {
+     "rows": 1380,
+     "sha256": "097625b16a1a9e007a13deea05eaf61b966dea384180553395f4355564fcd2fc"
+    },
+    "game_results": {
+     "rows": 444,
+     "sha256": "5b81f57112579a773147047b61d355f817a5d7b189a82d5c8c7f3dbda8e685c3"
+    },
+    "system_stats": {
+     "rows": 1,
+     "sha256": "6833756ec5b1189c98b44622232f5a1dc47486a1d6183f4e886f320504a846e5"
+    },
+    "market_quotes": {
+     "rows": 2309,
+     "sha256": "6ea2bf50c474e49c3b8bbbb247a2a2a4360446eb0a308ca8a499adeb95a34be8"
+    },
+    "team_game_stats": {
+     "rows": 888,
+     "sha256": "6fc2847e59bedebbc74f9583c4834e3d6cf338bb84eeb8fcfeb9a1372f685431"
+    },
+    "market_snapshots": {
+     "rows": 993,
+     "sha256": "8912ca0c02b8defe23350a9357afcd97d58f6799ed624ce081773df44f0a985c"
+    },
+    "prediction_grades": {
+     "rows": 881,
+     "sha256": "1b1f67424e28ca3c3898d56183ebeb8fab68f096b43db6b09a44c7309c65867c"
+    },
+    "team_adjusted_epa": {
+     "rows": 1930,
+     "sha256": "f53968d05eed71bff92d9107c587a4ba4a12740654320704a88432f223540185"
+    },
+    "team_game_yardage": {
+     "rows": 888,
+     "sha256": "ba4127d2323f0714a728da75decea29b780cc7ffffbab3f738a715aa49b25597"
+    },
+    "team_season_stats": {
+     "rows": 23650,
+     "sha256": "454d957695f7c37acb93c6b00d914dd41683a50dfe9f317f906bd7930a868aa8"
+    },
+    "team_season_roster": {
+     "rows": 138,
+     "sha256": "3192b2dd3c98fc6fc179e8b61e46d8d44c4dcfdcb6dc12b732c5f326dca886b2"
+    },
+    "v5_rating_snapshots": {
+     "rows": 2622,
+     "sha256": "70343f7ebdcbfb3d1d600d6515a53790b9102633bf25def8d859b39fdc98933a"
+    },
+    "site_week_selections": {
+     "rows": 10,
+     "sha256": "b0fbcd7be6caf23e4dbebbc08f169613a3d2568289b2da57cda9bf82ddc5b2ee"
+    },
+    "team_possession_stats": {
+     "rows": 12900,
+     "sha256": "25b279ebfb1d80823946259745d2bb0d57f1fee7a3264ea7d25ad8d409382d7e"
+    },
+    "market_snapshot_quotes": {
+     "rows": 4602,
+     "sha256": "4b774f2e5f307400174b02059bef5330de74abf8b79843c1a8a8181e74d82c73"
+    },
+    "team_game_measurements": {
+     "rows": 14208,
+     "sha256": "066a1e465f984693a696857767ef6a761d5db728a58e303344f7243d383356b4"
+    },
+    "team_rating_components": {
+     "rows": 5244,
+     "sha256": "6a612dee0f7f761c770360a2d117e03d237b2787b105cc9801c5e9830fb39fab"
+    },
+    "team_possession_adjusted": {
+     "rows": 4171,
+     "sha256": "6accd6efbe0eeb321064344ef8b04b46761e9dc7a7f6a091c47ca94027ea7371"
+    },
+    "matchup_data_publications": {
+     "rows": 1,
+     "sha256": "3989421fbf5a964cdcaf22e394571de69dac530a7f21cb383b82968031746d23"
+    },
+    "prediction_market_selections": {
+     "rows": 993,
+     "sha256": "86ee2b74e9da001f82c8cec12907932392d9224b74ebb5b075a61d754396f348"
+    }
+   },
+   "created_at": "2026-10-26T16:07:38.864063+00:00",
+   "activated_at": "2026-10-26T16:07:38.864063+00:00"
+  }
+ ],
+ "season_release_history": [
+  {
+   "activation_id": 1,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": null,
+   "release_id": "preview-season-2026-a45c8f0d77eb46e0b5a7604c",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "58b8616535d2b01ec4df9932d1f659e4e43d2ed621af8d65c34e05f8581b8e00",
+   "created_at": "2026-10-15T00:54:27.106511+00:00"
+  },
+  {
+   "activation_id": 2,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-a45c8f0d77eb46e0b5a7604c",
+   "release_id": "preview-season-2026-58b22e1d6b2ffc4d752b105f",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "8a29de3193071b99353b63aa83f4c5933aca88f7449ed79daa9953f1e205e8c9",
+   "created_at": "2026-10-15T01:43:01.217638+00:00"
+  },
+  {
+   "activation_id": 3,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-58b22e1d6b2ffc4d752b105f",
+   "release_id": "preview-season-2026-d0272a48d3a0252fd4196db3",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "e667c99c230ea9c1b467f82dc1d859993482a73444ede68b2b7fecfe77b8adb0",
+   "created_at": "2026-10-15T02:07:38.251959+00:00"
+  },
+  {
+   "activation_id": 4,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-d0272a48d3a0252fd4196db3",
+   "release_id": "preview-season-2026-99c518e3bb66e7cc2adcc169",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "77dfcc05eaff3e54beeb7593ae62d025084968b8f2722d287d0eddaa934bfcc7",
+   "created_at": "2026-10-16T15:53:27.698347+00:00"
+  },
+  {
+   "activation_id": 5,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-99c518e3bb66e7cc2adcc169",
+   "release_id": "preview-season-2026-b1e0ac13c88baf86b97ab213",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "2ea2b95b78f5a6ac5a6018f9d6e8b9756d86d76fc59631fd1736df85b04f1e10",
+   "created_at": "2026-10-18T14:52:10.933574+00:00"
+  },
+  {
+   "activation_id": 6,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-b1e0ac13c88baf86b97ab213",
+   "release_id": "preview-season-2026-b7bc98eb26fa667f6c0941d6",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "d8d02ae36baf6eef4b2e770cb5fc71bb43b92a2036aad096808efe90d1e1527f",
+   "created_at": "2026-10-19T14:26:20.132711+00:00"
+  },
+  {
+   "activation_id": 7,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-b7bc98eb26fa667f6c0941d6",
+   "release_id": "preview-season-2026-ac3d6668440e1f3494ba92da",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "f67efd9cb5fc22bdc9e29cf2d30b77fe48e3a7862551f553f73e71ea46568742",
+   "created_at": "2026-10-19T19:12:34.874643+00:00"
+  },
+  {
+   "activation_id": 8,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-ac3d6668440e1f3494ba92da",
+   "release_id": "preview-season-2026-2cdf8916d915e21b3f25fa71",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "6b52cdf0a1c464c9873968fc58088eb431afcc82e65f3c47b1ed8eacdbe10429",
+   "created_at": "2026-10-19T19:46:57.153461+00:00"
+  },
+  {
+   "activation_id": 9,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-2cdf8916d915e21b3f25fa71",
+   "release_id": "preview-season-2026-125158328e025fb89c96ce0d",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "43349ac3cb1e477be4541e23bcdb1179dd11b4c9aa00bb5ad999df67df8bc348",
+   "created_at": "2026-10-20T14:42:12.817578+00:00"
+  },
+  {
+   "activation_id": 10,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-125158328e025fb89c96ce0d",
+   "release_id": "preview-season-2026-7a59b8a92d0f7a85ca0a377b",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "de7659e0b6d0f8f211b968281ea2461b7afa158a7a2a0b76efd419739bb5db42",
+   "created_at": "2026-10-25T16:10:27.283997+00:00"
+  },
+  {
+   "activation_id": 11,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-7a59b8a92d0f7a85ca0a377b",
+   "release_id": "preview-season-2026-ba909ab93515e133f5c85ecb",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "54a08a82ba7c152ed2c5eaf2a31d70fd8578bd949e3bdebeedfac3f7a0eca46d",
+   "created_at": "2026-10-25T20:57:04.281359+00:00"
+  },
+  {
+   "activation_id": 12,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-ba909ab93515e133f5c85ecb",
+   "release_id": "preview-season-2026-dfa7cc9949d0ad08ced0b05b",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "442c92f80a26b9115f9260adbe001c1ea3a0e60362e8f80dda4a68d7d26a121d",
+   "created_at": "2026-10-26T15:45:33.413152+00:00"
+  },
+  {
+   "activation_id": 13,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-dfa7cc9949d0ad08ced0b05b",
+   "release_id": "preview-season-2026-923f3c7bb97d007642b4d14c",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "587a1113eec0f80ca3afce65fa17eac3c674c45f45ccfed6150b0a46d4a7b1c4",
+   "created_at": "2026-10-26T16:07:38.864063+00:00"
+  },
+  {
+   "activation_id": 14,
+   "environment": "preview",
+   "season": 2026,
+   "prior_release_id": "preview-season-2026-923f3c7bb97d007642b4d14c",
+   "release_id": "preview-season-2026-3921681d03fcfcb0ebfe96b6",
+   "action": "activate",
+   "decision_ref": "stage-3-preview-activation",
+   "readback_sha256": "f56ba99dbdb7de2aff4305b0e3088c8029b642bcf85a91afe6b86e5c366b9cd2",
+   "created_at": "2026-11-02T04:55:51.697437+00:00"
+  }
+ ],
+ "projection_row_counts_by_release": {
+  "preview-season-2026-125158328e025fb89c96ce0d": {
+   "season_release_game_results": 388,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1695,
+   "season_release_market_snapshot_quotes": 3374,
+   "season_release_market_snapshots": 881,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 769,
+   "season_release_prediction_market_selections": 881,
+   "season_release_predictions": 444,
+   "season_release_site_week_selections": 9,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1654,
+   "season_release_team_game_measurements": 12416,
+   "season_release_team_game_stats": 776,
+   "season_release_team_game_yardage": 776,
+   "season_release_team_possession_adjusted": 3619,
+   "season_release_team_possession_stats": 11244,
+   "season_release_team_rating_components": 4692,
+   "season_release_team_resume": 1242,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 20614,
+   "season_release_v5_rating_snapshots": 2346
+  },
+  "preview-season-2026-2cdf8916d915e21b3f25fa71": {
+   "season_release_game_results": 388,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1693,
+   "season_release_market_snapshot_quotes": 3369,
+   "season_release_market_snapshots": 881,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 769,
+   "season_release_prediction_market_selections": 881,
+   "season_release_predictions": 444,
+   "season_release_site_week_selections": 9,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1654,
+   "season_release_team_game_measurements": 12416,
+   "season_release_team_game_stats": 776,
+   "season_release_team_game_yardage": 776,
+   "season_release_team_possession_adjusted": 3619,
+   "season_release_team_possession_stats": 11244,
+   "season_release_team_rating_components": 4692,
+   "season_release_team_resume": 1242,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 20614,
+   "season_release_v5_rating_snapshots": 2346
+  },
+  "preview-season-2026-58b22e1d6b2ffc4d752b105f": {
+   "season_release_game_results": 329,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1149,
+   "season_release_market_snapshot_quotes": 2177,
+   "season_release_market_snapshots": 771,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 657,
+   "season_release_prediction_market_selections": 771,
+   "season_release_predictions": 388,
+   "season_release_site_week_selections": 8,
+   "season_release_system_stats": 1,
+   "season_release_team_game_measurements": 10528,
+   "season_release_team_possession_adjusted": 3067,
+   "season_release_team_possession_stats": 9588,
+   "season_release_team_rating_components": 4140,
+   "season_release_team_season_stats": 17578,
+   "season_release_v5_rating_snapshots": 2070
+  },
+  "preview-season-2026-7a59b8a92d0f7a85ca0a377b": {
+   "season_release_game_results": 444,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1765,
+   "season_release_market_snapshot_quotes": 3514,
+   "season_release_market_snapshots": 941,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 881,
+   "season_release_prediction_market_selections": 941,
+   "season_release_predictions": 500,
+   "season_release_site_week_selections": 10,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1930,
+   "season_release_team_game_measurements": 14208,
+   "season_release_team_game_stats": 888,
+   "season_release_team_game_yardage": 888,
+   "season_release_team_possession_adjusted": 4171,
+   "season_release_team_possession_stats": 12900,
+   "season_release_team_rating_components": 5244,
+   "season_release_team_resume": 1380,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 23650,
+   "season_release_v5_rating_snapshots": 2622
+  },
+  "preview-season-2026-923f3c7bb97d007642b4d14c": {
+   "season_release_game_results": 444,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 2309,
+   "season_release_market_snapshot_quotes": 4602,
+   "season_release_market_snapshots": 993,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 881,
+   "season_release_prediction_market_selections": 993,
+   "season_release_predictions": 500,
+   "season_release_site_week_selections": 10,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1930,
+   "season_release_team_game_measurements": 14208,
+   "season_release_team_game_stats": 888,
+   "season_release_team_game_yardage": 888,
+   "season_release_team_possession_adjusted": 4171,
+   "season_release_team_possession_stats": 12900,
+   "season_release_team_rating_components": 5244,
+   "season_release_team_resume": 1380,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 23650,
+   "season_release_v5_rating_snapshots": 2622
+  },
+  "preview-season-2026-99c518e3bb66e7cc2adcc169": {
+   "season_release_game_results": 329,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1149,
+   "season_release_market_snapshot_quotes": 2177,
+   "season_release_market_snapshots": 771,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 657,
+   "season_release_prediction_market_selections": 771,
+   "season_release_predictions": 388,
+   "season_release_site_week_selections": 8,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1378,
+   "season_release_team_game_measurements": 10528,
+   "season_release_team_game_stats": 658,
+   "season_release_team_possession_adjusted": 3067,
+   "season_release_team_possession_stats": 9588,
+   "season_release_team_rating_components": 4140,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 17578,
+   "season_release_v5_rating_snapshots": 2070
+  },
+  "preview-season-2026-a45c8f0d77eb46e0b5a7604c": {
+   "season_release_game_results": 329,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 588,
+   "season_release_market_snapshot_quotes": 1062,
+   "season_release_market_snapshots": 110,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_market_selections": 110,
+   "season_release_predictions": 386,
+   "season_release_site_week_selections": 8,
+   "season_release_system_stats": 1,
+   "season_release_team_game_measurements": 10528,
+   "season_release_team_possession_adjusted": 3067,
+   "season_release_team_possession_stats": 9588,
+   "season_release_team_rating_components": 4140,
+   "season_release_team_season_stats": 17578,
+   "season_release_v5_rating_snapshots": 2070
+  },
+  "preview-season-2026-ac3d6668440e1f3494ba92da": {
+   "season_release_game_results": 388,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1693,
+   "season_release_market_snapshot_quotes": 3369,
+   "season_release_market_snapshots": 881,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 769,
+   "season_release_prediction_market_selections": 881,
+   "season_release_predictions": 444,
+   "season_release_site_week_selections": 9,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1654,
+   "season_release_team_game_measurements": 12416,
+   "season_release_team_game_stats": 776,
+   "season_release_team_game_yardage": 776,
+   "season_release_team_possession_adjusted": 3619,
+   "season_release_team_possession_stats": 11244,
+   "season_release_team_rating_components": 4692,
+   "season_release_team_resume": 1242,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 20614,
+   "season_release_v5_rating_snapshots": 2346
+  },
+  "preview-season-2026-b1e0ac13c88baf86b97ab213": {
+   "season_release_game_results": 388,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1274,
+   "season_release_market_snapshot_quotes": 2533,
+   "season_release_market_snapshots": 833,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 769,
+   "season_release_prediction_market_selections": 833,
+   "season_release_predictions": 444,
+   "season_release_site_week_selections": 9,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1654,
+   "season_release_team_game_measurements": 12416,
+   "season_release_team_game_stats": 776,
+   "season_release_team_possession_adjusted": 3619,
+   "season_release_team_possession_stats": 11244,
+   "season_release_team_rating_components": 4692,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 20614,
+   "season_release_v5_rating_snapshots": 2346
+  },
+  "preview-season-2026-b7bc98eb26fa667f6c0941d6": {
+   "season_release_game_results": 388,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1693,
+   "season_release_market_snapshot_quotes": 3369,
+   "season_release_market_snapshots": 881,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 769,
+   "season_release_prediction_market_selections": 881,
+   "season_release_predictions": 444,
+   "season_release_site_week_selections": 9,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1654,
+   "season_release_team_game_measurements": 12416,
+   "season_release_team_game_stats": 776,
+   "season_release_team_game_yardage": 776,
+   "season_release_team_possession_adjusted": 3619,
+   "season_release_team_possession_stats": 11244,
+   "season_release_team_rating_components": 4692,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 20614,
+   "season_release_v5_rating_snapshots": 2346
+  },
+  "preview-season-2026-ba909ab93515e133f5c85ecb": {
+   "season_release_game_results": 444,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 2227,
+   "season_release_market_snapshot_quotes": 4438,
+   "season_release_market_snapshots": 993,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 881,
+   "season_release_prediction_market_selections": 993,
+   "season_release_predictions": 500,
+   "season_release_site_week_selections": 10,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1930,
+   "season_release_team_game_measurements": 14208,
+   "season_release_team_game_stats": 888,
+   "season_release_team_game_yardage": 888,
+   "season_release_team_possession_adjusted": 4171,
+   "season_release_team_possession_stats": 12900,
+   "season_release_team_rating_components": 5244,
+   "season_release_team_resume": 1380,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 23650,
+   "season_release_v5_rating_snapshots": 2622
+  },
+  "preview-season-2026-d0272a48d3a0252fd4196db3": {
+   "season_release_game_results": 329,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 1149,
+   "season_release_market_snapshot_quotes": 2177,
+   "season_release_market_snapshots": 771,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 657,
+   "season_release_prediction_market_selections": 771,
+   "season_release_predictions": 388,
+   "season_release_site_week_selections": 8,
+   "season_release_system_stats": 1,
+   "season_release_team_game_measurements": 10528,
+   "season_release_team_possession_adjusted": 3067,
+   "season_release_team_possession_stats": 9588,
+   "season_release_team_rating_components": 4140,
+   "season_release_team_season_stats": 17578,
+   "season_release_v5_rating_snapshots": 2070
+  },
+  "preview-season-2026-dfa7cc9949d0ad08ced0b05b": {
+   "season_release_game_results": 444,
+   "season_release_game_venues": 761,
+   "season_release_games": 761,
+   "season_release_market_quotes": 2309,
+   "season_release_market_snapshot_quotes": 4602,
+   "season_release_market_snapshots": 993,
+   "season_release_matchup_data_publications": 1,
+   "season_release_prediction_grades": 881,
+   "season_release_prediction_market_selections": 993,
+   "season_release_predictions": 500,
+   "season_release_site_week_selections": 10,
+   "season_release_system_stats": 1,
+   "season_release_team_adjusted_epa": 1930,
+   "season_release_team_game_measurements": 14208,
+   "season_release_team_game_stats": 888,
+   "season_release_team_game_yardage": 888,
+   "season_release_team_possession_adjusted": 4171,
+   "season_release_team_possession_stats": 12900,
+   "season_release_team_rating_components": 5244,
+   "season_release_team_resume": 1380,
+   "season_release_team_season_roster": 138,
+   "season_release_team_season_stats": 23650,
+   "season_release_v5_rating_snapshots": 2622
+  }
+ }
+}

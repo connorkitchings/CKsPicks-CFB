@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-11-15: One-off prune of superseded Preview releases
+
+- **Context:** The Preview Neon branch reached 1003 MB of the 1 GB Free-plan cap and the Week 11 to 12 close failed at `release preview` with `DiskFull`.
+- **Decision:** One-off, owner-approved exception to "season releases are retained", for Preview only: delete the 13 Weeks 7 to 9 releases and their 14 history rows, keeping `d842113f`, `aca7b33d`, `5d50a63e` and `3921681d`. Production is untouched.
+- **Impact:** The immutability triggers were disabled briefly and re-enabled; deleted rows are exported to `session_logs/2026-11-15/04-preview-release-prune-export.json`. The prune did not free enough file space: the re-run still hit `DiskFull`, so the Neon plan needs upgrading.
+- **Source:** [contract](../plans/2026-11-15/preview-release-prune.md), session log `session_logs/2026-11-15/04-preview-release-prune.md`.
+
 ## 2026-11-09: Net success rate includes overtime
 
 - **Context:** Fleming's Week 10 chart disagrees with ours on blowouts. We first considered keeping garbage time and overtime; the investigation showed our data is sound and that keeping garbage time tracks his game ordering worse (rank agreement 0.952 kept against 0.966 dropped), so garbage-time exclusion does not explain the gap.
