@@ -52,7 +52,7 @@ function ScheduleTable({ entries, team, now, nextId }: { entries: readonly Sched
           <tr>
             <th scope="col" className={TH}>Wk</th><th scope="col" className={TH}>Date</th><th scope="col" className={TH}>Opponent</th>
             <th scope="col" className={clsx(TH, "text-right")}>Line</th><th scope="col" className={clsx(TH, "text-right")}>Total</th>
-            <th scope="col" className={TH}>Result</th><th scope="col" className={TH}>ATS</th><th scope="col" className={TH}>O/U</th>
+            <th scope="col" className={clsx(TH, "pl-4")}>Result</th><th scope="col" className={TH}>ATS</th><th scope="col" className={TH}>O/U</th>
             <th scope="col" className="sr-only">Matchup</th>
           </tr>
         </thead>
@@ -79,7 +79,7 @@ function ScheduleTable({ entries, team, now, nextId }: { entries: readonly Sched
                 </td>
                 <td className={clsx(TD, "text-right font-mono")}>{line === null ? NONE : lineText(line)}</td>
                 <td className={clsx(TD, "text-right font-mono")}>{game.totalLine === null ? NONE : game.totalLine.toFixed(1)}</td>
-                <td className={TD}>{final ? <Outcome game={game} team={team} /> : gameState(game, now) === "awaiting" ? <AwaitingTag game={game} now={now} /> : NONE}</td>
+                <td className={clsx(TD, "pl-4")}>{final ? <Outcome game={game} team={team} /> : gameState(game, now) === "awaiting" ? <AwaitingTag game={game} now={now} /> : NONE}</td>
                 <td className={TD}>{ats ? <span className={clsx("font-semibold", BET_TONE[ats])}>{ats}</span> : NONE}</td>
                 <td className={TD}>{ou ?? NONE}</td>
                 <td className={clsx(TD, "text-right text-xs")}><MatchupCellLink gameId={game.gameId} /></td>

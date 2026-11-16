@@ -29,12 +29,12 @@ test("phone rank label follows the selected sort and the résumé scale ignores 
   const offenseRank = await firstCard.getByRole("link").locator("span").first().textContent();
   expect(offenseRank).toBe("#1");
   const chartFor = () => page.getByRole("group", { name: "Strength versus résumé scatterplot" });
-  const cx = (label: string) => chartFor().getByRole("button", { name: label }).locator("circle").getAttribute("cx");
+  const cx = (team: string) => chartFor().locator(`[data-team="${team}"] circle.focus-ring`).getAttribute("cx");
   await gotoHydrated(page, "/teams?view=resume&conf=p4");
-  const label = (await chartFor().getByRole("button").first().getAttribute("aria-label"))!;
-  const filtered = await cx(label);
+  const team = (await chartFor().locator("[data-team]").first().getAttribute("data-team"))!;
+  const filtered = await cx(team);
   await gotoHydrated(page, "/teams?view=resume");
-  expect(await cx(label)).toBe(filtered);
+  expect(await cx(team)).toBe(filtered);
 });
 
 test("the phone schedule has no nested links and links opponents inside the row", async ({ page }) => {

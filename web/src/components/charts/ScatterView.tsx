@@ -33,8 +33,8 @@ export type ScatterViewProps = {
   /** Note under the figure, e.g. the defense inversion. */
 };
 
-/** A team scatter in the shared frame: national geometry, conference filter, highlight and export. */
-export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, description }: ScatterViewProps) {
+/** Phone-fit or desktop-scroll sizing shared by team scatters: `fitRef` goes on the phone wrapper, `view` is the viewBox size. */
+export function useScatterViewport() {
   const mobile = useIsPhone();
   const [fitNode, setFitNode] = useState<HTMLDivElement | null>(null);
   const [fitWidth, setFitWidth] = useState(MOBILE_FALLBACK_WIDTH);
@@ -44,6 +44,12 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
     observer.observe(fitNode);
     return () => observer.disconnect();
   }, [mobile, fitNode]);
+  return { mobile, fitRef: setFitNode, view: mobile ? mobileView(fitWidth) : SCATTER_VIEW };
+}
+
+/** A team scatter in the shared frame: national geometry, conference filter, highlight and export. */
+export function ScatterView({ shared, kind, side, data, config, describe, controls, exportMetric, description }: ScatterViewProps) {
+  const { mobile, fitRef, view } = useScatterViewport();
   const [detailsContainer, setDetailsContainer] = useState<HTMLDivElement | null>(null);
   const { season, week, roster, filter, highlight, onHighlight, compare, onCompare } = shared;
   const ranks = useMemo(() => scatterRanks(data), [data]);
@@ -157,12 +163,12 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       figure={
         <>
           {mobile ? (
-            <div ref={setFitNode} data-testid="scatter-fit">{chart(mobileView(fitWidth), true)}</div>
+            <div ref={fitRef} data-testid="scatter-fit">{chart(view, true)}</div>
           ) : (
             <>
               <p className="mb-2 text-xs text-ink-muted lg:hidden">Scroll chart horizontally to see every team.</p>
               <div className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-accent" role="region" aria-label="Team scatter chart, horizontally scrollable" tabIndex={0} data-testid="scatter-scroll">
-                <div className="min-w-[760px] lg:min-w-0">{chart(SCATTER_VIEW, true)}</div>
+                <div className="min-w-[760px] lg:min-w-0">{chart(view, true)}</div>
               </div>
             </>
           )}

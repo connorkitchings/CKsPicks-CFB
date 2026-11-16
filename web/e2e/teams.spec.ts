@@ -97,8 +97,8 @@ test.describe("team pages (fixture mode)", () => {
     expect(await noOverflow(page)).toBe(true);
     await expect(row("Rice")).toContainText("No line");
     const record = page.getByTestId("model-record");
-    await expect(record).toContainText("ATS (W–L) 1–1–1 · 50%");
-    await expect(record).toContainText("O/U 1–2 · 33%");
+    await expect(record).toContainText("Model ATS (W–L) 1–1–1 · 50%");
+    await expect(record).toContainText("Model O/U 1–2 · 33%");
     await expect(record).toContainText("Model picked the winner 2–1 · 67%");
     await expect(page.getByText("Model picks use the pregame forecast for each game. Display only — not betting advice.")).toBeVisible();
   });

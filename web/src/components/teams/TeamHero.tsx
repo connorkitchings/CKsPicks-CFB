@@ -99,8 +99,8 @@ export function TeamHero({ team, conference, summary, nextGame }: {
           <StripCell label="DEF" title="Defense rating and rank" value={ratingText(rating.defenseRating)} rank={summary.defenseRank} />
           <StripCell label="SOR" title="Strength of record rank" rank={rating.sorRank} />
           <StripCell label="SOS played" title="Strength of schedule played, rank" rank={summary.sos.played} />
-          <StripCell label="SOS left" title="Strength of schedule remaining, rank" rank={summary.sos.remaining} />
-          <StripCell label="Wins vs avg" title="Wins above average" value={typeof rating.waa === "number" ? `${rating.waa > 0 ? "+" : ""}${rating.waa.toFixed(1)}` : "—"} />
+          <StripCell label="SOS remaining" title="Strength of schedule remaining, rank" rank={summary.sos.remaining} />
+          <StripCell label="Wins above avg"title="Wins above average" value={typeof rating.waa === "number" ? `${rating.waa > 0 ? "+" : ""}${rating.waa.toFixed(1)}` : "—"} />
         </dl>
       )}
       {nextGame && <NextGame game={nextGame} team={team} />}
