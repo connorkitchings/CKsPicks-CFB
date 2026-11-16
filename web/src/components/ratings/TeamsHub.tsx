@@ -135,7 +135,7 @@ function ResumeView({ rows, extent, population, selected, onSelect, compareHref 
   const chart = <ScatterChart
     points={scatterPoints}
     xDomain={xDomain}
-    yDomain={[0.5, population + 0.5]}
+    yDomain={[0.5, population + 4]}
     onToggleHighlight={(team) => onSelect(team === selected ? "" : team)}
     highlight={selected || null}
     average={null}
