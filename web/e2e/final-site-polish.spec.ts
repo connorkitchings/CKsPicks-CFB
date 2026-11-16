@@ -44,6 +44,13 @@ test("long matchup names wrap and native disclosures work at 320px", async ({ pa
     });
     expect(bounds.roleTop).toBeGreaterThanOrEqual(bounds.nameBottom - 1);
     expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width);
+    const fitsWords = await heading.evaluate((node) => {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d")!;
+      context.font = getComputedStyle(node).font;
+      return ["Eastern", "Michigan", "Offense"].every((word) => context.measureText(word).width <= node.clientWidth);
+    });
+    expect(fitsWords).toBe(true);
   }
   await expect(tape.locator('[title="Model Offense Rank"]')).toBeVisible();
   await expect(tape.locator('[title="Model Defense Rank"]')).toBeVisible();
