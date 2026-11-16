@@ -1,6 +1,6 @@
 # Final site corrections and limited polish
 
-- **Status:** In Progress
+- **Status:** Implemented 2026-11-16 locally on `dev`; not pushed or deployed
 - **Created:** 2026-11-16
 - **Approval source:** Owner approved the complete revised conversational plan with “Please implement the plan.” on 2026-11-16.
 - **Implementation log:** `session_logs/2026-11-16/01-final-site-corrections.md`
@@ -51,3 +51,11 @@ Mechanical amendments may proceed only within the existing scope and acceptance 
 - The first focused run found a test-only locator mismatch (`textbox` versus the input's `searchbox` role), corrected without changing the control. The first full browser run found missing text whitespace between wrapped team-name and role spans; literal whitespace now preserves text/accessible content while the visual block layout remains.
 - Matching baseline and changed fixture builds report identical route classifications. Team-profile server query guards and `revalidate = 300` are unchanged.
 - Fresh real-Preview inspection at 320px found that sharing a heading row with the dot and rank forced ordinary words to break. The narrow layout therefore gives the name/role the full column and places the dot/rank on another line; desktop placement remains intact. This stays within the approved heading-wrapping adjustment, and the browser check now verifies word-width capacity as well as overflow.
+
+### Completion
+
+- `make check` passed on the final production changes: Python 2,546 passed / 12 skipped; web publication/unit 519 passed / 1 skipped; Worker 14 passed; Ruff, contracts, quality registry, strict docs, web lint/typecheck/build passed. Subsequent test-only navigation synchronization passed fresh lint/typecheck.
+- Final `CI=1 make web-e2e`: 495 passed / 10 skipped, no retries. The strengthened Trends history test also passed twelve repetitions with retries disabled. An earlier unrelated away/home ordering flake passed six focused repetitions; no unresolved new failure remains.
+- Security/reliability/accessibility, design/simplicity, correctness/testing and performance reviews completed. The two test-evidence gaps were closed and re-reviewed; no actionable finding remains.
+- After integration, 56 real Preview page/viewport/theme checks at 320/390/820/1440px returned 200 with zero page overflow and zero browser errors. Fresh 320/390px light/dark matchup captures and desktop captures were inspected; the corrected name/role layout is readable and dark dots are visible. Health confirms predictions mode and full active-week coverage. No physical Safari/iPhone test was performed.
+- Clean `dev` was proved an ancestor of the reviewed tip and moved with `git reset --keep`; tracked web/contract content matched. The implementation worktree and branch were removed from the primary checkout after workers finished. Outcome/Next were finalized only after this integration and cleanup, in a temporary documentation-only worktree. No push or deployment.
