@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// Legacy URLs answer a 307 with the query string preserved.
+// Legacy URLs answer a 307 (or 308 for /ratings) with the query string preserved.
 const redirects = [
   ["/results?week=5", "/?week=5"],
   ["/results", "/"],
@@ -17,6 +17,21 @@ for (const [from, to] of redirects) {
   test(`${from} redirects to ${to} with a 307`, async ({ request }) => {
     const response = await request.get(from, { maxRedirects: 0 });
     expect(response.status()).toBe(307);
+    const location = new URL(response.headers()["location"], "http://127.0.0.1");
+    expect(location.pathname + location.search).toBe(to);
+  });
+}
+
+const permanent = [
+  ["/ratings", "/teams"],
+  ["/ratings?sort=sor&dir=asc&q=tex&view=compare", "/teams?sort=sor&dir=asc&q=tex&view=compare"],
+  ["/ratings?team=Texas&team=Ohio%20State", "/teams?team=Texas&team=Ohio%20State"],
+] as const;
+
+for (const [from, to] of permanent) {
+  test(`${from} redirects to ${to} with a 308`, async ({ request }) => {
+    const response = await request.get(from, { maxRedirects: 0 });
+    expect(response.status()).toBe(308);
     const location = new URL(response.headers()["location"], "http://127.0.0.1");
     expect(location.pathname + location.search).toBe(to);
   });

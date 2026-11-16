@@ -217,7 +217,7 @@ function WeeklyResults({ rows, overall, label }: { rows: WeekRow[]; overall: Rec
   );
 }
 
-export function PerformanceDashboard({ data, title, initialTarget }: { data: PerformanceView; title: string; initialTarget: MarketTarget }) {
+export function PerformanceDashboard({ data, title, season, initialTarget }: { data: PerformanceView; title: string; season: number; initialTarget: MarketTarget }) {
   const games = data.gradedGames;
   const overall = useMemo(() => {
     const spread = recordFor(games, (game) => game.spreadResult);
@@ -242,7 +242,7 @@ export function PerformanceDashboard({ data, title, initialTarget }: { data: Per
   return (
     <div className="space-y-2 sm:space-y-6">
       <SummaryLine
-        parts={["2026 · V5", `${weeklyData.length} graded ${weeklyData.length === 1 ? "week" : "weeks"}`]}
+        parts={[`${season} · V5`, `${weeklyData.length} graded ${weeklyData.length === 1 ? "week" : "weeks"}`]}
         className="text-xs text-ink-muted sm:hidden"
         data-testid="model-summary"
       />
@@ -320,8 +320,8 @@ export function PerformanceDashboard({ data, title, initialTarget }: { data: Per
             {([
               ["Spread average miss", decimal(data.summary.marginMae, " pts")],
               ["Total average miss", decimal(data.summary.totalMae, " pts")],
-              ["Spread 95% interval", decimal(data.summary.marginCoverage95, "%")],
-              ["Total 95% interval", decimal(data.summary.totalCoverage95, "%")],
+              ["Spread finals inside the model's 95% band", decimal(data.summary.marginCoverage95, "%")],
+              ["Total finals inside the model's 95% band", decimal(data.summary.totalCoverage95, "%")],
             ] as const).map(([label, value]) => (
               <div key={label}><dt>{label}</dt><dd className="font-mono font-semibold text-ink">{value}</dd></div>
             ))}

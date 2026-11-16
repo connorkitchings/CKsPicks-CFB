@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
-import { publicationScope } from "@/lib/publication";
+import { publicationScope, resolveSeasonParam } from "@/lib/publication";
 import { resolveTeam } from "@/lib/team-routes";
 import { getTeamGames, getTeamHistory, getWeeklyRatings, getRatingAnalysisHistory, type Rating } from "@/lib/v5";
 import { ratingsFixture } from "@/test/fixtures/ratings";
@@ -46,11 +46,11 @@ export async function generateMetadata({ params }: { params: Promise<{ team: str
  * The team's offense and defense stats as of `week`, or the week before when that snapshot is not published
  * yet. Null when they cannot be read or none are published.
  */
-async function loadUnitRows(team: string, week: number): Promise<UnitMatchupRow[] | null> {
+async function loadUnitRows(season: number, team: string, week: number): Promise<UnitMatchupRow[] | null> {
   try {
     for (const asOfWeek of week > 0 ? [week, week - 1] : [week]) {
-      const [season, possession] = await Promise.all([getTeamSeasonStats(publicationScope.season, asOfWeek, [team]), getTeamPossessionStats(publicationScope.season, asOfWeek, [team])]);
-      const rows = [...season, ...possession];
+      const [seasonRows, possession] = await Promise.all([getTeamSeasonStats(season, asOfWeek, [team]), getTeamPossessionStats(season, asOfWeek, [team])]);
+      const rows = [...seasonRows, ...possession];
       if (rows.length > 0) return buildUnitRows(rows, team, team);
     }
     return null;
@@ -64,6 +64,9 @@ export default async function TeamPage({ params, searchParams }: { params: Promi
   const resolved = resolveTeam((await params).team);
   if (!resolved) notFound();
   const { gameName: team, ratingName } = resolved;
+  // `?now=` and `?season=` are read only in UI-test mode so production keeps the page statically revalidated.
+  const query = isUiTestMode() ? await searchParams : undefined;
+  const season = resolveSeasonParam(query?.season, publicationScope.season);
   let history: Rating[] = [];
   let games: Awaited<ReturnType<typeof getTeamGames>> = [];
   let current: Rating[] = [];
@@ -85,21 +88,20 @@ export default async function TeamPage({ params, searchParams }: { params: Promi
   } else {
     try {
       // Rating snapshots store nine teams under legacy names; games use CFBD names.
-      [history, games] = await Promise.all([getTeamHistory(publicationScope.season, ratingName), getTeamGames(publicationScope.season, team)]);
+      [history, games] = await Promise.all([getTeamHistory(season, ratingName), getTeamGames(season, team)]);
     } catch (error) {
       console.error("V5 team page query failed", error);
       unavailable = true;
     }
     // The summary, rank history and conference are secondary: a failed read leaves them out instead of hiding the page.
     [current, analysisHistory, roster, gameStats] = await Promise.all([
-      getWeeklyRatings(publicationScope.season, "current").then((result) => result.ratings).catch(() => []),
-      getRatingAnalysisHistory(publicationScope.season, "current").catch(() => []),
-      getTeamSeasonRoster(2026).then((rows) => rows ?? []).catch(() => []),
-      getTeamGameStats(2026).catch(() => null),
+      getWeeklyRatings(season, "current").then((result) => result.ratings).catch(() => []),
+      getRatingAnalysisHistory(season, "current").catch(() => []),
+      getTeamSeasonRoster(season).then((rows) => rows ?? []).catch(() => []),
+      getTeamGameStats(season).catch(() => null),
     ]);
   }
-  // `?now=` is a UI-test override; reading search params only there keeps the page statically revalidated in production.
-  const now = pageNow(isUiTestMode() ? await searchParams : undefined);
+  const now = pageNow(query);
   const nextGame = nextUpcomingGame(games, now);
   // Stats snapshots cover games completed before a week's slate: the week after the last played game, so a bye
   // before the next game does not ask for a snapshot that is not published yet.
@@ -107,7 +109,7 @@ export default async function TeamPage({ params, searchParams }: { params: Promi
   const statsWeek = played.length > 0 ? played[played.length - 1].week + 1 : nextGame ? nextGame.week : null;
   const unitRows = statsWeek === null ? null
     : process.env.CFB_UI_TEST_MODE === "1" ? buildUnitRows(fixtureRows([team], ""), team, team)
-    : await loadUnitRows(team, statsWeek);
+    : await loadUnitRows(season, team, statsWeek);
   const rankHistory = analysisHistory.flatMap((entry) => {
     const row = entry.ratings.find((rating) => rating.team === ratingName);
     const rank = nationalRanks(entry.ratings, "overall").get(ratingName);
@@ -115,18 +117,18 @@ export default async function TeamPage({ params, searchParams }: { params: Promi
   });
   const currentRow = current.find((row) => row.team === ratingName);
   const evidence: UnitRatingBreakdown[] = currentRow && publicationScope.mode === "predictions"
-    ? await getTeamRatingEvidence(publicationScope.season, team, currentRow, current)
+    ? await getTeamRatingEvidence(season, team, currentRow, current)
     : [];
   const summary = buildTeamSummary(current, ratingName, rankHistory);
   const conference = roster.find((row) => row.team === ratingName || row.team === team)?.conference ?? null;
   return (
     <PageShell
       width="slate"
-      header={{ season: publicationScope.season, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons,
+      header={{ season, systemName: null, updatedAt: null, allowedSeasons: publicationScope.allowedSeasons,
         back: { href: "/teams", label: "Back to teams", title: teamAbbr(team) } }}
       mainClassName="space-y-4 py-4 sm:py-8"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/teams" className="inline-flex min-h-11 items-center text-sm max-sm:hidden text-accent-ink hover:underline">← All teams</Link><Link href={`/teams?${new URLSearchParams({ view: "compare", team: ratingName, season: String(publicationScope.season) })}`} className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-semibold text-accent-ink">Compare this team</Link></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><Link href="/teams" className="inline-flex min-h-11 items-center text-sm max-sm:hidden text-accent-ink hover:underline">← All teams</Link><Link href={`/teams?${new URLSearchParams({ view: "compare", team: ratingName, season: String(season) })}`} className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-semibold text-accent-ink">Compare this team</Link></div>
       <TeamHero team={team} conference={conference} summary={summary} nextGame={nextGame} />
       <nav aria-label="Team sections" className="flex flex-wrap gap-x-4 gap-y-1 border-b border-line pb-3 text-sm font-semibold text-accent-ink">{[["team-games", "Schedule"], ["team-rating-trend", "Strength"], ["team-rating-evidence", "Rating evidence"], ["team-game-log", "Game log"], ["team-unit-profile", "Unit profile"]].map(([id, label]) => <a key={id} href={`#${id}`} className="inline-flex min-h-11 items-center hover:underline">{label}</a>)}</nav>
       {unavailable ? <Notice tone="empty">Team data is temporarily unavailable.</Notice> : (

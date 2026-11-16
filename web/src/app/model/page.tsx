@@ -71,7 +71,7 @@ export default async function ModelPage({ searchParams }: { searchParams?: Promi
         <ModelTabs active="record" />
         {/* Phones: the app bar names the page, so the heading stays for screen readers only. */}
         <div className="max-sm:sr-only">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink max-sm:hidden">2026 · V5</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink max-sm:hidden">{publicationScope.season} · V5</p>
           <PageHeading title="Season record & performance">
             One continuous V5 record from Week 0 onward, with spreads and totals reported separately.
           </PageHeading>
@@ -82,7 +82,7 @@ export default async function ModelPage({ searchParams }: { searchParams?: Promi
           <StatusCard title={title} message="No V5 weeks are selected." />
         ) : record.value.gradedGames.length === 0 ? (
           <StatusCard title={title} message="The selected runs have games, but no grades are available yet." />
-        ) : <PerformanceDashboard data={clientView(record.value)} title={title} initialTarget={initialTarget} />}
+        ) : <PerformanceDashboard data={clientView(record.value)} title={title} season={publicationScope.season} initialTarget={initialTarget} />}
         <p className="text-xs leading-relaxed text-ink-muted max-sm:hidden">{EXPLAINER}</p>
         <Disclosure title="About this record" className="sm:hidden">
           <div className="space-y-2 text-xs leading-relaxed">

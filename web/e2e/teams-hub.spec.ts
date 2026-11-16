@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { gotoHydrated } from "./helpers";
 
-test("/ratings permanently redirects to Teams and keeps every query parameter", async ({ page }) => {
+test("/ratings lands on Teams in the browser with its query intact", async ({ page }) => {
   await page.goto("/ratings?sort=sor&dir=asc&q=tex&view=compare");
-  await expect(page).toHaveURL(/\/teams\?/);
   const url = new URL(page.url());
   expect(url.pathname).toBe("/teams");
   expect(Object.fromEntries(url.searchParams)).toMatchObject({ sort: "sor", dir: "asc", q: "tex", view: "compare" });

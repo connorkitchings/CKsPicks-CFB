@@ -5,9 +5,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  // 307 first; moves to 308 after the owner accepts. Query strings are forwarded automatically.
+  // `/ratings` is permanent (308); the rest stay 307 until the owner accepts. Query strings are forwarded automatically.
   async redirects() {
     return [
+      { source: "/ratings", destination: "/teams", permanent: true },
       { source: "/results", destination: "/", permanent: false },
       { source: "/matchup", destination: "/", permanent: false },
       { source: "/performance", destination: "/model", permanent: false },

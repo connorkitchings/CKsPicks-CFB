@@ -336,10 +336,11 @@ export const getWeeklyRatings = cache(async (
 });
 
 /** Exact-source, cutoff-bounded history. One release-scoped read; no week-only cross-generation join. */
-export const getRatingAnalysisHistory = cache(async (season: number, targetPeriod: string): Promise<RatingHistoryPeriod[]> => {
+export const getRatingAnalysisHistory = cache(releaseCached("getRatingAnalysisHistory", async (season: number, targetPeriod: string): Promise<RatingHistoryPeriod[]> => {
   const selected = await getWeeklyRatings(season, targetPeriod);
   const selectedPeriod = analysisPeriod(selected.periodMeta, selected.ratings);
-  if (selected.period === "preseason" || !selected.ratings.length) return [selectedPeriod];
+  // History is release-scoped; without an active release there is no exact source to bound it by.
+  if (selected.period === "preseason" || !selected.ratings.length || !await getSeasonReleaseContext(season)) return [selectedPeriod];
   const source = selected.periodMeta.sourceManifestSha256 ?? selected.ratings[0]?.sourceManifestSha256;
   const cutoff = selected.periodMeta.cutoffUtc ?? selected.ratings[0]?.cutoffUtc;
   if (!source || !cutoff) return [selectedPeriod];
@@ -367,7 +368,7 @@ export const getRatingAnalysisHistory = cache(async (season: number, targetPerio
     history.push(analysisPeriod({ id, cutoffUtc, sourceManifestSha256: source, ...periodLabelFields(cutoffUtc, facts.get(id), id === selected.period) }, [...byTeam.values()]));
   }
   return boundedRatingHistory(history, selectedPeriod);
-});
+}));
 
 /** `team` must be the rating name from `resolveTeam`, which bounds the cache keys to known schools. */
 export const getTeamHistory = cache(releaseCached("getTeamHistory", async (season: number, team: string): Promise<Rating[]> => {
