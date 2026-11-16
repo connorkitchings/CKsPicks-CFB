@@ -11,9 +11,9 @@ test("SiteNav includes Games, Teams, Graphs, and Model in navigation items", () 
   assert.match(source, /\["Model",\s*"\/model"\]/);
 });
 
-test("the retired ratings page is a permanent redirect to Teams in the Next config", () => {
+test("the retired ratings page is a temporary (307) redirect to Teams in the Next config", () => {
   const source = readFileSync(new URL("../../next.config.ts", import.meta.url), "utf8");
-  assert.match(source, /source: "\/ratings", destination: "\/teams", permanent: true/);
+  assert.match(source, /source: "\/ratings", destination: "\/teams", permanent: false/);
 });
 
 test("Teams hub keeps national ranks fixed, validates sort and direction, and exposes aria-sort", () => {

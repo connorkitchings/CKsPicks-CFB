@@ -55,16 +55,30 @@ async function holdRender(page: Page): Promise<void> {
     const gate = new Promise<void>((resolve) => (release = resolve));
     Object.assign(window, { __releaseRender: release });
     Object.defineProperty(document.fonts, "ready", { get: () => gate, configurable: true });
-    // Track canvas encodes so `drainRender` can tell when no image work is still in flight.
+    // Track every async step of an export (font and image fetches, canvas encodes) so
+    // `drainRender` can tell when no image work is still in flight.
     const win = window as unknown as { __encodesInFlight: number };
     win.__encodesInFlight = 0;
+    const nativeFetch = window.fetch;
+    window.fetch = (...args) => {
+      // Next's own navigation and prefetch requests are not export work and may stay open.
+      const url = String(args[0] instanceof Request ? args[0].url : args[0]);
+      if (url.includes("_rsc=")) return nativeFetch.apply(window, args);
+      win.__encodesInFlight += 1;
+      return nativeFetch.apply(window, args).finally(() => { win.__encodesInFlight -= 1; });
+    };
     const toBlob = HTMLCanvasElement.prototype.toBlob;
     HTMLCanvasElement.prototype.toBlob = function (callback, ...rest) {
       win.__encodesInFlight += 1;
-      return toBlob.call(this, (blob) => {
+      try {
+        return toBlob.call(this, (blob) => {
+          win.__encodesInFlight -= 1;
+          callback(blob);
+        }, ...rest);
+      } catch (error) {
         win.__encodesInFlight -= 1;
-        callback(blob);
-      }, ...rest);
+        throw error;
+      }
     };
   });
 }
@@ -72,14 +86,18 @@ async function holdRender(page: Page): Promise<void> {
 const releaseRender = (page: Page) => page.evaluate(() => (window as unknown as { __releaseRender: () => void }).__releaseRender());
 
 /**
- * Waits until a released render has nothing left to do: 30 animation frames pass and no canvas encode is in
- * flight. Used before asserting that an abandoned export did nothing, which has no positive event to wait for.
+ * Waits until a released render has nothing left to do: no font or image fetch or canvas encode is in flight
+ * for 30 consecutive animation frames. Used before asserting that an abandoned export did nothing,
+ * which has no positive event to wait for.
  */
 async function drainRender(page: Page): Promise<void> {
   await page.evaluate(async () => {
-    for (let frame = 0; frame < 30; frame += 1) await new Promise((resolve) => requestAnimationFrame(resolve));
+    const win = window as unknown as { __encodesInFlight: number };
+    for (let quiet = 0; quiet < 30; ) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      quiet = win.__encodesInFlight === 0 ? quiet + 1 : 0;
+    }
   });
-  await expect.poll(() => page.evaluate(() => (window as unknown as { __encodesInFlight: number }).__encodesInFlight)).toBe(0);
 }
 
 async function highlightMichigan(page: Page): Promise<void> {

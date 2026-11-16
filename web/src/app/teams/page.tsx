@@ -35,7 +35,7 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
   } else {
     try {
       const [periods, loadedRoster] = await Promise.all([getRatingPeriods(season), getTeamSeasonRoster(season).catch(() => null)]);
-      const result = await getWeeklyRatings(season, normalizeRatingPeriod(requested, periods.map((meta) => meta.id)));
+      const result = await getWeeklyRatings(season, normalizeRatingPeriod(requested, periods));
       current = analysisPeriod(result.periodMeta, result.ratings);
       history = await getRatingAnalysisHistory(season, result.period).catch(() => [current]);
       timeline = periods.map((meta) => ({ id: meta.id, label: meta.postWeek === undefined ? meta.label : `Through Week ${meta.postWeek}` }));

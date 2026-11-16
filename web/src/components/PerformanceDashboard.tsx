@@ -217,7 +217,7 @@ function WeeklyResults({ rows, overall, label }: { rows: WeekRow[]; overall: Rec
   );
 }
 
-export function PerformanceDashboard({ data, title, season, initialTarget }: { data: PerformanceView; title: string; season: number; initialTarget: MarketTarget }) {
+export function PerformanceDashboard({ data, title, season }: { data: PerformanceView; title: string; season: number }) {
   const games = data.gradedGames;
   const overall = useMemo(() => {
     const spread = recordFor(games, (game) => game.spreadResult);
@@ -295,7 +295,7 @@ export function PerformanceDashboard({ data, title, season, initialTarget }: { d
         </Card>
       </section>
 
-      <ErrorExplorer pairs={data.pairs} initialTarget={initialTarget} />
+      <ErrorExplorer pairs={data.pairs} />
 
       <h2 id="filter-heading" className="text-sm font-semibold text-ink">Week by week</h2>
       <Card as="section" padding="none" aria-labelledby="weekly-heading" className="overflow-hidden">

@@ -1,15 +1,16 @@
 const FIXED_PERIODS = ["current", "preseason", "pre"];
-const WEEK_STYLE = /^(?:post-|week-)?\d+$/;
+const WEEK_STYLE = /^(?:post-|week-)?(\d+)$/;
 
 /**
  * Maps a raw `?period=` / `?week=` value to one the ratings loader should see. Anything that is not a
- * fixed tab, one of the release's own period ids, or a retired week-style param becomes `current`, so
- * arbitrary strings never reach `getWeeklyRatings` as uncached queries.
+ * fixed tab, one of the release's own period ids, or a retired week-style param naming one of the
+ * release's weeks becomes `current`, so arbitrary strings never reach `getWeeklyRatings` as uncached queries.
  */
-export function normalizeRatingPeriod(requested: string, knownPeriodIds: readonly string[]): string {
-  return FIXED_PERIODS.includes(requested) || WEEK_STYLE.test(requested) || knownPeriodIds.includes(requested)
-    ? requested
-    : "current";
+export function normalizeRatingPeriod(requested: string, knownPeriods: readonly { id: string; postWeek?: number }[]): string {
+  const week = WEEK_STYLE.exec(requested)?.[1];
+  const known = FIXED_PERIODS.includes(requested)
+    || knownPeriods.some((period) => period.id === requested || (week !== undefined && period.postWeek === Number(week)));
+  return known ? requested : "current";
 }
 
 /**

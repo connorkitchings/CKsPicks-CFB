@@ -2,16 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { canBoundHistoryByRelease, normalizeRatingPeriod } from "./rating-request.ts";
 
-const known = ["abc123@2026-10-12T00:00:00.000Z"];
+const known = [{ id: "abc123@2026-10-12T00:00:00.000Z", postWeek: 3 }, { id: "preseason-id" }];
 
 test("fixed tabs, known period ids and retired week params pass through", () => {
-  for (const value of ["current", "preseason", "pre", known[0], "3", "post-3", "week-3"]) {
+  for (const value of ["current", "preseason", "pre", known[0].id, "3", "post-3", "week-3"]) {
     assert.equal(normalizeRatingPeriod(value, known), value);
   }
 });
 
 test("unknown period strings fall back to current", () => {
-  for (const value of ["", "nope", "post-", "week-3; drop table", "abc123@2099-01-01T00:00:00.000Z"]) {
+  for (const value of ["", "nope", "post-", "week-3; drop table", "4", "1000001", "post-99", "abc123@2099-01-01T00:00:00.000Z"]) {
     assert.equal(normalizeRatingPeriod(value, known), "current");
   }
 });

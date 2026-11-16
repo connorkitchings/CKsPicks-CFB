@@ -14,7 +14,6 @@ import { Wordmark } from "./Wordmark";
 const TAB_TITLES = new Set(["Games", "Teams", "Graphs", "Model"]);
 
 const TITLES: [prefix: string, title: string][] = [
-  ["/ratings", "Teams"],
   ["/stats", "Graphs"],
   ["/model", "Model"],
   ["/matchup", "Matchup"],

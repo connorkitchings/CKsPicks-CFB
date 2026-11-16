@@ -6,7 +6,7 @@ import {
   marketComparison,
   type MarketTarget,
 } from "@/lib/performance-market";
-import { pairedErrors, parseTarget } from "@/lib/performance-errors";
+import { pairedErrors } from "@/lib/performance-errors";
 import { weeklyAndCumulative } from "@/lib/performance-trend";
 import { publicationScope } from "@/lib/publication";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
@@ -48,7 +48,6 @@ export default async function ModelPage({ searchParams }: { searchParams?: Promi
   // `?target=` only picks which already-loaded target the error view opens on; unknown values fall back.
   // `?fixture=partial|archive` are UI-test variants and are read only in fixture mode.
   const params = await searchParams;
-  const initialTarget = parseTarget(params?.target);
   const fixture = isUiTestMode() ? params?.fixture : undefined;
   const record = isUiTestMode()
     ? { status: "ok" as const, value: fixture === "partial" ? partialPerformanceFixture : fixture === "archive" ? archivePerformanceFixture : mobilePerformanceFixture }
@@ -82,7 +81,7 @@ export default async function ModelPage({ searchParams }: { searchParams?: Promi
           <StatusCard title={title} message="No V5 weeks are selected." />
         ) : record.value.gradedGames.length === 0 ? (
           <StatusCard title={title} message="The selected runs have games, but no grades are available yet." />
-        ) : <PerformanceDashboard data={clientView(record.value)} title={title} season={publicationScope.season} initialTarget={initialTarget} />}
+        ) : <PerformanceDashboard data={clientView(record.value)} title={title} season={publicationScope.season} />}
         <p className="text-xs leading-relaxed text-ink-muted max-sm:hidden">{EXPLAINER}</p>
         <Disclosure title="About this record" className="sm:hidden">
           <div className="space-y-2 text-xs leading-relaxed">

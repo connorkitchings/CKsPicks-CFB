@@ -108,6 +108,7 @@ function Scatter({
     }), event.clientX, event.clientY);
     if (nearest === undefined) return;
     setFocusId(Number(nearest));
+    nodes.current.get(Number(nearest))?.focus();
     onSelect(Number(nearest));
   }
 
@@ -270,15 +271,16 @@ export function ErrorExplorer({
   pairs,
 }: {
   pairs: Record<MarketTarget, PairedError[]>;
-  initialTarget?: MarketTarget;
 }) {
   const target = parseTarget(useSearchParams().get("target"));
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  // Keyed to its target so Back/Forward changing `?target=` drops the selection too.
+  const [selection, setSelection] = useState<{ target: MarketTarget; id: number | null } | null>(null);
+  const selectedId = selection?.target === target ? selection.id : null;
+  const setSelectedId = (id: number | null) => setSelection({ target, id });
   const rows = pairs[target];
   const selected = rows.find((pair) => pair.gameId === selectedId) ?? null;
 
   function changeTarget(next: MarketTarget) {
-    setSelectedId(null);
     replaceSearchParams("/model", (params) => params.set("target", next));
   }
 

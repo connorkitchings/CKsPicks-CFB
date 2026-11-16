@@ -34,7 +34,7 @@ export function TeamSearch({ season, onNavigate }: { season: number | null; onNa
         if (event.key === "ArrowUp") { event.preventDefault(); setActive((index) => Math.max(0, index - 1)); }
         if (event.key === "Enter" && open && matches[active]) { event.preventDefault(); go(matches[active]); }
       }} />
-    <div aria-live="polite" className="sr-only">{searchAnnouncement(query, matches.length)}</div>
+    <div aria-live="polite" className="sr-only">{searchAnnouncement(query, searchTeams(query, Infinity).length)}</div>
     {expanded && <ul id={`${id}-results`} role="listbox" aria-label="Matching teams" className="absolute inset-x-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-line bg-surface-card p-1 shadow-lg">
       {matches.map((team, index) => <li key={team} id={`${id}-${index}`} role="option" aria-selected={index === active} onMouseDown={(event) => event.preventDefault()} onClick={() => go(team)} className={`cursor-pointer rounded px-3 py-3 text-sm text-ink ${index === active ? "bg-surface-inset" : ""}`}>{team}</li>)}
     </ul>}
