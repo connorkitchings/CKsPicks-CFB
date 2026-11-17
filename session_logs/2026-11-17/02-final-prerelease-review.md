@@ -82,13 +82,13 @@ All 14 findings were approved by the owner (no deferrals) and fixed on branch `c
 - Known residue, all closed by the visual re-capture below (see "Visual re-capture"):
   1. The Net success "-12.1" label over a neighbouring bar's logo: closed by `5fffced2` (the break value now has a backing rect); no logo shows through on the page or in the PNG export.
   2. The 1024 List-layout model line wrapping to two lines inside its cell: still wraps at 1024 (for example "model: Toledo by 16.2 · best line: Bovada"), and row heights stay uniform; no commit changed it, so this stays an accepted behaviour rather than a fix.
-  3. The sportsbook name under the matchup market line wrapping at 390: closed by `9b6431d5`, which stacks the book name under the value instead of keeping it on one line beside it; stacked cells are 31px tall, so the cap in `mobile-matchup.spec.ts` is 32px at both 390 and 320.
+  3. The sportsbook name under the matchup market line wrapping at 390: closed by `ea51fb99`, which stacks the book name under the value instead of keeping it on one line beside it; stacked cells are 31px tall, so the cap in `mobile-matchup.spec.ts` is 32px at both 390 and 320.
   4. The one unidentified 10.4px label on the Notre Dame team page at 1024: closed by `1bb51f59` (the team Game log is measured on every viewport and set to 12px); no rendered SVG text is under 12px on any page now.
 - Not done at the time: a full visual re-capture of every page after the fixes, and the dark 1280 and 1024 passes. Both are done in "Visual re-capture" below.
 
 ## Visual re-capture
 
-Second visual pass after three further fixes: `1bb51f59` (team Game log measured on every viewport, 12px), `5fffced2` (Net success break value has a backing rect) and `9b6431d5` (matchup sportsbook name stacked under the value on phones). Branch `connorkitchings/close-prerelease-gaps` at `9b6431d5`, served on `http://127.0.0.1:3112` with `PORT=3112 make web-local ENV=production` after deleting `web/.next` (Production data, Week 12 live, publication mode `predictions`). No source file was changed; `web/.next` was deleted and the server stopped afterwards.
+Second visual pass after three further fixes: `1bb51f59` (team Game log measured on every viewport, 12px), `5fffced2` (Net success break value has a backing rect) and `ea51fb99` (matchup sportsbook name stacked under the value on phones). Local `dev` at `ea51fb99`, served on `http://127.0.0.1:3112` with `PORT=3112 make web-local ENV=production` after deleting `web/.next` (Production data, Week 12 live, publication mode `predictions`). No source file was changed; `web/.next` was deleted and the server stopped afterwards.
 
 Method as in the review: Playwright driven by scripts outside the repo; full-page captures sliced to viewport height into contact sheets, each opened and looked at; 1x crops of the Net success break labels; downloaded PNG exports opened. Viewports: 1440x900, 1280x800 and 1024x768 in light and dark; 390x844 light and dark; 320x568 light. The same automated checks (horizontal scroll, touch targets, rendered SVG text size as font size times `getScreenCTM` scale, HTML text under 11px, console, failed requests) ran on 25 page URLs in all 9 viewport and theme combinations (225 runs), plus a per-element SVG text size and sportsbook-cell measurement at 1440, 1280, 1024, 390 and 320. Games was captured as Week 12 `/` (Today) and `/?status=all` in Grid and List, and Week 11 in Grid and List. Capture root: `/private/tmp/claude-501/-Users-connorkitchings-Desktop-Repositories-ckspicks-cfb/a5cded3d-3e1e-4f14-a163-b1155b143706/scratchpad/rc/caps/` (scratchpad, not durable); sheets are `SHEET-<page>-<viewport><L|D>-<n>.png`, exports `dl-*.png`, crops `crop-*.png`, raw automated output `results-*.json`.
 
@@ -109,7 +109,7 @@ Method as in the review: Playwright driven by scripts outside the repo; full-pag
 | Horizontal page scroll | `scrollWidth` equals `innerWidth` on every page, viewport and theme. |
 | Console and network | No console error, warning or failed request except the expected `404` on the three 404 URLs. |
 | Tap targets under 44px (390, 320) | Only the hidden 1x1 "Skip to main content" link on every page, the `UCF` matchup link and the team page game-log opponent links (height is 44px, width is the text), and the scatter points (140 on each Graphs scatter, 161 on the Teams résumé plot, 627 on the Model error scatter, unchanged from the review and from finding 7). |
-| Loading skeleton | Not caught. On this dev server the Graphs page arrived within 120ms of the click, and delaying the request kept the previous page on screen, so the new skeleton was not seen. Its shape (finding 13) is unverified visually. |
+| Loading skeleton | Not caught during a client navigation: the Graphs page is prerendered, so the old page stays on screen until the new one arrives. Checked afterwards by rendering the `stats/loading.tsx` component on a throwaway page (not committed) at 1440, 1024 and 390 and comparing it with the loaded page: desktop shows a tab row, a toolbar row and one large card; phones show the pinned picker row, a controls block and the chart. The shape matches the page (finding 13). |
 
 ### Review status after the fixes
 
@@ -121,7 +121,7 @@ Method as in the review: Playwright driven by scripts outside the repo; full-pag
 | Games Week 11 (Grid, List) | ok | auto | auto | auto | auto | auto | auto | ok (List: records, Win and Loss tags) | auto |
 | Teams (`?group=resume`, `?view=resume`) | ok (SOR group: Rank is a plain number) | auto | auto | auto | auto | auto | auto | auto | auto |
 | Notre Dame, Texas team pages | ok | auto | auto | ok (Texas) | ok (Notre Dame: Rating trend labels readable) | auto | auto | auto | auto |
-| Graphs Net success (page, PNG, skeleton) | ok (page and PNG; skeleton not caught) | ok (PNG) | auto | auto | auto | auto | auto | auto | auto |
+| Graphs Net success (page, PNG, skeleton) | ok (page, PNG and skeleton) | ok (PNG) | auto | auto | auto | auto | auto | auto | auto |
 | Graphs Game log (page, PNG) | ok | ok (PNG) | auto | auto | auto | auto | auto | auto | auto |
 | Model (error scatter), Method | auto | auto | auto | auto | auto | auto | auto | auto | ok (Model) |
 | Matchup upcoming, final (page, Download) | ok | ok (PNG light and dark) | auto | auto | auto | auto | ok (both) | ok (final, PNG) | auto |
@@ -133,7 +133,7 @@ Not opened visually in this pass, covered by the automated checks and the same c
 
 ### New findings
 
-None. No defect was found in this pass, so finding numbers 15 onward are unused. Two observations are not defects: the List-layout model line at 1024 still wraps (residue item 2, uniform rows), and the loading skeleton could not be captured.
+None. No defect was found in this pass, so finding numbers 15 onward are unused. Two observations are not defects: the List-layout model line at 1024 still wraps (residue item 2, uniform rows). The loading skeleton was checked separately and matches the page.
 
 ## Not covered
 
