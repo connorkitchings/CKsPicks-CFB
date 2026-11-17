@@ -7,7 +7,7 @@
 - **Plan Contract:** [`docs/plans/2026-11-17/jpplus-review-adoptions.md`](../../docs/plans/2026-11-17/jpplus-review-adoptions.md)
 - **Approval / Status:** Owner approval in this session; contract Approved, not yet implemented.
 - **Blockers:** None
-- **Next:** Implement the contract in a fresh task using its copy-ready Terra prompt.
+- **Next:** None until the offseason model and methods work is done; then implement the contract (revisit tasks B and D first).
 
 **tags:** ["planning", "web", "review"]
 
@@ -37,5 +37,5 @@
 
 ## Handoff Notes
 
-- **Resume at:** Task A of the contract
+- **Resume at:** After the offseason model and methods work; owner deferred implementation on 2026-11-17
 - **Watch out for:** Mobile density and layout invariants in `mobile-slate.spec.ts` and `mobile-matchup.spec.ts`; betting-policy wording.

@@ -6,7 +6,7 @@ This log records architectural and product decisions, newest first. Older entrie
 
 - **Context:** Owner-requested review of jpplusratings.com against Stratum Production on Week 12.
 - **Decision:** Adopt a weekly rating-movers panel, a projected score on games, record by size of model-vs-market difference, and "How to read the ratings" plus "How Stratum differs from other models" on `/model/method`. Defer the rating scale (methods discussion), season simulation and futures, résumé narratives, line-movement and CLV views, and the archive. Reject the hype banner, betting picks and hover-only menus.
-- **Impact:** One approved web-only contract; no schema, pipeline or model change; site stays at 2.0.0.
+- **Impact:** Implementation deferred by the owner until after the offseason model and methods work (projected score and method sections depend on the final totals behavior and rating scale). One approved web-only contract; no schema, pipeline or model change; site stays at 2.0.0.
 - **Source:** [decision record](2026-11-17-jpplus-site-review.md), [contract](../plans/2026-11-17/jpplus-review-adoptions.md), session log `session_logs/2026-11-17/03-jpplus-site-review.md`.
 
 ## 2026-11-15: One-off prune of superseded Preview releases

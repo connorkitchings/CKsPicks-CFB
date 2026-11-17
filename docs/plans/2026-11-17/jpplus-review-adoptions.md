@@ -1,8 +1,9 @@
 # JP+ review adoptions
 
-- **Status:** Approved
+- **Status:** Approved, deferred until after the offseason model and methods work
 - **Created:** 2026-11-17
 - **Planner:** Sol
+- **Deferral:** Owner decided on 2026-11-17 not to implement before the offseason model work. When resuming, tasks A and C can proceed as written; revisit B (projected score) against the final totals behavior (V5 totals are close to flat) and D (method sections) against the final rating scale and model description before implementing.
 - **Approval source:** Owner approval in the 2026-11-17 planning session (decisions recorded in [the JP+ site review](../../decisions/2026-11-17-jpplus-site-review.md)).
 - **Implementation log:** Pending
 - **Commit policy:** Commit on local dev as tasks complete (default)
