@@ -33,7 +33,7 @@ export function MobileChartSettings({ children, summary, conference, finder }: {
   return (
     <>
       {!mobile && (
-        <div className="hidden sm:flex flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
+        <div className="hidden sm:flex sm:min-w-0 sm:flex-1 flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
           {conference}
           {finder}
           {children}

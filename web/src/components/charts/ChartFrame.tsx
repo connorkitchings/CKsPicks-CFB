@@ -144,7 +144,7 @@ export function ChartFrame({
   return (
     <section className="space-y-3" aria-label={title}>
       {/* One row of every setting: filter, highlight, side, week, metric/sort; display and export at the right end. */}
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2" data-testid="chart-controls">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 sm:items-start" data-testid="chart-controls">
         <MobileChartSettings finder={highlightTeams && <TeamHighlightCombobox teams={highlightTeams} highlight={highlight} onSelect={onHighlight} />} summary={summary} conference={
           <select
             className="min-h-11 max-w-full rounded-lg border border-line bg-surface-card px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-fine:min-h-9 sm:text-xs"

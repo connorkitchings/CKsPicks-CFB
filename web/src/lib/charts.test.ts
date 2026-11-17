@@ -20,6 +20,7 @@ import {
   netSuccessBars,
   gameLogDomains,
   leastCrowdedSpot,
+  netSuccessCap,
   netSuccessDomain,
   valueLabelY,
   netSuccessWeeks,
@@ -441,7 +442,7 @@ test("buildConferenceMap and matchesTeamConference resolve CFBD and legacy ratin
 
 test("netSuccessDomain follows the lowest and highest bar instead of mirroring zero", () => {
   // The Week 8 slate: tallest bar +28 points, deepest bar -15.
-  const [low, high] = netSuccessDomain([0.28, 0.1, -0.15, 0.02], 400, 33, 36);
+  const [low, high] = netSuccessDomain([0.28, 0.25, 0.1, -0.15, -0.14, 0.02], 400, 33, 36);
   assert.ok(low < -0.15 && low > -0.22, `low ${low} sits just below the deepest bar`);
   assert.ok(high > 0.28 && high < 0.34, `high ${high} sits just above the tallest bar`);
   // A mirrored axis would have reached about -0.33.
@@ -460,14 +461,40 @@ test("netSuccessDomain leaves room for the logos at both ends and maps to the pi
 
 test("netSuccessDomain with only positive bars reserves just the loser-logo room below zero", () => {
   const span = 400;
-  const [low, high] = netSuccessDomain([0.05, 0.3], span, 30, 40);
+  const [low, high] = netSuccessDomain([0.25, 0.3], span, 30, 40);
   const px = (value: number) => ((value - low) / (high - low)) * span;
   assert.ok(Math.abs(px(0) - 40) < 1e-6, "zero sits one loser clearance above the bottom");
   assert.ok(span - px(0.3) >= 30 - 1e-6);
 });
 
+test("netSuccessCap leaves a side alone when its top two bars are close", () => {
+  const cap = netSuccessCap([0.3, 0.26, -0.1, -0.08]);
+  assert.equal(cap.high, 0.3);
+  assert.equal(cap.low, -0.1);
+});
+
+test("netSuccessCap limits one outlier to 1.25 times the next-largest bar", () => {
+  const cap = netSuccessCap([0.5, 0.2, 0.1, -0.05]);
+  assert.ok(Math.abs(cap.high - 0.25) < 1e-9);
+  assert.equal(cap.low, -0.05);
+  const [, high] = netSuccessDomain([0.5, 0.2, 0.1, -0.05], 400, 30, 40);
+  assert.ok(high < 0.35, `domain top ${high} follows the cap, not the 0.5 outlier`);
+});
+
+test("netSuccessCap caps a negative-side outlier independently", () => {
+  const cap = netSuccessCap([0.2, 0.17, -0.6, -0.1]);
+  assert.ok(Math.abs(cap.low + 0.125) < 1e-9);
+  assert.equal(cap.high, 0.2);
+});
+
+test("netSuccessCap never caps a lone bar on its side", () => {
+  assert.deepEqual(netSuccessCap([0.4]), { low: 0, high: 0.4 });
+  assert.deepEqual(netSuccessCap([-0.4]), { low: -0.4, high: 0 });
+  assert.deepEqual(netSuccessCap([]), { low: 0, high: 0 });
+});
+
 test("netSuccessDomain handles only-negative, all-zero and empty input", () => {
-  const [lowNeg, highNeg] = netSuccessDomain([-0.2, -0.05], 400, 30, 40);
+  const [lowNeg, highNeg] = netSuccessDomain([-0.2, -0.18], 400, 30, 40);
   assert.ok(lowNeg < -0.2 && highNeg > 0);
   const [lowZero, highZero] = netSuccessDomain([0, 0], 400, 30, 40);
   assert.ok(lowZero < 0 && highZero > 0 && Number.isFinite(lowZero) && Number.isFinite(highZero));

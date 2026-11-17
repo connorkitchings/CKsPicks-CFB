@@ -92,6 +92,10 @@ export function GameLogChart({ log, domains, formatTick, formatValue, describe, 
           <text x={plotRight - 140} y={12} dominantBaseline="central" fontSize={11} fill="var(--ink-muted)">
             FBS average that week
           </text>
+          <rect x={plotRight - 332} y={6} width={12} height={12} fill="var(--loss-soft)" opacity={0.6} stroke="var(--line)" strokeWidth={0.5} />
+          <text x={plotRight - 314} y={12} dominantBaseline="central" fontSize={11} fill="var(--ink-muted)">
+            Shaded column: loss
+          </text>
         </g>
         {PANELS.map(({ side, title }, index) => {
           const top = panelTop(index);
@@ -160,8 +164,8 @@ export function GameLogChart({ log, domains, formatTick, formatValue, describe, 
                         fontWeight={600}
                         fill="var(--ink)"
                         stroke="var(--surface-card)"
-                        strokeWidth={2}
-                        strokeOpacity={0.8}
+                        strokeWidth={3}
+                        strokeOpacity={1}
                         strokeLinejoin="round"
                         paintOrder="stroke"
                         data-value-label

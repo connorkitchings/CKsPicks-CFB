@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { gotoHydrated, openTable } from "./helpers";
 
 test.describe("team game log", () => {
   test("shows the whole release, weekly references, and national ranks", async ({ page }) => {
@@ -48,6 +48,14 @@ test.describe("team game log", () => {
     await page.getByTestId("game-log-metric-ppa").click();
     await expect(footnote).toContainText("PPA/play is the average predicted points added per play.");
     await expect(footnote).not.toContainText("Success rate is the share");
+  });
+
+  test("legend explains the shaded loss column and the table lists one row per game", async ({ page }) => {
+    await gotoHydrated(page, "/stats?chart=game-log&team=alabama&week=0");
+    await expect(page.getByTestId("game-log-legend")).toContainText("Shaded column: loss");
+    await expect(page.getByTestId("table-toggle")).toHaveCount(1);
+    await openTable(page);
+    await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(4);
   });
 
   test("both panels draw at one pixels-per-unit scale, each fitted to its own values", async ({ page }) => {

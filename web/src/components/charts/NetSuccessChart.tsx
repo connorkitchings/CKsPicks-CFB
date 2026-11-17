@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { chartColor, netSuccessDomain, niceTicks, type NetSuccessBar } from "@/lib/charts";
+import { chartColor, netSuccessCap, netSuccessDomain, niceTicks, type NetSuccessBar } from "@/lib/charts";
 import { Card } from "@/components/ui/Card";
 import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import type { MarkerState } from "./ScatterChart";
@@ -24,6 +24,30 @@ const LOGO = 26;
 
 function fillFor(bar: NetSuccessBar): string {
   return chartColor(teamColor(bar.winner), teamAltColor(bar.winner), FALLBACK_TEAM_COLOR);
+}
+
+/** Two short parallel diagonals across a capped bar near its tip, plus the bar's true value. */
+function BarBreak({ horizontal, c, tip, outward, thick, text }: { horizontal: boolean; c: number; tip: number; outward: number; thick: number; text: string }) {
+  const half = thick / 2 + 1.5;
+  // Offsets run from the tip back toward zero.
+  const mark = (back: number) => {
+    const at = horizontal ? tip - outward * back : tip + outward * back;
+    return horizontal
+      ? <line x1={at - 3} x2={at + 3} y1={c + half} y2={c - half} stroke="var(--surface-card)" strokeWidth={2} />
+      : <line x1={c - half} x2={c + half} y1={at + 3} y2={at - 3} stroke="var(--surface-card)" strokeWidth={2} />;
+  };
+  const halo = { stroke: "var(--surface-card)", strokeWidth: 3, strokeOpacity: 1, strokeLinejoin: "round" as const, paintOrder: "stroke" };
+  return (
+    <g pointerEvents="none" data-bar-break>
+      {mark(8)}
+      {mark(14)}
+      {horizontal ? (
+        <text x={tip} y={c - thick / 2 - 4} textAnchor="end" fontSize={12} fontWeight={600} fill="var(--ink)" {...halo} data-break-value>{text}</text>
+      ) : (
+        <text x={c + thick / 2 + 4} y={tip + outward * 11} fontSize={12} fontWeight={600} fill="var(--ink)" {...halo} data-break-value>{text}</text>
+      )}
+    </g>
+  );
 }
 
 export function NetSuccessChart({
@@ -59,6 +83,7 @@ export function NetSuccessChart({
   const thick = Math.max(2, Math.min(horizontal ? 18 : 34, band * 0.64));
   const logo = Math.max(10, Math.min(LOGO, horizontal ? band * 0.9 : band * 0.95));
   // The winner's logo sits 0.6 logos past the bar tip; the loser's just across zero.
+  const cap = netSuccessCap(bars.map((b) => b.value));
   const [domainLow, domainHigh] = netSuccessDomain(
     bars.map((b) => b.value),
     span,
@@ -146,7 +171,9 @@ export function NetSuccessChart({
           const state = stateOf(bar);
           const focusable = interactive && state !== "dim";
           const c = center(index);
-          const tip = along(bar.value);
+          // A bar past the cap is drawn only up to it; a break mark and its true value say so.
+          const capped = bar.value > cap.high || bar.value < cap.low;
+          const tip = along(capped ? (bar.value > 0 ? cap.high : cap.low) : bar.value);
           // Keep the winner beyond the bar tip and the loser just across the zero axis.
           const outward = bar.value >= 0 ? 1 : -1;
           const gap = logo * 0.6;
@@ -202,6 +229,7 @@ export function NetSuccessChart({
               ) : (
                 <rect x={c - thick / 2} y={Math.min(zero, tip)} width={thick} height={Math.abs(tip - zero)} fill={fillFor(bar)} />
               )}
+              {capped && <BarBreak horizontal={horizontal} c={c} tip={tip} outward={outward} thick={thick} text={(bar.value * 100).toFixed(1)} />}
               <TeamMark team={bar.winner} cx={winnerAt.cx} cy={winnerAt.cy} size={logo} />
               <TeamMark team={bar.loser} cx={loserAt.cx} cy={loserAt.cy} size={logo} />
               {horizontal ? (

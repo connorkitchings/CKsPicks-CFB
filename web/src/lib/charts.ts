@@ -802,8 +802,9 @@ export function netSuccessDomain(
   if (!values.length) return [-0.05, 0.05];
   const hasUp = values.some((v) => v >= 0);
   const hasDown = values.some((v) => v < 0);
-  const high = Math.max(0, ...values);
-  const low = Math.min(0, ...values);
+  const { low: capLow, high: capHigh } = netSuccessCap(values);
+  const high = Math.max(0, capHigh);
+  const low = Math.min(0, capLow);
   const padHigh = hasUp ? tipPx : crossPx;
   const padLow = hasDown ? tipPx : crossPx;
   const range = Math.max(high - low, 0.01);
@@ -811,6 +812,25 @@ export function netSuccessDomain(
   if (plotPx <= 0) return [low - range * 0.1, high + range * 0.1];
   const perPx = range / plotPx;
   return [low - padLow * perPx, high + padHigh * perPx];
+}
+
+/** An outlier bar is drawn no taller than this multiple of the next-largest bar on its side. */
+const NET_SUCCESS_CAP_RATIO = 1.25;
+
+/**
+ * The data limit of each side of the net-success axis: the largest magnitude on that side,
+ * unless it exceeds 1.25 times the second largest, in which case the limit is 1.25 times the
+ * second largest so one blowout does not flatten every other bar. `low` is <= 0 and `high` >= 0.
+ */
+export function netSuccessCap(values: readonly number[]): { low: number; high: number } {
+  const limit = (magnitudes: number[]) => {
+    const [m1 = 0, m2 = 0] = magnitudes.sort((a, b) => b - a);
+    return m1 > NET_SUCCESS_CAP_RATIO * m2 && magnitudes.length > 1 ? NET_SUCCESS_CAP_RATIO * m2 : m1;
+  };
+  return {
+    low: 0 - limit(values.filter((v) => v < 0).map((v) => -v)),
+    high: limit(values.filter((v) => v > 0)),
+  };
 }
 
 /**
