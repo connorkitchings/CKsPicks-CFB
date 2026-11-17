@@ -48,4 +48,37 @@ test.describe("bar chart tabs: toolbar, table, outlier cap", () => {
       expect(size).toBeGreaterThanOrEqual(11.9);
     }
   });
+
+  test("break value backing exists and no other bar's logo shows through it", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await gotoHydrated(page, "/stats?chart=net-success&week=3");
+    const chart = page.getByTestId("net-success-chart");
+    await expect(chart).toHaveAttribute("data-orientation", "vertical");
+    const backings = chart.getByTestId("break-value-bg");
+    await expect(backings.first()).toBeAttached();
+    const logos = chart.locator("g[data-game] g[data-mark='logo'] image:visible");
+    const logoCount = await logos.count();
+    expect(logoCount).toBeGreaterThan(0);
+    const placed = [];
+    for (let j = 0; j < logoCount; j++) {
+      const logo = logos.nth(j);
+      placed.push({
+        owner: await logo.evaluate((el) => el.closest("g[data-game]")?.getAttribute("data-game")),
+        box: (await logo.boundingBox())!,
+      });
+    }
+    for (let i = 0; i < (await backings.count()); i++) {
+      const backing = backings.nth(i);
+      const owner = await backing.getAttribute("data-game");
+      const box = (await backing.boundingBox())!;
+      for (const logo of placed.filter((p) => p.owner !== owner)) {
+        const overlaps =
+          box.x < logo.box.x + logo.box.width &&
+          logo.box.x < box.x + box.width &&
+          box.y < logo.box.y + logo.box.height &&
+          logo.box.y < box.y + box.height;
+        expect(overlaps, `break value of game ${owner} overlaps logo of game ${logo.owner}`).toBe(false);
+      }
+    }
+  });
 });

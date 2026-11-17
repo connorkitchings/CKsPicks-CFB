@@ -44,14 +44,59 @@ function BarBreak({ horizontal, c, tip, outward, thick }: { horizontal: boolean;
   );
 }
 
-/** A capped bar's true value. Drawn after every bar so a neighbour never covers it, and kept inside the chart's right edge. */
-function BreakValue({ horizontal, c, tip, outward, thick, text, unit, width, dim }: { horizontal: boolean; c: number; tip: number; outward: number; thick: number; text: string; unit: number; width: number; dim: boolean }) {
-  const halo = { stroke: "var(--surface-card)", strokeWidth: 3 * unit, strokeOpacity: 1, strokeLinejoin: "round" as const, paintOrder: "stroke" };
-  const common = { fontSize: 12 * unit, fontWeight: 600, fill: "var(--ink)", opacity: dim ? 0.15 : 1, pointerEvents: "none" as const, "data-break-value": true, ...halo };
-  if (horizontal) return <text x={tip} y={c - thick / 2 - 4} textAnchor="end" {...common}>{text}</text>;
-  const x = c + thick / 2 + 4;
-  const flip = x + text.length * 7.5 * unit > width;
-  return <text x={flip ? c - thick / 2 - 4 : x} y={tip + outward * 11 * unit} textAnchor={flip ? "end" : "start"} {...common}>{text}</text>;
+type Box = { x: number; y: number; w: number; h: number };
+
+/** Gap kept between a break value's backing card and a logo it is moved clear of. */
+const LOGO_CLEARANCE = 2;
+
+function overlaps(a: Box, b: Box): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+/** Moves a box along the bar axis to the nearer side of each logo it overlaps. */
+function clearLogos(box: Box, logos: readonly Box[]): Box {
+  let moved = box;
+  for (let pass = 0; pass < logos.length; pass++) {
+    const hit = logos.find((logo) => overlaps(moved, logo));
+    if (!hit) break;
+    const above = hit.y - moved.h - LOGO_CLEARANCE;
+    const below = hit.y + hit.h + LOGO_CLEARANCE;
+    moved = { ...moved, y: Math.abs(above - moved.y) <= Math.abs(below - moved.y) ? above : below };
+  }
+  return moved;
+}
+
+/**
+ * A capped bar's true value on a card-coloured backing, so a neighbour's logo cannot show through.
+ * Drawn after every bar and kept inside the chart's right edge. In a vertical chart it is also moved along the bar axis off any logo.
+ */
+function BreakValue({ gameId, horizontal, c, tip, outward, thick, text, unit, width, dim, logos }: { gameId: number | string; horizontal: boolean; c: number; tip: number; outward: number; thick: number; text: string; unit: number; width: number; dim: boolean; logos: readonly Box[] }) {
+  const fontSize = 12 * unit;
+  const pad = 3 * unit;
+  const textWidth = text.length * 7.5 * unit;
+  const flip = !horizontal && c + thick / 2 + 4 + textWidth > width;
+  const anchor = horizontal || flip ? "end" : "start";
+  const x = horizontal ? tip : flip ? c - thick / 2 - 4 : c + thick / 2 + 4;
+  let baseline = horizontal ? c - thick / 2 - 4 : tip + outward * 11 * unit;
+  const boxAt = (y: number): Box => ({
+    x: anchor === "end" ? x - textWidth - pad : x - pad,
+    y: y - fontSize * 0.8 - pad,
+    w: textWidth + 2 * pad,
+    h: fontSize + 2 * pad,
+  });
+  let box = boxAt(baseline);
+  if (!horizontal) {
+    box = clearLogos(box, logos);
+    baseline = box.y + fontSize * 0.8 + pad;
+  }
+  return (
+    <g pointerEvents="none" opacity={dim ? 0.15 : 1}>
+      <rect data-testid="break-value-bg" data-game={gameId} x={box.x} y={box.y} width={box.w} height={box.h} rx={3 * unit} fill="var(--surface-card)" stroke="var(--line)" strokeWidth={unit} />
+      <text x={x} y={baseline} textAnchor={anchor} fontSize={fontSize} fontWeight={600} fill="var(--ink)" data-break-value>
+        {text}
+      </text>
+    </g>
+  );
 }
 
 export function NetSuccessChart({
@@ -104,6 +149,9 @@ export function NetSuccessChart({
   };
   const ticks = niceTicks(domainLow, domainHigh, horizontal && interactive ? 3 : 8);
   const zero = along(0);
+  const isCapped = (bar: NetSuccessBar) => bar.value > cap.high || bar.value < cap.low;
+  // A capped bar's tip is held at its cap.
+  const tipOf = (bar: NetSuccessBar) => along(isCapped(bar) ? (bar.value > 0 ? cap.high : cap.low) : bar.value);
   // Dense slates (about 50+ games) read best as upright columns sized to the band.
   const verticalLabels = band < 20;
   const labelSize = 12 * unit;
@@ -111,6 +159,22 @@ export function NetSuccessChart({
   function center(index: number): number {
     return (horizontal ? plot.top : plot.left) + band * (index + 0.5);
   }
+
+  // Keep the winner beyond the bar tip and the loser just across the zero axis.
+  function logoSlots(bar: NetSuccessBar, index: number) {
+    const c = center(index);
+    const tip = tipOf(bar);
+    const outward = bar.value >= 0 ? 1 : -1;
+    const gap = logo * 0.6;
+    const loserGap = logo / 2 + 6;
+    return {
+      winner: horizontal ? { cx: tip + outward * gap, cy: c } : { cx: c, cy: tip - outward * gap },
+      loser: horizontal ? { cx: zero - outward * loserGap, cy: c } : { cx: c, cy: zero + outward * loserGap },
+    };
+  }
+  const logoBoxes: Box[] = bars.flatMap((bar, index) =>
+    Object.values(logoSlots(bar, index)).map(({ cx, cy }) => ({ x: cx - logo / 2, y: cy - logo / 2, w: logo, h: logo })),
+  );
 
   function tooltipPosition(bar: NetSuccessBar) {
     const index = bars.indexOf(bar);
@@ -185,14 +249,10 @@ export function NetSuccessChart({
           const focusable = interactive && state !== "dim";
           const c = center(index);
           // A bar past the cap is drawn only up to it; a break mark and its true value say so.
-          const capped = bar.value > cap.high || bar.value < cap.low;
-          const tip = along(capped ? (bar.value > 0 ? cap.high : cap.low) : bar.value);
-          // Keep the winner beyond the bar tip and the loser just across the zero axis.
+          const capped = isCapped(bar);
+          const tip = tipOf(bar);
           const outward = bar.value >= 0 ? 1 : -1;
-          const gap = logo * 0.6;
-          const loserGap = logo / 2 + 6;
-          const winnerAt = horizontal ? { cx: tip + outward * gap, cy: c } : { cx: c, cy: tip - outward * gap };
-          const loserAt = horizontal ? { cx: zero - outward * loserGap, cy: c } : { cx: c, cy: zero + outward * loserGap };
+          const { winner: winnerAt, loser: loserAt } = logoSlots(bar, index);
           const key = String(bar.gameId);
           return (
             <g
@@ -269,9 +329,8 @@ export function NetSuccessChart({
           );
         })}
         {bars.map((bar, index) => {
-          if (bar.value <= cap.high && bar.value >= cap.low) return null;
-          const tip = along(bar.value > 0 ? cap.high : cap.low);
-          return <BreakValue key={bar.gameId} horizontal={horizontal} c={center(index)} tip={tip} outward={bar.value >= 0 ? 1 : -1} thick={thick} text={(bar.value * 100).toFixed(1)} unit={unit} width={width} dim={stateOf(bar) === "dim"} />;
+          if (!isCapped(bar)) return null;
+          return <BreakValue key={bar.gameId} gameId={bar.gameId} horizontal={horizontal} c={center(index)} tip={tipOf(bar)} outward={bar.value >= 0 ? 1 : -1} thick={thick} text={(bar.value * 100).toFixed(1)} unit={unit} width={width} dim={stateOf(bar) === "dim"} logos={logoBoxes} />;
         })}
       </svg>
       {tipBar && !horizontal && (
