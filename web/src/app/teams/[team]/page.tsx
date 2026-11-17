@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
 import { publicationScope, resolveSeasonParam } from "@/lib/publication";
-import { canonicalTeamSegment, resolveTeam } from "@/lib/team-routes";
+import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
+import { canonicalTeamSegment, resolveTeam, teamHref } from "@/lib/team-routes";
 import { getTeamGames, getTeamHistory, getWeeklyRatings, getRatingAnalysisHistory, type Rating } from "@/lib/v5";
 import { ratingsFixture } from "@/test/fixtures/ratings";
 import { v5RatingFixture } from "@/test/fixtures/publication";
@@ -39,7 +40,12 @@ export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ team: string }> }): Promise<Metadata> {
   const resolved = resolveTeam((await params).team);
-  return resolved ? { title: `${resolved.gameName} · Team page` } : { robots: { index: false, follow: false } };
+  if (!resolved) return notFoundMetadata;
+  return pageMetadata(
+    resolved.gameName,
+    `${resolved.gameName} team rating, weekly trend, schedule and results.`,
+    teamHref(resolved.gameName),
+  );
 }
 
 /**

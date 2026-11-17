@@ -1,4 +1,6 @@
-import { getV5PerformanceDetail, type PerformanceDetail } from "@/lib/v5";
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/metadata";
+import { getV5PerformanceDetail,type PerformanceDetail } from "@/lib/v5";
 import { archivePerformanceFixture, mobilePerformanceFixture, partialPerformanceFixture } from "@/test/fixtures/performance-mobile";
 import { isUiTestMode } from "@/lib/slate-page";
 import {
@@ -43,6 +45,8 @@ function clientView(detail: PerformanceDetail): PerformanceView {
     pairs: { spread: pairedErrors(detail.gradedGames, "spread"), total: pairedErrors(detail.gradedGames, "total") },
   };
 }
+
+export const metadata: Metadata = pageMetadata("Model", "Season record and performance of the forecasts: accuracy, betting results and error by week.", "/model");
 
 export default async function ModelPage({ searchParams }: { searchParams?: Promise<{ fixture?: string; target?: string | string[] }> }) {
   // `?target=` only picks which already-loaded target the error view opens on; unknown values fall back.

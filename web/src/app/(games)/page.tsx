@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/metadata";
 import {
   getAvailableWeeks,
   getBiggestEdgesRecord,
@@ -104,6 +106,14 @@ async function resolveTarget(
     activeWeek,
     currentUpdatedAt: activeWeek !== null ? current?.updatedAt ?? null : null,
   };
+}
+
+export async function generateMetadata({ searchParams }: { searchParams: SlateSearchParams }): Promise<Metadata> {
+  // `getCurrentWeek` and `getAvailableWeeks` are request- and release-cached, so this adds no extra reads.
+  const week = await resolveTarget(searchParams).then((t) => t.week).catch(() => null);
+  return week === null
+    ? pageMetadata("Games", "Weekly college football forecasts: model picks, betting edges and results.", "/")
+    : pageMetadata(`Week ${week} Games`, `Week ${week} college football forecasts: model picks, betting edges and results.`, `/?week=${week}`);
 }
 
 export default async function Home({

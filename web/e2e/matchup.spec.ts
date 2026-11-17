@@ -205,7 +205,7 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.getByRole("link", { name: /^← Week \d+ games$/ })).toHaveAttribute("href", /^\/\?week=\d+$/);
     await expect(page.getByRole("link", { name: /^All Week \d+ games$/ })).toBeVisible();
 
-    await expect(page).toHaveTitle(/ at .* · Matchup/);
+    await expect(page).toHaveTitle(/^.+ at .+ · Stratum CFB$/);
   });
 
   test("loaded matchups fit phones and tablets with teams above forecasts, and between them from lg", async ({ page }) => {
@@ -291,7 +291,8 @@ test.describe("matchup page (fixture mode)", () => {
     await page.goto("/teams/Not_A_Team");
     await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
     await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
-    for (const name of ["Games", "Ratings"]) {
+    await expect(page.getByTestId("app-bar-title")).toHaveText("Page not found");
+    for (const name of ["Games", "Teams"]) {
       const link = page.getByRole("navigation", { name: "Where to go next" }).getByRole("link", { name, exact: true });
       await expect(link).toBeVisible();
       expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);

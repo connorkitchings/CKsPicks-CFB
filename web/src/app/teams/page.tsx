@@ -11,9 +11,10 @@ import { Notice } from "@/components/ui/Notice";
 import { PageHeading } from "@/components/ui/PageHeading";
 import { TeamsHub } from "@/components/ratings/TeamsHub";
 import { etDateYearTime } from "@/lib/time-et";
+import { pageMetadata } from "@/lib/metadata";
 
 export const revalidate = 300;
-export const metadata: Metadata = { title: "Teams · Stratum CFB", description: "Explore team strength, weekly trends, résumé and same-period comparisons." };
+export const metadata: Metadata = pageMetadata("Teams", "Explore team strength, weekly trends, résumé and same-period comparisons.", "/teams");
 export default async function TeamsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const season = resolveSeasonParam(typeof params.season === "string" ? params.season : undefined, publicationScope.season);

@@ -30,7 +30,7 @@ test.describe("team pages (fixture mode)", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
     await expect(page.getByRole("heading", { level: 1, name: "Texas" })).toBeVisible();
-    await expect(page).toHaveTitle(/Texas · Team page/);
+    await expect(page).toHaveTitle("Texas · Stratum CFB");
     await expect(page.getByRole("link", { name: "← All teams" })).toHaveAttribute("href", "/teams");
 
     const h = await hero(page);

@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import clsx from "clsx";
+import { pageMetadata } from "@/lib/metadata";
 import Link from "next/link";
 import { getSeasonReleaseContext } from "@/lib/season-release";
 import { getGamesForWeek, getMarketGamesForWeek } from "@/lib/queries";
@@ -86,6 +88,14 @@ import { segmentedGroupClass, segmentedItemClass } from "@/components/ui/Segment
 import { WeekNav } from "@/components/WeekNav";
 
 export const revalidate = 300;
+
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const kind = parseChartKind((await searchParams).chart);
+  const { tabLabel, description } = CHART_REGISTRY[kind];
+  // "V5" is internal wording; public titles and descriptions drop it.
+  const name = kind === "rating-trajectory" ? "Rating trajectory" : tabLabel;
+  return pageMetadata(`${name} graph`, description.replaceAll("V5 ", ""), `/stats?chart=${kind}`);
+}
 
 type SearchParams = Promise<{ chart?: string; side?: string; week?: string; fixture?: string; metric?: string; team?: string }>;
 
@@ -296,7 +306,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         <div className="hidden flex-wrap items-end gap-x-5 gap-y-2 sm:flex">
           {pickerGroups().map((group) => (
             <div key={group.id} className="flex min-w-0 flex-col gap-1" role="group" aria-label={group.label}>
-              <span className="px-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>{group.label}</span>
+              <span className="px-0.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>{group.label}</span>
               <div className="flex flex-wrap gap-1.5">
                 {group.kinds.map((target) => (
                   <ChartLink

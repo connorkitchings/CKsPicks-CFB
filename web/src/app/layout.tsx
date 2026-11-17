@@ -7,26 +7,24 @@ import { SiteNav } from "@/components/SiteNav";
 import { MatchupLinksProvider } from "@/components/MatchupLinks";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { BRAND_FULL, SITE_URL } from "@/lib/brand";
+import { SITE_DESCRIPTION } from "@/lib/metadata";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: `${BRAND_FULL} · V5 College Football Forecasts`,
-  description:
-    "V5 college football forecasts, team ratings, and season performance.",
+  title: { default: `${BRAND_FULL} · College Football Forecasts`, template: `%s · ${BRAND_FULL}` },
+  description: SITE_DESCRIPTION,
   applicationName: BRAND_FULL,
   openGraph: {
-    title: `${BRAND_FULL} · V5 College Football Forecasts`,
-    description:
-      "V5 college football forecasts, team ratings, and season performance.",
+    title: `${BRAND_FULL} · College Football Forecasts`,
+    description: SITE_DESCRIPTION,
     url: SITE_URL,
     siteName: BRAND_FULL,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND_FULL} · V5 College Football Forecasts`,
-    description:
-      "V5 college football forecasts, team ratings, and season performance.",
+    title: `${BRAND_FULL} · College Football Forecasts`,
+    description: SITE_DESCRIPTION,
   },
   robots: { index: true, follow: true },
 };

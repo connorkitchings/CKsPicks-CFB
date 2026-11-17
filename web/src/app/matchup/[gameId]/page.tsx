@@ -11,6 +11,7 @@ import { publicationScope } from "@/lib/publication";
 import { teamAbbr } from "@/lib/team-logos";
 import { teamHref } from "@/lib/team-routes";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
+import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { MatchupAnalysis } from "@/components/matchup/MatchupAnalysis";
 
 // Revalidate every 5 minutes (ISR)
@@ -24,9 +25,15 @@ export async function generateMetadata({
   params: Promise<{ gameId: string }>;
 }): Promise<Metadata> {
   const id = parseGameId((await params).gameId);
-  if (!isMatchupEnabled() || id === null) return noindex;
+  if (!isMatchupEnabled() || id === null) return notFoundMetadata;
   const matchup = await getMatchupData(id).catch(() => null);
-  return matchup ? { ...noindex, title: `${matchup.awayTeam} at ${matchup.homeTeam} · Matchup` } : noindex;
+  if (!matchup) return notFoundMetadata;
+  return pageMetadata(
+    `${matchup.awayTeam} at ${matchup.homeTeam}`,
+    `${matchup.season} Week ${matchup.week} forecast, ratings and betting edges for ${matchup.awayTeam} at ${matchup.homeTeam}.`,
+    `/matchup/${matchup.gameId}`,
+    noindex,
+  );
 }
 
 export default async function MatchupPage({

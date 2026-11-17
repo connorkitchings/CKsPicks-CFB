@@ -8,8 +8,9 @@ import { PageHeading } from "@/components/ui/PageHeading";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import { publicationScope } from "@/lib/publication";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "How the model works" };
+export const metadata: Metadata = pageMetadata("How the model works", "How the model rates teams, forecasts games and grades its record.", "/model/method");
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
