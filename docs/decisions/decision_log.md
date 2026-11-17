@@ -2,6 +2,13 @@
 
 This log records architectural and product decisions, newest first. Older entries retain their dated decisions rather than current operating instructions; the latest entries and [Current Status](../status.md) govern. Add new entries with [`decision_template.md`](decision_template.md) and link the supporting implementation contract and session log.
 
+## 2026-11-17: Adopt four display-only ideas from the JP+ site review
+
+- **Context:** Owner-requested review of jpplusratings.com against Stratum Production on Week 12.
+- **Decision:** Adopt a weekly rating-movers panel, a projected score on games, record by size of model-vs-market difference, and "How to read the ratings" plus "How Stratum differs from other models" on `/model/method`. Defer the rating scale (methods discussion), season simulation and futures, résumé narratives, line-movement and CLV views, and the archive. Reject the hype banner, betting picks and hover-only menus.
+- **Impact:** One approved web-only contract; no schema, pipeline or model change; site stays at 2.0.0.
+- **Source:** [decision record](2026-11-17-jpplus-site-review.md), [contract](../plans/2026-11-17/jpplus-review-adoptions.md), session log `session_logs/2026-11-17/03-jpplus-site-review.md`.
+
 ## 2026-11-15: One-off prune of superseded Preview releases
 
 - **Context:** The Preview Neon branch reached 1003 MB of the 1 GB Free-plan cap and the Week 11 to 12 close failed at `release preview` with `DiskFull`.

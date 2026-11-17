@@ -49,6 +49,7 @@ nav:
       - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md
   - Decisions and Contracts:
       - Decision Log: decisions/decision_log.md
+      - JP+ Site Review: decisions/2026-11-17-jpplus-site-review.md
       - Stratum CFB Brand: decisions/2026-10-27-stratum-cfb-brand.md
       - Historical Crest Wordmark Decision: decisions/2026-10-25-crest-wordmark.md
       - Implementation Contracts: plans/index.md
