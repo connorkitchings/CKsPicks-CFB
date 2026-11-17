@@ -30,7 +30,7 @@ function WeeklyChange({ change }: { change: NonNullable<TeamSummary["change"]> }
 function StripCell({ label, title, value, rank }: { label: string; title: string; value?: string; rank?: number | null }) {
   return (
     <div title={title} className="min-w-0 bg-surface-card px-3 py-2.5">
-      <dt className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">{label}</dt>
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">{label}</dt>
       <dd className="mt-0.5 whitespace-nowrap font-mono text-base font-semibold tabular-nums text-ink sm:text-lg">
         {value ?? rankText(rank)}
         {value !== undefined && rank !== undefined && <small className="ml-1 font-sans text-[11px] font-normal text-ink-muted">{rankText(rank)}</small>}
@@ -53,7 +53,7 @@ function NextGame({ game, team }: { game: TeamGame; team: string }) {
   const forecast = forecastParts(game);
   return (
     <section aria-label="Next game" className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-accent-line bg-accent-soft px-3.5 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-ink">Next game · Wk {game.week} · {dayShort(game.startDate)}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-accent-ink">Next game · Wk {game.week} · {dayShort(game.startDate)}</p>
       <p className="flex items-center gap-2 text-base font-semibold text-ink">
         <span className="text-[13px] font-normal text-ink-muted">{home ? "vs" : "at"}</span>
         <TeamLogo name={opponent} px={24} />

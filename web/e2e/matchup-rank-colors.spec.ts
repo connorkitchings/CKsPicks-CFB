@@ -22,7 +22,7 @@ async function chipStyles(root: Locator) {
 }
 
 for (const scheme of ["light", "dark"] as const) {
-  test(`matchup ranks and the always-dark export share the rank scale in ${scheme} mode`, async ({ page }, testInfo) => {
+  test(`matchup ranks and the theme-following export share the rank scale in ${scheme} mode`, async ({ page }, testInfo) => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.addInitScript(() => {
       let release!: () => void;
@@ -40,17 +40,13 @@ for (const scheme of ["light", "dark"] as const) {
       expect(live.some((other) => other.text === chip.text && other.mix === chip.mix && other.background === chip.background)).toBe(true);
     }
 
-    // Collect the site's dark palette before starting an export (theme changes invalidate active exports).
-    await page.locator("html").evaluate((element) => element.classList.add("dark"));
-    // The export shows both offenses, the page one at a time: gather the site's chips for each selection.
-    const darkLive = [];
+    // The export follows the page theme: gather the site's chips for each offense in the same scheme.
+    const sameSchemeLive = [];
     for (const side of ["away", "home"] as const) {
       await selectOffense(page, side);
-      darkLive.push(...await chipStyles(unitStats(page)));
+      sameSchemeLive.push(...await chipStyles(unitStats(page)));
     }
     await selectOffense(page, "away");
-    await page.locator("html").evaluate((element, dark) => element.classList.toggle("dark", dark), scheme === "dark");
-    await expect.poll(() => page.locator("html").getAttribute("class")).toMatch(scheme === "dark" ? /dark/ : /^(?!.*dark)/);
 
     const download = page.waitForEvent("download");
     await page.getByTestId("share-download").click();
@@ -64,12 +60,12 @@ for (const scheme of ["light", "dark"] as const) {
     expect(exported.some((chip) => chip.neutral)).toBe(true);
     for (const chip of green) expect(chip.rgb[1]).toBeGreaterThan(chip.rgb[0]);
     for (const chip of red) expect(chip.rgb[0]).toBeGreaterThan(chip.rgb[1]);
-    for (const chip of exported.filter((chip) => !chip.neutral)) expect(chip.color).toBe("rgb(244, 244, 245)");
+    for (const chip of exported.filter((chip) => !chip.neutral)) expect(chip.color).toBe(scheme === "dark" ? "rgb(244, 244, 245)" : "rgb(24, 24, 27)");
 
-    // Match the export against the site's dark palette even when exporting from light mode.
+    // Match the export against the site's palette for the same scheme.
     for (const chip of exported) {
       if (!chip.neutral) {
-        const matching = darkLive.find((other) => other.text === chip.text && other.mix === chip.mix);
+        const matching = sameSchemeLive.find((other) => other.text === chip.text && other.mix === chip.mix);
         expect(matching, `live counterpart for ${chip.text}`).toBeDefined();
         expect(chip.background).toBe(matching!.background);
       }

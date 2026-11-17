@@ -7,7 +7,7 @@ const RECENT_WEEKS = 4;
 function Table({ rows, head }: { rows: readonly Rating[]; head: boolean }) {
   return (
     <table className="w-full whitespace-nowrap text-sm tabular-nums">
-      <thead className={head ? "border-b border-line bg-surface-inset text-[10px] uppercase text-ink-faint sm:tracking-wide" : "sr-only"}>
+      <thead className={head ? "border-b border-line bg-surface-inset text-[11px] uppercase text-ink-faint sm:tracking-wide" : "sr-only"}>
         <tr><th scope="col" className="px-2.5 py-3 text-left">Week</th><th scope="col" className="px-2.5 py-3 text-right">Overall</th><th scope="col" className="px-2.5 py-3 text-right">OFF</th><th scope="col" className="px-2.5 py-3 text-right">DEF</th><th scope="col" className="px-2.5 py-3 text-right max-sm:hidden">Uncertainty</th></tr>
       </thead>
       <tbody>

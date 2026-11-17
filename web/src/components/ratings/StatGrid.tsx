@@ -15,7 +15,7 @@ export function StatGrid({ cells, className }: { cells: readonly StatCell[]; cla
     <dl className={`grid grid-cols-4 gap-1 border-t border-line pt-2 ${className ?? ""}`}>
       {cells.map((cell) => (
         <div key={cell.label} title={cell.title} aria-label={cell.title} role="group" className="min-w-0 text-center">
-          <dt className="text-[10px] uppercase tracking-wide text-ink-muted">{cell.label}</dt>
+          <dt className="text-[11px] uppercase tracking-wide text-ink-muted">{cell.label}</dt>
           <dd className="font-mono text-sm font-semibold tabular-nums text-ink">{cell.value}</dd>
         </div>
       ))}

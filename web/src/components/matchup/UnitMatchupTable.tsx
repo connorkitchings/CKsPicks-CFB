@@ -177,7 +177,7 @@ export function UnitMatchupTable({
                       className="inline-flex items-center justify-center gap-1 min-h-11 rounded px-3 py-1.5 pointer-fine:min-h-0 pointer-fine:px-1.5 pointer-fine:py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted hover:bg-surface-inset hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     >
                       <span>{group.label}</span>
-                      <span aria-hidden="true" className="text-[10px] leading-none">{isCollapsed ? "▸" : "▾"}</span>
+                      <span aria-hidden="true" className="text-[11px] leading-none">{isCollapsed ? "▸" : "▾"}</span>
                     </button>
                   ) : (
                     group.label
@@ -191,7 +191,7 @@ export function UnitMatchupTable({
                       <span data-value="offense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.offenseValue}</span>
                       <RankBadge rank={row.offenseRank} cohort={row.offenseCohort} tied={row.offenseTied} />
                     </div>
-                    {row.offenseN != null && <p className="pb-2 text-[10px] text-ink-muted">{row.offenseN.toLocaleString("en-US")} {metricExposureLabel(row.key)} · {row.offenseGames ?? "—"} games</p>}
+                    {row.offenseN != null && <p className="pb-2 text-[11px] text-ink-muted">{row.offenseN.toLocaleString("en-US")} {metricExposureLabel(row.key)} · {row.offenseGames ?? "—"} games</p>}
                   </td>
                   <td className="break-words px-1 text-center text-sm font-medium leading-tight text-ink">
                     <Label text={row.name} />
@@ -201,7 +201,7 @@ export function UnitMatchupTable({
                       <span data-value="defense" className="font-mono text-sm font-medium tabular-nums text-ink">{row.defenseValue}</span>
                       <RankBadge rank={row.defenseRank} cohort={row.defenseCohort} tied={row.defenseTied} />
                     </div>
-                    {row.defenseN != null && <p className="pb-2 text-right text-[10px] text-ink-muted">{row.defenseN.toLocaleString("en-US")} {metricExposureLabel(row.key)} · {row.defenseGames ?? "—"} games</p>}
+                    {row.defenseN != null && <p className="pb-2 text-right text-[11px] text-ink-muted">{row.defenseN.toLocaleString("en-US")} {metricExposureLabel(row.key)} · {row.defenseGames ?? "—"} games</p>}
                   </td>
                 </tr>
               ))}

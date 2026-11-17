@@ -142,7 +142,7 @@ export function TaleOfTheTape({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-x-3 text-[10px] text-ink-muted mt-1 px-0.5">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 text-[11px] text-ink-muted mt-1 px-0.5">
                 <span className="min-w-0">{factor.description}</span>
                 {!edge ? (
                   <span className="font-medium text-ink-muted">Not available</span>

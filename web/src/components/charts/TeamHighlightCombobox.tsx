@@ -223,7 +223,7 @@ export function TeamHighlightCombobox({
               )}
             >
               <span>{option.label}</span>
-              {option.conference && <span className="text-[10px] text-ink-muted">{option.conference}</span>}
+              {option.conference && <span className="text-[11px] text-ink-muted">{option.conference}</span>}
             </li>
           ))}
         </ul>

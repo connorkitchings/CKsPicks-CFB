@@ -32,7 +32,6 @@ export function ShareButton({ matchup, disabled = false, selectedSide = "away" }
       shareTitle={`${matchup.awayTeam} at ${matchup.homeTeam}`}
       width={SHARE_CARD_WIDTH}
       height={SHARE_CARD_HEIGHT}
-      backgroundColor="#0b0b0d"
       contentKey={JSON.stringify([matchup, selectedSide])}
       disabled={disabled}
       disabledReason="Sharing unavailable until matchup data lineage is verified"

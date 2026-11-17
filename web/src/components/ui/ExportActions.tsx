@@ -88,13 +88,14 @@ const subscribeNever = () => () => {};
 const serverFalse = () => false;
 const canCopyImages = () => typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write);
 /** The page theme decides which logo and `dark:` variants the card is drawn with. */
-const subscribeTheme = (onChange: () => void) => {
+export type ExportTheme = "light" | "dark";
+export const subscribeTheme = (onChange: () => void) => {
   const observer = new MutationObserver(onChange);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
   return () => observer.disconnect();
 };
-const currentTheme = (): "light" | "dark" => (document.documentElement.classList.contains("dark") ? "dark" : "light");
-const serverTheme = (): "light" | "dark" => "light";
+export const currentTheme = (): ExportTheme => (document.documentElement.classList.contains("dark") ? "dark" : "light");
+export const serverTheme = (): ExportTheme => "light";
 const canShareFiles = () =>
   typeof navigator.canShare === "function" &&
   navigator.canShare({ files: [new File([""], "probe.png", { type: "image/png" })] });

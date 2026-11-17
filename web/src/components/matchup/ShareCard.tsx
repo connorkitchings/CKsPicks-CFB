@@ -1,4 +1,5 @@
-import { forwardRef, type CSSProperties } from "react";
+import { createContext, forwardRef, useContext, useSyncExternalStore, type CSSProperties } from "react";
+import { currentTheme, serverTheme, subscribeTheme, type ExportTheme } from "@/components/ui/ExportActions";
 import type { MatchupData } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { spreadBetLabel } from "@/lib/betting-format";
@@ -21,27 +22,35 @@ export const SHARE_CARD_WIDTH = 1080;
 export const SHARE_CARD_HEIGHT = 1350;
 
 /**
- * Fixed-size, always-dark card for sharing one matchup as an image. Its colors are
- * literal values, not theme tokens, and logos are the dark variants chosen with
- * `logoSrc(..., "dark")` (never `TeamLogo`, which swaps by the viewer's theme), so
- * the capture looks the same in a light- or dark-mode browser.
+ * Fixed-size card for sharing one matchup as an image. It follows the page theme, like the
+ * chart exports: the colors are literal palettes (not theme tokens, which would not survive
+ * the capture) exposed to the markup as CSS variables on the card root, and logos are the
+ * variant for the card's theme (`logoSrc(..., theme)`, never `TeamLogo`).
  */
-const C = {
-  bg: "#0b0b0d",
-  panel: "#141417",
-  inset: "#1c1c21",
-  line: "#2a2a31",
-  ink: "#f4f4f5",
-  muted: "#a1a1aa",
-  faint: "#71717a",
-  accent: "#93c5fd",
+const PALETTES = {
+  dark: { bg: "#0b0b0d", panel: "#141417", inset: "#1c1c21", line: "#2a2a31", ink: "#f4f4f5", muted: "#a1a1aa", faint: "#71717a", accent: "#93c5fd", good: "#4ade80", mid: "#fbbf24", bad: "#f87171" },
+  light: { bg: "#ffffff", panel: "#fafafa", inset: "#f4f4f5", line: "#e4e4e7", ink: "#18181b", muted: "#52525b", faint: "#6e6e77", accent: "#1d4ed8", good: "#16a34a", mid: "#d97706", bad: "#dc2626" },
 } as const;
+
+const C = {
+  bg: "var(--sc-bg)",
+  panel: "var(--sc-panel)",
+  inset: "var(--sc-inset)",
+  line: "var(--sc-line)",
+  ink: "var(--sc-ink)",
+  muted: "var(--sc-muted)",
+  faint: "var(--sc-faint)",
+  accent: "var(--sc-accent)",
+} as const;
+
+const ThemeContext = createContext<ExportTheme>("dark");
 
 const sans = "var(--font-geist-sans), system-ui, -apple-system, 'Segoe UI', sans-serif";
 const mono = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
 function Logo({ name, size }: { name: string; size: number }) {
-  const src = logoSrc(name, "lg", "dark");
+  const theme = useContext(ThemeContext);
+  const src = logoSrc(name, "lg", theme);
   if (!src) {
     return (
       <div
@@ -357,8 +366,11 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData; sele
   { matchup, selectedSide = "away" },
   ref,
 ) {
+  // The card is mounted only while an image is made, so the page theme at mount is the export's theme.
+  const theme = useSyncExternalStore(subscribeTheme, currentTheme, serverTheme);
   const stats = matchup.stats;
   if (!stats) return null;
+  const pal = PALETTES[theme];
   const venue = venueLine(matchup);
   const awayPanelEdges = topMismatches(
     [{ offenseTeam: matchup.awayTeam, defenseTeam: matchup.homeTeam, rows: stats.awayOffVsHomeDef }],
@@ -369,9 +381,11 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData; sele
     2,
   );
   return (
+    <ThemeContext.Provider value={theme}>
     <div
       ref={ref}
       data-testid="share-card"
+      data-theme={theme}
       style={{
         width: SHARE_CARD_WIDTH,
         height: SHARE_CARD_HEIGHT,
@@ -384,13 +398,21 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData; sele
         flexDirection: "column",
         gap: 16,
         overflow: "hidden",
-        "--rank-good": "#4ade80",
-        "--rank-mid": "#fbbf24",
-        "--rank-bad": "#f87171",
-        "--ink": C.ink,
-        "--ink-muted": C.muted,
-        "--surface-inset": C.inset,
-        "--line": C.line,
+        "--sc-bg": pal.bg,
+        "--sc-panel": pal.panel,
+        "--sc-inset": pal.inset,
+        "--sc-line": pal.line,
+        "--sc-ink": pal.ink,
+        "--sc-muted": pal.muted,
+        "--sc-faint": pal.faint,
+        "--sc-accent": pal.accent,
+        "--rank-good": pal.good,
+        "--rank-mid": pal.mid,
+        "--rank-bad": pal.bad,
+        "--ink": pal.ink,
+        "--ink-muted": pal.muted,
+        "--surface-inset": pal.inset,
+        "--line": pal.line,
       } as CSSProperties}
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", borderBottom: `1px solid ${C.line}`, paddingBottom: 12 }}>
@@ -448,5 +470,6 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData; sele
         <div>Team names and logos are trademarks of their respective schools and owners, shown for identification only.</div>
       </div>
     </div>
+    </ThemeContext.Provider>
   );
 });
