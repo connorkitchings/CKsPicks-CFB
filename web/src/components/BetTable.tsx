@@ -7,6 +7,8 @@ const rowHeaderBase = "py-1.5 pr-2 text-left font-medium text-ink-muted";
 
 export type BetTableColumn = {
   header: string;
+  /** Shorter header shown below 360px. */
+  phoneHeader?: string;
   /** Narrow-viewport width share (e.g. "w-[28%]"); omit on fluid tables. */
   widthClass?: string;
 };
@@ -79,7 +81,12 @@ export function BetTable({
               scope="col"
               className={clsx(colHeaderBase, col.widthClass, headerCellClassName)}
             >
-              {col.header}
+              {col.phoneHeader ? (
+                <>
+                  <span className="max-[359px]:hidden">{col.header}</span>
+                  <span className="min-[360px]:hidden">{col.phoneHeader}</span>
+                </>
+              ) : col.header}
             </th>
           ))}
         </tr>

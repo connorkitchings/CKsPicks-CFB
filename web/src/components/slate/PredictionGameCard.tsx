@@ -5,7 +5,7 @@ import { isFinal } from "@/lib/team-games";
 import { coverMargin, leanFor, modelCrossesMarket, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { MatchupButton } from "@/components/MatchupLinks";
-import { phoneTeamName } from "@/lib/team-logos";
+import { phoneTeamName, teamAbbr } from "@/lib/team-logos";
 import { kickoffTime, dayShort } from "./format";
 import { TeamPair } from "./TeamPair";
 import { ResultBadge, coverText } from "./ResultBadge";
@@ -18,6 +18,21 @@ function modelNumber(lean: Lean): string {
   const margin = Number(match[1]);
   if (Math.abs(margin) < 0.05) return "PK";
   return -margin > 0 ? `+${(-margin).toFixed(1)}` : (-margin).toFixed(1);
+}
+
+/** The pick on one line: full from 640px, short name on phones, abbreviation below 360px. */
+function PickText({ lean }: { lean: Lean }) {
+  const full = lean.pick;
+  const phone = phoneLean(lean).pick;
+  const tiny = lean.team ? full.replace(lean.team, teamAbbr(lean.team)) : full;
+  if (full === tiny) return <>{full}</>;
+  return (
+    <>
+      <span className="max-sm:hidden">{full}</span>
+      <span className="sm:hidden max-[359px]:hidden" title={full}>{phone}</span>
+      <span className="hidden max-[359px]:inline" title={full}>{tiny}</span>
+    </>
+  );
 }
 
 function BetCell({ game, kind, results }: {
@@ -36,7 +51,7 @@ function BetCell({ game, kind, results }: {
         {grade ? <ResultBadge grade={grade} /> : results ? <span>Ungraded</span> : lean?.source ? <span className="truncate text-ink-muted">{lean.source}</span> : null}
       </div>
       {lean ? <>
-        <p data-pick className={clsx("break-words text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}><PhoneSwap full={lean.pick} phone={phoneLean(lean).pick} /></p>
+        <p data-pick className={clsx("break-words max-sm:whitespace-nowrap text-sm font-semibold leading-snug", results ? "text-ink" : "text-accent-ink")}><PickText lean={lean} /></p>
         <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs tabular-nums text-ink-muted">
           <span>
             Model:{" "}
@@ -74,7 +89,7 @@ export function PredictionGameCard({ game, results = false, now }: {
       <div className="px-3 pb-3 pt-2">
         <div className="mb-1 flex items-center justify-between gap-2 text-xs text-ink-muted">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium tabular-nums">{results ? dayShort(game.startDate) : kickoffTime(game.startDate)}</span>
+            <span data-testid="kickoff" className="whitespace-nowrap font-medium tabular-nums">{results ? dayShort(game.startDate) : kickoffTime(game.startDate)}</span>
             {where && <span>· {where}</span>}
             {game.neutralSite && <span>· Neutral site</span>}
             {final && <span className="rounded bg-surface-inset px-1.5 py-0.5 text-xs font-semibold">Final</span>}

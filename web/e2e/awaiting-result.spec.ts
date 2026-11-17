@@ -74,7 +74,7 @@ test("the matchup hero tags a past unscored game, and only that", async ({ page 
   await page.goto("/matchup/1");
   await expect(page.getByTestId("awaiting-tag")).toHaveCount(0);
   await page.goto(`/matchup/101?now=${WEEK_5_OVER}`);
-  await expect(page.getByText(/Final: \d+–\d+/)).toBeVisible();
+  await expect(page.getByText("Final", { exact: true }).first()).toBeVisible();
   await expect(page.getByTestId("awaiting-tag")).toHaveCount(0);
 });
 

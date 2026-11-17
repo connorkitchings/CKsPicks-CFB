@@ -280,10 +280,22 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     // Unknown ids render the 404 page.
     await page.goto("/matchup/987654");
-    await expect(page.getByText("This page could not be found")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Team stats" })).toHaveCount(0);
     await page.goto("/matchup/abc");
-    await expect(page.getByText("This page could not be found")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+  });
+
+  test("the 404 page keeps the site header and the dark theme, with tappable links", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("theme", "dark"));
+    await page.goto("/teams/Not_A_Team");
+    await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
+    await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+    for (const name of ["Games", "Ratings"]) {
+      const link = page.getByRole("navigation", { name: "Where to go next" }).getByRole("link", { name, exact: true });
+      await expect(link).toBeVisible();
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
   });
 
   test("unknown and invalid game ids return HTTP 404; known games return 200", async ({ request }) => {

@@ -62,6 +62,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       await expect(page.locator("li[id^='game-']")).toHaveCount(1);
     });
 
+    test("the Filters button exists only when the sheet has controls", async ({ page }) => {
+      await gotoHydrated(page, "/?mode=market");
+      await expect(page.getByTestId("slate-filters-button")).toHaveCount(0);
+      await gotoHydrated(page, "/");
+      await expect(page.getByTestId("slate-filters-button")).toHaveCount(1);
+    });
+
     test("the week navigator lives in the bar and the quick search filters the slate", async ({ page }) => {
       await gotoHydrated(page, "/");
       const bar = page.getByTestId("slate-bar");
@@ -127,4 +134,33 @@ test("desktop keeps the heading, phase pill, week navigator and an open record c
   await openRecord(page);
   await expect(page.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
   await expect(page.getByTestId("record-summary")).toBeHidden();
+});
+
+test.describe("phone cards at 320px", () => {
+  test.use({ viewport: { width: 320, height: 568 }, hasTouch: true });
+
+  for (const url of ["/?mode=market", "/?week=4", "/"]) {
+    test(`${url}: kickoff stays on one line and no pick or spread wraps`, async ({ page }) => {
+      await gotoHydrated(page, url);
+      const cards = page.locator("li[id^='game-']");
+      await expect(cards.first()).toBeVisible();
+      for (const kickoff of await cards.locator("[data-testid='kickoff']").all()) {
+        const box = (await kickoff.boundingBox())!;
+        expect(box.height).toBeLessThanOrEqual(18);
+      }
+      // Market cards: the spread row cell; prediction cards: each pick.
+      const spreadCells = page.locator("li[id^='game-'] tbody tr:first-child td:nth-child(2), li[id^='game-'] [data-pick]");
+      for (const cell of await spreadCells.all()) {
+        if (!(await cell.isVisible())) continue;
+        expect((await cell.boundingBox())!.height).toBeLessThanOrEqual(36); // one 20px line plus 12px padding; a wrapped cell is 52px+
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
+
+  test("the market table says Result below 360px", async ({ page }) => {
+    await gotoHydrated(page, "/?mode=market");
+    const table = page.getByRole("table", { name: "Market and results" });
+    await expect(table.getByRole("columnheader", { name: "Result", exact: true })).toBeVisible();
+  });
 });

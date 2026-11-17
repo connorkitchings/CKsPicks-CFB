@@ -2,8 +2,7 @@ import { clsx } from "clsx";
 import TeamLogo from "@/components/TeamLogo";
 import { Card } from "@/components/ui/Card";
 import { MatchupButton } from "@/components/MatchupLinks";
-import { PhoneSwap } from "@/components/ui/PhoneSwap";
-import { phoneTeamName } from "@/lib/team-logos";
+import { phoneTeamName, teamAbbr } from "@/lib/team-logos";
 import { BetTable } from "../BetTable";
 import { AwaitingTag } from "./AwaitingTag";
 import type { Game } from "@/lib/queries";
@@ -12,7 +11,22 @@ import {
   marketSpreadView,
   spreadLabel,
 } from "@/lib/betting-format";
-import { etWeekdayDateKickoff } from "@/lib/time-et";
+import { etWeekdayDateClock, etWeekdayDateKickoff } from "@/lib/time-et";
+
+/** Full text from 640px, the 14-character short name on phones, the abbreviation below 360px. */
+function SpreadLabel({ view }: { view: ReturnType<typeof marketSpreadView> }) {
+  const full = spreadLabel(view);
+  const phone = spreadLabel(view, phoneTeamName);
+  const tiny = spreadLabel(view, teamAbbr);
+  if (full === tiny) return <>{full}</>;
+  return (
+    <>
+      <span className="max-sm:hidden">{full}</span>
+      <span className="sm:hidden max-[359px]:hidden" title={full}>{phone}</span>
+      <span className="hidden max-[359px]:inline" title={full}>{tiny}</span>
+    </>
+  );
+}
 
 function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
   if (result === null) {
@@ -56,8 +70,11 @@ export function MarketGameCard({
 
   return (
     <Card as="li" id={`game-${game.gameId}`} className="scroll-mt-12 max-sm:scroll-mt-0">
-      <div className="mb-3 flex items-center gap-2 text-xs text-ink-muted">
-        <span>{etWeekdayDateKickoff(game.startDate)}</span>
+      <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+        <span data-testid="kickoff" className="whitespace-nowrap">
+          <span className="max-[359px]:hidden">{etWeekdayDateKickoff(game.startDate)}</span>
+          <span className="min-[360px]:hidden">{etWeekdayDateClock(game.startDate)}</span>
+        </span>
         {hasResults && (
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">
             Final
@@ -88,18 +105,18 @@ export function MarketGameCard({
         tableClassName="mt-3 w-full tabular-nums text-sm"
         headerCellClassName="pl-2 text-right"
         bodyCellClassName={[
-          "py-1.5 pl-2 text-right font-mono tabular-nums text-ink",
+          "py-1.5 pl-2 text-right font-mono tabular-nums whitespace-nowrap text-ink",
           ...(showBetResult ? ["py-1.5 pl-2 text-right text-ink"] : []),
         ]}
         columns={[
           { header: "Market" },
-          ...(showBetResult ? [{ header: "Bet Result" }] : []),
+          ...(showBetResult ? [{ header: "Bet Result", phoneHeader: "Result" }] : []),
         ]}
         rows={[
           {
             label: "Spread",
             cells: [
-              <PhoneSwap key="spread" full={spreadLabel(marketSpread)} phone={spreadLabel(marketSpread, phoneTeamName)} />,
+              <SpreadLabel key="spread" view={marketSpread} />,
               ...(showBetResult
                 ? [<ResultCell key="result" result={game.spreadResult} />]
                 : []),
@@ -143,10 +160,10 @@ function TeamLine({
         {name}
       </span>
       {record && (
-        <span className="text-xs tabular-nums text-ink-muted">({record})</span>
+        <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-ink-muted">({record})</span>
       )}
       {home && (
-        <span className="text-xs uppercase tracking-wide text-ink-muted">
+        <span className="shrink-0 text-xs uppercase tracking-wide text-ink-muted">
           home
         </span>
       )}

@@ -16,7 +16,7 @@ const SELECT_CLASS =
 
 /**
  * Search, conference, sort and layout. On phones this is the pinned bar: the week navigator centered
- * on one row, the search field and the Filters button below it; conference and sort live in the
+ * on one row, the search field, the Filters button (only when it has controls) and the Layout toggle below it; conference and sort live in the
  * Filters sheet. From 640px up it is the single toolbar card, unchanged.
  */
 export function SlateToolbar<T extends string>({
@@ -106,13 +106,15 @@ export function SlateToolbar<T extends string>({
           onChange={onQueryChange}
           className="min-w-0 flex-[1.2_1_0%] sm:flex-[1_1_9rem]"
         />
-        <SlateFilterSheet mobile={mobile} active={filtersActive}>
-          {conferenceSelect}
-          {sortSelect}
-        </SlateFilterSheet>
+        {(conferenceSelect || sortSelect) && (
+          <SlateFilterSheet mobile={mobile} active={filtersActive}>
+            {conferenceSelect}
+            {sortSelect}
+          </SlateFilterSheet>
+        )}
         {!mobile && conferenceSelect}
         {!mobile && sortSelect}
-        <div className="hidden shrink-0 sm:block">
+        <div className="shrink-0">
           <SegmentedControl
             label="Layout"
             value={view}

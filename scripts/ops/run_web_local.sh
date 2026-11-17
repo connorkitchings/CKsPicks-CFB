@@ -8,6 +8,8 @@
 # restricted pipeline role from the macOS Keychain (never the owner URL in
 # web/.env); the app only reads. Preview holds the same Week 5 data as
 # production. Port: PORT (default 3000).
+# CFB_PUBLICATION_MODE defaults to predictions here (the app itself falls back to market
+# mode when it is unset), so local review matches Production; set it to market to test that mode.
 # MODE=start builds the production bundle and serves it with `next start`, which is
 # what speed measurements need (default MODE=dev). CFB_QUERY_LOG=1 logs each query.
 set -euo pipefail
@@ -26,6 +28,7 @@ case "$target" in
   *) print -u2 "Usage: zsh scripts/ops/run_web_local.sh [preview|production]"; exit 64 ;;
 esac
 
+export CFB_PUBLICATION_MODE="${CFB_PUBLICATION_MODE:-predictions}"
 export WEB_CMD="$web_cmd"
 print "Web on http://127.0.0.1:${PORT:-3000}/matchup  (data: $target, read-only use of the pipeline login, mode ${mode})"
 exec zsh "$root/scripts/ops/$wrapper" zsh -c '

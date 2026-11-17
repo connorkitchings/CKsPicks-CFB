@@ -236,7 +236,7 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
 
           {isFinal && (
             <span className="mt-2.5 rounded-full border border-line bg-surface-card px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-              Final: {matchup.awayFinalPoints}–{matchup.homeFinalPoints}
+              Final
             </span>
           )}
           <AwaitingTag

@@ -12,7 +12,9 @@ for (const path of ["/", "/?week=4"]) {
     const card = page.locator("li[id^='game-']").first();
     await expect(card).toBeVisible();
     await expect(page.locator("details[open]")).toHaveCount(0);
-    await expect(page.getByRole("group", { name: "Layout" })).toBeHidden();
+    const layout = page.getByRole("group", { name: "Layout" });
+    await expect(layout).toBeVisible();
+    expect((await layout.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     // The graded week adds a status line, so only the upcoming week promises a complete first card
     // above the navigation (the featured comparisons and the record sit below the games).
     if (path === "/") {
@@ -51,20 +53,41 @@ for (const path of ["/", "/?week=4"]) {
     await expect(page.locator("details[open]")).toHaveCount(0);
   });
 
-  test(`${path}: desktop list selection becomes cards on phones and survives resize`, async ({ page }) => {
+  test(`${path}: the list layout renders compact rows on phones and survives resize`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(path);
     await page.getByRole("button", { name: "List", exact: true }).click();
     await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "list");
     const originalCount = await page.locator("li[id^='game-']").count();
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "grid");
+    const list = page.locator("ul[data-layout]").first();
+    await expect(list).toHaveAttribute("data-layout", "list");
     await expect(page.locator("li[id^='game-']")).toHaveCount(originalCount);
+    await expect(page.locator("li[data-compact-row]")).toHaveCount(originalCount);
     const ids = await page.locator("li[id^='game-']").evaluateAll((cards) => cards.map((card) => card.id));
     expect(new Set(ids).size).toBe(ids.length);
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "list");
+    await expect(page.locator("li[data-compact-row]")).toHaveCount(0);
   });
+
+  for (const width of [390, 320]) {
+    test(`${path}: phone list rows are short, tappable and fit at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await gotoHydrated(page, `${path}${path.includes("?") ? "&" : "?"}view=list`);
+      const rows = page.locator("li[data-compact-row]");
+      await expect(rows.first()).toBeVisible();
+      for (const row of await rows.all()) {
+        const box = (await row.boundingBox())!;
+        expect(box.height).toBeLessThanOrEqual(width === 390 ? 96 : 120);
+        expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+      const link = rows.first().getByRole("link");
+      await expect(link).toHaveAttribute("href", /\/matchup\/\d+/);
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
 }
 
 test("phone cards keep venue beside the time and the line source through a filter rerender", async ({ page }) => {

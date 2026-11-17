@@ -346,8 +346,9 @@ test.describe("final week (/?week=4)", () => {
     expect(await fits(page)).toBe(true);
 
     await page.setViewportSize({ width: 390, height: 800 });
-    await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeHidden();
-    await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "grid");
+    await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeVisible();
+    await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "list");
+    await expect(page.locator("li[data-compact-row]").first()).toBeVisible();
     expect(await fits(page)).toBe(true);
   });
 

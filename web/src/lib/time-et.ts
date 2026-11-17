@@ -94,6 +94,11 @@ export function etWeekdayDateKickoff(d: Date): string {
   return isTimeTbd(d) ? `${etWeekdayDate(d)}, time TBD` : etWeekdayDateTime(d);
 }
 
+/** "Sat, Oct 24, time TBD" for a placeholder, else "Sat, Oct 24, 7:30 PM" (no zone label; for the narrowest phones). */
+export function etWeekdayDateClock(d: Date): string {
+  return isTimeTbd(d) ? `${etWeekdayDate(d)}, time TBD` : `${etWeekdayDate(d)}, ${etClock(d)}`;
+}
+
 /** Midnight Eastern that ends the Eastern calendar day containing `d`. */
 export function nextEtDayStart(d: Date): Date {
   const day = (t: number) => etDateYear(new Date(t));

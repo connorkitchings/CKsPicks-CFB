@@ -130,7 +130,7 @@ export function SlateList({
   }, [visible, effectiveSort]);
 
   return (
-    <div className="flex flex-col gap-2 [--slate-bar-h:105px] sm:gap-4">
+    <div className="flex flex-col gap-2 [--slate-bar-h:108px] sm:gap-4">
       <SlateToolbar query={query} onQueryChange={(value) => setParam("q", value)} conference={conference} onConferenceChange={(value) => setParam("conference", value)} conferences={conferences} sort={effectiveSort} onSortChange={(value) => setParam("sort", value)} sortLabels={sortLabels} predictionsVisible={predictionsVisible} view={view} onViewChange={(value) => setParam("view", value)} weekNav={weekNav} />
       <div className="order-1 flex flex-wrap items-center justify-between gap-3 py-2">
         <SegmentedControl label="Game status" value={status} onChange={(value: SlateStatusFilter) => setParam("status", value)} options={[{value:"today",label:"Today"},{value:"upcoming",label:"Upcoming"},{value:"results",label:"Results"},{value:"all",label:"All"}]} />
