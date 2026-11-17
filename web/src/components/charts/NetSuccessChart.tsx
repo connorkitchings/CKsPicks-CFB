@@ -71,11 +71,13 @@ export function NetSuccessChart({
   }, [horizontal, interactive]);
   // Match the viewBox to CSS pixels for readable text and >=44px row targets.
   const width = interactive && horizontal ? renderedWidth ?? requestedWidth : requestedWidth;
-  const height = interactive && horizontal ? 56 + 48 * bars.length : requestedHeight;
+  const phone = interactive && horizontal;
+  const height = phone ? 72 + 48 * bars.length : requestedHeight;
   const ordered = bars.filter((b) => stateOf(b) !== "dim").map((b) => String(b.gameId));
   const { selected, register, handlers, setSelected } = useChartSelection(ordered);
   const tipBar = interactive && selected ? bars.find((b) => String(b.gameId) === selected) : undefined;
-  const margin = horizontal ? { top: 28, right: 20, bottom: 28, left: 100 } : { top: 10, right: 12, bottom: 78, left: 56 };
+  const narrowLabels = phone && width < 340;
+  const margin = horizontal ? { top: 28, right: 20, bottom: phone ? 44 : 28, left: narrowLabels ? 76 : 100 } : { top: 10, right: 12, bottom: 78, left: 56 };
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   const span = horizontal ? plot.right - plot.left : plot.bottom - plot.top;
   const count = Math.max(1, bars.length);
@@ -141,6 +143,11 @@ export function NetSuccessChart({
                 <text x={along(tick)} y={plot.top - 8} textAnchor="middle" fontSize={horizontal && interactive ? 12 : 11} fill="var(--ink-muted)">
                   {(tick * 100).toFixed(0)}
                 </text>
+                {phone && (
+                  <text x={along(tick)} y={plot.bottom + 16} textAnchor="middle" fontSize={12} fill="var(--ink-muted)" data-axis="x-tick-bottom">
+                    {(tick * 100).toFixed(0)}
+                  </text>
+                )}
               </>
             ) : (
               <>
@@ -234,7 +241,12 @@ export function NetSuccessChart({
               <TeamMark team={bar.loser} cx={loserAt.cx} cy={loserAt.cy} size={logo} />
               {horizontal ? (
                 <text x={plot.left - 6} y={c} textAnchor="end" dominantBaseline="central" fontSize={interactive ? 12 : Math.min(11, band * 0.7)} fill="var(--ink)">
-                  {bar.label}
+                  {narrowLabels && bar.label.includes(" ") ? (
+                    <>
+                      <tspan x={plot.left - 6} dy="-0.6em">{bar.label.slice(0, bar.label.indexOf(" "))}</tspan>
+                      <tspan x={plot.left - 6} dy="1.2em">{bar.label.slice(bar.label.indexOf(" ") + 1)}</tspan>
+                    </>
+                  ) : bar.label}
                 </text>
               ) : (
                 <text
