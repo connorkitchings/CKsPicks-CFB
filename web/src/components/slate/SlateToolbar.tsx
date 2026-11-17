@@ -114,7 +114,7 @@ export function SlateToolbar<T extends string>({
         )}
         {!mobile && conferenceSelect}
         {!mobile && sortSelect}
-        <div className="shrink-0">
+        <div className="shrink-0 max-[359px]:[&_button]:px-2">
           <SegmentedControl
             label="Layout"
             value={view}

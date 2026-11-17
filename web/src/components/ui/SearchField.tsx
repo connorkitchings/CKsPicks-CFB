@@ -40,7 +40,7 @@ export function SearchField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="min-h-11 w-full rounded-lg border border-line-control bg-surface-card px-3 pr-12 text-base pointer-fine:min-h-9 pointer-fine:pr-10 text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-sm [&::-webkit-search-cancel-button]:hidden"
+        className={`min-h-11 w-full rounded-lg border border-line-control bg-surface-card px-3 pr-12 ${value ? "" : "max-[359px]:pr-3"} text-base pointer-fine:min-h-9 pointer-fine:pr-10 text-ink placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-sm [&::-webkit-search-cancel-button]:hidden`}
       />
       {value && (
         <button

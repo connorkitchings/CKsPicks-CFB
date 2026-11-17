@@ -158,6 +158,24 @@ test.describe("phone cards at 320px", () => {
     });
   }
 
+  test("the team search placeholder is not clipped beside the Filters button and Layout toggle", async ({ page }) => {
+    await gotoHydrated(page, "/");
+    const search = page.getByRole("searchbox", { name: "Filter by team" });
+    const { room, needed } = await search.evaluate((input: HTMLInputElement) => {
+      const style = getComputedStyle(input);
+      const probe = document.createElement("span");
+      probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${style.font}`;
+      probe.textContent = input.placeholder;
+      document.body.append(probe);
+      const needed = probe.getBoundingClientRect().width;
+      probe.remove();
+      return { room: input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), needed };
+    });
+    expect(needed).toBeLessThanOrEqual(room);
+    const toggle = page.getByRole("group", { name: "Layout" });
+    expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  });
+
   test("the market table says Result below 360px", async ({ page }) => {
     await gotoHydrated(page, "/?mode=market");
     const table = page.getByRole("table", { name: "Market and results" });
