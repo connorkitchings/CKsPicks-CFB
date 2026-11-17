@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { bestFirstDirection, competitionRanks, parseRatingsSort, rankSosByTeam } from "./sos-rank.ts";
+import { bestFirstDirection, competitionRanks, parseRatingsSort, rankSosByTeam, resolveGroupSort } from "./sos-rank.ts";
 
 test("competitionRanks ranks the highest value first", () => {
   assert.deepEqual(competitionRanks([50, 70, 60]), [3, 1, 2]);
@@ -77,4 +77,14 @@ test("parseRatingsSort honours a valid direction and replaces an unknown one wit
 
 test("competitionRanks gives teams with equal overall ratings the same rank", () => {
   assert.deepEqual(competitionRanks([0.53, 1.2, 0.53, -0.4]), [2, 1, 2, 4]);
+});
+
+test("resolveGroupSort moves a sort outside the group to the group's first sort, best first", () => {
+  assert.deepEqual(resolveGroupSort("resume", "overall", "desc"), { sort: "sor", dir: "asc" });
+  assert.deepEqual(resolveGroupSort("strength", "sos_full", "asc"), { sort: "overall", dir: "desc" });
+});
+
+test("resolveGroupSort keeps a sort the group offers, with its direction", () => {
+  assert.deepEqual(resolveGroupSort("resume", "sos_played", "desc"), { sort: "sos_played", dir: "desc" });
+  assert.deepEqual(resolveGroupSort("strength", "defense", "asc"), { sort: "defense", dir: "asc" });
 });

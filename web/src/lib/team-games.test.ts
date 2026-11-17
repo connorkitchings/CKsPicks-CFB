@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  atsResult, nextMatchupByTeam, nextUpcomingGame, forecastLine, forecastText, gameResultText, lineForTeam, lineText, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
+  atsResult, nextMatchupByTeam, nextUpcomingGame, forecastLine, forecastParts, forecastText, gameResultText, lineForTeam, lineText, marketParts, marketText, modelPickedWinner, modelRecords, modelSpreadPick,
   modelTotalPick, modelWinnerName, overUnderResult, recordText, teamRecords, winPercent, withByeWeeks,
   type TeamGameFields, type TeamGameLines,
 } from "./team-games.ts";
@@ -156,6 +156,14 @@ test("marketText reads the line from the favorite's side with the total", () => 
 test("forecastText gives the model line and total without a prefix", () => {
   assert.equal(forecastText(game({ predictedMargin: 3.5, predictedTotal: 54.84 })), "Texas -3.5 · 54.8");
   assert.equal(forecastText(game({})), null);
+});
+
+test("marketParts and forecastParts return each part separately", () => {
+  assert.deepEqual(marketParts(lined({ homeTeamSpreadLine: -3.5, totalLine: 51.5 })), ["Texas -3.5", "51.5"]);
+  assert.deepEqual(marketParts(lined({ totalLine: 51.5 })), ["51.5"]);
+  assert.deepEqual(marketParts(lined({})), []);
+  assert.deepEqual(forecastParts(game({ predictedMargin: 3.5, predictedTotal: 54.84 })), ["Texas -3.5", "54.8"]);
+  assert.deepEqual(forecastParts(game({})), []);
 });
 
 test("lineText prints a signed line, a pick'em or a dash", () => {

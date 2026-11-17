@@ -1,3 +1,5 @@
+import { signedFixed } from "@/lib/number-format";
+
 export interface StatCell {
   label: string;
   title: string;
@@ -5,7 +7,7 @@ export interface StatCell {
 }
 
 /** A rating as a signed two-decimal number: "+0.53", "-1.20". */
-export const ratingText = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
+export const ratingText = (value: number) => signedFixed(value, 2);
 
 /** A row of four labelled stat cells; the Ratings phone cards and the team page header share it. */
 export function StatGrid({ cells, className }: { cells: readonly StatCell[]; className?: string }) {

@@ -71,6 +71,26 @@ export function bestFirstDirection(sort: RatingsSort): SortDirection {
   return sort === "sor" || sort.startsWith("sos_") ? "asc" : "desc";
 }
 
+/** Sorts the Strength column group offers, in select order. */
+export const STRENGTH_SORTS = ["overall", "offense", "defense"] as const satisfies readonly RatingsSort[];
+/** Sorts the Résumé & schedule column group offers, in select order. */
+export const RESUME_SORTS = ["sor", "sos_played", "sos_remaining", "sos_full"] as const satisfies readonly RatingsSort[];
+
+/**
+ * Keeps the sort inside the active column group. A sort the group does not offer (for example
+ * the default Overall under `?group=resume`) becomes the group's first sort, best first.
+ */
+export function resolveGroupSort(
+  group: "strength" | "resume",
+  sort: RatingsSort,
+  dir: SortDirection,
+): { sort: RatingsSort; dir: SortDirection } {
+  const allowed: readonly RatingsSort[] = group === "resume" ? RESUME_SORTS : STRENGTH_SORTS;
+  if (allowed.includes(sort)) return { sort, dir };
+  const first = allowed[0];
+  return { sort: first, dir: bestFirstDirection(first) };
+}
+
 /**
  * Resolves raw `?sort=` and `?dir=` values. The retired pre-split `sos` value means SOS Full, and
  * any other unknown sort (including the removed `waa`) falls back to Overall. A missing or unknown

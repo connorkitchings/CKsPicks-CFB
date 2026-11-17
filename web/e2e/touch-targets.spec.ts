@@ -10,6 +10,7 @@ import { gotoHydrated } from "./helpers";
 const ROUTES = [
   ["Games", "/"],
   ["Teams", "/teams"],
+  ["Teams résumé list", "/teams?group=resume"],
   ["Team page", "/teams/Texas"],
   ["Matchup", "/matchup/1"],
   ["Graphs", "/stats?chart=efficiency&week=3"],

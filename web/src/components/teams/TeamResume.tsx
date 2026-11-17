@@ -1,9 +1,10 @@
 import { RankChip } from "@/components/ui/RankChip";
 import { TeamSection } from "@/components/teams/TeamSection";
+import { signedFixed } from "@/lib/number-format";
 import type { TeamSummary } from "@/lib/team-summary";
 
 const value = (n: number | null | undefined, digits = 1) => (typeof n === "number" ? n.toFixed(digits) : "—");
-const signed = (n: number | null | undefined) => (typeof n === "number" ? `${n > 0 ? "+" : ""}${n.toFixed(1)}` : "—");
+const signed = (n: number | null | undefined) => (typeof n === "number" ? signedFixed(n, 1) : "—");
 
 /** Strength of record, the three schedule-strength views and wins above average, each with its national rank. */
 export function TeamResume({ summary }: { summary: TeamSummary }) {

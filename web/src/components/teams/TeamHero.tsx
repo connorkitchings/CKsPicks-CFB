@@ -4,7 +4,8 @@ import { MatchupButton } from "@/components/MatchupLinks";
 import { ratingText } from "@/components/ratings/StatGrid";
 import { dayShort } from "@/components/slate/format";
 import type { TeamGame } from "@/components/teams/TeamGameRow";
-import { forecastText, marketText } from "@/lib/team-games";
+import { signedFixed } from "@/lib/number-format";
+import { forecastParts, marketParts } from "@/lib/team-games";
 import { phoneTeamName } from "@/lib/team-logos";
 import type { TeamSummary } from "@/lib/team-summary";
 
@@ -38,12 +39,18 @@ function StripCell({ label, title, value, rank }: { label: string; title: string
   );
 }
 
+/** Line and total as unbreakable chunks, so a narrow screen wraps between them and never inside one. */
+function Parts({ parts }: { parts: string[] }) {
+  if (parts.length === 0) return <>—</>;
+  return <>{parts.map((part, index) => <span key={part + index}>{index > 0 && " · "}<span className="whitespace-nowrap">{part}</span></span>)}</>;
+}
+
 /** The callout for a team's next unplayed game: opponent, date, market line and total, and the model's forecast. */
 function NextGame({ game, team }: { game: TeamGame; team: string }) {
   const home = game.homeTeam === team;
   const opponent = home ? game.awayTeam : game.homeTeam;
-  const market = marketText(game);
-  const forecast = forecastText(game);
+  const market = marketParts(game);
+  const forecast = forecastParts(game);
   return (
     <section aria-label="Next game" className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-accent-line bg-accent-soft px-3.5 py-3">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-accent-ink">Next game · Wk {game.week} · {dayShort(game.startDate)}</p>
@@ -53,8 +60,8 @@ function NextGame({ game, team }: { game: TeamGame; team: string }) {
         <span className="min-w-0 truncate">{phoneTeamName(opponent)}</span>
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">
-        <dt className="text-ink-muted">Market</dt><dd className="font-mono tabular-nums text-ink">{market ?? "—"}</dd>
-        <dt className="text-ink-muted">Forecast</dt><dd className="font-mono tabular-nums text-ink">{forecast ?? "—"}</dd>
+        <dt className="text-ink-muted">Market</dt><dd className="font-mono tabular-nums text-ink"><Parts parts={market} /></dd>
+        <dt className="text-ink-muted">Forecast</dt><dd className="font-mono tabular-nums text-ink"><Parts parts={forecast} /></dd>
       </dl>
       <div className="-mb-1 flex"><MatchupButton gameId={game.gameId} className="-ml-3 font-semibold text-accent-ink hover:underline sm:-ml-2" /></div>
     </section>
@@ -100,7 +107,7 @@ export function TeamHero({ team, conference, summary, nextGame }: {
           <StripCell label="SOR" title="Strength of record rank" rank={rating.sorRank} />
           <StripCell label="SOS played" title="Strength of schedule played, rank" rank={summary.sos.played} />
           <StripCell label="SOS remaining" title="Strength of schedule remaining, rank" rank={summary.sos.remaining} />
-          <StripCell label="Wins above avg"title="Wins above average" value={typeof rating.waa === "number" ? `${rating.waa > 0 ? "+" : ""}${rating.waa.toFixed(1)}` : "—"} />
+          <StripCell label="Wins above avg"title="Wins above average" value={typeof rating.waa === "number" ? signedFixed(rating.waa, 1) : "—"} />
         </dl>
       )}
       {nextGame && <NextGame game={nextGame} team={team} />}

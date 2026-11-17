@@ -9,8 +9,9 @@ import { Notice } from "@/components/ui/Notice";
 import { SearchField } from "@/components/ui/SearchField";
 import { teamHref, resolveTeam } from "@/lib/team-routes";
 import { buildConferenceMap, conferenceOptions, matchesTeamConference, type RosterRow } from "@/lib/conferences";
-import { bestFirstDirection, parseRatingsSort, rankSosByTeam, type RatingsSort } from "@/lib/sos-rank";
+import { bestFirstDirection, parseRatingsSort, rankSosByTeam, resolveGroupSort, RESUME_SORTS, STRENGTH_SORTS, type RatingsSort } from "@/lib/sos-rank";
 import { nationalRanks, ratingField, weeklyMovement, type AnalysisRating, type RatingHistoryPeriod, type RatingMetric } from "@/lib/team-analysis";
+import { signedFixed } from "@/lib/number-format";
 import { searchParamsUrl } from "@/lib/url-state";
 import { RatingTimeline } from "./RatingTimeline";
 import { ScatterChart } from "@/components/charts/ScatterChart";
@@ -23,7 +24,7 @@ const MEASURES = [{ value: "rating", label: "Rating" }, { value: "rank", label: 
 const CONTROL = "min-h-11 min-w-0 max-w-full rounded-lg border border-line bg-surface-card px-3 text-sm text-ink";
 const CELL = "whitespace-nowrap px-3 py-3 text-right tabular-nums";
 const number = (n: number | null | undefined, places = 2) => n === null || n === undefined || !Number.isFinite(n) ? "—" : n.toFixed(places);
-const signed = (n: number | null | undefined, places = 2) => n === null || n === undefined || !Number.isFinite(n) ? "—" : `${n > 0 ? "+" : ""}${n.toFixed(places)}`;
+const signed = (n: number | null | undefined, places = 2) => n === null || n === undefined || !Number.isFinite(n) ? "—" : signedFixed(n, places);
 const record = (r: AnalysisRating) => r.wins == null || r.losses == null ? "—" : `${r.wins}–${r.losses}`;
 const rankText = (n: number | null | undefined) => n == null ? "—" : `#${n}`;
 const SORT_LABEL: Record<RatingsSort, string> = { overall: "Overall", offense: "Offense", defense: "Defense", sor: "SOR", sos_played: "SOS Played", sos_remaining: "SOS Remaining", sos_full: "SOS Full" };
@@ -37,12 +38,16 @@ export function TeamsHub({ current, history, timeline, roster, season }: Props) 
   const view = VIEWS.find((v) => v.value === params.get("view"))?.value ?? "rankings";
   const metric: RatingMetric = METRICS.find((m) => m.value === params.get("metric"))?.value ?? "overall";
   const measure = params.get("measure") === "rank" ? "rank" : "rating";
-  const { sort, dir } = parseRatingsSort(params.get("sort") ?? undefined, params.get("dir") ?? undefined);
+  const requested = parseRatingsSort(params.get("sort") ?? undefined, params.get("dir") ?? undefined);
   const query = (params.get("q") ?? "").slice(0, 80);
   const confOptions = useMemo(() => conferenceOptions(roster), [roster]);
   const requestedConference = params.get("conf") ?? "all";
   const conference = ["all", "p4", ...confOptions].includes(requestedConference) ? requestedConference : "all";
-  const group = params.get("group") === "resume" || (!params.has("group") && !["overall", "offense", "defense"].includes(sort)) ? "resume" : "strength";
+  const group = params.get("group") === "resume" || (!params.has("group") && !(STRENGTH_SORTS as readonly string[]).includes(requested.sort)) ? "resume" : "strength";
+  // A sort the active column group does not offer (`?group=resume` alone) falls to that group's first sort.
+  const { sort, dir } = resolveGroupSort(group, requested.sort, requested.dir);
+  const [openRows, setOpenRows] = useState<ReadonlySet<string>>(new Set());
+  const toggleRow = (name: string) => setOpenRows((current) => { const next = new Set(current); if (!next.delete(name)) next.add(name); return next; });
   const resolveSelection = (value: string | null) => {
     const resolved = value && resolveTeam(value);
     return current.ratings.find((r) => r.team === (resolved ? resolved.ratingName : value))?.team ?? "";
@@ -100,10 +105,26 @@ export function TeamsHub({ current, history, timeline, roster, season }: Props) 
     {filteredSelections.length > 0 && <p role="status" className="text-sm text-ink-muted">Selected outside these filters: {filteredSelections.join(", ")}. Your comparison is preserved.</p>}
     {current.ratings.length === 0 ? <Notice tone="empty">No certified ratings are available for this period.</Notice> : <>
       {view === "rankings" && <>
-        <div className="flex flex-wrap items-center justify-between gap-3"><SegmentedControl label="Rating columns" value={group} options={[{ value: "strength", label: "Strength" }, { value: "resume", label: "Résumé & schedule" }]} onChange={(value) => change({ group: value, sort: value === "strength" ? "overall" : "sor", dir: value === "strength" ? "desc" : "asc" })} /><label className="text-sm text-ink-muted">Sort by <select id="rating-sort" className={CONTROL} value={sort} onChange={(e) => chooseSort(e.target.value as RatingsSort)}>{(group === "strength" ? ["overall", "offense", "defense"] : ["sor", "sos_played", "sos_remaining", "sos_full"]).map((value) => <option key={value} value={value}>{SORT_LABEL[value as RatingsSort]}</option>)}</select></label></div>
+        <div className="flex flex-wrap items-center justify-between gap-3"><SegmentedControl label="Rating columns" value={group} options={[{ value: "strength", label: "Strength" }, { value: "resume", label: "Résumé & schedule" }]} onChange={(value) => change({ group: value, sort: value === "strength" ? "overall" : "sor", dir: value === "strength" ? "desc" : "asc" })} /><label className="text-sm text-ink-muted">Sort by <select id="rating-sort" className={CONTROL} value={sort} onChange={(e) => chooseSort(e.target.value as RatingsSort)}>{(group === "strength" ? STRENGTH_SORTS : RESUME_SORTS).map((value) => <option key={value} value={value}>{SORT_LABEL[value]}</option>)}</select></label></div>
         {visible.length === 0 ? <Notice tone="empty"><p>No teams match these filters.</p><button className="min-h-11 text-accent-ink" onClick={() => change({ q: null, conf: null })}>Clear filters</button></Notice> : <>
           <div className="hidden overflow-x-auto rounded-xl border border-line sm:block"><table className="w-full text-sm"><caption className="sr-only">{season} {current.period.label} team {group === "strength" ? "strength" : "résumé and schedule"} ratings</caption><thead className="bg-surface-inset text-xs text-ink-muted"><tr><th className={CELL}>Rank</th><th className="px-3 py-3 text-left">Team</th>{group === "strength" ? <>{header("overall")}{header("offense")}{header("defense")}<th className={CELL}>Weekly change</th><th className={CELL}>Rank movement</th></> : <><th className={CELL}>FBS W-L</th>{header("sor")}<th className={CELL} title="Wins above an average FBS team on the same schedule">Wins above avg</th>{header("sos_played")}{header("sos_remaining")}{header("sos_full")}</>}</tr></thead><tbody className="divide-y divide-line">{visible.map((row) => <tr key={row.team}><td className={CELL}>{group === "strength" ? ranks[(sort in ratingField ? sort : "overall") as RatingMetric].get(row.team) ?? "—" : rankText(sortValue(row))}</td><th scope="row" className="px-3 py-3 text-left"><Link href={teamHref(row.team)} className="inline-flex min-h-11 items-center gap-2 font-semibold hover:underline"><TeamLogo name={row.team} px={24} />{row.team}</Link></th>{group === "strength" ? <><td className={CELL}>{signed(row.overallRating)}</td><td className={CELL}>{signed(row.offenseRating)}</td><td className={CELL}>{signed(row.defenseRating)}</td><td className={CELL}>{signed(movement.get(row.team)?.change)}</td><td className={CELL}>{signed(movement.get(row.team)?.rankChange, 0)}</td></> : <><td className={CELL}>{record(row)}</td><td className={CELL} title={`SOR ${number(row.sor, 1)}`}>{rankText(row.sorRank)}</td><td className={CELL}>{signed(row.waa, 1)}</td>{(["played", "remaining", "full"] as const).map((key) => <td className={CELL} key={key}>{rankText(sosRanks.get(row.team)?.[key])}</td>)}</>}</tr>)}</tbody></table></div>
-          <ul aria-label="Team ratings list" className="space-y-3 sm:hidden">{visible.map((row) => <li key={row.team} className="rounded-xl border border-line bg-surface-card p-4"><Link href={teamHref(row.team)} className="flex min-h-11 items-center gap-2 font-semibold"><span className="text-sm text-ink-muted">{rankText(group === "strength" ? ranks[(sort in ratingField ? sort : "overall") as RatingMetric].get(row.team) : sortValue(row))}</span><TeamLogo name={row.team} px={24} /><span className="min-w-0 break-words">{row.team}</span></Link><dl className="mt-3 grid grid-cols-3 gap-3 text-sm">{(group === "strength" ? [["Overall", signed(row.overallRating)], ["Offense", signed(row.offenseRating)], ["Defense", signed(row.defenseRating)], ["Weekly change", signed(movement.get(row.team)?.change)], ["Rank movement", signed(movement.get(row.team)?.rankChange, 0)]] : [["FBS W-L", record(row)], ["SOR", rankText(row.sorRank)], ["Wins above avg", signed(row.waa, 1)], ["SOS played", rankText(sosRanks.get(row.team)?.played)], ["SOS remaining", rankText(sosRanks.get(row.team)?.remaining)], ["SOS full", rankText(sosRanks.get(row.team)?.full)]]).map(([label, value]) => <div key={label}><dt className="text-xs text-ink-muted">{label}</dt><dd className="mt-1 font-mono">{value}</dd></div>)}</dl></li>)}</ul>
+          <ul aria-label="Team ratings list" className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface-card sm:hidden">{visible.map((row) => {
+            const move = movement.get(row.team);
+            const open = openRows.has(row.team);
+            const sos = sosRanks.get(row.team);
+            const summary = group === "strength" ? [signed(row.overallRating), signed(move?.change)] : [record(row), signed(row.waa, 1)];
+            const details = group === "strength"
+              ? [["Offense", signed(row.offenseRating)], ["Defense", signed(row.defenseRating)], ["Rank movement", signed(move?.rankChange, 0)]]
+              : [["SOR", rankText(row.sorRank)], ["SOS played", rankText(sos?.played)], ["SOS remaining", rankText(sos?.remaining)], ["SOS full", rankText(sos?.full)]];
+            return <li key={row.team} className="px-3">
+              <div className="flex items-center gap-1">
+                <Link href={teamHref(row.team)} className="flex min-h-11 min-w-0 flex-1 items-center gap-2 font-semibold"><span className="w-9 shrink-0 text-sm text-ink-muted">{rankText(group === "strength" ? ranks[(sort in ratingField ? sort : "overall") as RatingMetric].get(row.team) : sortValue(row))}</span><TeamLogo name={row.team} px={24} /><span className="min-w-0 truncate">{row.team}</span></Link>
+                <div className="shrink-0 text-right font-mono text-sm leading-tight tabular-nums"><div>{summary[0]}</div><div className="text-xs text-ink-muted" title={group === "strength" ? "Weekly change" : "Wins above average"}>{summary[1]}</div></div>
+                <button type="button" aria-expanded={open} aria-label={`${open ? "Hide" : "Show"} details for ${row.team}`} onClick={() => toggleRow(row.team)} className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded text-ink-muted focus-visible:outline-2 focus-visible:outline-accent"><span aria-hidden className={`inline-block transition-transform ${open ? "rotate-180" : ""}`}>▾</span></button>
+              </div>
+              {open && <dl className="grid grid-cols-3 gap-3 pb-3 text-sm">{details.map(([label, value]) => <div key={label}><dt className="text-xs text-ink-muted">{label}</dt><dd className="mt-1 font-mono">{value}</dd></div>)}</dl>}
+            </li>;
+          })}</ul>
         </>}
         <p className="max-w-3xl text-xs leading-relaxed text-ink-muted">Weekly change compares consecutive certified weeks; a dash means that comparison is unavailable. Positive rank movement means improvement. SOR ranks résumé (1 is strongest); SOS ranks difficulty (1 is hardest). Wins above avg is wins above an average FBS team on the same schedule. FCS games are excluded from résumé measures.</p>
       </>}
@@ -135,7 +156,7 @@ function ResumeView({ rows, extent, population, selected, onSelect, compareHref 
   const chart = <ScatterChart
     points={scatterPoints}
     xDomain={xDomain}
-    yDomain={[0.5, population + 4]}
+    yDomain={[-3, population + 4]}
     onToggleHighlight={(team) => onSelect(team === selected ? "" : team)}
     highlight={selected || null}
     average={null}
@@ -150,12 +171,13 @@ function ResumeView({ rows, extent, population, selected, onSelect, compareHref 
     describe={(p) => `${p.team}: overall ${number(p.x)}, SOR rank ${p.y}`}
     formatX={(v) => signed(v, 1)}
     formatY={(v) => `#${Math.round(v)}`}
+    yTickFilter={(v) => v >= 1}
     detailsContainer={mobile ? detailsContainer : undefined}
     showDetails={false}
     label="Strength versus résumé scatterplot"
   />;
   return <section aria-labelledby="resume-heading" className="space-y-4"><div><h2 id="resume-heading" className="text-xl font-semibold">Strength vs résumé</h2><p className="mt-1 text-sm text-ink-muted">Right: higher overall rating. Up: stronger strength-of-record rank. {points.length} of {rows.length} filtered teams have both measures.</p></div>{points.length ? (mobile ? <><div ref={fitRef} data-testid="scatter-fit">{chart}</div><div ref={setDetailsContainer} /></> : <div className="overflow-x-auto" role="region" aria-label="Strength versus résumé chart, horizontally scrollable" tabIndex={0}><div className="min-w-[760px] lg:min-w-0">{chart}</div></div>) : <Notice tone="empty">Strength-of-record comparisons are not available for these teams in this period.</Notice>}
     {selectedRow && <div className="rounded-xl border border-line bg-surface-inset p-4" role="status"><h3 className="font-semibold">{selectedRow.team}</h3><p className="mt-1 text-sm">Overall {signed(selectedRow.overallRating)} · SOR {rankText(selectedRow.sorRank)} · score {number(selectedRow.sor, 1)} · FBS {record(selectedRow)} · {selectedRow.completedGames ?? "—"} completed FBS games</p><div className="mt-2 flex gap-4 text-sm"><Link href={teamHref(selectedRow.team)} className="min-h-11 content-center text-accent-ink">Team profile</Link><Link href={compareHref(selectedRow.team)} className="min-h-11 content-center text-accent-ink">Compare</Link></div></div>}
-    <details className="rounded-xl border border-line p-4"><summary className="min-h-11 cursor-pointer font-semibold">Show as table</summary><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th className="px-3 py-3 text-left">Team</th><th className={CELL}>Overall</th><th className={CELL}>SOR rank</th><th className={CELL}>SOR score</th><th className={CELL}>FBS W-L</th><th className={CELL}>FBS games</th></tr></thead><tbody>{[...points].sort((a, b) => a.sorRank! - b.sorRank!).map((r) => <tr key={r.team} className="border-t border-line"><th className="px-3 py-3 text-left"><Link href={teamHref(r.team)} className="text-accent-ink">{r.team}</Link></th><td className={CELL}>{signed(r.overallRating)}</td><td className={CELL}>{rankText(r.sorRank)}</td><td className={CELL}>{number(r.sor, 1)}</td><td className={CELL}>{record(r)}</td><td className={CELL}>{r.completedGames ?? "—"}</td></tr>)}</tbody></table></div></details>
+    <details className="rounded-xl border border-line p-4"><summary className="min-h-11 cursor-pointer font-semibold">Show as table</summary><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th className="px-3 py-3 text-left">Team</th><th className={CELL}>Overall</th><th className={CELL}>SOR rank</th><th className={CELL}>SOR score</th><th className={CELL}>FBS W-L</th><th className={CELL}>FBS games</th></tr></thead><tbody>{[...points].sort((a, b) => a.sorRank! - b.sorRank!).map((r) => <tr key={r.team} className="border-t border-line"><th className="px-3 py-3 text-left"><Link href={teamHref(r.team)} className="inline-flex min-h-11 items-center text-accent-ink">{r.team}</Link></th><td className={CELL}>{signed(r.overallRating)}</td><td className={CELL}>{rankText(r.sorRank)}</td><td className={CELL}>{number(r.sor, 1)}</td><td className={CELL}>{record(r)}</td><td className={CELL}>{r.completedGames ?? "—"}</td></tr>)}</tbody></table></div></details>
   </section>;
 }

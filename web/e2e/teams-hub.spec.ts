@@ -94,3 +94,53 @@ test("redirect preserves cleared Trends selection and nonempty team aliases reso
   await gotoHydrated(page, "/teams?view=trends&team=App%20State");
   await expect(page.getByRole("combobox", { name: "First team" })).toHaveValue("Appalachian State");
 });
+
+test("/teams?group=resume ranks by SOR, not by raw overall rating", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoHydrated(page, "/teams?group=resume");
+  const items = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem");
+  await expect(items.first().getByRole("link").locator("span").first()).toHaveText("#1");
+  const ranks = await items.getByRole("link").locator("span:first-child").allTextContents();
+  for (const rank of ranks) expect(rank).not.toContain(".");
+  await expect(page.locator("#rating-sort")).toHaveValue("sor");
+});
+
+test("phone ratings rows are compact and reveal details one toggle at a time", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoHydrated(page, "/teams");
+  const list = page.getByRole("list", { name: "Team ratings list" });
+  const items = list.getByRole("listitem");
+  const count = await items.count();
+  expect(count).toBeGreaterThan(1);
+  for (let i = 0; i < count; i++) expect((await items.nth(i).boundingBox())!.height).toBeLessThanOrEqual(64);
+  expect((await list.boundingBox())!.height / count).toBeLessThan(80);
+  const first = items.nth(0);
+  const second = items.nth(1);
+  await expect(first.locator("dl")).toHaveCount(0);
+  const toggle = first.getByRole("button", { name: /details for/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await toggle.click();
+  await second.getByRole("button", { name: /details for/ }).click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(first.locator("dl")).toBeVisible();
+  await expect(second.locator("dl")).toBeVisible();
+});
+
+test("résumé plot keeps the rank-1 dot below the top frame and table links are tap-sized", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoHydrated(page, "/teams?view=resume");
+  const chart = page.getByRole("group", { name: "Strength versus résumé scatterplot" });
+  const gap = await chart.evaluate((group) => {
+    const svg = group.closest("svg") ?? group.querySelector("svg") ?? group.ownerDocument.querySelector("svg");
+    const frame = svg!.querySelector('rect[fill="var(--surface-card)"]')!;
+    const top = Number(frame.getAttribute("y"));
+    const cys = [...group.querySelectorAll("[data-team] circle.focus-ring")].map((c) => Number(c.getAttribute("cy")));
+    return Math.min(...cys) - top;
+  });
+  expect(gap).toBeGreaterThanOrEqual(8);
+  await expect(chart.getByText("#0", { exact: true })).toHaveCount(0);
+  await page.getByText("Show as table").click();
+  const link = page.locator("details table tbody a").first();
+  expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+});
