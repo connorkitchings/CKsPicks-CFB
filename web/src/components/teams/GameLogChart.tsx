@@ -42,7 +42,7 @@ function Bars({ bars, measure, width, phone, team, teamFill }: { bars: readonly 
     return `Week ${bar.week} ${teamAbbr(bar.opponent)} ${show(own)}, ${show(opp)}`;
   }).join("; ")}`;
   return (
-    <svg viewBox={`0 0 ${width} ${HEIGHT}`} role="img" aria-label={summary} className={`block h-auto w-full ${phone ? "text-xs" : "text-[11px]"}`}>
+    <svg viewBox={`0 0 ${width} ${HEIGHT}`} role="img" aria-label={summary} className="block h-auto w-full text-xs">
       <rect x={PAD.left} y={PAD.top} width={plotW} height={plotH} fill="var(--surface-card)" stroke="var(--line)" />
       {ticks.map((tick) => (
         <g key={tick}>
@@ -76,7 +76,7 @@ function Bars({ bars, measure, width, phone, team, teamFill }: { bars: readonly 
 export function GameLogChart({ bars, team }: { bars: readonly GameLogBar[]; team: string }) {
   const [measure, setMeasure] = useState<Measure>("success");
   const phone = useIsPhone();
-  const { ref, width } = useMeasuredWidth(phone, 360);
+  const { ref, width } = useMeasuredWidth(true, 640);
   const teamFill = chartColor(teamColor(team), teamAltColor(team), FALLBACK_TEAM_COLOR);
   return (
     <TeamSection
@@ -85,7 +85,7 @@ export function GameLogChart({ bars, team }: { bars: readonly GameLogBar[]; team
       actions={bars.length > 0 && <SegmentedControl<Measure> label="Game log measure" value={measure} onChange={setMeasure} options={MEASURES} size="sm" testId="game-log-measure" />}
     >
       {bars.length === 0 ? <p className="text-sm text-ink-muted">Game-by-game bars appear after the first game.</p> : <>
-        <div ref={ref}><Bars bars={bars} measure={measure} width={phone ? width : 640} phone={phone} team={team} teamFill={teamFill} /></div>
+        <div ref={ref}><Bars bars={bars} measure={measure} width={width} phone={phone} team={team} teamFill={teamFill} /></div>
         <p className="mt-2 flex gap-4 text-xs text-ink-muted" aria-hidden>
           <span className="flex items-center gap-1.5"><i className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: teamFill }} />{phoneTeamName(team)}</span>
           <span className="flex items-center gap-1.5"><i className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: "var(--ink-faint)" }} />Opponent</span>

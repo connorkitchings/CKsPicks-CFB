@@ -189,6 +189,18 @@ test.describe("team pages (fixture mode)", () => {
     await expect(chart(/^Success rate by game/)).toBeVisible();
   });
 
+  test("the game log labels render at 11px or more at 1024px", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await gotoHydrated(page, "/teams/Texas");
+    const svg = page.getByRole("img", { name: /^Success rate by game/ });
+    await svg.scrollIntoViewIfNeeded();
+    await expect.poll(async () => {
+      const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+      return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+    }).toBe(true);
+    await expect.poll(() => minLabelPx(svg)).toBeGreaterThanOrEqual(11);
+  });
+
   test("the rating trend toggles between rating and rank", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
