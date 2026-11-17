@@ -76,6 +76,7 @@ export function ScatterView({ shared, kind, side, data, config, describe, contro
       invertY={data.invertY}
       xLabel={config.xLabel}
       yLabel={config.yLabel}
+      shortXLabel={config.shortXLabel}
       shortYLabel={config.shortYLabel}
       width={view.width}
       height={view.height}

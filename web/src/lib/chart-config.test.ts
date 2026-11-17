@@ -125,6 +125,16 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
     "Finishing drives",
     "Game log",
   ]);
+  // Short picker labels exist only where the full label would clip on a 320px phone, and are always shorter.
+  for (const kind of readyKinds()) {
+    const short = CHART_REGISTRY[kind].shortTabLabel;
+    if (short !== undefined) assert.ok(short.length > 0 && short.length < CHART_REGISTRY[kind].tabLabel.length, kind);
+  }
+  assert.equal(CHART_REGISTRY.efficiency.shortTabLabel, "Explosiveness");
+  for (const side of ["offense", "defense"] as const) {
+    const config = finishingDrivesConfig(side);
+    assert.ok(config.shortXLabel && config.shortXLabel.length < config.xLabel.length, side);
+  }
   assert.equal(parseChartKind("bogus"), "efficiency");
   assert.equal(parseChartKind(undefined), "efficiency");
   assert.equal(parseChartKind(["efficiency"]), "efficiency");

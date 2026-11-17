@@ -322,6 +322,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
               options: group.kinds.map((target) => ({
                 href: chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) }),
                 label: CHART_REGISTRY[target].tabLabel,
+                shortLabel: CHART_REGISTRY[target].shortTabLabel,
               })),
             }))}
           />

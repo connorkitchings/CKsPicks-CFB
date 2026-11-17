@@ -205,7 +205,7 @@ test.describe("mobile scatter inspection on the page", () => {
     expect((await clear.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 
-  for (const [chart, week, width] of ["efficiency", "adjusted", "possession"].flatMap((c) => [320, 390, 430].map((w) => [c, c === "adjusted" ? 2 : 3, w] as const))) {
+  for (const [chart, week, width] of ["efficiency", "adjusted", "possession", "downs", "finishing-drives"].flatMap((c) => [320, 390, 430].map((w) => [c, c === "adjusted" ? 2 : 3, w] as const))) {
     test(`${chart} scatter axis labels and titles stay inside bounds and do not collide at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await page.goto(`/stats?chart=${chart}&week=${week}`);
@@ -248,7 +248,13 @@ test.describe("mobile scatter inspection on the page", () => {
           }
         }
 
+        // Neighbouring x tick labels never touch (every label fits its slot).
+        const tickBoxes = xTicks.map((tick) => tick.getBoundingClientRect()).sort((a, b) => a.left - b.left);
+        let tickOverlaps = 0;
+        for (let i = 1; i < tickBoxes.length; i++) if (tickBoxes[i].left < tickBoxes[i - 1].right) tickOverlaps++;
+
         return {
+          tickOverlaps,
           xCollisions,
           yCollisions,
           outOfBounds,
@@ -262,6 +268,7 @@ test.describe("mobile scatter inspection on the page", () => {
       expect(evaluation.yTicksFound).toBeGreaterThanOrEqual(4);
       expect(evaluation.allLabelsFound).toBeGreaterThanOrEqual(10);
       expect(evaluation.outOfBounds).toBe(0);
+      expect(evaluation.tickOverlaps).toBe(0);
       expect(evaluation.xCollisions).toBe(0);
       expect(evaluation.yCollisions).toBe(0);
     });

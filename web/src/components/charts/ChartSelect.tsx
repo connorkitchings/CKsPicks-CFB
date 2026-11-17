@@ -1,9 +1,19 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { withChartState } from "@/lib/chart-config";
 
-export type ChartSelectGroup = { id: string; label: string; options: { href: string; label: string }[] };
+export type ChartSelectGroup = { id: string; label: string; options: { href: string; label: string; shortLabel?: string }[] };
+
+const NARROW = "(max-width: 359px)";
+const subscribeNarrow = (notify: () => void) => {
+  const media = window.matchMedia(NARROW);
+  media.addEventListener("change", notify);
+  return () => media.removeEventListener("change", notify);
+};
+/** True below 360px; false on the server and during hydration so the first markup is stable. */
+const useIsNarrow = () => useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW).matches, () => false);
 
 /**
  * Phone chart picker: a native select (OS picker on iOS and Android) that navigates like
@@ -12,6 +22,7 @@ export type ChartSelectGroup = { id: string; label: string; options: { href: str
 export function ChartSelect({ groups, currentHref }: { groups: ChartSelectGroup[]; currentHref: string }) {
   const router = useRouter();
   const params = useSearchParams();
+  const narrow = useIsNarrow();
   return (
     <>
       <label htmlFor="chart-select" className="sr-only">Chart type</label>
@@ -24,7 +35,7 @@ export function ChartSelect({ groups, currentHref }: { groups: ChartSelectGroup[
       >
         {groups.map((group) => (
           <optgroup key={group.id} label={group.label}>
-            {group.options.map((option) => <option key={option.href} value={option.href}>{option.label}</option>)}
+            {group.options.map((option) => <option key={option.href} value={option.href}>{narrow ? option.shortLabel ?? option.label : option.label}</option>)}
           </optgroup>
         ))}
       </select>

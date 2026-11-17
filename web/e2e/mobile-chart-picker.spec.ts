@@ -166,6 +166,43 @@ test.describe("phone chart picker", () => {
     });
   }
 
+  test("at 320px the picker shows short labels unclipped and the summary takes its own row in at most two lines", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await gotoHydrated(page, "/stats?chart=efficiency&week=3");
+    const select = page.getByTestId("chart-select");
+    await expect(select.locator("option:checked")).toHaveText("Explosiveness");
+    for (const [chart, text] of [["efficiency", "Explosiveness"], ["possession", "Possession"]]) {
+      await gotoHydrated(page, `/stats?chart=${chart}&week=3`);
+      await expect(select.locator("option:checked")).toHaveText(text);
+      const fit = await select.evaluate((node: HTMLSelectElement, label: string) => {
+        const style = getComputedStyle(node);
+        const probe = document.createElement("span");
+        probe.textContent = label;
+        Object.assign(probe.style, { font: style.font, position: "absolute", visibility: "hidden", whiteSpace: "nowrap" });
+        document.body.append(probe);
+        const width = probe.getBoundingClientRect().width;
+        probe.remove();
+        const room = node.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 24; // chevron
+        return { scroll: node.scrollWidth <= node.clientWidth, width, room };
+      }, text);
+      expect(fit.scroll).toBe(true);
+      expect(fit.width).toBeLessThanOrEqual(fit.room);
+    }
+    const summary = page.getByTestId("chart-settings-summary");
+    const lines = await summary.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return Math.round(node.getBoundingClientRect().height / parseFloat(style.lineHeight));
+    });
+    expect(lines).toBeLessThanOrEqual(2);
+    // Below 360px the summary owns its row, above the export buttons.
+    const summaryBox = (await summary.boundingBox())!;
+    const exports = (await page.getByRole("group", { name: "Chart display and export" }).boundingBox())!;
+    expect(exports.y).toBeGreaterThanOrEqual(summaryBox.y + summaryBox.height - 1);
+    // Full labels return from 360px; the desktop `tabLabel` is untouched.
+    await page.setViewportSize({ width: 360, height: 844 });
+    await expect(select.locator("option:checked")).toHaveText("Possession efficiency");
+  });
+
   test("at 640px and wider the original chart nav is unchanged", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 800 });
     await page.goto("/stats?chart=efficiency&week=3");

@@ -55,6 +55,8 @@ export type ChartDefinition = {
   group: ChartGroup;
   /** Picker link text. */
   tabLabel: string;
+  /** Phone picker text below 360px, where the full `tabLabel` would clip; omitted when the full label fits. */
+  shortTabLabel?: string;
   /** Section heading and export title. */
   title: string;
   /** One plain sentence under the title on the page; the PNG export carries the full metadata line instead. */
@@ -99,6 +101,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   efficiency: {
     group: "teams",
     tabLabel: "Efficiency vs explosiveness",
+    shortTabLabel: "Explosiveness",
     title: "Efficiency vs explosiveness",
     description: "Each team's success rate against its explosiveness.",
     population: FBS_GAMES,
@@ -130,6 +133,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   possession: {
     group: "teams",
     tabLabel: "Possession efficiency",
+    shortTabLabel: "Possession",
     title: "Possession efficiency",
     description: "Offense against defense allowed, adjusted for opponent strength, per possession.",
     population: "FBS teams, all games",
@@ -379,6 +383,8 @@ export type ScatterConfig = {
   yLabel: string;
   /** Y title on phones, where the rotated full title would not fit the plot height. */
   shortYLabel: string;
+  /** X title on phones when the full title would not fit the plot width; falls back to `xLabel`. */
+  shortXLabel?: string;
   /** Axis tick text. */
   tickX: (value: number) => string;
   tickY: (value: number) => string;
@@ -739,6 +745,7 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
     xSample: "eligible drives",
     ySample: "scoring opportunities",
     xLabel: isOffense ? "Scoring Opportunity Rate (Drives to Opponent 40)" : "Scoring Opportunity Rate Allowed",
+    shortXLabel: isOffense ? "Scoring opp. rate" : "Scoring opp. rate allowed",
     yLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
     shortYLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
     tickX: percentTick,
