@@ -203,6 +203,92 @@ def test_stop_gate_names_a_changed_completed_week_row():
     assert problems == ["games: game 2 changed columns ['venue_id']"]
 
 
+def _metadata_games(**overrides) -> pd.DataFrame:
+    row = {
+        "game_id": 1,
+        "week": 7,
+        "home_team": "A",
+        "away_team": "B",
+        "neutral_site": False,
+        "kickoff_utc": "2026-10-17T16:00:00Z",
+        "start_time_tbd": True,
+        "venue": "Old Field",
+        "venue_id": 10,
+        "attendance": None,
+        "excitement_index": None,
+        "highlights": None,
+        "notes": None,
+    }
+    row.update(overrides)
+    return pd.DataFrame([row])
+
+
+_METADATA_CHANGE = {
+    "kickoff_utc": "2026-10-17T19:30:00Z",
+    "start_time_tbd": False,
+    "venue": "New Field",
+    "venue_id": 11,
+    "attendance": 70000,
+    "excitement_index": 4.2,
+    "highlights": "x",
+    "notes": "y",
+}
+
+
+def _compare_games(new, previous, *, allow, outcomes_new=None, outcomes_prev=None):
+    base = outcomes_frame([(1, 31, 24)])
+    return gate.compare_completed_weeks(
+        new,
+        previous,
+        base if outcomes_new is None else outcomes_new,
+        base if outcomes_prev is None else outcomes_prev,
+        through_week=7,
+        allow_metadata_corrections=allow,
+    )
+
+
+def test_stop_gate_allows_metadata_corrections_when_opted_in():
+    new = _metadata_games(**_METADATA_CHANGE)
+    assert _compare_games(new, _metadata_games(), allow=True) == []
+
+
+def test_stop_gate_default_still_stops_on_metadata_changes():
+    new = _metadata_games(**_METADATA_CHANGE)
+    problems = _compare_games(new, _metadata_games(), allow=False)
+    assert problems == [
+        "games: game 1 changed columns "
+        "['attendance', 'excitement_index', 'highlights', 'kickoff_utc', "
+        "'notes', 'start_time_tbd', 'venue', 'venue_id']"
+    ]
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"home_team": "Z"}, {"away_team": "Z"}, {"week": 6}, {"neutral_site": True}],
+)
+def test_stop_gate_metadata_allowance_keeps_model_fields_strict(change):
+    problems = _compare_games(_metadata_games(**change), _metadata_games(), allow=True)
+    assert len(problems) == 1 and "game 1" in problems[0]
+
+
+def test_stop_gate_metadata_allowance_keeps_finals_and_game_set_strict():
+    previous = _metadata_games()
+    finals = _compare_games(
+        previous,
+        previous,
+        allow=True,
+        outcomes_new=outcomes_frame([(1, 35, 24)]),
+    )
+    assert finals == ["game_outcomes: game 1 changed columns ['home_points']"]
+    added = pd.concat([previous, _metadata_games(game_id=2)], ignore_index=True)
+    assert _compare_games(added, previous, allow=True) == [
+        "games: game 2 is new in the completed-week scope"
+    ]
+    assert _compare_games(previous, added, allow=True) == [
+        "games: game 2 is missing from the new completed-week scope"
+    ]
+
+
 def test_stop_gate_ignores_changes_above_the_through_week():
     new = games_frame([(1, 7, 10), (2, 8, 11)])
     previous = games_frame([(1, 7, 10), (2, 8, 99)])

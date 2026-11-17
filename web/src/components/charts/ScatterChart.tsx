@@ -24,6 +24,10 @@ export type ScatterChartProps = {
   yLabel: string;
   /** Y title on phones; falls back to `yLabel`. */
   shortYLabel?: string;
+  /** X title on phones; falls back to `xLabel`. */
+  shortXLabel?: string;
+  /** Keeps only the y ticks it accepts (e.g. drop rank ticks below #1); all ticks when omitted. */
+  yTickFilter?: (value: number) => boolean;
   /** ViewBox size; the SVG scales to its container. */
   width: number;
   height: number;
@@ -41,6 +45,8 @@ export type ScatterChartProps = {
   label: string;
   /** Live mobile details live outside the horizontally scrolling plot. */
   detailsContainer?: HTMLElement | null;
+  /** The enclosing view can render a persistent shared inspector instead. */
+  showDetails?: boolean;
 };
 
 const EXPORT_MARGIN = { top: 18, right: 22, bottom: 52, left: 84 };
@@ -48,6 +54,21 @@ const INTERACTIVE_MARGIN = { top: 20, right: 26, bottom: 56, left: 86 };
 const MOBILE_MARGIN = { top: 12, right: 12, bottom: 50, left: 64 };
 /** Narrow phone views wrap quadrant captions and thin the x ticks so neighbours never overlap. */
 const COMPACT_BELOW = 500;
+
+/**
+ * X ticks for a narrow plot: starts at about one per 55px, then asks `niceTicks` for fewer until every
+ * label fits its slot (its 1-2-5 step rounding can return up to twice the requested count). Keeps at least 3.
+ */
+function compactTicks(domain: Domain, format: (value: number) => string, plotWidth: number, labelSize: number): number[] {
+  const fits = (ticks: number[]) => ticks.length * (Math.max(...ticks.map((t) => format(t).length)) * labelSize * 0.6 + 8) <= plotWidth;
+  let ticks = niceTicks(domain[0], domain[1], Math.max(3, Math.floor(plotWidth / 55)));
+  for (let count = Math.floor(plotWidth / 55) - 1; count >= 2 && !fits(ticks); count--) {
+    const fewer = niceTicks(domain[0], domain[1], count);
+    if (fewer.length < 3) break;
+    ticks = fewer;
+  }
+  return ticks;
+}
 
 function captionLines(text: string, maxChars: number): string[] {
   if (maxChars <= 0) return [text];
@@ -93,6 +114,8 @@ export function ScatterChart({
   xLabel,
   yLabel,
   shortYLabel,
+  shortXLabel,
+  yTickFilter,
   width,
   height,
   cornerCaptions,
@@ -104,6 +127,7 @@ export function ScatterChart({
   interactive = true,
   label,
   detailsContainer,
+  showDetails = true,
 }: ScatterChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [renderedWidth, setRenderedWidth] = useState(interactive ? Math.min(width, 760) : width);
@@ -139,6 +163,7 @@ export function ScatterChart({
   const xd = xDomain;
   const yd = yDomain;
   const fraction = (value: number, domain: Domain) => (value - domain[0]) / (domain[1] - domain[0]);
+  const xTicks = compact ? compactTicks(xd, formatX, plot.right - plot.left, textSize(12)) : niceTicks(xd[0], xd[1], 6);
   const sx = (v: number) => plot.left + (invertX ? 1 - fraction(v, xd) : fraction(v, xd)) * (plot.right - plot.left);
   // Quadrant captions own a band at the top and bottom of the plot; data maps into the rows between,
   // so a mark can never sit under a caption whatever the data. Marks are kept their own radius clear of the band.
@@ -186,8 +211,11 @@ export function ScatterChart({
     : plot.bottom - 10 - (lines - 1) * captionSize * 1.15;
 
   // A long x title is centred on the plot, shifted (and on a phone shrunk to 12px) to stay inside the view.
-  const xTitleSize = compact && xLabel.length * textSize(14) * 0.58 > width - 8 ? textSize(12) : textSize(14);
-  const xTitleHalf = interactive ? (xLabel.length * xTitleSize * 0.58) / 2 : 0;
+  const xTitle = compact ? shortXLabel ?? xLabel : xLabel;
+  const xTitleSize = compact && xTitle.length * textSize(14) * 0.58 > width - 8 ? textSize(12) : textSize(14);
+  // If it still overflows at 12px on a phone, the title is squeezed to the view width rather than clipped.
+  const xTitleFit = compact && xTitle.length * xTitleSize * 0.58 > width - 8 ? width - 8 : undefined;
+  const xTitleHalf = interactive ? (xTitleFit ?? xTitle.length * xTitleSize * 0.58) / 2 : 0;
   const xTitleY = height - (interactive ? 8 : 10) - noteHeight;
   const yTitle = compact ? shortYLabel ?? yLabel : yLabel;
   // On a phone the rotated y title is squeezed to the plot height rather than clipped.
@@ -197,6 +225,8 @@ export function ScatterChart({
   const selectTeam = (team: string) => {
     setChoices([]);
     setSelected(team);
+    // Selecting only ever sets the highlight; the toggle would clear one that is already on this team.
+    if (!showDetails && highlight !== team) onToggleHighlight(team);
   };
   const onTouchUp = (event: PointerEvent<SVGSVGElement>) => {
     const start = touch.current;
@@ -215,6 +245,7 @@ export function ScatterChart({
       if (selected === candidates[0]) {
         setSelected(null);
         setChoices([]);
+        if (!showDetails) onToggleHighlight(candidates[0]);
       } else {
         selectTeam(candidates[0]);
       }
@@ -225,7 +256,7 @@ export function ScatterChart({
   };
   const validChoices = choices.filter((team) => points.some((p) => p.team === team));
   const isHighlighted = highlight === tip?.team;
-  const hasDetails = interactive && Boolean(tip || validChoices.length > 0);
+  const hasDetails = interactive && Boolean((showDetails && tip) || validChoices.length > 0);
   const detailsRef = useRef<HTMLDivElement>(null);
   const revealDetails = useRef(false);
   // The panel sits under the plot, where a phone's fixed tab bar can cover its buttons; bring it clear of the bar.
@@ -239,7 +270,7 @@ export function ScatterChart({
     if (panel.getBoundingClientRect().bottom > barTop) panel.scrollIntoView({ block: "nearest" });
   }, [hasDetails, selected, validChoices.length]);
   const details = hasDetails ? (
-    <div ref={detailsRef} className="show-on-touch-or-small scroll-mb-28 mt-3rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink" data-testid="scatter-details">
+    <div ref={detailsRef} className="show-on-touch-or-small scroll-mb-28 mt-3 rounded-lg border border-line bg-surface-inset p-3 text-sm leading-relaxed text-ink" data-testid="scatter-details">
       {validChoices.length > 0 ? (
         <>
           <p role="status">Several teams are nearby. Choose a team:</p>
@@ -299,7 +330,7 @@ export function ScatterChart({
         } : undefined}
         viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
         <rect x={plot.left} y={plot.top} width={plot.right - plot.left} height={plot.bottom - plot.top} fill="var(--surface-card)" stroke="var(--line)" />
-        {niceTicks(xd[0], xd[1], compact ? Math.max(3, Math.floor((plot.right - plot.left) / 55)) : 6).map((tick, index) => (
+        {xTicks.map((tick, index) => (
           <g key={`x${tick}`}>
             {/* Every other vertical line, and fainter than the axis, so the marks carry the picture. */}
             {index % 2 === 0 && <line x1={sx(tick)} x2={sx(tick)} y1={plot.top} y2={plot.bottom} stroke="var(--line)" strokeWidth={0.5} opacity={GRID_OPACITY} data-grid="x" />}
@@ -308,7 +339,7 @@ export function ScatterChart({
             </text>
           </g>
         ))}
-        {niceTicks(yd[0], yd[1], 6).map((tick) => (
+        {niceTicks(yd[0], yd[1], 6).filter((tick) => !yTickFilter || yTickFilter(tick)).map((tick) => (
           <g key={`y${tick}`}>
             <line x1={plot.left} x2={plot.right} y1={sy(tick)} y2={sy(tick)} stroke="var(--line)" strokeWidth={0.5} opacity={GRID_OPACITY} data-grid="y" />
             <text x={plot.left - (interactive ? 10 : 8)} y={sy(tick)} textAnchor="end" dominantBaseline="central" data-chart-label="true" data-axis="y-tick" fontSize={textSize(12)} fill="var(--ink-muted)">
@@ -351,8 +382,8 @@ export function ScatterChart({
             ))}
           </g>
         )}
-        <text x={xTitleX} y={xTitleY} textAnchor="middle" data-chart-label="true" data-axis="x-title" fontSize={xTitleSize} fontWeight={600} fill="var(--ink)">
-          {xLabel}
+        <text x={xTitleX} y={xTitleY} textAnchor="middle" data-chart-label="true" data-axis="x-title" fontSize={xTitleSize} fontWeight={600} fill="var(--ink)" textLength={xTitleFit} lengthAdjust={xTitleFit ? "spacingAndGlyphs" : undefined}>
+          {xTitle}
         </text>
         <text transform={`translate(${compact ? 15 : interactive ? 18 : 14} ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" data-chart-label="true" data-axis="y-title" fontSize={textSize(14)} fontWeight={600} fill="var(--ink)" textLength={yTitleFit} lengthAdjust={yTitleFit ? "spacingAndGlyphs" : undefined}>
           {yTitle}
@@ -418,7 +449,7 @@ export function ScatterChart({
               {compact && state !== "searched" ? (
                 <g data-mark="dot">
                   <circle cx={cx} cy={cy} r={DOT_HIT_RADIUS} fill="transparent" />
-                  <circle cx={cx} cy={cy} r={DOT_RADIUS} fill={teamColor(p.team)} stroke="var(--surface-card)" strokeWidth={1} />
+                  <circle cx={cx} cy={cy} r={DOT_RADIUS} fill={teamColor(p.team)} stroke="var(--scatter-dot-outline)" strokeWidth={1} />
                 </g>
               ) : (
                 <TeamMark team={p.team} cx={cx} cy={cy} size={size} />

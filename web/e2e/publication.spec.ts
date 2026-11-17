@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { gotoHydrated, openFeatured, openRecord } from "./helpers";
 
 const fits = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
@@ -35,9 +35,11 @@ test("navigation exposes active tabs", async ({ page }) => {
 
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(nav.getByRole("link", { name: "Games" })).toHaveAttribute("aria-current", "page");
-  await expect(nav.getByRole("link", { name: "Ratings" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Teams" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Graphs" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Model" })).toBeVisible();
-  for (const retired of ["Picks", "Results", "Performance", "Method"]) {
+  // Teams replaced Ratings (and /ratings redirects there), so the old label is gone.
+  for (const retired of ["Ratings", "Picks", "Results", "Performance", "Method"]) {
     await expect(nav.getByRole("link", { name: retired })).toHaveCount(0);
   }
 });
@@ -45,6 +47,7 @@ test("navigation exposes active tabs", async ({ page }) => {
 test.describe("upcoming week (/)", () => {
   test("underdog picks name the model's winner, ignore the pick'em, and state no odds or returns", async ({ page }) => {
     await gotoHydrated(page, "/");
+    await openFeatured(page);
     const section = page.getByRole("region", { name: "Biggest edges" });
     await section.getByRole("group", { name: "Featured games view" }).getByRole("button", { name: "Underdog picks", exact: true }).click();
     // Game 9: Oklahoma is +4.0 on the consensus line and the model has Oklahoma by 2.0.
@@ -58,7 +61,7 @@ test.describe("upcoming week (/)", () => {
     await expect(section.locator("a[href='#game-4']")).toHaveCount(0);
     await expect(section).toContainText("The model says the wrong team is favored");
     await expect(section).toContainText("Straight-up record: picks won outright");
-    await expect(section.getByText(/2026: 2–0/).first()).toBeAttached();
+    await expect(section.getByText(/2026: 2–0 \(100\.0%\)/).first()).toBeAttached();
     await expect(section).not.toContainText(/straight up, all picks/i);
     // One pick: nothing to expand. The toggle itself is covered by unit tests (no fixture week has more than five).
     await expect(section.getByRole("button", { name: /^Show (all|fewer)/ })).toHaveCount(0);
@@ -69,10 +72,14 @@ test.describe("upcoming week (/)", () => {
   });
 
   test("shows the phase, record, top leans and the full slate", async ({ page }) => {
-    await page.goto("/");
+    await gotoHydrated(page, "/");
 
-    await expect(page.getByRole("heading", { name: "Week 5", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Week 5 games", level: 1 })).toBeVisible();
     await expect(page.getByTestId("week-phase")).toHaveText("Upcoming");
+    // Biggest edges and the record sit in collapsed disclosures until opened.
+    await expect(page.getByRole("region", { name: "Biggest edges" })).toBeHidden();
+    await openFeatured(page);
+    await openRecord(page);
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Biggest edges" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Featured games view" })).toBeAttached();
@@ -80,7 +87,7 @@ test.describe("upcoming week (/)", () => {
     await expect(page.getByRole("region", { name: "Highlights" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: /^Week \d+ record/ })).toHaveCount(0);
     await expect(page.locator("#slate-sort option[value='worstResult']")).toHaveCount(0);
-    await expect(page.getByPlaceholder("Filter by team…")).toBeVisible();
+    await expect(page.getByPlaceholder("Find team…")).toBeVisible();
     // Season track record over each scored week's top-5 spread/total leans.
     await expect(shown(page.getByText(/2026: 7–3–0 \(\d+\.\d%\)/))).toBeVisible();
     // Every week is browsable: the final, upcoming and in-progress fixture weeks.
@@ -94,17 +101,18 @@ test.describe("upcoming week (/)", () => {
 
     await expect(page.getByText("Blitzkrieg")).toBeVisible();
     await expect(page.getByRole("banner").getByText("Frozen before kickoff")).toBeVisible();
-    await expect(page.getByText(/Run published Sep 29/)).toBeVisible();
+    await expect(page.getByRole("banner").getByText(/Forecast updated Sep 29/)).toBeVisible();
     await expect(page.getByText("Retrospective replay", { exact: true })).toHaveCount(0);
   });
 
   test("shows each lean's direction and model prediction once, without a second market/model table", async ({ page }) => {
     await page.goto("/");
 
-    // Edge sits in parentheses after the model's number; no separate "Edge" label.
-    await expect(page.getByText("(5.1)").first()).toBeVisible();
+    // The model-market gap is a neutral, explicit "Difference: N pts"; no bare "Edge" label or parenthesized edge.
+    await expect(page.getByText("Difference: 5.1 pts").first()).toBeVisible();
     await expect(page.getByText(/^Edge \d/)).toHaveCount(0);
-    // Each bet cell: the pick with its sportsbook, then one line with the model's number and the edge.
+    await expect(page.getByText("(5.1)")).toHaveCount(0);
+    // Each bet cell: the pick with its sportsbook, then one line with the model's number and the difference.
     const appState = page.locator("#game-1");
     await expect(appState).toContainText("Appalachian State -2.5");
     await expect(appState).toContainText("DraftKings");
@@ -122,6 +130,7 @@ test.describe("upcoming week (/)", () => {
     await expect(oklahoma.getByText(/DraftKings|FanDuel|Bovada|BetMGM|ESPN Bet|Caesars/)).toHaveCount(0);
     // The per-card edge footnote and the Game details block are gone.
     await expect(page.getByText("The number in parentheses after the model is its edge")).toHaveCount(0);
+    await expect(page.getByText("Model Bet")).toHaveCount(0);
     await expect(page.getByText("Game details", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/wins by more than|loses by under|total above|total below|best line:/)).toHaveCount(0);
     // The old Market / Model grid is gone from the cards.
@@ -130,8 +139,9 @@ test.describe("upcoming week (/)", () => {
   });
 
   test("top of the page shows the season record, centered with no break-even bars", async ({ page }) => {
-    await page.goto("/");
+    await gotoHydrated(page, "/");
 
+    await openRecord(page);
     const record = page.getByRole("region", { name: "Record" });
     await expect(record.getByRole("heading", { name: "Season record before Week 5" })).toBeVisible();
     await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
@@ -148,14 +158,14 @@ test.describe("upcoming week (/)", () => {
     const games = page.locator("li[id^='game-']");
     await expect(games).toHaveCount(10);
 
-    await page.getByPlaceholder("Filter by team…").fill("Oregon");
+    await page.getByPlaceholder("Find team…").fill("Oregon");
     await expect(games).toHaveCount(1);
     await expect(games.first()).toHaveAttribute("id", "game-3");
 
-    await page.getByPlaceholder("Filter by team…").fill("zzz");
+    await page.getByPlaceholder("Find team…").fill("zzz");
     await expect(games).toHaveCount(0);
 
-    await page.getByPlaceholder("Filter by team…").fill("");
+    await page.getByPlaceholder("Find team…").fill("");
     await expect(games).toHaveCount(10);
 
     const confFilter = page.getByTestId("conference-filter");
@@ -276,12 +286,21 @@ test("footer carries the team-logo trademark attribution", async ({ page }) => {
   }
 });
 
+test("footer shows the site version and /api/health reports it", async ({ page, request }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("app-version")).toHaveText("Stratum CFB v2.0.0");
+  const health = await (await request.get("/api/health")).json();
+  expect(health.appVersion).toBe("2.0.0");
+});
+
 test.describe("final week (/?week=4)", () => {
   test("shows the phase, both records, highlights and the full slate", async ({ page }) => {
-    await page.goto("/?week=4");
+    await gotoHydrated(page, "/?week=4");
 
-    await expect(page.getByRole("heading", { name: "Week 4", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Week 4 games", level: 1 })).toBeVisible();
     await expect(page.getByTestId("week-phase")).toHaveText("Final");
+    await openRecord(page);
+    await openFeatured(page);
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Week 4 record" })).toBeVisible();
@@ -300,8 +319,9 @@ test.describe("final week (/?week=4)", () => {
   });
 
   test("the week record sits beside the season record; graded cards show the pick and the model's number", async ({ page }) => {
-    await page.goto("/?week=4");
+    await gotoHydrated(page, "/?week=4");
 
+    await openRecord(page);
     const record = page.getByRole("region", { name: "Record" });
     await expect(shown(record.getByText("this slate · small sample"))).toBeVisible();
     await expect(shown(record.getByText("4–3–1"))).toBeVisible();
@@ -315,19 +335,15 @@ test.describe("final week (/?week=4)", () => {
   });
 
   test("team search narrows the slate and cards show a graded badge", async ({ page }) => {
-    await page.goto("/?week=4");
+    await gotoHydrated(page, "/?week=4");
 
-    const count = async () => {
-      const text = (await page.getByText(/Showing \d+ of 9 games/).innerText()) ?? "";
-      return Number(/Showing (\d+) of/.exec(text)?.[1]);
-    };
-    await page.getByPlaceholder("Filter by team…").fill("Ohio State");
-    const filtered = await count();
-    expect(filtered).toBe(1);
+    const count = page.getByRole("status");
+    await page.getByPlaceholder("Find team…").fill("Ohio State");
+    await expect(count).toHaveText("Showing 1 of 9 games");
     await expect(page.locator("li[id^='game-']").first().getByText("Win", { exact: true }).first()).toBeVisible();
 
-    await page.getByPlaceholder("Filter by team…").fill("");
-    expect(await count()).toBe(9);
+    await page.getByPlaceholder("Find team…").fill("");
+    await expect(count).toHaveText("Showing 9 of 9 games");
   });
 
   test("sort by biggest miss, list view and phone width all fit", async ({ page }) => {
@@ -337,8 +353,9 @@ test.describe("final week (/?week=4)", () => {
     expect(await fits(page)).toBe(true);
 
     await page.setViewportSize({ width: 390, height: 800 });
-    await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeHidden();
-    await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "grid");
+    await expect(page.getByRole("button", { name: "Grid", exact: true })).toBeVisible();
+    await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "list");
+    await expect(page.locator("li[data-compact-row]").first()).toBeVisible();
     expect(await fits(page)).toBe(true);
   });
 
@@ -354,9 +371,16 @@ test.describe("final week (/?week=4)", () => {
 
 test.describe("in-progress week (/?week=6)", () => {
   test("shows leans for unplayed games and results for finished ones", async ({ page }) => {
-    await page.goto("/?week=6");
+    await gotoHydrated(page, "/?week=6");
 
     await expect(page.getByTestId("week-phase")).toHaveText("In progress");
+    // By default only the unplayed games show; All adds the two finished ones.
+    const status = page.getByRole("group", { name: "Game status" });
+    await expect(status.getByRole("button", { name: "Upcoming" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("li[id^='game-']")).toHaveCount(2);
+    await status.getByRole("button", { name: "All", exact: true }).click();
+    await openFeatured(page);
+    await openRecord(page);
     await expect(page.getByRole("region", { name: "Biggest edges" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Featured games view" })).toBeAttached();
     await expect(page.getByRole("region", { name: "Highlights" })).toBeVisible();
@@ -375,8 +399,9 @@ test.describe("in-progress week (/?week=6)", () => {
   });
 
   test("the week record counts only the graded games, and result sorts are offered", async ({ page }) => {
-    await page.goto("/?week=6");
+    await gotoHydrated(page, "/?week=6&status=all");
 
+    await openRecord(page);
     const record = page.getByRole("region", { name: "Record" });
     // Both finished games covered the spread.
     await expect(shown(record.getByText("2–0–0"))).toBeVisible();

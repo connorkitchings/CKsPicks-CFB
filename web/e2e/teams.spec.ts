@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { gotoHydrated } from "./helpers";
 
 const noOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
@@ -16,6 +16,12 @@ async function hero(page: Page) {
   return b;
 }
 
+/** Smallest rendered label size (CSS px) among an SVG's text nodes. */
+const minLabelPx = (svg: Locator) => svg.evaluate((node) => Math.min(...[...node.querySelectorAll<SVGTextElement>("text")].map((label) => {
+  const matrix = label.getScreenCTM();
+  return matrix ? parseFloat(getComputedStyle(label).fontSize) * Math.hypot(matrix.a, matrix.b) : 0;
+})));
+
 const heading = (page: Page, name: string) => page.getByRole("heading", { level: 2, name, exact: true });
 const weeklyRatings = (page: Page) => page.getByText("Weekly ratings", { exact: true });
 
@@ -24,8 +30,8 @@ test.describe("team pages (fixture mode)", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
     await expect(page.getByRole("heading", { level: 1, name: "Texas" })).toBeVisible();
-    await expect(page).toHaveTitle(/Texas · Team page/);
-    await expect(page.getByRole("link", { name: "← All ratings" })).toHaveAttribute("href", "/ratings");
+    await expect(page).toHaveTitle("Texas · Stratum CFB");
+    await expect(page.getByRole("link", { name: "← All teams" })).toHaveAttribute("href", "/teams");
 
     const h = await hero(page);
     const schedule = await card(page, "team-games");
@@ -61,6 +67,19 @@ test.describe("team pages (fixture mode)", () => {
     await expect(table.getByTestId("schedule-next-row")).toContainText("Ohio State");
   });
 
+  test("a bye week shows as a Bye row that is not a game", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHydrated(page, "/teams/Texas");
+    const table = page.getByRole("table", { name: "Lines and results" });
+    const bye = table.getByTestId("schedule-bye-row");
+    await expect(bye).toHaveCount(1);
+    await expect(bye).toContainText("5");
+    await expect(bye).toContainText("Bye");
+    await expect(bye.getByRole("link")).toHaveCount(0);
+    // The record still counts only played games.
+    await expect(page.getByTestId("schedule-record")).toContainText("ATS (W–L) 2–1–1");
+  });
+
   test("the desktop model card lists each pick with its mark and the model record", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
@@ -84,8 +103,8 @@ test.describe("team pages (fixture mode)", () => {
     expect(await noOverflow(page)).toBe(true);
     await expect(row("Rice")).toContainText("No line");
     const record = page.getByTestId("model-record");
-    await expect(record).toContainText("ATS (W–L) 1–1–1 · 50%");
-    await expect(record).toContainText("O/U 1–2 · 33%");
+    await expect(record).toContainText("Model ATS (W–L) 1–1–1 · 50%");
+    await expect(record).toContainText("Model O/U 1–2 · 33%");
     await expect(record).toContainText("Model picked the winner 2–1 · 67%");
     await expect(page.getByText("Model picks use the pregame forecast for each game. Display only — not betting advice.")).toBeVisible();
   });
@@ -102,9 +121,9 @@ test.describe("team pages (fixture mode)", () => {
     test(`the phone page is one column in order and fits at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 844 });
       await gotoHydrated(page, "/teams/Texas");
-      await expect(page.getByTestId("app-bar").getByRole("link", { name: "Back to ratings" })).toHaveAttribute("href", "/ratings");
+      await expect(page.getByTestId("app-bar").getByRole("link", { name: "Back to teams" })).toHaveAttribute("href", "/teams");
       await expect(page.getByTestId("app-bar-title")).toHaveText("TEX");
-      await expect(page.getByRole("link", { name: "← All ratings" })).toBeHidden();
+      await expect(page.getByRole("link", { name: "← All teams" })).toBeHidden();
       await expect(page.getByRole("heading", { level: 1, name: "Texas" })).toBeVisible();
 
       const ids = ["team-games", "team-model", "team-game-log", "team-rating-trend", "team-resume", "team-unit-profile"];
@@ -115,7 +134,8 @@ test.describe("team pages (fixture mode)", () => {
         expect(Math.abs(boxes[i].x - boxes[0].x), `${ids[i - 1]} aligned with the hero`).toBeLessThanOrEqual(2);
       }
       await expect(page.getByRole("table", { name: "Lines and results" })).toBeHidden();
-      await expect(page.getByRole("list", { name: "Schedule" }).getByRole("listitem")).toHaveCount(6);
+      await expect(page.getByRole("list", { name: "Schedule" }).getByRole("listitem")).toHaveCount(7);
+      await expect(page.getByRole("list", { name: "Schedule" }).getByTestId("schedule-bye-row")).toContainText("Wk 5");
       await expect(page.getByLabel("Next game")).toContainText(/at\s*Ohio State/);
       const picks = page.getByRole("list", { name: "Model picks" });
       await expect(picks).toBeVisible();
@@ -129,7 +149,7 @@ test.describe("team pages (fixture mode)", () => {
 
   test("the next-game card skips a game that kicked off without a score", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    // Texas's week 4 game (Sep 26) is past and unscored; week 5 (Oct 3) is still ahead.
+    // Texas's week 4 game (Sep 26) is past and unscored; week 6 (Oct 10) is still ahead.
     await gotoHydrated(page, "/teams/Texas?now=2026-09-30T12:00:00Z");
     await expect(page.getByLabel("Next game")).toContainText(/vs\s*Rice/);
     await expect(page.getByLabel("Next game")).not.toContainText("Ohio State");
@@ -169,18 +189,48 @@ test.describe("team pages (fixture mode)", () => {
     await expect(chart(/^Success rate by game/)).toBeVisible();
   });
 
+  test("the game log labels render at 11px or more at 1024px", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await gotoHydrated(page, "/teams/Texas");
+    const svg = page.getByRole("img", { name: /^Success rate by game/ });
+    await svg.scrollIntoViewIfNeeded();
+    await expect.poll(async () => {
+      const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+      return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+    }).toBe(true);
+    await expect.poll(() => minLabelPx(svg)).toBeGreaterThanOrEqual(11);
+  });
+
   test("the rating trend toggles between rating and rank", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHydrated(page, "/teams/Texas");
     const toggle = page.getByTestId("trend-measure");
     const chart = (name: RegExp) => page.getByRole("img", { name });
-    await expect(chart(/^Overall rating by week/)).toBeVisible();
+    await expect(chart(/^overall rating through the selected period/)).toBeVisible();
     await toggle.getByRole("button", { name: "Rank" }).click();
-    await expect(chart(/^Overall rank by week/)).toBeVisible();
-    await expect(chart(/^Overall rating by week/)).toHaveCount(0);
+    await expect(chart(/^overall rank through the selected period/)).toBeVisible();
+    await expect(chart(/^overall rating through the selected period/)).toHaveCount(0);
     await toggle.getByRole("button", { name: "Rating" }).click();
-    await expect(chart(/^Overall rating by week/)).toBeVisible();
+    await expect(chart(/^overall rating through the selected period/)).toBeVisible();
   });
+
+  for (const width of [320, 390, 430]) {
+    test(`the rating trend and game log labels render at 12px or more at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await gotoHydrated(page, "/teams/Texas");
+      for (const name of [/^overall rating through the selected period/, /^Success rate by game/]) {
+        const svg = page.getByRole("img", { name });
+        await svg.scrollIntoViewIfNeeded();
+        await expect.poll(async () => {
+          const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+          return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+        }).toBe(true);
+        await expect.poll(() => minLabelPx(svg)).toBeGreaterThanOrEqual(11.99);
+      }
+      await expect(page.getByRole("img", { name: /^Success rate by game/ }).locator("text", { hasText: /^Wk / })).toHaveCount(0);
+      expect(await noOverflow(page)).toBe(true);
+    });
+  }
 
   test("on a phone the unit sections start closed and open on tap", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -271,5 +321,16 @@ test.describe("team pages (fixture mode)", () => {
   test("an unknown team is a 404", async ({ page }) => {
     const response = await page.goto("/teams/Nowhere%20State");
     expect(response?.status()).toBe(404);
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
   });
 });
+
+for (const [width, tabbable] of [[1280, false], [390, true]] as const) {
+  test(`team page unit-section headings are ${tabbable ? "" : "not "}focus stops at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await gotoHydrated(page, "/teams/Texas");
+    const summary = page.locator(".unit-section > summary").first();
+    if (tabbable) await expect(summary).not.toHaveAttribute("tabindex", "-1");
+    else await expect(summary).toHaveAttribute("tabindex", "-1");
+  });
+}

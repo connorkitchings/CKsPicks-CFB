@@ -35,6 +35,39 @@ test.describe("model section", () => {
     await expect(page).toHaveURL(/\/model$/);
   });
 
+  test("method page has a nine-link contents nav and no stale or internal wording", async ({ page }) => {
+    await page.goto("/model/method");
+    const contents = page.getByText("Contents", { exact: true });
+    if (await contents.isVisible()) await contents.click();
+    await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveCount(9);
+    const body = page.locator("body");
+    await expect(body).not.toContainText("ppp__rho");
+    await expect(body).not.toContainText("not shown in the ratings table");
+  });
+
+  test("method contents sit below the heading, collapsed, and jump to sections on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await gotoHydrated(page, "/model/method");
+    const summary = page.getByText("Contents", { exact: true });
+    const h1 = page.getByRole("heading", { level: 1, name: "How the model works" });
+    expect((await h1.boundingBox())!.y).toBeLessThan((await summary.boundingBox())!.y);
+    expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const nav = page.getByRole("navigation", { name: "On this page" });
+    await expect(nav).toBeHidden();
+    await summary.click();
+    await expect(nav.getByRole("link")).toHaveCount(9);
+    await nav.getByRole("link", { name: "Grading the record" }).click();
+    await expect(page).toHaveURL(/#grading$/);
+    await expect(page.locator("#grading")).toBeInViewport();
+  });
+
+  test("method contents are an open column without a summary at desktop width", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHydrated(page, "/model/method");
+    await expect(page.getByText("Contents", { exact: true })).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveCount(9);
+  });
+
   test("method page fits the viewport at 320px", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 800 });
     await page.goto("/model/method#elite-reference");
@@ -62,7 +95,7 @@ test.describe("model page is accuracy-only", () => {
     const accuracy = page.getByRole("region", { name: "Forecast accuracy", exact: true }).filter({ visible: true });
     await expect(accuracy.getByText("Spread average miss", { exact: true })).toBeVisible();
     await expect(accuracy.getByText(/Average miss, every game with a final score \(9 games\)/)).toBeVisible();
-    await expect(accuracy.getByText("Total 95% interval", { exact: true })).toBeVisible();
+    await expect(accuracy.getByText("Total finals inside the model's 95% band", { exact: true })).toBeVisible();
     await expect(accuracy.getByText("4.5 pts", { exact: true })).toBeVisible();
 
     for (const banned of [/\bROI\b/, /profit/i, /\bunits?\b/i, /net return/i, /closing line/i, /-110/, /\d\.\d+u\b/]) {
@@ -89,7 +122,9 @@ test.describe("model page is accuracy-only", () => {
     await expect(totals).toContainText("Model 3.4 pts high; betting line 0.5 pts high");
     await expect(totals).toContainText("Compared on 7 games");
     await expect(page.getByTestId("record-caveat")).toContainText("it is not a betting result");
-    await expect(page.getByTestId("record-caveat")).toContainText("within normal luck of break-even");
+    await expect(page.getByTestId("record-caveat")).toContainText("not pooled");
+    await expect(page.getByTestId("record-caveat")).toContainText("52.4% is the reference win rate");
+    await expect(page.locator("body").getByText(/luck|normal approximation|statistically significant/i)).toHaveCount(0);
   });
 
   test("the season trend has an accessible name and a table view", async ({ page }) => {
@@ -151,7 +186,7 @@ test.describe("model page is accuracy-only", () => {
 });
 
 test.describe("inline links on phones", () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
   test("the method page record link is a 44px tap target", async ({ page }) => {
     await page.goto("/model/method");
@@ -159,10 +194,24 @@ test.describe("inline links on phones", () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
   });
 
-  test("the ratings elite link is a 44px tap target", async ({ page }) => {
-    await page.goto("/ratings");
-    const box = (await page.getByRole("link", { name: "elite", exact: true }).boundingBox())!;
+  test("the Teams methodology link is a 44px tap target", async ({ page }) => {
+    await gotoHydrated(page, "/teams");
+    await page.getByText("How to read these ratings").click();
+    const box = (await page.getByRole("link", { name: "Read the methodology" }).boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(44);
     expect(box.width).toBeGreaterThanOrEqual(44);
+  });
+});
+
+test.describe("model target follows the URL", () => {
+  test("choosing Totals then the Record tab returns to Spread", async ({ page }) => {
+    await gotoHydrated(page, "/model");
+    const explorer = page.getByTestId("error-explorer");
+    await explorer.getByTestId("error-target-total").click();
+    await expect(page).toHaveURL(/target=total/);
+    await expect(explorer.getByTestId("error-target-total")).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("navigation", { name: "Model sections" }).getByRole("link", { name: "Record" }).click();
+    await expect(page).not.toHaveURL(/target=/);
+    await expect(explorer.getByTestId("error-target-spread")).toHaveAttribute("aria-pressed", "true");
   });
 });

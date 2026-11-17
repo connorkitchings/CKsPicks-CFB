@@ -91,6 +91,8 @@ export interface MatchupData {
   /** Sportsbook behind each best line when the run recorded one. */
   spreadSource: string | null;
   totalSource: string | null;
+  spreadCapturedAt?: Date | null;
+  totalCapturedAt?: Date | null;
   highConfidence: boolean;
   // Final results if game completed
   homeFinalPoints: number | null;
@@ -358,6 +360,8 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     modelTotalEdge: totalEdge(view.predictedTotal, view.marketTotal),
     spreadSource: view.spreadSource,
     totalSource: view.totalSource,
+    spreadCapturedAt: view.spreadCapturedAt,
+    totalCapturedAt: view.totalCapturedAt,
     highConfidence: view.highConfidence,
     homeFinalPoints,
     awayFinalPoints,

@@ -171,7 +171,7 @@ export type NetSuccessBar = {
   /** Axis label: winner abbreviation and final score, e.g. `UGA 31-10`. */
   label: string;
 };
-export type NotCharted = { gameId: number; reason: string };
+export type NotCharted = { gameId: number; reason: string; teams?: string[] };
 
 function successRate(n: number, sum: number): number | null {
   return n > 0 ? sum / n : null;
@@ -196,19 +196,19 @@ export function netSuccessBars(
   const notCharted: NotCharted[] = [];
   for (const [gameId, pair] of [...games].sort((a, b) => a[0] - b[0])) {
     if (pair.length !== 2) {
-      notCharted.push({ gameId, reason: "incomplete game rows" });
+      notCharted.push({ gameId, teams: pair.map((row) => row.team), reason: "incomplete game rows" });
       continue;
     }
     const [a, b] = pair;
     if (a.pointsFor === b.pointsFor) {
-      notCharted.push({ gameId, reason: "tied points" });
+      notCharted.push({ gameId, teams: pair.map((row) => row.team), reason: "tied points" });
       continue;
     }
     const [winner, loser] = a.pointsFor > b.pointsFor ? [a, b] : [b, a];
     const winnerRate = successRate(winner.offSuccessOtN ?? 0, winner.offSuccessOtSum ?? 0);
     const loserRate = successRate(loser.offSuccessOtN ?? 0, loser.offSuccessOtSum ?? 0);
     if (winnerRate === null || loserRate === null) {
-      notCharted.push({ gameId, reason: "success rate unavailable" });
+      notCharted.push({ gameId, teams: pair.map((row) => row.team), reason: "success rate unavailable" });
       continue;
     }
     bars.push({
@@ -248,8 +248,10 @@ export type ScatterPoint = {
   conference: string | null;
   x: number;
   y: number;
-  /** Plays behind the point (eligible PPA observations). */
+  /** Legacy exposure; use xN/yN with axis-specific labels in display. */
   n: number;
+  xN?: number;
+  yN?: number;
 };
 export type ScatterData = {
   points: ScatterPoint[];
@@ -299,7 +301,7 @@ export function efficiencyPoints(
       unavailable.push(team);
       continue;
     }
-    points.push({ team, conference, x: acc.successSum / acc.successN, y: acc.yNum / acc.yDen, n: acc.n });
+    points.push({ team, conference, x: acc.successSum / acc.successN, y: acc.yNum / acc.yDen, n: acc.n, xN: acc.successN, yN: acc.yDen });
   }
   points.sort(byTeam);
   unavailable.sort();
@@ -383,7 +385,7 @@ function roleScatter<R extends { team: string; role: Side }>(
       unavailable.push(team);
       continue;
     }
-    points.push({ team, conference, x: value(o), y: value(d), n: weight(o) + weight(d) });
+    points.push({ team, conference, x: value(o), y: value(d), n: weight(o) + weight(d), xN: weight(o), yN: weight(d) });
     roles[team] = { offense: o, defense: d };
     ox += value(o) * weight(o);
     on += weight(o);
@@ -800,8 +802,9 @@ export function netSuccessDomain(
   if (!values.length) return [-0.05, 0.05];
   const hasUp = values.some((v) => v >= 0);
   const hasDown = values.some((v) => v < 0);
-  const high = Math.max(0, ...values);
-  const low = Math.min(0, ...values);
+  const { low: capLow, high: capHigh } = netSuccessCap(values);
+  const high = Math.max(0, capHigh);
+  const low = Math.min(0, capLow);
   const padHigh = hasUp ? tipPx : crossPx;
   const padLow = hasDown ? tipPx : crossPx;
   const range = Math.max(high - low, 0.01);
@@ -809,6 +812,25 @@ export function netSuccessDomain(
   if (plotPx <= 0) return [low - range * 0.1, high + range * 0.1];
   const perPx = range / plotPx;
   return [low - padLow * perPx, high + padHigh * perPx];
+}
+
+/** An outlier bar is drawn no taller than this multiple of the next-largest bar on its side. */
+const NET_SUCCESS_CAP_RATIO = 1.25;
+
+/**
+ * The data limit of each side of the net-success axis: the largest magnitude on that side,
+ * unless it exceeds 1.25 times the second largest, in which case the limit is 1.25 times the
+ * second largest so one blowout does not flatten every other bar. `low` is <= 0 and `high` >= 0.
+ */
+export function netSuccessCap(values: readonly number[]): { low: number; high: number } {
+  const limit = (magnitudes: number[]) => {
+    const [m1 = 0, m2 = 0] = magnitudes.sort((a, b) => b - a);
+    return m1 > NET_SUCCESS_CAP_RATIO * m2 && magnitudes.length > 1 ? NET_SUCCESS_CAP_RATIO * m2 : m1;
+  };
+  return {
+    low: 0 - limit(values.filter((v) => v < 0).map((v) => -v)),
+    high: limit(values.filter((v) => v > 0)),
+  };
 }
 
 /**
@@ -943,6 +965,10 @@ export type SlateMarketGameRow = {
   edgeTotal: number | null;
   spreadLean: "home" | "away" | null;
   totalLean: "over" | "under" | null;
+  spreadSource?: string | null;
+  totalSource?: string | null;
+  spreadCapturedAt?: Date | null;
+  totalCapturedAt?: Date | null;
 };
 
 export type MarketBoardMetric = "spread" | "total";
@@ -957,13 +983,56 @@ export type MarketBoardPoint = {
   edge: number;
   lean: string | null;
   highEdge: boolean;
+  source?: string | null;
+  capturedAt?: Date | null;
   x: number;
   y: number;
 };
 
+/** Which side of a market comparison is absent: the book's line, the model projection, or both. */
+export type MarketMissing = "line" | "projection" | "both";
+
+export type MarketUnavailable = {
+  gameId: number;
+  homeTeam: string;
+  awayTeam: string;
+  startDate: Date;
+  missing: MarketMissing;
+  reason: string;
+};
+
+function marketUnavailable(
+  g: SlateMarketGameRow,
+  metric: MarketBoardMetric,
+  market: number | null,
+  model: number | null,
+): MarketUnavailable {
+  const lineMissing = market === null || !Number.isFinite(market);
+  const projectionMissing = model === null || !Number.isFinite(model);
+  const missing: MarketMissing = lineMissing && projectionMissing ? "both" : lineMissing ? "line" : "projection";
+  const reason =
+    missing === "both" ? `no ${metric} line or model projection`
+    : missing === "line" ? `no ${metric} line`
+    : `no ${metric} model projection`;
+  return { gameId: g.gameId, homeTeam: g.homeTeam, awayTeam: g.awayTeam, startDate: g.startDate, missing, reason };
+}
+
+/** Unavailable comparisons regrouped one entry per game (first-seen order), with each side's reason. */
+export function groupUnavailableByGame(
+  ...lists: readonly (readonly MarketUnavailable[])[]
+): { gameId: number; homeTeam: string; awayTeam: string; reasons: string[] }[] {
+  const byGame = new Map<number, { gameId: number; homeTeam: string; awayTeam: string; reasons: string[] }>();
+  for (const item of lists.flat()) {
+    const entry = byGame.get(item.gameId) ?? { gameId: item.gameId, homeTeam: item.homeTeam, awayTeam: item.awayTeam, reasons: [] };
+    entry.reasons.push(item.reason);
+    byGame.set(item.gameId, entry);
+  }
+  return [...byGame.values()];
+}
+
 export type MarketBoardData = {
   points: MarketBoardPoint[];
-  unavailable: { homeTeam: string; awayTeam: string; reason: string }[];
+  unavailable: MarketUnavailable[];
   metric: MarketBoardMetric;
 };
 
@@ -1001,7 +1070,7 @@ function metricPairScatter(
       unavailable.push(team);
       continue;
     }
-    points.push({ team, conference, x: xr.value, y: yr.value, n: xr.n });
+    points.push({ team, conference, x: xr.value, y: yr.value, n: xr.n, xN: xr.n, yN: yr.n });
     sx += xr.value * xr.n;
     xn += xr.n;
     sy += yr.value * yr.n;
@@ -1093,14 +1162,14 @@ export function marketBoardPoints(
   metric: MarketBoardMetric,
 ): MarketBoardData {
   const points: MarketBoardPoint[] = [];
-  const unavailable: { homeTeam: string; awayTeam: string; reason: string }[] = [];
+  const unavailable: MarketUnavailable[] = [];
 
   for (const g of games) {
     if (metric === "spread") {
       const market = g.homeTeamSpreadLine;
       const model = homeSpreadFromMargin(g.predictedSpread);
       if (market === null || model === null || !Number.isFinite(market) || !Number.isFinite(model)) {
-        unavailable.push({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, reason: "Missing spread line or model projection" });
+        unavailable.push(marketUnavailable(g, metric, market, model));
         continue;
       }
       const edge = g.edgeSpread ?? Math.abs(model - market);
@@ -1114,6 +1183,8 @@ export function marketBoardPoints(
         edge,
         lean: g.spreadLean,
         highEdge: Math.abs(edge) >= 3.0,
+        source: g.spreadSource ?? null,
+        capturedAt: g.spreadCapturedAt ?? null,
         x: market,
         y: model,
       });
@@ -1121,7 +1192,7 @@ export function marketBoardPoints(
       const market = g.totalLine;
       const model = g.predictedTotal;
       if (market === null || model === null || !Number.isFinite(market) || !Number.isFinite(model)) {
-        unavailable.push({ homeTeam: g.homeTeam, awayTeam: g.awayTeam, reason: "Missing total line or model projection" });
+        unavailable.push(marketUnavailable(g, metric, market, model));
         continue;
       }
       const edge = g.edgeTotal ?? Math.abs(model - market);
@@ -1135,6 +1206,8 @@ export function marketBoardPoints(
         edge,
         lean: g.totalLean,
         highEdge: Math.abs(edge) >= 3.0,
+        source: g.totalSource ?? null,
+        capturedAt: g.totalCapturedAt ?? null,
         x: market,
         y: model,
       });
@@ -1145,5 +1218,22 @@ export function marketBoardPoints(
     points,
     unavailable,
     metric,
+  };
+}
+
+/**
+ * Market-board points expressed on one axis for paired comparison. Spread lines
+ * are home spread lines (negative favors home), so they are negated into home
+ * margins (positive favors home); totals pass through unchanged.
+ */
+export function marketComparisonPoints(
+  games: readonly SlateMarketGameRow[],
+  metric: MarketBoardMetric,
+): { points: (MarketBoardPoint & { market: number; model: number })[]; unavailable: MarketBoardData["unavailable"] } {
+  const data = marketBoardPoints(games, metric);
+  const sign = metric === "spread" ? -1 : 1;
+  return {
+    points: data.points.map((point) => ({ ...point, market: sign * point.marketLine || 0, model: sign * point.modelLine || 0 })),
+    unavailable: data.unavailable,
   };
 }

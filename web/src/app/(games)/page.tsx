@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/metadata";
 import {
   getAvailableWeeks,
   getBiggestEdgesRecord,
@@ -5,7 +7,7 @@ import {
   getUnderdogRecord,
 } from "@/lib/queries";
 import { SlateView } from "@/components/slate/SlateView";
-import { isRetrospective, topLeansRecord, underdogRecord, type Tally } from "@/lib/slate";
+import { isRegularSeasonComplete, isRetrospective, topLeansRecord, underdogRecord, type Tally } from "@/lib/slate";
 import { publicationScope } from "@/lib/publication";
 import {
   isUiTestMode,
@@ -35,10 +37,24 @@ async function resolveTarget(
   activeSeason: number | null;
   activeWeek: number | null;
   currentUpdatedAt: Date | null;
+  /** Set only by the UI test fixtures; production uses the library constant. */
+  finalWeek?: number;
 }> {
   const params = await searchParams;
   if (isUiTestMode()) {
     const requestedWeek = Number(params.week);
+    // The final-state fixture: the scored fixture week is the final, active and only published week.
+    if (params.finalWeek === "4") {
+      return {
+        season: 2026,
+        week: 4,
+        weeks: [4],
+        activeSeason: 2026,
+        activeWeek: 4,
+        currentUpdatedAt: new Date("2026-08-29T19:30:00.000Z"),
+        finalWeek: 4,
+      };
+    }
     // Market fixtures keep their own week list; prediction fixtures cover a final,
     // an upcoming and a partly graded week.
     const market = slatePublicationMode(params) === "market";
@@ -92,6 +108,14 @@ async function resolveTarget(
   };
 }
 
+export async function generateMetadata({ searchParams }: { searchParams: SlateSearchParams }): Promise<Metadata> {
+  // `getCurrentWeek` and `getAvailableWeeks` are request- and release-cached, so this adds no extra reads.
+  const week = await resolveTarget(searchParams).then((t) => t.week).catch(() => null);
+  return week === null
+    ? pageMetadata("Games", "Weekly college football forecasts: model picks, betting edges and results.", "/")
+    : pageMetadata(`Week ${week} Games`, `Week ${week} college football forecasts: model picks, betting edges and results.`, `/?week=${week}`);
+}
+
 export default async function Home({
   searchParams,
 }: {
@@ -121,6 +145,7 @@ export default async function Home({
     season,
     week: target.week,
     publicationMode,
+    fixture: params.fixture,
     dbError: targetError ? "Weekly data is temporarily unavailable." : null,
   });
   const week = data.fixtureWeek?.week ?? target.week;
@@ -150,6 +175,15 @@ export default async function Home({
   }
 
   const firstPrediction = games.find((g) => g.publicationMode === "predictions");
+  const regularSeasonComplete = publicationMode === "predictions"
+    && !data.dbError
+    && isRegularSeasonComplete({
+      week,
+      activeWeek: target.activeWeek,
+      weeks: target.weeks,
+      games,
+      finalWeek: target.finalWeek,
+    });
 
   return (
     <SlateView
@@ -166,12 +200,14 @@ export default async function Home({
       systemName={data.systemName}
       runState={firstPrediction?.runState ?? null}
       retrospective={isRetrospective(data.retrospectiveRepair, firstPrediction)}
-      updatedAt={slateUpdatedAt(games, target.currentUpdatedAt)}
+      updatedAt={publicationMode === "predictions" ? slateUpdatedAt(games, null) : null}
+      activatedAt={data.activatedAt}
       publicationMode={publicationMode}
       allowedSeasons={publicationScope.allowedSeasons}
       dbError={data.dbError}
       retrospectiveRepair={data.retrospectiveRepair}
       displayOnlyNotice={data.displayOnlyText}
+      regularSeasonComplete={regularSeasonComplete}
       initialSort={slateSort(params)}
       now={pageNow(params)}
     />

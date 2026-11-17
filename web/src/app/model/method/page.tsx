@@ -8,19 +8,30 @@ import { PageHeading } from "@/components/ui/PageHeading";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import { publicationScope } from "@/lib/publication";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "How the model works" };
+export const metadata: Metadata = pageMetadata("How the model works", "How the model rates teams, forecasts games and grades its record.", "/model/method");
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <Card as="section" id={id} aria-labelledby={`${id}-heading`}>
+    <Card as="section" id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-12 max-sm:scroll-mt-0">
       <SectionHeading id={`${id}-heading`}>{title}</SectionHeading>
       <div className="mt-2 space-y-2 text-sm leading-relaxed text-ink-muted">{children}</div>
     </Card>
   );
 }
 
-const code = "rounded bg-surface-inset px-1 py-0.5 font-mono text-xs break-words";
+const CONTENTS = [
+  ["team-strength", "Team strength"],
+  ["prior", "The learned prior"],
+  ["updates", "Exposure-weighted updates"],
+  ["uncertainty", "Uncertainty"],
+  ["forecasts", "Game forecasts"],
+  ["grading", "Grading the record"],
+  ["sos-sor", "Schedule strength and record"],
+  ["elite-reference", "Elite reference"],
+  ["reading-the-record", "Reading the record"],
+] as const;
 
 export default function ModelMethodPage() {
   return (
@@ -35,12 +46,22 @@ export default function ModelMethodPage() {
       mainClassName="space-y-4 py-3 sm:py-6"
     >
       <ModelTabs active="method" />
-      <div className="max-w-xl space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,36rem)_minmax(0,14rem)] lg:items-start">
+      <div className="max-w-xl lg:col-start-1 lg:row-start-1">
         <PageHeading title="How the model works" eyebrow="V5 model">
           <span className="block">
             What the forecasts measure, how they are turned into a spread and a total, and how the record is graded.
           </span>
         </PageHeading>
+      </div>
+      {/* Below lg: a closed disclosure after the heading. At lg: the open sticky right column. */}
+      <details className="responsive-disclosure-lg rounded-xl border border-line bg-surface-card px-3 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-0 lg:bg-transparent lg:px-0">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-ink">Contents</summary>
+        <nav aria-label="On this page" className="flex flex-col gap-y-1 pb-2 text-sm font-semibold text-accent-ink lg:pb-0">
+          {CONTENTS.map(([id, label]) => <a key={id} href={`#${id}`} className="inline-flex min-h-11 items-center hover:underline">{label}</a>)}
+        </nav>
+      </details>
+      <div className="max-w-xl space-y-4 lg:col-start-1 lg:row-start-2">
 
         <Section id="team-strength" title="Team strength: points per possession">
           <p>
@@ -55,8 +76,8 @@ export default function ModelMethodPage() {
 
         <Section id="prior" title="The learned prior">
           <p>
-            Before a team has played, its rating starts from a prior rather than from a blank slate. The accepted prior
-            uses a 0.60 carryover (written ρ = 0.60): a fixed share of what the model already knew about a team
+            Before a team has played, its rating starts from a prior rather than from a blank slate. The prior
+            uses a 0.60 carryover: a fixed share of what the model already knew about a team
             carries forward instead of resetting every team to average. Preseason evidence matters most before games are
             played; completed games gradually take more weight.
           </p>
@@ -65,9 +86,8 @@ export default function ModelMethodPage() {
         <Section id="updates" title="Exposure-weighted updates">
           <p>
             After each game, the ratings update in proportion to how much the game actually showed. A game with more
-            possessions is stronger evidence than one with fewer, so it moves the ratings more. The accepted
-            candidate combines the points-per-possession measure, the 0.60 carryover and these exposure-weighted updates
-            (<code className={code}>ppp__rho_0_60__exposure</code>).
+            possessions is stronger evidence than one with fewer, so it moves the ratings more. The model
+            combines the points-per-possession measure, the 0.60 carryover and these exposure-weighted updates.
           </p>
         </Section>
 
@@ -87,11 +107,11 @@ export default function ModelMethodPage() {
             refit it: bookmaker lines never enter the model’s features.
           </p>
           <p>
-            The 2025 historical review reported a margin error of 14.160 points and a total error of 13.356 points
+            The 2025 historical review reported a margin error of 14.2 points and a total error of 13.4 points
             (mean absolute error) across 934 games per target. A separate postseason market comparison had lower
             market error on both targets. There is no like-for-like point-in-time V4 backtest, so the evidence does
             not establish that V5 beats V4.{" "}
-            <Link href="/model#market-heading" className="font-semibold text-accent-ink underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
+            <Link href="/model#market-heading" className="font-semibold text-accent-ink underline -my-3 inline-flex min-h-11 items-center pointer-fine:my-0 pointer-fine:inline pointer-fine:min-h-0">
               See the 2026 comparison with the betting line
             </Link>
             .
@@ -121,7 +141,7 @@ export default function ModelMethodPage() {
             Limits: capture times are when a line was fetched, not when a sportsbook posted it. Some design decisions were
             made with early 2026 outcomes known, though those outcomes do not fit any parameter, so reconstructed
             weeks are not blind forward tests.{" "}
-            <Link href="/model" className="font-semibold text-accent-ink underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
+            <Link href="/model" className="font-semibold text-accent-ink underline -my-3 inline-flex min-h-11 items-center pointer-fine:my-0 pointer-fine:inline pointer-fine:min-h-0">
               See the 2026 record
             </Link>
             .
@@ -140,8 +160,8 @@ export default function ModelMethodPage() {
           <p>
             SOR is 100 minus the chance that an elite team, playing the same completed FBS schedule, finishes with at
             least this team’s record, so higher is a stronger résumé. The ratings table shows SOR as a rank, where 1 is the
-            strongest résumé; the underlying number appears on hover. WAA (wins above an average FBS team on the same
-            schedule) is stored with the release but not shown in the ratings table. SOR shows {"—"} until a team has 3
+            strongest résumé; the underlying number appears on hover. Wins above average (wins above an average FBS team
+            on the same schedule) appear in the Ratings tab’s résumé view and on team pages. SOR shows {"—"} until a team has 3
             completed FBS games. W-L is “vs FBS”, and FCS games are excluded. Neutral sites are not adjusted because the
             model has no neutral-site term; home field is included.
           </p>
@@ -165,9 +185,10 @@ export default function ModelMethodPage() {
             The V5 model was fit through the 2025 season. Its 2026 forecasts use only information available before each
             game; 2026 outcomes do not retrain the model. Market comparison uses timestamped lines after the model
             forecast; missing eligible lines yield no grade. The historical V5 study established an accepted model
-            design. It did not establish that V5 beats V4 in a like-for-like live comparison.
+            design. It did not establish that V5 beats V4 in a like-for-like live comparison, and it is not an operational verification of the 2026 record: that record is graded week by week from captured lines and certified final scores.
           </p>
         </Section>
+      </div>
       </div>
     </PageShell>
   );

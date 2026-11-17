@@ -9,7 +9,7 @@ import {
 } from "./betting-format.ts";
 import { isFinal } from "./team-games.ts";
 import { phoneTeamName } from "./team-logos.ts";
-import { isTimeTbd, nextEtDayStart } from "./time-et.ts";
+import { etDateYear, isTimeTbd, nextEtDayStart } from "./time-et.ts";
 
 export type LeanKind = "spread" | "total";
 
@@ -65,20 +65,6 @@ export function edgeTier(kind: LeanKind, edge: number | null): 0 | 1 | 2 | 3 {
   return 3;
 }
 
-/**
- * Tone class for an edge magnitude on the shared thresholds: below the low
- * threshold reads low, through the high threshold reads medium, above it
- * reads high. Preserved from the retired comparison table so the lean
- * sentences keep the same edge language.
- */
-export function edgeTone(edge: number, kind: LeanKind): "edge-low" | "edge-medium" | "edge-high" {
-  const magnitude = Math.abs(edge);
-  const [lowThreshold, highThreshold] = EDGE_THRESHOLDS[kind];
-  if (magnitude < lowThreshold) return "edge-low";
-  if (magnitude <= highThreshold) return "edge-medium";
-  return "edge-high";
-}
-
 export type Lean = {
   kind: LeanKind;
   /** Display text, e.g. "New Mexico State -2.5" or "Under 57.5". */
@@ -87,7 +73,9 @@ export type Lean = {
   dir: "home" | "away" | "over" | "under";
   /** Team the spread lean backs; null for totals. */
   team: string | null;
-  /** What the model says on the same scale: "Ohio State by 7.6" / "54.1". */
+  /** The other side of a spread lean; null for totals. */
+  opponent: string | null;
+  /** What the model says on the same scale: "Ohio State by 7.6" (names the team the model favors, never a negative margin) / "54.1". */
   model: string | null;
   /** Sportsbook behind the line (display name), when the run recorded one. */
   source: string | null;
@@ -96,10 +84,17 @@ export type Lean = {
   tier: 1 | 2 | 3;
 };
 
-/** Model margin from the leaned team's side, named: "Ohio State by 7.6". */
-function modelMarginText(margin: number | null, team: string): string | null {
+/** Model margin from the leaned team's side, naming the team the model favors: "Ohio State by 7.6". */
+function modelMarginText(margin: number | null, team: string, opponent: string): string | null {
   if (margin === null) return null;
-  return `${team} by ${margin.toFixed(1)}`;
+  return `${margin < 0 ? opponent : team} by ${Math.abs(margin).toFixed(1)}`;
+}
+
+/** The model's margin from the leaned team's side: negative when the model favors the other team. */
+export function modelMargin(lean: Lean): number | null {
+  const match = lean.kind === "spread" ? lean.model?.match(/by\s+(\d+(?:\.\d+)?)$/) : null;
+  if (!match || !lean.team) return null;
+  return lean.model!.startsWith(`${lean.team} by `) ? Number(match[1]) : -Number(match[1]);
 }
 
 /** The prediction fields `leanFor` reads; lets a lightweight query row stand in for a full game. */
@@ -127,6 +122,7 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
     const line =
       game.spreadLean === "home" ? game.homeTeamSpreadLine : -game.homeTeamSpreadLine;
     const team = game.spreadLean === "home" ? game.homeTeam : game.awayTeam;
+    const opponent = game.spreadLean === "home" ? game.awayTeam : game.homeTeam;
     const edge = Math.abs(
       game.edgeSpread ??
         spreadEdge(
@@ -146,7 +142,8 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
       pick: `${team} ${line === 0 ? "PK" : signedSpread(line)}`,
       dir: game.spreadLean,
       team,
-      model: modelMarginText(margin, team),
+      opponent,
+      model: modelMarginText(margin, team, opponent),
       source: bookName(game.spreadSource),
       edge,
       tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
@@ -162,6 +159,7 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
     pick: `${over ? "Over" : "Under"} ${game.totalLine.toFixed(1)}`,
     dir: game.totalLean,
     team: null,
+    opponent: null,
     model: game.predictedTotal === null ? null : game.predictedTotal.toFixed(1),
     source: bookName(game.totalSource),
     edge,
@@ -197,11 +195,9 @@ export function leanDetail(lean: Lean): string | null {
 export function modelCrossesMarket(lean: Lean): boolean {
   if (lean.kind !== "spread") return false;
   const line = lean.pick.match(/([+-]\d+(?:\.\d+)?)$/);
-  const margin = lean.model?.match(/by\s+(-?\d+(?:\.\d+)?)$/);
-  if (!line || !margin) return false;
-  const modelMargin = Number(margin[1]);
-  if (Math.abs(modelMargin) < 0.05) return false;
-  return modelMargin > 0 !== Number(line[1]) < 0;
+  const margin = modelMargin(lean);
+  if (!line || margin === null || Math.abs(margin) < 0.05) return false;
+  return margin > 0 !== Number(line[1]) < 0;
 }
 
 /** The lean as phones show it: a long team name in the pick and model text becomes its abbreviation. */
@@ -209,7 +205,12 @@ export function phoneLean(lean: Lean): Lean {
   if (lean.team === null) return lean;
   const short = phoneTeamName(lean.team);
   if (short === lean.team) return lean;
-  return { ...lean, pick: lean.pick.replace(lean.team, short), model: lean.model?.replace(lean.team, short) ?? null };
+  const model = lean.model?.replace(lean.team, short);
+  return {
+    ...lean,
+    pick: lean.pick.replace(lean.team, short),
+    model: (lean.opponent ? model?.replace(lean.opponent, phoneTeamName(lean.opponent)) : model) ?? null,
+  };
 }
 
 export type TopLean = Lean & { game: PredictionGame };
@@ -325,6 +326,12 @@ export function underdogRecord(weeks: ReadonlyArray<ReadonlyArray<Game | Underdo
   return out;
 }
 
+/** Kickoff order with unannounced times (midnight placeholders) last within their Eastern day. */
+export function byKickoff(a: Pick<Game, "startDate">, b: Pick<Game, "startDate">): number {
+  const key = (d: Date) => (isTimeTbd(d) ? nextEtDayStart(d).getTime() - 1 : d.getTime());
+  return key(a.startDate) - key(b.startDate);
+}
+
 export type SortKey = "kickoff" | "bestEdge" | "spreadEdge" | "totalEdge";
 
 function edgeOf(game: Game, kind: LeanKind): number | null {
@@ -334,7 +341,6 @@ function edgeOf(game: Game, kind: LeanKind): number | null {
 /** Biggest edge first; games with no lean sink to the bottom in kickoff order. */
 export function sortGames(games: Game[], sort: SortKey): Game[] {
   const rows = [...games];
-  const byKickoff = (a: Game, b: Game) => a.startDate.getTime() - b.startDate.getTime();
   if (sort === "kickoff") return rows.sort(byKickoff);
   const score = (g: Game): number | null => {
     if (sort === "spreadEdge") return edgeOf(g, "spread");
@@ -520,7 +526,6 @@ function coverScore(game: Game, pick: "max" | "min"): number | null {
 
 /** Result-oriented sort; games with nothing to rank sink in kickoff order. */
 export function sortResults(games: Game[], sort: ResultSort): Game[] {
-  const byKickoff = (a: Game, b: Game) => a.startDate.getTime() - b.startDate.getTime();
   if (sort === "kickoff") return [...games].sort(byKickoff);
   if (sort === "bestEdge") return sortGames(games, "bestEdge");
   const score = (g: Game) => coverScore(g, sort === "bestResult" ? "max" : "min");
@@ -541,6 +546,49 @@ export function weekPhase(games: Game[]): WeekPhase {
   const finished = games.filter(isFinal).length;
   if (finished === 0) return "upcoming";
   return finished === games.length ? "final" : "in-progress";
+}
+
+/**
+ * Last regular-season week of the 2026 official record (Army-Navy, 2026-12-12; the provider files no
+ * regular game in week 16). Mirrors `FINAL_REGULAR_WEEK` in `scripts/ops/weekly_automation.py`.
+ */
+export const FINAL_REGULAR_WEEK = 15;
+
+/**
+ * True once the active release is the final regular-season close: the slate shown is the active week, that
+ * week is the final one, every game in it is final, and no later week is published. Postseason is never
+ * published, so the record ends here.
+ */
+export function isRegularSeasonComplete(args: {
+  week: number;
+  activeWeek: number | null;
+  weeks: readonly number[];
+  games: Game[];
+  finalWeek?: number;
+}): boolean {
+  const { week, activeWeek, weeks, games, finalWeek = FINAL_REGULAR_WEEK } = args;
+  return (
+    activeWeek === finalWeek &&
+    week === finalWeek &&
+    games.length > 0 &&
+    weekPhase(games) === "final" &&
+    !weeks.some((w) => w > finalWeek)
+  );
+}
+
+/** The final cumulative record: the season record before the week plus the week's own graded record. */
+export function seasonRecordThrough(
+  before: ReadonlyArray<{ classification: string; spread: Tally | null; total: Tally | null }>,
+  games: Game[],
+): { spread: Tally; total: Tally } {
+  const overall = before.find((p) => p.classification === "all");
+  const week = weekRecord(games);
+  const add = (a: Tally | null | undefined, b: Tally): Tally => ({
+    win: (a?.win ?? 0) + b.win,
+    loss: (a?.loss ?? 0) + b.loss,
+    push: (a?.push ?? 0) + b.push,
+  });
+  return { spread: add(overall?.spread, week.spread), total: add(overall?.total, week.total) };
 }
 
 export type GameState = "final" | "awaiting" | "upcoming";
@@ -614,4 +662,22 @@ export function finalMarginText(game: Game, team: string): string | null {
   const margin = team === game.homeTeam ? home - away : away - home;
   if (margin === 0) return "tied";
   return `${margin > 0 ? "won" : "lost"} by ${Math.abs(margin)}`;
+}
+
+/** Public status filters never infer a live score from the clock. */
+export type SlateStatusFilter = "today" | "upcoming" | "results" | "all";
+export function defaultSlateStatus(games: Timed[], now: Date): SlateStatusFilter {
+  if (games.some((game) => etDateYear(game.startDate) === etDateYear(now))) return "today";
+  if (games.some((game) => gameState(game, now) === "upcoming")) return "upcoming";
+  if (games.length > 0 && games.every((game) => gameState(game, now) === "final")) return "results";
+  return "all";
+}
+export function parseSlateStatus(value: string | null | undefined, games: Timed[], now: Date): SlateStatusFilter {
+  return value === "today" || value === "upcoming" || value === "results" || value === "all"
+    ? value : defaultSlateStatus(games, now);
+}
+export function matchesSlateStatus(game: Timed, status: SlateStatusFilter, now: Date): boolean {
+  if (status === "all") return true;
+  if (status === "today") return etDateYear(game.startDate) === etDateYear(now);
+  return gameState(game, now) === (status === "results" ? "final" : "upcoming");
 }

@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import clsx from "clsx";
+import { pageMetadata } from "@/lib/metadata";
+import Link from "next/link";
+import { getSeasonReleaseContext } from "@/lib/season-release";
+import { getGamesForWeek, getMarketGamesForWeek } from "@/lib/queries";
+import { nextMatchupByTeam } from "@/lib/team-games";
+import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
 import { Notice } from "@/components/ui/Notice";
 import {
@@ -24,8 +31,10 @@ import {
 } from "@/lib/charts";
 import {
   CHART_REGISTRY,
+  chartEmptyMessage,
   chartHref,
   parseChartKind,
+  unhonoredChartNotice,
   parseEfficiencyMetric,
   parseGameLogMetric,
   parseMarketBoardMetric,
@@ -35,7 +44,7 @@ import {
   pickerGroups,
   SETTINGS_SLOT_ID,
 } from "@/lib/chart-config";
-import { publicationScope } from "@/lib/publication";
+import { isPublishedWeek, publicationScope } from "@/lib/publication";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 import {
   getSlateMarketComparison,
@@ -80,6 +89,14 @@ import { WeekNav } from "@/components/WeekNav";
 
 export const revalidate = 300;
 
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const kind = parseChartKind((await searchParams).chart);
+  const { tabLabel, description } = CHART_REGISTRY[kind];
+  // "V5" is internal wording; public titles and descriptions drop it.
+  const name = kind === "rating-trajectory" ? "Rating trajectory" : tabLabel;
+  return pageMetadata(`${name} graph`, description.replaceAll("V5 ", ""), `/stats?chart=${kind}`);
+}
+
 type SearchParams = Promise<{ chart?: string; side?: string; week?: string; fixture?: string; metric?: string; team?: string }>;
 
 type Loaded =
@@ -113,7 +130,7 @@ const NO_V5_ROWS = {
   ratingSnapshots: async () => [],
   seasonStatsWeeks: [],
   seasonStatsFor: async () => [],
-  teamResume: async (_week?: number) => [],
+  teamResume: async () => [],
   slateWeeks: [],
   slateGamesFor: async () => [],
 };
@@ -158,7 +175,7 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
         if (fixture === "adjusted-error") throw new Error("season stats window failed");
         return chartsSeasonStatsFixture(asOfWeek);
       },
-      teamResume: async (_w?: number) => {
+      teamResume: async () => {
         if (fixture === "adjusted-error") throw new Error("team resume failed");
         return chartsTeamResumeFixture();
       },
@@ -204,10 +221,38 @@ async function load(season: number, fixture: string | undefined): Promise<Loaded
   }
 }
 
+/**
+ * Each team's first game still to be played, in the active week or the one after it, so a link survives once
+ * every game of the active week has kicked off. Games come from the same reader the matchup page uses for the
+ * publication mode, so a link never points at a game that page cannot render.
+ */
+async function nextMatchups(season: number): Promise<Record<string, number>> {
+  if (!isMatchupEnabled() || process.env.CFB_UI_TEST_MODE === "1") return {};
+  try {
+    const release = await getSeasonReleaseContext(season);
+    if (!release) return {};
+    const read = publicationScope.mode === "predictions" ? getGamesForWeek : getMarketGamesForWeek;
+    const followingWeek = release.activeWeek + 1;
+    const [active, following] = await Promise.all([
+      read(season, release.activeWeek),
+      isPublishedWeek(season, followingWeek)
+        ? read(season, followingWeek).catch((error) => {
+          console.error("Chart next-week matchup links unavailable", error);
+          return [];
+        })
+        : [],
+    ]);
+    return nextMatchupByTeam([active, following], new Date());
+  } catch (error) {
+    console.error("Chart next matchup links unavailable", error);
+    return {};
+  }
+}
+
 function notice(text: string) {
   return (
     <div data-testid="charts-notice">
-      <Notice tone="empty">{text}</Notice>
+      <Notice tone="empty">{text} <Link className="font-medium text-accent-ink underline" href="/stats?chart=efficiency">Explore efficiency</Link></Notice>
     </div>
   );
 }
@@ -217,10 +262,11 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
   const season = publicationScope.season;
   // Only `ready` kinds parse, so a hidden chart's branch below (and its lazy query) never runs.
   const kind = parseChartKind(params.chart);
+  const unhonored = unhonoredChartNotice(params.chart);
   const side: Side = parseSide(params.side);
   const requested = params.week !== undefined && /^\d{1,2}$/.test(params.week) ? Number(params.week) : null;
 
-  const loaded = await load(season, params.fixture);
+  const [loaded, upcomingMatchups] = await Promise.all([load(season, params.fixture), nextMatchups(season)]);
 
   let body: React.ReactNode;
   let tabs: React.ReactNode = null;
@@ -260,7 +306,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         <div className="hidden flex-wrap items-end gap-x-5 gap-y-2 sm:flex">
           {pickerGroups().map((group) => (
             <div key={group.id} className="flex min-w-0 flex-col gap-1" role="group" aria-label={group.label}>
-              <span className="px-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>{group.label}</span>
+              <span className="px-0.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint" aria-hidden>{group.label}</span>
               <div className="flex flex-wrap gap-1.5">
                 {group.kinds.map((target) => (
                   <ChartLink
@@ -268,8 +314,8 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
                     href={chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) })}
                     aria-current={target === kind ? "page" : undefined}
                     className={clsx(
-                      "inline-flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                      target === kind ? "bg-accent text-white shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+                      "inline-flex min-h-11 items-center whitespace-nowrap pointer-fine:min-h-10 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      target === kind ? "bg-accent-solid text-on-accent-solid shadow-2xs" : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
                     )}
                   >{CHART_REGISTRY[target].tabLabel}</ChartLink>
                 ))}
@@ -286,6 +332,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
               options: group.kinds.map((target) => ({
                 href: chartHref(target, { side, week: coerceWeek(week ?? requested, weeksFor(target)) }),
                 label: CHART_REGISTRY[target].tabLabel,
+                shortLabel: CHART_REGISTRY[target].shortTabLabel,
               })),
             }))}
           />
@@ -311,10 +358,12 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
       </div>
     );
     const view = (viewWeek: number, chart: ChartPayload, weekNav: React.ReactNode = null) => (
-      <ChartsView season={season} week={viewWeek} roster={roster} chart={chart} settings={<>{sideNav}{weekNav}</>} />
+      <ChartsView season={season} week={viewWeek} roster={roster} chart={chart} nextMatchups={upcomingMatchups} settings={<>{sideNav}{weekNav}</>} />
     );
 
-    if (kind === "rating-trajectory") {
+    if (requested !== null && CHART_REGISTRY[kind].controls.week && !available.includes(requested)) {
+      body = notice(`Week ${requested} is not available for this chart. Choose an available week from the chart navigation; no other window has been substituted.`);
+    } else if (kind === "rating-trajectory") {
       // Every stored snapshot week (Through Week 0 on) at once, so there is no week selector.
       let snapshots: RatingSnapshotRow[] | null = null;
       try {
@@ -343,11 +392,7 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         ? notice("No completed games are published yet.")
         : view(charted[charted.length - 1], { kind, rows, adjusted, initialMetric: parseGameLogMetric(params.metric, explosiveness), explosiveness });
     } else if (week === null) {
-      body = notice(
-        kind === "net-success"
-          ? "No completed games are published yet."
-          : "This chart starts after Week 2 is complete.",
-      );
+      body = notice(chartEmptyMessage(kind));
     } else {
       const weekNav = (
         <WeekNav
@@ -454,14 +499,15 @@ export default async function ChartsPage({ searchParams }: { searchParams: Searc
         width="slate"
       />
       <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-6xl flex-1 px-4 sm:py-4 ${PHONE_PAGE_RHYTHM}`}>
-        {/* Phones drop the visible heading (the sticky bar names the chart) but keep it for assistive tech. */}
-        <div className="max-sm:sr-only">
-          <PageHeading title="Team graphs">
+        {/* The heading is visible at every width, phones included. */}
+        <div>
+          <PageHeading title="Team graphs" eyebrow="Explore the football">
             {season}
             <span className="text-ink-faint"> · </span>
             {CHART_REGISTRY[kind].population}
           </PageHeading>
         </div>
+        {unhonored && <Notice tone="info" className="mt-3">{unhonored}</Notice>}
         {tabs}
         {body}
       </main>

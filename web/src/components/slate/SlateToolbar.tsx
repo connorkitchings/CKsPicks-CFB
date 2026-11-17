@@ -12,11 +12,11 @@ import { SlateFilterSheet } from "./SlateFilterSheet";
 export type SlateLayout = "grid" | "list";
 
 const SELECT_CLASS =
-  "min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink sm:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent";
+  "min-h-11 w-full min-w-0 truncate rounded-lg border border-line bg-surface-card px-2 text-base font-medium text-ink pointer-fine:min-h-9 sm:w-auto sm:text-sm focus-visible:outline-2 focus-visible:outline-accent";
 
 /**
  * Search, conference, sort and layout. On phones this is the pinned bar: the week navigator centered
- * on one row, the search field and the Filters button below it; conference and sort live in the
+ * on one row, the search field, the Filters button (only when it has controls) and the Layout toggle below it; conference and sort live in the
  * Filters sheet. From 640px up it is the single toolbar card, unchanged.
  */
 export function SlateToolbar<T extends string>({
@@ -101,18 +101,20 @@ export function SlateToolbar<T extends string>({
         <SearchField
           id="slate-search"
           label="Filter by team"
-          placeholder="Filter by team…"
+          placeholder="Find team…"
           value={query}
           onChange={onQueryChange}
           className="min-w-0 flex-[1.2_1_0%] sm:flex-[1_1_9rem]"
         />
-        <SlateFilterSheet mobile={mobile} active={filtersActive}>
-          {conferenceSelect}
-          {sortSelect}
-        </SlateFilterSheet>
+        {(conferenceSelect || sortSelect) && (
+          <SlateFilterSheet mobile={mobile} active={filtersActive}>
+            {conferenceSelect}
+            {sortSelect}
+          </SlateFilterSheet>
+        )}
         {!mobile && conferenceSelect}
         {!mobile && sortSelect}
-        <div className="hidden shrink-0 sm:block">
+        <div className="shrink-0 max-[359px]:[&_button]:px-2">
           <SegmentedControl
             label="Layout"
             value={view}

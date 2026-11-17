@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import clsx from "clsx";
 
 export type TableColumn<Row> = {
@@ -9,7 +9,7 @@ export type TableColumn<Row> = {
   /** Sort value; strings sort alphabetically, numbers numerically, null last. */
   value: (row: Row) => string | number | null;
   /** Display text (defaults to the sort value). */
-  format?: (row: Row) => string;
+  format?: (row: Row) => ReactNode;
   numeric?: boolean;
 };
 
@@ -58,7 +58,7 @@ export function ChartTable<Row>({
                 >
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+                    className="inline-flex min-h-11 items-center gap-1 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent pointer-fine:min-h-0"
                     onClick={() =>
                       setSort(active ? { key: column.key, descending: !sort.descending } : { key: column.key })
                     }
@@ -76,7 +76,7 @@ export function ChartTable<Row>({
             <tr key={rowKey(row)} className="border-t border-line">
               {columns.map((column) => (
                 <td key={column.key} className={clsx("px-3 py-1.5 text-ink", column.numeric && "text-right tabular-nums")}>
-                  {column.format ? column.format(row) : (column.value(row) ?? "")}
+                  {column.format ? column.format(row) : (column.value(row) ?? "—")}
                 </td>
               ))}
             </tr>

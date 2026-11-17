@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useChartMetric } from "./useChartMetric";
+
+import { useMemo } from "react";
 import { EXPORT_PREFIX } from "@/lib/brand";
 import {
   CHART_REGISTRY,
@@ -27,6 +29,7 @@ import {
 import { chartSummary } from "@/components/ui/SummaryLine";
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { ChartTable, type TableColumn } from "./ChartTable";
 import { GameLogChart } from "./GameLogChart";
 import { MobileGameLog } from "./MobileGameLog";
 import { useIsPhone } from "@/lib/use-is-phone";
@@ -60,7 +63,7 @@ function SeasonStat({ side, log }: { side: Side; log: TeamGameLog }) {
 /** Every game of one team: offense and defense-allowed bars against each week's FBS average. */
 export function GameLogView({ shared, rows, adjusted, initialMetric, explosiveness }: GameLogViewProps) {
   const narrow = useIsPhone();
-  const [metric, setMetric] = useState<GameLogMetric>(initialMetric);
+  const [metric, setMetric] = useChartMetric<GameLogMetric>(initialMetric, gameLogMetrics(explosiveness));
   const { season, roster, filter, highlight } = shared;
   const team = highlight ?? defaultGameLogTeam(roster, rows, adjusted, filter);
   const log = useMemo(() => (team ? teamGameLog(roster, rows, team, metric) : null), [roster, rows, team, metric]);
@@ -76,6 +79,16 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
   const domains = log ? gameLogDomains(log) : { offense: [0, 1] as Domain, defense: [0, 1] as Domain };
   const describe = (game: GameLogGame) => describeGameLogGame(log!.team, game, metric);
   const slug = (team ?? "team").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  const show = (value: number | null) => (value === null ? "n/a" : metricText.value(value));
+  const columns: TableColumn<GameLogGame>[] = [
+    { key: "week", label: "Week", value: (g) => g.week, numeric: true },
+    { key: "opponent", label: "Opponent", value: (g) => g.opponent, format: (g) => `${g.site === "away" ? "@" : "vs"} ${g.opponent}` },
+    { key: "result", label: "Result", value: (g) => g.result },
+    { key: "offense", label: `Offense ${metricText.label}`, value: (g) => g.offense, format: (g) => show(g.offense), numeric: true },
+    { key: "defense", label: `Defense allowed ${metricText.label}`, value: (g) => g.defense, format: (g) => show(g.defense), numeric: true },
+    { key: "average", label: "FBS average (offense / defense)", value: (g) => g.average.offense, format: (g) => `${show(g.average.offense)} / ${show(g.average.defense)}`, numeric: true },
+  ];
 
   const chart = (view: { width: number; height: number }, interactive: boolean) =>
     log && <GameLogChart log={log} domains={domains} formatTick={metricText.tick} formatValue={metricText.value} describe={describe} width={view.width} height={view.height} interactive={interactive} label={label} />;
@@ -100,6 +113,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
       }
       highlightTeams={roster.filter((r) => matchesConference(filter, r.team, r.conference))}
       exportSpec={{
+        contentKey: JSON.stringify([viewSubtitle, metric, log]),
         filename: `${EXPORT_PREFIX}-game-log-${slug}-${season}.png`,
         width: EXPORT_SIZE.width,
         height: EXPORT_SIZE.height,
@@ -118,6 +132,7 @@ export function GameLogView({ shared, rows, adjusted, initialMetric, explosivene
           </div>
         </div>
       )}
+      table={log && <ChartTable rows={games} columns={columns} rowKey={(g) => String(g.gameId)} caption={`${title}. ${viewSubtitle}.`} initialSort={{ key: "week" }} />}
       hasData={games.length > 0}
       emptyText={team ? `${team} has no FBS games in this release yet.` : "No team can be charted yet."}
       figure={

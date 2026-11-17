@@ -11,6 +11,7 @@ import { getV5PerformanceSplit, type Performance } from "@/lib/v5";
 import type { SlateSort } from "@/lib/slate";
 import { selectsV5, V5_INTENDED_UPDATE_MODEL_ID } from "@/lib/run-selection";
 import { publicationScope, resolveSeasonParam } from "@/lib/publication";
+import { getSeasonReleaseContext } from "@/lib/season-release";
 import { uiFixture } from "@/test/fixtures/publication";
 
 export type SlateSearchParams = Promise<{
@@ -18,7 +19,15 @@ export type SlateSearchParams = Promise<{
   week?: string;
   mode?: string;
   sort?: string;
+  q?: string;
+  conference?: string;
+  view?: string;
+  status?: string;
+  metric?: string;
   now?: string;
+  fixture?: string;
+  /** UI test mode only: treat this week as the final regular-season week (and the active one). */
+  finalWeek?: string;
 }>;
 type ResolvedParams = Awaited<SlateSearchParams>;
 
@@ -55,6 +64,7 @@ export function slateSeason(params: ResolvedParams): number {
 
 export type SlateData = {
   games: Game[];
+  activatedAt: Date | null;
   /** FBS teams and conferences for the conference filter; empty when the release has none. */
   roster: RosterRow[];
   /** Season record before the week. */
@@ -74,12 +84,14 @@ export async function loadSlateData(args: {
   season: number;
   week: number;
   publicationMode: "predictions" | "market";
+  fixture?: string;
   /** Present when the caller already failed to resolve its target. */
   dbError?: string | null;
 }): Promise<SlateData> {
   const { season, week, publicationMode } = args;
   const out: SlateData = {
     games: [],
+    activatedAt: null,
     roster: [],
     performance: [],
     weekPerformance: [],
@@ -93,7 +105,11 @@ export async function loadSlateData(args: {
     if (publicationMode === "predictions") {
       const fx = await import("@/test/fixtures/slate");
       const bundle = week === 4 ? fx.slateResults() : week === 6 ? fx.slatePartial() : fx.slatePicks();
-      out.games = bundle.games;
+      out.games = args.fixture === "no-comparisons"
+        ? bundle.games.map((game) => game.gameId === 1
+          ? { ...game, homeTeamSpreadLine: null, totalLine: null, spreadLean: null, totalLean: null, edgeSpread: null, edgeTotal: null }
+          : game)
+        : bundle.games;
       out.roster = fx.slateRosterFixture;
       out.fixtureWeek = { week: bundle.week, weeks: bundle.weeks };
       if (bundle.games[0]?.publicationMode === "predictions") {
@@ -110,6 +126,7 @@ export async function loadSlateData(args: {
   if (out.dbError || season <= 0 || week < 0) return out;
 
   try {
+    out.activatedAt = (await getSeasonReleaseContext(season).catch(() => null))?.activatedAt ?? null;
     if (publicationMode === "predictions") {
       const run = await getRunForWeek(season, week);
       out.retrospectiveRepair = run?.modelId === V5_INTENDED_UPDATE_MODEL_ID

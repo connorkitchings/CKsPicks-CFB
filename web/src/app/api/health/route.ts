@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { APP_VERSION } from "@/lib/brand";
 import { schema } from "@/lib/db";
-import { publicationScope } from "@/lib/publication";
+import { isAllowedSeason, publicationScope } from "@/lib/publication";
 import { getCurrentWeek, getRunForWeek } from "@/lib/queries";
 import { getSeasonDb, getSeasonReleaseContext } from "@/lib/season-release";
 import { eq } from "drizzle-orm";
@@ -31,7 +32,7 @@ function parseRequestedWeek(
   if (season === null || week === null) {
     return { error: "season and week must be integers" };
   }
-  if (season < 2021 || season > 2100 || week < 0 || week > 23) {
+  if (!isAllowedSeason(season) || week < 0 || week > 23) {
     return { error: "requested season or week is out of range" };
   }
   return { season, week };
@@ -96,6 +97,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       status: "ok",
       schemaVersion: "data_platform_v1",
+      appVersion: APP_VERSION,
+      commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
       publication: {
         season: publicationScope.season,
         weeks: publicationScope.weeks,
@@ -126,6 +129,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         status: "error",
+        appVersion: APP_VERSION,
         error: "database_unavailable",
         latencyMs: Date.now() - start,
       },

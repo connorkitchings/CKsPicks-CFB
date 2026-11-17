@@ -25,22 +25,21 @@ const TEST_IDS = {
  * actions the charts use. The card is only mounted while an image is being made, so the page
  * itself is unchanged.
  */
-export function ShareButton({ matchup, disabled = false }: { matchup: MatchupData; disabled?: boolean }) {
+export function ShareButton({ matchup, disabled = false, selectedSide = "away" }: { matchup: MatchupData; disabled?: boolean; selectedSide?: "away" | "home" }) {
   return (
     <ExportActions
       filename={shareFileName(matchup)}
       shareTitle={`${matchup.awayTeam} at ${matchup.homeTeam}`}
       width={SHARE_CARD_WIDTH}
       height={SHARE_CARD_HEIGHT}
-      backgroundColor="#0b0b0d"
-      contentKey={JSON.stringify(matchup)}
+      contentKey={JSON.stringify([matchup, selectedSide])}
       disabled={disabled}
       disabledReason="Sharing unavailable until matchup data lineage is verified"
       compactReason
       atRightEdge
       testIds={TEST_IDS}
     >
-      <ShareCard matchup={matchup} />
+      <ShareCard matchup={matchup} selectedSide={selectedSide} />
     </ExportActions>
   );
 }

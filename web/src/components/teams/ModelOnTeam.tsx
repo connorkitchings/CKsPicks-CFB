@@ -53,8 +53,8 @@ function OpponentCell({ game, team, px }: { game: TeamGame; team: string; px: nu
 function Summary({ games, team }: { games: readonly TeamGame[]; team: string }) {
   const { ats, overUnder, winner } = modelRecords(games, team);
   const items = [
-    ats.wins + ats.losses + ats.pushes > 0 && { label: "ATS (W–L)", value: recordText(ats.wins, ats.losses, ats.pushes), rate: winPercent(ats.wins, ats.losses) },
-    overUnder.wins + overUnder.losses + overUnder.pushes > 0 && { label: "O/U", value: recordText(overUnder.wins, overUnder.losses, overUnder.pushes), rate: winPercent(overUnder.wins, overUnder.losses) },
+    ats.wins + ats.losses + ats.pushes > 0 && { label: "Model ATS (W–L)", value: recordText(ats.wins, ats.losses, ats.pushes), rate: winPercent(ats.wins, ats.losses) },
+    overUnder.wins + overUnder.losses + overUnder.pushes > 0 && { label: "Model O/U",value: recordText(overUnder.wins, overUnder.losses, overUnder.pushes), rate: winPercent(overUnder.wins, overUnder.losses) },
     winner.right + winner.wrong > 0 && { label: "Model picked the winner", value: recordText(winner.right, winner.wrong), rate: winPercent(winner.right, winner.wrong) },
   ].filter((item) => item !== false);
   if (items.length === 0) return null;

@@ -53,12 +53,17 @@ async function holdRender(page: Page): Promise<void> {
   await page.addInitScript(() => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
-    Object.assign(window, { __releaseRender: release });
-    Object.defineProperty(document.fonts, "ready", { get: () => gate, configurable: true });
+    Object.assign(window, { __releaseRender: release, __renderStarted: false });
+    Object.defineProperty(document.fonts, "ready", { get: () => { (window as unknown as { __renderStarted: boolean }).__renderStarted = true; return gate; }, configurable: true });
+    const settled: string[] = [];
+    Object.assign(window, { __exportSettled: (action: string) => settled.push(action), __settledExports: settled });
   });
 }
 
 const releaseRender = (page: Page) => page.evaluate(() => (window as unknown as { __releaseRender: () => void }).__releaseRender());
+
+const renderStarted = (page: Page) => page.evaluate(() => (window as unknown as { __renderStarted: boolean }).__renderStarted);
+const settledExports = (page: Page) => page.evaluate(() => (window as unknown as { __settledExports: string[] }).__settledExports);
 
 async function highlightMichigan(page: Page): Promise<void> {
   await expect(async () => {
@@ -125,8 +130,8 @@ const clipboardSettled = (page: Page) => page.evaluate(() => (window as unknown 
 
 /** Leaves the chart page client-side, which unmounts its export actions. */
 async function leaveChartPage(page: Page): Promise<void> {
-  await page.locator("a[href^='/ratings']:visible").first().click();
-  await expect(page).toHaveURL(/\/ratings/);
+  await page.locator("a[href^='/teams']:visible").first().click();
+  await expect(page).toHaveURL(/\/teams/);
   await expect(page.getByTestId("chart-export")).toHaveCount(0);
 }
 
@@ -175,6 +180,74 @@ test.describe("share and export", () => {
     await share(page).click();
     await expect.poll(() => cardsMounted(page)).toBeGreaterThan(cardsBefore);
     await expect.poll(async () => (await shareCalls(page)).length).toBe(shareCountBefore + 1);
+  });
+
+  for (const change of [
+    { name: "metric", apply: async (page: Page) => { await page.getByTestId("metric-toggle-yards-per-success").click(); } },
+    { name: "conference", apply: async (page: Page) => { await page.getByTestId("conference-filter").selectOption("SEC"); } },
+    { name: "side", apply: async (page: Page) => {
+      await page.getByRole("link", { name: "defense", exact: true }).click();
+      await expect(page).toHaveURL(/side=defense/);
+    } },
+    { name: "chart kind", apply: async (page: Page) => {
+      await page.getByRole("link", { name: "Adjusted PPA/play" }).click();
+      await expect(page).toHaveURL(/chart=adjusted/);
+    } },
+  ]) {
+    test(`changing ${change.name} after preparation renders a new image`, async ({ page }) => {
+      await scriptShare(page, ["expired"]);
+      await countExportCards(page);
+      await gotoHydrated(page, URL);
+      await prepareReadyImage(page);
+      await change.apply(page);
+      await expect(status(page)).toHaveText("");
+      const cardsBefore = await cardsMounted(page);
+      await share(page).click();
+      await expect.poll(() => cardsMounted(page)).toBeGreaterThan(cardsBefore);
+      await expect.poll(async () => (await shareCalls(page)).length).toBe(2);
+      await expect(share(page)).toBeEnabled();
+    });
+  }
+
+  test("changing the comparison after preparation renders the new comparison", async ({ page }) => {
+    await scriptShare(page, ["expired"]);
+    await gotoHydrated(page, URL);
+    await highlightMichigan(page);
+    await prepareReadyImage(page);
+    await page.getByLabel("Compare with a second team").selectOption("Ohio State");
+    await expect(status(page)).toHaveText("");
+    // Hold the next render so the new export card itself can be inspected.
+    await page.evaluate(() => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => { release = resolve; });
+      Object.assign(window, { __releaseRender: release, __renderStarted: false });
+      Object.defineProperty(document.fonts, "ready", { configurable: true, get: () => {
+        (window as unknown as { __renderStarted: boolean }).__renderStarted = true;
+        return gate;
+      } });
+    });
+    await share(page).click();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __renderStarted: boolean }).__renderStarted)).toBe(true);
+    await expect(page.getByTestId("export-card")).toContainText("Compare: Ohio State");
+    await releaseRender(page);
+    await expect.poll(async () => (await shareCalls(page)).length).toBe(2);
+    await expect(share(page)).toBeEnabled();
+  });
+
+  test("changing the comparison during rendering discards the stale image", async ({ page }) => {
+    await scriptShare(page, []);
+    await holdRender(page);
+    const downloads = countDownloads(page);
+    await gotoHydrated(page, URL);
+    await highlightMichigan(page);
+    await share(page).click();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __renderStarted: boolean }).__renderStarted)).toBe(true);
+    await page.getByLabel("Compare with a second team").selectOption("Ohio State");
+    await releaseRender(page);
+    await expect(status(page)).toHaveText("The chart changed. Tap again.");
+    await expect(share(page)).toBeEnabled();
+    expect(await shareCalls(page)).toEqual([]);
+    expect(downloads.names).toEqual([]);
   });
 
   test("switching theme after the image is ready renders a new image in the new theme", async ({ page }) => {
@@ -275,9 +348,10 @@ test.describe("share and export", () => {
     await gotoHydrated(page, URL);
     await share(page).click();
     await expect(status(page)).toHaveText("Creating image…");
+    await expect.poll(() => renderStarted(page)).toBe(true);
     await leaveChartPage(page);
     await releaseRender(page);
-    await page.waitForTimeout(1000);
+    await expect.poll(() => settledExports(page)).toEqual(["share"]);
     expect(await shareCalls(page)).toEqual([]);
     expect(downloads.names).toEqual([]);
     expect(errors).toEqual([]);
@@ -291,9 +365,10 @@ test.describe("share and export", () => {
     await gotoHydrated(page, URL);
     await page.getByTestId("chart-download").click();
     await expect(status(page)).toHaveText("Creating image…");
+    await expect.poll(() => renderStarted(page)).toBe(true);
     await leaveChartPage(page);
     await releaseRender(page);
-    await page.waitForTimeout(1000);
+    await expect.poll(() => settledExports(page)).toEqual(["download"]);
     expect(downloads.names).toEqual([]);
     expect(errors).toEqual([]);
   });
@@ -306,10 +381,11 @@ test.describe("share and export", () => {
     await gotoHydrated(page, URL);
     await page.getByTestId("chart-copy").click();
     await expect(status(page)).toHaveText("Creating image…");
+    await expect.poll(() => renderStarted(page)).toBe(true);
     await leaveChartPage(page);
     await releaseRender(page);
+    await expect.poll(() => settledExports(page)).toEqual(["copy"]);
     await expect.poll(() => clipboardSettled(page)).toEqual(["rejected"]);
-    await page.waitForTimeout(500);
     expect(await clipboardSettled(page)).toEqual(["rejected"]);
     expect(errors).toEqual([]);
   });

@@ -1,44 +1,47 @@
 import { expect, test } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { gotoHydrated, selectOffense } from "./helpers";
 
 test.describe("Key factors tale of the tape", () => {
-  test("renders five rows, the honest title and the turnover note", async ({ page }) => {
+  test("renders five rows, the honest title and the turnover note, with no aggregate verdict", async ({ page }) => {
     await gotoHydrated(page, "/matchup/1");
     const card = page.getByTestId("tale-of-the-tape");
     await expect(card.getByRole("heading", { name: "Key factors" })).toBeVisible();
-    await expect(card).toContainText("Turnovers are not included yet");
+    await expect(card).toContainText("Turnovers are not included.");
     await expect(card).not.toContainText("Five Factors");
     await expect(card.getByTestId("tape-row")).toHaveCount(5);
     await expect(card).toContainText("20+ yard play rate across all plays");
-    await expect(card.getByTestId("tape-verdict")).toContainText(/Tape Verdict:/);
+    // The redesign removed the aggregate winner verdict; rows only state which unit ranks higher.
+    await expect(card.getByTestId("tape-verdict")).toHaveCount(0);
+    await expect(card).not.toContainText(/Tape Verdict/);
   });
 
-  test("summary exports sit above the unit tables, with Key factors after their notes", async ({ page }) => {
+  test("the share section follows the comparison, notes and full statistics, with Key factors after the notes", async ({ page }) => {
     await gotoHydrated(page, "/matchup/1");
     const summary = page.getByTestId("matchup-summary-header");
-    await expect(summary.getByRole("heading", { name: "Matchup summary", exact: true })).toBeVisible();
+    await expect(summary.getByRole("heading", { name: "Share matchup", exact: true })).toBeVisible();
     await expect(summary.getByTestId("share-controls")).toHaveCount(1);
     await expect(page.getByTestId("game-facts").getByTestId("share-controls")).toHaveCount(0);
     await expect(page.getByTestId("tale-of-the-tape").getByTestId("share-controls")).toHaveCount(0);
-    const order = await page.locator('[data-testid="matchup-summary-header"], [aria-label="Team stats"] table, [data-testid="matchup-notes"], [data-testid="tale-of-the-tape"]').evaluateAll(
+    const order = await page.locator('[data-testid="matchup-summary-header"], table[aria-label*=" Offense vs "], [data-testid="matchup-notes"], [data-testid="tale-of-the-tape"]').evaluateAll(
       (elements) => elements.map((element) => element.getAttribute("data-testid") ?? element.tagName.toLowerCase()),
     );
-    expect(order).toEqual(["matchup-summary-header", "table", "table", "matchup-notes", "tale-of-the-tape"]);
+    expect(order).toEqual(["matchup-notes", "tale-of-the-tape", "table", "matchup-summary-header"]);
   });
 
-  test("the segmented control switches the clash and its verdict", async ({ page }) => {
+  test("the single offense selector switches the clash; the card has no selector of its own", async ({ page }) => {
     await gotoHydrated(page, "/matchup/1");
     const card = page.getByTestId("tale-of-the-tape");
-    const verdict = card.getByTestId("tape-verdict");
-    const radios = card.getByRole("group", { name: "Unit matchup clash" }).getByRole("button");
-    await expect(radios).toHaveCount(2);
-    const before = await verdict.innerText();
-    await radios.nth(1).click();
-    await expect(radios.nth(1)).toHaveAttribute("aria-pressed", "true");
-    // The verdict is recomputed for the other clash.
+    await expect(card.getByRole("group")).toHaveCount(0);
+    await expect(page.getByRole("group", { name: "Offense comparison" })).toHaveCount(1);
+    const awayRows = await card.getByTestId("tape-row").allInnerTexts();
+    const awayHeader = await card.locator("div.border-b").nth(1).innerText();
+    await selectOffense(page, "home");
+    // The rows are recomputed for the other clash (the other team's offense against the first team's defense).
     await expect(async () => {
-      expect(await verdict.innerText()).not.toBe(before);
+      expect(await card.locator("div.border-b").nth(1).innerText()).not.toBe(awayHeader);
+      expect(await card.getByTestId("tape-row").allInnerTexts()).not.toEqual(awayRows);
     }).toPass({ timeout: 5_000 });
+    await expect(card.getByTestId("tape-row")).toHaveCount(5);
   });
 
   test("is absent when lineage mismatches", async ({ page }) => {

@@ -8,7 +8,7 @@ import { PredictionGameCard } from "./PredictionGameCard";
 import { SlateGameRow } from "./SlateGameRow";
 import type { SlateLayout } from "./SlateToolbar";
 
-/** Keep one copy of each game/anchor while adapting a desktop list selection to phone cards. */
+/** One copy of each game/anchor in either layout; the list is compact rows on phones. */
 export function SlateGameList({
   games,
   view,
@@ -18,8 +18,8 @@ export function SlateGameList({
   view: SlateLayout;
   now: Date;
 }) {
-  const desktop = !useIsPhone(true); // the server renders the phone layout
-  const list = view === "list" && desktop;
+  const phone = useIsPhone(true); // the server renders the phone layout
+  const list = view === "list";
   return (
     <ul
       data-layout={list ? "list" : "grid"}
@@ -27,7 +27,7 @@ export function SlateGameList({
       className={list ? "overflow-hidden rounded-xl border border-line bg-surface-card shadow-sm" : "grid gap-3 md:grid-cols-2"}
     >
       {games.map((game) => list ? (
-        <SlateGameRow key={game.gameId} game={game} now={now} />
+        <SlateGameRow key={game.gameId} game={game} now={now} compact={phone} />
       ) : game.publicationMode === "market" ? (
         <MarketGameCard key={game.gameId} game={game} showBetResult={isFinal(game)} now={now} />
       ) : (

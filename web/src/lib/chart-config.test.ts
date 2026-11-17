@@ -26,7 +26,24 @@ import {
   readyKinds,
   RESUME_QUALITY_CONFIG,
   withTeamParam,
+  unhonoredChartNotice,
+  chartEmptyMessage,
 } from "./chart-config.ts";
+
+test("unhonoredChartNotice explains unknown and not-ready charts, and stays quiet otherwise", () => {
+  assert.equal(unhonoredChartNotice(undefined), null);
+  assert.equal(unhonoredChartNotice(""), null);
+  assert.equal(unhonoredChartNotice("efficiency"), null);
+  assert.match(unhonoredChartNotice("bogus")!, /“bogus” is not a chart/);
+  assert.match(unhonoredChartNotice("rating-trajectory")!, /V5 rating trajectory chart is not available yet/);
+  assert.equal(unhonoredChartNotice("constructor")?.includes("not a chart"), true);
+});
+
+test("chartEmptyMessage is specific to the chart", () => {
+  assert.match(chartEmptyMessage("net-success"), /completed games/);
+  assert.match(chartEmptyMessage("market-board"), /market lines/);
+  assert.match(chartEmptyMessage("efficiency"), /^Efficiency vs explosiveness/);
+});
 import type { AdjustedRow, ChartKind } from "./charts.ts";
 
 const roster = [
@@ -92,13 +109,13 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
   assert.equal(parseChartKind("finishing-drives"), "finishing-drives");
   // Hidden from public picker: rating-trajectory, market-board, and resume-quality (retained for research/internal).
   assert.equal(CHART_REGISTRY["rating-trajectory"].ready, false);
-  assert.equal(parseChartKind("rating-trajectory"), "net-success");
+  assert.equal(parseChartKind("rating-trajectory"), "efficiency");
   assert.equal(CHART_REGISTRY["market-board"].ready, false);
-  assert.equal(parseChartKind("market-board"), "net-success");
+  assert.equal(parseChartKind("market-board"), "efficiency");
   assert.equal(CHART_REGISTRY["resume-quality"].ready, false);
-  assert.equal(parseChartKind("resume-quality"), "net-success");
+  assert.equal(parseChartKind("resume-quality"), "efficiency");
   // Removed kinds fall back to the default chart like any unknown name.
-  for (const removed of ["schedule", "trajectory"]) assert.equal(parseChartKind(removed), "net-success", removed);
+  for (const removed of ["schedule", "trajectory"]) assert.equal(parseChartKind(removed), "efficiency", removed);
   assert.deepEqual(pickerGroups().flatMap((group) => group.kinds.map((kind) => CHART_REGISTRY[kind].tabLabel)), [
     "Net success rate",
     "Efficiency vs explosiveness",
@@ -108,10 +125,20 @@ test("registry: every kind is registered; only ready kinds parse and appear in t
     "Finishing drives",
     "Game log",
   ]);
-  assert.equal(parseChartKind("bogus"), "net-success");
-  assert.equal(parseChartKind(undefined), "net-success");
-  assert.equal(parseChartKind(["efficiency"]), "net-success");
-  for (const kind of kinds.filter((k) => !CHART_REGISTRY[k].ready)) assert.equal(parseChartKind(kind), "net-success", kind);
+  // Short picker labels exist only where the full label would clip on a 320px phone, and are always shorter.
+  for (const kind of readyKinds()) {
+    const short = CHART_REGISTRY[kind].shortTabLabel;
+    if (short !== undefined) assert.ok(short.length > 0 && short.length < CHART_REGISTRY[kind].tabLabel.length, kind);
+  }
+  assert.equal(CHART_REGISTRY.efficiency.shortTabLabel, "Explosiveness");
+  for (const side of ["offense", "defense"] as const) {
+    const config = finishingDrivesConfig(side);
+    assert.ok(config.shortXLabel && config.shortXLabel.length < config.xLabel.length, side);
+  }
+  assert.equal(parseChartKind("bogus"), "efficiency");
+  assert.equal(parseChartKind(undefined), "efficiency");
+  assert.equal(parseChartKind(["efficiency"]), "efficiency");
+  for (const kind of kinds.filter((k) => !CHART_REGISTRY[k].ready)) assert.equal(parseChartKind(kind), "efficiency", kind);
   const groups = pickerGroups();
   assert.ok(groups.every((group) => group.kinds.length > 0 && group.kinds.every((kind) => CHART_REGISTRY[kind].ready)));
   assert.equal(groups[0].label, "Games");
@@ -209,12 +236,12 @@ test("downs and finishing drives quadrant names match their positions on both si
   // Defense axes are inverted: up = fewer allowed on y, right = fewer allowed on x.
   const expected = {
     downs: {
-      offense: ["Late-Down Bailouts", "Unstoppable Engine", "Struggling", "On-Schedule Only"],
-      defense: ["Bend, Don't Break", "Suffocating Defense", "Vulnerable", "Stingy Early, Leaky Late"],
+      offense: ["Late-down bailouts", "Unstoppable engine", "Struggling", "On-schedule only"],
+      defense: ["Bend, don't break", "Suffocating defense", "Vulnerable", "Stingy early, leaky late"],
     },
     finishing: {
-      offense: ["Low Volume, High TD Rate", "Elite Finishers", "Struggling Finishers", "Drive Stallers / FG Settlers"],
-      defense: ["Red-Zone Wall", "Lockdown Defense", "Generous Defense", "Stingy Early, Leaky Inside"],
+      offense: ["Fewer opportunities, more points", "More opportunities, more points", "Fewer opportunities, fewer points", "More opportunities, fewer points"],
+      defense: ["More opportunities, fewer points allowed", "Fewer opportunities, fewer points allowed", "More opportunities, more points allowed", "Fewer opportunities, more points allowed"],
     },
   };
   for (const side of ["offense", "defense"] as const) {
@@ -228,14 +255,14 @@ test("downs and finishing drives quadrant names match their positions on both si
   }
 
   const downsDefCaptions = downsConfig("defense").captions;
-  assert.equal(downsDefCaptions.topLeft, "Higher early EPA allowed / Lower conversion allowed");
-  assert.equal(downsDefCaptions.bottomRight, "Lower early EPA allowed / Higher conversion allowed");
+  assert.equal(downsDefCaptions.topLeft, "Higher early PPA allowed / Lower conversion allowed");
+  assert.equal(downsDefCaptions.bottomRight, "Lower early PPA allowed / Higher conversion allowed");
   const finishingDefCaptions = finishingDrivesConfig("defense").captions;
   assert.equal(finishingDefCaptions.topLeft, "Higher opportunity rate allowed / Fewer points allowed per opportunity");
   assert.equal(finishingDefCaptions.bottomRight, "Lower opportunity rate allowed / More points allowed per opportunity");
   const downsOffCaptions = downsConfig("offense").captions;
-  assert.equal(downsOffCaptions.topLeft, "Lower early EPA / Higher conversion");
-  assert.equal(downsOffCaptions.bottomRight, "Higher early EPA / Lower conversion");
+  assert.equal(downsOffCaptions.topLeft, "Lower early PPA / Higher conversion");
+  assert.equal(downsOffCaptions.bottomRight, "Higher early PPA / Lower conversion");
   const finishingOffCaptions = finishingDrivesConfig("offense").captions;
   assert.equal(finishingOffCaptions.topLeft, "Lower opportunity rate / Higher points per opportunity");
   assert.equal(finishingOffCaptions.bottomRight, "Higher opportunity rate / Lower points per opportunity");
@@ -243,7 +270,7 @@ test("downs and finishing drives quadrant names match their positions on both si
 
 test("footnotes: pooled finishing average and cohort-neutral resume rank", () => {
   assert.ok(finishingDrivesConfig("offense").footnote?.includes("pooled over drives for opportunity rate and over scoring opportunities"));
-  assert.ok(downsConfig("offense").footnote?.includes("pooled over plays: early-down plays for EPA, 3rd/4th-down attempts for conversion rate."));
+  assert.ok(downsConfig("offense").footnote?.includes("pooled over plays: early-down plays for PPA, 3rd/4th-down attempts for conversion rate."));
   assert.ok(!RESUME_QUALITY_CONFIG.footnote?.includes("134"));
   assert.equal(RESUME_QUALITY_CONFIG.averageNames.y, "Avg SOR rank");
 });
@@ -251,23 +278,23 @@ test("footnotes: pooled finishing average and cohort-neutral resume rank", () =>
 test("advanced visualization suite configs and formatters", () => {
   const downsOff = downsConfig("offense");
   assert.equal(downsOff.xLabel, "Early Down PPA/play (1st & 2nd)");
-  assert.equal(downsOff.captions.names.topRight, "Unstoppable Engine");
-  assert.equal(downsOff.captions.names.bottomRight, "On-Schedule Only");
+  assert.equal(downsOff.captions.names.topRight, "Unstoppable engine");
+  assert.equal(downsOff.captions.names.bottomRight, "On-schedule only");
 
   const downsDef = downsConfig("defense");
-  assert.equal(downsDef.captions.names.topRight, "Suffocating Defense");
-  assert.equal(downsDef.captions.names.bottomRight, "Stingy Early, Leaky Late");
+  assert.equal(downsDef.captions.names.topRight, "Suffocating defense");
+  assert.equal(downsDef.captions.names.bottomRight, "Stingy early, leaky late");
 
   const finishingOff = finishingDrivesConfig("offense");
   assert.equal(finishingOff.xLabel, "Scoring Opportunity Rate (Drives to Opponent 40)");
   assert.equal(finishingOff.yLabel, "Points per Scoring Opportunity");
-  assert.equal(finishingOff.captions.names.topRight, "Elite Finishers");
-  assert.equal(finishingOff.captions.names.bottomRight, "Drive Stallers / FG Settlers");
+  assert.equal(finishingOff.captions.names.topRight, "More opportunities, more points");
+  assert.equal(finishingOff.captions.names.bottomRight, "More opportunities, fewer points");
 
   const finishingDef = finishingDrivesConfig("defense");
   assert.equal(finishingDef.xLabel, "Scoring Opportunity Rate Allowed");
   assert.equal(finishingDef.yLabel, "Points Allowed per Scoring Opportunity");
-  assert.equal(finishingDef.captions.names.topRight, "Lockdown Defense");
+  assert.equal(finishingDef.captions.names.topRight, "Fewer opportunities, fewer points allowed");
 
   assert.equal(RESUME_QUALITY_CONFIG.captions.names.topRight, "Championship Contenders");
   assert.equal(RESUME_QUALITY_CONFIG.captions.names.bottomRight, "Unlucky / Untested Giants");
@@ -277,7 +304,7 @@ test("advanced visualization suite configs and formatters", () => {
   assert.equal(parseMarketBoardMetric(null), "spread");
 
   const pt = { team: "Georgia", conference: "SEC", x: 0.25, y: 45, n: 100 };
-  assert.match(describeDownsPoint({ ...pt, y: 0.45 }, "offense"), /Georgia \(SEC\): Early-down EPA \+0.250, 3rd\/4th down conv 45.0%/);
+  assert.match(describeDownsPoint({ ...pt, y: 0.45 }, "offense"), /Georgia \(SEC\): Early-down PPA \+0.250, 3rd\/4th down conv 45.0%/);
   assert.match(describeFinishingDrivesPoint({ ...pt, x: 0.25, y: 4.5 }, "offense"), /Georgia \(SEC\): Scoring opportunity rate 25.0%, points per scoring opportunity 4.50/);
   assert.match(describeResumePoint(pt), /Georgia \(SEC\): V5 Rating \+0.25, Strength of Record #45/);
 });

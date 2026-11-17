@@ -2,12 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // The dev server prompts for security upgrades only (the default, pinned explicitly).
+  experimental: { agentUpgrade: "security" },
   turbopack: {
     root: process.cwd(),
   },
-  // 307 first; moves to 308 after the owner accepts. Query strings are forwarded automatically.
+  // Legacy redirects stay 307 until the owner accepts a 308 switch (docs/ops/weekly_runbook.md). Query strings are forwarded automatically.
   async redirects() {
     return [
+      { source: "/ratings", destination: "/teams", permanent: false },
       { source: "/results", destination: "/", permanent: false },
       { source: "/matchup", destination: "/", permanent: false },
       { source: "/performance", destination: "/model", permanent: false },
@@ -18,6 +21,15 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+        ],
+      },
       {
         // Content-addressed by version prefix: bump `v2` to invalidate.
         source: "/logos/v2/:path*",

@@ -25,6 +25,24 @@ export function nextUpcomingGame<T extends { startDate: Date; homePoints: number
 }
 
 /**
+ * Each team's next game id across `weeks` (earliest week first): the first game still upcoming at `now`, by
+ * kickoff within a week. Games that have kicked off or finished are skipped. Inputs are not mutated.
+ */
+export function nextMatchupByTeam(
+  weeks: readonly (readonly { gameId: number; homeTeam: string; awayTeam: string; startDate: Date; homePoints: number | null; awayPoints: number | null }[])[],
+  now: Date,
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const week of weeks) {
+    for (const game of [...week].sort((a, b) => a.startDate.getTime() - b.startDate.getTime())) {
+      if (gameState(game, now) !== "upcoming") continue;
+      for (const team of [game.homeTeam, game.awayTeam]) if (!(team in result)) result[team] = game.gameId;
+    }
+  }
+  return result;
+}
+
+/**
  * What a team page row says about the game, from `team`'s side: "W 59–45" once final, otherwise
  * "Forecast: Rice -3.5 · 54.8", or null when no forecast exists.
  */
@@ -43,10 +61,17 @@ export function forecastLine(game: TeamGameFields): string | null {
   return homeSpreadText(phoneTeamName(game.homeTeam), homeSpreadFromMargin(game.predictedMargin));
 }
 
+/** The forecast as separate parts, line then total: ["Rice -3.5", "54.8"]. Empty when no forecast exists. */
+export function forecastParts(game: TeamGameFields): string[] {
+  const line = forecastLine(game);
+  if (line === null) return [];
+  return game.predictedTotal === null ? [line] : [line, game.predictedTotal.toFixed(1)];
+}
+
 /** The model's line and total: "Rice -3.5 · 54.8". Null when no forecast exists. */
 export function forecastText(game: TeamGameFields): string | null {
-  const line = forecastLine(game);
-  return line === null ? null : `${line}${game.predictedTotal === null ? "" : ` · ${game.predictedTotal.toFixed(1)}`}`;
+  const parts = forecastParts(game);
+  return parts.length === 0 ? null : parts.join(" · ");
 }
 
 /** A game's market lines. Both are null until a provider posts them. */
@@ -55,12 +80,17 @@ export interface TeamGameLines {
   totalLine: number | null;
 }
 
+/** The market line and total as separate parts: ["Rice -3.5", "51.5"], each left out when missing. */
+export function marketParts(game: TeamGameFields & TeamGameLines): string[] {
+  const view = marketSpreadView(game.homeTeam, game.awayTeam, game.homeTeamSpreadLine);
+  return [view === null ? null : spreadLabel(view, phoneTeamName), game.totalLine === null ? null : game.totalLine.toFixed(1)]
+    .filter((part) => part !== null);
+}
+
 /** The market line and total: "Rice -3.5 · 51.5", each part left out when missing; null with neither. */
 export function marketText(game: TeamGameFields & TeamGameLines): string | null {
-  const view = marketSpreadView(game.homeTeam, game.awayTeam, game.homeTeamSpreadLine);
-  const parts = [view === null ? null : spreadLabel(view, phoneTeamName), game.totalLine === null ? null : game.totalLine.toFixed(1)];
-  const text = parts.filter((part) => part !== null).join(" · ");
-  return text === "" ? null : text;
+  const parts = marketParts(game);
+  return parts.length === 0 ? null : parts.join(" · ");
 }
 
 export type BetResult = "W" | "L" | "P";
@@ -199,3 +229,22 @@ export function winPercent(wins: number, losses: number): string | null {
 
 /** "2–3" or "2–3–1" with pushes; the shared wording of the record line. */
 export const recordText = (wins: number, losses: number, pushes = 0) => `${wins}–${losses}${pushes > 0 ? `–${pushes}` : ""}`;
+
+/** One schedule line: a game, or a bye week where the team played no one. */
+export type ScheduleEntry<T> = { kind: "game"; game: T } | { kind: "bye"; week: number };
+
+/**
+ * The games in schedule order with a bye entry at each week number the team skipped between two
+ * consecutive games. Only the rising run of weeks is bridged: a week number that does not rise (the
+ * postseason restarts the count) adds nothing, and weeks before the first or after the last game are
+ * not byes. Byes are display rows only and are never games.
+ */
+export function withByeWeeks<T extends { week: number }>(games: readonly T[]): ScheduleEntry<T>[] {
+  const entries: ScheduleEntry<T>[] = [];
+  games.forEach((game, i) => {
+    const previous = i > 0 ? games[i - 1].week : game.week;
+    for (let week = previous + 1; week < game.week; week++) entries.push({ kind: "bye", week });
+    entries.push({ kind: "game", game });
+  });
+  return entries;
+}

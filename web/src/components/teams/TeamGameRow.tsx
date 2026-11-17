@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import { AwaitingTag } from "@/components/slate/AwaitingTag";
 import { dayShort } from "@/components/slate/format";
@@ -7,6 +8,7 @@ import {
   type TeamGameFields, type TeamGameLines,
 } from "@/lib/team-games";
 import { phoneTeamName } from "@/lib/team-logos";
+import { resolveTeam, teamHref } from "@/lib/team-routes";
 
 export interface TeamGame extends TeamGameFields, TeamGameLines {
   gameId: number;
@@ -40,7 +42,7 @@ export function TeamGameRow({ game, team, now, next = false }: { game: TeamGame;
       <div className="flex items-center gap-2">
         <TeamLogo name={opponent} px={24} />
         <div className="min-w-0 flex-1">
-          <p className={clsx("truncate text-sm font-semibold", final || next ? "text-ink" : "text-ink-muted")}><span className="font-normal text-ink-muted">{home ? "vs" : "at"}</span> {phoneTeamName(opponent)}</p>
+          <p className={clsx("flex items-center gap-1 text-sm font-semibold", final || next ? "text-ink" : "text-ink-muted")}><span className="shrink-0 font-normal text-ink-muted">{home ? "vs" : "at"}</span> {resolveTeam(opponent) ? <Link href={teamHref(opponent)} className="relative z-10 -my-3 flex min-h-11 min-w-0 items-center hover:underline"><span className="truncate">{phoneTeamName(opponent)}</span></Link> : <span className="min-w-0 truncate">{phoneTeamName(opponent)}</span>}</p>
           <p className="text-xs text-ink-muted">Wk {game.week} · {dayShort(game.startDate)}</p>
         </div>
         {result ? <p className="shrink-0 font-mono text-sm font-semibold tabular-nums text-ink">{result}</p> : <AwaitingTag game={game} now={now} className="shrink-0" />}

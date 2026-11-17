@@ -35,6 +35,12 @@ LIVE_NCAAF_ENDPOINT = (
 )
 LIVE_CREDITS_PER_REQUEST = 2  # US region × spreads + totals markets.
 
+MARKET_QUOTES_ENTITY = "market_quotes"
+#: Analysis-only near-kickoff board captures. A distinct Bronze entity (not a label
+#: inside ``market_quotes``) because the revision builders select captures by entity;
+#: nothing selects this one, so it never reaches revisions, inputs or the record.
+NEAR_KICKOFF_ENTITY = "market_quotes_near_kickoff"
+
 
 def estimate_historical_snapshot_requests(
     schedule: pd.DataFrame,
@@ -176,7 +182,7 @@ class TheOddsAPIAdapter:
             return json.loads(response.read().decode("utf-8"))
 
     def _require_authenticated_entity(self, entity: str) -> None:
-        if entity != "market_quotes":
+        if entity not in (MARKET_QUOTES_ENTITY, NEAR_KICKOFF_ENTITY):
             raise SourceError(
                 f"Unsupported The Odds API entity: {entity}",
                 FailureCategory.CONTRACT,

@@ -26,7 +26,7 @@ Set `Status: Draft` until either the user approves the plan or explicitly author
 
 1. Run `git diff --check` and `uv run mkdocs build --quiet` for the documentation-only persistence step.
 2. Create the full planning session log at `session_logs/YYYY-MM-DD/NN-<description>.md`; link the contract instead of duplicating it.
-3. Recommend a separate plan commit for multi-session, asynchronous-review, migration, production, or difficult-to-reverse work. For contained work, record that the plan may be committed with implementation. Never commit automatically.
+3. Recommend a separate plan commit for multi-session, asynchronous-review, migration, production, or difficult-to-reverse work. For contained work, record that the plan may be committed with implementation. A plan may be committed once approved.
 4. End with a copy-ready prompt for a fresh Terra task:
 
 ```text

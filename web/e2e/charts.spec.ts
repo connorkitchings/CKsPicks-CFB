@@ -58,7 +58,7 @@ async function exportPng(page: Page): Promise<{ file: string; report: { logos: n
 
 test.describe("team charts", () => {
   test("net success bars render one bar per game with logos and score labels", async ({ page }) => {
-    await page.goto("/stats");
+    await page.goto("/stats?chart=net-success");
     await expect(page.getByRole("heading", { name: "Team graphs" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
     await expect(page.getByTestId("chart-description")).toHaveText("Each game's winner minus loser success rate, in percentage points.");
@@ -74,12 +74,13 @@ test.describe("team charts", () => {
     await expect(page.locator("main").getByText(/\b[A-Z]{2,6} \d+-\d+\b/).first()).toBeVisible();
   });
 
-  test("hidden charts are absent from the picker and their URLs fall back to net success", async ({ page }) => {
+  test("hidden charts are absent from the picker and their URLs fall back to efficiency", async ({ page }) => {
     // Hidden by `ready: false` in src/lib/chart-config.ts, or removed from the registry.
     for (const hidden of ["schedule", "trajectory", "rating-trajectory"]) {
       await page.goto(`/stats?chart=${hidden}&team=Alabama`);
-      await expect(page.getByRole("heading", { level: 2, name: "Net success rate" })).toBeVisible();
-      await expect(page.getByTestId("net-success-chart")).toBeVisible();
+      await expect(page.getByRole("heading", { level: 2, name: "Efficiency vs explosiveness" })).toBeVisible();
+      await expect(page.getByTestId("scatter-chart")).toBeVisible();
+      await expect(page.getByTestId("net-success-chart")).toHaveCount(0);
       await expect(page.getByTestId("chart-picker").getByRole("link")).toHaveText([
         "Net success rate", "Efficiency vs explosiveness", "Adjusted PPA/play", "Possession efficiency", "Situational downs", "Finishing drives", "Game log",
       ]);
@@ -115,7 +116,7 @@ test.describe("team charts", () => {
     await expect(footnote).toContainText("Yards per successful play is the average yardage");
     const averages = page.getByTestId("average-labels");
     await expect(averages.getByText(/^Avg success rate \d/)).toHaveCount(1);
-    await expect(averages.getByText(/^Avg yards\/success \d/)).toHaveCount(1);
+    await expect(averages.getByText(/^Avg yards per success \d/)).toHaveCount(1);
     await expect(page.getByTestId("direction-caption")).toHaveText("Up and right is better ↗");
     await expect(page.locator("[data-grid='x']").first()).toHaveAttribute("opacity", "0.55");
     await page.goto("/stats?chart=efficiency&week=3&side=defense");
@@ -173,7 +174,7 @@ test.describe("team charts", () => {
   });
 
   test("conference filtering removes excluded points and preserves national geometry", async ({ page }) => {
-    await page.goto("/stats?chart=efficiency&week=3");
+    await gotoHydrated(page, "/stats?chart=efficiency&week=3");
     const marks = page.locator("g[data-team]");
     await expect(marks).toHaveCount(PLOTTED);
     const alabama = page.locator("g[data-team='Alabama'] image").first();
@@ -237,7 +238,9 @@ test.describe("team charts", () => {
     await expect(michigan).toHaveAttribute("aria-pressed", "false");
     await select.selectOption("Michigan");
     await page.getByTestId("conference-filter").selectOption("SEC");
-    await expect(page.getByTestId("highlight-status")).toHaveCount(0);
+    // The selection is retained (not cleared) and explained when the filter hides its point.
+    await expect(page.getByTestId("highlight-status")).toContainText("Michigan");
+    await expect(page.getByText("Michigan: outside the current filter; selection retained.")).toBeVisible();
     await expect(michigan).toHaveCount(0);
   });
 
@@ -307,13 +310,13 @@ test.describe("team charts", () => {
 
   test("a release without chart tables shows the arrival notice, errors show unavailable", async ({ page }) => {
     await page.goto("/stats?fixture=unsupported");
-    await expect(page.getByTestId("charts-notice")).toHaveText("Charts arrive with the next weekly release.");
+    await expect(page.getByTestId("charts-notice")).toContainText("Charts arrive with the next weekly release.");
     await expect(page.getByTestId("net-success-chart")).toHaveCount(0);
     await page.goto("/stats?fixture=error");
-    await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
+    await expect(page.getByTestId("charts-notice")).toContainText("Charts are temporarily unavailable.");
     // A failing adjusted window shows the same card instead of the route error page.
     await page.goto("/stats?chart=adjusted&week=3&fixture=adjusted-error");
-    await expect(page.getByTestId("charts-notice")).toHaveText("Charts are temporarily unavailable.");
+    await expect(page.getByTestId("charts-notice")).toContainText("Charts are temporarily unavailable.");
   });
 
   test("a release without chart tables or a failing query keeps the four-item navigation and the page shell", async ({ page }) => {
@@ -321,7 +324,7 @@ test.describe("team charts", () => {
       const response = await page.goto(`/stats?fixture=${fixture}`);
       expect(response?.status()).toBe(200);
       const nav = page.getByRole("navigation", { name: "Main navigation" });
-      await expect(nav.getByRole("link")).toHaveText(["Games", "Ratings", "Graphs", "Model"]);
+      await expect(nav.getByRole("link")).toHaveText(["Games", "Teams", "Graphs", "Model"]);
       await expect(page.getByRole("heading", { name: "Team graphs", exact: true })).toBeVisible();
       await expect(page.getByTestId("chart-picker")).toHaveCount(0);
     }
@@ -332,14 +335,16 @@ test.describe("team charts", () => {
     for (const chart of ["adjusted", "possession"]) {
       const response = await page.goto(`/stats?chart=${chart}&week=3&fixture=slate`);
       expect(response?.status()).toBe(200);
-      await expect(page.getByTestId("charts-notice")).toHaveText("This chart starts after Week 2 is complete.");
+      await expect(page.getByTestId("charts-notice")).toContainText("Week 3 is not available for this chart.");
+      await page.goto(`/stats?chart=${chart}&fixture=slate`);
+      await expect(page.getByTestId("charts-notice")).toContainText("has no published week to show yet.");
       await expect(page.getByTestId("chart-picker")).toBeVisible();
     }
   });
 
   test("an out-of-range or malformed week is clamped to a stored week and never errors", async ({ page }) => {
     for (const chart of ["net-success", "efficiency", "adjusted", "possession"]) {
-      for (const week of ["99", "-1", "abc", "1.5", "123"]) {
+      for (const week of ["-1", "abc", "1.5"]) {
         const response = await page.goto(`/stats?chart=${chart}&week=${week}&team=Nowhere%20State`);
         expect(response?.status(), `${chart} week=${week}`).toBe(200);
         await expect(page.getByTestId("charts-notice")).toHaveCount(0);
@@ -347,8 +352,20 @@ test.describe("team charts", () => {
         await expect(page.locator("g[data-team][aria-pressed='true']")).toHaveCount(0);
       }
     }
-    // Week 99 is clamped to the latest stored week (Through Week 3 in the fixture).
-    await page.goto("/stats?chart=adjusted&week=99");
+    // (A three-digit week is malformed, so it falls back to the default like "abc".)
+    // A well-formed week that is not stored is never substituted: the page says so and keeps the shell.
+    for (const chart of ["net-success", "efficiency", "adjusted", "possession"]) {
+      for (const week of ["99", "98"]) {
+        const response = await page.goto(`/stats?chart=${chart}&week=${week}&team=Nowhere%20State`);
+        expect(response?.status(), `${chart} week=${week}`).toBe(200);
+        await expect(page.getByTestId("charts-notice")).toContainText(`Week ${week} is not available for this chart.`);
+        await expect(page.getByTestId("charts-notice")).toContainText("no other window has been substituted");
+        await expect(page.getByTestId("chart-picker")).toBeVisible();
+        await expect(page.locator("#week-select")).toHaveCount(0);
+      }
+    }
+    // Without a week the latest stored week (Through Week 3 in the fixture) is the default.
+    await page.goto("/stats?chart=adjusted");
     await expect(page.locator("#week-select")).toHaveValue("3");
   });
 
@@ -388,7 +405,7 @@ test.describe("team charts", () => {
     await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Graphs" })).toBeVisible();
   });
 
-  test("nav shows Graphs and the nav width matches the chart page", async ({ page }) => {
+  test("nav shows Graphs and the nav is left-aligned with the chart page column", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/stats");
     const nav = page.getByRole("navigation", { name: "Main navigation" });
@@ -396,9 +413,11 @@ test.describe("team charts", () => {
     // Styles may still be compiling on the first request; poll until the layout settles.
     await expect
       .poll(async () => {
+        // The redesigned desktop header sits the tab row at the left of the page column, so its
+        // left edge (not its width) is what lines up with the chart page.
         const navBox = await nav.locator("> div").boundingBox();
         const mainBox = await page.locator("main", { has: page.getByRole("heading", { name: "Team graphs" }) }).boundingBox();
-        return Math.abs((navBox?.width ?? 0) - (mainBox?.width ?? 0));
+        return Math.abs((navBox?.x ?? 0) - (mainBox?.x ?? 0));
       })
       .toBeLessThanOrEqual(2);
   });
@@ -433,7 +452,12 @@ test.describe("team charts", () => {
 
   test("net-success export includes exactly the selected group's games", async ({ page }) => {
     await page.goto("/stats?chart=net-success&week=3");
-    await page.getByTestId("conference-filter").selectOption("SEC");
+    // The filter lives in the URL now, so wait for it to be applied (and hydrated) before reading the bars.
+    await expect(async () => {
+      await page.getByTestId("conference-filter").selectOption("SEC");
+      await expect(page).toHaveURL(/conf=SEC/, { timeout: 500 });
+    }).toPass();
+    await expect(page.locator("g[data-game]")).toHaveCount(3);
     const games = await page.locator("g[data-game]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-game")!).sort());
     const { capture } = await exportPng(page);
     expect(capture.games.sort()).toEqual(games);
@@ -474,11 +498,11 @@ test.describe("team charts", () => {
     await expect(page.getByRole("button", { name: "Chart settings", exact: true })).toBeEnabled();
     const mark = page.locator("g[data-team='Boise State']");
     await mark.tap();
-    const details = page.getByTestId("scatter-details");
-    await expect(details).toContainText("Boise State");
-    await details.getByRole("button", { name: "Highlight this team" }).click();
+    // A tap highlights the team and the selection panel shows it (no transient details panel).
     await expect(mark).toHaveAttribute("aria-pressed", "true");
-    await details.getByRole("button", { name: "Remove highlight" }).click();
+    await expect(page.getByTestId("scatter-selection-panel")).toContainText("Boise State");
+    await expect(page.getByTestId("scatter-details")).toHaveCount(0);
+    await mark.tap();
     await expect(mark).toHaveAttribute("aria-pressed", "false");
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
     await context.close();
@@ -507,7 +531,8 @@ test.describe("team charts", () => {
 
   test("export icon buttons are named, show a tooltip on keyboard focus and announce the result", async ({ page }) => {
         await gotoHydrated(page, "/stats?chart=efficiency&week=3");
-    await expect(page.getByRole("button", { name: /table/i })).toHaveCount(0);
+    // Scatter charts now offer an equivalent sortable table behind a single toggle.
+    await expect(page.getByRole("button", { name: /table/i })).toHaveCount(1);
     const download = page.getByRole("button", { name: "Download PNG", exact: true });
     await expect(download).toHaveText("");
     const tooltip = page.getByTestId("chart-download-tooltip");

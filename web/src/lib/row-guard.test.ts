@@ -121,10 +121,12 @@ test("prediction and performance rows allow null leans and grades but not null i
     predictedSpread: null, predictedTotal: null, predictedSpreadStdDev: null, predictedTotalStdDev: null,
     spreadLean: "away", totalLean: null, spreadResult: "win", totalResult: null, highConfidence: true,
     canonicalSpread: null, canonicalTotal: null, spreadGradingVersion: null, totalGradingVersion: null,
+    canonicalSpreadCapturedAt: null, canonicalTotalCapturedAt: null,
   };
   assert.equal(checkRows([detail], PERFORMANCE_DETAIL_SPEC).total, 0);
   const withLines = {
     ...detail, canonicalSpread: -3.5, canonicalTotal: 51,
+    canonicalSpreadCapturedAt: new Date("2026-09-05T18:00:00.000Z"), canonicalTotalCapturedAt: new Date("2026-09-05T18:30:00.000Z"),
     spreadGradingVersion: "model_side_best_quote_v2:retained_prekickoff", totalGradingVersion: "model_side_best_quote_v2:cfbd_retrospective",
   };
   assert.equal(checkRows([withLines], PERFORMANCE_DETAIL_SPEC).total, 0);
@@ -156,6 +158,8 @@ test("the UI-test fixtures satisfy the row contracts (CFB_UI_TEST_MODE=1 stays v
     highConfidence: g.highConfidence,
     canonicalSpread: g.canonicalSpread ?? null,
     canonicalTotal: g.canonicalTotal ?? null,
+    canonicalSpreadCapturedAt: g.canonicalSpreadCapturedAt ?? null,
+    canonicalTotalCapturedAt: g.canonicalTotalCapturedAt ?? null,
     spreadGradingVersion: g.spreadGradingVersion ?? null,
     totalGradingVersion: g.totalGradingVersion ?? null,
   }));

@@ -5,7 +5,7 @@
 - **Planner:** Sol
 - **Approval source:** Pending
 - **Implementation log:** Pending
-- **Commit policy:** Separate plan commit | Commit with implementation
+- **Commit policy:** Commit on local dev as tasks complete (default) | Separate plan commit before implementation
 
 ## Goal and acceptance
 
@@ -25,4 +25,4 @@ List required tests/checks and positive, negative, boundary and recovery scenari
 
 ## Handoff/amendments
 
-State the approval and resume gate, implementation log, user-controlled commit policy and precise next action. Preserve the Sol-to-Terra workflow and separate exact release approvals. A mechanical amendment may proceed only if architecture, interfaces, scope and acceptance remain unchanged; a material conflict returns to Sol for review. Record each amendment's reason, previous approach, revised approach and impact here.
+State the approval and resume gate, implementation log, commit policy and precise next action. Preserve the Sol-to-Terra workflow and separate exact release approvals. A mechanical amendment may proceed only if architecture, interfaces, scope and acceptance remain unchanged; a material conflict returns to Sol for review. Record each amendment's reason, previous approach, revised approach and impact here.

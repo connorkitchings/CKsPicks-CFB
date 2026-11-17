@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { breakEvenBand, breakEvenCaveat, weeklyAndCumulative, type TrendGame } from "./performance-trend.ts";
+import { weeklyAndCumulative, type TrendGame } from "./performance-trend.ts";
 
 const games: TrendGame[] = [
   { week: 0, spreadResult: "win", totalResult: "loss" },
@@ -46,21 +46,4 @@ test("cumulative records add each week to everything before it", () => {
 test("no weeks and no games give no rows and no rates", () => {
   assert.deepEqual(weeklyAndCumulative([], []), []);
   assert.equal(weeklyAndCumulative([], [0])[0].cumulative.combined.winRate, null);
-});
-
-test("the break-even band narrows with sample size", () => {
-  const band = breakEvenBand(559)!;
-  assert.ok(Math.abs(band.low - 48.26) < 0.01, String(band.low));
-  assert.ok(Math.abs(band.high - 56.54) < 0.01, String(band.high));
-  assert.equal(breakEvenBand(0), null);
-  assert.equal(breakEvenBand(-3), null);
-  const small = breakEvenBand(50)!;
-  assert.ok(small.high - small.low > band.high - band.low);
-});
-
-test("the caveat names luck inside the band and the outside range beyond it", () => {
-  assert.match(breakEvenCaveat(50, 559)!, /within normal luck of break-even/);
-  assert.match(breakEvenCaveat(60, 559)!, /outside that range/);
-  assert.equal(breakEvenCaveat(null, 559), null);
-  assert.equal(breakEvenCaveat(55, 0), null);
 });

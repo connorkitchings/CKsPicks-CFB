@@ -33,14 +33,14 @@ export function MobileChartSettings({ children, summary, conference, finder }: {
   return (
     <>
       {!mobile && (
-        <div className="hidden sm:flex flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
+        <div className="hidden sm:flex sm:min-w-0 sm:flex-1 flex-wrap items-center gap-x-2.5 gap-y-2" role="group" aria-label="Chart controls">
           {conference}
           {finder}
           {children}
         </div>
       )}
       <div className="contents sm:hidden" data-testid="mobile-chart-settings">
-        <p className="order-1 min-w-0 flex-1 text-xs leading-relaxed text-ink-muted" data-testid="chart-settings-summary">{summary}</p>
+        <p className="order-1 min-w-0 flex-1 max-[359px]:basis-full text-xs leading-relaxed text-ink-muted" data-testid="chart-settings-summary">{summary}</p>
         {mobile && slot && createPortal(
           <button ref={triggerRef} type="button" aria-haspopup="dialog" aria-label="Chart settings" onClick={open} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-line bg-surface-card px-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-accent">
             <svg aria-hidden viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>

@@ -1,0 +1,68 @@
+name: Near-kickoff capture
+
+# Analysis-only closing-line evidence (contract docs/plans/2026-11-12/01-near-kickoff-line-capture.md).
+# Captures the Odds API board before kickoff into the separate Bronze entity
+# market_quotes_near_kickoff, on Preview storage only. The revision builders never
+# select that entity, so nothing here reaches inputs, grading, the record or the site.
+#
+# Scheduled runs need this file on main AND the repository variable
+# CFB_NEAR_KICKOFF_CAPTURE_ENABLED=true. GitHub schedules are best-effort, so every
+# slot has a primary and a backup; the capture is idempotent per slot (an Eastern
+# kickoff day in Weeks 12 to 15), so the backup skips when the primary succeeded.
+# Crons are UTC and written for Eastern standard time (UTC-5), which holds for all
+# of Weeks 12 to 15. Sunday and Monday are never scheduled (weekly-season-update.yml).
+on:
+  schedule:
+    - cron: "0 14 * * 6" # Saturday 09:00 ET, primary
+    - cron: "15 15 * * 6" # Saturday 10:15 ET, backup
+    - cron: "0 17 * * 2-5" # Tuesday to Friday 12:00 ET, primary (midweek games)
+    - cron: "15 18 * * 2-5" # Tuesday to Friday 13:15 ET, backup
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: near-kickoff-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    # The variable gates only the schedule; a manual dispatch is an explicit owner action.
+    if: github.event_name == 'workflow_dispatch' || vars.CFB_NEAR_KICKOFF_CAPTURE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # PREVIEW_PIPELINE_DATABASE_URL is an environment secret of season-production (runbook step 4).
+    environment: season-production
+    env:
+      # Preview credentials only. No Production secret is referenced.
+      CFB_STORAGE_BACKEND: r2
+      CFB_ARTIFACT_ENV: preview
+      CFB_R2_PREVIEW_BUCKET: ${{ secrets.CFB_R2_PREVIEW_BUCKET }}
+      CFB_R2_PREVIEW_ACCOUNT_ID: ${{ secrets.CFB_R2_PREVIEW_ACCOUNT_ID }}
+      CFB_R2_PREVIEW_ACCESS_KEY: ${{ secrets.CFB_R2_PREVIEW_ACCESS_KEY }}
+      CFB_R2_PREVIEW_SECRET_KEY: ${{ secrets.CFB_R2_PREVIEW_SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.PREVIEW_PIPELINE_DATABASE_URL }}
+      PYTHONPATH: .:src
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Decide slot
+        id: slot
+        run: uv run --frozen python scripts/ops/near_kickoff_slot.py
+      - name: Capture near-kickoff board
+        if: steps.slot.outputs.action == 'capture'
+        env:
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          SLOT_ID: ${{ steps.slot.outputs.slot_id }}
+          WEEK: ${{ steps.slot.outputs.week }}
+        run: |
+          export CFB_INGESTION_RUN_ID="near-kickoff-${SLOT_ID}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          uv run --frozen python scripts/data/fetch_odds_api_market_quotes.py \
+            --year 2026 --week "$WEEK" --near-kickoff --confirm

@@ -11,6 +11,9 @@ const redirects = [
   ["/charts", "/stats"],
   ["/charts?chart=x", "/stats?chart=x"],
   ["/charts/anything?chart=x&team=Alabama", "/stats/anything?chart=x&team=Alabama"],
+  ["/ratings", "/teams"],
+  ["/ratings?sort=sor&dir=asc&q=tex&view=compare", "/teams?sort=sor&dir=asc&q=tex&view=compare"],
+  ["/ratings?team=Texas&team=Ohio%20State", "/teams?team=Texas&team=Ohio%20State"],
 ] as const;
 
 for (const [from, to] of redirects) {
@@ -30,4 +33,12 @@ test("/matchup/:id is not redirected", async ({ request }) => {
 test("/methodology keeps the elite-reference anchor in the browser", async ({ page }) => {
   await page.goto("/methodology#elite-reference");
   await expect(page).toHaveURL(/\/model\/method#elite-reference$/);
+});
+
+test("pages send baseline security headers and cannot be framed", async ({ request }) => {
+  const headers = (await request.get("/")).headers();
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["content-security-policy"]).toBe("frame-ancestors 'none'");
 });

@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { Chevron } from "./Chevron";
+import { isMatchupEnabled } from "@/lib/matchup-gate";
+import { etDateTime } from "@/lib/time-et";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { Header, Footer } from "@/components/Header";
 import { ModelRecord } from "@/components/slate/ModelRecord";
+import { RegularSeasonComplete } from "@/components/slate/RegularSeasonComplete";
 import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
 import { FeaturedGames } from "@/components/slate/FeaturedGames";
 import { ResultHighlights } from "@/components/slate/ResultHighlights";
@@ -33,12 +37,15 @@ export interface SlateViewProps {
   runState?: string | null;
   retrospective?: boolean;
   updatedAt?: Date | null;
+  activatedAt?: Date | null;
   publicationMode: "predictions" | "market";
   allowedSeasons: readonly number[];
   dbError?: string | null;
   retrospectiveRepair?: boolean;
   /** Notice for a display-only run; null when the run is an ordinary one. */
   displayOnlyNotice?: string | null;
+  /** The final regular-season close is live: show the season-complete notice with the final record. */
+  regularSeasonComplete?: boolean;
   initialSort?: SlateSort;
   emptyMessage?: string;
   /** The clock for awaiting-result states; passed down so server and browser render the same text. */
@@ -74,10 +81,12 @@ export function SlateView({
   runState = null,
   retrospective = false,
   updatedAt = null,
+  activatedAt = null,
   publicationMode,
   allowedSeasons,
   dbError = null,
   displayOnlyNotice = null,
+  regularSeasonComplete = false,
   initialSort = "kickoff",
   emptyMessage,
   now,
@@ -95,6 +104,7 @@ export function SlateView({
         systemName={systemName}
         updatedAt={null}
         menuUpdatedAt={updatedAt}
+        updatedLabel="Forecast updated"
         phoneStatus={retrospective}
         publicationMode={publicationMode}
         allowedSeasons={allowedSeasons}
@@ -108,7 +118,7 @@ export function SlateView({
         }
       />
 
-      <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-6xl flex-1 px-4 sm:space-y-4 sm:py-6 ${PHONE_PAGE_RHYTHM}`}>
+      <main id="main-content" tabIndex={-1} className={`mx-auto w-full max-w-[1200px] flex-1 px-4 sm:px-6 sm:space-y-6 sm:py-8 ${PHONE_PAGE_RHYTHM}`}>
         {dbError && (
           <Notice tone="warn">{dbError}</Notice>
         )}
@@ -125,9 +135,9 @@ export function SlateView({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 {/* Phones: the heading is read aloud only; the summary line below is the visible label. */}
-                <h1 className="text-lg font-bold tracking-tight text-ink max-sm:sr-only sm:text-xl">{`Week ${week}`}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{`Week ${week} games`}</h1>
                 {/* With the record card, phones read this line inside the card's summary instead. */}
-                <p className={`text-xs text-ink-muted sm:mt-1 sm:text-sm${showRecord ? " max-sm:sr-only" : ""}`}>
+                <p className="mt-2 text-sm text-ink-muted">
                   <span className="sm:hidden">Week {week} · </span>
                   <span
                     data-testid="week-phase"
@@ -142,20 +152,11 @@ export function SlateView({
               </div>
               {weeks.length > 1 && <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} compact className="max-sm:hidden" />}
             </div>
-            {showRecord && (
-              <ModelRecord
-                phoneHeader={(
-                  <>
-                    Week {week} · <span className="font-semibold">{STATUS_LABEL[status]}</span>
-                    {" · "}{games.length} {games.length === 1 ? "game" : "games"}
-                  </>
-                )}
-                performance={performance}
-                weekNumber={week}
-                week={graded ? weekRecord(games) : undefined}
-                weekPerformance={graded ? weekPerformance : undefined}
-              />
+            {regularSeasonComplete && (
+              <RegularSeasonComplete performance={performance} games={games} />
             )}
+            <p className="max-w-3xl text-sm leading-relaxed text-ink-muted max-sm:hidden">Explore the week’s games, compare football forecasts with market lines, and revisit published results.</p>
+            <p className="text-xs text-ink-muted">{activatedAt ? `Data published ${etDateTime(activatedAt)}. ` : ""}Schedules, lines and results reflect published data; no live score feed.</p>
 
             {displayOnlyNotice && (
               <p
@@ -167,7 +168,6 @@ export function SlateView({
                 {displayOnlyNotice}
               </p>
             )}
-
 
             {games.length === 0 ? (
               <Card padding="none" className="p-8 text-center sm:p-12">
@@ -202,6 +202,7 @@ export function SlateView({
             ) : (
               <SlateList
                 games={games}
+                matchupEnabled={isMatchupEnabled()}
                 roster={roster}
                 initialSort={initialSort}
                 now={now}
@@ -214,6 +215,7 @@ export function SlateView({
                 ) : undefined}
               />
             )}
+            {showRecord && <details className="border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">Season and weekly model record<Chevron /></summary><div className="mt-3"><ModelRecord performance={performance} weekNumber={week} week={graded ? weekRecord(games) : undefined} weekPerformance={graded ? weekPerformance : undefined} /></div></details>}
           </>
         )}
       </main>

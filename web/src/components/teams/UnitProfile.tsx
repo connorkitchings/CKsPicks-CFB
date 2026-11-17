@@ -81,7 +81,7 @@ export function UnitProfile({ rows }: { rows: readonly UnitMatchupRow[] }) {
       </div>
       {more.length > 0 && (
         <details className="mt-3 border-t border-line pt-1" data-testid="unit-full-stats">
-          <summary className="flex min-h-11 cursor-pointer items-center text-[13px] font-semibold text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-9">Full stats ({rows.length})</summary>
+          <summary className="flex min-h-11 cursor-pointer items-center text-[13px] font-semibold text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent pointer-fine:min-h-9">Full stats ({rows.length})</summary>
           <div className="space-y-3 pt-1">
             {UNITS.map((unit) => (
               <div key={unit.role}>

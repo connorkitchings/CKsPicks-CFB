@@ -1,0 +1,45 @@
+# Pre-registered offseason 2027 research protocol.
+# Authority: docs/plans/2026-11-12/02-offseason-research-protocol.md (approved 2026-11-12).
+# Loosening any value requires a dated amendment in that contract; never after a
+# 2026 residual has been viewed.
+# Amendments 7, 9 and 10 (2026-11-15) are recorded in the same contract; none changes
+# a numeric threshold. Amendments 3, 5, 6, 8 and 11 were applied the same day.
+protocol_id: offseason_2027_v1
+comparison_models: [frozen_v5, v5-common]
+# Fitting data may include 2015-2019 and 2021-2025; 2020 is always excluded.
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+headline_seasons: [2022, 2023, 2024, 2025]
+# Amendments 8 and 6 (2026-11-15): population definition, not a threshold change.
+headline_population: fbs_vs_fbs_regular_season
+secondary_population: fbs_vs_fcs_regular_season   # reported separately for every candidate
+postseason: excluded                              # from training, calibration and scoring
+holdout_season: 2026
+holdout_scored_once: true
+holdout_exposure:                                 # amendment 7
+  - date: 2026-11-15
+    scope: weeks 0-6, zero offsets
+    candidates: [baseline, B1s, B3, P1, P2, P3, P4]
+min_earlier_training_seasons_for_selection: 3     # amendment 10
+frozen_candidates:                                # amendment 9
+  - id: p3_fcs_indicator_conference_tier
+    script: p4.py
+    script_sha256: 30438df9d6d4f9357f2e5f401b2f7ba47bd2054e2d616e836a90156a700f8c09
+    forward_test: 2027 regular season, completed-game stages 0-3
+    pass: {mae_gain_min: 0.20, paired_interval_confidence: 0.95, bias_abs_max: 1.0, stage4_mae_worse_max: 0.05}
+# After the 2026 score is recorded, the 2027 model is refit on 2021-2026 (plus the
+# allowed earlier years) without changing any choice made from 2021-2025.
+post_holdout_refit_seasons_end: 2026
+bootstrap_seed: 20260928
+bootstrap_replicates: 2000
+research_prefix: offseason-2027/v1/
+targets: [margin, total]
+metrics: [mae, rmse, bias, gaussian_crps, interval_90_coverage, interval_90_width]
+adoption:
+  paired_interval_confidence: 0.95
+  paired_interval_excludes_zero_on_claimed_target: true
+  max_season_mae_worse_than_v5: 0.10
+  interval_90_coverage_min: 0.87
+  interval_90_coverage_max: 0.93
+  early_weeks_not_worse_than_v5: [0, 1, 2, 3, 4]
+market_reporting: after_football_priorities_frozen   # amendment 5
+offset_rule_2027: serving_offsets_if_available_before_kickoff_else_zero_for_both_arms   # amendment 11, provisional

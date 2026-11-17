@@ -62,9 +62,11 @@ test.describe("phone chart picker", () => {
       await expect(bar.getByTestId("chart-select")).toBeVisible();
       await expect(settings).toBeVisible();
       expect((await settings.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-      // The old heading is screen-reader only on phones.
-      await expect(page.getByRole("heading", { level: 1, name: "Team graphs" })).toBeAttached();
-      expect((await page.getByRole("heading", { level: 1, name: "Team graphs" }).boundingBox())!.width).toBeLessThanOrEqual(1);
+      // The editorial page heading is visible on phones and stays within the viewport.
+      const heading = page.getByRole("heading", { level: 1, name: "Team graphs" });
+      await expect(heading).toBeVisible();
+      const headingBox = (await heading.boundingBox())!;
+      expect(headingBox.x + headingBox.width).toBeLessThanOrEqual(390);
 
       const summary = page.getByTestId("chart-settings-summary");
       await expect(summary).toHaveText(/Week \d+ · /);
@@ -87,7 +89,8 @@ test.describe("phone chart picker", () => {
       const card = page.locator('[data-card]', { has: page.getByTestId("chart-figure") }).first();
       const top = (await card.boundingBox())!.y;
       console.log(`chart card top ${chart}: ${Math.round(top)}px`);
-      expect(top).toBeLessThan(335);
+      // The visible editorial heading adds ~80px over the old screen-reader-only one; the card still starts in the first screen.
+      expect(top).toBeLessThan(420);
 
       // The chart title is screen-reader only; the description and credit sit in "About this chart".
       const chartTitle = page.getByRole("heading", { level: 2, name: title });
@@ -125,7 +128,7 @@ test.describe("phone chart picker", () => {
     await expect(settings).toBeVisible();
     await expect(settings.locator("span")).toBeHidden();
     const card320 = page.locator("[data-card]", { has: page.getByTestId("chart-figure") }).first();
-    expect((await card320.boundingBox())!.y).toBeLessThan(335);
+    expect((await card320.boundingBox())!.y).toBeLessThan(420);
     expect((await settings.boundingBox())!.width).toBeLessThan(60);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     // Icon-only up to 439px; the "Settings" label returns from 440px, still below the 640px phone layout.
@@ -162,6 +165,43 @@ test.describe("phone chart picker", () => {
       expect(fit.text).toBeLessThanOrEqual(fit.room);
     });
   }
+
+  test("at 320px the picker shows short labels unclipped and the summary takes its own row in at most two lines", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await gotoHydrated(page, "/stats?chart=efficiency&week=3");
+    const select = page.getByTestId("chart-select");
+    await expect(select.locator("option:checked")).toHaveText("Explosiveness");
+    for (const [chart, text] of [["efficiency", "Explosiveness"], ["possession", "Possession"]]) {
+      await gotoHydrated(page, `/stats?chart=${chart}&week=3`);
+      await expect(select.locator("option:checked")).toHaveText(text);
+      const fit = await select.evaluate((node: HTMLSelectElement, label: string) => {
+        const style = getComputedStyle(node);
+        const probe = document.createElement("span");
+        probe.textContent = label;
+        Object.assign(probe.style, { font: style.font, position: "absolute", visibility: "hidden", whiteSpace: "nowrap" });
+        document.body.append(probe);
+        const width = probe.getBoundingClientRect().width;
+        probe.remove();
+        const room = node.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 24; // chevron
+        return { scroll: node.scrollWidth <= node.clientWidth, width, room };
+      }, text);
+      expect(fit.scroll).toBe(true);
+      expect(fit.width).toBeLessThanOrEqual(fit.room);
+    }
+    const summary = page.getByTestId("chart-settings-summary");
+    const lines = await summary.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return Math.round(node.getBoundingClientRect().height / parseFloat(style.lineHeight));
+    });
+    expect(lines).toBeLessThanOrEqual(2);
+    // Below 360px the summary owns its row, above the export buttons.
+    const summaryBox = (await summary.boundingBox())!;
+    const exports = (await page.getByRole("group", { name: "Chart display and export" }).boundingBox())!;
+    expect(exports.y).toBeGreaterThanOrEqual(summaryBox.y + summaryBox.height - 1);
+    // Full labels return from 360px; the desktop `tabLabel` is untouched.
+    await page.setViewportSize({ width: 360, height: 844 });
+    await expect(select.locator("option:checked")).toHaveText("Possession efficiency");
+  });
 
   test("at 640px and wider the original chart nav is unchanged", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 800 });

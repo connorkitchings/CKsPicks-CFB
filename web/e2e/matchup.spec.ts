@@ -1,8 +1,11 @@
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { gotoHydrated, sharedFiles, stubWebShare } from "./helpers";
+import { gotoHydrated, openUnitStats, selectOffense, sharedFiles, stubWebShare, unitStats } from "./helpers";
 
 test.describe("matchup page (fixture mode)", () => {
+  // Phone widths imply a touch device: compact sizes are gated on `pointer: fine`.
+  test.use({ hasTouch: true });
+
   test("mismatched publication lineage hides model sections and disables sharing", async ({ page }) => {
     await stubWebShare(page);
     await page.goto("/matchup/987656");
@@ -19,10 +22,13 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("shows both unit tables: 12 grouped metrics, ties, an unranked zero and unranked dashes", async ({ page }) => {
-    await page.goto("/matchup/1");
+    await gotoHydrated(page, "/matchup/1");
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(2);
-    const first = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first();
+    // The full statistics are collapsed until opened, and show only the selected offense's comparison.
+    await expect(unitStats(page).getByRole("table")).toHaveCount(0);
+    await openUnitStats(page);
+    await expect(unitStats(page).getByRole("table")).toHaveCount(1);
+    const first = unitStats(page).getByRole("table").first();
     await expect(first).toHaveAccessibleName(/Offense vs .* Defense/);
     for (const section of ["Core possession efficiency", "Situational / down and distance", "Drive context"]) {
       await expect(first.getByText(section)).toBeVisible();
@@ -35,7 +41,7 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.getByText("Non-offense pts/game")).toHaveCount(0);
     await expect(page.getByText("Plays/possession")).toHaveCount(0);
     await expect(first.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
-    await expect(page.getByText(/FBS opponents only, regulation\s+play, garbage time excluded/)).toBeVisible();
+    await expect(page.getByText(/FBS opponents only; regulation play, garbage time excluded/)).toBeVisible();
     await expect(page.getByText("#null")).toHaveCount(0);
     // Ties show as T-N; unranked rows (no sample or an exact zero) show a dash with a "Not ranked" tooltip.
     await expect(page.getByText(/^T-\d+$/).first()).toBeVisible();
@@ -43,8 +49,9 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("section headers are centered across the table", async ({ page }) => {
-    await page.goto("/matchup/1");
-    const table = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first();
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
+    const table = unitStats(page).getByRole("table").first();
     const tableBox = await table.boundingBox();
     for (const label of ["Core possession efficiency", "Situational / down and distance", "Drive context"]) {
       const header = table.locator("th[scope='rowgroup']", { hasText: label });
@@ -60,8 +67,9 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("an exact zero shows its value but no rank", async ({ page }) => {
-    await page.goto("/matchup/1");
-    const row = page
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
+    const row = unitStats(page)
       .getByRole("table")
       .first()
       .locator("tr", { hasText: "Explosive plays" });
@@ -79,10 +87,11 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("table headers stack the logo above the name above Offense/Defense, centered", async ({ page }) => {
-    await page.goto("/matchup/1");
-    const heads = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first().locator("xpath=ancestor::div[1]").locator("h3");
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
+    const heads = unitStats(page).getByRole("table").first().locator("xpath=ancestor::div[1]").locator("h3");
     await expect(heads).toHaveCount(2);
-    const first = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first().locator("xpath=ancestor::div[1]");
+    const first = unitStats(page).getByRole("table").first().locator("xpath=ancestor::div[1]");
     const block = first.locator("div.flex-col").first();
     const img = await block.locator("img").first().boundingBox();
     const name = await block.locator("h3").boundingBox();
@@ -97,65 +106,61 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(block).toContainText("Offense");
   });
 
-  test("tables sit side by side on desktop with aligned rows, and phones select one unit", async ({ page }) => {
+  test("one selector drives a single unit table at every width, with synchronized section collapse", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/matchup/1");
-    const tables = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table");
-    const a = await tables.nth(0).boundingBox();
-    const b = await tables.nth(1).boundingBox();
-    expect(a && b).toBeTruthy();
-    expect(Math.abs(a!.y - b!.y)).toBeLessThan(2); // same top: side by side
-    expect(b!.x).toBeGreaterThan(a!.x + a!.width - 2);
-    expect(a!.width).toBeGreaterThan(430); // room for values, ranks and metric labels
-    // Rows line up across the two tables (fixed row heights).
-    const ra = await tables.nth(0).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-    const rb = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-    expect(ra).toEqual(rb);
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
+    const tables = unitStats(page).getByRole("table");
+    await expect(tables).toHaveCount(1);
+    const box = await tables.boundingBox();
+    expect(box!.width).toBeGreaterThan(430); // room for values, ranks and metric labels
 
-    // Collapsing a secondary section synchronizes both desktop tables and keeps rows aligned.
-    const sitButton = tables.nth(0).getByRole("button", { name: /Situational \/ down and distance/ });
+    // Collapsing a secondary section hides its rows and the collapse survives switching offenses.
+    const sitButton = tables.getByRole("button", { name: /Situational \/ down and distance/ });
     await expect(sitButton).toHaveAttribute("aria-expanded", "true");
     await sitButton.click();
     await expect(sitButton).toHaveAttribute("aria-expanded", "false");
-    await expect(tables.nth(1).getByRole("button", { name: /Situational \/ down and distance/ })).toHaveAttribute("aria-expanded", "false");
-    await expect(tables.nth(0).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
-    await expect(tables.nth(1).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
-    const raCollapsed = await tables.nth(0).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-    const rbCollapsed = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-    expect(raCollapsed).toEqual(rbCollapsed);
-    await sitButton.click();
-    await expect(sitButton).toHaveAttribute("aria-expanded", "true");
-    await expect(tables.nth(0).locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    const awayName = await tables.getAttribute("aria-label");
+    await selectOffense(page, "home");
+    await expect(tables).not.toHaveAttribute("aria-label", awayName!);
+    await expect(tables.getByRole("button", { name: /Situational \/ down and distance/ })).toHaveAttribute("aria-expanded", "false");
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    await tables.getByRole("button", { name: /Situational \/ down and distance/ }).click();
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+    await selectOffense(page, "away");
+    await expect(tables).toHaveAttribute("aria-label", awayName!);
 
     await page.setViewportSize({ width: 390, height: 900 });
-    await page.goto("/matchup/1");
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(1);
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
     const selectors = page.getByRole("group", { name: "Offense comparison" });
     const away = selectors.getByRole("button").first();
     const home = selectors.getByRole("button").last();
     await expect(away).toHaveAttribute("aria-pressed", "true");
     await expect(home).toHaveAttribute("aria-pressed", "false");
-    const firstName = await page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").getAttribute("aria-label");
-    await home.click();
-    await expect(home).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).not.toHaveAttribute("aria-label", firstName!);
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").locator("thead th")).toHaveCount(3);
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+    const firstName = await tables.getAttribute("aria-label");
+    await selectOffense(page, "home");
+    await expect(away).toHaveAttribute("aria-pressed", "false");
+    await expect(tables).not.toHaveAttribute("aria-label", firstName!);
+    await expect(tables.locator("thead th")).toHaveCount(3);
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
-    // The selected unit survives desktop resizing; both tables appear at 1024.
-    await page.setViewportSize({ width: 1024, height: 900 });
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(2);
-    await expect(selectors).toBeHidden();
-    await page.setViewportSize({ width: 1023, height: 900 });
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(1);
-    await expect(home).toHaveAttribute("aria-pressed", "true");
-    await away.click();
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveAttribute("aria-label", firstName!);
+    // The selection survives resizing, and the selector stays available at every width.
+    for (const width of [1024, 1023]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(tables).toHaveCount(1);
+      await expect(selectors).toBeVisible();
+      await expect(home).toHaveAttribute("aria-pressed", "true");
+    }
+    await selectOffense(page, "away");
+    await expect(tables).toHaveAttribute("aria-label", firstName!);
   });
 
   test("top of the page: records, venue, rating labels, a real Updated time, no duplicate system name", async ({ page }) => {
-    await page.goto("/matchup/1");
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
     const away = page.locator("[data-side='away']");
     await expect(away).toContainText(/Away · \d+-\d+/);
     await expect(page.locator("[data-side='home']")).toContainText(/Home · \d+-\d+/);
@@ -164,17 +169,17 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(away).not.toContainText("Model Offense");
     await expect(away).not.toContainText("V5 rank");
     await expect(page.locator("[data-side]").getByText(/Rating [+−]\d/)).toHaveCount(0);
-    const first = page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first().locator("xpath=ancestor::div[1]");
+    const first = unitStats(page).getByRole("table").first().locator("xpath=ancestor::div[1]");
     await expect(first.getByTestId("unit-offense-rank")).toHaveText(/^Model Offense Rank\s*#\d+$/);
     await expect(first.getByTestId("unit-defense-rank")).toHaveText(/^Model Defense Rank\s*#\d+$/);
-    await expect(page.getByTestId("unit-offense-rank")).toHaveCount(2);
-    await expect(page.getByTestId("unit-defense-rank")).toHaveCount(2);
+    await expect(page.getByTestId("unit-offense-rank")).toHaveCount(1);
+    await expect(page.getByTestId("unit-defense-rank")).toHaveCount(1);
     const facts = page.getByTestId("game-facts");
     await expect(facts).toContainText(/, [A-Z]{2}|Neutral site/); // venue
     await expect(facts).not.toContainText("Blitzkrieg");
-    // The header's Updated time is the forecast update, not the kickoff.
-    const header = await page.locator("header").innerText();
-    expect(header).toMatch(/Updated Sep (29|30)/);
+    // The forecast update time is stated in the data context (the app bar no longer repeats it), and it is not the kickoff.
+    await expect(page.getByLabel("Data context")).toContainText(/Forecast updated Sep (29|30)/);
+    await expect(page.getByLabel("Data context")).toContainText("not a live feed");
     await expect(page.locator("#matchup-header")).toHaveText(/ at /);
     await expect(page.locator("#matchup-header")).toHaveClass(/sr-only/);
     // The forecast box shows market and model lines only; no model-minus-market edge numbers.
@@ -188,30 +193,27 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(grid.getByText("Total", { exact: true })).toBeVisible();
     await expect(grid.getByText("DraftKings", { exact: true })).toBeVisible();
     await expect(grid.getByText("Bovada", { exact: true })).toBeVisible();
-    // Explanations and legends live below the tables, not above them.
-    const lastTable = await page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").last().boundingBox();
+    // The notes explain the offense-versus-defense comparison, which comes before the collapsed full statistics.
     const notes = await page.getByTestId("matchup-notes").boundingBox();
-    expect(notes!.y).toBeGreaterThan(lastTable!.y + lastTable!.height - 2);
-    // Notes: the coverage line, then the ranks line on its own line; no "before this game".
-    const noteLines = page.getByTestId("matchup-notes").locator("p");
-    await expect(noteLines).toHaveCount(2);
-    await expect(noteLines.nth(0)).toHaveText(/^Stats through Week \d+\. FBS opponents only, regulation play, garbage time excluded; raw, not opponent-adjusted\. Defense columns show what that defense allowed\.$/);
-    await expect(noteLines.nth(1)).toHaveText(/^Ranks are among \d+ teams; T = tied\.$/);
+    const statsBox = await unitStats(page).boundingBox();
+    expect(notes!.y + notes!.height).toBeLessThanOrEqual(statsBox!.y + 2);
+    // Coverage, the allowed-defense convention and the rank cohort in one note; no "before this game".
+    await expect(page.getByTestId("matchup-notes")).toHaveText(/^Statistics through Week \d+\. FBS opponents only; regulation play, garbage time excluded; raw, not opponent-adjusted\. Defense values are allowed\. Ranks among \d+ teams; T = tied\.$/);
     await expect(page.getByText("before this game")).toHaveCount(0);
     // One way back at the bottom (the top already has "← Week N games").
     await expect(page.getByRole("link", { name: /^Return to Week/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /^← Week \d+ games$/ })).toHaveAttribute("href", /^\/\?week=\d+$/);
     await expect(page.getByRole("link", { name: /^All Week \d+ games$/ })).toBeVisible();
 
-    await expect(page).toHaveTitle(/ at .* · Matchup/);
+    await expect(page).toHaveTitle(/^.+ at .+ · Stratum CFB$/);
   });
 
   test("loaded matchups fit phones and tablets with teams above forecasts, and between them from lg", async ({ page }) => {
     for (const width of [320, 360, 390, 430, 639, 640, 768, 1024, 1280]) {
       await page.setViewportSize({ width, height: 844 });
       await page.goto("/matchup/1");
-      // Unit tables sit side by side from md; the first one is always present.
-      await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table").first()).toBeVisible();
+      // The offense-versus-defense comparison is always present; the full tables are collapsed.
+      await expect(page.getByTestId("tale-of-the-tape")).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       const { away, home, forecast } = await page.evaluate(() => {
         const box = (selector: string) => {
@@ -263,7 +265,10 @@ test.describe("matchup page (fixture mode)", () => {
     await page.goto("/matchup/101");
     await expect(page.locator("[data-side=away]")).toContainText("Final Score");
     await expect(page.locator("[data-side=home]")).toContainText("Final Score");
-    await expect(page.getByTestId("forecast-grid")).toContainText("Model Bet");
+    await expect(page.getByTestId("forecast-grid")).toContainText("Model lean");
+    await expect(page.getByTestId("forecast-grid")).not.toContainText("Model Bet");
+    // Completed matchups keep frozen pregame evidence and say so.
+    await expect(page.getByText(/frozen pregame context, not an actual-game statistical breakdown/)).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.goto("/matchup/7");
     await expect(page.getByTestId("forecast-grid")).toContainText("—");
@@ -275,10 +280,23 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     // Unknown ids render the 404 page.
     await page.goto("/matchup/987654");
-    await expect(page.getByText("This page could not be found")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Team stats" })).toHaveCount(0);
     await page.goto("/matchup/abc");
-    await expect(page.getByText("This page could not be found")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+  });
+
+  test("the 404 page keeps the site header and the dark theme, with tappable links", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("theme", "dark"));
+    await page.goto("/teams/Not_A_Team");
+    await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
+    await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+    await expect(page.getByTestId("app-bar-title")).toHaveText("Page not found");
+    for (const name of ["Games", "Teams"]) {
+      const link = page.getByRole("navigation", { name: "Where to go next" }).getByRole("link", { name, exact: true });
+      await expect(link).toBeVisible();
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
   });
 
   test("unknown and invalid game ids return HTTP 404; known games return 200", async ({ request }) => {
@@ -291,7 +309,7 @@ test.describe("matchup page (fixture mode)", () => {
 
   test("the Games week view lists the week's games and links to each breakdown", async ({ page }) => {
     await page.goto("/?week=5");
-    await expect(page.getByRole("heading", { name: "Week 5", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Week 5 games", exact: true })).toBeVisible();
     await expect(page.locator("#week-select")).toHaveValue("5");
     const links = page.locator("a[href^='/matchup/']");
     expect(await links.count()).toBeGreaterThan(3);
@@ -299,7 +317,7 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page).toHaveURL(/\/matchup\/\d+$/);
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
     await page.getByRole("link", { name: /All Week \d+ games/ }).click();
-    await expect(page).toHaveURL(/\/\?week=\d+$/);
+    await expect(page).toHaveURL(/\/\?week=\d+&status=all$/);
   });
 
   test("the Games week view fits a phone", async ({ page }) => {
@@ -308,7 +326,7 @@ test.describe("matchup page (fixture mode)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test("game cards carry a Matchup button that opens the breakdown; team names link from ratings and matchup pages but not slate cards", async ({ page }) => {
+  test("game cards carry a Matchup button that opens the breakdown; team names link from Teams and matchup pages but not slate cards", async ({ page }) => {
     await page.goto("/");
     const home = page.getByTestId("matchup-link");
     expect(await home.count()).toBeGreaterThanOrEqual(1);
@@ -329,7 +347,7 @@ test.describe("matchup page (fixture mode)", () => {
     await page.goto("/?week=4");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThanOrEqual(1);
     expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
-    await page.goto("/ratings");
+    await page.goto("/teams");
     expect(await page.locator("a[href^='/teams/']").count()).toBeGreaterThan(0);
   });
 
@@ -341,7 +359,7 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("no page footer shows a GitHub source link", async ({ page }) => {
-    for (const url of ["/", "/?week=4", "/ratings", "/model", "/matchup/1", "/model/method"]) {
+    for (const url of ["/", "/?week=4", "/teams", "/model", "/matchup/1", "/model/method"]) {
       await page.goto(url);
       await expect(page.locator("a[href*='github.com']")).toHaveCount(0);
       await expect(page.locator("footer")).toHaveCount(1);
@@ -415,8 +433,9 @@ test.describe("matchup page (fixture mode)", () => {
   });
 
   test("share: the card is not part of the page until used, and the page tables are unchanged", async ({ page }) => {
-    await page.goto("/matchup/1");
-    await expect(page.getByRole("region", { name: "Team stats", exact: true }).getByRole("table")).toHaveCount(2);
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
+    await expect(unitStats(page).getByRole("table")).toHaveCount(1);
     await expect(page.getByTestId("share-card")).toHaveCount(0);
     await expect(page.getByText("Biggest mismatches")).toHaveCount(0);
   });

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { expect, test } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { gotoHydrated, openTable } from "./helpers";
 
 test.describe("team game log", () => {
   test("shows the whole release, weekly references, and national ranks", async ({ page }) => {
@@ -50,6 +50,14 @@ test.describe("team game log", () => {
     await expect(footnote).not.toContainText("Success rate is the share");
   });
 
+  test("legend explains the shaded loss column and the table lists one row per game", async ({ page }) => {
+    await gotoHydrated(page, "/stats?chart=game-log&team=alabama&week=0");
+    await expect(page.getByTestId("game-log-legend")).toContainText("Shaded column: loss");
+    await expect(page.getByTestId("table-toggle")).toHaveCount(1);
+    await openTable(page);
+    await expect(page.getByTestId("chart-table").locator("tbody tr")).toHaveCount(4);
+  });
+
   test("both panels draw at one pixels-per-unit scale, each fitted to its own values", async ({ page }) => {
     for (const metric of ["success", "ppa"]) {
       await page.goto(`/stats?chart=game-log&team=alabama&week=0&metric=${metric}`);
@@ -85,7 +93,7 @@ test.describe("team game log", () => {
     const picker = page.getByRole("combobox", { name: "Highlight a team" });
     await picker.fill("Wyoming");
     await picker.press("Enter");
-    await expect(page.getByTestId("chart-empty")).toHaveText("Wyoming has no FBS games in this release yet.");
+    await expect(page.getByTestId("chart-empty")).toContainText("Wyoming has no FBS games in this release yet.");
     await expect(page.getByTestId("chart-download")).toHaveCount(0);
     await expect(page).toHaveURL(/team=wyoming/i);
   });

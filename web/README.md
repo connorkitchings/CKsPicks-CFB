@@ -8,7 +8,7 @@ Public identity is centralized in `src/lib/brand.ts`; the outlined wordmark and 
 
 ## Current boundary
 
-V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves the Games, Ratings, Graphs and Model tabs and `/api/health` to the same atomic release. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
+V5 Blitzkrieg is the only operational model. The active `season_releases` context resolves the Games, Teams, Graphs and Model tabs and `/api/health` to the same atomic release. Legacy reads remain only when no season release is active. Rollback reactivates a prior verified V5 release; V4 is [historical evidence](../docs/modeling/v4_retrospective.md). Research requires separate promotion before altering serving or publication.
 
 Current release IDs and week state belong in [`docs/status.md`](../docs/status.md). Follow the [weekly runbook](../docs/ops/weekly_runbook.md) for revision, prepare, Preview rehearsal, owner-approved Production release and rollback.
 
@@ -37,7 +37,7 @@ Below Team stats (only when lineage is ready and stats are present), the matchup
 
 ## Graphs (`/stats`)
 
-Graphs (`/stats`) is public alongside Games, Ratings and Model. Legacy `/charts` URLs redirect to `/stats` with a 307. Mobile navigation has four equal items (`grid-cols-4`).
+Graphs (`/stats`) is public alongside Games, Teams and Model. Legacy `/charts` URLs redirect to `/stats` with a 307. Mobile navigation has four equal items (`grid-cols-4`).
 
 Run these from the repository root:
 
@@ -61,27 +61,36 @@ Use the explicit Preview migration command in the
 `make contracts-check`; `contracts/schema.ts` is canonical and the web copy
 must remain synchronized.
 
+## Versioning
+
+The site uses semantic versioning, recorded in `web/package.json` (mirrored in `pyproject.toml`); the footer and `/api/health` (`appVersion`) read it. Major for a redesign, minor for a new feature, patch for a fix. Weekly data releases never bump it. Add each change to `CHANGELOG.md`. After a release PR merges, the owner tags it: `git tag -a v2.0.0 <merge-commit> -m "Stratum CFB 2.0.0"`, `git tag -a v1.0.0 86c16f66 -m "Stratum CFB 1.0.0 (four-tab site)"`, then `git push origin v1.0.0 v2.0.0`.
+
 ## Routes and feature flags
 
 | Route | Status |
 |---|---|
-| `/` (Games), `/ratings`, `/stats`, `/model`, `/model/method`, `/teams/[team]` | Public |
+| `/` (Games), `/teams`, `/stats`, `/model`, `/model/method`, `/teams/[team]` | Public |
+| `/ratings` | Permanent redirect to `/teams`, preserving query parameters |
 | `/results`, `/matchup` | Redirect to `/` |
 | `/performance`, `/methodology` | Redirect to `/model` and `/model/method` |
 | `/charts`, `/charts/...` | Redirect to `/stats` |
-| `/matchup/[gameId]` | The pre-game breakdown. Full-time public feature on the site (open in production and dev, emergency-disabled only if `CFB_MATCHUP_ENABLED=0`); always `noindex`. Game cards on Games show a **Matchup** button linking to each breakdown. The breakdown shows 12 raw metrics in three sections (the two tables sit side by side from `lg` up; smaller screens select one team’s offense at a time, with values and ranks paired in three columns on phones, in a `max-w-5xl` container); tied national ranks read `T-N`, an exact zero is shown without a rank, and PPA values are CFBD's predicted points added (labelled PPA, not EPA). The top card groups both teams together above a full-width Forecast & Lines grid (Spread and Total columns: Market, Model, Model Bet). A per-row edge calculation (offense rank against the opposing defense's rank) exists in `team-stats.ts` but is not drawn on the page; the explanatory notes sit below the tables, followed by the Key factors comparison card. **Share:** the **Matchup summary** row immediately above the unit-stat tables offers *Download PNG* (plus *Copy image* or *Share* where the browser supports them): `ShareCard` is a fixed 1080x1350 always-dark card (literal colors, dark logo variants via `logoSrc`, Eastern kickoff time) rasterized at 2x by `html-to-image`; it is mounted only while an image is being made, excludes the Key factors bars and verdict, uses the shared green–amber–red rank-chip scale with a fixed dark palette, and carries a "Biggest mismatches" box per panel (`topMismatches` in `team-stats.ts`) and a footnote when any value shows "—". Team names are plain text everywhere: team pages are not linked (the `/teams/[team]` route still exists but nothing links to it). Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
+| `/matchup/[gameId]` | Public pregame breakdown (emergency opt-out: `CFB_MATCHUP_ENABLED=0`), always `noindex`. Forecast and market overview, deterministic facts, one shared offense selector, contextual unit measurements, validated rating evidence, and sharing controls. Completed games preserve frozen pregame context alongside the final outcome. |
 
-## Mobile presentation
+## Analytical navigation and presentation
 
-Games uses compact game cards on phones, with visible spread/total records and collapsed Best Bets or Highlights. Game details expose the full forecast, line source, venue and applicable grading explanation. The grid/list choice remains available from 640 px; choosing a desktop list still renders cards on a phone without duplicating game anchors.
+The editorial interface uses Games / Teams / Graphs / Model, with global team search, a common analysis canvas, light/dark themes, and persistent phone navigation. The [implementation contract](../docs/plans/2026-11-15/site-redesign-and-analytical-usability.md) records scope and validation state.
 
-Ratings emphasizes the selected Overall, Offense or Defense value. The phone period selector and desktop timeline preserve live search and sort when navigating between frozen periods; filtering retains national rank. Overall uncertainty stays explicitly labeled.
+Games offers Today / Upcoming / Results / All, card/list layouts and model-versus-market comparison. Upcoming and awaiting-published-result states use the existing Eastern-time rules; the site is not a live scoreboard. The Model vs market view shows spread and total together, side by side on larger screens and stacked on phones, with separate coverage and point scales. Point differences are descriptive comparisons. Line-capture timestamps remain in serving provenance but are hidden in the interface. Forecast updates and release activation are distinct timestamps.
 
-Matchup pages show both teams together with forecasts below them. Below 1024 px, the offense selector switches between the two comparisons; larger screens show both. Share-image data and fixed export dimensions remain unchanged.
+Teams (`/teams`) combines Rankings, Trends, Strength vs résumé and two-team Compare. All views use the same exact certified period. National competition ranks are independent of filtering and sort direction; weekly movement requires the preceding certified week. Profiles connect schedules, component trajectories, comparisons and validated rating evidence.
 
-Model (`/model`) leads with separate spread and total records, with season diagnostics expandable; `/model/method` explains the method.
+Graphs is for football measurements. It defaults to Efficiency vs explosiveness, offers persistent team details and equivalent sortable tables, and preserves filters in shareable URLs. Explicit unavailable views retain their requested context and explain coverage without substituting data.
 
-Shared controls use generous touch targets, and the bottom navigation reserves device safe-area space. The mobile implementation contract is [Mobile web experience](../docs/plans/2026-10-18/04-mobile-web-experience.md).
+Matchup pages lead with forecasts and concise facts, then offense-versus-defense comparisons and rating evidence. A single comparison selection governs related tables and exports. Full tables remain available as detail. Raw-to-adjusted explanations reuse verified rating components, rather than combining incompatible statistical windows.
+
+Model leads with separate spread/total records and paired pre-kickoff market comparisons, followed by trends and game-level errors. The error scatter compares model and retained-market absolute errors on the same eligible games. Weekly summaries initially show the latest four periods, with the full archive expandable. `/model/method` explains the method and evidence limits.
+
+All new views preserve publication and lineage safeguards. Public forecast ranges, pace, turnovers and detailed actual-game postgame analysis are deferred. Shared controls remain keyboard accessible and phone layouts reserve safe-area space.
 
 Fixture mode: `CFB_UI_TEST_MODE=1` serves sample data (no database) for the
 Games slates, the matchup page and the Playwright suite. Optional tables

@@ -59,7 +59,8 @@ def test_current_guide_records_model_completion_and_live_release():
         assert required in text
     assert "do not establish superiority over v4" in text
     assert "not the weekly operational path" in text
-    assert "pending activation" in text
+    assert "cfbd retrospective lines" in text
+    assert "pending activation" not in text
     assert "no prospective production activation" not in text
 
 

@@ -202,6 +202,8 @@ export const PERFORMANCE_DETAIL_SPEC: RowSpec = {
   highConfidence: { kind: "boolean" },
   canonicalSpread: OPTIONAL_NUMBER,
   canonicalTotal: OPTIONAL_NUMBER,
+  canonicalSpreadCapturedAt: { kind: "date", nullable: true },
+  canonicalTotalCapturedAt: { kind: "date", nullable: true },
   spreadGradingVersion: { kind: "string", nullable: true },
   totalGradingVersion: { kind: "string", nullable: true },
 };

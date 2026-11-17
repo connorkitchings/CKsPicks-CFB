@@ -3,7 +3,7 @@ import { gotoHydrated } from "./helpers";
 
 const PAGES = [
   ["Games", "/"],
-  ["Ratings", "/ratings"],
+  ["Teams", "/teams"],
   ["Graphs", "/stats?chart=efficiency&week=3"],
   ["Model", "/model"],
   ["Matchup", "/matchup/1"],
@@ -49,7 +49,8 @@ for (const viewport of VIEWPORTS) {
       const sheets: [url: string, trigger: string, dialog: string][] = [
         ["/", "app-menu-button", "app-menu-dialog"],
         ["/", "slate-filters-button", "slate-filters-dialog"],
-        ["/ratings", "ratings-filters-button", "ratings-filters-dialog"],
+        // Teams keeps its search, conference and sort controls inline (no phone filter sheet); the page-wide
+        // 44px check above covers them.
         ["/stats?chart=efficiency&week=3", "app-menu-button", "app-menu-dialog"],
       ];
       for (const [url, trigger, dialog] of sheets) {
@@ -75,7 +76,8 @@ for (const viewport of VIEWPORTS) {
           const box = main.getBoundingClientRect();
           const style = getComputedStyle(main);
           const firstChild = [...main.children].find((child) => getComputedStyle(child).position !== "absolute")!;
-          const firstCard = main.querySelector("[data-card]")!.getBoundingClientRect();
+          // Teams is a table-led page without a card, so its first section stands in.
+          const firstCard = (main.querySelector("[data-card]") ?? firstChild).getBoundingClientRect();
           return {
             left: box.left,
             width: box.width,
@@ -95,9 +97,10 @@ for (const viewport of VIEWPORTS) {
           width: viewport.width,
           paddingLeft: "16px",
           paddingRight: "16px",
-          paddingTop: "8px",
-          paddingBottom: "16px",
-          sectionGap: 8,
+          // The editorial shell's shared phone rhythm (PHONE_PAGE_RHYTHM: pt-5 pb-8, 24px between sections).
+          paddingTop: "20px",
+          paddingBottom: "32px",
+          sectionGap: 24,
           firstCardLeft: 16,
         });
       }
@@ -136,7 +139,7 @@ test.describe("press feedback and reduced motion", () => {
 
   test("a pressed control is untouched from 640px up", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 800 });
-    await gotoHydrated(page, "/ratings");
+    await gotoHydrated(page, "/teams");
     const state = await pressed(page, 'a[href^="/teams/"]:visible');
     expect(state).toEqual({ opacity: "1", transform: "none" });
   });

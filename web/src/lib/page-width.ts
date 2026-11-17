@@ -1,8 +1,8 @@
 /** Page container widths, defined once. Values are full class names so Tailwind can see them. */
 export const PAGE_WIDTHS = {
-  slate: "max-w-6xl",
-  wide: "max-w-5xl",
-  narrow: "max-w-4xl",
+  slate: "max-w-[1200px]",
+  wide: "max-w-[1200px]",
+  narrow: "max-w-[760px]",
 } as const;
 
 /**
@@ -11,7 +11,7 @@ export const PAGE_WIDTHS = {
  * its own desktop values with `sm:` classes; pages that lay sections out with `gap` use the same
  * three values.
  */
-export const PHONE_PAGE_RHYTHM = "space-y-2 pt-2 pb-4";
+export const PHONE_PAGE_RHYTHM = "space-y-6 pt-5 pb-8";
 
 export type PageWidth = keyof typeof PAGE_WIDTHS;
 

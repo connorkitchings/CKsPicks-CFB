@@ -160,7 +160,7 @@ function ReadyBody({ unit }: { unit: ReadyUnit }) {
 }
 
 /** Two cards per column, paired like the unit comparisons above: an offense and the defense it faces. */
-export function RatingBreakdown({ awayTeam, homeTeam, breakdown }: { awayTeam: string; homeTeam: string; breakdown: Breakdown }) {
+export function RatingBreakdown({ awayTeam, homeTeam, breakdown, selectedSide }: { awayTeam: string; homeTeam: string; breakdown: Breakdown; selectedSide?: "away" | "home" }) {
   return (
     <section aria-labelledby="rating-breakdown-heading" className="space-y-3">
       <SectionHeading id="rating-breakdown-heading">How the ratings are built</SectionHeading>
@@ -168,15 +168,19 @@ export function RatingBreakdown({ awayTeam, homeTeam, breakdown }: { awayTeam: s
         Each rating measures one thing: points scored (or allowed) per possession, adjusted for the strength of opponents.
         The Team stats tables above are shown for context and do not feed the rating. 0 is an average team and higher is
         better, including defense (allowing fewer points gives a higher rating); the preseason estimate counts for less as
-        games are played (see the <Link href="/model/method#prior" className="underline hover:text-accent-ink">prior</Link> and{" "}
-        <Link href="/model/method#updates" className="underline hover:text-accent-ink">updates</Link> methods).
+        games are played.
+      </p>
+      <p className="flex flex-wrap gap-x-4 text-xs text-ink-muted">
+        Methods:
+        <Link href="/model/method#prior" className="inline-flex min-h-11 items-center underline hover:text-accent-ink">Preseason prior</Link>
+        <Link href="/model/method#updates" className="inline-flex min-h-11 items-center underline hover:text-accent-ink">In-season updates</Link>
       </p>
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4" hidden={selectedSide === "home"}>
           <UnitCard team={awayTeam} unit={breakdown.awayOffense} />
           <UnitCard team={homeTeam} unit={breakdown.homeDefense} />
         </div>
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-4" hidden={selectedSide === "away"}>
           <UnitCard team={homeTeam} unit={breakdown.homeOffense} />
           <UnitCard team={awayTeam} unit={breakdown.awayDefense} />
         </div>

@@ -6,7 +6,7 @@ import { v5RatingFixture } from "./publication";
 /**
  * Texas, the one fixture team with a full team page: a 4-0 start with lines, graded results and
  * two games ahead (Week 4 at Ohio State is next). Spreads, totals and results are chosen so every
- * market outcome appears (ATS 2-1-1, O/U 1-3) and the model cases hit, miss, push, no pick (Week 2, no forecast) and no line (Week 5, upcoming): model ATS 1-1-1, O/U 1-2, winner 2-1.
+ * market outcome appears (ATS 2-1-1, O/U 1-3) and the model cases hit, miss, push, no pick (Week 2, no forecast) and no line (Week 6, upcoming, after a Week 5 bye): model ATS 1-1-1, O/U 1-2, winner 2-1.
  */
 type FixtureGame = Awaited<ReturnType<typeof getTeamGames>>[number];
 
@@ -21,7 +21,7 @@ export const texasGamesFixture: FixtureGame[] = [
   game(4, 2, "Texas", "Alabama", { homeTeamSpreadLine: -7, totalLine: 55, predictedMargin: null, predictedTotal: null, homePoints: 35, awayPoints: 17 }),
   game(5, 3, "LSU", "Texas", { homeTeamSpreadLine: 3, totalLine: 56.5, predictedMargin: 1, predictedTotal: 57.2, homePoints: 27, awayPoints: 30 }),
   game(2, 4, "Ohio State", "Texas", { homeTeamSpreadLine: -7, totalLine: 55.5, predictedMargin: 6.2, predictedTotal: 54.84, homePoints: null, awayPoints: null }),
-  game(6, 5, "Texas", "Rice", { homeTeamSpreadLine: null, totalLine: null, predictedMargin: 9.8, predictedTotal: 50.2, homePoints: null, awayPoints: null }),
+  game(6, 6, "Texas", "Rice", { homeTeamSpreadLine: null, totalLine: null, predictedMargin: 9.8, predictedTotal: 50.2, homePoints: null, awayPoints: null }),
 ];
 
 /** Texas's four charted team-games, matching the played rows of `texasGamesFixture`. */

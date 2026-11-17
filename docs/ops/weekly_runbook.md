@@ -58,7 +58,8 @@ Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actio
 **Schedule (primary slots at 17:07 UTC, which is 13:07 ET in daylight time and 12:07 ET in standard time; backup slots at 22:37 UTC the same day):**
 
 - Sunday: close the completed week and open the next (the full cadence below: capture, build, score exceptions, prepare, parity, Preview release, Production release, live health probe).
-- Monday: market-only line refresh for the active week, only when the active release has fewer than 100% of games lined. It stops without releasing when coverage did not improve.
+- Monday: market refresh for the active week. It runs when the active release has fewer than 100% of games lined, or when the active release holds placeholder kickoff times (midnight Eastern, the provider's "time not announced") and the provider now shows a real time for at least one of them, even if the week is fully lined. It skips when the first kickoff has passed, or when the week is fully lined and every placeholder is still unannounced. Without a schedule refresh it stops without releasing when coverage did not improve.
+- Monday kickoff-time refresh: when announced times are the reason to run, the controller first runs `python -m cks_picks_cfb.ops refresh-schedule` (one CFBD request for the season schedule; rebuilds `games` and `game_outcomes` Silver and runs the completed-week stop gate), then captures lines as usual. `build_market_revision.py --schedule-ref` swaps the `schedule` and `venue_games` pins together. Game metadata may be corrected in any week, split by effect. Display-only fields (venue, venue id, attendance and similar) and kickoff time may differ in any week, completed weeks included. Model-relevant fields stop the run red for an owner decision, naming the game IDs, with nothing committed: a game added or cancelled, or a changed week, home or away team, or `neutral_site`. A completed-week kickoff change is reported (count and game IDs) and re-checked against the retained quotes and the manifest cutoffs: the build refuses, naming game IDs, if a corrected kickoff would change whether a quote was captured strictly before kickoff, a week's cutoff before its first kickoff, or the six-hour margin after earlier kickoffs. Limit: the re-check covers the retained market quotes, not the retrospective CFBD fallback lines. The new release must pass parity, where `start_date` of `games` rows and the display columns of `game_venues` rows may differ in every week only when the schedule pin changed (`check_release_parity.py --previous-manifest`); `neutral_site`, predictions, ratings and grades stay strict. A schedule refresh releases even when line coverage did not improve. The completed-week stop gate (`verify_completed_week_stability.py`) runs here with `--allow-metadata-corrections`, which ignores only `kickoff_utc`, `start_time_tbd`, `venue`, `venue_id`, `attendance`, `excitement_index`, `highlights` and `notes` of `games`, so a corrected kickoff or venue and a late-filled `attendance` or `excitement_index` no longer stop the Monday refresh; scores, teams, week, `neutral_site`, pregame Elo, the game set and all `game_outcomes` stay strict. The Sunday close gate does not pass the flag and is unchanged.
 - Monday catch-up: if the active week has already kicked off, Sunday's close never rolled it over, so Monday runs the close-week path instead of a market refresh. It resumes at prepare when the manifest is already committed, completes the rollover, or fails red with the close-week stop reason (for example a game without a final score). It never ends as a green skip. `accept_cutoff_correction` is still owner-dispatched and applies only to this close-week path.
 - Backup slots: GitHub `schedule` is best-effort, and runs are delayed by hours or dropped on GitHub's side. Each day therefore has a second slot (Sunday `37 22 * * 0`, Monday `37 22 * * 1`; Sunday `7 17 * * 0` and Monday `7 17 * * 1` remain the primary slots). The controller is idempotent, so a duplicate run after a successful close is a fast no-op skip ("already rolled over"). A backup slot that fires while a delayed run is still going queues behind it in the `weekly-season-update` concurrency group, then skips as "already rolled over". After an interrupted run, the next slot resumes at prepare.
 - Manual fallback if every slot is missed: `gh workflow run weekly-season-update.yml --ref dev -f mode=close-week`.
@@ -66,14 +67,14 @@ Since 2026-10-26 the weekly cadence below can run unattended in the GitHub Actio
 
 **Gates (any failure stops the run before the next step; nothing further is activated):**
 
-- Week detection reads the active Production release. It stops when the upcoming week's first kickoff has passed, when the season is past its final regular week, or when any completed-week game lacks a final score (a human is needed).
+- Week detection reads the active Production release. It stops when the upcoming week's first kickoff has passed or when any completed-week game lacks a final score (a human is needed). After week 15 it runs the final close once (see [End of the regular season](#end-of-the-regular-season)) and then skips.
 - The revision builder's stop gate (completed-week schedule and finals unchanged) and its check that completed-week cutoffs match the previous certified manifest.
 - Score-reconciliation exceptions are added automatically only when the final score equals the sum of the quarter line scores for that team-game; otherwise the run stops and names the games. An earlier-week exception changing or becoming unused also stops the run.
 - Prepare passes every `season_verification_v2` check.
 - Parity against the active Preview release. When the candidate's revision manifest carries `historical_lines`, the gate also accepts, once and only for games `401871090`, `401871051` and `401871066`, the addition of their `cfbd_retrospective` quotes, snapshots, selections and grades with the matching `system_stats` movement; everything else is unchanged. For the close: completed-week predictions, variances, grades and earlier rating snapshots are identical within 1e-9. For the refresh: ratings, predictions, features and all grades are identical, and only the upcoming week's line, edge, lean and pending-pick columns differ. The upcoming week must be 100% predicted; line coverage is reported but does not block.
 - Preview release with `--expected-previous-release-id` read from the database, then Production release with the independent Preview proof, then a probe of the live `/api/health` until it reports the new release.
 
-**Commits.** The job commits the revision manifest and the exceptions file and pushes to `dev` before it prepares, then makes no further commit (prepare needs a clean tree and release needs `HEAD` equal to the prepared commit). Pushes made with `GITHUB_TOKEN` do not trigger `ci.yml`, so the workflow runs its own gates and does not rely on CI for that commit.
+**Commits.** The job commits the revision manifest and the exceptions file and pushes to `dev` before it prepares, then makes no further commit, except the empty retry commit pushed when Preview already holds the release id with different bytes (prepare needs a clean tree and release needs `HEAD` equal to the prepared commit). The push does not fetch or rebase: if `origin/dev` moved after checkout (a human push during the first minutes of a run), the push is rejected, the run stops red before prepare or release, and nothing is released; rerun it or let the backup slot complete it. Pushes made with `GITHUB_TOKEN` do not trigger `ci.yml`, so the workflow runs its own gates and does not rely on CI for that commit.
 
 **Public output.** The repository is public, so logs and artifacts carry only IDs, hashes and counts. The uploaded receipt artifact holds small reports, the run manifest and a summary JSON.
 
@@ -121,6 +122,27 @@ gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body false
    ```bash
    gh variable set CFB_WEEKLY_AUTOMATION_ENABLED --body true
    ```
+
+### Noon Eastern dispatcher
+
+GitHub `schedule` runs for `weekly-season-update.yml` arrive 3 to 7 hours late, so a Cloudflare Worker in `ops/noon-dispatch` calls the `workflow_dispatch` API at 12:00 America/New_York: Sundays with `mode=close-week`, Mondays with `mode=market-refresh`. It never sends `force`, `skip_production` or `accept_cutoff_correction`. Setup and tests are in `ops/noon-dispatch/README.md`.
+
+- **Kill switch.** `CFB_WEEKLY_AUTOMATION_ENABLED` now gates both the GitHub schedule and the Worker. Before dispatching, the Worker reads the variable and skips unless it is exactly `true`; a missing variable, a failed read or any other value means no dispatch.
+- **Manual runs.** A manual `workflow_dispatch` from the Actions page (or `gh workflow run`) still bypasses the variable, as before.
+- **Backup.** The GitHub cron slots stay in the workflow as backup. The controller is idempotent, so a late scheduled run after a successful Worker dispatch skips.
+- **Token renewal.** The Worker uses a fine-grained token (single repository, "Actions: Read and write" and "Variables: Read") stored as the Worker secret `GITHUB_TOKEN`. Before it expires, create a new token and run `npx wrangler secret put GITHUB_TOKEN` from `ops/noon-dispatch`; no redeploy is needed. An expired token shows as a 401 in the Cloudflare logs.
+- **Disable.** Set `CFB_WEEKLY_AUTOMATION_ENABLED` to `false` (this stops both the schedule and the Worker), or delete the Worker's cron triggers in the Cloudflare dashboard, or run `npx wrangler delete` from `ops/noon-dispatch`.
+
+### End of the regular season
+
+The official 2026 record ends with the last regular-season week, **week 15** (Army-Navy, Saturday 2026-12-12; verified 2026-11-11 against the provider schedule, which files no regular-season game in week 14 or 16). The week-14 close opens week 15 exactly as every earlier close does. The Sunday 2026-12-13 run then performs the **final close**:
+
+- **What runs.** Detection sees active week 15 with every week-15 game final and no week 16, and decides `run` with the final flag. The controller captures only the week-15 lines (no week-16 lines or odds quotes exist), builds `conf/season/2026/revision_manifest_w16_v1.json` (the "week 16" name is the builder's week-to-forecast convention; its `pre_week_cutoffs["16"]` only fixes the run's as-of and nothing forecasts week 16), prepares with `--through-week 15` and no `--next-week`, checks parity with `--completed-week 15 --upcoming-week 15` (the final week stays the 100%-predicted week; weeks 0..14 compare strictly), then releases to Preview and Production. The release carries every week through 15 graded, `active_week` equal to 15 and no next slate.
+- **Every gate still applies.** Verification (`season_verification_v2`), parity, Preview before Production, the expected-previous-release check and the live health probe are unchanged; the health probe expects week 15.
+- **After it.** Later scheduled runs (Sunday backup, Monday, every following week) detect that the active release's revision manifest is the committed week-16 manifest and skip green with "the final regular-season close (week 15) is already live". A run never fails and never opens a postseason week. If a week-16 regular game ever appears in the provider schedule, the run skips with "past the final regular-season week" instead of closing, and `FINAL_REGULAR_WEEK` needs a decision.
+- **Owner checks after the close.** `/api/health` reports the final release at week 15 with no later slate; the Model page record includes week 15; the home page shows "Regular season complete" with the final record; the next scheduled run skips with the reason above. If the Sunday run is late or missing, dispatch `close-week` (the Monday run also completes it as a catch-up).
+- **Deliberately not done.** No postseason schedule, lines, predictions or grades are ingested or shown, and the record is not extended to bowls or the playoff. Postseason modeling is an offseason item ([backlog](../planning/offseason-2027-backlog.md)).
+- **Before it runs.** The controller runs from `dev`, and the workflow file is unchanged. The web notice reaches the public site with a `dev` to `main` release, which must land before the week-15 games finish. A `plan-only` dispatch after that release confirms detection with no provider call or write.
 
 Everything below is the manual procedure the automation mirrors; use it when the automation is disabled or stops.
 
@@ -256,7 +278,7 @@ Use this to refresh the upcoming week's spreads and totals before kickoff withou
    uv run python scripts/data/ingest_week.py --year 2026 --week <NEXT_WEEK> --entities betting_lines
    uv run python scripts/data/fetch_odds_api_market_quotes.py --year 2026 --week <NEXT_WEEK> --confirm   # ~2 credits
    ```
-   Pass `--entities betting_lines`: the default is `plays,betting_lines`. No schedule, plays or historical weeks are fetched. Note the time of the last capture.
+   Pass `--entities betting_lines`: the default is `plays,betting_lines`. No schedule, plays or historical weeks are fetched by this manual path (the automated Monday run may add the schedule refresh below). Note the time of the last capture.
 2. **Build the revision.** Set `CUTOFF` to the last capture plus about five minutes. The builder reads stored captures (it never queries a provider), refuses to overwrite its target and registers the new quotes version:
    ```bash
    make season-market-revision WEEK=<NEXT_WEEK> FROM=conf/season/2026/revision_manifest_w<NEXT_WEEK>_v<N>.json \
@@ -275,6 +297,26 @@ Use this to refresh the upcoming week's spreads and totals before kickoff withou
 5. **Release to Preview, check parity, then Production** exactly as in sections 2 and 3, with `EXPECTED_PREVIOUS` set to the active release. Parity against the previous release should show identical predictions, variances, ratings and completed-week grades; only upcoming-week lines and leans may differ.
 
 If other work sits uncommitted in your checkout (`prepare` and `release` reject any dirty tree, untracked files included), run prepare and release from a clean `git worktree` pinned to the manifest commit.
+
+---
+
+### Near-kickoff capture (analysis only)
+
+Closing lines exist only while games are being played, so the official record has none ([record methodology](../modeling/record_methodology.md)). From Week 12 to Week 15 a separate capture stores the Odds API board shortly before kickoff, so closing-line value (does the line move toward the model between the early-week capture and kickoff?) can be studied later. Contract: [near-kickoff line capture](../plans/2026-11-12/01-near-kickoff-line-capture.md).
+
+- **Separate by design.** The capture registers under Bronze entity `market_quotes_near_kickoff` (provider `the_odds_api`), not `market_quotes`. The revision builders, `season/inputs.py`, `prepare`, `market_snapshots`, `prediction_grades`, the record and the site never select that entity, so nothing in these captures can replace an early-week line. Step 1b and the mid-week refresh above are unchanged. Never pass a near-kickoff capture id to `build_week_market_snapshot.py --capture-id`; it refuses it.
+- **Scheduler.** `.github/workflows/near-kickoff-capture.yml` (Preview credentials only; concurrency group `near-kickoff-capture`, distinct from the weekly update). Slots, in Eastern time: Saturday 09:00 primary and 10:15 backup; Tuesday to Friday 12:00 primary and 13:15 backup. Sunday and Monday are never scheduled. `scripts/ops/near_kickoff_slot.py` reads the stored schedule and decides per Eastern day: skip outside Weeks 12 to 15, skip when no game kicks off that day, skip when the earliest kickoff has passed (a late capture is not near-kickoff), skip when the slot already has a succeeded capture (so the backup skips after a successful primary and runs after a failed one), and stop after two midweek slots per week. Budget: about 2 credits per capture, about 24 for Weeks 12 to 15 (ceiling 50). Never use the historical-snapshot mode.
+- **Matched-games check.** After the board is matched to the stored schedule, the capture counts the games that kick off later on the same Eastern day (the slot's day, not yet started) and how many of them got quotes. If that share is below `MIN_MATCH_RATIO` (0.80, in `scripts/data/fetch_odds_api_market_quotes.py`) the script exits non-zero, naming the counts, the ratio and the threshold, so the GitHub run fails and emails the owner. No expected games (for example a manual capture on a day without kickoffs) never fails. **The capture is still registered** (it is immutable analysis-only evidence and the credits are spent), but its ingestion run is marked `failed` with category `MatchRatioBelowThreshold`, so the slot is not counted as done and the backup slot retries. Pass `--min-match-ratio 0` to disable the check for a manual early or week-ahead capture; a low match nine days before kickoff is expected because most of the week's games are not on the board yet. In near-kickoff mode the unmatched-events warning prints the count and at most 5 sample names instead of the full list; weekly mode output is unchanged.
+- **Release gate.** GitHub runs scheduled workflows only from `main`. After the `dev` to `main` release, the owner enables the capture by setting the repository variable: `gh variable set CFB_NEAR_KICKOFF_CAPTURE_ENABLED --body true`. Until then (and for any Saturday slate before the release) run the capture by hand, under the Preview wrapper, before the first kickoff:
+  ```bash
+  # Estimate only: prints the credit estimate, makes no provider request
+  CFB_STORAGE_BACKEND=r2 PYTHONPATH=.:src zsh scripts/ops/with_preview_env.sh \
+    uv run python scripts/data/fetch_odds_api_market_quotes.py --year 2026 --week <WEEK> --near-kickoff
+  # Paid: one request, ~2 credits (needs owner go-ahead)
+  CFB_STORAGE_BACKEND=r2 PYTHONPATH=.:src zsh scripts/ops/with_preview_env.sh \
+    uv run python scripts/data/fetch_odds_api_market_quotes.py --year 2026 --week <WEEK> --near-kickoff --confirm
+  ```
+- **Check a capture.** `catalog.source_captures` shows `entity = 'market_quotes_near_kickoff'`, `captured_at` earlier than the day's earliest kickoff, and the capture id appears in no revision manifest and no `prediction_grades` row. A rerun produces a second immutable capture; it never overwrites.
 
 ---
 
@@ -346,6 +388,8 @@ Commits are allowed again from here.
    gh pr create --base main --head dev --title "chore(release): release dev to main"
    gh pr merge <PR_NUMBER> --merge
    ```
+
+   GitHub enforces this: only merge commits are allowed on the repository, and `main` requires a pull request with the `Python tests` and `Web` checks passing, applied to admins too, with force-push and deletion blocked (`dev` blocks force-push and deletion only). Emergency valve, owner only: `gh api -X DELETE repos/connorkitchings/CKsPicks-CFB/branches/main/protection/enforce_admins`, make the change, then restore it with `gh api -X POST repos/connorkitchings/CKsPicks-CFB/branches/main/protection/enforce_admins`.
    Scheduled workflows run only from the default branch (`main`), so changes to `.github/workflows/weekly-season-update.yml` take effect only after this release.
 2. Verify live production URLs:
    - `https://c-ks-picks-cfb.vercel.app/`

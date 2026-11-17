@@ -29,6 +29,7 @@ export function MobileGameLog({ log, domains, formatTick, formatValue, describe,
       {(["offense", "defense"] as const).map((side) => (
         <section key={side} className="mb-5 space-y-2" data-testid={`game-log-panel-${side}`}>
           <h3 className="text-sm font-semibold text-ink">{side === "offense" ? "Offense · higher is better" : "Defense allowed · lower is better"}</h3>
+          <p className="text-xs text-ink-muted" data-testid="game-log-mobile-key">Shaded row: loss</p>
           <div className="relative mx-2 h-5 text-xs tabular-nums text-ink-muted" aria-label="Shared numeric scale" data-testid="game-log-mobile-scale">
             {ticks.map((tick) => <span key={tick} className="absolute" style={{ left: `${position(tick)}%`, transform: `translateX(${position(tick) < 10 ? 0 : position(tick) > 90 ? -100 : -50}%)` }}>{formatTick(tick)}</span>)}
           </div>
@@ -46,10 +47,11 @@ export function MobileGameLog({ log, domains, formatTick, formatValue, describe,
                 type="button"
                 data-game={game.gameId}
                 data-side={side}
+                data-result={game.result.startsWith("L") ? "L" : "W"}
                 data-value={value ?? "missing"}
                 aria-label={rowLabel}
                 aria-pressed={current?.gameId === game.gameId}
-                className="block min-h-11 w-full space-y-2 rounded-md border border-line p-2 text-left text-xs text-ink focus-visible:outline-2 focus-visible:outline-accent"
+                className={`block min-h-11 w-full space-y-2 rounded-md border border-line p-2 text-left text-xs text-ink focus-visible:outline-2 focus-visible:outline-accent${game.result.startsWith("L") ? " bg-loss-soft/60" : ""}`}
                 onPointerDown={(event) => { gesture.current = { x: event.clientX, y: event.clientY, moved: false }; }}
                 onPointerMove={(event) => { const start = gesture.current; if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) start.moved = true; }}
                 onPointerCancel={() => { if (gesture.current) gesture.current.moved = true; }}

@@ -23,10 +23,13 @@
   color-scheme: light;
   --surface-page: #fafafa; /* zinc-50 */
   --surface-card: #ffffff;
+  --scatter-dot-outline: #ffffff;
   --surface-elevated: #ffffff;
   --surface-inset: #f4f4f5; /* zinc-100 — chips, hover fills */
   --line: #e4e4e7; /* zinc-200 */
   --line-strong: #d4d4d8; /* zinc-300 */
+  /* Input/control borders (WCAG 1.4.11, >= 3:1): on card 3.42, page 3.28, inset 3.11. */
+  --line-control: #8a8a93;
   --wordmark: #20344d; /* navy; the Stratum CFB wordmark only */
   --ink: #18181b; /* zinc-900 */
   --ink-muted: #52525b; /* zinc-600 */
@@ -46,9 +49,9 @@
   --warn: #b45309; /* amber-700 */
   --warn-soft: #fffbeb; /* amber-50 */
   --warn-line: #fcd34d; /* amber-300 */
-  --edge-low: #71717a; /* zinc-500 */
-  --edge-medium: #b45309; /* amber-700 */
-  --edge-high: #15803d; /* green-700 */
+  --edge-low: #6b6b74; /* 4.80:1 on inset, 5.28 card, 5.05 page */
+  --edge-medium: #52525b; /* neutral discrepancy */
+  --edge-high: #18181b; /* neutral discrepancy */
   /* Rank scale (rank 1 -> last): green -> amber -> red. Own token set, not the win/loss results
      hues. Chip text is --ink over a 38% tint; contrast of --ink on that tint (card / inset / page)
      at rank 1, 69, 138 (stop colors at full strength; in between the mix stays within these):
@@ -62,10 +65,13 @@ html.dark {
   color-scheme: dark;
   --surface-page: #000000;
   --surface-card: #09090b; /* zinc-950 */
+  --scatter-dot-outline: #a1a1aa; /* 7.7:1 against the chart background */
   --surface-elevated: #1c1917; /* stone-900 — elevated controls */
   --surface-inset: #18181b; /* zinc-900 */
   --line: #27272a; /* zinc-800 */
   --line-strong: #3f3f46; /* zinc-700 */
+  /* On card 4.12, page 4.35, inset 3.67, elevated 3.62. */
+  --line-control: #71717a; /* zinc-500 */
   --wordmark: #f8fafc;
   --ink: #f4f4f5; /* zinc-100 */
   --ink-muted: #a1a1aa; /* zinc-400 */
@@ -86,8 +92,8 @@ html.dark {
   --warn-soft: #451a03; /* amber-950 */
   --warn-line: #78350f; /* amber-900 */
   --edge-low: #a1a1aa; /* zinc-400 */
-  --edge-medium: #facc15; /* yellow-400 */
-  --edge-high: #4ade80; /* green-400 */
+  --edge-medium: #a1a1aa; /* neutral discrepancy */
+  --edge-high: #f4f4f5; /* neutral discrepancy */
   /* Same hues as light, lighter stops. Contrast of --ink on the 38% tint (card / inset / page):
      dark 7.40/6.42/8.05, 7.19/6.24/7.83, 9.47/8.24/10.28 (rank 1, 69, 138; all >= 4.5). */
   --rank-good: #4ade80; /* green-400 */
@@ -123,6 +129,7 @@ html.dark {
   --color-surface-inset: var(--surface-inset);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
+  --color-line-control: var(--line-control);
   --color-wordmark: var(--wordmark);
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
@@ -253,6 +260,18 @@ html.dark [data-card] {
   }
 }
 
+/* Same disclosure, but collapsed below `lg:` (64rem) and forced open from `lg:` up. */
+@supports selector(::details-content) {
+  @media (min-width: 64rem) {
+    .responsive-disclosure-lg::details-content {
+      content-visibility: visible;
+    }
+    .responsive-disclosure-lg > summary {
+      display: none;
+    }
+  }
+}
+
 /* Team page unit sections: collapsible on phones; from `sm:` up the content is forced open and the
    summary stays as a static heading (no pointer, no caret or headline stat). */
 @supports selector(::details-content) {
@@ -285,3 +304,15 @@ html.dark [data-card] {
     display: block !important;
   }
 }
+
+/* Shared editorial rhythm: broad analysis canvas, readable prose and quiet sections. */
+@layer base {
+  main { max-width: 1200px; }
+  @media (min-width: 640px) { main { padding-inline: 24px; } }
+  main > section + section { margin-top: 2rem; }
+  main h1 { font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.15; letter-spacing: -0.035em; }
+}
+
+/* Compact control sizes apply only to precise pointers; touch devices (any
+   viewport width) keep the 44px minimum touch target. */
+@custom-variant pointer-fine (@media (pointer: fine));

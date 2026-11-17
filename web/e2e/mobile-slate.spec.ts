@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { featuredComparisons, gotoHydrated, openFeatured, openRecord } from "./helpers";
+
+// Phone widths imply a touch device: compact sizes are gated on `pointer: fine`.
+test.use({ hasTouch: true });
 
 // Upcoming week, then a final week whose graded cards and highlights share the page.
 for (const path of ["/", "/?week=4"]) {
@@ -9,9 +12,11 @@ for (const path of ["/", "/?week=4"]) {
     const card = page.locator("li[id^='game-']").first();
     await expect(card).toBeVisible();
     await expect(page.locator("details[open]")).toHaveCount(0);
-    await expect(page.getByRole("group", { name: "Layout" })).toBeHidden();
-    // A graded week stacks the season and week records above the slate, so only the
-    // upcoming week promises a complete first card above the navigation.
+    const layout = page.getByRole("group", { name: "Layout" });
+    await expect(layout).toBeVisible();
+    expect((await layout.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    // The graded week adds a status line, so only the upcoming week promises a complete first card
+    // above the navigation (the featured comparisons and the record sit below the games).
     if (path === "/") {
       const cardBox = await card.boundingBox();
       const navigationBox = await page.getByRole("navigation", { name: "Main navigation" }).boundingBox();
@@ -48,20 +53,41 @@ for (const path of ["/", "/?week=4"]) {
     await expect(page.locator("details[open]")).toHaveCount(0);
   });
 
-  test(`${path}: desktop list selection becomes cards on phones and survives resize`, async ({ page }) => {
+  test(`${path}: the list layout renders compact rows on phones and survives resize`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(path);
     await page.getByRole("button", { name: "List", exact: true }).click();
     await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "list");
     const originalCount = await page.locator("li[id^='game-']").count();
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "grid");
+    const list = page.locator("ul[data-layout]").first();
+    await expect(list).toHaveAttribute("data-layout", "list");
     await expect(page.locator("li[id^='game-']")).toHaveCount(originalCount);
+    await expect(page.locator("li[data-compact-row]")).toHaveCount(originalCount);
     const ids = await page.locator("li[id^='game-']").evaluateAll((cards) => cards.map((card) => card.id));
     expect(new Set(ids).size).toBe(ids.length);
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(page.locator("ul[data-layout]").first()).toHaveAttribute("data-layout", "list");
+    await expect(page.locator("li[data-compact-row]")).toHaveCount(0);
   });
+
+  for (const width of [390, 320]) {
+    test(`${path}: phone list rows are short, tappable and fit at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await gotoHydrated(page, `${path}${path.includes("?") ? "&" : "?"}view=list`);
+      const rows = page.locator("li[data-compact-row]");
+      await expect(rows.first()).toBeVisible();
+      for (const row of await rows.all()) {
+        const box = (await row.boundingBox())!;
+        expect(box.height).toBeLessThanOrEqual(width === 390 ? 96 : 120);
+        expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+      const link = rows.first().getByRole("link");
+      await expect(link).toHaveAttribute("href", /\/matchup\/\d+/);
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
 }
 
 test("phone cards keep venue beside the time and the line source through a filter rerender", async ({ page }) => {
@@ -71,14 +97,16 @@ test("phone cards keep venue beside the time and the line source through a filte
   await expect(card.getByText("Game details", { exact: true })).toHaveCount(0);
   await expect(card.getByText(/Los Angeles, CA/)).toBeVisible();
   await expect(card.getByText(/FanDuel/)).toBeVisible();
-  await page.getByPlaceholder("Filter by team…").fill("Oregon");
+  await page.getByPlaceholder("Find team…").fill("Oregon");
   await expect(card.getByText(/Los Angeles, CA/)).toBeVisible();
   await expect(card.getByText(/FanDuel/)).toBeVisible();
 });
 
 test("collapsed biggest edges preserve every game anchor and selected category", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await gotoHydrated(page, "/");
+  // Two levels on phones: the featured disclosure, then the Biggest edges card inside it.
+  await openFeatured(page);
   const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
   await biggestEdges.locator("summary").click();
   // The collapsed and inline copies both render the links; only the shown copy counts.
@@ -97,7 +125,15 @@ test("collapsed biggest edges preserve every game anchor and selected category",
   expect(new URL(page.url()).hash).toBe(target);
   // The card lands just under the pinned bars (app bar 48 + slate bar 105 + day header 25 = 178px),
   // not hidden beneath them and not a second scroll margin lower.
-  await expect.poll(async () => (await page.locator(target!).boundingBox())!.y).toBeLessThan(230);
+  // The jump scrolls smoothly, so wait for the card to stop moving before measuring where it landed.
+  let previousY = Number.NaN;
+  await expect.poll(async () => {
+    const y = (await page.locator(target!).boundingBox())!.y;
+    const settled = y === previousY;
+    previousY = y;
+    return settled;
+  }, { intervals: [150] }).toBe(true);
+  expect((await page.locator(target!).boundingBox())!.y).toBeLessThan(230);
   const [bar, card] = [await page.getByTestId("slate-bar").boundingBox(), await page.locator(target!).boundingBox()];
   expect(card!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height + 24);
 });
@@ -109,6 +145,8 @@ test("one collapsed featured card on phones flips to underdog picks and keeps th
   const card = page.getByRole("region", { name: "Biggest edges" });
   await expect(page.getByRole("region", { name: "Underdog picks" })).toHaveCount(0);
   await expect(page.locator("details[open]")).toHaveCount(0);
+  await openFeatured(page);
+  await expect(card.locator("details")).not.toHaveAttribute("open", "");
   // One full-width, one-line, 44px summary; the flip control lives inside the opened card.
   const summary = card.locator("summary");
   const box = (await summary.boundingBox())!;
@@ -138,6 +176,7 @@ test("one collapsed featured card on phones flips to underdog picks and keeps th
 test("the opened featured card keeps its control inside a 320px phone in both views", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await gotoHydrated(page, "/");
+  await openFeatured(page);
   const card = page.getByRole("region", { name: "Biggest edges" });
   await card.locator("summary").click();
   const view = card.getByRole("group", { name: "Featured games view" });
@@ -154,23 +193,29 @@ test("the opened featured card keeps its control inside a 320px phone in both vi
 test("the featured card starts on Biggest edges again after a reload", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoHydrated(page, "/");
+  await openFeatured(page);
   const card = page.getByRole("region", { name: "Biggest edges" });
   await card.locator("summary").click();
   await card.getByRole("button", { name: "Underdog picks", exact: true }).click();
   await page.reload();
+  await page.locator('html[data-hydrated="true"]').waitFor({ state: "attached" });
   await expect(page.locator("details[open]")).toHaveCount(0);
+  await openFeatured(page);
   await card.locator("summary").click();
   await expect(card.getByRole("button", { name: "Biggest edges", exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("biggest edges and highlights are open inline on desktop without a click", async ({ page }) => {
+test("biggest edges and highlights open inline on desktop once the featured disclosure is open", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/");
+  await gotoHydrated(page, "/");
+  await expect(featuredComparisons(page)).not.toHaveAttribute("open", "");
+  await openFeatured(page);
   const biggestEdges = page.getByRole("region", { name: "Biggest edges" });
   await expect(biggestEdges.getByRole("heading", { name: "Biggest edges" })).toBeVisible();
   await expect(biggestEdges.getByRole("button", { name: "Totals", exact: true })).toBeHidden();
   await expect(biggestEdges.locator("a[href^='#game-']").filter({ visible: true })).toHaveCount(10);
-  await page.goto("/?week=4");
+  await gotoHydrated(page, "/?week=4");
+  await openFeatured(page);
   await expect(page.getByRole("region", { name: "Highlights" }).getByRole("heading", { name: "Highlights" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Highlights" }).locator("details")).toHaveCount(1);
   // One copy of the content: the summary is hidden on desktop and the content is forced open.
@@ -216,29 +261,30 @@ test("market timestamps hydrate without replacing the slate", async ({ page }) =
 
 test("a graded week shows the week record beside the season record, with accuracy on wider screens", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/?week=4");
+  await gotoHydrated(page, "/?week=4");
+  // Phones keep the record behind two disclosures: the section summary, then the compact record line.
   const record = page.getByRole("region", { name: "Record" });
-  // Phones show one compact line; it opens the full card.
   await expect(record.getByRole("heading", { name: "Season record before Week 4" })).toBeHidden();
-  await record.getByTestId("record-summary").click();
+  await openRecord(page);
   await expect(record.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
   await expect(record.getByRole("heading", { name: /^Week \d+ record/ })).toBeVisible();
   await expect(record.getByRole("link", { name: "Season record" })).toHaveAttribute("href", "/model");
   // The accuracy line is dropped on phones to keep the slate close to the top.
   await expect(record.getByTestId("week-accuracy")).toBeHidden();
   await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(record.getByTestId("week-accuracy")).toContainText("95% interval coverage");
+  await expect(record.getByTestId("week-accuracy")).toContainText("Finals inside the model's 95% band");
 });
 
 test("an upcoming week has no week record, and an in-progress week keeps phone cards inside the viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await gotoHydrated(page, "/");
+  await openRecord(page);
   await expect(page.getByRole("region", { name: "Record" }).getByRole("heading", { name: /^Week \d+ record/ })).toHaveCount(0);
-  await page.goto("/?week=6");
+  await gotoHydrated(page, "/?week=6&status=all");
   await expect(page.getByTestId("week-phase")).toHaveText("In progress");
   await expect(page.locator("li[id^='game-']")).toHaveCount(4);
   await expect(page.locator("details[open]")).toHaveCount(0);
-  await page.getByTestId("record-summary").click();
+  await openRecord(page);
   await expect(page.getByRole("region", { name: "Record" }).getByRole("heading", { name: "Week 6 record" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });

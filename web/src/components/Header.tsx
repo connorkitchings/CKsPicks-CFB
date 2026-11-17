@@ -7,13 +7,16 @@ import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
 import { etDateTime } from "@/lib/time-et";
-import { BRAND_FULL } from "@/lib/brand";
+import { APP_VERSION, BRAND_FULL } from "@/lib/brand";
+import { SiteNav } from "./SiteNav";
+import { TeamSearch } from "./TeamSearch";
 import { Wordmark } from "./Wordmark";
 
 export function Header({
   season,
   systemName,
   updatedAt,
+  updatedLabel = "Updated",
   publicationMode,
   allowedSeasons,
   width = "narrow",
@@ -26,6 +29,8 @@ export function Header({
   season: number | null;
   systemName: string | null;
   updatedAt: Date | null;
+  /** Label only the source actually represented by updatedAt. */
+  updatedLabel?: string;
   publicationMode: PublicationMode;
   allowedSeasons?: readonly number[];
   width?: PageWidth;
@@ -42,7 +47,8 @@ export function Header({
    */
   loading?: boolean;
 }) {
-  const maxW = PAGE_WIDTHS[width];
+  // The navigation canvas stays full width even on narrow reading pages.
+  const maxW = PAGE_WIDTHS[width === "narrow" ? "wide" : width];
   const hasSubrow = Boolean(
     (publicationMode === "predictions" && systemName) || status || updatedAt,
   );
@@ -51,14 +57,15 @@ export function Header({
     <>
       {!loading && <HydrationMarker />}
       {/* Phones: the sticky app bar replaces the brand row and menu controls; only `status` stays on the page. */}
-      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={(menuUpdatedAt ?? updatedAt)?.toISOString() ?? null} back={back} />
+      <AppBar season={season} allowedSeasons={allowedSeasons} systemLabel={systemLabel} updatedAt={(menuUpdatedAt ?? updatedAt)?.toISOString() ?? null} updatedLabel={updatedLabel} back={back} />
     <header className={`border-b border-line bg-surface-card/80 backdrop-blur${(phoneStatus ?? Boolean(status)) ? "" : " max-sm:hidden"}`}>
-      <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-1.5 sm:py-3.5`}>
+      <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-2 sm:px-6 sm:py-5`}>
         <div className="flex items-center justify-between gap-3 max-sm:hidden">
           <Link href="/" className="inline-flex min-h-11 items-center rounded text-wordmark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
             <Wordmark className="h-8 w-auto" />
           </Link>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <TeamSearch season={season} />
             {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
               <SeasonSelector season={season} allowedSeasons={allowedSeasons} />
             )}
@@ -72,6 +79,7 @@ export function Header({
           </div>
         </div>
 
+        <div className="hidden items-center justify-between gap-4 pt-4 sm:flex"><SiteNav placement="desktop" /><span className="text-xs text-ink-muted">College football, in context.</span></div>
         {hasSubrow && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
             {systemLabel && (
@@ -82,7 +90,7 @@ export function Header({
             {status}
             {updatedAt && (
               <span className="max-sm:hidden">
-                Updated {etDateTime(updatedAt)}
+                {updatedLabel} {etDateTime(updatedAt)}
               </span>
             )}
           </div>
@@ -103,7 +111,7 @@ export function Footer({
   const maxW = PAGE_WIDTHS[width];
   return (
     <footer
-      className={`mx-auto mt-12 ${maxW} px-4 pb-8 text-center text-xs leading-relaxed text-ink-muted`}
+      className={`mx-auto mt-12 ${maxW} px-4 sm:px-6 pb-8 text-center text-xs leading-relaxed text-ink-muted`}
     >
       <p className="mb-1">
         Display only &mdash; not betting advice. {BRAND_FULL} is a research
@@ -116,6 +124,9 @@ export function Footer({
       <p>
         Team names and logos are trademarks of their respective schools and
         owners, shown for identification only.
+      </p>
+      <p className="mt-1 text-ink-faint" data-testid="app-version">
+        {BRAND_FULL} v{APP_VERSION}
       </p>
     </footer>
   );

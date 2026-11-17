@@ -48,6 +48,64 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
 
+    test("the record trend draws break-even and shares one y-axis across panels", async ({ page }) => {
+      await gotoHydrated(page, "/model");
+      const spread = page.getByTestId("record-trend-spread");
+      const total = page.getByTestId("record-trend-total");
+      await expect(spread.locator("[data-break-even]")).toHaveCount(1);
+      await expect(total.locator("[data-break-even]")).toHaveCount(1);
+      const yTicks = (svg: typeof spread) => svg.locator("text").filter({ hasText: /^\d+%$/ }).allTextContents();
+      const [a, b] = [await yTicks(spread), await yTicks(total)];
+      expect(a[0]).toBe(b[0]);
+      expect(a.at(-1)).toBe(b.at(-1));
+    });
+
+    test("the record trend labels render at 12px or more and the break-even label sits at the left", async ({ page }) => {
+      await gotoHydrated(page, "/model");
+      for (const id of ["record-trend-spread", "record-trend-total"]) {
+        const svg = page.getByTestId(id);
+        await expect.poll(async () => {
+          const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+          return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+        }).toBe(true);
+        await expect.poll(() => svg.evaluate((node) => Math.min(...[...node.querySelectorAll<SVGTextElement>("text")].map((label) => {
+          const matrix = label.getScreenCTM();
+          return matrix ? parseFloat(getComputedStyle(label).fontSize) * Math.hypot(matrix.a, matrix.b) : 0;
+        })))).toBeGreaterThanOrEqual(11.99);
+        const line = (await svg.locator("[data-break-even]").boundingBox())!;
+        const box = (await svg.locator("text", { hasText: /^52\.4%$/ }).boundingBox())!;
+        expect(box.x).toBeLessThan(line.x + line.width / 2);
+        expect(box.y + box.height).toBeLessThanOrEqual(line.y + 2);
+      }
+    });
+
+    test("the error scatter labels render at 12px or more and stay inside the svg", async ({ page }) => {
+      await gotoHydrated(page, "/model");
+      for (const target of ["spread", "total"]) {
+        await page.getByTestId(`error-target-${target}`).click();
+        const svg = page.getByTestId("error-scatter");
+        await expect(svg).toHaveAttribute("aria-label", new RegExp(`^${target === "spread" ? "Spread" : "Totals"} absolute error`));
+        // The phone layout swaps in after hydration; wait for the measured width to settle before probing.
+        await expect.poll(() => svg.evaluate((node) => node.isConnected && node.getBoundingClientRect().width > 0)).toBe(true);
+        await svg.scrollIntoViewIfNeeded();
+        await expect.poll(async () => {
+          const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+          return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+        }).toBe(true);
+        await expect.poll(() => svg.evaluate((node) => Math.min(...[...node.querySelectorAll<SVGTextElement>("text")].map((label) => {
+          const matrix = label.getScreenCTM();
+          return matrix ? parseFloat(getComputedStyle(label).fontSize) * Math.hypot(matrix.a, matrix.b) : 0;
+        })))).toBeGreaterThanOrEqual(11.99);
+        const outside = await svg.evaluate((node) => {
+          const frame = node.getBoundingClientRect();
+          return [...node.querySelectorAll<SVGTextElement>("text")].map((label) => ({ label, box: label.getBoundingClientRect() }))
+            .filter(({ box }) => box.left < frame.left - 0.5 || box.right > frame.right + 0.5 || box.top < frame.top - 0.5 || box.bottom > frame.bottom + 0.5)
+            .map(({ label }) => label.textContent);
+        });
+        expect(outside).toEqual([]);
+      }
+    });
+
     test("the explainers live in one collapsed disclosure", async ({ page }) => {
       await gotoHydrated(page, "/model");
       const explainer = page.getByText(/Win rate excludes pushes/).filter({ visible: true });

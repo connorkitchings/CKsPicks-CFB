@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 
 test("Graphs is reachable from the main navigation and keeps the selected side when changing weeks on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  await page.goto("/ratings");
-  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link")).toHaveText(["Games", "Ratings", "Graphs", "Model"]);
+  await page.goto("/teams");
+  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link")).toHaveText(["Games", "Teams", "Graphs", "Model"]);
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Graphs", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Team graphs" })).toBeVisible();
-  await page.getByTestId("chart-select").selectOption({ label: "Efficiency vs explosiveness" });
+  await page.getByTestId("chart-select").selectOption({ label: "Explosiveness" });
   await expect(page).toHaveURL(/chart=efficiency/);
   await page.getByRole("button", { name: "Chart settings", exact: true }).click();
   await page.getByRole("group", { name: "Side of the ball" }).getByRole("link", { name: "defense", exact: true }).click();
@@ -19,6 +19,7 @@ test("Graphs is reachable from the main navigation and keeps the selected side w
   await page.getByRole("combobox", { name: "Highlight a team" }).fill("Michigan");
   await page.getByRole("option", { name: /^Michigan/ }).click();
   await expect(page.locator("g[data-team='Michigan']")).toHaveAttribute("data-state", "searched");
-  await expect(page.getByTestId("table-toggle")).toHaveCount(0);
+  // The scatter's equivalent table is offered through a single toggle.
+  await expect(page.getByTestId("table-toggle")).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
 });

@@ -79,6 +79,15 @@ export function phoneTeamName(teamName: string): string {
   return teamName.length > PHONE_NAME_MAX_CHARS ? teamAbbr(teamName) : teamName;
 }
 
+/**
+ * "Florida International -10.0" -> "FIU -10.0": `shorten` applied to the team that leads the label (or is
+ * the whole label); other values pass through. Defaults to the abbreviation.
+ */
+export function abbreviateLead(value: string, teams: readonly string[], shorten: (team: string) => string = teamAbbr): string {
+  const team = teams.find((name) => value === name || value.startsWith(`${name} `));
+  return team ? `${shorten(team)}${value.slice(team.length)}` : value;
+}
+
 /** CFBD primary color (display only), or a neutral fallback. */
 export function teamColor(teamName: string): string {
   return TEAM_DISPLAY[schoolKey(teamName)]?.color ?? FALLBACK_TEAM_COLOR;

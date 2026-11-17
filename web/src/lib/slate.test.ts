@@ -3,12 +3,18 @@ import test from "node:test";
 
 import {
   biggestEdgesRecord,
+  byKickoff,
+  defaultSlateStatus,
+  matchesSlateStatus,
+  parseSlateStatus,
   edgeTier,
-  edgeTone,
   gameState,
   hasGradedPick,
   hasLean,
+  isRegularSeasonComplete,
+  FINAL_REGULAR_WEEK,
   leanFor,
+  seasonRecordThrough,
   leanGradeRows,
   modelCrossesMarket,
   phoneLean,
@@ -76,18 +82,6 @@ test("edge tiers follow the spread and total thresholds", () => {
   assert.equal(edgeTier("spread", 8.1), 3);
   assert.equal(edgeTier("total", 2), 1);
   assert.equal(edgeTier("total", 7.1), 3);
-});
-
-test("edgeTone colors edge magnitudes on the same thresholds", () => {
-  assert.equal(edgeTone(2.9, "spread"), "edge-low");
-  assert.equal(edgeTone(3, "spread"), "edge-medium");
-  assert.equal(edgeTone(8, "spread"), "edge-medium");
-  assert.equal(edgeTone(8.1, "spread"), "edge-high");
-  assert.equal(edgeTone(-8.1, "spread"), "edge-high");
-  assert.equal(edgeTone(1.9, "total"), "edge-low");
-  assert.equal(edgeTone(2, "total"), "edge-medium");
-  assert.equal(edgeTone(7, "total"), "edge-medium");
-  assert.equal(edgeTone(7.1, "total"), "edge-high");
 });
 
 test("leanFor labels the pick side with a positive edge", () => {
@@ -294,7 +288,7 @@ test("leans carry the model's prediction from the pick's side", () => {
   assert.equal(fav?.team, "Home");
 
   const dog = leanFor(game({ spreadLean: "away", homeTeamSpreadLine: -3.5 }), "spread");
-  assert.equal(dog?.model, "Away by -6.5");
+  assert.equal(dog?.model, "Home by 6.5");
 
   const pk = leanFor(game({ homeTeamSpreadLine: 0 }), "spread");
   assert.equal(pk?.pick, "Home PK");
@@ -370,6 +364,39 @@ test("weekPhase is upcoming with no finished game or no games, final when all ar
   assert.equal(weekPhase([open, open]), "upcoming");
   assert.equal(weekPhase([done, open]), "in-progress");
   assert.equal(weekPhase([done, done]), "final");
+});
+
+test("regular season is complete only for the final active week, all final, with no later week", () => {
+  const done = [game({ gameId: 1, homePoints: 31, awayPoints: 24 }), game({ gameId: 2, homePoints: 3, awayPoints: 0 })];
+  const open = game({ gameId: 3 });
+  const base = { week: FINAL_REGULAR_WEEK, activeWeek: FINAL_REGULAR_WEEK, weeks: [13, 14, FINAL_REGULAR_WEEK], games: done };
+  assert.equal(isRegularSeasonComplete(base), true);
+  // Not yet: a game without a final, or the earlier-week release that only opens the final week.
+  assert.equal(isRegularSeasonComplete({ ...base, games: [...done, open] }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, games: [] }), false);
+  // Browsing a past week or an inactive final week keeps the ordinary slate.
+  assert.equal(isRegularSeasonComplete({ ...base, week: 14 }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, activeWeek: 14 }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, activeWeek: null }), false);
+  // A published later week means the season has not ended.
+  assert.equal(isRegularSeasonComplete({ ...base, weeks: [...base.weeks, FINAL_REGULAR_WEEK + 1] }), false);
+  assert.equal(isRegularSeasonComplete({ ...base, week: 4, activeWeek: 4, weeks: [4], finalWeek: 4 }), true);
+});
+
+test("seasonRecordThrough adds the final week's graded record to the record before it", () => {
+  const before = [{ classification: "all", spread: { win: 40, loss: 30, push: 1 }, total: { win: 35, loss: 36, push: 0 } }];
+  const games = [
+    game({ gameId: 1, homePoints: 31, awayPoints: 24, spreadResult: "win", totalResult: "loss" }),
+    game({ gameId: 2, homePoints: 3, awayPoints: 0, spreadResult: "push", totalResult: null }),
+  ];
+  assert.deepEqual(seasonRecordThrough(before, games), {
+    spread: { win: 41, loss: 30, push: 2 },
+    total: { win: 35, loss: 37, push: 0 },
+  });
+  assert.deepEqual(seasonRecordThrough([], []), {
+    spread: { win: 0, loss: 0, push: 0 },
+    total: { win: 0, loss: 0, push: 0 },
+  });
 });
 
 test("sortSlate offers result sorts only once a game has finished", () => {
@@ -559,4 +586,44 @@ test("underdogRecord: every pick in a week counts, not just the top five", () =>
     ud({ gameId: 6, canonicalSpread: 3, predictedSpread: 1, ...won }),
   ];
   assert.deepEqual(underdogRecord([week]), { win: 1, loss: 5, push: 0 });
+});
+
+
+test("status defaults follow Eastern dates, upcoming, finals and awaiting", () => {
+  const now = new Date("2026-11-01T03:30:00Z"); // still October 31 in Eastern time
+  const today = game({ startDate: new Date("2026-11-01T02:30:00Z") });
+  const future = game({ startDate: new Date("2026-11-01T06:30:00Z") });
+  const final = game({ startDate: new Date("2026-10-30T16:00:00Z"), homePoints: 7, awayPoints: 3 });
+  const awaiting = game({ startDate: new Date("2026-10-30T16:00:00Z") });
+  assert.equal(defaultSlateStatus([today, future], now), "today");
+  assert.equal(matchesSlateStatus(future, "today", now), false);
+  assert.equal(defaultSlateStatus([final, future], now), "upcoming");
+  assert.equal(defaultSlateStatus([final], now), "results");
+  assert.equal(defaultSlateStatus([final, awaiting], now), "all");
+  assert.equal(defaultSlateStatus([awaiting], now), "all");
+  assert.equal(defaultSlateStatus([], now), "all");
+  assert.equal(parseSlateStatus("invalid", [final], now), "results");
+  assert.equal(parseSlateStatus("all", [final], now), "all");
+});
+
+test("TBD kickoff and DST boundaries use the Eastern calendar", () => {
+  const tbd = game({ startDate: new Date("2026-11-01T04:00:00Z") });
+  assert.equal(gameState(tbd, new Date("2026-11-02T04:59:59Z")), "upcoming");
+  assert.equal(gameState(tbd, new Date("2026-11-02T05:00:00Z")), "awaiting");
+});
+
+test("byKickoff and sortGames place a time-TBD game after the timed games of its Eastern day", () => {
+  // 04:00Z on Oct 24 is midnight Eastern (EDT): the placeholder for an unannounced time.
+  const tbd = game({ gameId: 1, startDate: new Date("2026-10-24T04:00:00Z") });
+  const noon = game({ gameId: 2, startDate: new Date("2026-10-24T16:00:00Z") });
+  const night = game({ gameId: 3, startDate: new Date("2026-10-25T00:00:00Z") }); // 8 PM ET Oct 24
+  const nextDay = game({ gameId: 4, startDate: new Date("2026-10-25T16:00:00Z") });
+  assert.deepEqual(sortGames([nextDay, tbd, night, noon], "kickoff").map((g) => g.gameId), [2, 3, 1, 4]);
+  assert.ok(byKickoff(tbd, nextDay) < 0, "a TBD game still precedes the next day");
+});
+
+test("sortGames breaks equal-edge ties with TBD last in the day", () => {
+  const tbd = game({ gameId: 1, startDate: new Date("2026-10-24T04:00:00Z") });
+  const noon = game({ gameId: 2, startDate: new Date("2026-10-24T16:00:00Z") });
+  assert.deepEqual(sortGames([tbd, noon], "bestEdge").map((g) => g.gameId), [2, 1]);
 });

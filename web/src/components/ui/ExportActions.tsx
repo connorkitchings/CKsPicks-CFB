@@ -88,20 +88,21 @@ const subscribeNever = () => () => {};
 const serverFalse = () => false;
 const canCopyImages = () => typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write);
 /** The page theme decides which logo and `dark:` variants the card is drawn with. */
-const subscribeTheme = (onChange: () => void) => {
+export type ExportTheme = "light" | "dark";
+export const subscribeTheme = (onChange: () => void) => {
   const observer = new MutationObserver(onChange);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
   return () => observer.disconnect();
 };
-const currentTheme = (): "light" | "dark" => (document.documentElement.classList.contains("dark") ? "dark" : "light");
-const serverTheme = (): "light" | "dark" => "light";
+export const currentTheme = (): ExportTheme => (document.documentElement.classList.contains("dark") ? "dark" : "light");
+export const serverTheme = (): ExportTheme => "light";
 const canShareFiles = () =>
   typeof navigator.canShare === "function" &&
   navigator.canShare({ files: [new File([""], "probe.png", { type: "image/png" })] });
 
 /** 44px touch targets on phones, the compact 36px from the sm breakpoint up. */
 const buttonClass =
-  "inline-flex size-11 items-center justify-center rounded-lg border border-line bg-surface-card text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 sm:size-9";
+  "inline-flex size-11 items-center justify-center rounded-lg border border-line bg-surface-card text-ink hover:border-accent hover:text-accent-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60 pointer-fine:size-9";
 
 const ICON_PATHS: Record<Action | Outcome, string> = {
   download: "M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14",
@@ -322,6 +323,8 @@ export function ExportActions({
     } finally {
       if (mounted.current) setJob(null);
       if (pending.current === render) pending.current = null;
+      // Optional test observer: unlike component state, this also reports completion after unmount.
+      (window as Window & { __exportSettled?: (action: Action) => void }).__exportSettled?.(action);
     }
   }
 

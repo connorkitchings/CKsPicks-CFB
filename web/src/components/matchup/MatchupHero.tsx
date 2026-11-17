@@ -8,7 +8,7 @@ import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { bookName } from "@/lib/slate";
 import { spreadBetLabel } from "@/lib/betting-format";
-import { teamAbbr } from "@/lib/team-logos";
+import { abbreviateLead, phoneTeamName } from "@/lib/team-logos";
 import { teamHref } from "@/lib/team-routes";
 import { ResultBadge } from "@/components/slate/ResultBadge";
 import { AwaitingTag } from "@/components/slate/AwaitingTag";
@@ -74,16 +74,11 @@ function TeamBlock({
   );
 }
 
-/** "James Madison -10.5" -> "JMU -10.5" for the team that leads the label (or is the whole label); other values pass through. */
-function abbreviateLead(value: string, teams: readonly string[]): string {
-  const team = teams.find((name) => value === name || value.startsWith(`${name} `));
-  return team ? `${teamAbbr(team)}${value.slice(team.length)}` : value;
-}
-
 /** One centered value in the forecast grid, with the sportsbook beneath when known. */
 function Cell({
   value,
   short = value,
+  title,
   book,
   badge,
   accent = false,
@@ -93,6 +88,8 @@ function Cell({
   value: string;
   /** Phones show this instead, so a long team name never wraps the cell. */
   short?: string;
+  /** The full label, shown on hover when `value` is shortened. */
+  title?: string;
   book?: string | null;
   badge?: React.ReactNode;
   accent?: boolean;
@@ -100,7 +97,7 @@ function Cell({
   testId?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center justify-center text-center max-sm:flex-row max-sm:flex-wrap max-sm:gap-x-1" data-testid={testId}>
+    <div className="flex min-w-0 flex-col items-center justify-center text-center" data-testid={testId}>
       <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-1 sm:gap-1.5">
         <span
           className={clsx(
@@ -111,16 +108,17 @@ function Cell({
             muted && "!font-normal !text-ink-muted",
           )}
         >
-          {short === value ? value : (
+          {short === value ? <span title={title}>{value}</span> : (
             <>
-              <span className="max-sm:hidden">{value}</span>
-              <span className="sm:hidden" title={value}>{short}</span>
+              <span className="max-sm:hidden" title={title}>{value}</span>
+              <span className="sm:hidden" title={title ?? value}>{short}</span>
             </>
           )}
         </span>
         {badge}
       </div>
-      {book && <span className="block font-sans text-xs leading-tight text-ink-muted max-sm:text-[10px]">{book}</span>}
+      {/* Phones reserve the book line in every cell so the forecast cells share one height. */}
+      <span className="block font-sans text-xs leading-tight text-ink-muted max-sm:min-h-[0.875rem] max-sm:text-[11px]">{book}</span>
     </div>
   );
 }
@@ -191,29 +189,30 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
 
           <div
             data-testid="forecast-grid"
-            className="grid w-full sm:mt-3 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 gap-y-2 text-sm sm:gap-y-3 sm:gap-x-4"
+            className="grid w-full sm:mt-3 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2 max-sm:gap-x-1 gap-y-2 text-sm sm:gap-y-3 sm:gap-x-4"
           >
             <span aria-hidden />
             <Eyebrow as="span" className="text-center">Spread</Eyebrow>
             <Eyebrow as="span" className="text-center">Total</Eyebrow>
 
             <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
-            <Cell value={matchup.marketSpread} short={abbreviateLead(matchup.marketSpread, teams)} book={bookName(matchup.spreadSource)} />
-            <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} book={bookName(matchup.totalSource)} />
+            <Cell value={abbreviateLead(matchup.marketSpread, teams, phoneTeamName)} short={abbreviateLead(matchup.marketSpread, teams)} title={matchup.marketSpread} book={bookName(matchup.spreadSource)} />
+            <Cell value={matchup.marketTotal !== null ? matchup.marketTotal.toFixed(1) : "—"} book={bookName(matchup.totalSource)} />
 
             {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
               <>
                 <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
-                <Cell value={matchup.modelSpread} short={abbreviateLead(matchup.modelSpread, teams)} />
-                <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
+                <Cell value={abbreviateLead(matchup.modelSpread, teams, phoneTeamName)} short={abbreviateLead(matchup.modelSpread, teams)} title={matchup.modelSpread} />
+                <Cell value={matchup.modelTotal !== null ? matchup.modelTotal.toFixed(1) : "—"} />
 
                 <div className="col-span-3 border-t border-line/60" aria-hidden />
-                <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model Bet</span>
+                <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model lean</span>
                 <Cell
                   accent
                   testId="model-bet-spread"
-                  value={betSpread}
+                  value={abbreviateLead(betSpread, teams, phoneTeamName)}
                   short={abbreviateLead(betSpread, teams)}
+                  title={betSpread}
                   muted={!matchup.spreadLean}
                   badge={
                     isFinal && matchup.spreadLean && matchup.spreadResult ? (
@@ -224,7 +223,7 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
                 <Cell
                   accent
                   testId="model-bet-total"
-                  value={matchup.totalLean ? (matchup.totalLean === "over" ? "Over" : "Under") : "—"}
+                  value={matchup.totalLean ? (`${matchup.totalLean === "over" ? "Over" : "Under"}${matchup.marketTotal === null ? "" : ` ${matchup.marketTotal.toFixed(1)}`}`) : "—"}
                   muted={!matchup.totalLean}
                   badge={
                     isFinal && matchup.totalLean && matchup.totalResult ? (
@@ -238,7 +237,7 @@ export function MatchupHero({ matchup, now }: { matchup: MatchupData; now: Date 
 
           {isFinal && (
             <span className="mt-2.5 rounded-full border border-line bg-surface-card px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
-              Final: {matchup.awayFinalPoints}–{matchup.homeFinalPoints}
+              Final
             </span>
           )}
           <AwaitingTag

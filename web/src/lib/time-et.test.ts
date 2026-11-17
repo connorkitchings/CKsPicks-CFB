@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  etClock, etDate, etDateTime, etDateYear, etDateYearTime, etKickoff, etLongDate, etLongWeekdayDate, etTime, etWeekdayDate, etWeekdayDateKickoff, etWeekdayDateTime,
+  etClock, etDate, etDateTime, etDateYear, etDateYearTime, etKickoff, etLongDate, etLongWeekdayDate, etTime, etWeekdayDate, etWeekdayDateClock, etWeekdayDateKickoff, etWeekdayDateTime,
   isTimeTbd, nextEtDayStart,
 } from "./time-et.ts";
 
@@ -66,4 +66,9 @@ test("the end of an Eastern day is the next midnight, across a daylight-saving c
   assert.equal(nextEtDayStart(new Date("2026-10-31T04:00:00Z")).toISOString(), "2026-11-01T04:00:00.000Z");
   assert.equal(nextEtDayStart(new Date("2026-11-01T04:00:00Z")).toISOString(), "2026-11-02T05:00:00.000Z"); // 25-hour day
   assert.equal(nextEtDayStart(new Date("2026-10-24T23:30:00Z")).toISOString(), "2026-10-25T04:00:00.000Z");
+});
+
+test("the short kickoff drops the zone label and keeps the TBD placeholder", () => {
+  assert.equal(etWeekdayDateClock(autumn), "Sat, Oct 24, 7:30 PM");
+  assert.equal(etWeekdayDateClock(new Date("2026-10-24T04:00:00Z")), "Sat, Oct 24, time TBD");
 });

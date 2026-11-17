@@ -68,10 +68,32 @@ COMPARISON_EXCLUSIONS = frozenset(
     }
 )
 
+#: Extra ``games`` columns excluded only when a caller opts in with
+#: ``--allow-metadata-corrections`` (the Monday ``refresh-schedule`` command).
+#: They are display or kickoff metadata that CFBD legitimately corrects or fills
+#: in after a week completes (``attendance`` and ``excitement_index`` arrive
+#: late). Kickoff corrections stay guarded by the eligibility and cutoff check
+#: in ``scripts/pipeline/build_market_revision.py``. Scores, teams, week,
+#: ``neutral_site``, pregame Elo, the game set and ``game_outcomes`` stay strict.
+METADATA_CORRECTION_EXCLUSIONS = frozenset(
+    {
+        "kickoff_utc",
+        "start_time_tbd",
+        "venue",
+        "venue_id",
+        "attendance",
+        "excitement_index",
+        "highlights",
+        "notes",
+    }
+)
 
-def _comparable(frame: pd.DataFrame) -> pd.DataFrame:
+
+def _comparable(
+    frame: pd.DataFrame, exclusions: frozenset[str] = COMPARISON_EXCLUSIONS
+) -> pd.DataFrame:
     """Drop the excluded columns, keeping every other column in the comparison."""
-    return frame.drop(columns=sorted(set(frame.columns) & COMPARISON_EXCLUSIONS))
+    return frame.drop(columns=sorted(set(frame.columns) & exclusions))
 
 
 def _value_differences(
@@ -106,8 +128,17 @@ def compare_completed_weeks(
     previous_outcomes: pd.DataFrame,
     *,
     through_week: int,
+    allow_metadata_corrections: bool = False,
 ) -> list[str]:
-    """Return one message per completed-week row that differs, in game order."""
+    """Return one message per completed-week row that differs, in game order.
+
+    ``allow_metadata_corrections`` additionally ignores
+    ``METADATA_CORRECTION_EXCLUSIONS`` in ``games``; ``game_outcomes`` is
+    always compared strictly.
+    """
+    games_exclusions = COMPARISON_EXCLUSIONS
+    if allow_metadata_corrections:
+        games_exclusions = games_exclusions | METADATA_CORRECTION_EXCLUSIONS
     problems: list[str] = []
     new_ids = _completed_week_ids(new_games, through_week)
     previous_ids = _completed_week_ids(previous_games, through_week)
@@ -121,8 +152,11 @@ def compare_completed_weeks(
     problems.extend(
         _value_differences(
             "games",
-            _comparable(new_games[new_games["week"] <= through_week]),
-            _comparable(previous_games[previous_games["week"] <= through_week]),
+            _comparable(new_games[new_games["week"] <= through_week], games_exclusions),
+            _comparable(
+                previous_games[previous_games["week"] <= through_week],
+                games_exclusions,
+            ),
             shared_ids,
         )
     )
@@ -155,6 +189,12 @@ def main() -> None:
     parser.add_argument(
         "--environment", choices=("preview", "production"), required=True
     )
+    parser.add_argument(
+        "--allow-metadata-corrections",
+        action="store_true",
+        help="Ignore display and kickoff metadata columns of games "
+        "(Monday refresh-schedule only; the Sunday close stays strict).",
+    )
     args = parser.parse_args()
     storage = get_storage(environment=args.environment)
     problems = compare_completed_weeks(
@@ -168,6 +208,7 @@ def main() -> None:
             _ref_from_input("game_outcomes", json.loads(args.previous_outcomes)),
         ),
         through_week=args.through_week,
+        allow_metadata_corrections=args.allow_metadata_corrections,
     )
     if problems:
         for problem in problems:

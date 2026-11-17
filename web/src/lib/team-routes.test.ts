@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveTeam, teamHref } from "./team-routes.ts";
+import { canonicalTeamSegment, resolveTeam, teamHref } from "./team-routes.ts";
 import { TEAM_LOGO_MAP } from "./teams.ts";
 
 test("teamHref encodes accents, ampersands and spaces", () => {
@@ -41,6 +41,23 @@ test("legacy-name teams resolve from either spelling", () => {
   for (const [segment, gameName, ratingName] of cases) {
     assert.deepEqual(resolveTeam(segment), { gameName, ratingName }, segment);
   }
+});
+
+test("alias keys resolve to their school", () => {
+  assert.deepEqual(resolveTeam("Hawaii"), { gameName: "Hawai'i", ratingName: "Hawai_i" });
+  assert.deepEqual(resolveTeam("Hawai i"), { gameName: "Hawai'i", ratingName: "Hawai_i" });
+  assert.deepEqual(resolveTeam("FIU"), { gameName: "Florida International", ratingName: "Florida International" });
+});
+
+test("canonicalTeamSegment names the canonical slug only for non-canonical spellings", () => {
+  assert.equal(canonicalTeamSegment("Hawaii"), "Hawai'i");
+  assert.equal(canonicalTeamSegment("Hawai_i"), "Hawai'i");
+  assert.equal(canonicalTeamSegment("San_Jose_State"), "San_Jos%C3%A9_State");
+  assert.equal(canonicalTeamSegment("Appalachian_State"), "App_State");
+  assert.equal(canonicalTeamSegment("Texas"), null);
+  assert.equal(canonicalTeamSegment("Texas%20A%26M"), null);
+  assert.equal(canonicalTeamSegment("Texas_A%26M"), null);
+  assert.equal(canonicalTeamSegment("Not_A_School"), null);
 });
 
 test("every stored rating name resolves to a CFBD name that maps back to it", () => {

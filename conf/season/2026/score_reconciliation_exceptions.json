@@ -55,6 +55,11 @@
     "reason": "Week 10 scoring events sum to 35, final is 66 (equals the quarter line scores); play-by-play score stream flagged impossible_score_increment"
   },
   {
+    "game_id": 401856863,
+    "team": "Texas Tech",
+    "reason": "Week 11 scoring events sum to 7, final is 52 (equals the quarter line scores); play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
     "game_id": 401858201,
     "team": "Stanford",
     "reason": "Week 0 scoring events sum to 14, final is 37; play-by-play score stream flagged impossible_score_increment"
@@ -208,6 +213,11 @@
     "game_id": 401864514,
     "team": "New Mexico",
     "reason": "Week 5 scoring events sum to 7, final is 61; play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
+  },
+  {
+    "game_id": 401864537,
+    "team": "North Dakota State",
+    "reason": "Week 11 scoring events sum to 7, final is 21 (equals the quarter line scores); play-by-play score stream flagged impossible_score_increment, score_regression_rollback"
   },
   {
     "game_id": 401864579,

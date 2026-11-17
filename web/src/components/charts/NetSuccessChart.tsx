@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { chartColor, netSuccessDomain, niceTicks, type NetSuccessBar } from "@/lib/charts";
+import { chartColor, netSuccessCap, netSuccessDomain, niceTicks, type NetSuccessBar } from "@/lib/charts";
 import { Card } from "@/components/ui/Card";
 import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import type { MarkerState } from "./ScatterChart";
@@ -26,6 +26,79 @@ function fillFor(bar: NetSuccessBar): string {
   return chartColor(teamColor(bar.winner), teamAltColor(bar.winner), FALLBACK_TEAM_COLOR);
 }
 
+/** Two short parallel diagonals across a capped bar near its tip. */
+function BarBreak({ horizontal, c, tip, outward, thick }: { horizontal: boolean; c: number; tip: number; outward: number; thick: number }) {
+  const half = thick / 2 + 1.5;
+  // Offsets run from the tip back toward zero.
+  const mark = (back: number) => {
+    const at = horizontal ? tip - outward * back : tip + outward * back;
+    return horizontal
+      ? <line x1={at - 3} x2={at + 3} y1={c + half} y2={c - half} stroke="var(--surface-card)" strokeWidth={2} />
+      : <line x1={c - half} x2={c + half} y1={at + 3} y2={at - 3} stroke="var(--surface-card)" strokeWidth={2} />;
+  };
+  return (
+    <g pointerEvents="none" data-bar-break>
+      {mark(8)}
+      {mark(14)}
+    </g>
+  );
+}
+
+type Box = { x: number; y: number; w: number; h: number };
+
+/** Gap kept between a break value's backing card and a logo it is moved clear of. */
+const LOGO_CLEARANCE = 2;
+
+function overlaps(a: Box, b: Box): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+/** Moves a box along the bar axis to the nearer side of each logo it overlaps. */
+function clearLogos(box: Box, logos: readonly Box[]): Box {
+  let moved = box;
+  for (let pass = 0; pass < logos.length; pass++) {
+    const hit = logos.find((logo) => overlaps(moved, logo));
+    if (!hit) break;
+    const above = hit.y - moved.h - LOGO_CLEARANCE;
+    const below = hit.y + hit.h + LOGO_CLEARANCE;
+    moved = { ...moved, y: Math.abs(above - moved.y) <= Math.abs(below - moved.y) ? above : below };
+  }
+  return moved;
+}
+
+/**
+ * A capped bar's true value on a card-coloured backing, so a neighbour's logo cannot show through.
+ * Drawn after every bar and kept inside the chart's right edge. In a vertical chart it is also moved along the bar axis off any logo.
+ */
+function BreakValue({ gameId, horizontal, c, tip, outward, thick, text, unit, width, dim, logos }: { gameId: number | string; horizontal: boolean; c: number; tip: number; outward: number; thick: number; text: string; unit: number; width: number; dim: boolean; logos: readonly Box[] }) {
+  const fontSize = 12 * unit;
+  const pad = 3 * unit;
+  const textWidth = text.length * 7.5 * unit;
+  const flip = !horizontal && c + thick / 2 + 4 + textWidth > width;
+  const anchor = horizontal || flip ? "end" : "start";
+  const x = horizontal ? tip : flip ? c - thick / 2 - 4 : c + thick / 2 + 4;
+  let baseline = horizontal ? c - thick / 2 - 4 : tip + outward * 11 * unit;
+  const boxAt = (y: number): Box => ({
+    x: anchor === "end" ? x - textWidth - pad : x - pad,
+    y: y - fontSize * 0.8 - pad,
+    w: textWidth + 2 * pad,
+    h: fontSize + 2 * pad,
+  });
+  let box = boxAt(baseline);
+  if (!horizontal) {
+    box = clearLogos(box, logos);
+    baseline = box.y + fontSize * 0.8 + pad;
+  }
+  return (
+    <g pointerEvents="none" opacity={dim ? 0.15 : 1}>
+      <rect data-testid="break-value-bg" data-game={gameId} x={box.x} y={box.y} width={box.w} height={box.h} rx={3 * unit} fill="var(--surface-card)" stroke="var(--line)" strokeWidth={unit} />
+      <text x={x} y={baseline} textAnchor={anchor} fontSize={fontSize} fontWeight={600} fill="var(--ink)" data-break-value>
+        {text}
+      </text>
+    </g>
+  );
+}
+
 export function NetSuccessChart({
   bars,
   stateOf,
@@ -40,18 +113,22 @@ export function NetSuccessChart({
   const [renderedWidth, setRenderedWidth] = useState<number | null>(null);
   const horizontal = orientation === "horizontal";
   useEffect(() => {
-    if (!interactive || !horizontal || !root.current) return;
+    if (!interactive || !root.current) return;
     const observer = new ResizeObserver(([entry]) => setRenderedWidth(entry.contentRect.width));
     observer.observe(root.current);
     return () => observer.disconnect();
-  }, [horizontal, interactive]);
-  // Match the viewBox to CSS pixels for readable text and >=44px row targets.
+  }, [interactive]);
+  // Phones match the viewBox to CSS pixels for readable text and >=44px row targets.
   const width = interactive && horizontal ? renderedWidth ?? requestedWidth : requestedWidth;
-  const height = interactive && horizontal ? 56 + 48 * bars.length : requestedHeight;
+  // viewBox units per CSS pixel, so SVG text keeps a 12px floor at any container width.
+  const unit = interactive && renderedWidth ? width / renderedWidth : 1;
+  const phone = interactive && horizontal;
+  const height = phone ? 72 + 48 * bars.length : requestedHeight;
   const ordered = bars.filter((b) => stateOf(b) !== "dim").map((b) => String(b.gameId));
   const { selected, register, handlers, setSelected } = useChartSelection(ordered);
   const tipBar = interactive && selected ? bars.find((b) => String(b.gameId) === selected) : undefined;
-  const margin = horizontal ? { top: 28, right: 20, bottom: 28, left: 100 } : { top: 10, right: 12, bottom: 78, left: 56 };
+  const narrowLabels = phone && width < 340;
+  const margin = horizontal ? { top: 28, right: 20, bottom: phone ? 44 : 28, left: narrowLabels ? 76 : 100 } : { top: 10, right: 12, bottom: Math.round(90 * unit), left: 56 };
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   const span = horizontal ? plot.right - plot.left : plot.bottom - plot.top;
   const count = Math.max(1, bars.length);
@@ -59,6 +136,7 @@ export function NetSuccessChart({
   const thick = Math.max(2, Math.min(horizontal ? 18 : 34, band * 0.64));
   const logo = Math.max(10, Math.min(LOGO, horizontal ? band * 0.9 : band * 0.95));
   // The winner's logo sits 0.6 logos past the bar tip; the loser's just across zero.
+  const cap = netSuccessCap(bars.map((b) => b.value));
   const [domainLow, domainHigh] = netSuccessDomain(
     bars.map((b) => b.value),
     span,
@@ -71,13 +149,32 @@ export function NetSuccessChart({
   };
   const ticks = niceTicks(domainLow, domainHigh, horizontal && interactive ? 3 : 8);
   const zero = along(0);
+  const isCapped = (bar: NetSuccessBar) => bar.value > cap.high || bar.value < cap.low;
+  // A capped bar's tip is held at its cap.
+  const tipOf = (bar: NetSuccessBar) => along(isCapped(bar) ? (bar.value > 0 ? cap.high : cap.low) : bar.value);
   // Dense slates (about 50+ games) read best as upright columns sized to the band.
   const verticalLabels = band < 20;
-  const labelSize = verticalLabels ? Math.max(8, Math.min(11, band * 0.72)) : Math.min(12, band * 0.5);
+  const labelSize = 12 * unit;
 
   function center(index: number): number {
     return (horizontal ? plot.top : plot.left) + band * (index + 0.5);
   }
+
+  // Keep the winner beyond the bar tip and the loser just across the zero axis.
+  function logoSlots(bar: NetSuccessBar, index: number) {
+    const c = center(index);
+    const tip = tipOf(bar);
+    const outward = bar.value >= 0 ? 1 : -1;
+    const gap = logo * 0.6;
+    const loserGap = logo / 2 + 6;
+    return {
+      winner: horizontal ? { cx: tip + outward * gap, cy: c } : { cx: c, cy: tip - outward * gap },
+      loser: horizontal ? { cx: zero - outward * loserGap, cy: c } : { cx: c, cy: zero + outward * loserGap },
+    };
+  }
+  const logoBoxes: Box[] = bars.flatMap((bar, index) =>
+    Object.values(logoSlots(bar, index)).map(({ cx, cy }) => ({ x: cx - logo / 2, y: cy - logo / 2, w: logo, h: logo })),
+  );
 
   function tooltipPosition(bar: NetSuccessBar) {
     const index = bars.indexOf(bar);
@@ -116,11 +213,16 @@ export function NetSuccessChart({
                 <text x={along(tick)} y={plot.top - 8} textAnchor="middle" fontSize={horizontal && interactive ? 12 : 11} fill="var(--ink-muted)">
                   {(tick * 100).toFixed(0)}
                 </text>
+                {phone && (
+                  <text x={along(tick)} y={plot.bottom + 16} textAnchor="middle" fontSize={12} fill="var(--ink-muted)" data-axis="x-tick-bottom">
+                    {(tick * 100).toFixed(0)}
+                  </text>
+                )}
               </>
             ) : (
               <>
                 <line x1={plot.left} x2={plot.right} y1={along(tick)} y2={along(tick)} stroke="var(--line)" strokeWidth={0.6} />
-                <text x={plot.left - 8} y={along(tick)} textAnchor="end" dominantBaseline="central" fontSize={12} fill="var(--ink-muted)">
+                <text x={plot.left - 8} y={along(tick)} textAnchor="end" dominantBaseline="central" fontSize={12 * unit} fill="var(--ink-muted)">
                   {(tick * 100).toFixed(0)}
                 </text>
               </>
@@ -133,7 +235,7 @@ export function NetSuccessChart({
           <line x1={plot.left} x2={plot.right} y1={zero} y2={zero} stroke="var(--ink-muted)" strokeWidth={1.2} />
         )}
         {!horizontal && (
-          <text transform={`translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ink)">
+          <text transform={`translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={13 * unit} fontWeight={600} fill="var(--ink)">
             Net success rate (pct)
           </text>
         )}
@@ -146,13 +248,11 @@ export function NetSuccessChart({
           const state = stateOf(bar);
           const focusable = interactive && state !== "dim";
           const c = center(index);
-          const tip = along(bar.value);
-          // Keep the winner beyond the bar tip and the loser just across the zero axis.
+          // A bar past the cap is drawn only up to it; a break mark and its true value say so.
+          const capped = isCapped(bar);
+          const tip = tipOf(bar);
           const outward = bar.value >= 0 ? 1 : -1;
-          const gap = logo * 0.6;
-          const loserGap = logo / 2 + 6;
-          const winnerAt = horizontal ? { cx: tip + outward * gap, cy: c } : { cx: c, cy: tip - outward * gap };
-          const loserAt = horizontal ? { cx: zero - outward * loserGap, cy: c } : { cx: c, cy: zero + outward * loserGap };
+          const { winner: winnerAt, loser: loserAt } = logoSlots(bar, index);
           const key = String(bar.gameId);
           return (
             <g
@@ -202,11 +302,17 @@ export function NetSuccessChart({
               ) : (
                 <rect x={c - thick / 2} y={Math.min(zero, tip)} width={thick} height={Math.abs(tip - zero)} fill={fillFor(bar)} />
               )}
+              {capped && <BarBreak horizontal={horizontal} c={c} tip={tip} outward={outward} thick={thick} />}
               <TeamMark team={bar.winner} cx={winnerAt.cx} cy={winnerAt.cy} size={logo} />
               <TeamMark team={bar.loser} cx={loserAt.cx} cy={loserAt.cy} size={logo} />
               {horizontal ? (
                 <text x={plot.left - 6} y={c} textAnchor="end" dominantBaseline="central" fontSize={interactive ? 12 : Math.min(11, band * 0.7)} fill="var(--ink)">
-                  {bar.label}
+                  {narrowLabels && bar.label.includes(" ") ? (
+                    <>
+                      <tspan x={plot.left - 6} dy="-0.6em">{bar.label.slice(0, bar.label.indexOf(" "))}</tspan>
+                      <tspan x={plot.left - 6} dy="1.2em">{bar.label.slice(bar.label.indexOf(" ") + 1)}</tspan>
+                    </>
+                  ) : bar.label}
                 </text>
               ) : (
                 <text
@@ -221,6 +327,10 @@ export function NetSuccessChart({
               )}
             </g>
           );
+        })}
+        {bars.map((bar, index) => {
+          if (!isCapped(bar)) return null;
+          return <BreakValue key={bar.gameId} gameId={bar.gameId} horizontal={horizontal} c={center(index)} tip={tipOf(bar)} outward={bar.value >= 0 ? 1 : -1} thick={thick} text={(bar.value * 100).toFixed(1)} unit={unit} width={width} dim={stateOf(bar) === "dim"} logos={logoBoxes} />;
         })}
       </svg>
       {tipBar && !horizontal && (

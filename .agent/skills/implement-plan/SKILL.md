@@ -33,4 +33,4 @@ For a material deviation, stop and request a revised Sol plan. Do not silently r
 1. Run the plan's final validation and `git diff --check`.
 2. Update the plan to `Implemented` only after every definition-of-done item passes; otherwise leave it `In Progress` and document the blocker.
 3. Create a full implementation session log linking the plan, amendments, validation, and precise next step.
-4. Propose a commit consistent with the plan's commit policy. Git operations remain user-controlled.
+4. Commit locally on `dev` per the contract's commit policy. Push only when the owner says it is ready (AGENTS.md "Pushing `dev`").

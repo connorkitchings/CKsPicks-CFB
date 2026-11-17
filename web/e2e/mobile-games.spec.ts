@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { gotoHydrated } from "./helpers";
+import { featuredComparisons, gotoHydrated, openRecord } from "./helpers";
 
 for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
   test.describe(`phone Games page at ${viewport.width}x${viewport.height}`, () => {
@@ -10,13 +10,15 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
         await gotoHydrated(page, url);
         const card = page.locator("li[id^='game-']").first();
         await expect(card).toBeVisible();
-        // Measured stack, graded week (the tallest): app bar 48 + Retrospective row 35 + top padding 8 +
-        // summary line 16 + record row 44 + gaps 18 + slate bar 105 + gap 8 + edges/highlights row 46 +
-        // gap 8 + day header 25 + gap 4 = 366px. The upcoming week lands at 331-347px.
-        expect((await card.boundingBox())!.y).toBeLessThan(370);
+        // Measured stack, graded week at 320px (the tallest, 537px): app bar 48 + title and phase lines +
+        // timestamp line + slate bar 105 + status and analysis row 48 + day header. Featured comparisons
+        // and the model record sit below the games, so they add nothing above the first card. The upcoming
+        // week lands at 482-498px.
+        expect((await card.boundingBox())!.y).toBeLessThan(560);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         await expect(page.getByTestId("week-phase")).toBeVisible();
-        await expect(page.getByTestId("record-summary")).toBeVisible();
+        await expect(page.getByRole("group", { name: "Game status" })).toBeVisible();
+        await expect(featuredComparisons(page).locator("summary").first()).toBeVisible();
         await expect(page.locator("details[open]")).toHaveCount(0);
       });
     }
@@ -60,6 +62,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       await expect(page.locator("li[id^='game-']")).toHaveCount(1);
     });
 
+    test("the Filters button exists only when the sheet has controls", async ({ page }) => {
+      await gotoHydrated(page, "/?mode=market");
+      await expect(page.getByTestId("slate-filters-button")).toHaveCount(0);
+      await gotoHydrated(page, "/");
+      await expect(page.getByTestId("slate-filters-button")).toHaveCount(1);
+    });
+
     test("the week navigator lives in the bar and the quick search filters the slate", async ({ page }) => {
       await gotoHydrated(page, "/");
       const bar = page.getByTestId("slate-bar");
@@ -68,23 +77,30 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       await expect(page.locator("li[id^='game-']")).toHaveCount(1);
     });
 
-    test("biggest edges sits collapsed under the slate bar, above the first day's games", async ({ page }) => {
+    test("the status row sits under the slate bar above the games, and featured comparisons stay collapsed below them", async ({ page }) => {
       await gotoHydrated(page, "/");
-      const edges = page.getByRole("region", { name: "Biggest edges" });
-      await expect(edges.locator("summary")).toBeVisible();
-      await expect(edges.locator("details")).not.toHaveAttribute("open", "");
-      const firstGroup = page.locator("section[aria-label]").filter({ has: page.locator("li[id^='game-']") }).first();
-      expect((await edges.boundingBox())!.y).toBeLessThan((await firstGroup.boundingBox())!.y);
-      expect((await edges.locator("summary").boundingBox())!.height).toBeGreaterThanOrEqual(44);
-      expect((await edges.boundingBox())!.height).toBeLessThan(60);
+      const groups = page.locator("section[aria-label]").filter({ has: page.locator("li[id^='game-']") });
+      const firstGroup = (await groups.first().boundingBox())!;
+      const lastGroup = (await groups.last().boundingBox())!;
+      const bar = (await page.getByTestId("slate-bar").boundingBox())!;
+      const status = (await page.getByRole("group", { name: "Game status" }).boundingBox())!;
+      expect(status.y).toBeGreaterThanOrEqual(bar.y + bar.height);
+      expect(status.y + status.height).toBeLessThanOrEqual(firstGroup.y);
+      const featured = featuredComparisons(page);
+      await expect(featured).not.toHaveAttribute("open", "");
+      const summary = (await featured.locator("summary").first().boundingBox())!;
+      expect(summary.y).toBeGreaterThanOrEqual(lastGroup.y + lastGroup.height);
+      expect(summary.height).toBeGreaterThanOrEqual(44);
+      expect((await featured.boundingBox())!.height).toBeLessThan(76);
     });
 
     test("the record card header carries the week status without the run state or publish stamp", async ({ page }) => {
       await gotoHydrated(page, "/");
       await expect(page.getByText(/Run published/)).toBeHidden();
-      const summary = page.getByTestId("record-summary");
-      await expect(summary).toContainText(/Week \d+ · Upcoming · \d+ games/);
-      await expect(summary).not.toContainText("Frozen before kickoff");
+      // The phone status line sits under the title; the model record no longer carries it.
+      const status = page.getByTestId("week-phase").locator("..");
+      await expect(status).toContainText(/Week \d+ · Upcoming · \d+ games/);
+      await expect(status).not.toContainText("Frozen before kickoff");
       await expect(page.getByText("Frozen before kickoff")).toBeHidden();
     });
 
@@ -107,13 +123,62 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
   });
 }
 
-test("desktop keeps the heading, phase pill, week navigator and open record", async ({ page }) => {
+test("desktop keeps the heading, phase pill, week navigator and an open record card inside its disclosure", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await gotoHydrated(page, "/?week=4");
-  await expect(page.getByRole("heading", { name: "Week 4", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Week 4 games", level: 1 })).toBeVisible();
   await expect(page.getByTestId("week-phase")).toBeVisible();
   await expect(page.locator("#week-select")).toBeVisible();
   await expect(page.getByTestId("slate-filters-button")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Season record before Week 4" })).toBeHidden();
+  await openRecord(page);
   await expect(page.getByRole("heading", { name: "Season record before Week 4" })).toBeVisible();
   await expect(page.getByTestId("record-summary")).toBeHidden();
+});
+
+test.describe("phone cards at 320px", () => {
+  test.use({ viewport: { width: 320, height: 568 }, hasTouch: true });
+
+  for (const url of ["/?mode=market", "/?week=4", "/"]) {
+    test(`${url}: kickoff stays on one line and no pick or spread wraps`, async ({ page }) => {
+      await gotoHydrated(page, url);
+      const cards = page.locator("li[id^='game-']");
+      await expect(cards.first()).toBeVisible();
+      for (const kickoff of await cards.locator("[data-testid='kickoff']").all()) {
+        const box = (await kickoff.boundingBox())!;
+        expect(box.height).toBeLessThanOrEqual(18);
+      }
+      // Market cards: the spread row cell; prediction cards: each pick.
+      const spreadCells = page.locator("li[id^='game-'] tbody tr:first-child td:nth-child(2), li[id^='game-'] [data-pick]");
+      for (const cell of await spreadCells.all()) {
+        if (!(await cell.isVisible())) continue;
+        expect((await cell.boundingBox())!.height).toBeLessThanOrEqual(36); // one 20px line plus 12px padding; a wrapped cell is 52px+
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+  }
+
+  test("the team search placeholder is not clipped beside the Filters button and Layout toggle", async ({ page }) => {
+    await gotoHydrated(page, "/");
+    const search = page.getByRole("searchbox", { name: "Filter by team" });
+    const { room, needed } = await search.evaluate((input: HTMLInputElement) => {
+      const style = getComputedStyle(input);
+      const probe = document.createElement("span");
+      probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${style.font}`;
+      probe.textContent = input.placeholder;
+      document.body.append(probe);
+      const needed = probe.getBoundingClientRect().width;
+      probe.remove();
+      return { room: input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), needed };
+    });
+    expect(needed).toBeLessThanOrEqual(room);
+    const toggle = page.getByRole("group", { name: "Layout" });
+    expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("the market table says Result below 360px", async ({ page }) => {
+    await gotoHydrated(page, "/?mode=market");
+    const table = page.getByRole("table", { name: "Market and results" });
+    await expect(table.getByRole("columnheader", { name: "Result", exact: true })).toBeVisible();
+  });
 });

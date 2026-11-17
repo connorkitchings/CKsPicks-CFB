@@ -25,6 +25,9 @@ export interface MarketGame {
   totalResult: "win" | "loss" | "push" | null;
   canonicalSpread?: number | null;
   canonicalTotal?: number | null;
+  /** When the retained line was captured (`market_snapshots.captured_at`); null/absent = unknown. */
+  canonicalSpreadCapturedAt?: Date | null;
+  canonicalTotalCapturedAt?: Date | null;
   spreadGradingVersion?: string | null;
   totalGradingVersion?: string | null;
 }
@@ -42,6 +45,8 @@ export interface ComparedGame {
   /** Prediction minus actual. */
   modelError: number;
   lineError: number;
+  /** ISO capture time of the retained line; null = unknown (never another timestamp). */
+  lineCapturedAt: string | null;
 }
 
 export interface MarketComparison {
@@ -79,6 +84,7 @@ interface Eligible {
   actual: number;
   model: number;
   line: number;
+  capturedAt: string | null;
   source: LineSource;
 }
 
@@ -98,13 +104,17 @@ function eligible(games: readonly MarketGame[], target: MarketTarget): Eligible[
       model: forecast,
       // Home-team spread of -7 implies a home margin of +7; a pick'em stays 0, never -0.
       line: spread ? (canonical === 0 ? 0 : -canonical) : canonical,
+      capturedAt: isoOrNull(target === "spread" ? game.canonicalSpreadCapturedAt : game.canonicalTotalCapturedAt),
       source: lineSourceOf(target === "spread" ? game.spreadGradingVersion : game.totalGradingVersion),
     });
   }
   return out;
 }
 
-const compared = ({ game, actual, model, line }: Eligible): ComparedGame => ({
+const isoOrNull = (value: Date | null | undefined): string | null =>
+  value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : null;
+
+const compared = ({ game, actual, model, line, capturedAt }: Eligible): ComparedGame => ({
   gameId: game.gameId,
   week: game.week,
   homeTeam: game.homeTeam,
@@ -114,6 +124,7 @@ const compared = ({ game, actual, model, line }: Eligible): ComparedGame => ({
   line,
   modelError: model - actual,
   lineError: line - actual,
+  lineCapturedAt: capturedAt,
 });
 
 /** The comparison set: eligible games whose line is the retained pre-kickoff line. Pushes included. */

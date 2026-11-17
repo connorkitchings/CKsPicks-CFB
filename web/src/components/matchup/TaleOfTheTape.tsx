@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { RankChip } from "@/components/ui/RankChip";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { chartColor } from "@/lib/charts";
-import { buildTapeRows, tapeVerdict, type TapeVerdict } from "@/lib/tale-of-tape";
-import { FALLBACK_TEAM_COLOR, teamAbbr, teamAltColor, teamColor } from "@/lib/team-logos";
+import { buildTapeRows } from "@/lib/tale-of-tape";
+import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
 import { rankLabel, rankTitle, type UnitMatchupRow } from "@/lib/team-stats";
 import type { TeamRatingSummary } from "@/lib/matchup";
 
 export type TaleOfTheTapeProps = {
+  selectedSide: "away" | "home";
   awayTeam: string;
   homeTeam: string;
   awayOffVsHomeDef: UnitMatchupRow[];
@@ -21,33 +20,8 @@ export type TaleOfTheTapeProps = {
 
 const sideColor = (team: string) => chartColor(teamColor(team), teamAltColor(team), FALLBACK_TEAM_COLOR);
 
-function Verdict({
-  verdict,
-  offTeam,
-  defTeam,
-  offColor,
-  defColor,
-}: {
-  verdict: TapeVerdict;
-  offTeam: string;
-  defTeam: string;
-  offColor: string;
-  defColor: string;
-}) {
-  if (verdict.kind === "none") return <span>Not enough ranked data to compare these factors.</span>;
-  if (verdict.kind === "split") return <span>Neither unit has the edge across the {verdict.compared} compared factors.</span>;
-  const offense = verdict.kind === "offense";
-  return (
-    <span>
-      <strong style={{ color: offense ? offColor : defColor }}>
-        {offense ? offTeam : defTeam} {offense ? "Offense" : "Defense"}
-      </strong>{" "}
-      controls the statistical edge in {verdict.count} of {verdict.compared} compared factors.
-    </span>
-  );
-}
-
 export function TaleOfTheTape({
+  selectedSide,
   awayTeam,
   homeTeam,
   awayOffVsHomeDef,
@@ -55,9 +29,7 @@ export function TaleOfTheTape({
   awayRating,
   homeRating,
 }: TaleOfTheTapeProps) {
-  const [selectedClash, setSelectedClash] = useState<"awayOff" | "homeOff">("awayOff");
-
-  const isAwayOff = selectedClash === "awayOff";
+  const isAwayOff = selectedSide === "away";
   const offTeam = isAwayOff ? awayTeam : homeTeam;
   const defTeam = isAwayOff ? homeTeam : awayTeam;
   const offRating = isAwayOff ? awayRating : homeRating;
@@ -67,7 +39,6 @@ export function TaleOfTheTape({
   const defColor = sideColor(defTeam);
 
   const tapeRows = buildTapeRows(isAwayOff ? awayOffVsHomeDef : homeOffVsAwayDef);
-  const verdict = tapeVerdict(tapeRows);
 
   return (
     <Card
@@ -81,36 +52,26 @@ export function TaleOfTheTape({
         <div className="min-w-0">
           <h2 className="text-base font-bold text-ink-primary">Key factors</h2>
           <p className="text-xs text-ink-muted mt-0.5">
-            Head-to-head unit strength on the factors that drive scoring. Turnovers are not included yet.
+            Descriptive offense-versus-defense comparisons. These contextual statistics do not feed the rating. Turnovers are not included.
           </p>
         </div>
 
-        <SegmentedControl
-          size="sm"
-          label="Unit matchup clash"
-          options={[
-            { value: "awayOff", label: `${teamAbbr(awayTeam)} Off vs ${teamAbbr(homeTeam)} Def` },
-            { value: "homeOff", label: `${teamAbbr(homeTeam)} Off vs ${teamAbbr(awayTeam)} Def` },
-          ]}
-          value={selectedClash}
-          onChange={setSelectedClash}
-        />
       </div>
 
       {/* Clash header */}
       <div className="grid grid-cols-2 gap-4 pb-3 text-sm font-semibold border-b border-line/40">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 max-sm:flex-wrap items-center gap-2">
           <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: offColor }} />
-          <span className="min-w-0 truncate text-ink-primary">{offTeam} Offense</span>
+          <span className="min-w-0 break-words text-ink-primary max-sm:order-first max-sm:w-full"><span className="block">{offTeam}</span>{" "}<span className="block">Offense</span></span>
           {offRating.offenseRank !== null && offRating.offenseRank !== undefined && (
             <RankChip rank={offRating.offenseRank} title="Model Offense Rank" className="shrink-0 text-[11px]" />
           )}
         </div>
-        <div className="flex min-w-0 items-center justify-end gap-2 text-right">
+        <div className="flex min-w-0 max-sm:flex-wrap items-center justify-end gap-2 text-right">
           {defRating.defenseRank !== null && defRating.defenseRank !== undefined && (
             <RankChip rank={defRating.defenseRank} title="Model Defense Rank" className="shrink-0 text-[11px]" />
           )}
-          <span className="min-w-0 truncate text-ink-primary">{defTeam} Defense</span>
+          <span className="min-w-0 break-words text-ink-primary max-sm:order-first max-sm:w-full"><span className="block">{defTeam}</span>{" "}<span className="block">Defense</span></span>
           <span className="w-3 h-3 shrink-0 rounded-full" style={{ backgroundColor: defColor }} />
         </div>
       </div>
@@ -181,20 +142,20 @@ export function TaleOfTheTape({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-x-3 text-[10px] text-ink-muted mt-1 px-0.5">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 text-[11px] text-ink-muted mt-1 px-0.5">
                 <span className="min-w-0">{factor.description}</span>
                 {!edge ? (
                   <span className="font-medium text-ink-muted">Not available</span>
                 ) : edge.side === "offense" ? (
                   <span className="font-bold text-ink-primary">
-                    Advantage: <span style={{ color: offColor }}>{offTeam}</span>
+                    Higher-ranked unit: <span aria-hidden className="mr-0.5 inline-block size-2 rounded-full" style={{ backgroundColor: offColor }} /> {offTeam}
                   </span>
                 ) : edge.side === "defense" ? (
                   <span className="font-bold text-ink-primary">
-                    Advantage: <span style={{ color: defColor }}>{defTeam}</span>
+                    Higher-ranked unit: <span aria-hidden className="mr-0.5 inline-block size-2 rounded-full" style={{ backgroundColor: defColor }} /> {defTeam}
                   </span>
                 ) : (
-                  <span className="font-medium text-ink-muted">Even matchup</span>
+                  <span className="font-medium text-ink-muted">Similar rank percentiles</span>
                 )}
               </div>
             </div>
@@ -204,10 +165,6 @@ export function TaleOfTheTape({
 
       {/* Summary Footer */}
       <div className="mt-4 pt-3.5 border-t border-line flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-ink-muted">
-        <div data-testid="tape-verdict">
-          <span className="font-semibold text-ink-primary">Tape Verdict: </span>
-          <Verdict verdict={verdict} offTeam={offTeam} defTeam={defTeam} offColor={offColor} defColor={defColor} />
-        </div>
         <div className="text-[11px] text-ink-faint">National ranks based on FBS-vs-FBS games.</div>
       </div>
     </Card>

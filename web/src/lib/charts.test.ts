@@ -20,6 +20,7 @@ import {
   netSuccessBars,
   gameLogDomains,
   leastCrowdedSpot,
+  netSuccessCap,
   netSuccessDomain,
   valueLabelY,
   netSuccessWeeks,
@@ -37,6 +38,8 @@ import {
   finishingDrivesScatterPoints,
   resumeQualityScatterPoints,
   marketBoardPoints,
+  marketComparisonPoints,
+  groupUnavailableByGame,
   type TeamSeasonStatRow,
   type TeamResumeChartRow,
   type SlateMarketGameRow,
@@ -125,7 +128,7 @@ test("net success: rows without the overtime-inclusive columns (earlier releases
   ];
   const { bars, notCharted } = netSuccessBars(rows, 3);
   assert.deepEqual(bars, []);
-  assert.deepEqual(notCharted, [{ gameId: 1, reason: "success rate unavailable" }]);
+  assert.deepEqual(notCharted, [{ gameId: 1, teams: ["Alabama", "Michigan"], reason: "success rate unavailable" }]);
 });
 
 test("net success: tied points and missing success rates are listed, not charted", () => {
@@ -137,10 +140,10 @@ test("net success: tied points and missing success rates are listed, not charted
   const { bars, notCharted } = netSuccessBars(rows, 0);
   assert.deepEqual(bars.map((b) => b.gameId), [3]);
   assert.deepEqual(notCharted, [
-    { gameId: 1, reason: "tied points" },
-    { gameId: 2, reason: "success rate unavailable" },
+    { gameId: 1, teams: ["Alabama", "Michigan"], reason: "tied points" },
+    { gameId: 2, teams: ["Tulane", "Notre Dame"], reason: "success rate unavailable" },
   ]);
-  assert.deepEqual(netSuccessBars([rows[0]], 0).notCharted, [{ gameId: 1, reason: "incomplete game rows" }]);
+  assert.deepEqual(netSuccessBars([rows[0]], 0).notCharted, [{ gameId: 1, teams: ["Alabama"], reason: "incomplete game rows" }]);
 });
 
 test("available weeks per chart and week coercion", () => {
@@ -439,7 +442,7 @@ test("buildConferenceMap and matchesTeamConference resolve CFBD and legacy ratin
 
 test("netSuccessDomain follows the lowest and highest bar instead of mirroring zero", () => {
   // The Week 8 slate: tallest bar +28 points, deepest bar -15.
-  const [low, high] = netSuccessDomain([0.28, 0.1, -0.15, 0.02], 400, 33, 36);
+  const [low, high] = netSuccessDomain([0.28, 0.25, 0.1, -0.15, -0.14, 0.02], 400, 33, 36);
   assert.ok(low < -0.15 && low > -0.22, `low ${low} sits just below the deepest bar`);
   assert.ok(high > 0.28 && high < 0.34, `high ${high} sits just above the tallest bar`);
   // A mirrored axis would have reached about -0.33.
@@ -458,14 +461,40 @@ test("netSuccessDomain leaves room for the logos at both ends and maps to the pi
 
 test("netSuccessDomain with only positive bars reserves just the loser-logo room below zero", () => {
   const span = 400;
-  const [low, high] = netSuccessDomain([0.05, 0.3], span, 30, 40);
+  const [low, high] = netSuccessDomain([0.25, 0.3], span, 30, 40);
   const px = (value: number) => ((value - low) / (high - low)) * span;
   assert.ok(Math.abs(px(0) - 40) < 1e-6, "zero sits one loser clearance above the bottom");
   assert.ok(span - px(0.3) >= 30 - 1e-6);
 });
 
+test("netSuccessCap leaves a side alone when its top two bars are close", () => {
+  const cap = netSuccessCap([0.3, 0.26, -0.1, -0.08]);
+  assert.equal(cap.high, 0.3);
+  assert.equal(cap.low, -0.1);
+});
+
+test("netSuccessCap limits one outlier to 1.25 times the next-largest bar", () => {
+  const cap = netSuccessCap([0.5, 0.2, 0.1, -0.05]);
+  assert.ok(Math.abs(cap.high - 0.25) < 1e-9);
+  assert.equal(cap.low, -0.05);
+  const [, high] = netSuccessDomain([0.5, 0.2, 0.1, -0.05], 400, 30, 40);
+  assert.ok(high < 0.35, `domain top ${high} follows the cap, not the 0.5 outlier`);
+});
+
+test("netSuccessCap caps a negative-side outlier independently", () => {
+  const cap = netSuccessCap([0.2, 0.17, -0.6, -0.1]);
+  assert.ok(Math.abs(cap.low + 0.125) < 1e-9);
+  assert.equal(cap.high, 0.2);
+});
+
+test("netSuccessCap never caps a lone bar on its side", () => {
+  assert.deepEqual(netSuccessCap([0.4]), { low: 0, high: 0.4 });
+  assert.deepEqual(netSuccessCap([-0.4]), { low: -0.4, high: 0 });
+  assert.deepEqual(netSuccessCap([]), { low: 0, high: 0 });
+});
+
 test("netSuccessDomain handles only-negative, all-zero and empty input", () => {
-  const [lowNeg, highNeg] = netSuccessDomain([-0.2, -0.05], 400, 30, 40);
+  const [lowNeg, highNeg] = netSuccessDomain([-0.2, -0.18], 400, 30, 40);
   assert.ok(lowNeg < -0.2 && highNeg > 0);
   const [lowZero, highZero] = netSuccessDomain([0, 0], 400, 30, 40);
   assert.ok(lowZero < 0 && highZero > 0 && Number.isFinite(lowZero) && Number.isFinite(highZero));
@@ -735,4 +764,72 @@ test("slate market board: consensus coordinates, spread sign inversion, high-edg
   assert.equal(g101Total.modelLine, 51.0);
   assert.equal(g101Total.highEdge, true);
   assert.equal(totals.unavailable.length, 1);
+});
+
+test("marketComparisonPoints negates home spread lines into home margins and leaves totals unchanged", () => {
+  const game = {
+    gameId: 201, season: 2026, week: 9, startDate: new Date("2026-10-31T20:00:00Z"),
+    homeTeam: "Home U", awayTeam: "Away U",
+    homeTeamSpreadLine: -7.0, predictedSpread: 10.5, totalLine: 54.5, predictedTotal: 51.0,
+    edgeSpread: 3.5, edgeTotal: 3.5, spreadLean: "home", totalLean: "under",
+  } as unknown as Parameters<typeof marketComparisonPoints>[0][number];
+  const spread = marketComparisonPoints([game], "spread").points[0];
+  assert.equal(spread.market, 7.0, "home favored by 7 reads as a +7 home margin");
+  assert.equal(spread.model, 10.5);
+  const total = marketComparisonPoints([game], "total").points[0];
+  assert.equal(total.market, 54.5);
+  assert.equal(total.model, 51.0);
+  const pickem = marketComparisonPoints([{ ...game, homeTeamSpreadLine: 0 } as typeof game], "spread").points[0];
+  assert.equal(Object.is(pickem.market, 0), true, "a pick'em line is +0, not -0");
+});
+
+test("marketComparisonPoints handles sign, pick'em, one-sided and non-finite inputs", () => {
+  const base = {
+    gameId: 301, season: 2026, week: 9, startDate: new Date("2026-10-31T20:00:00Z"),
+    homeTeam: "Home U", awayTeam: "Away U",
+    homeTeamSpreadLine: 4.5, predictedSpread: -2.0, totalLine: 48, predictedTotal: 50,
+    edgeSpread: null, edgeTotal: null, spreadLean: null, totalLean: null,
+  } as unknown as Parameters<typeof marketComparisonPoints>[0][number];
+  const dog = marketComparisonPoints([base], "spread").points[0];
+  assert.equal(dog.market, -4.5, "home underdog line +4.5 is a -4.5 home margin");
+  assert.equal(dog.model, -2.0);
+  assert.equal(dog.edge, 2.5, "edge falls back to the absolute gap when none is stored");
+
+  const pk = marketComparisonPoints([{ ...base, homeTeamSpreadLine: 0, predictedSpread: 0 } as typeof base], "spread").points[0];
+  assert.equal(Object.is(pk.market, 0) && Object.is(pk.model, 0), true);
+
+  const noModel = marketComparisonPoints([{ ...base, predictedSpread: null } as typeof base], "spread");
+  assert.equal(noModel.points.length, 0);
+  assert.equal(noModel.unavailable.length, 1);
+  assert.equal(noModel.unavailable[0].missing, "projection");
+  assert.equal(noModel.unavailable[0].reason, "no spread model projection");
+  const noLine = marketComparisonPoints([{ ...base, totalLine: null } as typeof base], "total");
+  assert.equal(noLine.points.length, 0);
+  assert.equal(noLine.unavailable.length, 1);
+  assert.equal(noLine.unavailable[0].missing, "line");
+  assert.equal(noLine.unavailable[0].reason, "no total line");
+  const neither = marketComparisonPoints([{ ...base, totalLine: null, predictedTotal: null } as typeof base], "total");
+  assert.equal(neither.unavailable[0].missing, "both");
+  assert.equal(neither.unavailable[0].reason, "no total line or model projection");
+
+  const nan = marketComparisonPoints([{ ...base, homeTeamSpreadLine: NaN } as typeof base], "spread");
+  assert.equal(nan.points.length, 0, "NaN never reaches a chart coordinate");
+  assert.equal(nan.unavailable.length, 1);
+});
+
+test("groupUnavailableByGame merges a game's spread and total gaps and names the missing side", () => {
+  const base = {
+    gameId: 401, season: 2026, week: 9, startDate: new Date("2026-10-31T20:00:00Z"),
+    homeTeam: "Home U", awayTeam: "Away U",
+    homeTeamSpreadLine: null, predictedSpread: 3, totalLine: 48, predictedTotal: null,
+    edgeSpread: null, edgeTotal: null, spreadLean: null, totalLean: null,
+  } as unknown as Parameters<typeof marketComparisonPoints>[0][number];
+  const other = { ...base, gameId: 402, homeTeam: "Other U", homeTeamSpreadLine: 1, predictedTotal: 50 } as typeof base;
+  const groups = groupUnavailableByGame(
+    marketComparisonPoints([base, other], "spread").unavailable,
+    marketComparisonPoints([base, other], "total").unavailable,
+  );
+  assert.deepEqual(groups, [
+    { gameId: 401, homeTeam: "Home U", awayTeam: "Away U", reasons: ["no spread line", "no total model projection"] },
+  ]);
 });

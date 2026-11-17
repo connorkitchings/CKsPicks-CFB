@@ -88,3 +88,36 @@ test("mobile full slate keeps every game and full-size row targets", async ({ pa
   expect(Math.min(...heights)).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test("mobile game log shades loss rows and explains the shading", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/stats?chart=game-log&team=Alabama");
+  const log = page.getByTestId("game-log-chart");
+  await expect(log.getByTestId("game-log-mobile-key").first()).toBeVisible();
+  await expect(log.getByTestId("game-log-mobile-key").first()).toHaveText("Shaded row: loss");
+  const rows = await log.locator("button[data-game]").evaluateAll((nodes) => nodes.map((node) => ({
+    result: node.getAttribute("data-result"),
+    label: node.getAttribute("aria-label") ?? "",
+    shaded: getComputedStyle(node).backgroundColor !== "rgba(0, 0, 0, 0)",
+  })));
+  expect(rows.length).toBeGreaterThan(0);
+  for (const row of rows) {
+    expect(row.shaded).toBe(row.result === "L");
+    expect(/ · L/.test(row.label)).toBe(row.result === "L");
+  }
+});
+
+test("mobile net success at 320px repeats ticks at the bottom, keeps a wide plot and 12px text", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/stats?chart=net-success&week=0&fixture=slate");
+  const net = page.getByTestId("net-success-chart");
+  await expect(net).toHaveAttribute("data-orientation", "horizontal");
+  expect(await net.locator('text[data-axis="x-tick-bottom"]').count()).toBeGreaterThan(0);
+  const plotWidth = await net.locator("svg > rect").first().evaluate((node) => node.getBoundingClientRect().width);
+  expect(plotWidth).toBeGreaterThanOrEqual(160);
+  const sizes = await net.locator("svg text").evaluateAll((nodes) => nodes.map((node) => {
+    const ctm = (node as SVGGraphicsElement).getScreenCTM()!;
+    return parseFloat(getComputedStyle(node).fontSize) * Math.hypot(ctm.a, ctm.b);
+  }));
+  expect(Math.min(...sizes)).toBeGreaterThanOrEqual(11.99);
+});

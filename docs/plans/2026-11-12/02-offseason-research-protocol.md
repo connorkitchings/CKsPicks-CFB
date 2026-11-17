@@ -1,0 +1,67 @@
+# Pre-registered offseason research protocol
+
+- **Status:** Approved (2026-11-12)
+- **Created:** 2026-11-12
+- **Planner:** Sol
+- **Approval source:** The owner approved the Protocol section as written on 2026-11-12, before any 2026 residual was examined ("I'm fine with all of those"), including that a candidate must win on the target it claims, not on both. The values are mirrored in `conf/research/offseason_2027/protocol.yaml`.
+- **Implementation log:** Pending (documentation only; `session_logs/2026-11-12/NN-research-protocol.md`)
+- **Commit policy:** Separate plan commit before any diagnostics run, so the registration date is verifiable in git history.
+
+## Goal and acceptance
+
+Write down, while 2026 is still unseen as a holdout, how any offseason model candidate will be compared and adopted. The offseason rules in the [backlog](../../planning/offseason-2027-backlog.md) say gates are written before any run; this contract is that record.
+
+Acceptance: the Protocol section is approved and committed before the diagnostics report ([contract 03](03-prediction-error-diagnostics.md)) or any candidate run starts; no later amendment loosens a threshold without a dated amendment entry.
+
+## Baseline and constraints
+
+- Frozen V5 (the accepted 2026-09-21 source family) is the comparison model. The closed V6 ratings lab (`RETAINED_AS_BENCHMARK` on 2026-09-30, did not beat V5) supplies the `v5-common` bridge reference and the evaluation code: `src/cks_picks_cfb/ratings_lab/evaluation.py` (`scorecard`, `paired_comparison`, `common_bridge_predictions`, `frozen_v5_predictions`) and the template `conf/research/ratings_lab_v1/protocol.yaml`.
+- 2026 is the clean holdout. No feature, prior, threshold or model choice may use 2026 results or betting win/loss slices ([betting policy](../../modeling/betting_policy.md), [evaluation](../../modeling/evaluation.md)).
+- Out of scope: running any candidate, changing V5, releases, the public record.
+- Assumption to confirm: the lab's research bucket credentials (`CFB_R2_LAB_*`) are not in `.env`, so lab runs use the local-output exception until the owner provisions the bucket (tracked in the backlog).
+
+## Protocol (to be approved)
+
+- **Populations:** development seasons 2021 to 2025; headline seasons 2022 to 2025 (the corpus of 7,318 frozen V5 rows); 2021 only through the bridge's rolling-origin errors. Earlier seasons in the lab protocol (2015 to 2019) may be used to fit a candidate but never for the headline.
+- **Targets:** home-minus-away margin and total points, scored separately.
+- **Metrics:** MAE, RMSE, bias, Gaussian CRPS, 90% interval coverage and width, each pooled, by season and by completed-game stage, from `scorecard`.
+- **Comparison:** paired bootstrap against frozen V5 and against `v5-common`, 2,000 replicates, seed `20260928`, resampling games.
+- **Adoption thresholds (approved):** a candidate is eligible only if, on the 2022 to 2025 headline, the paired 95% interval for the MAE difference versus V5 excludes zero in the candidate's favor on the target it claims; no season's MAE is worse than V5's by more than 0.10 points; 90% interval coverage stays within 87% to 93%; and Weeks 0 to 4 are not worse than V5.
+- **Holdout rule:** a candidate is frozen (code, parameters, hashes recorded) before any 2026 scoring. 2026 is scored once, week by week at the original information time, after the 2026-12-13 final close. A failed 2026 score ends that candidate; it is not tuned and rerun. **Refit after the holdout:** once the 2026 score is recorded, the 2027 model is refit on 2021 to 2026 (plus the earlier years the lab allows), and the refit changes no choice made from 2021 to 2025. 2027 then becomes the next clean holdout.
+- **Market data:** closing-line value (from the [near-kickoff capture](01-near-kickoff-line-capture.md)) and betting results are monitoring views, never selection criteria.
+- **Logging:** every candidate run records the commit, the protocol hash, the seed and the output hashes.
+
+## Ordered changes
+
+1. Owner edits and approves the thresholds above. Done 2026-11-12; the Status line records approval and date.
+2. Added (2026-11-12) `conf/research/offseason_2027/protocol.yaml` copying the lab protocol keys, with the approved values and explicit `holdout_season: 2026` and `holdout_scored_once: true` entries. The lab reads its protocol with `yaml.safe_load` into a plain dictionary (`scripts/research/run_v6_tournament.py:181`), so the extra keys do not break it.
+3. Link the protocol from the backlog and `docs/modeling/evaluation.md`.
+
+## Validation
+
+`git diff --check`, `uv run mkdocs build --strict`, and the contract is listed in `docs/plans/index.md`. Boundary check: the protocol file parses and its seed and replicate count equal the lab's values.
+
+## Handoff/amendments
+
+Resume gate: met. Next action: task 3, then the diagnostics contract. Amendments are dated entries here stating the reason and the previous and revised values; loosening a threshold after any 2026 residual has been viewed is not allowed.
+
+### Amendment 2026-11-15 (owner approved amendments 7, 9 and 10 of the baseline audit contract)
+
+Source: [V5 baseline audit and model analysis framework](../2026-11-14/01-v5-baseline-audit-and-analysis-framework.md), drafted amendments section. No threshold value changes; each entry is previous state, revised state.
+
+- **7. 2026 exposure.** Previous: 2026 was a holdout scored once. Revised: on 2026-11-15, under owner approval, 2026 weeks 0 to 6 were scored for the baseline and for candidates B1s, B3 and P1 to P4 (zero offsets). 2026 is not a clean holdout for those candidates; the clean forward test is the early weeks of 2027. The rule against loosening any value after a 2026 residual has been viewed stands.
+- **9. Frozen candidate for 2027.** Previous: none. Revised: P3 (FBS-vs-FCS indicator plus early conference-tier terms; specification in the contract; script `p4.py`, SHA-256 `30438df9d6d4f9357f2e5f401b2f7ba47bd2054e2d616e836a90156a700f8c09`) is scored once on 2027 regular-season games at completed-game stages 0 to 3 against the baseline. Pass: margin MAE gain at least 0.20 with a two-sided 95% paired interval excluding zero, stage 0 to 3 bias magnitude at most 1.0, and stage 4 MAE no more than 0.05 above the baseline once stage 4 games exist; adoption still requires the existing adoption block. The 2027 offset rule must be fixed before the first 2027 game is scored.
+- **10. Selection-season rule.** Previous: none. Revised: a season may select among candidates or set a tuning threshold only if its fit saw at least three earlier training seasons.
+- **Not applied:** amendment 8 (FBS-vs-FBS headline population) waits for an explicit owner statement that it is a population definition and not a loosening; amendments 1 to 6 of the contract remain unapplied.
+
+### Amendment 2026-11-15 (second entry; owner approved amendments 8, 3, 5, 6 and 11)
+
+Source: the baseline audit contract's amendments section. Each item is previous state, revised state. No numeric threshold changes.
+
+- **8. Headline population.** Previous: all regular-season games. Revised: the headline population for adoption is regular-season FBS-vs-FBS games (both teams FBS by that season's CFBD membership), per the release universe in `docs/status.md`. FBS-vs-FCS games are not dropped: they are reported separately as a secondary population for every candidate. Owner: approved the FBS-vs-FBS focus while keeping FBS-vs-FCS reported. Recorded as a population definition, not a loosening of any threshold.
+- **3. 2022 to 2025.** Previous: described as validation seasons. Revised: previously examined temporal validation evidence; tuning on 2015 to 2019 and 2021 restores no independence. Before the next evaluation batch, candidate families, comparison rules and the way a finalist is chosen are frozen; a ledger of scoring runs records looks and does not remove selection bias.
+- **5. Market.** Previous: unspecified. Revised: market comparison is reported only after football-based priorities are frozen, with identical game coverage, verified spread signs, quote provenance, and cutoff-time lines reported separately from closing lines. Using market results to steer research is market-informed prioritization and needs its own explicit approval.
+- **6. Benchmark population.** Previous: all games. Revised: regular-season games only (3,483 per target for 2022 to 2025); postseason games are removed from bridge training and calibration as well as scoring.
+- **4 (folded into 7).** The 2026 exposure language is carried by the 2026-11-15 entry above, with the restriction that no candidate beyond those listed there is scored on 2026 until a candidate, or a bounded pre-declared set, is frozen.
+- **11. 2027 offset rule (provisional).** Previous: none. Revised: P3 and the baseline use the serving pipeline's offsets if it produces them before kickoff; otherwise both use zero. The rule is identical for both arms and fixed before the first 2027 game is scored. The owner accepted this for now; it may be revisited before 2027.
+- **Not applied:** amendments 1 (comparator) and 2 (paired-interval method, which needs a `paired_comparison` change) are to be edited before applying.

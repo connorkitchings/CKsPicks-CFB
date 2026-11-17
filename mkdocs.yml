@@ -16,15 +16,20 @@ nav:
   - Current Status: status.md
   - 2026 Direction:
       - V5 Current Status: modeling/v5_status.md
+      - V5 Offensive and Defensive Ratings Audit: modeling/v5_offense_defense_ratings_audit_2026.md
       - Football Data Architecture Blueprint: planning/data_architecture_blueprint.md
       - Data-First Forecasting Roadmap: planning/data-first-football-forecasting-roadmap.md
       - Production and Historical Roadmap: planning/roadmap.md
+      - Offseason 2027 Backlog: planning/offseason-2027-backlog.md
+      - Direction 2026-11-14: planning/direction-2026-11-14.md
       - Rating-System Requirements: modeling/rating_system_requirements.md
       - Possession Rating Methodology: modeling/possession_rating_methodology.md
       - Measurement Catalog: modeling/measurement_catalog.md
       - Team Stats Methodology: modeling/team_charts_methodology.md
       - Record Methodology: modeling/record_methodology.md
       - Evaluation: modeling/evaluation.md
+      - Prediction-Error Diagnostics 2021 to 2025: modeling/prediction_error_diagnostics_2021_2025.md
+      - Score-Attribution Investigation 2026: modeling/score_attribution_investigation_2026.md
       - Betting Policy: modeling/betting_policy.md
   - Data Platform:
       - Repository Boundaries: architecture/repository_boundaries.md

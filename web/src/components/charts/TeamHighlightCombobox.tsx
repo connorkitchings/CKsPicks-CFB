@@ -149,7 +149,7 @@ export function TeamHighlightCombobox({
               setQuery("");
             }
           }}
-          className="min-h-11 sm:min-h-9 w-full rounded-lg border border-line bg-surface-card pl-3 pr-12 sm:pr-8 py-1.5 text-base sm:text-xs text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="min-h-11 pointer-fine:min-h-9 w-full rounded-lg border border-line bg-surface-card pl-3 pr-12 sm:pr-8 py-1.5 text-base sm:text-xs text-ink placeholder:text-ink-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           data-testid="team-search"
         />
 
@@ -160,7 +160,7 @@ export function TeamHighlightCombobox({
               e.stopPropagation();
               handleSelect(null);
             }}
-            className="absolute right-0 sm:right-2 flex min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 items-center justify-center text-ink-muted hover:text-ink p-0.5 rounded focus-visible:outline-2 focus-visible:outline-accent"
+            className="absolute right-0 sm:right-2 flex min-h-11 min-w-11 pointer-fine:min-h-0 pointer-fine:min-w-0 items-center justify-center text-ink-muted hover:text-ink p-0.5 rounded focus-visible:outline-2 focus-visible:outline-accent"
             aria-label="Clear team highlight"
             title="Clear highlight"
           >
@@ -218,12 +218,12 @@ export function TeamHighlightCombobox({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => handleSelect(option.team)}
               className={clsx(
-                "flex min-h-11 sm:min-h-0 items-center justify-between gap-2 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs transition-colors",
+                "flex min-h-11 pointer-fine:min-h-0 items-center justify-between gap-2 cursor-pointer rounded-lg px-2.5 py-1.5 text-xs transition-colors",
                 index === active ? "bg-accent/10 font-semibold text-accent-ink" : "text-ink hover:bg-surface-inset",
               )}
             >
               <span>{option.label}</span>
-              {option.conference && <span className="text-[10px] text-ink-muted">{option.conference}</span>}
+              {option.conference && <span className="text-[11px] text-ink-muted">{option.conference}</span>}
             </li>
           ))}
         </ul>

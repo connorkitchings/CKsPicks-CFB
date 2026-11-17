@@ -55,6 +55,8 @@ export type ChartDefinition = {
   group: ChartGroup;
   /** Picker link text. */
   tabLabel: string;
+  /** Phone picker text below 360px, where the full `tabLabel` would clip; omitted when the full label fits. */
+  shortTabLabel?: string;
   /** Section heading and export title. */
   title: string;
   /** One plain sentence under the title on the page; the PNG export carries the full metadata line instead. */
@@ -99,6 +101,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   efficiency: {
     group: "teams",
     tabLabel: "Efficiency vs explosiveness",
+    shortTabLabel: "Explosiveness",
     title: "Efficiency vs explosiveness",
     description: "Each team's success rate against its explosiveness.",
     population: FBS_GAMES,
@@ -130,6 +133,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   possession: {
     group: "teams",
     tabLabel: "Possession efficiency",
+    shortTabLabel: "Possession",
     title: "Possession efficiency",
     description: "Offense against defense allowed, adjusted for opponent strength, per possession.",
     population: "FBS teams, all games",
@@ -151,7 +155,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     group: "teams",
     tabLabel: "Situational downs",
     title: "Situational downs",
-    description: "Early down EPA against 3rd and 4th down conversion rate.",
+    description: "Early down PPA against 3rd and 4th down conversion rate.",
     population: FBS_GAMES,
     controls: { side: true, week: "through-week", team: true },
     footnote: downsFootnote(),
@@ -189,7 +193,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
   },
 };
 
-export const DEFAULT_CHART: ChartKind = "net-success";
+export const DEFAULT_CHART: ChartKind = "efficiency";
 
 /** Kinds whose views ship, in picker order. */
 export function readyKinds(): ChartKind[] {
@@ -217,6 +221,26 @@ type RawParam = string | string[] | undefined | null;
 /** A ready chart kind, else the default chart. */
 export function parseChartKind(raw: RawParam): ChartKind {
   return typeof raw === "string" && readyKinds().includes(raw as ChartKind) ? (raw as ChartKind) : DEFAULT_CHART;
+}
+
+/**
+ * One line explaining why `?chart=` did not select the chart it names: an unknown value or a chart that is not
+ * shown yet. Null when the param is absent or honored.
+ */
+export function unhonoredChartNotice(raw: RawParam): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value || (readyKinds() as string[]).includes(value)) return null;
+  const fallback = CHART_REGISTRY[DEFAULT_CHART].title;
+  return Object.hasOwn(CHART_REGISTRY, value)
+    ? `The ${CHART_REGISTRY[value as ChartKind].title} chart is not available yet, so ${fallback} is shown instead.`
+    : `“${value.slice(0, 40)}” is not a chart, so ${fallback} is shown instead.`;
+}
+
+/** What to say when `kind` has no published week to chart. */
+export function chartEmptyMessage(kind: ChartKind): string {
+  if (kind === "net-success") return "No completed games are published yet.";
+  if (kind === "market-board") return "No week with both market lines and model forecasts is published yet.";
+  return `${CHART_REGISTRY[kind].title} has no published week to show yet.`;
 }
 
 export function parseSide(raw: RawParam): Side {
@@ -272,6 +296,20 @@ export function withTeamParam(href: string, team: string | null): string {
   else q.delete("team");
   const text = q.toString();
   return text ? `${path}?${text}` : path;
+}
+
+/** Preserve shared exploration state across chart/side links without leaking incompatible metrics. */
+export function withChartState(href: string, current: string): string {
+  const [path, query = ""] = href.split("?");
+  const next = new URLSearchParams(query);
+  const previous = new URLSearchParams(current);
+  for (const key of ["team", "compare", "conf", "season"]) {
+    if (!next.has(key) && previous.has(key)) next.set(key, previous.get(key)!);
+  }
+  if (parseChartKind(next.get("chart")) === parseChartKind(previous.get("chart")) && !next.has("metric") && previous.has("metric")) {
+    next.set("metric", previous.get("metric")!);
+  }
+  return `${path}?${next.toString()}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -345,6 +383,8 @@ export type ScatterConfig = {
   yLabel: string;
   /** Y title on phones, where the rotated full title would not fit the plot height. */
   shortYLabel: string;
+  /** X title on phones when the full title would not fit the plot width; falls back to `xLabel`. */
+  shortXLabel?: string;
   /** Axis tick text. */
   tickX: (value: number) => string;
   tickY: (value: number) => string;
@@ -354,6 +394,9 @@ export type ScatterConfig = {
   /** Names of the two dashed average lines ("Avg offense"), printed with their values. */
   averageNames: { x: string; y: string };
   footnote: string;
+  /** Denominator for each axis, never a generic sample count. */
+  xSample?: string;
+  ySample?: string;
 };
 
 /** Percent tick: whole when the tick is a whole percent, else one decimal (`7.5%`), so ticks never repeat. */
@@ -408,10 +451,10 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
     value: formatPercent,
   },
   yards_per_success: {
-    label: "Yards / Success",
-    yLabel: { offense: "Yards / Successful Play", defense: "Yards / Success Allowed" },
+    label: "Yards per success",
+    yLabel: { offense: "Yards per successful play", defense: "Yards per success allowed" },
     shortYLabel: { offense: "Yds / success", defense: "Yds / success allowed" },
-    caption: "yards/success",
+    caption: "yards per success",
     footnote: "yards per successful play",
     describe: "yards/success",
     definition: "Yards per successful play is the average yardage on plays that count as successful.",
@@ -447,6 +490,8 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
         names: OFFENSE_QUADRANTS,
       };
   return {
+    xSample: "eligible success-rate plays",
+    ySample: metric === "yards_per_success" ? "successful plays with yardage" : metric === "explosive_rate" ? "plays with yardage" : "plays with PPA",
     xLabel: "Success Rate",
     yLabel: text.yLabel[side],
     shortYLabel: text.shortYLabel[side],
@@ -464,7 +509,7 @@ export function efficiencyConfig(side: Side, metric: EfficiencyMetric): ScatterC
 
 export function describeEfficiencyPoint(point: ScatterPoint, metric: EfficiencyMetric): string {
   const text = EFFICIENCY_METRICS[metric];
-  return `${point.team} (${conferenceLabel(point.conference)}): success rate ${formatPercent(point.x)}, ${text.describe} ${text.value(point.y)}, ${point.n} plays`;
+  return `${point.team} (${conferenceLabel(point.conference)}): success rate ${formatPercent(point.x)}, ${text.describe} ${text.value(point.y)}; success-rate sample ${point.xN ?? point.n} plays, metric sample ${point.yN ?? point.n} ${metric === "yards_per_success" ? "successful plays" : "plays"}`;
 }
 
 /** Two-decimal signed PPA for axis ticks (`+0.10`). */
@@ -474,6 +519,8 @@ export function formatEpaTick(value: number): string {
 }
 
 export const ADJUSTED_CONFIG: ScatterConfig = {
+  xSample: "offense exposure",
+  ySample: "defense exposure",
   xLabel: "Adjusted offense PPA/play",
   yLabel: "Adjusted defense PPA/play allowed",
   shortYLabel: "Def PPA/play allowed",
@@ -508,7 +555,7 @@ export function describeAdjustedPoint(point: ScatterPoint, roles: AdjustedScatte
 // ---------------------------------------------------------------------------
 
 function possessionFootnote(measurement: string): string {
-  return `Adjusted ${measurement}: opponent-adjusted V5 possession measurements of FBS teams for each Through Week window, every game counted (FCS opponents included, as in the V5 ratings). Defense is the value allowed, axis inverted so up and right is better. Dashed lines are possession-weighted averages over the plotted teams; quadrant names are relative to them. Teams missing either role are not plotted. From this release's V5 possession measurements.`;
+  return `Adjusted ${measurement}: opponent-adjusted V5 possession measurements of FBS teams for each Through Week window, every game counted (FCS opponents included, as in the V5 ratings). Defense is the value allowed, axis inverted so up and right is better. Dashed lines are possession-weighted averages over the plotted teams; quadrant names are relative to them. Teams missing either role are not plotted. From this release's V5 possession measurements.${measurement === "PPA per possession" ? ` ${PPA_DEFINITION.replace("PPA/play", "PPA per possession").replace("per play", "per possession")}` : ""}`;
 }
 
 export const POSSESSION_METRICS: Record<PossessionMetric, {
@@ -530,6 +577,8 @@ export const POSSESSION_METRICS: Record<PossessionMetric, {
 export function possessionConfig(metric: PossessionMetric): ScatterConfig {
   const text = POSSESSION_METRICS[metric];
   return {
+    xSample: "offensive possessions",
+    ySample: "defensive possessions",
     xLabel: `Adjusted offense ${text.unit}`,
     yLabel: `Adjusted defense ${text.unit} allowed`,
     shortYLabel: metric === "ppp" ? "Def pts/poss allowed" : "Def PPA/poss allowed",
@@ -633,12 +682,14 @@ export function describeGameLogGame(team: string, game: GameLogGame, metric: Gam
 // ---------------------------------------------------------------------------
 
 export function downsFootnote(): string {
-  return "Cumulative early down EPA/play (1st & 2nd down) and 3rd/4th down conversion rate on eligible plays, regulation play only, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are FBS averages pooled over plays: early-down plays for EPA, 3rd/4th-down attempts for conversion rate.";
+  return `Cumulative early down PPA/play (1st & 2nd down) and 3rd/4th down conversion rate on eligible plays, regulation play only, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are FBS averages pooled over plays: early-down plays for PPA, 3rd/4th-down attempts for conversion rate. ${PPA_DEFINITION}`;
 }
 
 export function downsConfig(side: Side): ScatterConfig {
   const isOffense = side === "offense";
   return {
+    xSample: "early-down plays",
+    ySample: "third/fourth-down attempts",
     xLabel: isOffense ? "Early Down PPA/play (1st & 2nd)" : "Early Down PPA/play Allowed",
     yLabel: isOffense ? "3rd & 4th Down Conv. Rate" : "3rd & 4th Down Conv. Rate Allowed",
     shortYLabel: isOffense ? "3rd/4th Conv Rate" : "3rd/4th Conv Allowed",
@@ -647,31 +698,31 @@ export function downsConfig(side: Side): ScatterConfig {
     metricLabel: "",
     captions: isOffense
       ? {
-          topLeft: "Lower early EPA / Higher conversion",
-          topRight: "Higher early EPA / Higher conversion",
-          bottomLeft: "Lower early EPA / Lower conversion",
-          bottomRight: "Higher early EPA / Lower conversion",
+          topLeft: "Lower early PPA / Higher conversion",
+          topRight: "Higher early PPA / Higher conversion",
+          bottomLeft: "Lower early PPA / Lower conversion",
+          bottomRight: "Higher early PPA / Lower conversion",
           names: {
-            topLeft: "Late-Down Bailouts",
-            topRight: "Unstoppable Engine",
+            topLeft: "Late-down bailouts",
+            topRight: "Unstoppable engine",
             bottomLeft: "Struggling",
-            bottomRight: "On-Schedule Only",
+            bottomRight: "On-schedule only",
           },
         }
       : {
-          topLeft: "Higher early EPA allowed / Lower conversion allowed",
-          topRight: "Lower early EPA allowed / Lower conversion allowed",
-          bottomLeft: "Higher early EPA allowed / Higher conversion allowed",
-          bottomRight: "Lower early EPA allowed / Higher conversion allowed",
+          topLeft: "Higher early PPA allowed / Lower conversion allowed",
+          topRight: "Lower early PPA allowed / Lower conversion allowed",
+          bottomLeft: "Higher early PPA allowed / Higher conversion allowed",
+          bottomRight: "Lower early PPA allowed / Higher conversion allowed",
           names: {
-            topLeft: "Bend, Don't Break",
-            topRight: "Suffocating Defense",
+            topLeft: "Bend, don't break",
+            topRight: "Suffocating defense",
             bottomLeft: "Vulnerable",
-            bottomRight: "Stingy Early, Leaky Late",
+            bottomRight: "Stingy early, leaky late",
           },
         },
     averageNames: {
-      x: isOffense ? "Avg early EPA" : "Avg early EPA allowed",
+      x: isOffense ? "Avg early-down PPA" : "Avg early-down PPA allowed",
       y: isOffense ? "Avg conv rate" : "Avg conv rate allowed",
     },
     footnote: downsFootnote(),
@@ -681,7 +732,7 @@ export function downsConfig(side: Side): ScatterConfig {
 export function describeDownsPoint(point: ScatterPoint, side: Side): string {
   const head = `${point.team} (${conferenceLabel(point.conference)})`;
   const isOffense = side === "offense";
-  return `${head}: ${isOffense ? "Early-down EPA" : "Early-down EPA allowed"} ${formatEpa(point.x)}, ${isOffense ? "3rd/4th down conv" : "3rd/4th conv allowed"} ${formatPercent(point.y)}`;
+  return `${head}: ${isOffense ? "Early-down PPA" : "Early-down PPA allowed"} ${formatEpa(point.x)}, ${isOffense ? "3rd/4th down conv" : "3rd/4th conv allowed"} ${formatPercent(point.y)}`;
 }
 
 export function finishingDrivesFootnote(): string {
@@ -691,7 +742,10 @@ export function finishingDrivesFootnote(): string {
 export function finishingDrivesConfig(side: Side): ScatterConfig {
   const isOffense = side === "offense";
   return {
+    xSample: "eligible drives",
+    ySample: "scoring opportunities",
     xLabel: isOffense ? "Scoring Opportunity Rate (Drives to Opponent 40)" : "Scoring Opportunity Rate Allowed",
+    shortXLabel: isOffense ? "Scoring opp. rate" : "Scoring opp. rate allowed",
     yLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
     shortYLabel: isOffense ? "Points per Scoring Opportunity" : "Points Allowed per Scoring Opportunity",
     tickX: percentTick,
@@ -704,10 +758,10 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
           bottomLeft: "Lower opportunity rate / Lower points per opportunity",
           bottomRight: "Higher opportunity rate / Lower points per opportunity",
           names: {
-            topLeft: "Low Volume, High TD Rate",
-            topRight: "Elite Finishers",
-            bottomLeft: "Struggling Finishers",
-            bottomRight: "Drive Stallers / FG Settlers",
+            topLeft: "Fewer opportunities, more points",
+            topRight: "More opportunities, more points",
+            bottomLeft: "Fewer opportunities, fewer points",
+            bottomRight: "More opportunities, fewer points",
           },
         }
       : {
@@ -716,10 +770,10 @@ export function finishingDrivesConfig(side: Side): ScatterConfig {
           bottomLeft: "Higher opportunity rate allowed / More points allowed per opportunity",
           bottomRight: "Lower opportunity rate allowed / More points allowed per opportunity",
           names: {
-            topLeft: "Red-Zone Wall",
-            topRight: "Lockdown Defense",
-            bottomLeft: "Generous Defense",
-            bottomRight: "Stingy Early, Leaky Inside",
+            topLeft: "More opportunities, fewer points allowed",
+            topRight: "Fewer opportunities, fewer points allowed",
+            bottomLeft: "More opportunities, more points allowed",
+            bottomRight: "Fewer opportunities, more points allowed",
           },
         },
     averageNames: {

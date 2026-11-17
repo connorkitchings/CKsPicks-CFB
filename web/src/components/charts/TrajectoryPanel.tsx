@@ -108,6 +108,7 @@ export function TrajectoryPanel<S extends TrajectorySeries>({
       controls={metricControl}
       highlightTeams={eligibleRoster}
       exportSpec={{
+        contentKey: JSON.stringify([metric, viewSubtitle, data]),
         filename: exportFilename(kind, season, latest, "offense", metric.slug),
         width: EXPORT_SIZE.width,
         height: EXPORT_SIZE.height,

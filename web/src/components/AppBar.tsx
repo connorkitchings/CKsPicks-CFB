@@ -7,13 +7,13 @@ import { useIsPhone } from "@/lib/use-is-phone";
 import { SeasonSelector } from "./SeasonSelector";
 import { ThemeToggle } from "./ThemeToggle";
 import { etDateTime } from "@/lib/time-et";
+import { TeamSearch } from "./TeamSearch";
 import { Wordmark } from "./Wordmark";
 
 /** Pages whose app bar centers the brand: the four tabs. Matchup and team pages keep a back link and their own title. */
-const TAB_TITLES = new Set(["Games", "Ratings", "Graphs", "Model"]);
+const TAB_TITLES = new Set(["Games", "Teams", "Graphs", "Model"]);
 
 const TITLES: [prefix: string, title: string][] = [
-  ["/ratings", "Ratings"],
   ["/stats", "Graphs"],
   ["/model", "Model"],
   ["/matchup", "Matchup"],
@@ -21,6 +21,7 @@ const TITLES: [prefix: string, title: string][] = [
 ];
 
 function titleFor(pathname: string): string {
+  if (pathname === "/teams") return "Teams";
   return TITLES.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] ?? "Games";
 }
 
@@ -38,12 +39,14 @@ export function AppBar({
   allowedSeasons,
   systemLabel,
   updatedAt,
+  updatedLabel = "Updated",
   back,
 }: {
   season: number | null;
   allowedSeasons?: readonly number[];
   systemLabel: string | null;
   updatedAt: string | null;
+  updatedLabel?: string;
   back?: AppBarBack;
 }) {
   const pathname = usePathname();
@@ -95,6 +98,7 @@ export function AppBar({
       </button>
       {phone && (
         <BottomSheet dialogRef={dialogRef} titleId={titleId} onClose={close} title="Menu" data-testid="app-menu-dialog">
+          <TeamSearch season={season} onNavigate={close} />
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-ink">Season</span>
             {allowedSeasons && allowedSeasons.length > 1 && season !== null ? (
@@ -108,7 +112,7 @@ export function AppBar({
             <ThemeToggle />
           </div>
           {systemLabel && <p className="text-sm text-ink-muted">Model: {systemLabel}</p>}
-          {updated && <p className="text-sm text-ink-muted">Updated {updated}</p>}
+          {updated && <p className="text-sm text-ink-muted">{updatedLabel} {updated}</p>}
         </BottomSheet>
       )}
     </div>

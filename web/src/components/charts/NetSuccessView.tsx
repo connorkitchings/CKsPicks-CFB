@@ -3,12 +3,14 @@
 import { CHART_REGISTRY, chartSubtitle, exportFilename, groupLabel } from "@/lib/chart-config";
 import {
   filterNetSuccessBars,
+  matchesConference,
   formatPercent,
   outplayedWinners,
   type NetSuccessBar,
   type NotCharted,
 } from "@/lib/charts";
 import { chartSummary } from "@/components/ui/SummaryLine";
+import { ChartTable, type TableColumn } from "./ChartTable";
 import { ChartFrame, EXPORT_CHART_HEIGHT, EXPORT_SIZE, ExportCard, type SharedChartProps } from "./ChartFrame";
 import { NetSuccessChart } from "./NetSuccessChart";
 import { useIsPhone } from "@/lib/use-is-phone";
@@ -29,8 +31,17 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
   // `bars` arrive in success-gap order (netSuccessBars) and filtering keeps it.
   const shown = filterNetSuccessBars(bars, roster, filter);
   const { outplayed, total } = outplayedWinners(shown);
+  const missing = notCharted.filter((item) => filter === "all" || item.teams?.some((team) => { const row = roster.find((r) => r.team === team); return row && matchesConference(filter, team, row.conference); }));
   const viewSubtitle = `${subtitle} | ${groupLabel(filter)}`;
   const label = `${title}. ${subtitle}`;
+  const columns: TableColumn<NetSuccessBar>[] = [
+    { key: "winner", label: "Winner", value: (b) => b.winner },
+    { key: "loser", label: "Loser", value: (b) => b.loser },
+    { key: "score", label: "Score", value: (b) => b.winnerPoints - b.loserPoints, format: (b) => `${b.winnerPoints}-${b.loserPoints}`, numeric: true },
+    { key: "winnerRate", label: "Winner success rate", value: (b) => b.winnerSuccessRate, format: (b) => formatPercent(b.winnerSuccessRate), numeric: true },
+    { key: "loserRate", label: "Loser success rate", value: (b) => b.loserSuccessRate, format: (b) => formatPercent(b.loserSuccessRate), numeric: true },
+    { key: "net", label: "Net (pct)", value: (b) => b.value, format: (b) => (b.value * 100).toFixed(1), numeric: true },
+  ];
   const exportWidth = netSuccessWidth(shown.length);
 
   return (
@@ -42,6 +53,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
       description={CHART_REGISTRY["net-success"].description}
       credit={credit}
       exportSpec={{
+        contentKey: JSON.stringify([viewSubtitle, shown]),
         filename: exportFilename("net-success", season, week, "offense"),
         width: exportWidth,
         height: EXPORT_SIZE.height,
@@ -52,11 +64,16 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
         ),
       }}
       headerControls={total > 0 && (
-        <p className="text-xs text-ink-muted sm:self-start sm:text-[13px]" data-testid="net-success-summary">
-          <span className="text-lg font-bold tracking-tight text-ink tabular-nums">{outplayed} of {total}</span> winners had the lower success rate.
-        </p>
+        <div className="sm:self-start">
+          <p className="text-xs text-ink-muted sm:text-[13px]" data-testid="net-success-summary">
+            <span className="text-lg font-bold tracking-tight text-ink tabular-nums">{outplayed} of {total}</span> winners had the lower success rate.
+          </p>
+          <p className="mt-0.5 text-xs text-ink-muted" data-testid="net-success-key">Logo past the bar end: winner · logo across the zero line: loser</p>
+        </div>
       )}
+      table={<ChartTable rows={shown} columns={columns} rowKey={(b) => String(b.gameId)} caption={`${title}. ${viewSubtitle}.`} initialSort={{ key: "net", descending: true }} />}
       hasData={shown.length > 0}
+      status={<p className="text-sm text-ink-muted">Coverage: {shown.length} of {shown.length + missing.length} games have eligible success-rate observations.</p>}
       figure={
         <NetSuccessChart
           bars={shown}
@@ -68,7 +85,7 @@ export function NetSuccessView({ shared, bars, notCharted }: { shared: SharedCha
           label={label}
         />
       }
-      notCharted={notCharted}
+      notCharted={missing}
       footnote={footnote}
     />
   );

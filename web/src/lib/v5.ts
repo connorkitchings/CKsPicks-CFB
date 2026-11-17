@@ -18,6 +18,8 @@ import {
 } from "./team-resume.ts";
 import { splitPerformanceByWeek, type Performance, type PerformanceRow } from "./performance-split.ts";
 import { withGameNameAliases } from "./rating-names.ts";
+import { canBoundHistoryByRelease } from "./rating-request.ts";
+import { analysisPeriod, boundedRatingHistory, type RatingHistoryPeriod } from "./team-analysis.ts";
 import { PERFORMANCE_DETAIL_SPEC, RATING_SPEC, guardRows } from "./row-guard.ts";
 import {
   defaultPeriodForRows,
@@ -334,6 +336,42 @@ export const getWeeklyRatings = cache(async (
   return known ? cachedWeeklyRatings(season, targetPeriod ?? null) : loadWeeklyRatings(season, targetPeriod);
 });
 
+/** Exact-source, cutoff-bounded history. One release-scoped read; no week-only cross-generation join. */
+export const getRatingAnalysisHistory = cache(releaseCached("getRatingAnalysisHistory", async (season: number, targetPeriod: string): Promise<RatingHistoryPeriod[]> => {
+  const selected = await getWeeklyRatings(season, targetPeriod);
+  const selectedPeriod = analysisPeriod(selected.periodMeta, selected.ratings);
+  // History is release-scoped; without an active release there is no exact source to bound it by.
+  const hasRelease = !!await getSeasonReleaseContext(season);
+  if (!canBoundHistoryByRelease({ period: selected.period, ratingCount: selected.ratings.length, hasRelease })) return [selectedPeriod];
+  const source = selected.periodMeta.sourceManifestSha256 ?? selected.ratings[0]?.sourceManifestSha256;
+  const cutoff = selected.periodMeta.cutoffUtc ?? selected.ratings[0]?.cutoffUtc;
+  if (!source || !cutoff) return [selectedPeriod];
+  const db = await getSeasonDb(season);
+  const [rows, priors, facts] = await Promise.all([
+    db.select(RATING_SELECT).from(schema.v5RatingSnapshots).where(and(
+      eq(schema.v5RatingSnapshots.season, season), eq(schema.v5RatingSnapshots.sourceManifestSha256, source),
+      eq(schema.v5RatingSnapshots.snapshotClass, "current"), lte(schema.v5RatingSnapshots.cutoffUtc, cutoff),
+    )).orderBy(asc(schema.v5RatingSnapshots.cutoffUtc), desc(schema.v5RatingSnapshots.createdAt)),
+    getPreseasonPriors(season, source), readResumePeriodFacts(season),
+  ]);
+  guardRows("v5_rating_snapshots", rows, RATING_SPEC);
+  const groups = new Map<string, Map<string, Rating>>();
+  for (const row of rows) {
+    const key = row.cutoffUtc.toISOString();
+    if (!groups.has(key)) groups.set(key, new Map());
+    if (!groups.get(key)!.has(row.team)) groups.get(key)!.set(row.team, row);
+  }
+  const history: RatingHistoryPeriod[] = [];
+  if (priors.length) history.push(analysisPeriod({ ...PRESEASON_META, sourceManifestSha256: source }, priors));
+  for (const [iso, byTeam] of groups) {
+    for (const row of priors) if (!byTeam.has(row.team)) byTeam.set(row.team, row);
+    const cutoffUtc = new Date(iso);
+    const id = sourceQualifiedPeriodId(source, cutoffUtc);
+    history.push(analysisPeriod({ id, cutoffUtc, sourceManifestSha256: source, ...periodLabelFields(cutoffUtc, facts.get(id), id === selected.period) }, [...byTeam.values()]));
+  }
+  return boundedRatingHistory(history, selectedPeriod);
+}));
+
 /** `team` must be the rating name from `resolveTeam`, which bounds the cache keys to known schools. */
 export const getTeamHistory = cache(releaseCached("getTeamHistory", async (season: number, team: string): Promise<Rating[]> => {
   const db = await getSeasonDb(season);
@@ -492,6 +530,9 @@ export interface GradedGamePick {
   /** Retained line behind each grade (`market_snapshots`); null when the grade has no snapshot. */
   canonicalSpread?: number | null;
   canonicalTotal?: number | null;
+  /** `market_snapshots.captured_at` of that retained line; null when the grade has no snapshot. */
+  canonicalSpreadCapturedAt?: Date | null;
+  canonicalTotalCapturedAt?: Date | null;
   /** `prediction_grades.grading_version` per target; its suffix names the line source. */
   spreadGradingVersion?: string | null;
   totalGradingVersion?: string | null;
@@ -558,6 +599,8 @@ type DetailRow = {
   totalResult: "win" | "loss" | "push" | null;
   canonicalSpread?: number | null;
   canonicalTotal?: number | null;
+  canonicalSpreadCapturedAt?: Date | null;
+  canonicalTotalCapturedAt?: Date | null;
   spreadGradingVersion?: string | null;
   totalGradingVersion?: string | null;
 };
@@ -678,6 +721,7 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
     spreadResult: spreadGrade.result,
     spreadGradingVersion: spreadGrade.gradingVersion,
     canonicalSpread: spreadSnapshot.spread,
+    canonicalSpreadCapturedAt: spreadSnapshot.capturedAt,
     spreadPriceProvenance: sql<"actual" | "defaulted" | "unavailable">`COALESCE((
       SELECT CASE WHEN CASE WHEN pms.side = 'home' THEN mq.home_spread_price ELSE mq.away_spread_price END IS NULL THEN 'defaulted' ELSE 'actual' END
       FROM prediction_market_selections pms JOIN market_quotes mq ON mq.quote_id = pms.quote_id
@@ -693,6 +737,7 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
     totalResult: totalGrade.result,
     totalGradingVersion: totalGrade.gradingVersion,
     canonicalTotal: totalSnapshot.total,
+    canonicalTotalCapturedAt: totalSnapshot.capturedAt,
   };
   const rows = await db.select(fields).from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
@@ -750,6 +795,8 @@ export const getV5PerformanceDetail = cache(releaseCached("getV5PerformanceDetai
       evidenceClass: r.evidenceClass,
       canonicalSpread: r.canonicalSpread,
       canonicalTotal: r.canonicalTotal,
+      canonicalSpreadCapturedAt: r.canonicalSpreadCapturedAt,
+      canonicalTotalCapturedAt: r.canonicalTotalCapturedAt,
       spreadGradingVersion: r.spreadGradingVersion,
       totalGradingVersion: r.totalGradingVersion,
     }));

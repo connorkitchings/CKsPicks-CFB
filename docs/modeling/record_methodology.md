@@ -6,6 +6,8 @@
 
 The public 2026 record is one cumulative V5 record from Week 0, presented as if V5 had been active for the whole season. A selection is the model side against its chosen eligible quote, settled win, loss or push against the certified final. Spread and total records are separate. Every forecast with an eligible line can receive a grade; there is no edge threshold. Missing lines remain ungraded.
 
+The official record covers the regular season only. It ends with the last regular-season week (week 15 in 2026). Postseason games (bowls and the playoff) are not ingested, predicted, graded or counted, and the site says so once the final regular-season release is live.
+
 Started and reconstructed games stay on Games without a retrospective label. The point-in-time claim concerns the observations used by the forecast, not when the replay was built. Freeze receipts, original runs and reconstruction provenance remain audit evidence. “Prospective” describes predictions frozen before kickoff only; it does not define a separate public record or a six-slate admission requirement.
 
 ## Admission and verification
@@ -52,7 +54,7 @@ The Games page lists games where the model picks the market underdog to win outr
 - **Exclusions.** A consensus pick'em (line 0) has no favorite, and a model margin under 0.05 is no call, matching the 0.05 rule the lean labels use. A game with no linked snapshot has no consensus line and is excluded everywhere; it is counted nowhere.
 - **Display.** Only unfinished games in prediction mode, ranked by the gap between the model's margin and the market's implied margin (largest first), then earlier kickoff, then game id. Every qualifying pick is listed; the first 5 show and a "Show all N" button (collapsed on every load) reveals the rest. The list shares one card with "Biggest edges" and a control flips between them (Biggest edges is the default on every load); the control appears only when both have content, and the card is hidden when the week is final or nothing qualifies.
 - **Straight-up grading.** A finished pick is graded on the model's winner against the actual final score. A tie is excluded.
-- **Season record.** The record counts every qualifying underdog pick from every scored week (previously only each week's top 5, the same cap as "Biggest edges", which still applies to that record) and is shown as "x–y", with the card footer explaining that it is the straight-up record of picks won outright. Counting all picks avoids hiding the weaker-gap calls from the record. It is a small sample, reported as counts only.
+- **Season record.** The record counts every qualifying underdog pick from every scored week (previously only each week's top 5, the same cap as "Biggest edges", which still applies to that record) and is shown as "x–y (rate%)", the same way the Biggest edges record is, with the card footer explaining that it is the straight-up record of picks won outright. The rate is wins over wins plus losses (ties are not counted). Counting all picks avoids hiding the weaker-gap calls from the record. It is a small sample, so read the rate with the counts.
 
 ## Limits and historical evidence
 
