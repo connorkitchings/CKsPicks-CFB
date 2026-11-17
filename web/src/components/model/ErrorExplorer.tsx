@@ -16,6 +16,7 @@ import {
   type SortDirection,
 } from "@/lib/performance-errors";
 import type { MarketTarget } from "@/lib/performance-market";
+import { niceTicks } from "@/lib/charts";
 import { nearestScatterTeams } from "@/lib/scatter-selection";
 import { replaceSearchParams } from "@/lib/url-state";
 import { Card } from "@/components/ui/Card";
@@ -112,14 +113,14 @@ function Scatter({
     onSelect(Number(nearest));
   }
 
-  const ticks = [0, domain / 2, domain];
+  const ticks = niceTicks(0, domain, 5);
   const unit = target === "spread" ? "margin" : "total";
   return (
     <svg
       ref={svgRef}
       onClick={onPlotClick}
       viewBox={`0 0 ${W} ${W}`}
-      className="mx-auto block h-auto w-full max-w-[440px] text-[10px]"
+      className="mx-auto block h-auto w-full max-w-[560px] text-[10px]"
       role="group"
       aria-label={`${target === "spread" ? "Spread" : "Totals"} absolute error: betting line on the horizontal axis, model on the vertical axis. Points below the diagonal are games where the model was closer.`}
       data-testid="error-scatter"
@@ -295,7 +296,7 @@ export function ErrorExplorer({
         {rows.length === 0 ? (
           <p className="text-sm text-ink-muted">No paired games for this target yet.</p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] md:items-start">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,560px)_minmax(0,1fr)] md:items-start">
             <div className="min-w-0">
               <Scatter key={target} target={target} pairs={rows} selectedId={selected?.gameId ?? null} onSelect={setSelectedId} />
               <p className="mt-1 text-center text-xs text-ink-muted max-sm:hidden">Arrow keys move between points, Enter selects, Escape clears the selection.</p>

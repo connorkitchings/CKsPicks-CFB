@@ -48,6 +48,18 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
 
+    test("the record trend draws break-even and shares one y-axis across panels", async ({ page }) => {
+      await gotoHydrated(page, "/model");
+      const spread = page.getByTestId("record-trend-spread");
+      const total = page.getByTestId("record-trend-total");
+      await expect(spread.locator("[data-break-even]")).toHaveCount(1);
+      await expect(total.locator("[data-break-even]")).toHaveCount(1);
+      const yTicks = (svg: typeof spread) => svg.locator("text").filter({ hasText: /^\d+%$/ }).allTextContents();
+      const [a, b] = [await yTicks(spread), await yTicks(total)];
+      expect(a[0]).toBe(b[0]);
+      expect(a.at(-1)).toBe(b.at(-1));
+    });
+
     test("the explainers live in one collapsed disclosure", async ({ page }) => {
       await gotoHydrated(page, "/model");
       const explainer = page.getByText(/Win rate excludes pushes/).filter({ visible: true });

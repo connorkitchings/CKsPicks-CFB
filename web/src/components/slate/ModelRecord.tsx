@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Performance } from "@/lib/v5";
 import { winRatePct } from "@/lib/slate";
+import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import { Card } from "@/components/ui/Card";
 
 type Rec = { win: number; loss: number; push: number };
@@ -15,7 +16,7 @@ const ZERO: Rec = { win: 0, loss: 0, push: 0 };
  */
 function RecordCell({ label, rec }: { label: string; rec: Rec }) {
   const rate = winRatePct(rec.win, rec.loss);
-  const isAboveBreakEven = rate !== null && rate >= 52.4;
+  const isAboveBreakEven = rate !== null && rate >= BREAK_EVEN_PCT;
 
   return (
     <div className="flex flex-col items-stretch justify-center gap-1 rounded-lg border border-line bg-surface-inset p-2 text-center">

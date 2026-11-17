@@ -35,6 +35,14 @@ test.describe("model section", () => {
     await expect(page).toHaveURL(/\/model$/);
   });
 
+  test("method page has a nine-link contents nav and no stale or internal wording", async ({ page }) => {
+    await page.goto("/model/method");
+    await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveCount(9);
+    const body = page.locator("body");
+    await expect(body).not.toContainText("ppp__rho");
+    await expect(body).not.toContainText("not shown in the ratings table");
+  });
+
   test("method page fits the viewport at 320px", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 800 });
     await page.goto("/model/method#elite-reference");
