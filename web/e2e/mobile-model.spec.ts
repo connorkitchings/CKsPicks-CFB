@@ -60,6 +60,25 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       expect(a.at(-1)).toBe(b.at(-1));
     });
 
+    test("the record trend labels render at 12px or more and the break-even label sits at the left", async ({ page }) => {
+      await gotoHydrated(page, "/model");
+      for (const id of ["record-trend-spread", "record-trend-total"]) {
+        const svg = page.getByTestId(id);
+        await expect.poll(async () => {
+          const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+          return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+        }).toBe(true);
+        await expect.poll(() => svg.evaluate((node) => Math.min(...[...node.querySelectorAll<SVGTextElement>("text")].map((label) => {
+          const matrix = label.getScreenCTM();
+          return matrix ? parseFloat(getComputedStyle(label).fontSize) * Math.hypot(matrix.a, matrix.b) : 0;
+        })))).toBeGreaterThanOrEqual(11.99);
+        const line = (await svg.locator("[data-break-even]").boundingBox())!;
+        const box = (await svg.locator("text", { hasText: /^52\.4%$/ }).boundingBox())!;
+        expect(box.x).toBeLessThan(line.x + line.width / 2);
+        expect(box.y + box.height).toBeLessThanOrEqual(line.y + 2);
+      }
+    });
+
     test("the explainers live in one collapsed disclosure", async ({ page }) => {
       await gotoHydrated(page, "/model");
       const explainer = page.getByText(/Win rate excludes pushes/).filter({ visible: true });

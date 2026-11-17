@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { gotoHydrated } from "./helpers";
 
 const noOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
@@ -15,6 +15,12 @@ async function hero(page: Page) {
   if (!b) throw new Error("no hero box");
   return b;
 }
+
+/** Smallest rendered label size (CSS px) among an SVG's text nodes. */
+const minLabelPx = (svg: Locator) => svg.evaluate((node) => Math.min(...[...node.querySelectorAll<SVGTextElement>("text")].map((label) => {
+  const matrix = label.getScreenCTM();
+  return matrix ? parseFloat(getComputedStyle(label).fontSize) * Math.hypot(matrix.a, matrix.b) : 0;
+})));
 
 const heading = (page: Page, name: string) => page.getByRole("heading", { level: 2, name, exact: true });
 const weeklyRatings = (page: Page) => page.getByText("Weekly ratings", { exact: true });
@@ -196,6 +202,24 @@ test.describe("team pages (fixture mode)", () => {
     await expect(chart(/^overall rating through the selected period/)).toBeVisible();
   });
 
+  for (const width of [320, 390, 430]) {
+    test(`the rating trend and game log labels render at 12px or more at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await gotoHydrated(page, "/teams/Texas");
+      for (const name of [/^overall rating through the selected period/, /^Success rate by game/]) {
+        const svg = page.getByRole("img", { name });
+        await svg.scrollIntoViewIfNeeded();
+        await expect.poll(async () => {
+          const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+          return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+        }).toBe(true);
+        await expect.poll(() => minLabelPx(svg)).toBeGreaterThanOrEqual(11.99);
+      }
+      await expect(page.getByRole("img", { name: /^Success rate by game/ }).locator("text", { hasText: /^Wk / })).toHaveCount(0);
+      expect(await noOverflow(page)).toBe(true);
+    });
+  }
+
   test("on a phone the unit sections start closed and open on tap", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoHydrated(page, "/teams/Texas");
@@ -285,6 +309,7 @@ test.describe("team pages (fixture mode)", () => {
   test("an unknown team is a 404", async ({ page }) => {
     const response = await page.goto("/teams/Nowhere%20State");
     expect(response?.status()).toBe(404);
+    await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
   });
 });
 

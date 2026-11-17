@@ -46,15 +46,21 @@ export default function ModelMethodPage() {
     >
       <ModelTabs active="method" />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,36rem)_minmax(0,14rem)] lg:items-start">
-      <nav aria-label="On this page" className="flex flex-wrap gap-x-4 gap-y-1 border-b border-line pb-3 text-sm font-semibold text-accent-ink lg:sticky lg:top-6 lg:order-2 lg:flex-col lg:border-b-0 lg:pb-0">
-        {CONTENTS.map(([id, label]) => <a key={id} href={`#${id}`} className="inline-flex min-h-11 items-center hover:underline">{label}</a>)}
-      </nav>
-      <div className="max-w-xl space-y-4 lg:order-1">
+      <div className="max-w-xl lg:col-start-1 lg:row-start-1">
         <PageHeading title="How the model works" eyebrow="V5 model">
           <span className="block">
             What the forecasts measure, how they are turned into a spread and a total, and how the record is graded.
           </span>
         </PageHeading>
+      </div>
+      {/* Below lg: a closed disclosure after the heading. At lg: the open sticky right column. */}
+      <details className="responsive-disclosure-lg rounded-xl border border-line bg-surface-card px-3 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-0 lg:bg-transparent lg:px-0">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-ink">Contents</summary>
+        <nav aria-label="On this page" className="flex flex-col gap-y-1 pb-2 text-sm font-semibold text-accent-ink lg:pb-0">
+          {CONTENTS.map(([id, label]) => <a key={id} href={`#${id}`} className="inline-flex min-h-11 items-center hover:underline">{label}</a>)}
+        </nav>
+      </details>
+      <div className="max-w-xl space-y-4 lg:col-start-1 lg:row-start-2">
 
         <Section id="team-strength" title="Team strength: points per possession">
           <p>

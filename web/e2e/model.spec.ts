@@ -37,10 +37,35 @@ test.describe("model section", () => {
 
   test("method page has a nine-link contents nav and no stale or internal wording", async ({ page }) => {
     await page.goto("/model/method");
+    const contents = page.getByText("Contents", { exact: true });
+    if (await contents.isVisible()) await contents.click();
     await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveCount(9);
     const body = page.locator("body");
     await expect(body).not.toContainText("ppp__rho");
     await expect(body).not.toContainText("not shown in the ratings table");
+  });
+
+  test("method contents sit below the heading, collapsed, and jump to sections on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await gotoHydrated(page, "/model/method");
+    const summary = page.getByText("Contents", { exact: true });
+    const h1 = page.getByRole("heading", { level: 1, name: "How the model works" });
+    expect((await h1.boundingBox())!.y).toBeLessThan((await summary.boundingBox())!.y);
+    expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const nav = page.getByRole("navigation", { name: "On this page" });
+    await expect(nav).toBeHidden();
+    await summary.click();
+    await expect(nav.getByRole("link")).toHaveCount(9);
+    await nav.getByRole("link", { name: "Grading the record" }).click();
+    await expect(page).toHaveURL(/#grading$/);
+    await expect(page.locator("#grading")).toBeInViewport();
+  });
+
+  test("method contents are an open column without a summary at desktop width", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHydrated(page, "/model/method");
+    await expect(page.getByText("Contents", { exact: true })).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "On this page" }).getByRole("link")).toHaveCount(9);
   });
 
   test("method page fits the viewport at 320px", async ({ page }) => {

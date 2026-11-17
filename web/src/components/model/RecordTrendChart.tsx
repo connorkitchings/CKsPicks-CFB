@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useIsPhone } from "@/lib/use-is-phone";
+import { useMeasuredWidth } from "@/lib/use-measured-width";
 import { ChartTable, type TableColumn } from "@/components/charts/ChartTable";
 import { niceTicks } from "@/lib/charts";
 import { BREAK_EVEN_PCT } from "@/lib/betting-format";
 import type { TrendRecord, TrendWeek } from "@/lib/performance-trend";
 
-const W = 320;
+const DESKTOP_W = 320;
+const MAX_W = 460;
 const H = 180;
-const PAD = { left: 34, right: 40, top: 12, bottom: 24 };
+const PAD = { left: 34, right: 48, top: 12, bottom: 24 };
 
 const recordText = (record: TrendRecord) => `${record.win}–${record.loss}–${record.push}`;
 const rateText = (record: TrendRecord) => (record.winRate === null ? "—" : `${record.winRate.toFixed(1)}%`);
@@ -30,6 +33,10 @@ const TARGETS = [
 
 /** One target: a dot per week, a line for the season to date, the break-even rate dashed. */
 function Panel({ rows, target, label, lo, hi }: { rows: readonly TrendWeek[]; target: "spread" | "total"; label: string; lo: number; hi: number }) {
+  // Phones: the viewBox is the panel's CSS width (1:1 scale), so 12px text stays 12px.
+  const phone = useIsPhone();
+  const { ref, width: measured } = useMeasuredWidth(phone, 360);
+  const W = phone ? Math.min(measured, MAX_W) : DESKTOP_W;
   const ticks = niceTicks(lo, hi, 4);
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
@@ -54,12 +61,12 @@ function Panel({ rows, target, label, lo, hi }: { rows: readonly TrendWeek[]; ta
   const weekTicks: number[] = [];
   for (let week = first; week <= lastWeek; week += step) weekTicks.push(week);
   return (
-    <figure className="m-0 min-w-0">
+    <figure ref={ref} className="m-0 min-w-0">
       <figcaption className="mb-1 flex items-baseline justify-between gap-2">
         <span className="text-sm font-semibold text-ink">{label}</span>
         <span className="font-mono text-xs text-ink-muted">{rateText(last.cumulative[target])} to date</span>
       </figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={name} className="mx-auto block h-auto w-full max-w-[460px] text-[10px]" data-testid={`record-trend-${target}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={name} className={`mx-auto block h-auto w-full max-w-[460px] ${phone ? "text-xs" : "text-[10px]"}`} data-testid={`record-trend-${target}`}>
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={PAD.left} x2={W - PAD.right} y1={y(tick)} y2={y(tick)} stroke="var(--line)" strokeWidth={0.5} opacity={0.7} />
@@ -67,7 +74,7 @@ function Panel({ rows, target, label, lo, hi }: { rows: readonly TrendWeek[]; ta
           </g>
         ))}
         <line x1={PAD.left} x2={W - PAD.right} y1={y(BREAK_EVEN_PCT)} y2={y(BREAK_EVEN_PCT)} stroke="var(--ink-muted)" strokeWidth={1} strokeDasharray="4 3" data-break-even />
-        <text x={W - PAD.right + 4} y={y(BREAK_EVEN_PCT) + 3.5} className="fill-ink-muted font-mono">{BREAK_EVEN_PCT}%</text>
+        <text x={PAD.left + 2} y={y(BREAK_EVEN_PCT) - 4} textAnchor="start" className="fill-ink-muted font-mono">{BREAK_EVEN_PCT}%</text>
         {line.length > 1 && <polyline points={line.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" ")} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
         {dots.map(([px, py]) => <circle key={px} cx={px} cy={py} r={2.75} fill="var(--accent)" fillOpacity={0.35} stroke="var(--accent)" strokeWidth={1} />)}
         {lastRate !== null && (

@@ -260,6 +260,18 @@ html.dark [data-card] {
   }
 }
 
+/* Same disclosure, but collapsed below `lg:` (64rem) and forced open from `lg:` up. */
+@supports selector(::details-content) {
+  @media (min-width: 64rem) {
+    .responsive-disclosure-lg::details-content {
+      content-visibility: visible;
+    }
+    .responsive-disclosure-lg > summary {
+      display: none;
+    }
+  }
+}
+
 /* Team page unit sections: collapsible on phones; from `sm:` up the content is forced open and the
    summary stays as a static heading (no pointer, no caret or headline stat). */
 @supports selector(::details-content) {
