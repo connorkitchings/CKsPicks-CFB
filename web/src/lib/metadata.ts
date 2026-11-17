@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { BRAND_FULL } from "@/lib/brand";
 
+// The shared generated image (`app/opengraph-image.tsx`); a route that sets `openGraph` drops the inherited one.
+const SHARE_IMAGE = "/opengraph-image";
+
 export const SITE_DESCRIPTION = "College football forecasts, team ratings and season performance.";
 
 /** Every public title: the page name, then the brand. */
@@ -25,8 +28,8 @@ export function pageMetadata(
     title,
     description,
     alternates: { canonical: path },
-    openGraph: { title: full, description, url: path, siteName: BRAND_FULL, type: "website" },
-    twitter: { card: "summary_large_image", title: full, description },
+    openGraph: { title: full, description, url: path, siteName: BRAND_FULL, type: "website", images: [SHARE_IMAGE] },
+    twitter: { card: "summary_large_image", title: full, description, images: [SHARE_IMAGE] },
     ...extra,
   };
 }
@@ -37,7 +40,7 @@ const NOT_FOUND_DESCRIPTION = "This page could not be found.";
 export const notFoundMetadata: Metadata = {
   title: "Page not found",
   description: NOT_FOUND_DESCRIPTION,
-  openGraph: { title: fullTitle("Page not found"), description: NOT_FOUND_DESCRIPTION, siteName: BRAND_FULL, type: "website" },
-  twitter: { card: "summary_large_image", title: fullTitle("Page not found"), description: NOT_FOUND_DESCRIPTION },
+  openGraph: { title: fullTitle("Page not found"), description: NOT_FOUND_DESCRIPTION, siteName: BRAND_FULL, type: "website", images: [SHARE_IMAGE] },
+  twitter: { card: "summary_large_image", title: fullTitle("Page not found"), description: NOT_FOUND_DESCRIPTION, images: [SHARE_IMAGE] },
   robots: { index: false, follow: false },
 };

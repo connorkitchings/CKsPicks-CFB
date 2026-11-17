@@ -53,8 +53,8 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
         .locator("> div:not([aria-hidden])")
         .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
       console.log(`forecast cell heights ${viewport.width}: ${cellHeights.join(",")}`);
-      // At 390 the source label sits beside the spread (one line); at 320 only the market cell may wrap it beneath.
-      expect(Math.max(...cellHeights)).toBeLessThanOrEqual(viewport.width === 390 ? 24 : 32);
+      // The sportsbook label (11px) sits beside the spread; only the market cell may wrap it beneath, at 390 and 320.
+      expect(Math.max(...cellHeights)).toBeLessThanOrEqual(32);
       expect(cellHeights.filter((height) => height > 24).length).toBeLessThanOrEqual(1);
 
       await page.mouse.wheel(0, 800);

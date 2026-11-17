@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         status: "error",
+        appVersion: APP_VERSION,
         error: "database_unavailable",
         latencyMs: Date.now() - start,
       },

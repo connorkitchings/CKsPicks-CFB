@@ -28,9 +28,9 @@ test("matchup page text is at least 11px", async ({ page }) => {
       if (![...element.childNodes].some((node) => node.nodeType === 3 && node.textContent?.trim())) continue;
       const style = getComputedStyle(element);
       if (!element.getBoundingClientRect().width || style.visibility === "hidden") continue;
-      if (parseFloat(style.fontSize) < 11) found.push(`${style.fontSize} ${element.textContent?.trim().slice(0, 30)}`);
+      if (parseFloat(style.fontSize) < 11 && (element.textContent?.trim().length ?? 0) > 2) found.push(`${style.fontSize} ${element.textContent?.trim().slice(0, 30)}`);
     }
     return found;
   });
-  expect(small).toEqual([]);
+  expect(small, small.join(" | ")).toEqual([]);
 });

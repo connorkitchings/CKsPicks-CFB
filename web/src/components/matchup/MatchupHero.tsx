@@ -117,7 +117,7 @@ function Cell({
         </span>
         {badge}
       </div>
-      {book && <span className="block font-sans text-xs leading-tight text-ink-muted">{book}</span>}
+      {book && <span className="block font-sans text-xs leading-tight text-ink-muted max-sm:text-[11px]">{book}</span>}
     </div>
   );
 }

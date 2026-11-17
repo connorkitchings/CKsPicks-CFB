@@ -27,7 +27,7 @@ test("phone rank label follows the selected sort and the résumé scale ignores 
   const list = page.getByRole("list", { name: "Team ratings list" });
   const firstCard = list.getByRole("listitem").first();
   const offenseRank = await firstCard.getByRole("link").locator("span").first().textContent();
-  expect(offenseRank).toBe("#1");
+  expect(offenseRank).toBe("1");
   const chartFor = () => page.getByRole("group", { name: "Strength versus résumé scatterplot" });
   const cx = (team: string) => chartFor().locator(`[data-team="${team}"] circle.focus-ring`).getAttribute("cx");
   await gotoHydrated(page, "/teams?view=resume&conf=p4");
@@ -99,7 +99,7 @@ test("/teams?group=resume ranks by SOR, not by raw overall rating", async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoHydrated(page, "/teams?group=resume");
   const items = page.getByRole("list", { name: "Team ratings list" }).getByRole("listitem");
-  await expect(items.first().getByRole("link").locator("span").first()).toHaveText("#1");
+  await expect(items.first().getByRole("link").locator("span").first()).toHaveText("1");
   const ranks = await items.getByRole("link").locator("span:first-child").allTextContents();
   for (const rank of ranks) expect(rank).not.toContain(".");
   await expect(page.locator("#rating-sort")).toHaveValue("sor");
