@@ -46,6 +46,8 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Release state
 
+Site version: 2.0.0 on `dev` (not yet released; see the [changelog](https://github.com/connorkitchings/CKsPicks-CFB/blob/main/CHANGELOG.md)). The site version is separate from the weekly data release IDs below.
+
 A Cloudflare Worker that dispatches the weekly update at 12:00 Eastern (GitHub `schedule` runs arrive 3 to 7 hours late) was deployed on 2026-11-15 (first live fire Monday 2026-11-16 at noon Eastern); it honors `CFB_WEEKLY_AUTOMATION_ENABLED`, which is `true`. See the [runbook](ops/weekly_runbook.md#noon-eastern-dispatcher).
 
 Preview was pruned to 4 releases on 2026-11-15 (owner-approved, [decision](decisions/decision_log.md)) and compacted with `VACUUM FULL`, which cleared the 1 GB Neon cap (1018 MB down to 354 MB); the Week 12 close then succeeded (run `43790541091`) and Preview is at 434 MB with 5 releases. Production was left alone because its cap is separate. Each release adds about 75 MB, so a prune plus compaction tool or a plan upgrade is needed within about 6 releases.

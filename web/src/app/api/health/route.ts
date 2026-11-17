@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { APP_VERSION } from "@/lib/brand";
 import { schema } from "@/lib/db";
 import { isAllowedSeason, publicationScope } from "@/lib/publication";
 import { getCurrentWeek, getRunForWeek } from "@/lib/queries";
@@ -96,6 +97,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       status: "ok",
       schemaVersion: "data_platform_v1",
+      appVersion: APP_VERSION,
+      commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
       publication: {
         season: publicationScope.season,
         weeks: publicationScope.weeks,

@@ -12,6 +12,8 @@ The [weekly runbook](docs/ops/weekly_runbook.md) is the sole operational authori
 
 Revision manifests and score exceptions must be committed before preparing from a clean tree. Do not commit between prepare and the last release: release requires the exact prepared commit. Agents commit locally on `dev`; the owner decides when `dev` is pushed, and Production releases through the `dev` into `main` release PR. Production activation is automatic when every gate passes (see [`docs/ops/weekly_runbook.md`](docs/ops/weekly_runbook.md)); rollback is owner-only.
 
+Site version and history: [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Modeling and research
 
 ```text

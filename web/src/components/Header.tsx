@@ -7,7 +7,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 import { PAGE_WIDTHS, type PageWidth } from "@/lib/page-width";
 import { etDateTime } from "@/lib/time-et";
-import { BRAND_FULL } from "@/lib/brand";
+import { APP_VERSION, BRAND_FULL } from "@/lib/brand";
 import { SiteNav } from "./SiteNav";
 import { TeamSearch } from "./TeamSearch";
 import { Wordmark } from "./Wordmark";
@@ -124,6 +124,9 @@ export function Footer({
       <p>
         Team names and logos are trademarks of their respective schools and
         owners, shown for identification only.
+      </p>
+      <p className="mt-1 text-ink-faint" data-testid="app-version">
+        {BRAND_FULL} v{APP_VERSION}
       </p>
     </footer>
   );

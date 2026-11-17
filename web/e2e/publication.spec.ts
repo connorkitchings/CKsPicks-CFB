@@ -286,6 +286,14 @@ test("footer carries the team-logo trademark attribution", async ({ page }) => {
   }
 });
 
+test("footer shows the site version and /api/health reports it", async ({ page, request }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("app-version")).toHaveText("Stratum CFB v2.0.0");
+  const health = await (await request.get("/api/health")).json();
+  expect(health.appVersion).toBe("2.0.0");
+  expect(health).toHaveProperty("commit");
+});
+
 test.describe("final week (/?week=4)", () => {
   test("shows the phase, both records, highlights and the full slate", async ({ page }) => {
     await gotoHydrated(page, "/?week=4");

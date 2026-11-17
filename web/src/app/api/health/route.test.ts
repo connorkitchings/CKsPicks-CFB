@@ -18,6 +18,7 @@ const schemaUrl = pathToFileURL(new URL("../../../lib/schema.ts", import.meta.ur
 const stubs: Record<string, string> = {
   // "next/server" has no ESM entry under plain Node; Response.json is equivalent here.
   "next/server": `export const NextResponse = { json: (body, init) => Response.json(body, init) };`,
+  "@/lib/brand": `export const APP_VERSION = "9.9.9";`,
   "@/lib/db": `export * as schema from ${JSON.stringify(schemaUrl)};`,
   "@/lib/publication": `export const publicationScope = { season: 2026, weeks: [1, 2], mode: "test" };
     export const isAllowedSeason = (season) => season === 2026;`,
@@ -58,6 +59,8 @@ test("active release reports release id and week with its run", async () => {
   const res = await GET(request());
   const body = await res.json();
   assert.equal(res.status, 200);
+  assert.equal(body.appVersion, "9.9.9");
+  assert.equal(body.commit, process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null);
   assert.deepEqual(body.activeRelease, { releaseId: "rel-1", season: 2026, week: 8 });
   assert.equal(body.activeRun.runId, "run-new");
   assert.equal(body.activeRun.week, 8);

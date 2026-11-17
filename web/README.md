@@ -61,6 +61,10 @@ Use the explicit Preview migration command in the
 `make contracts-check`; `contracts/schema.ts` is canonical and the web copy
 must remain synchronized.
 
+## Versioning
+
+The site uses semantic versioning, recorded in `web/package.json` (mirrored in `pyproject.toml`); the footer and `/api/health` (`appVersion`) read it. Major for a redesign, minor for a new feature, patch for a fix. Weekly data releases never bump it. Add each change to `CHANGELOG.md`. After a release PR merges, the owner tags it: `git tag -a v2.0.0 <merge-commit> -m "Stratum CFB 2.0.0"`, `git tag -a v1.0.0 86c16f66 -m "Stratum CFB 1.0.0 (four-tab site)"`, then `git push origin v1.0.0 v2.0.0`.
+
 ## Routes and feature flags
 
 | Route | Status |
