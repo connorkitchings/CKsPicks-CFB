@@ -151,7 +151,7 @@ export const CHART_REGISTRY: Record<ChartKind, ChartDefinition> = {
     group: "teams",
     tabLabel: "Situational downs",
     title: "Situational downs",
-    description: "Early down EPA against 3rd and 4th down conversion rate.",
+    description: "Early down PPA against 3rd and 4th down conversion rate.",
     population: FBS_GAMES,
     controls: { side: true, week: "through-week", team: true },
     footnote: downsFootnote(),
@@ -445,10 +445,10 @@ export const EFFICIENCY_METRICS: Record<EfficiencyMetric, EfficiencyMetricText> 
     value: formatPercent,
   },
   yards_per_success: {
-    label: "Yards / Success",
-    yLabel: { offense: "Yards / Successful Play", defense: "Yards / Success Allowed" },
+    label: "Yards per success",
+    yLabel: { offense: "Yards per successful play", defense: "Yards per success allowed" },
     shortYLabel: { offense: "Yds / success", defense: "Yds / success allowed" },
-    caption: "yards/success",
+    caption: "yards per success",
     footnote: "yards per successful play",
     describe: "yards/success",
     definition: "Yards per successful play is the average yardage on plays that count as successful.",
@@ -549,7 +549,7 @@ export function describeAdjustedPoint(point: ScatterPoint, roles: AdjustedScatte
 // ---------------------------------------------------------------------------
 
 function possessionFootnote(measurement: string): string {
-  return `Adjusted ${measurement}: opponent-adjusted V5 possession measurements of FBS teams for each Through Week window, every game counted (FCS opponents included, as in the V5 ratings). Defense is the value allowed, axis inverted so up and right is better. Dashed lines are possession-weighted averages over the plotted teams; quadrant names are relative to them. Teams missing either role are not plotted. From this release's V5 possession measurements.`;
+  return `Adjusted ${measurement}: opponent-adjusted V5 possession measurements of FBS teams for each Through Week window, every game counted (FCS opponents included, as in the V5 ratings). Defense is the value allowed, axis inverted so up and right is better. Dashed lines are possession-weighted averages over the plotted teams; quadrant names are relative to them. Teams missing either role are not plotted. From this release's V5 possession measurements.${measurement === "PPA per possession" ? ` ${PPA_DEFINITION.replace("PPA/play", "PPA per possession").replace("per play", "per possession")}` : ""}`;
 }
 
 export const POSSESSION_METRICS: Record<PossessionMetric, {
@@ -676,7 +676,7 @@ export function describeGameLogGame(team: string, game: GameLogGame, metric: Gam
 // ---------------------------------------------------------------------------
 
 export function downsFootnote(): string {
-  return "Cumulative early down EPA/play (1st & 2nd down) and 3rd/4th down conversion rate on eligible plays, regulation play only, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are FBS averages pooled over plays: early-down plays for EPA, 3rd/4th-down attempts for conversion rate.";
+  return `Cumulative early down PPA/play (1st & 2nd down) and 3rd/4th down conversion rate on eligible plays, regulation play only, FBS vs FBS games. On defense, axes are inverted so up and right is better. Dashed lines are FBS averages pooled over plays: early-down plays for PPA, 3rd/4th-down attempts for conversion rate. ${PPA_DEFINITION}`;
 }
 
 export function downsConfig(side: Side): ScatterConfig {
@@ -692,31 +692,31 @@ export function downsConfig(side: Side): ScatterConfig {
     metricLabel: "",
     captions: isOffense
       ? {
-          topLeft: "Lower early EPA / Higher conversion",
-          topRight: "Higher early EPA / Higher conversion",
-          bottomLeft: "Lower early EPA / Lower conversion",
-          bottomRight: "Higher early EPA / Lower conversion",
+          topLeft: "Lower early PPA / Higher conversion",
+          topRight: "Higher early PPA / Higher conversion",
+          bottomLeft: "Lower early PPA / Lower conversion",
+          bottomRight: "Higher early PPA / Lower conversion",
           names: {
-            topLeft: "Late-Down Bailouts",
-            topRight: "Unstoppable Engine",
+            topLeft: "Late-down bailouts",
+            topRight: "Unstoppable engine",
             bottomLeft: "Struggling",
-            bottomRight: "On-Schedule Only",
+            bottomRight: "On-schedule only",
           },
         }
       : {
-          topLeft: "Higher early EPA allowed / Lower conversion allowed",
-          topRight: "Lower early EPA allowed / Lower conversion allowed",
-          bottomLeft: "Higher early EPA allowed / Higher conversion allowed",
-          bottomRight: "Lower early EPA allowed / Higher conversion allowed",
+          topLeft: "Higher early PPA allowed / Lower conversion allowed",
+          topRight: "Lower early PPA allowed / Lower conversion allowed",
+          bottomLeft: "Higher early PPA allowed / Higher conversion allowed",
+          bottomRight: "Lower early PPA allowed / Higher conversion allowed",
           names: {
-            topLeft: "Bend, Don't Break",
-            topRight: "Suffocating Defense",
+            topLeft: "Bend, don't break",
+            topRight: "Suffocating defense",
             bottomLeft: "Vulnerable",
-            bottomRight: "Stingy Early, Leaky Late",
+            bottomRight: "Stingy early, leaky late",
           },
         },
     averageNames: {
-      x: isOffense ? "Avg early EPA" : "Avg early EPA allowed",
+      x: isOffense ? "Avg early-down PPA" : "Avg early-down PPA allowed",
       y: isOffense ? "Avg conv rate" : "Avg conv rate allowed",
     },
     footnote: downsFootnote(),
@@ -726,7 +726,7 @@ export function downsConfig(side: Side): ScatterConfig {
 export function describeDownsPoint(point: ScatterPoint, side: Side): string {
   const head = `${point.team} (${conferenceLabel(point.conference)})`;
   const isOffense = side === "offense";
-  return `${head}: ${isOffense ? "Early-down EPA" : "Early-down EPA allowed"} ${formatEpa(point.x)}, ${isOffense ? "3rd/4th down conv" : "3rd/4th conv allowed"} ${formatPercent(point.y)}`;
+  return `${head}: ${isOffense ? "Early-down PPA" : "Early-down PPA allowed"} ${formatEpa(point.x)}, ${isOffense ? "3rd/4th down conv" : "3rd/4th conv allowed"} ${formatPercent(point.y)}`;
 }
 
 export function finishingDrivesFootnote(): string {

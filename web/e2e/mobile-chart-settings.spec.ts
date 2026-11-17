@@ -19,7 +19,7 @@ for (const width of [320, 390, 430]) {
     await expect(dialog.getByRole("heading", { name: "Chart settings" })).toBeFocused();
     await expect(page.locator("body")).toHaveCSS("position", "fixed");
     await dialog.getByTestId("conference-filter").selectOption("SEC");
-    await dialog.getByRole("button", { name: "Yards / Success", exact: true }).click();
+    await dialog.getByRole("button", { name: "Yards per success", exact: true }).click();
     for (const control of await dialog.locator("button, select, a[aria-current]").all()) {
       expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
@@ -31,7 +31,7 @@ for (const width of [320, 390, 430]) {
     await expect(page.getByTestId("chart-settings-summary")).toContainText("Yards");
     await page.getByRole("button", { name: "Chart settings", exact: true }).click();
     await expect(dialog.getByTestId("conference-filter")).toHaveValue("SEC");
-    await expect(dialog.getByRole("button", { name: "Yards / Success", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(dialog.getByRole("button", { name: "Yards per success", exact: true })).toHaveAttribute("aria-pressed", "true");
     await dialog.getByRole("button", { name: "Close", exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
     await expect(page).not.toHaveURL(/inspector|settings=/);

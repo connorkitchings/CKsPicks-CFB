@@ -226,8 +226,8 @@ test("downs and finishing drives quadrant names match their positions on both si
   // Defense axes are inverted: up = fewer allowed on y, right = fewer allowed on x.
   const expected = {
     downs: {
-      offense: ["Late-Down Bailouts", "Unstoppable Engine", "Struggling", "On-Schedule Only"],
-      defense: ["Bend, Don't Break", "Suffocating Defense", "Vulnerable", "Stingy Early, Leaky Late"],
+      offense: ["Late-down bailouts", "Unstoppable engine", "Struggling", "On-schedule only"],
+      defense: ["Bend, don't break", "Suffocating defense", "Vulnerable", "Stingy early, leaky late"],
     },
     finishing: {
       offense: ["Fewer opportunities, more points", "More opportunities, more points", "Fewer opportunities, fewer points", "More opportunities, fewer points"],
@@ -245,14 +245,14 @@ test("downs and finishing drives quadrant names match their positions on both si
   }
 
   const downsDefCaptions = downsConfig("defense").captions;
-  assert.equal(downsDefCaptions.topLeft, "Higher early EPA allowed / Lower conversion allowed");
-  assert.equal(downsDefCaptions.bottomRight, "Lower early EPA allowed / Higher conversion allowed");
+  assert.equal(downsDefCaptions.topLeft, "Higher early PPA allowed / Lower conversion allowed");
+  assert.equal(downsDefCaptions.bottomRight, "Lower early PPA allowed / Higher conversion allowed");
   const finishingDefCaptions = finishingDrivesConfig("defense").captions;
   assert.equal(finishingDefCaptions.topLeft, "Higher opportunity rate allowed / Fewer points allowed per opportunity");
   assert.equal(finishingDefCaptions.bottomRight, "Lower opportunity rate allowed / More points allowed per opportunity");
   const downsOffCaptions = downsConfig("offense").captions;
-  assert.equal(downsOffCaptions.topLeft, "Lower early EPA / Higher conversion");
-  assert.equal(downsOffCaptions.bottomRight, "Higher early EPA / Lower conversion");
+  assert.equal(downsOffCaptions.topLeft, "Lower early PPA / Higher conversion");
+  assert.equal(downsOffCaptions.bottomRight, "Higher early PPA / Lower conversion");
   const finishingOffCaptions = finishingDrivesConfig("offense").captions;
   assert.equal(finishingOffCaptions.topLeft, "Lower opportunity rate / Higher points per opportunity");
   assert.equal(finishingOffCaptions.bottomRight, "Higher opportunity rate / Lower points per opportunity");
@@ -260,7 +260,7 @@ test("downs and finishing drives quadrant names match their positions on both si
 
 test("footnotes: pooled finishing average and cohort-neutral resume rank", () => {
   assert.ok(finishingDrivesConfig("offense").footnote?.includes("pooled over drives for opportunity rate and over scoring opportunities"));
-  assert.ok(downsConfig("offense").footnote?.includes("pooled over plays: early-down plays for EPA, 3rd/4th-down attempts for conversion rate."));
+  assert.ok(downsConfig("offense").footnote?.includes("pooled over plays: early-down plays for PPA, 3rd/4th-down attempts for conversion rate."));
   assert.ok(!RESUME_QUALITY_CONFIG.footnote?.includes("134"));
   assert.equal(RESUME_QUALITY_CONFIG.averageNames.y, "Avg SOR rank");
 });
@@ -268,12 +268,12 @@ test("footnotes: pooled finishing average and cohort-neutral resume rank", () =>
 test("advanced visualization suite configs and formatters", () => {
   const downsOff = downsConfig("offense");
   assert.equal(downsOff.xLabel, "Early Down PPA/play (1st & 2nd)");
-  assert.equal(downsOff.captions.names.topRight, "Unstoppable Engine");
-  assert.equal(downsOff.captions.names.bottomRight, "On-Schedule Only");
+  assert.equal(downsOff.captions.names.topRight, "Unstoppable engine");
+  assert.equal(downsOff.captions.names.bottomRight, "On-schedule only");
 
   const downsDef = downsConfig("defense");
-  assert.equal(downsDef.captions.names.topRight, "Suffocating Defense");
-  assert.equal(downsDef.captions.names.bottomRight, "Stingy Early, Leaky Late");
+  assert.equal(downsDef.captions.names.topRight, "Suffocating defense");
+  assert.equal(downsDef.captions.names.bottomRight, "Stingy early, leaky late");
 
   const finishingOff = finishingDrivesConfig("offense");
   assert.equal(finishingOff.xLabel, "Scoring Opportunity Rate (Drives to Opponent 40)");
@@ -294,7 +294,7 @@ test("advanced visualization suite configs and formatters", () => {
   assert.equal(parseMarketBoardMetric(null), "spread");
 
   const pt = { team: "Georgia", conference: "SEC", x: 0.25, y: 45, n: 100 };
-  assert.match(describeDownsPoint({ ...pt, y: 0.45 }, "offense"), /Georgia \(SEC\): Early-down EPA \+0.250, 3rd\/4th down conv 45.0%/);
+  assert.match(describeDownsPoint({ ...pt, y: 0.45 }, "offense"), /Georgia \(SEC\): Early-down PPA \+0.250, 3rd\/4th down conv 45.0%/);
   assert.match(describeFinishingDrivesPoint({ ...pt, x: 0.25, y: 4.5 }, "offense"), /Georgia \(SEC\): Scoring opportunity rate 25.0%, points per scoring opportunity 4.50/);
   assert.match(describeResumePoint(pt), /Georgia \(SEC\): V5 Rating \+0.25, Strength of Record #45/);
 });

@@ -116,7 +116,7 @@ test.describe("team charts", () => {
     await expect(footnote).toContainText("Yards per successful play is the average yardage");
     const averages = page.getByTestId("average-labels");
     await expect(averages.getByText(/^Avg success rate \d/)).toHaveCount(1);
-    await expect(averages.getByText(/^Avg yards\/success \d/)).toHaveCount(1);
+    await expect(averages.getByText(/^Avg yards per success \d/)).toHaveCount(1);
     await expect(page.getByTestId("direction-caption")).toHaveText("Up and right is better ↗");
     await expect(page.locator("[data-grid='x']").first()).toHaveAttribute("opacity", "0.55");
     await page.goto("/stats?chart=efficiency&week=3&side=defense");
