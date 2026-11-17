@@ -1,9 +1,9 @@
 import { PageShell } from "@/components/PageShell";
 import { MobileStickyBar } from "@/components/ui/MobileStickyBar";
-import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { PHONE_PAGE_RHYTHM } from "@/lib/page-width";
 
-/** Graphs loading skeleton. Phones: the pinned chart picker row (select plus settings button), the controls block and the chart at their loaded heights. */
+/** Graphs loading skeleton. Phones: the pinned chart picker row (select plus settings button), the controls block and the chart at their loaded heights. Desktop: chart tabs, one toolbar row and one large chart card. */
 export default function StatsLoading() {
   return (
     <PageShell
@@ -19,9 +19,9 @@ export default function StatsLoading() {
       </MobileStickyBar>
       <Skeleton className="h-24 rounded-xl sm:hidden" />
       <Skeleton className="h-96 rounded-xl sm:hidden" />
-      <Skeleton className="h-11 w-56 max-sm:hidden" />
-      <Skeleton className="h-11 w-full max-sm:hidden" />
-      <SkeletonCard lines={8} className="max-sm:hidden" />
+      <Skeleton className="h-11 w-full max-w-3xl max-sm:hidden" />
+      <Skeleton className="h-14 w-full rounded-xl max-sm:hidden" />
+      <Skeleton className="h-[44rem] w-full rounded-xl max-sm:hidden" />
     </PageShell>
   );
 }

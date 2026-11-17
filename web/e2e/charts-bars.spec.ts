@@ -32,6 +32,20 @@ test.describe("bar chart tabs: toolbar, table, outlier cap", () => {
     const label = (await bar.getAttribute("aria-label"))!;
     const magnitude = label.match(/([\d.]+) percentage points/)![1];
     const trueValue = label.includes("disadvantage") ? `-${magnitude}` : magnitude;
-    await expect(bar.locator("[data-break-value]")).toHaveText(trueValue);
+    await expect(chart.locator("[data-break-value]").filter({ hasText: trueValue })).toHaveCount(1);
+  });
+
+  test("break value labels stay inside the chart and render at 12px or more", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await gotoHydrated(page, "/stats?chart=net-success&week=3");
+    const chart = page.getByTestId("net-success-chart");
+    const svg = (await chart.locator("svg").first().boundingBox())!;
+    const labels = chart.locator("[data-break-value]");
+    for (let i = 0; i < (await labels.count()); i++) {
+      const box = (await labels.nth(i).boundingBox())!;
+      expect(box.x + box.width).toBeLessThanOrEqual(svg.x + svg.width + 1);
+      const size = await labels.nth(i).evaluate((el) => parseFloat(getComputedStyle(el).fontSize) * (el as SVGTextElement).getScreenCTM()!.a);
+      expect(size).toBeGreaterThanOrEqual(11.9);
+    }
   });
 });

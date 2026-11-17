@@ -167,7 +167,7 @@ function Scatter({
             onKeyDown={(event) => onKeyDown(event, index, pair)}
             onFocus={() => setFocusId(pair.gameId)}
           >
-            <circle cx={cx} cy={cy} r={11} className="fill-transparent" />
+            <circle cx={cx} cy={cy} r={16} className="fill-transparent" />
             <circle cx={cx} cy={cy} r={selected ? 5 : 3.5} className={selected ? "fill-accent stroke-ink" : "fill-ink-muted/60"} strokeWidth={selected ? 1.5 : 0} />
             <circle cx={cx} cy={cy} r={8} className="fill-none stroke-transparent group-focus-visible:stroke-accent" strokeWidth={2} />
           </g>

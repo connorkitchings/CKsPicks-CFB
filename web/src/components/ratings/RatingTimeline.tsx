@@ -2,19 +2,16 @@
 
 import { nationalRanks, ratingField, type RatingHistoryPeriod, type RatingMetric } from "@/lib/team-analysis";
 import { trendAxis, trendWeekLabels } from "@/lib/team-rank-history";
-import { useIsPhone } from "@/lib/use-is-phone";
 import { useMeasuredWidth } from "@/lib/use-measured-width";
 import { Notice } from "@/components/ui/Notice";
 
 /** Two bounded series at most. Missing certified weeks remain visible breaks, not interpolation. */
 export function RatingTimeline({ history, teams, metric, measure }: { history: readonly RatingHistoryPeriod[]; teams: readonly string[]; metric: RatingMetric; measure: "rating" | "rank" }) {
-  const phone = useIsPhone();
-  const { ref, width: measured } = useMeasuredWidth(phone, 360);
-  // Phones: the viewBox is the measured CSS width (1:1 scale, so 12px text stays 12px). Desktop keeps 740x300.
-  const W = phone ? measured : 740;
-  const H = phone ? Math.round(measured * 0.62) : 300;
-  const left = phone ? 44 : 55;
-  const right = phone ? W - 12 : 695;
+  // The viewBox is the measured CSS width (1:1 scale, so 12px text stays 12px at every width).
+  const { ref, width: W } = useMeasuredWidth(true, 360);
+  const H = Math.min(300, Math.max(200, Math.round(W * 0.62)));
+  const left = W < 500 ? 44 : 55;
+  const right = W - 12;
   const bottom = H - 55;
   const series = teams.slice(0, 2).map((team) => history.map((entry, index) => {
     const row = entry.ratings.find((r) => r.team === team);
@@ -27,12 +24,8 @@ export function RatingTimeline({ history, teams, metric, measure }: { history: r
   const { lo, hi, ticks } = trendAxis(values, measure);
   const x = (i: number) => left + (history.length < 2 ? (right - left) / 2 : i / (history.length - 1) * (right - left));
   const y = (value: number) => 25 + (measure === "rank" ? (value - lo) : (hi - value)) / (hi - lo) * (bottom - 25);
-  const labelled = phone
-    ? new Set(trendWeekLabels(history.map((_, index) => index), right - left, 40))
-    : null;
-  const showLabel = (index: number) => labelled
-    ? labelled.has(index)
-    : index === 0 || index === history.length - 1 || index % Math.max(1, Math.ceil(history.length / 5)) === 0;
+  const labelled = new Set(trendWeekLabels(history.map((_, index) => index), right - left, 40));
+  const showLabel = (index: number) => labelled.has(index);
   const colors = ["var(--accent)", "var(--ink)"];
   return <section aria-label="Rating trajectory" className="space-y-3"><ul className="flex flex-wrap gap-4 text-sm">{teams.map((team, index) => <li key={team}><span aria-hidden style={{ color: colors[index] }}>● </span>{team}{index === 1 && " (dashed)"}</li>)}</ul><div ref={ref} className="overflow-hidden rounded-xl border border-line bg-surface-card"><svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${metric} ${measure} through the selected period; missing weeks are gaps`} className="block w-full"><rect x={left} y="25" width={right - left} height={bottom - 25} fill="none" stroke="var(--line)" />{ticks.map((tick) => <g key={tick}><line x1={left} x2={right} y1={y(tick)} y2={y(tick)} stroke="var(--line)" /><text x={left - 8} y={y(tick) + 4} textAnchor="end" fontSize="12" fill="var(--ink-muted)">{measure === "rank" ? `#${tick}` : tick.toFixed(1)}</text></g>)}{series.map((points, seriesIndex) => <g key={teams[seriesIndex]}>{points.map((p, index) => {
     if (p.value === undefined) return null;

@@ -26,8 +26,8 @@ function fillFor(bar: NetSuccessBar): string {
   return chartColor(teamColor(bar.winner), teamAltColor(bar.winner), FALLBACK_TEAM_COLOR);
 }
 
-/** Two short parallel diagonals across a capped bar near its tip, plus the bar's true value. */
-function BarBreak({ horizontal, c, tip, outward, thick, text }: { horizontal: boolean; c: number; tip: number; outward: number; thick: number; text: string }) {
+/** Two short parallel diagonals across a capped bar near its tip. */
+function BarBreak({ horizontal, c, tip, outward, thick }: { horizontal: boolean; c: number; tip: number; outward: number; thick: number }) {
   const half = thick / 2 + 1.5;
   // Offsets run from the tip back toward zero.
   const mark = (back: number) => {
@@ -36,18 +36,22 @@ function BarBreak({ horizontal, c, tip, outward, thick, text }: { horizontal: bo
       ? <line x1={at - 3} x2={at + 3} y1={c + half} y2={c - half} stroke="var(--surface-card)" strokeWidth={2} />
       : <line x1={c - half} x2={c + half} y1={at + 3} y2={at - 3} stroke="var(--surface-card)" strokeWidth={2} />;
   };
-  const halo = { stroke: "var(--surface-card)", strokeWidth: 3, strokeOpacity: 1, strokeLinejoin: "round" as const, paintOrder: "stroke" };
   return (
     <g pointerEvents="none" data-bar-break>
       {mark(8)}
       {mark(14)}
-      {horizontal ? (
-        <text x={tip} y={c - thick / 2 - 4} textAnchor="end" fontSize={12} fontWeight={600} fill="var(--ink)" {...halo} data-break-value>{text}</text>
-      ) : (
-        <text x={c + thick / 2 + 4} y={tip + outward * 11} fontSize={12} fontWeight={600} fill="var(--ink)" {...halo} data-break-value>{text}</text>
-      )}
     </g>
   );
+}
+
+/** A capped bar's true value. Drawn after every bar so a neighbour never covers it, and kept inside the chart's right edge. */
+function BreakValue({ horizontal, c, tip, outward, thick, text, unit, width, dim }: { horizontal: boolean; c: number; tip: number; outward: number; thick: number; text: string; unit: number; width: number; dim: boolean }) {
+  const halo = { stroke: "var(--surface-card)", strokeWidth: 3 * unit, strokeOpacity: 1, strokeLinejoin: "round" as const, paintOrder: "stroke" };
+  const common = { fontSize: 12 * unit, fontWeight: 600, fill: "var(--ink)", opacity: dim ? 0.15 : 1, pointerEvents: "none" as const, "data-break-value": true, ...halo };
+  if (horizontal) return <text x={tip} y={c - thick / 2 - 4} textAnchor="end" {...common}>{text}</text>;
+  const x = c + thick / 2 + 4;
+  const flip = x + text.length * 7.5 * unit > width;
+  return <text x={flip ? c - thick / 2 - 4 : x} y={tip + outward * 11 * unit} textAnchor={flip ? "end" : "start"} {...common}>{text}</text>;
 }
 
 export function NetSuccessChart({
@@ -64,20 +68,22 @@ export function NetSuccessChart({
   const [renderedWidth, setRenderedWidth] = useState<number | null>(null);
   const horizontal = orientation === "horizontal";
   useEffect(() => {
-    if (!interactive || !horizontal || !root.current) return;
+    if (!interactive || !root.current) return;
     const observer = new ResizeObserver(([entry]) => setRenderedWidth(entry.contentRect.width));
     observer.observe(root.current);
     return () => observer.disconnect();
-  }, [horizontal, interactive]);
-  // Match the viewBox to CSS pixels for readable text and >=44px row targets.
+  }, [interactive]);
+  // Phones match the viewBox to CSS pixels for readable text and >=44px row targets.
   const width = interactive && horizontal ? renderedWidth ?? requestedWidth : requestedWidth;
+  // viewBox units per CSS pixel, so SVG text keeps a 12px floor at any container width.
+  const unit = interactive && renderedWidth ? width / renderedWidth : 1;
   const phone = interactive && horizontal;
   const height = phone ? 72 + 48 * bars.length : requestedHeight;
   const ordered = bars.filter((b) => stateOf(b) !== "dim").map((b) => String(b.gameId));
   const { selected, register, handlers, setSelected } = useChartSelection(ordered);
   const tipBar = interactive && selected ? bars.find((b) => String(b.gameId) === selected) : undefined;
   const narrowLabels = phone && width < 340;
-  const margin = horizontal ? { top: 28, right: 20, bottom: phone ? 44 : 28, left: narrowLabels ? 76 : 100 } : { top: 10, right: 12, bottom: 78, left: 56 };
+  const margin = horizontal ? { top: 28, right: 20, bottom: phone ? 44 : 28, left: narrowLabels ? 76 : 100 } : { top: 10, right: 12, bottom: Math.round(90 * unit), left: 56 };
   const plot = { left: margin.left, right: width - margin.right, top: margin.top, bottom: height - margin.bottom };
   const span = horizontal ? plot.right - plot.left : plot.bottom - plot.top;
   const count = Math.max(1, bars.length);
@@ -100,7 +106,7 @@ export function NetSuccessChart({
   const zero = along(0);
   // Dense slates (about 50+ games) read best as upright columns sized to the band.
   const verticalLabels = band < 20;
-  const labelSize = verticalLabels ? Math.max(8, Math.min(11, band * 0.72)) : Math.min(12, band * 0.5);
+  const labelSize = 12 * unit;
 
   function center(index: number): number {
     return (horizontal ? plot.top : plot.left) + band * (index + 0.5);
@@ -152,7 +158,7 @@ export function NetSuccessChart({
             ) : (
               <>
                 <line x1={plot.left} x2={plot.right} y1={along(tick)} y2={along(tick)} stroke="var(--line)" strokeWidth={0.6} />
-                <text x={plot.left - 8} y={along(tick)} textAnchor="end" dominantBaseline="central" fontSize={12} fill="var(--ink-muted)">
+                <text x={plot.left - 8} y={along(tick)} textAnchor="end" dominantBaseline="central" fontSize={12 * unit} fill="var(--ink-muted)">
                   {(tick * 100).toFixed(0)}
                 </text>
               </>
@@ -165,7 +171,7 @@ export function NetSuccessChart({
           <line x1={plot.left} x2={plot.right} y1={zero} y2={zero} stroke="var(--ink-muted)" strokeWidth={1.2} />
         )}
         {!horizontal && (
-          <text transform={`translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ink)">
+          <text transform={`translate(14 ${(plot.top + plot.bottom) / 2}) rotate(-90)`} textAnchor="middle" fontSize={13 * unit} fontWeight={600} fill="var(--ink)">
             Net success rate (pct)
           </text>
         )}
@@ -236,7 +242,7 @@ export function NetSuccessChart({
               ) : (
                 <rect x={c - thick / 2} y={Math.min(zero, tip)} width={thick} height={Math.abs(tip - zero)} fill={fillFor(bar)} />
               )}
-              {capped && <BarBreak horizontal={horizontal} c={c} tip={tip} outward={outward} thick={thick} text={(bar.value * 100).toFixed(1)} />}
+              {capped && <BarBreak horizontal={horizontal} c={c} tip={tip} outward={outward} thick={thick} />}
               <TeamMark team={bar.winner} cx={winnerAt.cx} cy={winnerAt.cy} size={logo} />
               <TeamMark team={bar.loser} cx={loserAt.cx} cy={loserAt.cy} size={logo} />
               {horizontal ? (
@@ -261,6 +267,11 @@ export function NetSuccessChart({
               )}
             </g>
           );
+        })}
+        {bars.map((bar, index) => {
+          if (bar.value <= cap.high && bar.value >= cap.low) return null;
+          const tip = along(bar.value > 0 ? cap.high : cap.low);
+          return <BreakValue key={bar.gameId} horizontal={horizontal} c={center(index)} tip={tip} outward={bar.value >= 0 ? 1 : -1} thick={thick} text={(bar.value * 100).toFixed(1)} unit={unit} width={width} dim={stateOf(bar) === "dim"} />;
         })}
       </svg>
       {tipBar && !horizontal && (

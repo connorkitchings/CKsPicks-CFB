@@ -2,6 +2,7 @@
 
 import { chartColor, niceTicks, valueLabelY, type Domain, type GameLogGame, type Side, type TeamGameLog } from "@/lib/charts";
 import { FALLBACK_TEAM_COLOR, teamAltColor, teamColor } from "@/lib/team-logos";
+import { useMeasuredWidth } from "@/lib/use-measured-width";
 import { TeamMark } from "./TeamMark";
 import { useChartSelection } from "./useChartSelection";
 
@@ -43,6 +44,10 @@ const PANELS: readonly { side: Side; title: string }[] = [
  * and reads "n/a". Each game is one focus stop covering both panels.
  */
 export function GameLogChart({ log, domains, formatTick, formatValue, describe, width, height, interactive = true, label }: GameLogChartProps) {
+  const { ref, width: rendered } = useMeasuredWidth(interactive, width);
+  // viewBox units per CSS pixel, so SVG text keeps a 12px floor at any container width.
+  const unit = interactive ? width / rendered : 1;
+  const text = 12 * unit;
   const keys = log.games.map((game) => String(game.gameId));
   const { selected, register, handlers } = useChartSelection(keys);
   const tipGame = interactive && selected ? log.games.find((game) => String(game.gameId) === selected) : undefined;
@@ -85,15 +90,15 @@ export function GameLogChart({ log, domains, formatTick, formatValue, describe, 
   }
 
   return (
-    <div className="relative" data-testid="game-log-chart">
+    <div ref={ref} className="relative" data-testid="game-log-chart">
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="group" aria-label={label} className="block h-auto w-full select-none">
         <g data-testid="game-log-legend" aria-hidden>
-          <line x1={plotRight - 168} x2={plotRight - 146} y1={12} y2={12} stroke="var(--ink-muted)" strokeWidth={1.5} strokeDasharray="5 3" />
-          <text x={plotRight - 140} y={12} dominantBaseline="central" fontSize={11} fill="var(--ink-muted)">
+          <line x1={plotRight - 168 * unit} x2={plotRight - 146 * unit} y1={12} y2={12} stroke="var(--ink-muted)" strokeWidth={1.5} strokeDasharray="5 3" />
+          <text x={plotRight - 140 * unit} y={12} dominantBaseline="central" fontSize={text} fill="var(--ink-muted)">
             FBS average that week
           </text>
-          <rect x={plotRight - 332} y={6} width={12} height={12} fill="var(--loss-soft)" opacity={0.6} stroke="var(--line)" strokeWidth={0.5} />
-          <text x={plotRight - 314} y={12} dominantBaseline="central" fontSize={11} fill="var(--ink-muted)">
+          <rect x={plotRight - 332 * unit} y={6} width={12} height={12} fill="var(--loss-soft)" opacity={0.6} stroke="var(--line)" strokeWidth={0.5} />
+          <text x={plotRight - 314 * unit} y={12} dominantBaseline="central" fontSize={text} fill="var(--ink-muted)">
             Shaded column: loss
           </text>
         </g>
@@ -102,14 +107,14 @@ export function GameLogChart({ log, domains, formatTick, formatValue, describe, 
           const zero = yOf(side, 0);
           return (
             <g key={side} data-testid={`game-log-panel-${side}`}>
-              <text x={plotLeft} y={top - 8} fontSize={12} fontWeight={600} fill="var(--ink)">
+              <text x={plotLeft} y={top - 8} fontSize={text} fontWeight={600} fill="var(--ink)">
                 {title}
               </text>
               <rect x={plotLeft} y={top} width={plotRight - plotLeft} height={panelHeights[side]} fill="var(--surface-card)" stroke="var(--line)" />
               {ticksOf(side).map((tick) => (
                 <g key={tick}>
                   <line x1={plotLeft} x2={plotRight} y1={yOf(side, tick)} y2={yOf(side, tick)} stroke="var(--line)" strokeWidth={0.6} />
-                  <text x={plotLeft - 8} y={yOf(side, tick)} textAnchor="end" dominantBaseline="central" fontSize={11} fill="var(--ink-muted)">
+                  <text x={plotLeft - 8} y={yOf(side, tick)} textAnchor="end" dominantBaseline="central" fontSize={text} fill="var(--ink-muted)">
                     {formatTick(tick)}
                   </text>
                 </g>
@@ -147,7 +152,7 @@ export function GameLogChart({ log, domains, formatTick, formatValue, describe, 
                 return (
                   <g key={side} data-side={side}>
                     {value === null ? (
-                      <text x={c} y={zero + (side === "offense" ? -10 : 12)} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600} fill="var(--ink-muted)" data-na>
+                      <text x={c} y={zero + (side === "offense" ? -10 : 12)} textAnchor="middle" dominantBaseline="central" fontSize={text} fontWeight={600} fill="var(--ink-muted)" data-na>
                         n/a
                       </text>
                     ) : value === 0 ? (
@@ -160,11 +165,11 @@ export function GameLogChart({ log, domains, formatTick, formatValue, describe, 
                         x={c}
                         y={valueLabelY(yOf(side, value), zero, average === null ? null : yOf(side, average))}
                         textAnchor="middle"
-                        fontSize={11}
+                        fontSize={text}
                         fontWeight={600}
                         fill="var(--ink)"
                         stroke="var(--surface-card)"
-                        strokeWidth={3}
+                        strokeWidth={3 * unit}
                         strokeOpacity={1}
                         strokeLinejoin="round"
                         paintOrder="stroke"
@@ -179,14 +184,14 @@ export function GameLogChart({ log, domains, formatTick, formatValue, describe, 
                   </g>
                 );
               })}
-              <text x={c - logo / 2 - 5} y={footerTop + 6 + logo / 2} textAnchor="end" dominantBaseline="central" fontSize={11} fontWeight={600} fill="var(--ink-muted)" data-site-marker>
+              <text x={c - logo / 2 - 5} y={footerTop + 6 + logo / 2} textAnchor="end" dominantBaseline="central" fontSize={text} fontWeight={600} fill="var(--ink-muted)" data-site-marker>
                 {game.site === "away" ? "@" : "vs"}
               </text>
               <TeamMark team={game.opponent} cx={c} cy={footerTop + 6 + logo / 2} size={logo} />
-              <text x={c} y={footerTop + 12 + logo + 6} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700} fill={RESULT_FILL[game.result[0]] ?? "var(--ink)"} data-result={game.result[0]}>
+              <text x={c} y={footerTop + 12 + logo + 6} textAnchor="middle" dominantBaseline="central" fontSize={text} fontWeight={700} fill={RESULT_FILL[game.result[0]] ?? "var(--ink)"} data-result={game.result[0]}>
                 {game.result}
               </text>
-              <text x={c} y={footerTop + 12 + logo + 20} textAnchor="middle" dominantBaseline="central" fontSize={10} fill="var(--ink-muted)">
+              <text x={c} y={footerTop + 12 + logo + 20} textAnchor="middle" dominantBaseline="central" fontSize={text} fill="var(--ink-muted)">
                 {`Wk ${game.week}${game.site === "neutral" ? " · neutral" : ""}`}
               </text>
             </g>
