@@ -79,8 +79,61 @@ All 14 findings were approved by the owner (no deferrals) and fixed on branch `c
 - `make check` passes. `make web-e2e`: 547 passed, 10 skipped, no failures (the fixture `.next` was deleted afterwards).
 - Re-run on Production data (`PORT=3112 make web-local ENV=production`): every route family has its own title and an `og:image`; the footer reads "Stratum CFB v2.0.0" at 1440, 1024, 390 and 320; `/api/health` returns `appVersion` `2.0.0` and `commit` `null`; no horizontal scroll; no console errors beyond the expected 404s; no rendered SVG text under 11.5px on the re-checked pages except one 10.4px label on the Notre Dame team page at 1024 (not identified, not fixed).
 - Choices taken where the finding left options open: the matchup export follows the page theme (10); the resume Rank is a plain number and the SOR column stays (9); "Data release activated" now reads "Data published" (14); the Games placeholder is "Find a team..." style text at all widths because a placeholder cannot switch by width (2).
-- Known residue: the Net success "-12.1" label sits over a neighbouring bar's logo (crowded but readable); at 1024 the List-layout model line wraps to two lines inside its cell (row heights stay uniform); the sportsbook name under the matchup market line may wrap at 390 (cap raised to 32px in `mobile-matchup.spec.ts`).
-- Not done: a full visual re-capture of every page after the fixes, and the dark 1280 and 1024 passes.
+- Known residue, all closed by the visual re-capture below (see "Visual re-capture"):
+  1. The Net success "-12.1" label over a neighbouring bar's logo: closed by `5fffced2` (the break value now has a backing rect); no logo shows through on the page or in the PNG export.
+  2. The 1024 List-layout model line wrapping to two lines inside its cell: still wraps at 1024 (for example "model: Toledo by 16.2 · best line: Bovada"), and row heights stay uniform; no commit changed it, so this stays an accepted behaviour rather than a fix.
+  3. The sportsbook name under the matchup market line wrapping at 390: closed by `9b6431d5`, which stacks the book name under the value instead of keeping it on one line beside it; stacked cells are 31px tall, so the cap in `mobile-matchup.spec.ts` is 32px at both 390 and 320.
+  4. The one unidentified 10.4px label on the Notre Dame team page at 1024: closed by `1bb51f59` (the team Game log is measured on every viewport and set to 12px); no rendered SVG text is under 12px on any page now.
+- Not done at the time: a full visual re-capture of every page after the fixes, and the dark 1280 and 1024 passes. Both are done in "Visual re-capture" below.
+
+## Visual re-capture
+
+Second visual pass after three further fixes: `1bb51f59` (team Game log measured on every viewport, 12px), `5fffced2` (Net success break value has a backing rect) and `9b6431d5` (matchup sportsbook name stacked under the value on phones). Branch `connorkitchings/close-prerelease-gaps` at `9b6431d5`, served on `http://127.0.0.1:3112` with `PORT=3112 make web-local ENV=production` after deleting `web/.next` (Production data, Week 12 live, publication mode `predictions`). No source file was changed; `web/.next` was deleted and the server stopped afterwards.
+
+Method as in the review: Playwright driven by scripts outside the repo; full-page captures sliced to viewport height into contact sheets, each opened and looked at; 1x crops of the Net success break labels; downloaded PNG exports opened. Viewports: 1440x900, 1280x800 and 1024x768 in light and dark; 390x844 light and dark; 320x568 light. The same automated checks (horizontal scroll, touch targets, rendered SVG text size as font size times `getScreenCTM` scale, HTML text under 11px, console, failed requests) ran on 25 page URLs in all 9 viewport and theme combinations (225 runs), plus a per-element SVG text size and sportsbook-cell measurement at 1440, 1280, 1024, 390 and 320. Games was captured as Week 12 `/` (Today) and `/?status=all` in Grid and List, and Week 11 in Grid and List. Capture root: `/private/tmp/claude-501/-Users-connorkitchings-Desktop-Repositories-ckspicks-cfb/a5cded3d-3e1e-4f14-a163-b1155b143706/scratchpad/rc/caps/` (scratchpad, not durable); sheets are `SHEET-<page>-<viewport><L|D>-<n>.png`, exports `dl-*.png`, crops `crop-*.png`, raw automated output `results-*.json`.
+
+### Specific confirmations
+
+| Check | Result |
+|-------|--------|
+| Team page Game log labels at least 12px at 1440, 1280, 1024 | Confirmed. Notre Dame and Texas Game log: every text node measures 12.0px at all three widths (45 and 44 nodes; the chart is 723px wide at 1440 and 1280 and 606px at 1024). The Rating trend card (343px at 1440 and 1280, 284px at 1024) also measures 12.0px (it was 5.6px and 4.6px before `3863626c`). |
+| Net success break labels legible, no logo behind | Confirmed on the page and in the PNG export, light and dark. "50.2" (Washington State) is whole and sits inside its own backing box at the top right; "-12.1" (Boise State) is whole inside a backing box and no neighbouring bar logo shows through. Label sizes are 12px (one 13px). |
+| Matchup sportsbook name at 390 and 320 | Confirmed. The book name (BetMGM, Bovada, DraftKings, Lowvig) is 11px, stacked under the spread and total value, not clipped (`scrollWidth` equals `clientWidth`), and the market cells are 31px tall for every game (113px wide cell at 390, 78px at 320), so heights are uniform. |
+| Rendered SVG text under 11.5px | None on any page at any viewport or theme. The scan's "under 12px" hits are 12px values read as 11.99 (axis ticks such as "-10", "30%", "FBS average that week" at 1024 and 1280); none is under 11.9. |
+| HTML text under 11px | None at all (the 10px sportsbook names and matchup captions were raised by `af940e23`). |
+
+### Automated checks (225 runs)
+
+| Check | Result |
+|-------|--------|
+| Horizontal page scroll | `scrollWidth` equals `innerWidth` on every page, viewport and theme. |
+| Console and network | No console error, warning or failed request except the expected `404` on the three 404 URLs. |
+| Tap targets under 44px (390, 320) | Only the hidden 1x1 "Skip to main content" link on every page, the `UCF` matchup link and the team page game-log opponent links (height is 44px, width is the text), and the scatter points (140 on each Graphs scatter, 161 on the Teams résumé plot, 627 on the Model error scatter, unchanged from the review and from finding 7). |
+| Loading skeleton | Not caught. On this dev server the Graphs page arrived within 120ms of the click, and delaying the request kept the previous page on screen, so the new skeleton was not seen. Its shape (finding 13) is unverified visually. |
+
+### Review status after the fixes
+
+"ok" = looked at, no open defect. Pages marked "ok" were opened as contact sheets at the viewport shown; where a column is blank the page was covered by the automated checks only.
+
+| Page | 1440 L | 1440 D | 1280 L | 1280 D | 1024 L | 1024 D | 390 L | 390 D | 320 L |
+|------|--------|--------|--------|--------|--------|--------|-------|-------|-------|
+| Games Week 12 (Today, All, Grid, List), bottom disclosures, header timestamps, placeholder | ok (All Grid sheets 0 to 9; the two disclosures show chevrons; header shows one "Data published" timestamp) | auto | auto | auto | ok (All List: uniform rows, model line wraps to two lines as in residue item 2) | auto | ok (placeholder "Find team..." whole; Grid) | auto | ok (placeholder whole) |
+| Games Week 11 (Grid, List) | ok | auto | auto | auto | auto | auto | auto | ok (List: records, Win and Loss tags) | auto |
+| Teams (`?group=resume`, `?view=resume`) | ok (SOR group: Rank is a plain number) | auto | auto | auto | auto | auto | auto | auto | auto |
+| Notre Dame, Texas team pages | ok | auto | auto | ok (Texas) | ok (Notre Dame: Rating trend labels readable) | auto | auto | auto | auto |
+| Graphs Net success (page, PNG, skeleton) | ok (page and PNG; skeleton not caught) | ok (PNG) | auto | auto | auto | auto | auto | auto | auto |
+| Graphs Game log (page, PNG) | ok | ok (PNG) | auto | auto | auto | auto | auto | auto | auto |
+| Model (error scatter), Method | auto | auto | auto | auto | auto | auto | auto | auto | ok (Model) |
+| Matchup upcoming, final (page, Download) | ok | ok (PNG light and dark) | auto | auto | auto | auto | ok (both) | ok (final, PNG) | auto |
+| Matchup FIU | auto | auto | auto | ok | auto | auto | auto | auto | auto |
+| Graphs Efficiency, Situational downs, Finishing drives | auto | auto | auto | ok (Situational downs, Finishing drives) | auto | ok (Efficiency) | auto | auto | auto |
+| 404 (game, team, unknown) | auto | ok (team; button reads "Teams") | auto | auto | auto | auto | auto | auto | auto |
+
+Not opened visually in this pass, covered by the automated checks and the same components looked at elsewhere in the table: Adjusted PPA/play and Possession efficiency in dark at 1280 and 1024, Chart settings sheets (the toolbar renders inline on desktop and appears in every Graphs capture), the Method and Model pages at 1280 and 1024, and the PNG exports of the other five Graphs tabs.
+
+### New findings
+
+None. No defect was found in this pass, so finding numbers 15 onward are unused. Two observations are not defects: the List-layout model line at 1024 still wraps (residue item 2, uniform rows), and the loading skeleton could not be captured.
 
 ## Not covered
 
