@@ -97,7 +97,7 @@ function Cell({
   testId?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col items-center justify-center text-center max-sm:flex-row max-sm:flex-wrap max-sm:gap-x-1" data-testid={testId}>
+    <div className="flex min-w-0 flex-col items-center justify-center text-center" data-testid={testId}>
       <div className="inline-flex max-w-full flex-wrap items-center justify-center gap-1 sm:gap-1.5">
         <span
           className={clsx(
@@ -117,7 +117,8 @@ function Cell({
         </span>
         {badge}
       </div>
-      {book && <span className="block font-sans text-xs leading-tight text-ink-muted max-sm:text-[11px]">{book}</span>}
+      {/* Phones reserve the book line in every cell so the forecast cells share one height. */}
+      <span className="block font-sans text-xs leading-tight text-ink-muted max-sm:min-h-[0.875rem] max-sm:text-[11px]">{book}</span>
     </div>
   );
 }

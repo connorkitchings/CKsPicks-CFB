@@ -46,16 +46,16 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       const bet = (await page.getByTestId("model-bet-spread").boundingBox())!;
       expect(bet.y + bet.height).toBeLessThan(viewport.height === 844 ? 480 : 520);
       for (const id of ["model-bet-spread", "model-bet-total"]) {
-        expect((await page.getByTestId(id).boundingBox())!.height).toBeLessThanOrEqual(24);
+        expect((await page.getByTestId(id).boundingBox())!.height).toBeLessThanOrEqual(32);
       }
       const cellHeights = await page
         .getByTestId("forecast-grid")
         .locator("> div:not([aria-hidden])")
         .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
       console.log(`forecast cell heights ${viewport.width}: ${cellHeights.join(",")}`);
-      // The sportsbook label (11px) sits beside the spread; only the market cell may wrap it beneath, at 390 and 320.
+      // Phones stack each sportsbook label under its value, so every forecast cell shares one height.
       expect(Math.max(...cellHeights)).toBeLessThanOrEqual(32);
-      expect(cellHeights.filter((height) => height > 24).length).toBeLessThanOrEqual(1);
+      expect(Math.max(...cellHeights) - Math.min(...cellHeights)).toBeLessThanOrEqual(2);
 
       await page.mouse.wheel(0, 800);
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
