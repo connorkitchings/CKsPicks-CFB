@@ -79,6 +79,33 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
       }
     });
 
+    test("the error scatter labels render at 12px or more and stay inside the svg", async ({ page }) => {
+      await gotoHydrated(page, "/model");
+      for (const target of ["spread", "total"]) {
+        await page.getByTestId(`error-target-${target}`).click();
+        const svg = page.getByTestId("error-scatter");
+        await expect(svg).toHaveAttribute("aria-label", new RegExp(`^${target === "spread" ? "Spread" : "Totals"} absolute error`));
+        // The phone layout swaps in after hydration; wait for the measured width to settle before probing.
+        await expect.poll(() => svg.evaluate((node) => node.isConnected && node.getBoundingClientRect().width > 0)).toBe(true);
+        await svg.scrollIntoViewIfNeeded();
+        await expect.poll(async () => {
+          const [, , w] = (await svg.getAttribute("viewBox"))!.split(" ").map(Number);
+          return Math.abs(w - (await svg.boundingBox())!.width) <= 1;
+        }).toBe(true);
+        await expect.poll(() => svg.evaluate((node) => Math.min(...[...node.querySelectorAll<SVGTextElement>("text")].map((label) => {
+          const matrix = label.getScreenCTM();
+          return matrix ? parseFloat(getComputedStyle(label).fontSize) * Math.hypot(matrix.a, matrix.b) : 0;
+        })))).toBeGreaterThanOrEqual(11.99);
+        const outside = await svg.evaluate((node) => {
+          const frame = node.getBoundingClientRect();
+          return [...node.querySelectorAll<SVGTextElement>("text")].map((label) => ({ label, box: label.getBoundingClientRect() }))
+            .filter(({ box }) => box.left < frame.left - 0.5 || box.right > frame.right + 0.5 || box.top < frame.top - 0.5 || box.bottom > frame.bottom + 0.5)
+            .map(({ label }) => label.textContent);
+        });
+        expect(outside).toEqual([]);
+      }
+    });
+
     test("the explainers live in one collapsed disclosure", async ({ page }) => {
       await gotoHydrated(page, "/model");
       const explainer = page.getByText(/Win rate excludes pushes/).filter({ visible: true });

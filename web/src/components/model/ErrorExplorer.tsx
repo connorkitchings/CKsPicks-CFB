@@ -19,6 +19,8 @@ import type { MarketTarget } from "@/lib/performance-market";
 import { niceTicks } from "@/lib/charts";
 import { nearestScatterTeams } from "@/lib/scatter-selection";
 import { replaceSearchParams } from "@/lib/url-state";
+import { useIsPhone } from "@/lib/use-is-phone";
+import { useMeasuredWidth } from "@/lib/use-measured-width";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { MatchupButton } from "@/components/MatchupLinks";
@@ -50,9 +52,10 @@ function errorText(target: MarketTarget, pair: PairedError, error: number): stri
 
 const gameName = (pair: PairedError) => `${pair.awayTeam} at ${pair.homeTeam}`;
 
-const W = 320;
-const PAD = { left: 38, right: 12, top: 12, bottom: 36 };
-const PLOT = { w: W - PAD.left - PAD.right, h: W - PAD.top - PAD.bottom };
+/** Desktop draws in a fixed 320 viewBox that scales up; phones measure the container so 12px text stays 12px. */
+const DESKTOP_W = 320;
+const DESKTOP_PAD = { left: 38, right: 12, top: 12, bottom: 36 };
+const PHONE_PAD = { left: 50, right: 16, top: 12, bottom: 40 };
 
 function Scatter({
   target,
@@ -65,6 +68,14 @@ function Scatter({
   selectedId: number | null;
   onSelect: (gameId: number | null) => void;
 }) {
+  const phone = useIsPhone();
+  const { ref: containerRef, width: measured } = useMeasuredWidth(phone, DESKTOP_W);
+  const W = phone ? measured : DESKTOP_W;
+  const PAD = phone ? PHONE_PAD : DESKTOP_PAD;
+  const PLOT = phone
+    ? { w: W - PAD.left - PAD.right, h: W - PAD.left - PAD.right }
+    : { w: W - PAD.left - PAD.right, h: W - PAD.top - PAD.bottom };
+  const H = PAD.top + PLOT.h + PAD.bottom;
   const domain = scatterDomain(pairs);
   const x = (value: number) => PAD.left + (value / domain) * PLOT.w;
   const y = (value: number) => PAD.top + PLOT.h - (value / domain) * PLOT.h;
@@ -116,11 +127,12 @@ function Scatter({
   const ticks = niceTicks(0, domain, 5);
   const unit = target === "spread" ? "margin" : "total";
   return (
+    <div ref={containerRef}>
     <svg
       ref={svgRef}
       onClick={onPlotClick}
-      viewBox={`0 0 ${W} ${W}`}
-      className="mx-auto block h-auto w-full max-w-[560px] text-[10px]"
+      viewBox={`0 0 ${W} ${H}`}
+      className={clsx("mx-auto block h-auto w-full max-w-[560px]", phone ? "text-xs" : "text-[10px]")}
       role="group"
       aria-label={`${target === "spread" ? "Spread" : "Totals"} absolute error: betting line on the horizontal axis, model on the vertical axis. Points below the diagonal are games where the model was closer.`}
       data-testid="error-scatter"
@@ -129,15 +141,15 @@ function Scatter({
         <g key={tick}>
           <line x1={PAD.left} x2={W - PAD.right} y1={y(tick)} y2={y(tick)} className="stroke-line" strokeWidth={0.5} />
           <line y1={PAD.top} y2={PAD.top + PLOT.h} x1={x(tick)} x2={x(tick)} className="stroke-line" strokeWidth={0.5} />
-          <text x={PAD.left - 5} y={y(tick) + 3} textAnchor="end" className="fill-ink-muted font-mono">{Number.isInteger(tick) ? tick : tick.toFixed(1)}</text>
-          <text x={x(tick)} y={PAD.top + PLOT.h + 13} textAnchor="middle" className="fill-ink-muted font-mono">{Number.isInteger(tick) ? tick : tick.toFixed(1)}</text>
+          <text x={PAD.left - 5} y={y(tick) + (phone ? 4 : 3)} textAnchor="end" className="fill-ink-muted font-mono">{Number.isInteger(tick) ? tick : tick.toFixed(1)}</text>
+          <text x={x(tick)} y={PAD.top + PLOT.h + (phone ? 14 : 13)} textAnchor="middle" className="fill-ink-muted font-mono">{Number.isInteger(tick) ? tick : tick.toFixed(1)}</text>
         </g>
       ))}
       <line x1={x(0)} y1={y(0)} x2={x(domain)} y2={y(domain)} className="stroke-ink-muted" strokeWidth={1} strokeDasharray="4 3" data-testid="equal-error-diagonal" />
       <text x={W - PAD.right - 4} y={PAD.top + PLOT.h - 6} textAnchor="end" className="fill-ink-muted font-semibold">Model closer</text>
-      <text x={PAD.left + 4} y={PAD.top + 12} className="fill-ink-muted font-semibold">Betting line closer</text>
-      <text x={PAD.left + PLOT.w / 2} y={W - 6} textAnchor="middle" className="fill-ink-muted">Betting line absolute error ({unit}, pts)</text>
-      <text transform={`translate(10 ${PAD.top + PLOT.h / 2}) rotate(-90)`} textAnchor="middle" className="fill-ink-muted">Model absolute error (pts)</text>
+      <text x={PAD.left + 4} y={PAD.top + (phone ? 14 : 12)} className="fill-ink-muted font-semibold">Betting line closer</text>
+      <text x={PAD.left + PLOT.w / 2} y={H - 4} textAnchor="middle" className="fill-ink-muted">{phone ? "Betting line error (pts)" : `Betting line absolute error (${unit}, pts)`}</text>
+      <text transform={`translate(${phone ? 14 : 10} ${PAD.top + PLOT.h / 2}) rotate(-90)`} textAnchor="middle" className="fill-ink-muted">{phone ? "Model error (pts)" : "Model absolute error (pts)"}</text>
       {ordered.map((pair, index) => {
         const selected = pair.gameId === selectedId;
         const cx = x(lineAbsError(pair));
@@ -164,6 +176,7 @@ function Scatter({
       {/* The selected game is drawn last so no neighbouring point hides it. */}
       {selectedPair && <circle cx={x(lineAbsError(selectedPair))} cy={y(modelAbsError(selectedPair))} r={5} className="fill-accent stroke-ink" strokeWidth={1.5} pointerEvents="none" aria-hidden />}
     </svg>
+    </div>
   );
 }
 
