@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Chevron } from "./Chevron";
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { etDateTime } from "@/lib/time-et";
 import { Card } from "@/components/ui/Card";
@@ -155,7 +156,7 @@ export function SlateView({
               <RegularSeasonComplete performance={performance} games={games} />
             )}
             <p className="max-w-3xl text-sm leading-relaxed text-ink-muted max-sm:hidden">Explore the week’s games, compare football forecasts with market lines, and revisit published results.</p>
-            <p className="text-xs text-ink-muted">{activatedAt ? `Data release activated ${etDateTime(activatedAt)}. ` : ""}Schedules, lines and results reflect published data; no live score feed.</p>
+            <p className="text-xs text-ink-muted">{activatedAt ? `Data published ${etDateTime(activatedAt)}. ` : ""}Schedules, lines and results reflect published data; no live score feed.</p>
 
             {displayOnlyNotice && (
               <p
@@ -214,7 +215,7 @@ export function SlateView({
                 ) : undefined}
               />
             )}
-            {showRecord && <details className="border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">Season and weekly model record</summary><div className="mt-3"><ModelRecord performance={performance} weekNumber={week} week={graded ? weekRecord(games) : undefined} weekPerformance={graded ? weekPerformance : undefined} /></div></details>}
+            {showRecord && <details className="border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">Season and weekly model record<Chevron /></summary><div className="mt-3"><ModelRecord performance={performance} weekNumber={week} week={graded ? weekRecord(games) : undefined} weekPerformance={graded ? weekPerformance : undefined} /></div></details>}
           </>
         )}
       </main>

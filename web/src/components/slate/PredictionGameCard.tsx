@@ -2,7 +2,7 @@ import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
 import { Card } from "@/components/ui/Card";
 import { isFinal } from "@/lib/team-games";
-import { coverMargin, leanFor, modelCrossesMarket, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
+import { coverMargin, leanFor, modelCrossesMarket, modelMargin, phoneLean, resultFor, venueLabel, type Lean } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { phoneTeamName, teamAbbr } from "@/lib/team-logos";
@@ -13,9 +13,8 @@ import { AwaitingTag } from "./AwaitingTag";
 
 function modelNumber(lean: Lean): string {
   if (lean.kind === "total") return lean.model ?? "—";
-  const match = lean.model?.match(/by\s+(-?\d+(?:\.\d+)?)$/);
-  if (!match) return lean.model ?? "—";
-  const margin = Number(match[1]);
+  const margin = modelMargin(lean);
+  if (margin === null) return lean.model ?? "—";
   if (Math.abs(margin) < 0.05) return "PK";
   return -margin > 0 ? `+${(-margin).toFixed(1)}` : (-margin).toFixed(1);
 }

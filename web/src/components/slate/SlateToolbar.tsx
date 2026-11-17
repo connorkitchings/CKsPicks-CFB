@@ -101,7 +101,7 @@ export function SlateToolbar<T extends string>({
         <SearchField
           id="slate-search"
           label="Filter by team"
-          placeholder="Filter by team…"
+          placeholder="Find team…"
           value={query}
           onChange={onQueryChange}
           className="min-w-0 flex-[1.2_1_0%] sm:flex-[1_1_9rem]"

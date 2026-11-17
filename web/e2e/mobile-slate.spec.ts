@@ -97,7 +97,7 @@ test("phone cards keep venue beside the time and the line source through a filte
   await expect(card.getByText("Game details", { exact: true })).toHaveCount(0);
   await expect(card.getByText(/Los Angeles, CA/)).toBeVisible();
   await expect(card.getByText(/FanDuel/)).toBeVisible();
-  await page.getByPlaceholder("Filter by team…").fill("Oregon");
+  await page.getByPlaceholder("Find team…").fill("Oregon");
   await expect(card.getByText(/Los Angeles, CA/)).toBeVisible();
   await expect(card.getByText(/FanDuel/)).toBeVisible();
 });

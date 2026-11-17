@@ -73,7 +73,9 @@ export type Lean = {
   dir: "home" | "away" | "over" | "under";
   /** Team the spread lean backs; null for totals. */
   team: string | null;
-  /** What the model says on the same scale: "Ohio State by 7.6" / "54.1". */
+  /** The other side of a spread lean; null for totals. */
+  opponent: string | null;
+  /** What the model says on the same scale: "Ohio State by 7.6" (names the team the model favors, never a negative margin) / "54.1". */
   model: string | null;
   /** Sportsbook behind the line (display name), when the run recorded one. */
   source: string | null;
@@ -82,10 +84,17 @@ export type Lean = {
   tier: 1 | 2 | 3;
 };
 
-/** Model margin from the leaned team's side, named: "Ohio State by 7.6". */
-function modelMarginText(margin: number | null, team: string): string | null {
+/** Model margin from the leaned team's side, naming the team the model favors: "Ohio State by 7.6". */
+function modelMarginText(margin: number | null, team: string, opponent: string): string | null {
   if (margin === null) return null;
-  return `${team} by ${margin.toFixed(1)}`;
+  return `${margin < 0 ? opponent : team} by ${Math.abs(margin).toFixed(1)}`;
+}
+
+/** The model's margin from the leaned team's side: negative when the model favors the other team. */
+export function modelMargin(lean: Lean): number | null {
+  const match = lean.kind === "spread" ? lean.model?.match(/by\s+(\d+(?:\.\d+)?)$/) : null;
+  if (!match || !lean.team) return null;
+  return lean.model!.startsWith(`${lean.team} by `) ? Number(match[1]) : -Number(match[1]);
 }
 
 /** The prediction fields `leanFor` reads; lets a lightweight query row stand in for a full game. */
@@ -113,6 +122,7 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
     const line =
       game.spreadLean === "home" ? game.homeTeamSpreadLine : -game.homeTeamSpreadLine;
     const team = game.spreadLean === "home" ? game.homeTeam : game.awayTeam;
+    const opponent = game.spreadLean === "home" ? game.awayTeam : game.homeTeam;
     const edge = Math.abs(
       game.edgeSpread ??
         spreadEdge(
@@ -132,7 +142,8 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
       pick: `${team} ${line === 0 ? "PK" : signedSpread(line)}`,
       dir: game.spreadLean,
       team,
-      model: modelMarginText(margin, team),
+      opponent,
+      model: modelMarginText(margin, team, opponent),
       source: bookName(game.spreadSource),
       edge,
       tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
@@ -148,6 +159,7 @@ export function leanFor(game: Game | LeanSource, kind: LeanKind): Lean | null {
     pick: `${over ? "Over" : "Under"} ${game.totalLine.toFixed(1)}`,
     dir: game.totalLean,
     team: null,
+    opponent: null,
     model: game.predictedTotal === null ? null : game.predictedTotal.toFixed(1),
     source: bookName(game.totalSource),
     edge,
@@ -183,11 +195,9 @@ export function leanDetail(lean: Lean): string | null {
 export function modelCrossesMarket(lean: Lean): boolean {
   if (lean.kind !== "spread") return false;
   const line = lean.pick.match(/([+-]\d+(?:\.\d+)?)$/);
-  const margin = lean.model?.match(/by\s+(-?\d+(?:\.\d+)?)$/);
-  if (!line || !margin) return false;
-  const modelMargin = Number(margin[1]);
-  if (Math.abs(modelMargin) < 0.05) return false;
-  return modelMargin > 0 !== Number(line[1]) < 0;
+  const margin = modelMargin(lean);
+  if (!line || margin === null || Math.abs(margin) < 0.05) return false;
+  return margin > 0 !== Number(line[1]) < 0;
 }
 
 /** The lean as phones show it: a long team name in the pick and model text becomes its abbreviation. */
@@ -195,7 +205,12 @@ export function phoneLean(lean: Lean): Lean {
   if (lean.team === null) return lean;
   const short = phoneTeamName(lean.team);
   if (short === lean.team) return lean;
-  return { ...lean, pick: lean.pick.replace(lean.team, short), model: lean.model?.replace(lean.team, short) ?? null };
+  const model = lean.model?.replace(lean.team, short);
+  return {
+    ...lean,
+    pick: lean.pick.replace(lean.team, short),
+    model: (lean.opponent ? model?.replace(lean.opponent, phoneTeamName(lean.opponent)) : model) ?? null,
+  };
 }
 
 export type TopLean = Lean & { game: PredictionGame };

@@ -288,7 +288,7 @@ test("leans carry the model's prediction from the pick's side", () => {
   assert.equal(fav?.team, "Home");
 
   const dog = leanFor(game({ spreadLean: "away", homeTeamSpreadLine: -3.5 }), "spread");
-  assert.equal(dog?.model, "Away by -6.5");
+  assert.equal(dog?.model, "Home by 6.5");
 
   const pk = leanFor(game({ homeTeamSpreadLine: 0 }), "spread");
   assert.equal(pk?.pick, "Home PK");

@@ -18,6 +18,7 @@ import { byKickoff, slateSorts, sortSlate, weekPhase, gameState, parseSlateStatu
 import { SlateToolbar } from "./SlateToolbar";
 import { SlateGameList } from "./SlateGameList";
 import { dayLabel } from "./format";
+import { Chevron } from "./Chevron";
 
 const SORT_LABEL: Record<SlateSort, string> = {
   kickoff: "Kickoff time",
@@ -142,7 +143,7 @@ export function SlateList({
         window.history.pushState(null, "", `${window.location.pathname}?${next}#game-${awaiting[0].gameId}`);
         setScrollGame(awaiting[0].gameId);
       }}>Awaiting published results: {awaiting.length}</button>. Results arrive with a data release, not a live score feed.</p>}
-      {extras && <details className="order-2 border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">Featured comparisons and weekly highlights</summary><div className="mt-3">{extras}</div></details>}
+      {extras && <details className="order-2 border-t border-line py-3"><summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">Featured comparisons and weekly highlights<Chevron /></summary><div className="mt-3">{extras}</div></details>}
       <p role="status" className="sr-only">Showing {visible.length} of {games.length} games</p>
 
       {marketView && predictionsVisible ? <div className="order-1"><MarketComparison games={visible} matchupEnabled={matchupEnabled} now={now} onReset={showAllGames} /></div> : visible.length === 0 ? (

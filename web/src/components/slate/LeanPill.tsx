@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { Lean } from "@/lib/slate";
 import { leanDetail, phoneLean } from "@/lib/slate";
 import { PhoneSwap } from "@/components/ui/PhoneSwap";
@@ -10,7 +11,7 @@ const LABEL = { spread: "Spread", total: "Total" } as const;
  * and one line under it with the model's prediction and the sportsbook the
  * (best available) line came from.
  */
-export function LeanPill({ lean }: { lean: Lean; compact?: boolean }) {
+export function LeanPill({ lean, compact = false }: { lean: Lean; compact?: boolean }) {
   const sentence = leanDetail(lean);
   const phone = phoneLean(lean);
   return (
@@ -25,14 +26,14 @@ export function LeanPill({ lean }: { lean: Lean; compact?: boolean }) {
           <span data-pick className="min-w-0 break-words text-sm font-semibold text-accent-ink">
             <PhoneSwap full={lean.pick} phone={phone.pick} />
           </span>
-          <span className="whitespace-nowrap text-xs tabular-nums text-ink-muted" title="Absolute difference between model and selected market line">
+          <span className={clsx("whitespace-nowrap text-xs tabular-nums text-ink-muted", compact && "basis-full")} title="Absolute difference between model and selected market line">
             Difference: {lean.edge.toFixed(1)} pts
           </span>
         </span>
       </div>
       {sentence && (
         <p
-          className="truncate pl-[3.75rem] text-xs text-ink-muted max-[380px]:overflow-visible max-[380px]:whitespace-normal"
+          className={clsx("truncate pl-[3.75rem] text-xs text-ink-muted", !compact && "max-[380px]:overflow-visible max-[380px]:whitespace-normal")}
           title={lean.source ? `${sentence} (best available line for the model's side)` : sentence}
         >
           <PhoneSwap full={sentence} phone={leanDetail(phone) ?? sentence} />

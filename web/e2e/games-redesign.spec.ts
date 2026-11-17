@@ -158,7 +158,7 @@ test("missing both comparisons stays explained and empty filters remain usable",
   await expect(market).toContainText("Western Kentucky at Appalachian State: no spread line; no total line");
   await page.keyboard.press("Space");
   await expect(market.getByTestId("market-unavailable")).not.toHaveAttribute("open", "");
-  await page.getByPlaceholder("Filter by team…").fill("Western Kentucky");
+  await page.getByPlaceholder("Find team…").fill("Western Kentucky");
   await expect(market).toContainText("0 of 1 filtered games have a comparable spread; 0 of 1 have a comparable total.");
   await expect(market.getByRole("status")).toContainText("No comparable forecasts and lines for these filters.");
   await expect(market.locator("article")).toHaveCount(0);

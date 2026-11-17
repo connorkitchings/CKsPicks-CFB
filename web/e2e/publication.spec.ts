@@ -87,7 +87,7 @@ test.describe("upcoming week (/)", () => {
     await expect(page.getByRole("region", { name: "Highlights" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: /^Week \d+ record/ })).toHaveCount(0);
     await expect(page.locator("#slate-sort option[value='worstResult']")).toHaveCount(0);
-    await expect(page.getByPlaceholder("Filter by team…")).toBeVisible();
+    await expect(page.getByPlaceholder("Find team…")).toBeVisible();
     // Season track record over each scored week's top-5 spread/total leans.
     await expect(shown(page.getByText(/2026: 7–3–0 \(\d+\.\d%\)/))).toBeVisible();
     // Every week is browsable: the final, upcoming and in-progress fixture weeks.
@@ -158,14 +158,14 @@ test.describe("upcoming week (/)", () => {
     const games = page.locator("li[id^='game-']");
     await expect(games).toHaveCount(10);
 
-    await page.getByPlaceholder("Filter by team…").fill("Oregon");
+    await page.getByPlaceholder("Find team…").fill("Oregon");
     await expect(games).toHaveCount(1);
     await expect(games.first()).toHaveAttribute("id", "game-3");
 
-    await page.getByPlaceholder("Filter by team…").fill("zzz");
+    await page.getByPlaceholder("Find team…").fill("zzz");
     await expect(games).toHaveCount(0);
 
-    await page.getByPlaceholder("Filter by team…").fill("");
+    await page.getByPlaceholder("Find team…").fill("");
     await expect(games).toHaveCount(10);
 
     const confFilter = page.getByTestId("conference-filter");
@@ -331,11 +331,11 @@ test.describe("final week (/?week=4)", () => {
     await gotoHydrated(page, "/?week=4");
 
     const count = page.getByRole("status");
-    await page.getByPlaceholder("Filter by team…").fill("Ohio State");
+    await page.getByPlaceholder("Find team…").fill("Ohio State");
     await expect(count).toHaveText("Showing 1 of 9 games");
     await expect(page.locator("li[id^='game-']").first().getByText("Win", { exact: true }).first()).toBeVisible();
 
-    await page.getByPlaceholder("Filter by team…").fill("");
+    await page.getByPlaceholder("Find team…").fill("");
     await expect(count).toHaveText("Showing 9 of 9 games");
   });
 
