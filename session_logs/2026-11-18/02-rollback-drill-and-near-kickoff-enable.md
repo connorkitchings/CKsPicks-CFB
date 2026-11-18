@@ -38,7 +38,7 @@
 
 - [x] `/api/health` checked after each step (values above).
 - [ ] Pre-drill readback SHA-256 baseline was not recorded, so the post-restore hash (`f213c19e…`) is not compared against it. The 2026-10-25 note records matching Preview and Production hashes per release, but no baseline for this release was found in the repository or run log.
-- [ ] `git diff --check`
+- [x] `git diff --check`; full `make check` green on `dev` (web steps included)
 
 ## Amendments and Blockers
 
