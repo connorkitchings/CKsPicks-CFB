@@ -35,6 +35,19 @@ No failures; no pin other than the exceptions file failed, and no provider call 
 
 `tests/test_export_2026_holdout.py` covers byte-identical reruns, hash-pinned inputs with roles, the cutoff rule (accepts and rejects), the quote-after-capture rejection and the analysis-only separation. The real export has not been run (Task 4).
 
+## Validation
+
+- [x] `uv run pytest tests/test_export_2026_holdout.py`: 7 passed.
+- [x] Task 1 rerun by the orchestrator after merge: 12 of 12 pass.
+- [x] `git diff --check`, `uv run mkdocs build --strict`, and the full `make check` (web steps included) on `dev`.
+
+## Decisions and blockers
+
+- Decision: the exceptions pin is restored from git at runtime rather than editing `season/inputs.py`, so no live-pipeline file changed.
+- Decision: cutoffs are checked per manifest, because pinned inputs carry no per-input timestamps; the one row-level check is on market-quote `captured_at`.
+- Blockers: none. Task 4 must supply near-kickoff captures from the Postgres catalog through `--near-kickoff-captures`.
+- Commits: `0381a65b` (feat), `7d837074` (docs); pushed to `origin/dev` with the session close.
+
 ## Next
 
 1. After the 2026-12-13 final close, add the final close manifest to the check and run the export (Task 4).
