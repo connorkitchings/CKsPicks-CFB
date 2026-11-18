@@ -1,6 +1,6 @@
 # Near-kickoff line capture (analysis-only closing-line evidence)
 
-- **Status:** In Progress (implemented in `ac2023a6` and merged to `main` 2026-11-17 via PR #39, `a7d03f2d`; remaining: confirmed Preview capture check and `CFB_NEAR_KICKOFF_CAPTURE_ENABLED=true` before Saturday 2026-11-21)
+- **Status:** In Progress (implemented in `ac2023a6` and merged to `main` 2026-11-17 via PR #39, `a7d03f2d`; enabled 2026-11-18 (`CFB_NEAR_KICKOFF_CAPTURE_ENABLED=true`); first workflow capture, run `44336095011`, stored capture `5637d39fda834559addd10f400072db2` with 566 quotes, and the slot logic then reported `skip`)
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner decisions recorded 2026-11-12: (1) credit budget accepted (the account has a 500-credit monthly allowance, 496 remaining on 2026-11-12; this plan needs about 24, ceiling 50); (2) cloud automation (a GitHub workflow), not manual or local cron; (3) near-kickoff lines are kept separate from early-week lines, so the two can be compared later (line-value analysis). Owner approved implementation on 2026-11-12 ("yes, go ahead with contract 1").
