@@ -1,6 +1,6 @@
 # Monday kickoff-time refresh
 
-- **Status:** In Progress
+- **Status:** Merged (implemented in `9075f370`, `5a1f515e`, `9ca82555`; merged to `main` 2026-11-17 via PR #39, `a7d03f2d`)
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner decisions 2026-11-12 (target Monday 2026-11-16 gated on a passing Preview rehearsal, otherwise Monday 2026-11-23; stop and alert if the refreshed schedule adds, cancels or moves a game); exact-path authorization for implementation is the next gate

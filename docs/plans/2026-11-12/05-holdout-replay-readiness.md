@@ -1,11 +1,12 @@
 # 2026 holdout replay readiness
 
-- **Status:** Draft
+- **Status:** Approved (Phase 1: Tasks 1 and 3 approved 2026-11-18 for read-only in-season execution; Task 2 live-controller per-manifest exception pinning deferred to post-2026-12-13 alongside [Stage 1a](../2026-10-28/01-data-architecture-operational-safeguards.md); Task 4 export runs after the 2026-12-13 final close)
 - **Created:** 2026-11-12
+- **Amended:** 2026-11-18 (split in-season read-only Tasks 1 & 3 from post-season live-controller Task 2 to isolate `weekly_automation.py` and `refresh_score_exceptions.py` during Weeks 13–15; see [repository review](../2026-11-18/repo-review-and-offseason-engineering.md))
 - **Planner:** Sol
-- **Approval source:** Pending. The owner approved drafting this contract on 2026-11-12; exact-path approval to implement is the next gate. The export part cannot run before the 2026-12-13 final close.
+- **Approval source:** Owner approved Phase 1 (Tasks 1 & 3) and the Task 2 post-Dec-13 deferral in chat on 2026-11-18 ("1) A1 - yes, A2 - yes").
 - **Implementation log:** Pending (`session_logs/YYYY-MM-DD/NN-holdout-replay-readiness-impl.md`)
-- **Commit policy:** Commit on local `dev` with implementation. Tooling and the export are separate steps: the tooling may land before the season ends; the export runs only after the final close.
+- **Commit policy:** Commit on local `dev` with implementation. Tooling (Tasks 1 & 3), controller cutover (Task 2, post-2026-12-13) and the export (Task 4, post-2026-12-13) are separate steps.
 
 ## Goal and acceptance
 
@@ -42,4 +43,12 @@ Acceptance:
 
 ## Handoff/amendments
 
-Approval and resume gate: the owner approves this path for implementation. Task 1 can run any time. Task 2 waits for a window outside the weekly runs. Task 4 waits for the 2026-12-13 final close and the research bucket. Record amendments here with reason, previous approach, revised approach and impact. Related: [near-kickoff line capture](01-near-kickoff-line-capture.md) (the captures included in the export), the [research protocol](02-offseason-research-protocol.md).
+Approval and resume gate: on 2026-11-18 the owner approved **Phase 1 (Tasks 1 and 3 only)** for in-season execution. Do not edit `scripts/ops/weekly_automation.py`, `scripts/pipeline/refresh_score_exceptions.py`, or `scripts/pipeline/build_season_revision.py` during Weeks 13–15: **Task 2** is explicitly deferred until after the 2026-12-13 final regular-season close alongside [Data architecture Stage 1a](../2026-10-28/01-data-architecture-operational-safeguards.md). **Task 4** waits for the 2026-12-13 final close and the research bucket.
+
+- **Amendment (2026-11-18):**
+  - *Reason:* Keep the live weekly automation on `dev` completely untouched for the final three regular-season closes (Weeks 13–15), since git history already preserves every week's committed `score_reconciliation_exceptions.json` bytes.
+  - *Previous approach:* Task 2 could land in any midweek window outside Sunday/Monday runs.
+  - *Revised approach:* Split into Phase 1 (Tasks 1 and 3: read-only git-pin recovery verification and standalone read-only holdout export tool, authorized now) and Phase 2 (Task 2 controller/builder per-manifest exception pinning + [Stage 1a](../2026-10-28/01-data-architecture-operational-safeguards.md), deferred until after 2026-12-13).
+  - *Impact:* Zero live-pipeline blast radius in-season while preparing the holdout exporter ahead of 2026-12-13.
+
+Related: [near-kickoff line capture](01-near-kickoff-line-capture.md) (the captures included in the export), the [research protocol](02-offseason-research-protocol.md), and the [2026-11-18 repository review](../2026-11-18/repo-review-and-offseason-engineering.md).

@@ -1,6 +1,6 @@
 # Near-kickoff line capture (analysis-only closing-line evidence)
 
-- **Status:** In Progress. Approved 2026-11-12 and implemented on branch `worktree-connorkitchings-offseason-prep-contracts` (uncommitted); the dry run and the confirmed Preview capture check (Validation) and the `dev` to `main` release plus the repository variable (change 4) remain.
+- **Status:** In Progress (implemented in `ac2023a6` and merged to `main` 2026-11-17 via PR #39, `a7d03f2d`; remaining: confirmed Preview capture check and `CFB_NEAR_KICKOFF_CAPTURE_ENABLED=true` before Saturday 2026-11-21)
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner decisions recorded 2026-11-12: (1) credit budget accepted (the account has a 500-credit monthly allowance, 496 remaining on 2026-11-12; this plan needs about 24, ceiling 50); (2) cloud automation (a GitHub workflow), not manual or local cron; (3) near-kickoff lines are kept separate from early-week lines, so the two can be compared later (line-value analysis). Owner approved implementation on 2026-11-12 ("yes, go ahead with contract 1").
