@@ -6,8 +6,8 @@
 - **Outcome:** Drill passed in both directions. Near-kickoff capture is enabled and the first capture is stored. Monday release recorded.
 - **Plan Contract:** [`docs/plans/2026-11-12/01-near-kickoff-line-capture.md`](../../docs/plans/2026-11-12/01-near-kickoff-line-capture.md)
 - **Approval / Status:** Owner ran every Production and repository-variable command. Contract stays In Progress.
-- **Blockers:** None for the drill. The holdout work (Phase 1, Tasks 1 and 3) has not started.
-- **Next:** Holdout replay readiness Phase 1 in a worktree.
+- **Blockers:** None for the drill. None. Holdout Phase 1 (Tasks 1 and 3) is merged to local `dev`; Task 2 and Task 4 stay deferred.
+- **Next:** Push on the owner's go-ahead. Task 4 (export) runs after the 2026-12-13 final close.
 
 **tags:** ["ops", "rollback", "near-kickoff"]
 
@@ -27,6 +27,9 @@
   3. Two first roll-forward attempts failed with the `make` usage message because the pasted command was split across lines; nothing ran. A wrapper script fixed it.
 - Expected side effect: the Games page "Data published" line reads `activated_at`, so it now shows the 2026-11-18 restore time.
 
+- Holdout replay Phase 1, see [`03-holdout-replay-readiness-impl.md`](./03-holdout-replay-readiness-impl.md): `verify_2026_manifest_pins.py` passed all 12 manifests against Preview R2 (rerun by the orchestrator after merge); `export_2026_holdout.py` and `tests/test_export_2026_holdout.py` (7 tests) added. Commits `0381a65b` (feat) and `7d837074` (docs), fast-forwarded onto `dev`; the worktree and branch are removed.
+- The worktree's `make check` stopped at web lint (`eslint` missing, no `web/node_modules`); the Python steps, `mkdocs build --strict` and `git diff --check` passed.
+
 ## Files Modified
 
 - `docs/status.md`, `docs/plans/2026-11-12/01-near-kickoff-line-capture.md`, `docs/planning/offseason-2027-backlog.md`, this log.
@@ -43,5 +46,5 @@
 
 ## Handoff Notes
 
-- **Resume at:** Holdout replay Phase 1 (`docs/plans/2026-11-12/05-holdout-replay-readiness.md`).
+- **Resume at:** Owner decision on pushing `dev`; holdout contract `docs/plans/2026-11-12/05-holdout-replay-readiness.md` (Tasks 2 and 4 pending).
 - **Watch out for:** Do not push during Sunday 17:00–19:30 UTC; nothing is pushed yet.
