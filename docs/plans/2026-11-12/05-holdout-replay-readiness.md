@@ -1,11 +1,11 @@
 # 2026 holdout replay readiness
 
-- **Status:** Approved (Phase 1: Tasks 1 and 3 approved 2026-11-18 for read-only in-season execution; Task 2 live-controller per-manifest exception pinning deferred to post-2026-12-13 alongside [Stage 1a](../2026-10-28/01-data-architecture-operational-safeguards.md); Task 4 export runs after the 2026-12-13 final close)
+- **Status:** In Progress (Phase 1 Tasks 1 and 3 implemented 2026-11-18; Task 2 and Task 4 pending). Approved (Phase 1: Tasks 1 and 3 approved 2026-11-18 for read-only in-season execution; Task 2 live-controller per-manifest exception pinning deferred to post-2026-12-13 alongside [Stage 1a](../2026-10-28/01-data-architecture-operational-safeguards.md); Task 4 export runs after the 2026-12-13 final close)
 - **Created:** 2026-11-12
 - **Amended:** 2026-11-18 (split in-season read-only Tasks 1 & 3 from post-season live-controller Task 2 to isolate `weekly_automation.py` and `refresh_score_exceptions.py` during Weeks 13–15; see [repository review](../2026-11-18/repo-review-and-offseason-engineering.md))
 - **Planner:** Sol
 - **Approval source:** Owner approved Phase 1 (Tasks 1 & 3) and the Task 2 post-Dec-13 deferral in chat on 2026-11-18 ("1) A1 - yes, A2 - yes").
-- **Implementation log:** Pending (`session_logs/YYYY-MM-DD/NN-holdout-replay-readiness-impl.md`)
+- **Implementation log:** `session_logs/2026-11-18/03-holdout-replay-readiness-impl.md` (Tasks 1 and 3; the check now covers 12 manifests, adding `w12_v1` and `w12_v2` at exceptions version `8145ebe8`, the sixth git version of the file)
 - **Commit policy:** Commit on local `dev` with implementation. Tooling (Tasks 1 & 3), controller cutover (Task 2, post-2026-12-13) and the export (Task 4, post-2026-12-13) are separate steps.
 
 ## Goal and acceptance
