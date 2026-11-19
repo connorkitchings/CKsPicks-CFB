@@ -51,4 +51,10 @@ Approval and resume gate: on 2026-11-18 the owner approved **Phase 1 (Tasks 1 an
   - *Revised approach:* Split into Phase 1 (Tasks 1 and 3: read-only git-pin recovery verification and standalone read-only holdout export tool, authorized now) and Phase 2 (Task 2 controller/builder per-manifest exception pinning + [Stage 1a](../2026-10-28/01-data-architecture-operational-safeguards.md), deferred until after 2026-12-13).
   - *Impact:* Zero live-pipeline blast radius in-season while preparing the holdout exporter ahead of 2026-12-13.
 
+### 2026-11-19 export preflight
+
+- The current export CLI rejects `w7_v1` before writing output. Of the 12 manifests through `w12_v2`, it is the only manifest whose top-level `captured_at` (October 14, 14:42 UTC) is later than its newest declared pre-week cutoff (October 13, 18:00 UTC). The November 18 pin recovery check proves the inputs can be recovered. This separate check concerns when an input was available. The other 11 manifests passed the exporter's current checks with the Preview reader, including hash and capture-time validation for their pinned market quotes.
+- Preview R2 readback of the hash-pinned Week 7 schedule and quotes confirmed that all 610 Week 7 quote rows, covering 59 games, were captured after the cutoff. Four rows were at or after their game's actual kickoff. The exporter guard is still in force.
+- Before Task 4, resolve Week 7 explicitly in this contract. Retain the original manifest and hashes as replay provenance. For a forecast-time market view, require each quote to meet its game's applicable cutoff and leave Week 7 market coverage missing unless earlier quotes with proven identity and timestamps are recovered. Verify football-input timing independently. Add a real-manifest regression test before rerunning the final export twice and recording its hash.
+
 Related: [near-kickoff line capture](01-near-kickoff-line-capture.md) (the captures included in the export), the [research protocol](02-offseason-research-protocol.md), and the [2026-11-18 repository review](../2026-11-18/repo-review-and-offseason-engineering.md).

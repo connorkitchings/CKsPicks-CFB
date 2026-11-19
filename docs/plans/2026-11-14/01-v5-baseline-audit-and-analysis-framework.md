@@ -1171,3 +1171,24 @@ Resume gate: owner approval of the next executable scope. Record amendments here
 - **Output-file collision.** Another session working on this contract wrote `step4a_results.json` and `step4b_results.json` into the same output folders while this session ran. Its files were left in place; this session's results are under different names (`step4a_attribution_results.json`, `step4b_variants_results.json` and the later files). Its work is not in the repository and was not verified.
 - **Open owner gates.** (1) Done 2026-11-15: amendments 7, 8, 9, 10, 3, 5, 6 and the provisional offset rule 11 approved and applied; amendment 4 folded into 7. Still open: amendments 1 (comparator) and 2 (paired-interval method, needs a `paired_comparison` change), which are to be edited before applying.  Owner decided (2) to go to the 2027 forward test and skip the rest of step 5 for now, keeping one check: verify the 2026 rating recipe matches the historical one. (2) Decide whether the audit moves to step 5 and the 2027 forward test, or stops at step 4. (3) Say where the other session's work lives so it can be merged and verified.
 - Nothing was pushed. (The protocol and its YAML were later changed only by the approved amendments listed above.)
+
+## Frozen P3 historical replay (2026-11-19)
+
+From the repository root, use the retained offline research mirror:
+
+```bash
+PYTHONPATH=src:. uv run python scripts/research/replay_frozen_p3.py \
+  --research-root "$P3_RESEARCH_ROOT" \
+  --season 2022 --season 2023 --season 2024 --season 2025 \
+  --output /tmp/p3-historical-predictions.parquet
+```
+
+Set `P3_RESEARCH_ROOT` to the retained `cfb_ratings_lab_v6` directory before running. Use a fresh output path. The runner checks the SHA-256s in `conf/research/offseason_2027/p3_reference.json`, reapplies the frozen regular-season population and team tiers, and fits separately on the earlier development seasons for each requested season. The command accepts 2016–2019 and 2021–2025 as prediction seasons. The archived `p4.py` dependency chain is retained for provenance. The runnable replay uses the existing bridge estimator directly.
+
+Verification covered all 3,483 regular-season game keys in 2022–2025. P3 predictions matched an extraction of the historical sections of the hash-verified original scripts with a maximum absolute difference of zero. The baseline matched the separate stored Operational V5 benchmark on all of the same game keys, also with a maximum absolute difference of zero. Early-stage FBS-vs-FBS margin MAE improved by 0.933537 points on 886 games. The verified originals and prediction output were copied to the owner workspace's ignored `.worktrees/model-head-start-evidence/p3/` directory. The prediction Parquet SHA-256 is `4a60ff043e23e1e8acd52c949216c41477898751ef95899bf7e254c3c9ca0e25`.
+
+### 2026 rating recipe trace
+
+The historical bundle builder at commit `ff2e0df65` used `CutoffAdjustment.game_evidence` and `V5_GAME_AT_CUTOFF`, with certified historical priors and the historical FCS fallback pool. The 2026 artifact builder at `2147c5fb` used `IntendedUpdate.pregame`, with priors derived from the corrected 2025 terminal table. Both paths use eligible regulation PPP, earlier-week games available six hours after kickoff, four-pass opponent adjustment at the target game's cutoff, the preceding terminal season's role scales (PPP floor 0.30), and the same possession-exposure update (`k=8`). The artifact's pregame rows use game kickoff as the boundary. The current serving preparation uses a shared pre-week cutoff.
+
+Using the 2026 artifact's logged priors and standardized evidence, the historical updater reproduced all 1,316 stored pregame role means to within `4.44e-16`, with exact variance and usable-exposure agreement. All logged source weeks preceded the target week and all availability timestamps were at or before cutoff. This verifies the update arithmetic and recorded timing from state metadata without loading 2026 final outcomes. The historical and 2026 input lineages differ: historical ratings use corrected historical measurement parents and historical FCS fallback handling, while the 2026 rebuild used baseline score attribution and priors derived from 2025. Full raw-input parity would require rebuilding both paths from identical measurement and prior inputs. The 2026 P3 comparison also used zero offsets. The 2027 forward run remains the independent test.

@@ -46,4 +46,10 @@ Acceptance:
 
 Approval and resume gate: the owner approves the credit budget, the scheduler and the entity decision. Next action after approval: task 1. Mechanical amendments may proceed if architecture, interfaces, scope and acceptance are unchanged; anything else returns to Sol. Record each amendment (reason, previous approach, revised approach, impact) below.
 
+### 2026-11-19 coverage check
+
+The November 18 capture has spreads and totals for both eligible games in the Eastern day's slot. It was fetched 510.73 minutes before Akron–Massachusetts and 540.73 minutes before Central Michigan–Buffalo. The full weekly board contains 566 quote rows for 63 matched games, and the provider matching step skipped 3 quote rows with unmatched game IDs. Neither scheduled workflow receipt that followed fetched another board. The first found the slot already captured and the second ran after the earliest kickoff.
+
+For later slots, run `scripts/research/report_near_kickoff_coverage.py` with Preview credentials under `scripts/ops/with_preview_env.sh`, `CFB_STORAGE_BACKEND=r2` and `PYTHONPATH=.:src`. Pass the registered `--capture-id`, `--week` and `--revision` active for the slot. The JSON includes the per-game lead time and spread and total coverage. The report also provides `capture_id`, `uri`, `sha256` and `captured_at` for the export tool's analysis-only receipt list.
+
 Related: the [pre-registered research protocol](02-offseason-research-protocol.md), which names closing-line value as a monitoring analysis that uses this data.
