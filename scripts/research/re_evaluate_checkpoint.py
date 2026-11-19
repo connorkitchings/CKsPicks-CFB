@@ -141,10 +141,10 @@ def main() -> None:
         f"{'V5 Reference (v5_common)':<30} | {sc_v5['pooled']['margin']['mae']:>10.4f}  | {'-':>10}  | {'-':>22} | {sc_v5['pooled']['total']['mae']:>9.4f}"
     )
     print(
-        f"{'Bridge A (alpha10_direct18)':<30} | {sc_a['pooled']['margin']['mae']:>10.4f}  | {comp_a['paired']['margin']['mae_gain']:>+10.4f}  | [{comp_a['paired']['margin']['lower_90']:>8.4f}, {comp_a['paired']['margin']['upper_90']:>8.4f}] | {sc_a['pooled']['total']['mae']:>9.4f}"
+        f"{'Bridge A (alpha10_direct18)':<30} | {sc_a['pooled']['margin']['mae']:>10.4f}  | {comp_a['paired']['margin']['mae_gain']:>+10.4f}  | [{comp_a['paired']['margin']['lower']:>8.4f}, {comp_a['paired']['margin']['upper']:>8.4f}] | {sc_a['pooled']['total']['mae']:>9.4f}"
     )
     print(
-        f"{'Bridge B (alpha10_differentials)':<30} | {sc_b['pooled']['margin']['mae']:>10.4f}  | {comp_b['paired']['margin']['mae_gain']:>+10.4f}  | [{comp_b['paired']['margin']['lower_90']:>8.4f}, {comp_b['paired']['margin']['upper_90']:>8.4f}] | {sc_b['pooled']['total']['mae']:>9.4f}"
+        f"{'Bridge B (alpha10_differentials)':<30} | {sc_b['pooled']['margin']['mae']:>10.4f}  | {comp_b['paired']['margin']['mae_gain']:>+10.4f}  | [{comp_b['paired']['margin']['lower']:>8.4f}, {comp_b['paired']['margin']['upper']:>8.4f}] | {sc_b['pooled']['total']['mae']:>9.4f}"
     )
     print("=" * 85)
 

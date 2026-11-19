@@ -485,7 +485,19 @@ def paired_comparison(
     *,
     seed: int = 20260928,
     samples: int = 2000,
+    confidence_level: float = 0.95,
 ) -> dict[str, object]:
+    """Compare candidate and reference with a two-sided paired bootstrap interval.
+
+    ``mae_gain`` is reference MAE minus candidate MAE, so positive favors the
+    candidate. The interval uses the ``(1-level)/2`` and ``(1+level)/2``
+    quantiles of a bootstrap that resamples whole season-week blocks. That
+    captures dependence within a week but omits dependence from the same teams
+    recurring across weeks and across seasons. This comparison interval is
+    distinct from the model's 90% prediction intervals.
+    """
+    if not 0.0 < confidence_level < 1.0:
+        raise ValueError("confidence_level must be strictly between 0 and 1")
     validate_prediction_population(candidate, corpus)
     validate_prediction_population(reference, corpus)
     merged = candidate.merge(
@@ -513,8 +525,9 @@ def paired_comparison(
             sampled.append(float(difference[indices].mean()))
         report["paired"][target] = {
             "mae_gain": float(difference.mean()),
-            "lower_90": float(np.quantile(sampled, 0.05)),
-            "upper_90": float(np.quantile(sampled, 0.95)),
+            "lower": float(np.quantile(sampled, (1 - confidence_level) / 2)),
+            "upper": float(np.quantile(sampled, (1 + confidence_level) / 2)),
+            "confidence_level": confidence_level,
             "seed": seed,
             "replicates": samples,
         }

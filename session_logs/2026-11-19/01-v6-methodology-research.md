@@ -43,3 +43,22 @@
 
 - **Resume at:** Session complete; next step is the owner decisions in survey section 8.
 - **Watch out for:** The survey's power table and sigma estimates are the survey's own arithmetic (game-level iid assumption). CFBD point-in-time verdicts are unverified until checked against the live API.
+
+## Follow-up: owner decisions and reconciliation (same day)
+
+- **Owner decisions applied:** stay L1 for the first V6 wave; two-sided 95% paired interval (Amendment 2) with season/week block resampling as primary; 2026 is the one-shot confirmation holdout for new frozen finalists; totals diagnostic is draft only; live CFBD audit approved; no push, no amend.
+- **Survey reconciled with steps 4C and 4D:** the first draft wrongly treated bridge specification and the neutral-site flag as untested. Both were run 2026-11-15 with no gain (flat total is a signal limit; the venue flag overshoots). The survey now frames the totals diagnostic around what 4C did not test and sends the fix upstream if it is also null. The existing drive-sample declaration (`docs/modeling/offseason_totals_drive_sample.md`) is referenced instead of duplicated.
+- **Amendment 2 applied:** `paired_comparison` in `src/cks_picks_cfb/ratings_lab/evaluation.py` now takes `confidence_level` (default 0.95) and reports `lower`, `upper`, `confidence_level` (the old `lower_90`/`upper_90` keys are gone); two scripts that read the old keys were updated (`scripts/research/run_v6_tournament.py`, `scripts/research/re_evaluate_checkpoint.py`). Recorded in the protocol, `protocol.yaml` and the audit contract. A game-level sensitivity interval is declared alongside.
+- **Measured sigma and design effect (read-only, scratchpad scripts):** sigma is 1.1-1.4 for variants close to Operational V5, about 4.1 for one first-boundary margin variant and 8.3-8.8 for structurally different margin models; season-week design effect mostly 0.9-1.6; team clustering is larger for totals (home-team 1.4-1.9). Candidates from steps 4B to 4D have no per-game outputs on disk and are not covered.
+- **Live CFBD audit (91 calls, Tier 2):** no endpoint has an as-of timestamp; portal data starts 2021; `/roster` behaves as an archive but class-year is unreliable; FCS plays and drives are present in 15 sampled games; weather has no forecast-vs-observed marker and looks gridded; `/lines` has no capture time and `spreadOpen` is empty before 2021. Key never printed or stored.
+- **Draft contract:** `docs/plans/2026-11-19/pooled-team-score-totals-diagnostic.md`, linked from `docs/plans/index.md`. Nothing is approved to run.
+
+## Follow-up files modified
+
+- `docs/research/v6-methodology-survey-2026-11.md`, `docs/plans/2026-11-19/pooled-team-score-totals-diagnostic.md` (new), `docs/plans/index.md`
+- `docs/plans/2026-11-12/02-offseason-research-protocol.md`, `conf/research/offseason_2027/protocol.yaml`, `docs/plans/2026-11-14/01-v5-baseline-audit-and-analysis-framework.md`
+- `src/cks_picks_cfb/ratings_lab/evaluation.py`, `tests/ratings_lab/test_platform.py`, `scripts/research/run_v6_tournament.py`, `scripts/research/re_evaluate_checkpoint.py`
+
+## Follow-up handoff
+
+- **Watch out for:** `run_v6_tournament.py` gates on the interval lower bound, now the 2.5th percentile, so its promotion gate is stricter than before. Scratchpad sigma and CFBD audit outputs are session-local and not committed.
