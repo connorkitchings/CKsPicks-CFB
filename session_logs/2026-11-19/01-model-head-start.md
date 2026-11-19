@@ -34,3 +34,10 @@
 
 - Ruff format and lint, strict MkDocs, contracts validation, quality registry, and Git whitespace checks passed.
 - The Python suite passed with 2,550 tests and 24 skips after excluding the single chart golden-digest test that independently failed on clean `dev`.
+
+## Closeout and handoff
+
+- The research changes are on local `dev` in `e1f873ae` and `f0177bcd`. They add the weather collector, offline P3 replay and reference pins, near-kickoff coverage report, totals sample builder, focused tests, and the linked research contracts and reports. The closeout commit covers this log only.
+- The weather automation now runs from the main project checkout, so the completed implementation worktree can be removed. The evidence directory remains available for both scheduled captures and the saved research outputs.
+- After each November 22 and 29 capture, check the receipt against the initial rollover manifest and verify coverage for the corresponding near-kickoff slots. Check the Week 14 schedule at the November 29 rollover.
+- Before scoring the December experiment, approve the comparator and paired-interval protocol changes. Before attempting the final holdout export, resolve the Week 7 cutoff blocker under the holdout contract. After the December 13 final close, verify the final manifest and run the export twice to check the hash.
