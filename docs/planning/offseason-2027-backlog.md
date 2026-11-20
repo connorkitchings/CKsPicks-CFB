@@ -42,6 +42,7 @@ Chosen only after section A shows where the error is; the likely areas are:
 - The totals model.
 - Venue as a model input: the forecast hard-codes every game as home (`home_host=1.0`, `venue_unknown=True`), while the diagnostics show neutral-site margin bias of -4.32 points; the venue data is already stored (`fbs_involved_games`, `game_venues`). Not market-derived, so allowed.
 - Measurement refinements: the garbage-time rule for the Net success rate (the analysis in `session_logs/2026-11-09/06-nsr-keep-garbage-time-impl.md` points to a flat margin cut of about 24 points; the owner kept the current rule for 2026, so this is a candidate for the next model version, which needs a stored column and a release), turnover margin, and the historical EPA replacement.
+- Offense-evidence input: whether adjusted yards per play (or EPA per play) predicts future scoring better than adjusted points per possession, per the [adjusted YPP predictive diagnostic](../plans/2026-11-19/adjusted-ypp-predictive-diagnostic.md) (Draft); the display side is [specified here](../plans/2026-11-19/yards-per-play-display.md).
 - Rating-system structure questions raised by the audit, once its original-artifact verification can be completed.
 - Background reading, no commitment: the [V6 methodology survey](../research/v6-methodology-survey-2026-11.md) (rating systems, totals structure, evaluation decisions, input feasibility).
 
