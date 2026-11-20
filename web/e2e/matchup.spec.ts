@@ -21,7 +21,7 @@ test.describe("matchup page (fixture mode)", () => {
     for (const button of await controls.getByRole("button").all()) await expect(button).toBeDisabled();
   });
 
-  test("shows both unit tables: 12 grouped metrics, ties, an unranked zero and unranked dashes", async ({ page }) => {
+  test("shows both unit tables: 14 grouped metrics, ties, an unranked zero and unranked dashes", async ({ page }) => {
     await gotoHydrated(page, "/matchup/1");
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
     // The full statistics are collapsed until opened, and show only the selected offense's comparison.
@@ -40,7 +40,7 @@ test.describe("matchup page (fixture mode)", () => {
     // Plays/possession and non-offense points are stored but not shown.
     await expect(page.getByText("Non-offense pts/game")).toHaveCount(0);
     await expect(page.getByText("Plays/possession")).toHaveCount(0);
-    await expect(first.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+    await expect(first.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(14);
     await expect(page.getByText(/FBS opponents only; regulation play, garbage time excluded/)).toBeVisible();
     await expect(page.getByText("#null")).toHaveCount(0);
     // Ties show as T-N; unranked rows (no sample or an exact zero) show a dash with a "Not ranked" tooltip.
@@ -120,14 +120,14 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(sitButton).toHaveAttribute("aria-expanded", "true");
     await sitButton.click();
     await expect(sitButton).toHaveAttribute("aria-expanded", "false");
-    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(8);
     const awayName = await tables.getAttribute("aria-label");
     await selectOffense(page, "home");
     await expect(tables).not.toHaveAttribute("aria-label", awayName!);
     await expect(tables.getByRole("button", { name: /Situational \/ down and distance/ })).toHaveAttribute("aria-expanded", "false");
-    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(8);
     await tables.getByRole("button", { name: /Situational \/ down and distance/ }).click();
-    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(14);
     await selectOffense(page, "away");
     await expect(tables).toHaveAttribute("aria-label", awayName!);
 
@@ -144,7 +144,7 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(away).toHaveAttribute("aria-pressed", "false");
     await expect(tables).not.toHaveAttribute("aria-label", firstName!);
     await expect(tables.locator("thead th")).toHaveCount(3);
-    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+    await expect(tables.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(14);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
     // The selection survives resizing, and the selector stays available at every width.

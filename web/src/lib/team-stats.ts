@@ -43,7 +43,7 @@ export interface UnitMatchupRow {
   section: MetricSection;
 }
 
-type Format = "epa" | "pct" | "pts" | "field";
+type Format = "epa" | "pct" | "pts" | "yds" | "field";
 
 /** Matchup table sections, in display order. */
 export type MetricSection = "possession" | "situational" | "drive";
@@ -63,6 +63,9 @@ export const SECTION_LABELS: Record<MetricSection, string> = {
  * `epa_per_play` companion: that one counts returned punts as plays (a Silver
  * `st` flag gap, fixed for future builds) and so reads slightly low. Team stats
  * excludes kicking plays, so it is the number shown here.
+ *
+ * Yards/play (`ypp`) is raw. Adjusted yards/play (`adj_ypp`) is opponent- and
+ * venue-adjusted for display only; it is not a rating input.
  */
 export const UNIT_METRICS: {
   key: string;
@@ -73,6 +76,8 @@ export const UNIT_METRICS: {
   { key: "ppp", label: "Points/possession", format: "pts", section: "possession" },
   { key: "epa_per_possession", label: "PPA/possession", format: "epa", section: "possession" },
   { key: "ppa_per_play", label: "PPA/play", format: "epa", section: "possession" },
+  { key: "ypp", label: "Yards/play", format: "yds", section: "possession" },
+  { key: "adj_ypp", label: "Adj. yards/play", format: "yds", section: "possession" },
   { key: "success_rate", label: "Success rate", format: "pct", section: "situational" },
   { key: "explosive_rate", label: "Explosive plays (20+)", format: "pct", section: "situational" },
   { key: "conv_rate_3rd_4th", label: "3rd/4th down conv.", format: "pct", section: "situational" },
@@ -96,6 +101,7 @@ export function formatMetric(format: Format, value: number | null): string {
     case "pct":
       return `${(value * 100).toFixed(1)}%`;
     case "pts":
+    case "yds":
       return value.toFixed(2);
     case "field":
       return `Own ${value.toFixed(1)}`;

@@ -639,3 +639,95 @@ def test_display_ppa_masks_missing_values_but_keeps_real_zero():
     assert observed["n"] == 2
     assert observed["value"] == pytest.approx(-0.4)
     assert val(result, "A", "offense", "success_rate")["n"] == 3
+
+
+def run_frame(byplay, drives, g, o, as_of_week=2):
+    return build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=g,
+        outcomes=o,
+        fbs_teams=FBS,
+        season=2026,
+        as_of_week=as_of_week,
+    )
+
+
+def test_ypp_is_the_mean_yards_of_eligible_plays_and_defense_is_yards_allowed():
+    gid, week, home, away, drv = base_game()
+    # Excluded plays carry huge yardage so any leak shows in the mean.
+    drv[0]["plays"].append(play("Punt", 4, 10, 60, 0.0, 0))
+    drv[0]["plays"].append(play("Pass Reception", 1, 10, 80, 5.0, 1, garbage=1))
+    drv[0]["plays"].append(play("Rush", 1, 10, 70, 0.0, 0))
+    byplay, drives, g, o = build([(gid, week, home, away, drv)])
+    penalized = (byplay["offense"] == "A") & (byplay["yards_gained"] == 70)
+    byplay.loc[penalized, "penalty"] = 1
+    r = run_frame(byplay, drives, g, o)
+    # A: 25, 3, 0 on eligible plays; B: 6, 4.
+    assert val(r, "A", "offense", "ypp")["value"] == pytest.approx(28 / 3)
+    assert val(r, "A", "offense", "ypp")["n"] == 3
+    assert val(r, "B", "offense", "ypp")["value"] == pytest.approx(5.0)
+    assert val(r, "A", "defense", "ypp")["value"] == pytest.approx(5.0)
+    assert val(r, "B", "defense", "ypp")["value"] == pytest.approx(28 / 3)
+
+
+def drive_of(team, yards, plays=4):
+    return drive(team, [play("Rush", 1, 10, yards, 0.0, 0) for _ in range(plays)])
+
+
+def ypp_season():
+    """A gains 5 ypp against B and C; D and E gain 2 against those same defenses."""
+    pairs = [
+        (1, "A", "B", 5, 4),
+        (2, "A", "C", 5, 4),
+        (3, "D", "B", 2, 6),
+        (4, "E", "C", 2, 6),
+        (5, "D", "C", 2, 6),
+        (6, "E", "B", 2, 6),
+        (7, "D", "E", 6, 6),
+    ]
+    return [
+        (gid, 1 + gid % 2, home, away, [drive_of(home, hy), drive_of(away, ay)])
+        for gid, home, away, hy, ay in pairs
+    ]
+
+
+FBS_FIVE = {"A", "B", "C", "D", "E"}
+
+
+def run_five(as_of_week):
+    byplay, drives, g, o = build(ypp_season())
+    return build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=g,
+        outcomes=o,
+        fbs_teams=FBS_FIVE,
+        season=2026,
+        as_of_week=as_of_week,
+    )
+
+
+def test_adj_ypp_is_null_with_no_rank_before_week_three():
+    r = run_five(as_of_week=2)
+    row = val(r, "A", "offense", "adj_ypp")
+    assert row["value"] is None and pd.isna(row["rank"])
+    assert val(r, "A", "offense", "ypp")["value"] == pytest.approx(5.0)
+
+
+def test_adj_ypp_credits_an_offense_that_faced_strong_defenses():
+    r = run_five(as_of_week=3)
+    raw = val(r, "A", "offense", "ypp")
+    adjusted = val(r, "A", "offense", "adj_ypp")
+    assert adjusted["value"] > raw["value"]
+    assert adjusted["n"] == raw["n"] and adjusted["games"] == raw["games"]
+
+
+def test_adj_ypp_ranks_follow_the_stat_direction():
+    r = run_five(as_of_week=3)
+    off = r.frame[(r.frame.metric == "adj_ypp") & (r.frame.role == "offense")]
+    dfn = r.frame[(r.frame.metric == "adj_ypp") & (r.frame.role == "defense")]
+    best_off = off.sort_values("rank").iloc[0]
+    best_def = dfn.sort_values("rank").iloc[0]
+    assert best_off["value"] == off["value"].max()
+    assert best_def["value"] == dfn["value"].min()

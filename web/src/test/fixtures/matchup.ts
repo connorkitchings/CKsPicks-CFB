@@ -34,6 +34,7 @@ export function fixtureRows(teams: string[], unrankedTeam: string): TeamStatRow[
           m.format === "epa" ? frac * 0.6 - 0.3
           : m.format === "pct" ? 0.25 + frac * 0.3
           : m.format === "pts" ? 3 + frac * 2
+          : m.format === "yds" ? 4 + frac * 3
           : 25 + frac * 12;
         const unranked =
           team === unrankedTeam && (m.key === "explosive_rate" || m.key === "epa_pass");

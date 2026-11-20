@@ -114,7 +114,7 @@ test.describe("team pages (fixture mode)", () => {
     await gotoHydrated(page, "/teams/Texas");
     await expect(page.getByTestId("unit-offense").getByRole("term").first()).toBeVisible();
     await expect(page.getByTestId("unit-defense").getByRole("term").first()).toBeVisible();
-    await expect(page.getByTestId("unit-full-stats").getByText("Full stats (12)")).toBeVisible();
+    await expect(page.getByTestId("unit-full-stats").getByText("Full stats (14)")).toBeVisible();
   });
 
   for (const width of [390, 320]) {

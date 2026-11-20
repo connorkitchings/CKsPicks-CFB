@@ -70,6 +70,8 @@ These feed only the Charts page (see [Team Charts Methodology](team_charts_metho
 | Net success rate (winner offense minus loser offense) | Game | One game | Reconstructed per week |
 | Venue coefficient `h` | League window | Weighted team-game offenses | Weighted least squares; zero when not identified |
 | Adjusted EPA/play (`iterative_4pass_venue_v1`) | Offense, defense | Plays with a valid `ppa`, FBS vs FBS | Reconstructed; unchanged V5 adjuster on a venue-neutral baseline |
+| Yards per play (`ypp`) | Offense, defense | Mean `yards_gained` over eligible plays with finite yardage (defense = yards allowed) | `team_season_stats.ypp`; display only, not a V5 input |
+| Adjusted yards per play (`adj_ypp`) | Offense, defense | Same plays and FBS-vs-FBS games; yard sums and play counts per team-game, venue-neutralized by the Adjusted EPA venue fit, then the unchanged V5 adjuster | `team_season_stats.adj_ypp`; null with no rank before Week 3 (`as_of_week < 3`); display only, not a V5 input |
 | Schedule effect | Offense, defense | Stored venue-neutral and adjusted PPA/play | Offense `adjusted - neutral`; defense `neutral - adjusted`; excludes venue effects |
 | Adjusted trajectory | Net, offense, defense | Every stored Through Week window | Net = offense minus defense allowed; missing windows remain gaps |
 

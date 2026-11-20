@@ -38,6 +38,8 @@ test("formatMetric formats each kind and shows a dash for missing values", () =>
   assert.equal(formatMetric("epa", -0.05), "−0.05");
   assert.equal(formatMetric("pct", 0.4567), "45.7%");
   assert.equal(formatMetric("pts", 4.1), "4.10");
+  assert.equal(formatMetric("yds", 6.8421), "6.84");
+  assert.equal(formatMetric("yds", 0), "0.00");
   assert.equal(formatMetric("field", 31.25), "Own 31.3");
   assert.equal(formatMetric("pct", null), "—");
   assert.equal(formatMetric("pct", Number.NaN), "—");
@@ -60,7 +62,7 @@ test("buildUnitRows pairs the offense with the OPPOSING defense, never the same 
 test("buildUnitRows returns every metric and tolerates a team with no rows", () => {
   const out = buildUnitRows([], "A", "B");
   assert.equal(out.length, UNIT_METRICS.length);
-  assert.equal(out.length, 12);
+  assert.equal(out.length, 14);
   assert.ok(out.every((r) => r.offenseValue === "—" && r.offenseRank === null && r.defenseRank === null));
 });
 
@@ -101,7 +103,7 @@ test("metrics are grouped into three sections in display order", () => {
     SECTION_LABELS.situational,
     SECTION_LABELS.drive,
   ]);
-  assert.deepEqual(groups.map((g) => g.rows.length), [3, 6, 3]);
+  assert.deepEqual(groups.map((g) => g.rows.length), [5, 6, 3]);
   assert.equal(groups.flatMap((g) => g.rows).length, UNIT_METRICS.length);
   assert.equal(new Set(UNIT_METRICS.map((m) => m.key)).size, UNIT_METRICS.length);
 });
@@ -115,6 +117,18 @@ test("possession metrics format and pair like the others", () => {
   const out = Object.fromEntries(buildUnitRows(rows, "A", "B").map((r) => [r.key, r]));
   assert.deepEqual([out.ppp.offenseValue, out.ppp.defenseValue], ["2.46", "1.90"]);
   assert.equal(out.epa_per_possession.offenseValue, "−0.25");
+});
+
+test("yards per play rows sit after PPA/play and format to two decimals", () => {
+  const keys = UNIT_METRICS.map((m) => m.key);
+  const at = keys.indexOf("ppa_per_play");
+  assert.deepEqual(keys.slice(at + 1, at + 3), ["ypp", "adj_ypp"]);
+  assert.equal(UNIT_METRICS.find((m) => m.key === "ypp")?.label, "Yards/play");
+  assert.equal(UNIT_METRICS.find((m) => m.key === "adj_ypp")?.label, "Adj. yards/play");
+  const rows = [row("A", "offense", "ypp", 6.8421, 12), row("B", "defense", "adj_ypp", 5.5, 30)];
+  const out = Object.fromEntries(buildUnitRows(rows, "A", "B").map((r) => [r.key, r]));
+  assert.deepEqual([out.ypp.offenseValue, out.ypp.offenseRank], ["6.84", 12]);
+  assert.deepEqual([out.adj_ypp.defenseValue, out.adj_ypp.defenseRank], ["5.50", 30]);
 });
 
 test("plays per possession and non-offense points are stored but not shown on the matchup", () => {
