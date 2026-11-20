@@ -61,8 +61,8 @@ test("buildUnitRows pairs the offense with the OPPOSING defense, never the same 
 
 test("buildUnitRows returns every metric and tolerates a team with no rows", () => {
   const out = buildUnitRows([], "A", "B");
-  assert.equal(out.length, UNIT_METRICS.length);
-  assert.equal(out.length, 14);
+  assert.equal(out.length, UNIT_METRICS.length - 2); // the two yards-per-play rows are hidden without data
+  assert.equal(out.length, 12);
   assert.ok(out.every((r) => r.offenseValue === "—" && r.offenseRank === null && r.defenseRank === null));
 });
 
@@ -95,8 +95,12 @@ test("buildMatchupStats is null with no rows and pairs each offense with the opp
   assert.equal(stats?.cohortSize, 130);
 });
 
+function allMetricRows() {
+  return UNIT_METRICS.map((m) => row("A", "offense", m.key, 1, 1));
+}
+
 test("metrics are grouped into three sections in display order", () => {
-  const groups = groupUnitRows(buildUnitRows([], "A", "B"));
+  const groups = groupUnitRows(buildUnitRows(allMetricRows(), "A", "B"));
   assert.deepEqual(groups.map((g) => g.section), ["possession", "situational", "drive"]);
   assert.deepEqual(groups.map((g) => g.label), [
     SECTION_LABELS.possession,
@@ -129,6 +133,20 @@ test("yards per play rows sit after PPA/play and format to two decimals", () => 
   const out = Object.fromEntries(buildUnitRows(rows, "A", "B").map((r) => [r.key, r]));
   assert.deepEqual([out.ypp.offenseValue, out.ypp.offenseRank], ["6.84", 12]);
   assert.deepEqual([out.adj_ypp.defenseValue, out.adj_ypp.defenseRank], ["5.50", 30]);
+});
+
+test("yards per play rows are hidden when no loaded row has a value, shown when any side does", () => {
+  const base = [row("A", "offense", "ppp", 2, 10), row("B", "defense", "ppp", 2, 10)];
+  const hidden = buildUnitRows([...base, row("A", "offense", "ypp", null, null)], "A", "B").map((r) => r.key);
+  assert.ok(!hidden.includes("ypp") && !hidden.includes("adj_ypp"));
+  assert.equal(hidden.length, 12);
+  const defenseOnly = buildUnitRows([...base, row("B", "defense", "adj_ypp", 5.5, 30)], "A", "B");
+  assert.equal(defenseOnly.length, 13);
+  // A null for one team still renders a dash while the other team has a value.
+  const ypp = defenseOnly.find((r) => r.key === "adj_ypp");
+  assert.deepEqual([ypp?.offenseValue, ypp?.defenseValue], ["—", "5.50"]);
+  assert.ok(!defenseOnly.some((r) => r.key === "ypp"));
+  assert.equal(buildUnitRows([...base, row("A", "offense", "ypp", 6, 1), row("A", "offense", "adj_ypp", 6, 1)], "A", "B").length, 14);
 });
 
 test("plays per possession and non-offense points are stored but not shown on the matchup", () => {

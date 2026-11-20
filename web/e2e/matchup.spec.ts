@@ -106,6 +106,20 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(block).toContainText("Offense");
   });
 
+  test("hides the yards-per-play rows when the release has no values for them", async ({ page }) => {
+    await gotoHydrated(page, "/matchup/987659");
+    await openUnitStats(page);
+    const table = unitStats(page).getByRole("table");
+    await expect(table.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(12);
+    await expect(table.getByText("Yards/play")).toHaveCount(0);
+    await expect(table.getByText("Adj. yards/play")).toHaveCount(0);
+    await table.getByRole("button", { name: /Situational \/ down and distance/ }).click();
+    await expect(table.locator("tbody tr").filter({ has: page.locator("td") })).toHaveCount(6);
+    await gotoHydrated(page, "/matchup/1");
+    await openUnitStats(page);
+    await expect(unitStats(page).getByRole("table").getByText("Adj. yards/play")).toBeVisible();
+  });
+
   test("one selector drives a single unit table at every width, with synchronized section collapse", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await gotoHydrated(page, "/matchup/1");
