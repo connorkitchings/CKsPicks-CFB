@@ -23,17 +23,19 @@ function hash(text: string): number {
  * has an exact-zero explosive rate (a value with no rank); every other row is
  * ranked, with a few ties.
  */
-export function fixtureRows(teams: string[], unrankedTeam: string): TeamStatRow[] {
+export function fixtureRows(teams: string[], unrankedTeam: string, omit: readonly string[] = []): TeamStatRow[] {
   const rows: TeamStatRow[] = [];
   for (const team of teams) {
     for (const role of ["offense", "defense"] as const) {
       UNIT_METRICS.forEach((m, i) => {
+        if (omit.includes(m.key)) return;
         const seed = hash(`${team}|${role}|${m.key}`);
         const frac = (seed % 1000) / 1000;
         const value =
           m.format === "epa" ? frac * 0.6 - 0.3
           : m.format === "pct" ? 0.25 + frac * 0.3
           : m.format === "pts" ? 3 + frac * 2
+          : m.format === "yds" ? 4 + frac * 3
           : 25 + frac * 12;
         const unranked =
           team === unrankedTeam && (m.key === "explosive_rate" || m.key === "epa_pass");
@@ -144,7 +146,12 @@ export function fixtureBreakdown(
   return { awayOffense, awayDefense, homeOffense, homeDefense };
 }
 
-export function fixtureMatchup(gameId: number): MatchupData | null {
+/** Yards-per-play stat keys, absent from a release that predates them. */
+export const YPP_KEYS = ["ypp", "adj_ypp"] as const;
+/** Test-only: a game (and, on team pages, `?fixture=no-ypp`) whose release has no yards-per-play values. */
+export const NO_YPP_GAME_ID = 987659;
+
+export function fixtureMatchup(gameId: number, omit: readonly string[] = []): MatchupData | null {
   const game = [...protoGames(), ...protoResultGames()].find((g) => g.gameId === gameId);
   if (!game) return null;
   const predictions = game.publicationMode === "predictions";
@@ -154,7 +161,7 @@ export function fixtureMatchup(gameId: number): MatchupData | null {
     game.awayTeam,
     predictions ? game.predictedSpread : null,
   );
-  const rows = fixtureRows([game.homeTeam, game.awayTeam], game.awayTeam);
+  const rows = fixtureRows([game.homeTeam, game.awayTeam], game.awayTeam, omit);
   return {
     gameId: game.gameId,
     season: game.season,
@@ -222,6 +229,10 @@ export function fixtureMatchupForId(gameId: number): MatchupData | null {
     return base
       ? { ...base, gameId, ratingBreakdown: fixtureBreakdown(base.awayTeam, base.homeTeam, breakdownMode) }
       : null;
+  }
+  if (gameId === NO_YPP_GAME_ID) {
+    const base = fixtureMatchup(1, YPP_KEYS);
+    return base ? { ...base, gameId } : null;
   }
   if (gameId === LINEAGE_MISMATCH_GAME_ID) {
     const base = fixtureMatchup(1);

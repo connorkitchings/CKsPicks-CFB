@@ -105,6 +105,85 @@ def _window_rows(game_rows: pd.DataFrame, as_of_week: int) -> pd.DataFrame:
     return window.sort_values(["game_id", "team"], kind="mergesort")
 
 
+class TeamGameValue(NamedTuple):
+    """One team-game observation of a ratio measurement for one role."""
+
+    team: str
+    opponent: str
+    site: str
+    role: str
+    numerator: float
+    denominator: float
+
+
+class AdjustedValue(NamedTuple):
+    raw: float
+    neutral: float
+    adjusted: float
+    n: float
+    games: int
+
+
+class AdjustedValues(NamedTuple):
+    fit: VenueFit
+    values: dict[tuple[str, str], AdjustedValue]
+
+
+def adjust_team_game_values(
+    observations: Sequence[TeamGameValue], *, measurement: str = MEASUREMENT
+) -> AdjustedValues:
+    """Venue-neutralize then opponent-adjust ratio observations, keyed by (team, role).
+
+    Observations need ``denominator > 0``. The venue coefficient is fit on the
+    offense rows; defense numerators take the opposite sign (``s`` is from the
+    defender's side, as in the module docstring). ``raw`` is the unneutralized
+    ratio of sums.
+    """
+    offense = [o for o in observations if o.role == "offense"]
+    fit = estimate_venue_coefficient(
+        [o.team for o in offense],
+        [o.opponent for o in offense],
+        [_SIGN[o.site] for o in offense],
+        [o.numerator / o.denominator for o in offense],
+        [float(o.denominator) for o in offense],
+    )
+    if not observations:
+        return AdjustedValues(fit, {})
+    raw_sums: dict[tuple[str, str], list[float]] = {}
+    games: dict[tuple[str, str], int] = {}
+    history = []
+    for obs in observations:
+        key = (obs.team, obs.role)
+        totals = raw_sums.setdefault(key, [0.0, 0.0])
+        totals[0] += obs.numerator
+        totals[1] += obs.denominator
+        games[key] = games.get(key, 0) + 1
+        direction = -1.0 if obs.role == "offense" else 1.0
+        history.append(
+            {
+                "team": obs.team,
+                "unit_role": obs.role,
+                "measurement_id": measurement,
+                "opponent": obs.opponent,
+                "numerator": obs.numerator
+                + direction * _SIGN[obs.site] * fit.coefficient * obs.denominator,
+                "denominator": float(obs.denominator),
+            }
+        )
+    neutral, adjusted = adjust_possession_history(pd.DataFrame(history))
+    values = {
+        key: AdjustedValue(
+            total / count,
+            neutral[(*key, measurement)],
+            adjusted[(*key, measurement)],
+            count,
+            games[key],
+        )
+        for key, (total, count) in sorted(raw_sums.items())
+    }
+    return AdjustedValues(fit, values)
+
+
 def adjusted_epa_window(
     game_rows: pd.DataFrame,
     roster: Collection[str],
@@ -115,66 +194,41 @@ def adjusted_epa_window(
     """Adjusted rows (team, role) of one window, ranked among roster teams."""
     window = _window_rows(game_rows, as_of_week)
     roster_set = set(roster)
-    offense = window[window["off_epa_n"] > 0]
-    fit = estimate_venue_coefficient(
-        offense["team"].tolist(),
-        offense["opponent"].tolist(),
-        [_SIGN[site] for site in offense["site"]],
-        (offense["off_epa_sum"] / offense["off_epa_n"]).tolist(),
-        offense["off_epa_n"].astype(float).tolist(),
-    )
-    history = []
-    raw_sums: dict[tuple[str, str], list[float]] = {}
-    games: dict[tuple[str, str], int] = {}
-    for row in window.itertuples(index=False):
-        sign = _SIGN[row.site]
-        for role, prefix, direction in (
-            ("offense", "off", -1.0),
-            ("defense", "def", 1.0),
-        ):
-            epa_n = int(getattr(row, f"{prefix}_epa_n"))
-            if epa_n <= 0:
-                continue
-            epa_sum = float(getattr(row, f"{prefix}_epa_sum"))
-            key = (row.team, role)
-            totals = raw_sums.setdefault(key, [0.0, 0.0])
-            totals[0] += epa_sum
-            totals[1] += epa_n
-            games[key] = games.get(key, 0) + 1
-            history.append(
-                {
-                    "team": row.team,
-                    "unit_role": role,
-                    "measurement_id": MEASUREMENT,
-                    "opponent": row.opponent,
-                    "numerator": epa_sum + direction * sign * fit.coefficient * epa_n,
-                    "denominator": float(epa_n),
-                }
-            )
-    if not history:
+    observations = [
+        TeamGameValue(
+            row.team,
+            row.opponent,
+            row.site,
+            role,
+            float(getattr(row, f"{prefix}_epa_sum")),
+            float(getattr(row, f"{prefix}_epa_n")),
+        )
+        for row in window.itertuples(index=False)
+        for role, prefix in (("offense", "off"), ("defense", "def"))
+        if getattr(row, f"{prefix}_epa_n") > 0
+    ]
+    if not observations:
         return []
-    neutral, adjusted = adjust_possession_history(pd.DataFrame(history))
+    fit, values = adjust_team_game_values(observations)
     rows = []
-    for (team, role), (epa_sum, epa_n) in sorted(raw_sums.items()):
+    for (team, role), value in values.items():
         if team not in roster_set:
             raise ValueError(f"team outside the roster: {team}")
-        key = (team, role, MEASUREMENT)
-        raw = epa_sum / epa_n
         rows.append(
             {
                 "season": season,
                 "as_of_week": as_of_week,
                 "team": team,
                 "role": role,
-                "raw_epa_per_play": raw,
-                "venue_correction": raw - neutral[key],
-                "neutral_epa_per_play": neutral[key],
-                "opponent_adjustment": neutral[key] - adjusted[key],
-                "adjusted_epa_per_play": adjusted[key],
+                "raw_epa_per_play": value.raw,
+                "venue_correction": value.raw - value.neutral,
+                "neutral_epa_per_play": value.neutral,
+                "opponent_adjustment": value.neutral - value.adjusted,
+                "adjusted_epa_per_play": value.adjusted,
                 "venue_coefficient": fit.coefficient,
                 "venue_identified": fit.identified,
-                "epa_n": int(epa_n),
-                "games": games[(team, role)],
+                "epa_n": int(value.n),
+                "games": value.games,
                 "adjusted_rank": None,
                 "cohort_size": None,
                 "adjustment_method": ADJUSTMENT_METHOD,

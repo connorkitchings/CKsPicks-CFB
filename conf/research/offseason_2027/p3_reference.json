@@ -1,0 +1,80 @@
+{
+  "inputs": {
+    "features": {
+      "path": "source/rebuild/6a/6a-rebuild-w5-20261007-r2/forecast/feature_frame.parquet",
+      "sha256": "7cdfcfeb4e3748124ff13d722f70f072f1968020b34f59aea83134958c6beffd"
+    },
+    "ratings": {
+      "path": "source/artifacts/research/data-first-football-v1/forecasts/intended-update/runs/v5-intended-update-corrected-w5-r1/historical-states.parquet",
+      "sha256": "8df690ce3d35ece3ae0bf9f68d7c6953e5907a8a7ef63f8e36fc35aa279ddaec"
+    },
+    "postseason": {
+      "path": "output/operational-v5-historical-2026-11-14/postseason_game_ids.json",
+      "sha256": "99f1c2a70f9d0a79013bc08e8dcff891455b23bedc9d668d8be26620cdcb41b8"
+    },
+    "teams": {
+      "2015": {
+        "path": "source/cfbd-2026-11-15/teams_2015.json",
+        "sha256": "947359f00946ae40ebbacd75ce91e94eb676455bf0f596f4e398f665199990bf"
+      },
+      "2016": {
+        "path": "source/cfbd-2026-11-15/teams_2016.json",
+        "sha256": "3650be057492a4e1e6721acb410e4a4639964f68327eebdf19e4c72c846de9d1"
+      },
+      "2017": {
+        "path": "source/cfbd-2026-11-15/teams_2017.json",
+        "sha256": "803696fa0c78ecaaa1abced7f20e56af3f4a6a70104f6e274f2ba557f1fb42cf"
+      },
+      "2018": {
+        "path": "source/cfbd-2026-11-15/teams_2018.json",
+        "sha256": "23f7c74f369d1e63fdb43dbe7b2f14e71b4438524f67bd0f43aeb8f03ba064a7"
+      },
+      "2019": {
+        "path": "source/cfbd-2026-11-15/teams_2019.json",
+        "sha256": "719b72a5af0202b2ac93015c790a4f2e5b246cf52e6f89af963845ada55a160d"
+      },
+      "2021": {
+        "path": "source/cfbd-2026-11-15/teams_2021.json",
+        "sha256": "c7a9c031fa99cbb296232c577b6dbfe21ae80a2c363ea97609528e59e320f720"
+      },
+      "2022": {
+        "path": "source/cfbd-2026-11-15/teams_2022.json",
+        "sha256": "2272d7f19c38bf307478dda134e4621244e4a27ba382c22fc4dedcc379bd7439"
+      },
+      "2023": {
+        "path": "source/cfbd-2026-11-15/teams_2023.json",
+        "sha256": "7c5f1debf95de5fe7468c1aa0221bbe20b617ec83277bb66fd0a310884863571"
+      },
+      "2024": {
+        "path": "source/cfbd-2026-11-15/teams_2024.json",
+        "sha256": "889c37ab96b71c99240e113fbeff9c7b01436591059a2abcadf6d464b14598b0"
+      },
+      "2025": {
+        "path": "source/cfbd-2026-11-15/teams_2025.json",
+        "sha256": "78d129eb285cc28a449dd6ea0bed158198998960b7186e78436ad3c2573114ba"
+      }
+    }
+  },
+  "original_script_bundle": [
+    {
+      "path": "scripts/step4-2026-11-15/p4.py",
+      "sha256": "30438df9d6d4f9357f2e5f401b2f7ba47bd2054e2d616e836a90156a700f8c09"
+    },
+    {
+      "path": "scripts/step4-2026-11-15/b6.py",
+      "sha256": "dd2e9149ace3c9ff759cda06793576ca723556aa04d3c8eab408ae0a4648ad3b"
+    },
+    {
+      "path": "scripts/step4-2026-11-15/b5.py",
+      "sha256": "7fbd116886081794fa48e7dc95667525439c003986c4684bff706aee4900dde9"
+    },
+    {
+      "path": "scripts/step4-2026-11-15/b4.py",
+      "sha256": "17f0dca4c5e747cba664fbe4132350dfa56f83388fb3e7fd3f1ac004f4f79d98"
+    }
+  ],
+  "independent_baseline": {
+    "path": "output/regular-season-benchmark-2026-11-15/predictions_operational_v5.parquet",
+    "sha256": "5651b023a440838b0901863f7629a8ffc913945f9b1768ecb23ce12e82370da2"
+  }
+}

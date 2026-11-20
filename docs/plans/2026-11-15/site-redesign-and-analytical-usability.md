@@ -1,6 +1,6 @@
 # Stratum CFB: site redesign and analytical usability
 
-- **Status:** Implemented 2026-11-15 (redesign and presentation follow-up verified locally; not pushed or deployed)
+- **Status:** Merged (2026-11-17 to `main` via PR #39, `a7d03f2d`)
 - **Created:** 2026-11-15
 - **Planner:** Sol
 - **Approval source:** Owner approved the complete conversational plan and explicitly instructed “Please implement the plan.” on 2026-11-15.

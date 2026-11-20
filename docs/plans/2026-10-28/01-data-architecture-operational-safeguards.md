@@ -1,8 +1,8 @@
 # Data architecture Stage 1a: operational safeguards and baseline
 
-- **Status:** Draft (scope reduced to Stage 1a on 2026-10-29; budgeted repair tooling split out as deferred Stage 1b)
+- **Status:** Draft (scope reduced to Stage 1a on 2026-10-29; budgeted repair tooling split out as deferred Stage 1b; live-controller exception pinning deferred on 2026-11-18 until after the 2026-12-13 final close per [repository review](../2026-11-18/repo-review-and-offseason-engineering.md))
 - **Created:** 2026-10-28
-- **Amended:** 2026-10-29. Owner accepted splitting Stage 1: the urgent immutable-exception fix and provider-free tests stay here (1a); the repair CLI is deferred (1b, see the appendix). Added a recorded `prepare` timing baseline.
+- **Amended:** 2026-10-29 (split Stage 1a/1b and added `prepare` timing baseline); 2026-11-18 (aligned with [2026 holdout replay readiness](../2026-11-12/05-holdout-replay-readiness.md) to defer live `weekly_automation.py` / `refresh_score_exceptions.py` edits until after the 2026-12-13 final regular-season close so Weeks 13–15 run on untouched pipeline code).
 - **Planner:** Sol
 - **Approval source:** Owner approved the revised migration roadmap and requested its persistence in chat on 2026-10-28. This detailed Stage 1 contract adds execution interfaces; implementation requires its own approval or authorization of this exact path.
 - **Implementation log:** `session_logs/YYYY-MM-DD/NN-data-architecture-operational-safeguards.md` (create in the implementation session)

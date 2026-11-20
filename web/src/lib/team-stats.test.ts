@@ -38,6 +38,8 @@ test("formatMetric formats each kind and shows a dash for missing values", () =>
   assert.equal(formatMetric("epa", -0.05), "−0.05");
   assert.equal(formatMetric("pct", 0.4567), "45.7%");
   assert.equal(formatMetric("pts", 4.1), "4.10");
+  assert.equal(formatMetric("yds", 6.8421), "6.84");
+  assert.equal(formatMetric("yds", 0), "0.00");
   assert.equal(formatMetric("field", 31.25), "Own 31.3");
   assert.equal(formatMetric("pct", null), "—");
   assert.equal(formatMetric("pct", Number.NaN), "—");
@@ -59,7 +61,7 @@ test("buildUnitRows pairs the offense with the OPPOSING defense, never the same 
 
 test("buildUnitRows returns every metric and tolerates a team with no rows", () => {
   const out = buildUnitRows([], "A", "B");
-  assert.equal(out.length, UNIT_METRICS.length);
+  assert.equal(out.length, UNIT_METRICS.length - 2); // the two yards-per-play rows are hidden without data
   assert.equal(out.length, 12);
   assert.ok(out.every((r) => r.offenseValue === "—" && r.offenseRank === null && r.defenseRank === null));
 });
@@ -93,15 +95,19 @@ test("buildMatchupStats is null with no rows and pairs each offense with the opp
   assert.equal(stats?.cohortSize, 130);
 });
 
+function allMetricRows() {
+  return UNIT_METRICS.map((m) => row("A", "offense", m.key, 1, 1));
+}
+
 test("metrics are grouped into three sections in display order", () => {
-  const groups = groupUnitRows(buildUnitRows([], "A", "B"));
+  const groups = groupUnitRows(buildUnitRows(allMetricRows(), "A", "B"));
   assert.deepEqual(groups.map((g) => g.section), ["possession", "situational", "drive"]);
   assert.deepEqual(groups.map((g) => g.label), [
     SECTION_LABELS.possession,
     SECTION_LABELS.situational,
     SECTION_LABELS.drive,
   ]);
-  assert.deepEqual(groups.map((g) => g.rows.length), [3, 6, 3]);
+  assert.deepEqual(groups.map((g) => g.rows.length), [5, 6, 3]);
   assert.equal(groups.flatMap((g) => g.rows).length, UNIT_METRICS.length);
   assert.equal(new Set(UNIT_METRICS.map((m) => m.key)).size, UNIT_METRICS.length);
 });
@@ -115,6 +121,32 @@ test("possession metrics format and pair like the others", () => {
   const out = Object.fromEntries(buildUnitRows(rows, "A", "B").map((r) => [r.key, r]));
   assert.deepEqual([out.ppp.offenseValue, out.ppp.defenseValue], ["2.46", "1.90"]);
   assert.equal(out.epa_per_possession.offenseValue, "−0.25");
+});
+
+test("yards per play rows sit after PPA/play and format to two decimals", () => {
+  const keys = UNIT_METRICS.map((m) => m.key);
+  const at = keys.indexOf("ppa_per_play");
+  assert.deepEqual(keys.slice(at + 1, at + 3), ["ypp", "adj_ypp"]);
+  assert.equal(UNIT_METRICS.find((m) => m.key === "ypp")?.label, "Yards/play");
+  assert.equal(UNIT_METRICS.find((m) => m.key === "adj_ypp")?.label, "Adj. yards/play");
+  const rows = [row("A", "offense", "ypp", 6.8421, 12), row("B", "defense", "adj_ypp", 5.5, 30)];
+  const out = Object.fromEntries(buildUnitRows(rows, "A", "B").map((r) => [r.key, r]));
+  assert.deepEqual([out.ypp.offenseValue, out.ypp.offenseRank], ["6.84", 12]);
+  assert.deepEqual([out.adj_ypp.defenseValue, out.adj_ypp.defenseRank], ["5.50", 30]);
+});
+
+test("yards per play rows are hidden when no loaded row has a value, shown when any side does", () => {
+  const base = [row("A", "offense", "ppp", 2, 10), row("B", "defense", "ppp", 2, 10)];
+  const hidden = buildUnitRows([...base, row("A", "offense", "ypp", null, null)], "A", "B").map((r) => r.key);
+  assert.ok(!hidden.includes("ypp") && !hidden.includes("adj_ypp"));
+  assert.equal(hidden.length, 12);
+  const defenseOnly = buildUnitRows([...base, row("B", "defense", "adj_ypp", 5.5, 30)], "A", "B");
+  assert.equal(defenseOnly.length, 13);
+  // A null for one team still renders a dash while the other team has a value.
+  const ypp = defenseOnly.find((r) => r.key === "adj_ypp");
+  assert.deepEqual([ypp?.offenseValue, ypp?.defenseValue], ["—", "5.50"]);
+  assert.ok(!defenseOnly.some((r) => r.key === "ypp"));
+  assert.equal(buildUnitRows([...base, row("A", "offense", "ypp", 6, 1), row("A", "offense", "adj_ypp", 6, 1)], "A", "B").length, 14);
 });
 
 test("plays per possession and non-offense points are stored but not shown on the matchup", () => {

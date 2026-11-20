@@ -15,7 +15,7 @@ import { UnitProfile } from "@/components/teams/UnitProfile";
 import { Disclosure } from "@/components/ui/Disclosure";
 import { getTeamPossessionStats, getTeamSeasonStats } from "@/lib/queries";
 import { buildUnitRows, type UnitMatchupRow } from "@/lib/team-stats";
-import { fixtureRows } from "@/test/fixtures/matchup";
+import { YPP_KEYS, fixtureRows } from "@/test/fixtures/matchup";
 import { teamAbbr } from "@/lib/team-logos";
 import { getTeamGameStats, getTeamSeasonRoster } from "@/lib/chart-queries";
 import { analysisPeriod, boundedRatingHistory, nationalRanks, type RatingHistoryPeriod } from "@/lib/team-analysis";
@@ -117,7 +117,7 @@ export default async function TeamPage({ params, searchParams }: { params: Promi
   const played = games.filter(isFinal);
   const statsWeek = played.length > 0 ? played[played.length - 1].week + 1 : nextGame ? nextGame.week : null;
   const unitRows = statsWeek === null ? null
-    : process.env.CFB_UI_TEST_MODE === "1" ? buildUnitRows(fixtureRows([team], ""), team, team)
+    : process.env.CFB_UI_TEST_MODE === "1" ? buildUnitRows(fixtureRows([team], "", query?.fixture === "no-ypp" ? YPP_KEYS : []), team, team)
     : await loadUnitRows(season, team, statsWeek);
   const rankHistory = analysisHistory.flatMap((entry) => {
     const row = entry.ratings.find((rating) => rating.team === ratingName);

@@ -331,9 +331,70 @@ def test_population_validation_and_paired_bootstrap():
     reference["absolute_error"] = 2.0
     result = paired_comparison(candidate, reference, corpus, samples=20)
     assert result["paired"]["margin"]["mae_gain"] == 1.0
-    assert result["paired"]["total"]["lower_90"] == 1.0
+    assert result["paired"]["total"]["lower"] == 1.0
     with pytest.raises(ValueError, match="eligible schedule"):
         validate_prediction_population(candidate.head(1), corpus)
+
+
+def _varying_pair():
+    rows = [
+        {
+            "season": 2022 + week // 6,
+            "week": week % 6 + 1,
+            "game_id": week,
+            "target": "margin",
+            "actual": 10.0,
+            "prediction": 8.0,
+            "completed_game_stage": 0,
+            "gaussian_crps": 1.0,
+        }
+        for week in range(12)
+    ]
+
+    class CorpusStub:
+        v5_predictions = pd.DataFrame(rows)
+
+    corpus = CorpusStub()
+    reference = corpus.v5_predictions.copy()
+    reference["absolute_error"] = 2.0
+    candidate = corpus.v5_predictions.copy()
+    candidate["absolute_error"] = [float(i % 4) for i in range(12)]
+    return candidate, reference, corpus
+
+
+def test_paired_comparison_defaults_to_two_sided_95_interval():
+    candidate, reference, corpus = _varying_pair()
+    result = paired_comparison(candidate, reference, corpus, samples=200)
+    margin = result["paired"]["margin"]
+    assert margin["confidence_level"] == 0.95
+    assert margin["lower"] < margin["mae_gain"] < margin["upper"]
+    assert margin["replicates"] == 200
+    assert "lower_90" not in margin
+
+
+def test_paired_comparison_95_interval_wider_than_90():
+    candidate, reference, corpus = _varying_pair()
+    wide = paired_comparison(candidate, reference, corpus, samples=500)["paired"]
+    narrow = paired_comparison(
+        candidate, reference, corpus, samples=500, confidence_level=0.90
+    )["paired"]
+    assert wide["margin"]["upper"] - wide["margin"]["lower"] > (
+        narrow["margin"]["upper"] - narrow["margin"]["lower"]
+    )
+
+
+@pytest.mark.parametrize("level", [0.0, 1.0, -0.1, 1.5])
+def test_paired_comparison_rejects_invalid_confidence_level(level):
+    candidate, reference, corpus = _varying_pair()
+    with pytest.raises(ValueError, match="confidence_level"):
+        paired_comparison(candidate, reference, corpus, confidence_level=level)
+
+
+def test_paired_comparison_is_deterministic_given_seed():
+    candidate, reference, corpus = _varying_pair()
+    first = paired_comparison(candidate, reference, corpus, seed=7, samples=100)
+    second = paired_comparison(candidate, reference, corpus, seed=7, samples=100)
+    assert first["paired"] == second["paired"]
 
 
 def test_common_bridge_uses_earlier_seasons_and_reports_early_period():

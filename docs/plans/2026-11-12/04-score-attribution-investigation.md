@@ -1,6 +1,6 @@
 # Score-attribution investigation: the quarantined games, one by one
 
-- **Status:** Implemented (2026-11-12, uncommitted on a branch; needs review, commit and pull request into `dev`)
+- **Status:** Merged (implemented in `182a31b5`; merged to `main` 2026-11-17 via PR #39, `a7d03f2d`)
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner approved implementation on 2026-11-12, after the direction of the same day: document the 44 quarantined games and examine each individually; the goal is to repair the running-score problem directly, not to keep removing games.

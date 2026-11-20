@@ -43,7 +43,7 @@ export interface UnitMatchupRow {
   section: MetricSection;
 }
 
-type Format = "epa" | "pct" | "pts" | "field";
+type Format = "epa" | "pct" | "pts" | "yds" | "field";
 
 /** Matchup table sections, in display order. */
 export type MetricSection = "possession" | "situational" | "drive";
@@ -63,16 +63,23 @@ export const SECTION_LABELS: Record<MetricSection, string> = {
  * `epa_per_play` companion: that one counts returned punts as plays (a Silver
  * `st` flag gap, fixed for future builds) and so reads slightly low. Team stats
  * excludes kicking plays, so it is the number shown here.
+ *
+ * Yards/play (`ypp`) is raw. Adjusted yards/play (`adj_ypp`) is opponent- and
+ * venue-adjusted for display only; it is not a rating input.
  */
 export const UNIT_METRICS: {
   key: string;
   label: string;
   format: Format;
   section: MetricSection;
+  /** Omitted from the table when the loaded rows hold no value for it (not yet in the active release). */
+  optional?: true;
 }[] = [
   { key: "ppp", label: "Points/possession", format: "pts", section: "possession" },
   { key: "epa_per_possession", label: "PPA/possession", format: "epa", section: "possession" },
   { key: "ppa_per_play", label: "PPA/play", format: "epa", section: "possession" },
+  { key: "ypp", label: "Yards/play", format: "yds", section: "possession", optional: true },
+  { key: "adj_ypp", label: "Adj. yards/play", format: "yds", section: "possession", optional: true },
   { key: "success_rate", label: "Success rate", format: "pct", section: "situational" },
   { key: "explosive_rate", label: "Explosive plays (20+)", format: "pct", section: "situational" },
   { key: "conv_rate_3rd_4th", label: "3rd/4th down conv.", format: "pct", section: "situational" },
@@ -96,6 +103,7 @@ export function formatMetric(format: Format, value: number | null): string {
     case "pct":
       return `${(value * 100).toFixed(1)}%`;
     case "pts":
+    case "yds":
       return value.toFixed(2);
     case "field":
       return `Own ${value.toFixed(1)}`;
@@ -246,13 +254,17 @@ function find(rows: TeamStatRow[], team: string, role: StatRole, metric: string)
   return rows.find((r) => r.team === team && r.role === role && r.metric === metric) ?? null;
 }
 
-/** Offense of `offenseTeam` against the defense of `defenseTeam`; missing data shows "—". */
+/**
+ * Offense of `offenseTeam` against the defense of `defenseTeam`; missing data shows "—".
+ * An optional metric with no value on either side (offense or defense) in `rows` is left out entirely.
+ */
 export function buildUnitRows(
   rows: TeamStatRow[],
   offenseTeam: string,
   defenseTeam: string,
 ): UnitMatchupRow[] {
-  return UNIT_METRICS.map(({ key, label, format, section }) => {
+  const published = new Set(rows.filter((r) => r.value !== null && Number.isFinite(r.value)).map((r) => r.metric));
+  return UNIT_METRICS.filter((m) => !m.optional || published.has(m.key)).map(({ key, label, format, section }) => {
     const off = find(rows, offenseTeam, "offense", key);
     const def = find(rows, defenseTeam, "defense", key);
     // An exact zero is no ranking signal (many teams share it): show the value, not a rank.

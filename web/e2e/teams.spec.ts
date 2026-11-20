@@ -114,7 +114,15 @@ test.describe("team pages (fixture mode)", () => {
     await gotoHydrated(page, "/teams/Texas");
     await expect(page.getByTestId("unit-offense").getByRole("term").first()).toBeVisible();
     await expect(page.getByTestId("unit-defense").getByRole("term").first()).toBeVisible();
-    await expect(page.getByTestId("unit-full-stats").getByText("Full stats (12)")).toBeVisible();
+    await expect(page.getByTestId("unit-full-stats").getByText("Full stats (14)")).toBeVisible();
+  });
+
+  test("Full stats omits the yards-per-play rows when the release has no values for them", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await gotoHydrated(page, "/teams/Texas?fixture=no-ypp");
+    const full = page.getByTestId("unit-full-stats");
+    await expect(full.getByText("Full stats (12)")).toBeVisible();
+    await expect(full.getByText("Yards/play")).toHaveCount(0);
   });
 
   for (const width of [390, 320]) {

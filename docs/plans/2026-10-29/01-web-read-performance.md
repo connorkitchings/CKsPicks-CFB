@@ -1,8 +1,9 @@
 # Web read performance
 
-- **Status:** Draft
+- **Status:** Draft (amended 2026-11-18 with PostgreSQL CTE materialization and `/stats` lazy-loading findings from the [repository review](../2026-11-18/repo-review-and-offseason-engineering.md); deferred until after the 2026-12-13 final regular-season close)
 - **Created:** 2026-10-29
-- **Approval source:** Owner accepted the web read performance track in the 2026-10-29 review of the [data architecture blueprint](../../planning/data_architecture_blueprint.md). Implementation requires approval or authorization of this exact path.
+- **Amended:** 2026-11-18
+- **Approval source:** Owner accepted the web read performance track in the 2026-10-29 review of the [data architecture blueprint](../../planning/data_architecture_blueprint.md) and approved recording the 2026-11-18 CTE materialization and `/stats` findings on 2026-11-18. Implementation requires approval or authorization of this exact path.
 - **Implementation log:** `session_logs/YYYY-MM-DD/NN-web-read-performance.md` (create in the implementation session)
 - **Commit policy:** Separate plan commit; owner controls staging, commits, pushes and releases.
 
@@ -12,28 +13,36 @@ Make the display pages fast on Vercel without changing what they show. This is a
 
 ## Findings
 
-Static findings were re-verified against `dev` (`ec86d877`) on 2026-10-29; the timings below are earlier local measurements and are not re-run.
+Static findings were re-verified against `dev` (`ec86d877`) on 2026-10-29 and expanded on 2026-11-18 (`aae08563`); the timings below are earlier local measurements and are not re-run.
 
 - **Production TTFB has never been measured.** Local warm TTFB through the release-keyed data cache is 9–99 ms.
-- **ISR does nothing on most pages.** `revalidate = 300` is exported by `app/(games)/page.tsx` (`/`), `app/ratings/page.tsx`, `app/stats/page.tsx` and `app/matchup/[gameId]/page.tsx`, but each awaits `searchParams`, which makes the route dynamic. `/` reads real parameters (`week`, publication mode), as do `/ratings` and `/stats`. `/matchup/[gameId]` reads it only for the `?now=` UI-test override. `app/teams/[team]/page.tsx` already avoids this by reading `searchParams` only when `isUiTestMode()`, and is the pattern to copy. `/model` is `force-dynamic` by design, so ISR does not apply to it. This has been known since the [2026-10-21 plan](../2026-10-21/01-site-reorganization-and-performance.md).
+- **ISR does nothing on most pages.** `revalidate = 300` is exported by `app/(games)/page.tsx` (`/`), `app/teams/page.tsx`, `app/stats/page.tsx` and `app/matchup/[gameId]/page.tsx`, but each awaits `searchParams`, which makes the route dynamic. `/` reads real parameters (`week`, publication mode), as do `/teams` and `/stats`. `/matchup/[gameId]` reads it only for the `?now=` UI-test override. `app/teams/[team]/page.tsx` already avoids this by reading `searchParams` only when `isUiTestMode()`, and is the pattern to copy. `/model` is `force-dynamic` by design, so ISR does not apply to it. This has been known since the [2026-10-21 plan](../2026-10-21/01-site-reorganization-and-performance.md).
 - **The matchup page is the slowest route:** 1,356 ms cold and 99 ms warm locally. `getMatchupData` (`lib/matchup.ts`) is not in the release data cache (React `cache` only) and fetches the whole week's slate through `getGamesForWeek` or `getMarketGamesForWeek` to find one game. The count of 4 dependent query stages comes from the earlier measurement session; re-count it when implementing.
 - **The data cache starts empty after every deploy** because the deployment id is part of the cache key (`release-cache.ts`, `deploymentId`).
-- **Correlated subqueries run per row** for grades and market selections. `getV5PerformanceDetail` runs 4 per row across the season, and its cache entry grows toward Vercel's roughly 2 MB per-entry limit.
+- **Correlated subqueries and double-referenced release CTEs force PostgreSQL full-release materialization (added 2026-11-18).** `seasonReleaseDb` (`lib/season-release-query.ts:60-82`) attaches 19 to 23 `WITH <table_name> AS (SELECT ... FROM season_release_<table_name> WHERE release_id = $1)` CTEs to every Drizzle query. In PostgreSQL 12+, a CTE referenced once is inlined so outer `WHERE` predicates push down into the `(release_id, ...)` primary key index, but a CTE referenced **two or more times** is materialized in full into a Tuplestore without pushing outer predicates:
+  - `queryTeamSeasonStats` and `queryTeamPossessionStats` (`lib/queries.ts:624-728`) call `tiedExistsSql` (`lib/tie-sql.ts:12-18`), referencing `team_season_stats` / `team_possession_stats` in both the outer `FROM` and the correlated `EXISTS (SELECT 1 FROM team_season_stats s2 ...)`, materializing all ~36,432 rows across all 12 weeks just to read 44 rows for 2 teams on a matchup page.
+  - `getCurrentRatings` (`lib/v5.ts:64-88`) references `v5_rating_snapshots` twice (`FROM v5_rating_snapshots` and `SELECT MAX(cutoff_utc) FROM v5_rating_snapshots`).
+  - `loadGamesForWeek`, `loadMarketGamesForWeek`, `loadBiggestEdgesRecord`, and `selectPerformanceRows` (`lib/queries.ts:822-835, 952-969, 1141-1147`; `lib/v5.ts:452-459`) run two correlated scalar subqueries per row against `prediction_grades` instead of the `LEFT JOIN` alias pattern already used in `getV5PerformanceDetail` (`lib/v5.ts:694-695`).
+- **Eager full-season chart loading on `/stats` (added 2026-11-18).** `load()` in `app/stats/page.tsx:190-198` unconditionally fetches `getTeamGameStats(season)` (~1,500 rows) and `getTeamGameYardage(season)` (~1,500 rows) on every `/stats` request, even when rendering tabs (`adjusted`, `possession`, `downs`, `finishing-drives`, `resume-quality`, `rating-trajectory`, `market-board`) that do not use them.
 - **Some results are rebuilt in JavaScript on each cache miss:** season W-L-P from raw grades, team records as of each kickoff, and lines and leans re-derived from snapshots.
 
-Relevant files: `web/src/lib/{season-release,release-cache,matchup,queries,v5}.ts`.
+Relevant files: `web/src/lib/{season-release,season-release-query,release-cache,matchup,queries,tie-sql,v5,chart-queries}.ts`, `web/src/app/{stats/page,matchup/[gameId]/page}.tsx`.
 
 ## Ordered changes
 
-1. **Measure first.** Record production (or Preview) TTFB for `/`, `/ratings`, `/stats`, `/matchup` and `/model`, cold and warm, in the implementation log. Later changes are judged against this baseline; if it shows no problem, stop and amend.
+1. **Measure first.** Record production (or Preview) TTFB for `/`, `/teams`, `/stats`, `/matchup` and `/model`, cold and warm, in the implementation log. Later changes are judged against this baseline; if it shows no problem, stop and amend.
 2. **Matchup loader.** Put `getMatchupData` in the release data cache and load only the requested game instead of the whole week's slate. Reduce the dependent query stages where independent queries can run together. Output must be identical for existing games.
-3. **ISR decision.** Start with `/matchup/[gameId]`: read `searchParams` only under `isUiTestMode()`, as `teams/[team]` does, which should make its `revalidate` effective. For `/`, `/ratings` and `/stats`, which use real parameters, either restructure so static/ISR applies (for example, move the parameter to a path segment or a client-side filter) or remove the ineffective `revalidate` export and document that the page is dynamic. Do not change URLs without an explicit redirect plan.
-4. **Cache key.** Evaluate a cache key that does not include the deployment id, so the cache survives deploys. Correctness depends on the release id remaining in the key; stale-data risk must be analysed and tested before adopting.
-5. **`/model` entry size.** Measure the cached `getV5PerformanceDetail` entry and add a check or alert threshold well under the roughly 2 MB limit. Reducing it via read-shaped projections is deferred to the shared-facts work.
+3. **Eliminate double-referenced CTE materialization and eager `/stats` loads (added 2026-11-18).**
+   - Replace the per-row `prediction_grades` scalar subqueries in `loadGamesForWeek`, `loadMarketGamesForWeek`, `loadBiggestEdgesRecord` and `selectPerformanceRows` with `LEFT JOIN` aliases (matching `getV5PerformanceDetail`).
+   - Rewrite `queryTeamSeasonStats`, `queryTeamPossessionStats` and `getCurrentRatings` so each release CTE is referenced once (or filtered by `as_of_week` before tie detection), and verify with `EXPLAIN (ANALYZE, BUFFERS)` on Preview that full-release CTE Tuplestore materialization is eliminated.
+   - In `app/stats/page.tsx`, lazy-load `getTeamGameStats` and `getTeamGameYardage` only on the tabs that consume them (`net-success`, `efficiency`, `game-log`), using a lightweight distinct-weeks query for tab navigation.
+4. **ISR decision.** Start with `/matchup/[gameId]`: read `searchParams` only under `isUiTestMode()`, as `teams/[team]` does, which should make its `revalidate` effective. For `/`, `/teams` and `/stats`, which use real parameters, either restructure so static/ISR applies (for example, move the parameter to a path segment or a client-side filter) or remove the ineffective `revalidate` export and document that the page is dynamic. Do not change URLs without an explicit redirect plan.
+5. **Cache key.** Evaluate a cache key that does not include the deployment id, so the cache survives deploys. Correctness depends on the release id remaining in the key; stale-data risk must be analysed and tested before adopting.
+6. **`/model` entry size.** Measure the cached `getV5PerformanceDetail` entry and add a check or alert threshold well under the roughly 2 MB limit. Reducing it via read-shaped projections is deferred to the shared-facts work.
 
 ## Constraints and validation
 
-No schema, migration, Python pipeline, release or model change. Existing displayed values stay byte-identical: add tests (or snapshot comparisons) of loader output before and after. Use the project's Make targets for web checks. Required checks: focused unit tests, `make check` and `make web-e2e` before any web release. Measurements are made against Preview or Production only with the owner's authorization for that operation.
+No schema, migration, Python pipeline, release or model change. Existing displayed values stay byte-identical: add tests (or before/after JSON snapshot comparisons against Preview DB) of loader output (`getGamesForWeek`, `getMatchupData`, `getCurrentRatings`, `getTeamSeasonStats`, `getTeamPossessionStats`, `/stats` payloads) before and after, plus `EXPLAIN (ANALYZE, BUFFERS)` verification for the rewritten CTE queries. Use the project's Make targets for web checks. Required checks: focused unit tests, `make check` and `make web-e2e` before any web release. Measurements are made against Preview or Production only with the owner's authorization for that operation.
 
 ## Handoff
 
