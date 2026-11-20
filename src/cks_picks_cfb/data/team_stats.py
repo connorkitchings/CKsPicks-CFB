@@ -235,6 +235,8 @@ def _adjusted_ypp(
 
     Empty before ``FIRST_ADJUSTED_WEEK``. Uses the same eligible plays and games as
     ``ypp``; the site is ``neutral`` when the games frame flags ``neutral_site``.
+    The season-projection schedule carries no such column, so its absence is
+    allowed and means every game is venue-corrected as home/away.
     """
     if as_of_week < FIRST_ADJUSTED_WEEK:
         return {}
@@ -256,6 +258,8 @@ def _adjusted_ypp(
             (game.away_team, game.home_team, "away"),
         ):
             for role, attacker in ((OFFENSE, team), (DEFENSE, opponent)):
+                # A team can legitimately have no eligible plays with yardage
+                # (its raw ``ypp`` is then null too), so a missing sum is skipped.
                 if (game_id, attacker) not in sums.index:
                     continue
                 total = sums.loc[(game_id, attacker)]

@@ -512,6 +512,23 @@ GOLDEN_WINDOW = [
 ]  # fmt: skip
 
 
+def _assert_matches_golden(actual, expected):
+    """Exact for strings, ints and keys; rel=1e-12 for floats (lstsq BLAS noise)."""
+    if isinstance(expected, float):
+        assert actual == pytest.approx(expected, rel=1e-12)
+    elif isinstance(expected, (list, tuple)):
+        assert isinstance(actual, (list, tuple))
+        assert len(actual) == len(expected)
+        for a, e in zip(actual, expected):
+            _assert_matches_golden(a, e)
+    elif isinstance(expected, dict):
+        assert actual.keys() == expected.keys()
+        for key in expected:
+            _assert_matches_golden(actual[key], expected[key])
+    else:
+        assert actual == expected
+
+
 def test_adjusted_epa_window_equals_the_pre_extraction_golden_snapshot():
     rows = window(game_rows(h=0.07, neutral=(4,)))
     actual = [
@@ -529,4 +546,4 @@ def test_adjusted_epa_window_equals_the_pre_extraction_golden_snapshot():
         )
         for r in rows
     ]
-    assert actual == GOLDEN_WINDOW
+    _assert_matches_golden(actual, GOLDEN_WINDOW)

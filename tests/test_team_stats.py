@@ -731,3 +731,87 @@ def test_adj_ypp_ranks_follow_the_stat_direction():
     best_def = dfn.sort_values("rank").iloc[0]
     assert best_off["value"] == off["value"].max()
     assert best_def["value"] == dfn["value"].min()
+
+
+def adj_ypp_values(r):
+    frame = r.frame[r.frame.metric == "adj_ypp"]
+    return {(row.team, row.role): row.value for row in frame.itertuples()}
+
+
+def test_adj_ypp_excludes_penalized_and_garbage_time_plays():
+    baseline = adj_ypp_values(run_five(as_of_week=3))
+    games = ypp_season()
+    # Excluded plays carry huge yardage so any leak moves the adjusted values.
+    games[0][4][0]["plays"].append(play("Pass Reception", 1, 10, 80, 5.0, 1, garbage=1))
+    games[0][4][0]["plays"].append(play("Rush", 1, 10, 70, 0.0, 0))
+    byplay, drives, g, o = build(games)
+    penalized = (byplay["offense"] == "A") & (byplay["yards_gained"] == 70)
+    assert penalized.sum() == 1
+    byplay.loc[penalized, "penalty"] = 1
+    r = build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=g,
+        outcomes=o,
+        fbs_teams=FBS_FIVE,
+        season=2026,
+        as_of_week=3,
+    )
+    assert adj_ypp_values(r) == pytest.approx(baseline)
+
+
+def home_edge_season():
+    """Every home offense gains 7 ypp and every visitor 3, so venue matters."""
+    pairs = [(1, "A", "B"), (2, "C", "A"), (3, "B", "C"), (4, "D", "E"), (5, "E", "A")]
+    pairs += [
+        (6, "B", "D"),
+        (7, "C", "E"),
+        (8, "D", "A"),
+        (9, "E", "B"),
+        (10, "C", "D"),
+    ]
+    return [
+        (gid, 1 + gid % 2, home, away, [drive_of(home, 7), drive_of(away, 3)])
+        for gid, home, away in pairs
+    ]
+
+
+def run_five_with_sites(neutral_site, swap_game_1=False):
+    byplay, drives, g, o = build(home_edge_season())
+    if neutral_site is not None:
+        g["neutral_site"] = neutral_site
+    if swap_game_1:
+        first = g["game_id"] == 1
+        g.loc[first, ["home_team", "away_team"]] = g.loc[
+            first, ["away_team", "home_team"]
+        ].to_numpy()
+        o.loc[o["game_id"] == 1, ["home_points", "away_points"]] = o.loc[
+            o["game_id"] == 1, ["away_points", "home_points"]
+        ].to_numpy()
+    return build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=g,
+        outcomes=o,
+        fbs_teams=FBS_FIVE,
+        season=2026,
+        as_of_week=3,
+    )
+
+
+def test_adj_ypp_does_not_venue_correct_a_neutral_site_game():
+    # Home/away labels are meaningless at a neutral site, so swapping them must
+    # not change the result; the same swap does change it at a true home game.
+    neutral = adj_ypp_values(run_five_with_sites(True))
+    swapped_neutral = adj_ypp_values(run_five_with_sites(True, swap_game_1=True))
+    assert swapped_neutral == pytest.approx(neutral)
+    home_away = adj_ypp_values(run_five_with_sites(False))
+    swapped_home_away = adj_ypp_values(run_five_with_sites(False, swap_game_1=True))
+    assert swapped_home_away != pytest.approx(home_away)
+
+
+def test_adj_ypp_treats_a_schedule_without_neutral_site_as_all_home_away():
+    # Silver schedules built for season projections carry no neutral_site column.
+    assert adj_ypp_values(run_five_with_sites(None)) == pytest.approx(
+        adj_ypp_values(run_five_with_sites(False))
+    )
