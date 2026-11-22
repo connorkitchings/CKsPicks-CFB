@@ -60,6 +60,11 @@
     "reason": "Week 11 scoring events sum to 7, final is 52 (equals the quarter line scores); play-by-play score stream flagged score_regression_or_nonintegral"
   },
   {
+    "game_id": 401856867,
+    "team": "Cincinnati",
+    "reason": "Week 12 scoring events sum to 0, final is 35 (equals the quarter line scores); play-by-play score stream flagged impossible_score_increment"
+  },
+  {
     "game_id": 401858201,
     "team": "Stanford",
     "reason": "Week 0 scoring events sum to 14, final is 37; play-by-play score stream flagged impossible_score_increment"
@@ -110,6 +115,11 @@
     "reason": "Week 9 scoring events sum to 17, final is 52 (equals the quarter line scores); play-by-play score stream flagged impossible_score_increment"
   },
   {
+    "game_id": 401858308,
+    "team": "Stanford",
+    "reason": "Week 12 scoring events sum to 43, final is 44 (equals the quarter line scores); play-by-play score stream flagged no stream flag recorded"
+  },
+  {
     "game_id": 401858433,
     "team": "Oregon",
     "reason": "Week 1 scoring events sum to 14, final is 34; play-by-play score stream flagged impossible_score_increment"
@@ -153,6 +163,16 @@
     "game_id": 401858493,
     "team": "Washington",
     "reason": "Week 7 scoring events sum to 32, final is 38; play-by-play logged touchdown pass as Pass Reception"
+  },
+  {
+    "game_id": 401858529,
+    "team": "Michigan State",
+    "reason": "Week 12 scoring events sum to 0, final is 7 (equals the quarter line scores); play-by-play score stream flagged score_regression_or_nonintegral"
+  },
+  {
+    "game_id": 401858532,
+    "team": "Rutgers",
+    "reason": "Week 12 scoring events sum to 0, final is 25 (equals the quarter line scores); play-by-play score stream flagged impossible_score_increment"
   },
   {
     "game_id": 401859184,
