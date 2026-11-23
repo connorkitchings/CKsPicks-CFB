@@ -1,6 +1,6 @@
 # Final site corrections and limited polish
 
-- **Status:** Implemented 2026-11-16 locally on `dev`; not pushed or deployed
+- **Status:** Merged (2026-11-17 to `main` via PR #39, `a7d03f2d`)
 - **Created:** 2026-11-16
 - **Approval source:** Owner approved the complete revised conversational plan with “Please implement the plan.” on 2026-11-16.
 - **Implementation log:** `session_logs/2026-11-16/01-final-site-corrections.md`

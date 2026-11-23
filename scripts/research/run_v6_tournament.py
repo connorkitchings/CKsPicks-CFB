@@ -445,8 +445,8 @@ def run_tournament(
     )
 
     # Decision logic
-    bound_a = comp_a["paired"]["margin"]["lower_90"]
-    bound_b = comp_b["paired"]["margin"]["lower_90"]
+    bound_a = comp_a["paired"]["margin"]["lower"]
+    bound_b = comp_b["paired"]["margin"]["lower"]
     decision_a = "PROMOTED" if bound_a > 0.0 else "RETAINED_AS_BENCHMARK"
     decision_b = "PROMOTED" if bound_b > 0.0 else "RETAINED_AS_BENCHMARK"
 
@@ -463,8 +463,8 @@ def run_tournament(
             "features_count": 22,
             "margin_mae": scorecard_a["pooled"]["margin"]["mae"],
             "margin_mae_gain_vs_v5": comp_a["paired"]["margin"]["mae_gain"],
-            "margin_lower_90": bound_a,
-            "margin_upper_90": comp_a["paired"]["margin"]["upper_90"],
+            "margin_lower": bound_a,
+            "margin_upper": comp_a["paired"]["margin"]["upper"],
             "total_mae": scorecard_a["pooled"]["total"]["mae"],
             "total_mae_gain_vs_v5": comp_a["paired"]["total"]["mae_gain"],
             "decision": decision_a,
@@ -474,8 +474,8 @@ def run_tournament(
             "features_count": 10,
             "margin_mae": scorecard_b["pooled"]["margin"]["mae"],
             "margin_mae_gain_vs_v5": comp_b["paired"]["margin"]["mae_gain"],
-            "margin_lower_90": bound_b,
-            "margin_upper_90": comp_b["paired"]["margin"]["upper_90"],
+            "margin_lower": bound_b,
+            "margin_upper": comp_b["paired"]["margin"]["upper"],
             "total_mae": scorecard_b["pooled"]["total"]["mae"],
             "total_mae_gain_vs_v5": comp_b["paired"]["total"]["mae_gain"],
             "decision": decision_b,

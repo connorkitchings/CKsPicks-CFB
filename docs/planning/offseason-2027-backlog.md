@@ -20,7 +20,7 @@ Work that cannot wait for January, each under a Draft contract in `docs/plans/20
 
 Also scheduled:
 
-- **2026 holdout replay readiness** ([contract](../plans/2026-11-12/05-holdout-replay-readiness.md)). Verified 2026-11-12: every manifest's pinned exceptions file still exists in git history, so Weeks 7 and 8 are recoverable. The Week 7 and Week 8 revision manifests can no longer be re-prepared because the score-exceptions file is edited in place and its checksum no longer matches. Version the score-exceptions file per manifest from 2027, and after the 2026-12-13 final close export one frozen holdout table (pre-kickoff inputs per week, outcomes, captured lines) with hashes, so a candidate can be scored on 2026 once at the original information time.
+- **2026 holdout replay readiness** ([contract](../plans/2026-11-12/05-holdout-replay-readiness.md)). Verified 2026-11-18 (Task 1, read-only): all 12 revision manifests (`w7_v1` to `w12_v2`) pass pin validation and a full input load from their git-restored exceptions version (`scripts/research/verify_2026_manifest_pins.py`); the checksum mismatch only occurs against the in-place edited working file. The read-only export tool exists (`scripts/research/export_2026_holdout.py`); running it is Task 4, after the 2026-12-13 final close. Version the score-exceptions file per manifest from 2027, and after the 2026-12-13 final close export one frozen holdout table (pre-kickoff inputs per week, outcomes, captured lines) with hashes, so a candidate can be scored on 2026 once at the original information time.
 - **Research bucket.** Provision the private research bucket and `CFB_R2_LAB_*` credentials (owner action in Cloudflare) so the ratings-lab CLI runs without the local-output exception, then re-baseline the closed V6 tournament (`RETAINED_AS_BENCHMARK`) as the benchmark that candidates are compared against alongside V5.
 
 ## A. Prediction-error diagnostics (read-only, first)
@@ -42,7 +42,9 @@ Chosen only after section A shows where the error is; the likely areas are:
 - The totals model.
 - Venue as a model input: the forecast hard-codes every game as home (`home_host=1.0`, `venue_unknown=True`), while the diagnostics show neutral-site margin bias of -4.32 points; the venue data is already stored (`fbs_involved_games`, `game_venues`). Not market-derived, so allowed.
 - Measurement refinements: the garbage-time rule for the Net success rate (the analysis in `session_logs/2026-11-09/06-nsr-keep-garbage-time-impl.md` points to a flat margin cut of about 24 points; the owner kept the current rule for 2026, so this is a candidate for the next model version, which needs a stored column and a release), turnover margin, and the historical EPA replacement.
+- Offense-evidence input: whether adjusted yards per play (or EPA per play) predicts future scoring better than adjusted points per possession, per the [adjusted YPP predictive diagnostic](../plans/2026-11-19/adjusted-ypp-predictive-diagnostic.md) (Draft); the display side is [specified here](../plans/2026-11-19/yards-per-play-display.md).
 - Rating-system structure questions raised by the audit, once its original-artifact verification can be completed.
+- Background reading, no commitment: the [V6 methodology survey](../research/v6-methodology-survey-2026-11.md) (rating systems, totals structure, evaluation decisions, input feasibility).
 
 ## C. 2027 rollover readiness
 
@@ -68,13 +70,17 @@ Recovery backup from the 2026-10-28 worktree cleanup (owner decision 2026-11-11:
 
 ## F. Operations and resilience
 
-- Production rollback drill (never run; the readback fix is merged). Run it mid-week, outside a weekly run, and record the evidence.
+- ~~Production rollback drill~~ Done 2026-11-18 (rolled back to the Week 11 release and forward again; evidence in `session_logs/2026-11-18/02-rollback-drill-and-near-kickoff-enable.md`).
+- **Neon release retention and provenance slimming** ([2026-11-18 repository review](../plans/2026-11-18/repo-review-and-offseason-engineering.md)): build a supported `scripts/ops/prune_season_releases.py` (`make season-prune`) codifying the two-phase trigger-safe delete (`SET CONSTRAINTS ALL IMMEDIATE`, scoped trigger disable/delete/enable with 25/25 trigger assertions, mandatory JSON export receipt, Production rollback-target protection) and smallest-first headroom-checked `VACUUM (FULL, ANALYZE)` cascade from `session_logs/2026-11-15/04-preview-release-prune.md`. In the next offseason projection set, drop or empty per-row `source_versions` JSONB repetition on `team_season_stats` (~420 bytes repeated across ~36,432 rows per release, ~15.3 MB raw JSONB per release), `team_game_measurements` and `team_possession_stats` (~35–45% storage reduction per release).
+- **Season `prepare` runtime optimization** ([2026-11-18 repository review](../plans/2026-11-18/repo-review-and-offseason-engineering.md)): pre-index `teams_by_game` and `usable_by_game` in `src/cks_picks_cfb/forecast/offsets.py` to remove ~460,000 inner-loop pandas DataFrame boolean scans per `prepare` run, and key `measurement-cache` in `src/cks_picks_cfb/season/inputs.py` and `scripts/pipeline/refresh_score_exceptions.py` on the five pinned input dataset hashes plus a SHA-256 of the measurement source files (instead of git `HEAD` `code_sha`) so the manifest commit in `weekly_automation.py` does not force `build_measurements` to execute twice. Gate on 100% byte-identical `serving-projections.json` SHA-256 against a certified 2026 manifest.
+- **Per-manifest score-reconciliation exceptions and Stage 1a safeguards** ([Stage 1a](../plans/2026-10-28/01-data-architecture-operational-safeguards.md), [holdout replay readiness](../plans/2026-11-12/05-holdout-replay-readiness.md)): deferred until after the 2026-12-13 final regular-season close so `weekly_automation.py` and `refresh_score_exceptions.py` stay untouched during Weeks 13–15.
 - Review how many Sunday and Monday slots the scheduler missed in 2026 and whether the backup slots are enough.
-- Automation commits made with `GITHUB_TOKEN` do not trigger CI; decide whether to add a post-commit check.
+- Automation commits made with `GITHUB_TOKEN` do not trigger CI; add an in-workflow post-commit verification step (`contracts/validation.py` + focused season/manifest pytest checks) in `weekly-season-update.yml`, and add refusal guards to legacy `Makefile` targets (`team-stats`, `matchup-data`, `prepare-week`, `promote-silver`).
 - Unused market-quotes catalog version and other small cleanups listed under Open items in the status page.
 
 ## G. Site and product
 
-- Small fixes from the final site review: console warning on 404 pages, long team names wrapping in the matchup forecast card, a "Bye" row.
-- Web read performance ([contract](../plans/2026-10-29/01-web-read-performance.md)).
+- Small fixes from the final site review: all closed in PR #39 (`a7d03f2d`, site v2.0.0), including the 404 theme application fix (`66ce7294`), short team names in the forecast card, and the Bye row on team schedules.
+- Web read performance ([contract](../plans/2026-10-29/01-web-read-performance.md), expanded 2026-11-18 with PostgreSQL double-referenced CTE materialization fixes in `tie-sql.ts`, `getCurrentRatings` and `prediction_grades` joins, plus lazy `/stats` chart loading).
+- [JP+ site review adoptions](../plans/2026-11-17/jpplus-review-adoptions.md): approved 2026-11-17 and deferred until after the offseason model and methods work.
 - Content and explainability. Owner decision 2026-11-11: the site is primarily an analytics site, and market comparison and bet finding are a central spoke of that analytics wheel, so betting views are part of the analytics product rather than a separate tool. Weigh model research against explainability and market-comparison content on that basis.

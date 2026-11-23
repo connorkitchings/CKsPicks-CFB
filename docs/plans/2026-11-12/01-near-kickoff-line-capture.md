@@ -1,6 +1,6 @@
 # Near-kickoff line capture (analysis-only closing-line evidence)
 
-- **Status:** In Progress. Approved 2026-11-12 and implemented on branch `worktree-connorkitchings-offseason-prep-contracts` (uncommitted); the dry run and the confirmed Preview capture check (Validation) and the `dev` to `main` release plus the repository variable (change 4) remain.
+- **Status:** In Progress (implemented in `ac2023a6` and merged to `main` 2026-11-17 via PR #39, `a7d03f2d`; enabled 2026-11-18 (`CFB_NEAR_KICKOFF_CAPTURE_ENABLED=true`); first workflow capture, run `44336095011`, stored capture `5637d39fda834559addd10f400072db2` with 566 quotes, and the slot logic then reported `skip`)
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner decisions recorded 2026-11-12: (1) credit budget accepted (the account has a 500-credit monthly allowance, 496 remaining on 2026-11-12; this plan needs about 24, ceiling 50); (2) cloud automation (a GitHub workflow), not manual or local cron; (3) near-kickoff lines are kept separate from early-week lines, so the two can be compared later (line-value analysis). Owner approved implementation on 2026-11-12 ("yes, go ahead with contract 1").
@@ -45,5 +45,11 @@ Acceptance:
 ## Handoff/amendments
 
 Approval and resume gate: the owner approves the credit budget, the scheduler and the entity decision. Next action after approval: task 1. Mechanical amendments may proceed if architecture, interfaces, scope and acceptance are unchanged; anything else returns to Sol. Record each amendment (reason, previous approach, revised approach, impact) below.
+
+### 2026-11-19 coverage check
+
+The November 18 capture has spreads and totals for both eligible games in the Eastern day's slot. It was fetched 510.73 minutes before Akron–Massachusetts and 540.73 minutes before Central Michigan–Buffalo. The full weekly board contains 566 quote rows for 63 matched games, and the provider matching step skipped 3 quote rows with unmatched game IDs. Neither scheduled workflow receipt that followed fetched another board. The first found the slot already captured and the second ran after the earliest kickoff.
+
+For later slots, run `scripts/research/report_near_kickoff_coverage.py` with Preview credentials under `scripts/ops/with_preview_env.sh`, `CFB_STORAGE_BACKEND=r2` and `PYTHONPATH=.:src`. Pass the registered `--capture-id`, `--week` and `--revision` active for the slot. The JSON includes the per-game lead time and spread and total coverage. The report also provides `capture_id`, `uri`, `sha256` and `captured_at` for the export tool's analysis-only receipt list.
 
 Related: the [pre-registered research protocol](02-offseason-research-protocol.md), which names closing-line value as a monitoring analysis that uses this data.

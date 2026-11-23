@@ -1,6 +1,6 @@
 # Prediction-error diagnostics, 2021 to 2025 (read-only)
 
-- **Status:** In Progress (implemented on a branch; needs review, commit and pull request into `dev`; site class, conference and a totals-bias diagnostic added by the 2026-11-12 amendment; only the true partial-quarantine re-estimation could not be computed, see the log)
+- **Status:** Implemented (development report committed in `613cbfcb` and merged to `main` 2026-11-17 via PR #39, `a7d03f2d`; separate 2026 monitoring section waits for the 2026-12-13 final close)
 - **Created:** 2026-11-12
 - **Planner:** Sol
 - **Approval source:** Owner approved implementation 2026-11-12, after [contract 02](02-offseason-research-protocol.md) was approved.

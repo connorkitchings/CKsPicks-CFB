@@ -25,7 +25,7 @@ Acceptance: the Protocol section is approved and committed before the diagnostic
 - **Populations:** development seasons 2021 to 2025; headline seasons 2022 to 2025 (the corpus of 7,318 frozen V5 rows); 2021 only through the bridge's rolling-origin errors. Earlier seasons in the lab protocol (2015 to 2019) may be used to fit a candidate but never for the headline.
 - **Targets:** home-minus-away margin and total points, scored separately.
 - **Metrics:** MAE, RMSE, bias, Gaussian CRPS, 90% interval coverage and width, each pooled, by season and by completed-game stage, from `scorecard`.
-- **Comparison:** paired bootstrap against frozen V5 and against `v5-common`, 2,000 replicates, seed `20260928`, resampling games.
+- **Comparison:** paired bootstrap against frozen V5 and against `v5-common`, 2,000 replicates, seed `20260928`, resampling games (superseded 2026-11-19 by amendment 2: two-sided 95% interval from season/week block resampling; see the entry below).
 - **Adoption thresholds (approved):** a candidate is eligible only if, on the 2022 to 2025 headline, the paired 95% interval for the MAE difference versus V5 excludes zero in the candidate's favor on the target it claims; no season's MAE is worse than V5's by more than 0.10 points; 90% interval coverage stays within 87% to 93%; and Weeks 0 to 4 are not worse than V5.
 - **Holdout rule:** a candidate is frozen (code, parameters, hashes recorded) before any 2026 scoring. 2026 is scored once, week by week at the original information time, after the 2026-12-13 final close. A failed 2026 score ends that candidate; it is not tuned and rerun. **Refit after the holdout:** once the 2026 score is recorded, the 2027 model is refit on 2021 to 2026 (plus the earlier years the lab allows), and the refit changes no choice made from 2021 to 2025. 2027 then becomes the next clean holdout.
 - **Market data:** closing-line value (from the [near-kickoff capture](01-near-kickoff-line-capture.md)) and betting results are monitoring views, never selection criteria.
@@ -64,4 +64,15 @@ Source: the baseline audit contract's amendments section. Each item is previous 
 - **6. Benchmark population.** Previous: all games. Revised: regular-season games only (3,483 per target for 2022 to 2025); postseason games are removed from bridge training and calibration as well as scoring.
 - **4 (folded into 7).** The 2026 exposure language is carried by the 2026-11-15 entry above, with the restriction that no candidate beyond those listed there is scored on 2026 until a candidate, or a bounded pre-declared set, is frozen.
 - **11. 2027 offset rule (provisional).** Previous: none. Revised: P3 and the baseline use the serving pipeline's offsets if it produces them before kickoff; otherwise both use zero. The rule is identical for both arms and fixed before the first 2027 game is scored. The owner accepted this for now; it may be revisited before 2027.
-- **Not applied:** amendments 1 (comparator) and 2 (paired-interval method, which needs a `paired_comparison` change) are to be edited before applying.
+- **Not applied:** amendment 1 (comparator) is to be edited before applying.
+
+### Amendment 2026-11-19 (owner approved amendment 2 of the baseline audit contract: paired-interval method)
+
+Source: [V5 baseline audit and model analysis framework](../2026-11-14/01-v5-baseline-audit-and-analysis-framework.md), proposed amendment 2. Previous state, revised state. No numeric adoption threshold changes: the adoption block already required a 95% interval, and the lab code returned 90%, so this brings the code into line with the protocol.
+
+- **2. Paired interval.** Previous: `paired_comparison` returned a 90% interval (5th and 95th percentiles) while the adoption thresholds named a 95% interval. Revised: the comparison interval for the MAE difference is a **two-sided 95% paired bootstrap interval** (2.5th and 97.5th percentiles), taken from season/week block resampling (whole season-week blocks of games are resampled, 2,000 replicates, seed `20260928`). `paired_comparison` takes an explicit `confidence_level` that defaults to 0.95.
+  - **What the block resampling captures:** dependence among games played in the same season-week (shared weather, scheduling and scoring-environment shocks) and the variation in how many games each week contributes.
+  - **What it omits:** dependence from the same teams recurring across weeks and seasons, and any dependence across blocks. The interval is therefore conditional on the sampled seasons and weeks, and may be too narrow if team-level error is persistent. This limitation is documented, not corrected.
+  - **Sensitivity analysis (declared before any candidate is evaluated):** a game-level resampling interval is reported next to the block interval for every comparison. It is reported only; the adoption gate uses the block interval.
+  - **Distinct from prediction intervals:** the 95% comparison interval concerns the difference in MAE between two models. The 90% interval coverage and width metrics describe each model's own predictive intervals and are unchanged.
+- **Still open:** amendment 1 (comparator).

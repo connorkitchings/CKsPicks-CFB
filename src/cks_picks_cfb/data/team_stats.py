@@ -20,6 +20,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.charts.adjusted_epa import (
+    FIRST_ADJUSTED_WEEK,
+    TeamGameValue,
+    adjust_team_game_values,
+)
 from cks_picks_cfb.data.play_filters import (
     eligible_possession_play_mask,
     scrimmage_play_mask,
@@ -51,6 +56,9 @@ METRICS: dict[str, tuple[bool, bool]] = {
     "avg_start_field_pos": (True, False),
     "conv_rate_3rd_4th": (True, False),
     "turnover_rate": (False, True),
+    # Display only; neither feeds the V5 rating.
+    "ypp": (True, False),
+    "adj_ypp": (True, False),
 }
 
 _REQUIRED_BYPLAY = (
@@ -189,6 +197,7 @@ def _role_rows(
             "early_down_epa": _mean(ppa[down.isin([1, 2])]),
             "conv_rate_3rd_4th": _mean(_conversions(team_plays, down, yards)),
             "success_rate": _mean(success),
+            "ypp": _mean(yards),
             "explosive_rate": _mean((yards >= 20).astype(float).where(yards.notna())),
             "turnover_rate": _mean(
                 (turnover == 1).astype(float).where(turnover.notna())
@@ -217,6 +226,57 @@ def _role_rows(
                 }
             )
     return rows
+
+
+def _adjusted_ypp(
+    plays: pd.DataFrame, eligible: pd.DataFrame, as_of_week: int
+) -> dict[tuple[str, str], float]:
+    """Venue-neutral, opponent-adjusted yards per play by (team, role).
+
+    Empty before ``FIRST_ADJUSTED_WEEK``. Uses the same eligible plays and games as
+    ``ypp``; the site is ``neutral`` when the games frame flags ``neutral_site``.
+    The season-projection schedule carries no such column, so its absence is
+    allowed and means every game is venue-corrected as home/away.
+    """
+    if as_of_week < FIRST_ADJUSTED_WEEK:
+        return {}
+    valid = plays.assign(
+        game_id=plays["game_id"].astype(int),
+        yards=pd.to_numeric(plays["yards_gained"], errors="coerce"),
+    ).dropna(subset=["yards"])
+    sums = valid.groupby(["game_id", "offense"])["yards"].agg(["sum", "count"])
+    neutral = (
+        eligible["neutral_site"].fillna(False).astype(bool)
+        if "neutral_site" in eligible.columns
+        else pd.Series(False, index=eligible.index)
+    )
+    observations = []
+    for game, is_neutral in zip(eligible.itertuples(index=False), neutral, strict=True):
+        game_id = int(game.game_id)
+        for team, opponent, site in (
+            (game.home_team, game.away_team, "home"),
+            (game.away_team, game.home_team, "away"),
+        ):
+            for role, attacker in ((OFFENSE, team), (DEFENSE, opponent)):
+                # A team can legitimately have no eligible plays with yardage
+                # (its raw ``ypp`` is then null too), so a missing sum is skipped.
+                if (game_id, attacker) not in sums.index:
+                    continue
+                total = sums.loc[(game_id, attacker)]
+                observations.append(
+                    TeamGameValue(
+                        team,
+                        opponent,
+                        "neutral" if is_neutral else site,
+                        role,
+                        float(total["sum"]),
+                        float(total["count"]),
+                    )
+                )
+    if not observations:
+        return {}
+    _, values = adjust_team_game_values(observations, measurement="ypp")
+    return {key: value.adjusted for key, value in values.items()}
 
 
 def build_team_season_stats(
@@ -339,6 +399,15 @@ def build_team_season_stats(
     )
     frame = pd.DataFrame(rows, columns=["team", "role", "metric", "value", "n"])
     frame = frame[frame["team"].isin(fbs_teams)].copy()
+    adjusted_ypp = _adjusted_ypp(plays, eligible.sort_values("game_id"), as_of_week)
+    ypp_rows = frame[frame["metric"] == "ypp"].assign(metric="adj_ypp")
+    ypp_rows["value"] = pd.Series(
+        [adjusted_ypp.get(key) for key in zip(ypp_rows["team"], ypp_rows["role"])],
+        index=ypp_rows.index,
+        dtype=float,
+    )
+    frame["value"] = frame["value"].astype(float)
+    frame = pd.concat([frame, ypp_rows], ignore_index=True)
 
     game_counts: dict[str, int] = {}
     for row in eligible.itertuples(index=False):

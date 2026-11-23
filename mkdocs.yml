@@ -47,8 +47,10 @@ nav:
       - Chart Explosiveness Comparison: research/chart-explosiveness-comparison-2026-10-16.md
       - Ratings Laboratory v1: research/ratings-lab-v1.md
       - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md
+      - V6 Methodology Survey (2026-11): research/v6-methodology-survey-2026-11.md
   - Decisions and Contracts:
       - Decision Log: decisions/decision_log.md
+      - JP+ Site Review: decisions/2026-11-17-jpplus-site-review.md
       - Stratum CFB Brand: decisions/2026-10-27-stratum-cfb-brand.md
       - Historical Crest Wordmark Decision: decisions/2026-10-25-crest-wordmark.md
       - Implementation Contracts: plans/index.md

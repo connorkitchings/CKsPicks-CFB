@@ -4,6 +4,7 @@
 # 2026 residual has been viewed.
 # Amendments 7, 9 and 10 (2026-11-15) are recorded in the same contract; none changes
 # a numeric threshold. Amendments 3, 5, 6, 8 and 11 were applied the same day.
+# Amendment 2 (2026-11-19) records the paired-interval method; no threshold changes.
 protocol_id: offseason_2027_v1
 comparison_models: [frozen_v5, v5-common]
 # Fitting data may include 2015-2019 and 2021-2025; 2020 is always excluded.
@@ -29,6 +30,11 @@ frozen_candidates:                                # amendment 9
 # After the 2026 score is recorded, the 2027 model is refit on 2021-2026 (plus the
 # allowed earlier years) without changing any choice made from 2021-2025.
 post_holdout_refit_seasons_end: 2026
+# Amendment 2 (2026-11-19): the paired comparison interval is two-sided 95% from
+# season/week block resampling (captures same-week dependence; omits same-team
+# dependence across weeks and seasons). A game-level interval is reported alongside
+# as sensitivity only. It is distinct from the 90% prediction intervals below.
+paired_interval: {confidence_level: 0.95, sided: two, resampling: season_week_blocks, sensitivity_reported: game_level}
 bootstrap_seed: 20260928
 bootstrap_replicates: 2000
 research_prefix: offseason-2027/v1/

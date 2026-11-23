@@ -15,6 +15,7 @@ Stratum CFB follows [semantic versioning](https://semver.org/) for the website: 
 - Site version in the footer and in `/api/health` (`appVersion`, `commit`).
 - "Regular season complete" notice for the end-of-season state.
 - Weekly automation: Monday catch-up for a missed close and a noon-Eastern dispatcher.
+- Yards per play and opponent-adjusted yards per play on team stats and matchup pages (context only; not used in ratings or forecasts; shown after the next close-week release).
 
 ### Changed
 - Matchup share images follow the page theme.
